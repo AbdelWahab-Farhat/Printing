@@ -51,6 +51,19 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class)->orderBy('sort_order')->orderBy('id');
     }
 
+    /**
+     * Primary first, then by explicit order — the sequence a gallery should render.
+     *
+     * @return HasMany<ProductImage, $this>
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)
+            ->orderByDesc('is_primary')
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
     public function hasListedPrices(): bool
     {
         return $this->pricing_mode->hasListedPrices();

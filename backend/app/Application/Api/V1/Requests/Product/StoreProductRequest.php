@@ -41,7 +41,7 @@ class StoreProductRequest extends FormRequest
             // A size and its price list. Sizes are optional here so a quote-only product can be
             // created before its sizes are known.
             'variants' => ['sometimes', 'array'],
-            'variants.*.label' => ['required', 'string', 'max:60'],
+            'variants.*.label' => ['required', 'string', 'max:60', 'distinct'],
             'variants.*.width_cm' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'variants.*.height_cm' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'variants.*.is_active' => ['sometimes', 'boolean'],

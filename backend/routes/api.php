@@ -4,6 +4,7 @@ use App\Application\Api\V1\Controllers\AuthController;
 use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\ProductController;
+use App\Application\Api\V1\Controllers\ProductImageController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -58,5 +59,12 @@ Route::prefix('v1')->group(function (): void {
         // is shown and the number written to an order come from the same code.
         Route::post('products/{product}/quote', [ProductController::class, 'quote'])
             ->name('products.quote');
+
+        // scoped() makes {image} resolve *within* {product}, so another product's image id is a
+        // 404 rather than something every controller method has to remember to check.
+        Route::apiResource('products.images', ProductImageController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->parameters(['images' => 'image'])
+            ->scoped();
     });
 });

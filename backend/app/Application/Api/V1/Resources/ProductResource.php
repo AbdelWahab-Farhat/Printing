@@ -43,6 +43,7 @@ class ProductResource extends JsonResource
             'sort_order' => $this->sort_order,
 
             'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
+            'images' => ProductImageResource::collection($this->whenLoaded('images')),
 
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

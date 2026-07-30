@@ -47,7 +47,7 @@ class UpdateProductRequest extends StoreProductRequest
             // left out is deleted.
             'variants' => ['sometimes', 'array'],
             'variants.*.id' => ['sometimes', 'integer', $this->variantBelongsToThisProduct()],
-            'variants.*.label' => ['required', 'string', 'max:60'],
+            'variants.*.label' => ['required', 'string', 'max:60', 'distinct'],
             'variants.*.width_cm' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'variants.*.height_cm' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'variants.*.is_active' => ['sometimes', 'boolean'],

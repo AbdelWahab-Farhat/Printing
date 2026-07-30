@@ -524,6 +524,90 @@ class ProductTest extends TestCase
         $this->assertDatabaseCount('product_price_tiers', 0);
     }
 
+    public function test_update_matches_an_existing_size_by_label_when_no_id_is_sent(): void
+    {
+        // Arrange — the owner resends the whole product with its sizes, without tracking the
+        // internal variant ids. A label is unique per product, so it is the natural key.
+        $product = Product::factory()->create();
+        $existing = ProductVariant::factory()->create(['product_id' => $product->id, 'label' => '25*35']);
+        ProductPriceTier::factory()->from(1, '1.100')->create(['product_variant_id' => $existing->id]);
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson(
+            "/api/v1/products/{$product->id}",
+            $this->payload(['variants' => [
+                ['label' => '25*35', 'width_cm' => 25, 'height_cm' => 35, 'price_tiers' => [
+                    ['min_quantity' => 1, 'unit_price' => '1.25'],
+                ]],
+            ]]),
+        );
+
+        // Assert — the same row was updated rather than a duplicate being attempted.
+        $response->assertOk()->assertJsonCount(1, 'data.variants');
+        $this->assertSame($existing->id, $response->json('data.variants.0.id'));
+        $this->assertDatabaseCount('product_variants', 1);
+        $this->assertDatabaseHas('product_price_tiers', ['product_variant_id' => $existing->id, 'unit_price' => '1.250']);
+    }
+
+    public function test_update_is_idempotent_when_the_same_payload_is_sent_twice(): void
+    {
+        // Arrange
+        $product = Product::factory()->create();
+        $headers = $this->auth();
+        $payload = $this->payload(['variants' => [
+            ['label' => '25*35', 'price_tiers' => [['min_quantity' => 1, 'unit_price' => '1.10']]],
+        ]]);
+
+        // Act
+        $first = $this->withHeaders($headers)->putJson("/api/v1/products/{$product->id}", $payload);
+        $second = $this->withHeaders($headers)->putJson("/api/v1/products/{$product->id}", $payload);
+
+        // Assert
+        $first->assertOk();
+        $second->assertOk()->assertJsonCount(1, 'data.variants');
+        $this->assertDatabaseCount('product_variants', 1);
+        $this->assertDatabaseCount('product_price_tiers', 1);
+    }
+
+    public function test_update_rejects_the_same_size_listed_twice_in_one_request(): void
+    {
+        // Arrange
+        $product = Product::factory()->create();
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson(
+            "/api/v1/products/{$product->id}",
+            $this->payload(['variants' => [['label' => '25*35'], ['label' => '25*35']]]),
+        );
+
+        // Assert — a clear 422, not a unique-constraint 500.
+        $response->assertStatus(422)->assertJsonValidationErrors('variants.0.label');
+    }
+
+    public function test_update_rejects_renaming_a_size_onto_one_that_already_exists(): void
+    {
+        // Arrange
+        $product = Product::factory()->create();
+        $first = ProductVariant::factory()->create(['product_id' => $product->id, 'label' => '25*35']);
+        ProductVariant::factory()->create(['product_id' => $product->id, 'label' => '35*40']);
+        $headers = $this->auth();
+
+        // Act — rename 25*35 to 35*40, which the other variant holds.
+        $response = $this->withHeaders($headers)->putJson(
+            "/api/v1/products/{$product->id}",
+            $this->payload(['variants' => [
+                ['id' => $first->id, 'label' => '35*40'],
+                ['label' => '50*60'],
+            ]]),
+        );
+
+        // Assert
+        $response->assertStatus(422)->assertJson(['status' => false]);
+        $this->assertDatabaseHas('product_variants', ['id' => $first->id, 'label' => '25*35']);
+    }
+
     public function test_update_rejects_a_variant_id_belonging_to_another_product(): void
     {
         // Arrange

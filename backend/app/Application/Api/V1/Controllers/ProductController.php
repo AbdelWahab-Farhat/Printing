@@ -72,7 +72,7 @@ class ProductController extends Controller
      */
     public function show(Product $product): JsonResponse
     {
-        return $this->success(new ProductResource($product->load('variants.priceTiers')));
+        return $this->success(new ProductResource($product->load(['variants.priceTiers', 'images'])));
     }
 
     /**

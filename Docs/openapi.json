@@ -839,7 +839,8 @@
                                                             {
                                                                 "type": "object",
                                                                 "required": [
-                                                                    "variants"
+                                                                    "variants",
+                                                                    "images"
                                                                 ]
                                                             }
                                                         ]
@@ -902,7 +903,8 @@
                                                 {
                                                     "type": "object",
                                                     "required": [
-                                                        "variants"
+                                                        "variants",
+                                                        "images"
                                                     ]
                                                 }
                                             ]
@@ -967,7 +969,8 @@
                                                 {
                                                     "type": "object",
                                                     "required": [
-                                                        "variants"
+                                                        "variants",
+                                                        "images"
                                                     ]
                                                 }
                                             ]
@@ -1041,7 +1044,8 @@
                                                 {
                                                     "type": "object",
                                                     "required": [
-                                                        "variants"
+                                                        "variants",
+                                                        "images"
                                                     ]
                                                 }
                                             ]
@@ -1123,7 +1127,8 @@
                                                 {
                                                     "type": "object",
                                                     "required": [
-                                                        "variants"
+                                                        "variants",
+                                                        "images"
                                                     ]
                                                 }
                                             ]
@@ -1215,6 +1220,215 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/products/{product}/images": {
+            "post": {
+                "operationId": "products.images.store",
+                "description": "Send as `multipart/form-data`. Accepts jpeg, png or webp.",
+                "summary": "Upload an image",
+                "tags": [
+                    "ProductImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "description": "The product ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UploadProductImageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u0631\u0641\u0639 \u0627\u0644\u0635\u0648\u0631\u0629 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductImageResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/products/{product}/images/{image}": {
+            "put": {
+                "operationId": "products.images.update",
+                "description": "Changes the caption, the ordering, or promotes this image to be the product's primary.\nThe file itself cannot be swapped \u2014 upload a new image and delete the old one, so a URL\nalready handed out never starts pointing at different content.",
+                "summary": "Update an image",
+                "tags": [
+                    "ProductImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "description": "The product ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "image",
+                        "in": "path",
+                        "required": true,
+                        "description": "The image ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProductImageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0627\u0644\u0635\u0648\u0631\u0629 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProductImageResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "products.images.destroy",
+                "description": "Removes the record and the stored file. If it was the primary image, the next one takes\nits place so the product is never left without a thumbnail.",
+                "summary": "Delete an image",
+                "tags": [
+                    "ProductImage"
+                ],
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "description": "The product ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "image",
+                        "in": "path",
+                        "required": true,
+                        "description": "The image ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0635\u0648\u0631\u0629 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -1439,6 +1653,67 @@
                 ],
                 "title": "ProductCategory"
             },
+            "ProductImageResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "Generated per request from the disk the file lives on, never stored \u2014 so it stays\ncorrect after a move to S3, and can be a signed link for a private bucket."
+                    },
+                    "alt_text": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_primary": {
+                        "type": "boolean"
+                    },
+                    "sort_order": {
+                        "type": "integer"
+                    },
+                    "mime_type": {
+                        "type": "string"
+                    },
+                    "size_bytes": {
+                        "type": "integer"
+                    },
+                    "width_px": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "height_px": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "url",
+                    "alt_text",
+                    "is_primary",
+                    "sort_order",
+                    "mime_type",
+                    "size_bytes",
+                    "width_px",
+                    "height_px",
+                    "created_at"
+                ],
+                "title": "ProductImageResource"
+            },
             "ProductPriceTierResource": {
                 "type": "object",
                 "properties": {
@@ -1540,6 +1815,12 @@
                                     ]
                                 }
                             ]
+                        }
+                    },
+                    "images": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductImageResource"
                         }
                     },
                     "created_at": {
@@ -1935,6 +2216,36 @@
                 ],
                 "title": "UpdateCustomerRequest"
             },
+            "UpdateProductImageRequest": {
+                "type": "object",
+                "description": "Edits an image's metadata. The file itself is never replaced \u2014 upload a new one and delete\nthe old, so a cached URL can never start pointing at different content.",
+                "properties": {
+                    "alt_text": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 65535
+                    },
+                    "is_primary": {
+                        "description": "Only promoting is meaningful: a product needs one primary image, so demoting the\ncurrent one without naming a replacement is refused.",
+                        "enum": [
+                            "yes",
+                            "on",
+                            "1",
+                            1,
+                            "true",
+                            true
+                        ]
+                    }
+                },
+                "title": "UpdateProductImageRequest"
+            },
             "UpdateProductRequest": {
                 "type": "object",
                 "description": "Same shape as creating, plus `variants.*.id` so an existing size can be edited in place.\n\nThe rules are written out in full rather than merged onto the parent's: Scramble reads this\nmethod statically to build the OpenAPI request body and cannot follow\n`array_merge(parent::rules(), \u2026)`, which would leave this endpoint published with no body.",
@@ -2062,6 +2373,31 @@
                     "min_order_quantity"
                 ],
                 "title": "UpdateProductRequest"
+            },
+            "UploadProductImageRequest": {
+                "type": "object",
+                "properties": {
+                    "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "`image` on top of the mime list: it verifies the file really is an image rather\nthan trusting a renamed extension or a client-supplied content type."
+                    },
+                    "alt_text": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "is_primary": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "image"
+                ],
+                "title": "UploadProductImageRequest"
             },
             "UserResource": {
                 "type": "object",

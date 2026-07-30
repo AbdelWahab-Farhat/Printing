@@ -30,7 +30,7 @@ final class CreateProduct
 
             ($this->syncVariants)($product, $data->variants ?? []);
 
-            return $product->load('variants.priceTiers');
+            return $product->load(['variants.priceTiers', 'images']);
         });
     }
 }

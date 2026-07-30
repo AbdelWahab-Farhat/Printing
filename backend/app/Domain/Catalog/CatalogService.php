@@ -57,7 +57,7 @@ class CatalogService
     {
         $product->update(['is_active' => $isActive]);
 
-        return $product->load('variants.priceTiers');
+        return $product->load(['variants.priceTiers', 'images']);
     }
 
     public function quote(Product $product, ProductVariant $variant, string $quantity): PriceQuote
