@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
-use App\Models\User;
+use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
+/**
+ * Every test follows Arrange - Act - Assert: state is prepared first, exactly one call is
+ * made, and only then is anything asserted.
+ */
 class AuthTest extends TestCase
 {
     use RefreshDatabase;
@@ -57,8 +61,13 @@ class AuthTest extends TestCase
 
     public function test_register_creates_the_user_and_returns_a_usable_token(): void
     {
-        $response = $this->postJson('/api/v1/auth/register', $this->validRegistrationPayload());
+        // Arrange
+        $payload = $this->validRegistrationPayload();
 
+        // Act
+        $response = $this->postJson('/api/v1/auth/register', $payload);
+
+        // Assert
         $response->assertCreated()
             ->assertJson([
                 'status' => true,
@@ -80,26 +89,34 @@ class AuthTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'abdelwahab@printing.ly']);
 
         // The token handed back must actually authenticate.
-        $token = $response->json('data.token');
-        $this->withHeader('Authorization', 'Bearer '.$token)
+        $this->withHeader('Authorization', 'Bearer '.$response->json('data.token'))
             ->getJson('/api/v1/auth/me')
             ->assertOk();
     }
 
     public function test_register_never_exposes_the_password_hash(): void
     {
-        $response = $this->postJson('/api/v1/auth/register', $this->validRegistrationPayload());
+        // Arrange
+        $payload = $this->validRegistrationPayload();
 
+        // Act
+        $response = $this->postJson('/api/v1/auth/register', $payload);
+
+        // Assert
         $response->assertCreated();
         $this->assertArrayNotHasKey('password', $response->json('data.user'));
     }
 
     public function test_register_stores_the_password_hashed(): void
     {
-        $this->postJson('/api/v1/auth/register', $this->validRegistrationPayload())->assertCreated();
+        // Arrange
+        $payload = $this->validRegistrationPayload();
 
+        // Act
+        $this->postJson('/api/v1/auth/register', $payload)->assertCreated();
+
+        // Assert
         $user = User::query()->where('email', 'abdelwahab@printing.ly')->firstOrFail();
-
         $this->assertNotSame('password123', $user->password);
         $this->assertTrue(Hash::check('password123', $user->password));
     }
@@ -110,8 +127,13 @@ class AuthTest extends TestCase
     #[DataProvider('invalidRegistrationCases')]
     public function test_register_rejects_invalid_input(array $overrides, string $invalidField): void
     {
-        $response = $this->postJson('/api/v1/auth/register', $this->validRegistrationPayload($overrides));
+        // Arrange
+        $payload = $this->validRegistrationPayload($overrides);
 
+        // Act
+        $response = $this->postJson('/api/v1/auth/register', $payload);
+
+        // Assert
         $response->assertStatus(422)
             ->assertJson(['status' => false, 'data' => null])
             ->assertJsonValidationErrors($invalidField);
@@ -139,26 +161,36 @@ class AuthTest extends TestCase
 
     public function test_register_rejects_a_duplicate_email(): void
     {
+        // Arrange
         User::factory()->create(['email' => 'taken@printing.ly']);
+        $payload = $this->validRegistrationPayload(['email' => 'taken@printing.ly']);
 
-        $this->postJson('/api/v1/auth/register', $this->validRegistrationPayload(['email' => 'taken@printing.ly']))
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('email');
+        // Act
+        $response = $this->postJson('/api/v1/auth/register', $payload);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('email');
     }
 
     public function test_register_rejects_a_duplicate_phone(): void
     {
+        // Arrange
         User::factory()->create(['phone' => '0911234567']);
+        $payload = $this->validRegistrationPayload(['phone' => '0911234567']);
 
-        $this->postJson('/api/v1/auth/register', $this->validRegistrationPayload(['phone' => '0911234567']))
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('phone');
+        // Act
+        $response = $this->postJson('/api/v1/auth/register', $payload);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('phone');
     }
 
     public function test_register_validation_errors_are_returned_in_an_errors_object(): void
     {
+        // Act
         $response = $this->postJson('/api/v1/auth/register', []);
 
+        // Assert
         $response->assertStatus(422)
             ->assertJsonStructure(['status', 'message', 'data', 'errors'])
             ->assertJson(['message' => 'البيانات المدخلة غير صحيحة']);
@@ -168,10 +200,17 @@ class AuthTest extends TestCase
 
     public function test_login_with_email_succeeds(): void
     {
+        // Arrange
         $user = User::factory()->create(['email' => 'user@printing.ly']);
 
-        $this->postJson('/api/v1/auth/login', ['login' => 'user@printing.ly', 'password' => 'password'])
-            ->assertOk()
+        // Act
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login' => 'user@printing.ly',
+            'password' => 'password',
+        ]);
+
+        // Assert
+        $response->assertOk()
             ->assertJson([
                 'status' => true,
                 'message' => 'تم تسجيل الدخول بنجاح',
@@ -182,36 +221,51 @@ class AuthTest extends TestCase
 
     public function test_login_with_phone_succeeds(): void
     {
+        // Arrange
         $user = User::factory()->create(['phone' => '0917654321']);
 
-        $this->postJson('/api/v1/auth/login', ['login' => '0917654321', 'password' => 'password'])
-            ->assertOk()
+        // Act
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login' => '0917654321',
+            'password' => 'password',
+        ]);
+
+        // Assert
+        $response->assertOk()
             ->assertJson(['status' => true, 'data' => ['user' => ['id' => $user->id]]]);
     }
 
     public function test_login_rejects_a_wrong_password(): void
     {
+        // Arrange
         User::factory()->create(['email' => 'user@printing.ly']);
 
-        $this->postJson('/api/v1/auth/login', ['login' => 'user@printing.ly', 'password' => 'wrong-password'])
-            ->assertStatus(422)
+        // Act
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login' => 'user@printing.ly',
+            'password' => 'wrong-password',
+        ]);
+
+        // Assert
+        $response->assertStatus(422)
             ->assertJson(['status' => false])
             ->assertJsonValidationErrors('login');
     }
 
     public function test_login_gives_the_same_error_for_an_unknown_account_as_for_a_wrong_password(): void
     {
+        // Arrange
         User::factory()->create(['email' => 'user@printing.ly']);
 
+        // Act
         $wrongPassword = $this->postJson('/api/v1/auth/login', [
             'login' => 'user@printing.ly', 'password' => 'wrong-password',
         ]);
-
         $unknownUser = $this->postJson('/api/v1/auth/login', [
             'login' => 'nobody@printing.ly', 'password' => 'wrong-password',
         ]);
 
-        // Identical responses, otherwise the endpoint reveals which accounts exist.
+        // Assert — identical responses, otherwise the endpoint reveals which accounts exist.
         $unknownUser->assertStatus(422);
         $this->assertSame(
             $wrongPassword->json('errors.login'),
@@ -221,21 +275,27 @@ class AuthTest extends TestCase
 
     public function test_login_requires_both_fields(): void
     {
-        $this->postJson('/api/v1/auth/login', [])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['login', 'password']);
+        // Act
+        $response = $this->postJson('/api/v1/auth/login', []);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors(['login', 'password']);
     }
 
     public function test_login_names_the_token_after_the_device_when_one_is_given(): void
     {
+        // Arrange
         $user = User::factory()->create(['email' => 'user@printing.ly']);
 
-        $this->postJson('/api/v1/auth/login', [
+        // Act
+        $response = $this->postJson('/api/v1/auth/login', [
             'login' => 'user@printing.ly',
             'password' => 'password',
             'device_name' => 'iPhone 15',
-        ])->assertOk();
+        ]);
 
+        // Assert
+        $response->assertOk();
         $this->assertDatabaseHas('personal_access_tokens', [
             'tokenable_id' => $user->id,
             'name' => 'iPhone 15',
@@ -246,11 +306,15 @@ class AuthTest extends TestCase
 
     public function test_me_returns_the_authenticated_user(): void
     {
+        // Arrange
         $user = User::factory()->create();
+        $headers = $this->bearerFor($user);
 
-        $this->withHeaders($this->bearerFor($user))
-            ->getJson('/api/v1/auth/me')
-            ->assertOk()
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/auth/me');
+
+        // Assert
+        $response->assertOk()
             ->assertJson([
                 'status' => true,
                 'data' => ['id' => $user->id, 'email' => $user->email, 'phone' => $user->phone],
@@ -259,8 +323,11 @@ class AuthTest extends TestCase
 
     public function test_me_rejects_an_unauthenticated_request_with_a_json_401(): void
     {
-        $this->getJson('/api/v1/auth/me')
-            ->assertStatus(401)
+        // Act
+        $response = $this->getJson('/api/v1/auth/me');
+
+        // Assert
+        $response->assertStatus(401)
             ->assertJson([
                 'status' => false,
                 'message' => 'غير مصرح لك بالدخول',
@@ -270,29 +337,33 @@ class AuthTest extends TestCase
 
     public function test_me_rejects_a_bogus_token(): void
     {
-        $this->withHeader('Authorization', 'Bearer not-a-real-token')
-            ->getJson('/api/v1/auth/me')
-            ->assertStatus(401)
-            ->assertJson(['status' => false]);
+        // Act
+        $response = $this->withHeader('Authorization', 'Bearer not-a-real-token')
+            ->getJson('/api/v1/auth/me');
+
+        // Assert
+        $response->assertStatus(401)->assertJson(['status' => false]);
     }
 
     // ───────────────────────────── logout ─────────────────────────────
 
     public function test_logout_revokes_only_the_current_token(): void
     {
+        // Arrange
         $user = User::factory()->create();
         $keptToken = $user->createToken('other-device')->plainTextToken;
         $headers = $this->bearerFor($user, 'this-device');
-
         $this->assertDatabaseCount('personal_access_tokens', 2);
 
-        $this->withHeaders($headers)
-            ->postJson('/api/v1/auth/logout')
-            ->assertOk()
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/auth/logout');
+
+        // Assert
+        $response->assertOk()
             ->assertJson(['status' => true, 'message' => 'تم تسجيل الخروج بنجاح', 'data' => null]);
+        $this->assertDatabaseCount('personal_access_tokens', 1);
 
         // The used token is gone...
-        $this->assertDatabaseCount('personal_access_tokens', 1);
         $this->forgetAuthenticatedUser();
         $this->withHeaders($headers)->getJson('/api/v1/auth/me')->assertStatus(401);
 
@@ -305,21 +376,27 @@ class AuthTest extends TestCase
 
     public function test_logout_requires_authentication(): void
     {
-        $this->postJson('/api/v1/auth/logout')->assertStatus(401);
+        // Act
+        $response = $this->postJson('/api/v1/auth/logout');
+
+        // Assert
+        $response->assertStatus(401);
     }
 
     public function test_logout_all_revokes_every_token(): void
     {
+        // Arrange
         $user = User::factory()->create();
         $otherToken = $user->createToken('other-device')->plainTextToken;
         $headers = $this->bearerFor($user, 'this-device');
 
-        $this->withHeaders($headers)
-            ->postJson('/api/v1/auth/logout-all')
-            ->assertOk()
-            ->assertJson(['status' => true, 'data' => null]);
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/auth/logout-all');
 
+        // Assert
+        $response->assertOk()->assertJson(['status' => true, 'data' => null]);
         $this->assertDatabaseCount('personal_access_tokens', 0);
+
         $this->forgetAuthenticatedUser();
         $this->withHeader('Authorization', 'Bearer '.$otherToken)
             ->getJson('/api/v1/auth/me')
@@ -328,24 +405,30 @@ class AuthTest extends TestCase
 
     public function test_logout_all_requires_authentication(): void
     {
-        $this->postJson('/api/v1/auth/logout-all')->assertStatus(401);
+        // Act
+        $response = $this->postJson('/api/v1/auth/logout-all');
+
+        // Assert
+        $response->assertStatus(401);
     }
 
     // ───────────────────────────── throttling ─────────────────────────────
 
     public function test_login_is_rate_limited_to_six_attempts_per_minute(): void
     {
+        // Arrange — burn the whole allowance with failed attempts.
         User::factory()->create(['email' => 'user@printing.ly']);
+        $credentials = ['login' => 'user@printing.ly', 'password' => 'wrong-password'];
 
         for ($attempt = 1; $attempt <= 6; $attempt++) {
-            $this->postJson('/api/v1/auth/login', [
-                'login' => 'user@printing.ly', 'password' => 'wrong-password',
-            ])->assertStatus(422);
+            $this->postJson('/api/v1/auth/login', $credentials)->assertStatus(422);
         }
 
-        $this->postJson('/api/v1/auth/login', [
-            'login' => 'user@printing.ly', 'password' => 'wrong-password',
-        ])->assertStatus(429)->assertJson([
+        // Act — the seventh attempt within the same minute.
+        $response = $this->postJson('/api/v1/auth/login', $credentials);
+
+        // Assert
+        $response->assertStatus(429)->assertJson([
             'status' => false,
             'message' => 'عدد المحاولات كبير، يرجى المحاولة لاحقاً',
         ]);

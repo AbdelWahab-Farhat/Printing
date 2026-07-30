@@ -272,6 +272,399 @@
                 }
             }
         },
+        "/v1/customers": {
+            "get": {
+                "operationId": "customers.index",
+                "description": "Newest first. `search` matches the name, the code, or the phone number.",
+                "summary": "List customers",
+                "tags": [
+                    "Customer"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "boolean"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "current_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "per_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "last_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "total": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "current_page",
+                                                        "per_page",
+                                                        "last_page",
+                                                        "total"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "data",
+                                                "meta"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "boolean"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "allOf": [
+                                                            {
+                                                                "$ref": "#/components/schemas/CustomerResource"
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "required": [
+                                                                    "shops"
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "data"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "customers.store",
+                "description": "Shops may be supplied inline. The `code` is generated by the server.",
+                "summary": "Create a customer",
+                "tags": [
+                    "Customer"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreCustomerRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0639\u0645\u064a\u0644 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/CustomerResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "shops"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/customers/{customer}": {
+            "get": {
+                "operationId": "customers.show",
+                "summary": "Get one customer",
+                "tags": [
+                    "Customer"
+                ],
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "description": "The customer ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/CustomerResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "shops"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "customers.update",
+                "description": "Sending `shops` replaces the whole set: entries with an `id` are updated, entries\nwithout one are added, and any shop left out is removed. Omit `shops` entirely to\nleave them untouched.",
+                "summary": "Update a customer",
+                "tags": [
+                    "Customer"
+                ],
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "description": "The customer ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateCustomerRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0639\u0645\u064a\u0644 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/CustomerResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "shops"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/customers/{customer}/activation": {
+            "patch": {
+                "operationId": "customers.activation",
+                "description": "Customers are never deleted \u2014 deactivating keeps their history intact.",
+                "summary": "Activate or deactivate a customer",
+                "tags": [
+                    "Customer"
+                ],
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "path",
+                        "required": true,
+                        "description": "The customer ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetCustomerActivationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "enum": [
+                                                "\u062a\u0645 \u062a\u0646\u0634\u064a\u0637 \u0627\u0644\u0639\u0645\u064a\u0644",
+                                                "\u062a\u0645 \u0625\u0644\u063a\u0627\u0621 \u062a\u0646\u0634\u064a\u0637 \u0627\u0644\u0639\u0645\u064a\u0644"
+                                            ]
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/CustomerResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "shops"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/v1/health": {
             "get": {
                 "operationId": "health",
@@ -373,6 +766,82 @@
             }
         },
         "schemas": {
+            "CustomerResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "primary_phone": {
+                        "type": "string"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "shops": {
+                        "type": "array",
+                        "description": "whenLoaded keeps this resource honest: a caller that forgot to eager-load gets\nno `shops` key rather than a silent query per row.",
+                        "items": {
+                            "$ref": "#/components/schemas/CustomerShopResource"
+                        }
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "primary_phone",
+                    "is_active",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "CustomerResource"
+            },
+            "CustomerShopResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "location": {
+                        "type": "string"
+                    },
+                    "page_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "location",
+                    "page_url"
+                ],
+                "title": "CustomerShopResource"
+            },
             "LoginRequest": {
                 "type": "object",
                 "properties": {
@@ -432,6 +901,128 @@
                     "password_confirmation"
                 ],
                 "title": "RegisterRequest"
+            },
+            "SetCustomerActivationRequest": {
+                "type": "object",
+                "description": "Activating / deactivating a customer is its own request so a list screen's toggle does not\nhave to send the whole record back.",
+                "properties": {
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "is_active"
+                ],
+                "title": "SetCustomerActivationRequest"
+            },
+            "StoreCustomerRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 255
+                    },
+                    "primary_phone": {
+                        "type": "string",
+                        "description": "Digits only, wide enough for both Libyan mobiles (0912345678) and\nlandlines (0213334444).",
+                        "pattern": "^\\d{9,15}$"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "shops": {
+                        "type": "array",
+                        "description": "Shops are created together with the customer; the code never comes from here.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "maxLength": 255
+                                },
+                                "location": {
+                                    "type": "string",
+                                    "maxLength": 255
+                                },
+                                "page_url": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "format": "uri",
+                                    "maxLength": 2048
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "location"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "name",
+                    "primary_phone"
+                ],
+                "title": "StoreCustomerRequest"
+            },
+            "UpdateCustomerRequest": {
+                "type": "object",
+                "description": "Same shape as creating, plus an optional `shops.*.id` so an existing shop can be edited in\nplace instead of being replaced.\n\nThe rules are written out in full rather than merged onto the parent's on purpose: Scramble\nreads this method statically to build the OpenAPI request body, and it cannot follow a\n`array_merge(parent::rules(), \u2026)` call \u2014 doing that left this endpoint with no documented\nbody at all.",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 255
+                    },
+                    "primary_phone": {
+                        "type": "string",
+                        "description": "Digits only, wide enough for both Libyan mobiles (0912345678) and\nlandlines (0213334444).",
+                        "pattern": "^\\d{9,15}$"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "description": "Omit to leave the customer's current state alone."
+                    },
+                    "shops": {
+                        "type": "array",
+                        "description": "Omit `shops` to keep the existing ones. Sending the key replaces the whole set:\nentries with an `id` are updated, entries without one are added, and anything\nleft out is deleted.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "maxLength": 255
+                                },
+                                "location": {
+                                    "type": "string",
+                                    "maxLength": 255
+                                },
+                                "page_url": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "format": "uri",
+                                    "maxLength": 2048
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "location"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "name",
+                    "primary_phone"
+                ],
+                "title": "UpdateCustomerRequest"
             },
             "UserResource": {
                 "type": "object",
@@ -498,6 +1089,25 @@
             },
             "AuthenticationException": {
                 "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "ModelNotFoundException": {
+                "description": "Not found",
                 "content": {
                     "application/json": {
                         "schema": {

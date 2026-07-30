@@ -13,8 +13,10 @@ class HealthTest extends TestCase
 
     public function test_health_endpoint_is_public_and_reports_a_reachable_database(): void
     {
+        // Act
         $response = $this->getJson('/api/v1/health');
 
+        // Assert
         $response->assertOk()
             ->assertJson([
                 'status' => true,
@@ -32,8 +34,10 @@ class HealthTest extends TestCase
 
     public function test_unknown_api_route_returns_the_envelope_not_an_html_page(): void
     {
+        // Act
         $response = $this->getJson('/api/v1/does-not-exist');
 
+        // Assert
         $response->assertNotFound()
             ->assertJson([
                 'status' => false,

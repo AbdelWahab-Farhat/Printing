@@ -1,7 +1,8 @@
 <?php
 
-use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\HealthController;
+use App\Application\Api\V1\Controllers\AuthController;
+use App\Application\Api\V1\Controllers\CustomerController;
+use App\Application\Api\V1\Controllers\HealthController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,5 +34,15 @@ Route::prefix('v1')->group(function (): void {
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::post('logout-all', [AuthController::class, 'logoutAll'])->name('logout-all');
         });
+    });
+
+    Route::middleware('auth:sanctum')->group(function (): void {
+        // No destroy route on purpose: a customer is deactivated, never deleted, so orders
+        // and history keep pointing at a row that still exists.
+        Route::apiResource('customers', CustomerController::class)
+            ->only(['index', 'store', 'show', 'update']);
+
+        Route::patch('customers/{customer}/activation', [CustomerController::class, 'setActivation'])
+            ->name('customers.activation');
     });
 });
