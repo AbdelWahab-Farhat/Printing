@@ -36,5 +36,6 @@ The live contract to code against is always the generated OpenAPI spec — start
 
 ## Conventions
 
-Architecture and coding rules for this app live in **[RULES.md](RULES.md)** — read it before writing
-any Dart.
+Not written yet — the Flutter standard gets its own `RULES.md` here when the app is scaffolded.
+Until then, the backend's [RULES.md](../backend/RULES.md) is the reference for the API contract
+(envelope, error shape, auth).

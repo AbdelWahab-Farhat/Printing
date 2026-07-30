@@ -43,9 +43,8 @@ Seeded admin (local only): `admin@printing.ly` / `0910000000`, password `passwor
 
 ## Project conventions
 
-Two binding rules documents — read the relevant one before writing code:
-
-- **[backend/RULES.md](backend/RULES.md)** — Laravel API standard.
-- **[frontend/RULES.md](frontend/RULES.md)** — Flutter app standard.
-
-[CLAUDE.md](CLAUDE.md) holds environment/tooling facts for AI-assisted work.
+- **[backend/RULES.md](backend/RULES.md)** — the binding Laravel API standard. Read it before
+  writing any PHP.
+- **[backend/CLAUDE.md](backend/CLAUDE.md)** — general engineering rules that apply to any
+  repository; `RULES.md` wins where the two overlap.
+- A Flutter standard will be written when the app is scaffolded.
