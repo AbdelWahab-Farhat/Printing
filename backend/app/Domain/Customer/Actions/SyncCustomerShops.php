@@ -27,7 +27,8 @@ final class SyncCustomerShops
         foreach ($shops as $shop) {
             $attributes = [
                 'name' => $shop->name,
-                'location' => $shop->location,
+                'latitude' => $shop->latitude,
+                'longitude' => $shop->longitude,
                 'page_url' => $shop->pageUrl,
             ];
 

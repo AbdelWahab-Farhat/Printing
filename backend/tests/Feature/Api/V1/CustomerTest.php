@@ -174,8 +174,8 @@ class CustomerTest extends TestCase
         $headers = $this->auth();
         $payload = $this->payload([
             'shops' => [
-                ['name' => 'فرع طرابلس', 'location' => 'شارع الجمهورية', 'page_url' => 'https://facebook.com/branch1'],
-                ['name' => 'فرع بنغازي', 'location' => 'شارع دبي'],
+                ['name' => 'فرع طرابلس', 'latitude' => 32.8872, 'longitude' => 13.1913, 'page_url' => 'https://facebook.com/branch1'],
+                ['name' => 'فرع بنغازي', 'latitude' => 32.1167, 'longitude' => 20.0686],
             ],
         ]);
 
@@ -186,6 +186,8 @@ class CustomerTest extends TestCase
         $response->assertCreated()
             ->assertJsonCount(2, 'data.shops')
             ->assertJsonPath('data.shops.0.name', 'فرع طرابلس')
+            ->assertJsonPath('data.shops.0.latitude', 32.8872)
+            ->assertJsonPath('data.shops.0.longitude', 13.1913)
             ->assertJsonPath('data.shops.0.page_url', 'https://facebook.com/branch1')
             // A shop without a page link stores null rather than an empty string.
             ->assertJsonPath('data.shops.1.page_url', null);
@@ -194,9 +196,44 @@ class CustomerTest extends TestCase
         $this->assertDatabaseHas('customer_shops', [
             'customer_id' => $response->json('data.id'),
             'name' => 'فرع بنغازي',
-            'location' => 'شارع دبي',
             'page_url' => null,
         ]);
+    }
+
+    public function test_coordinates_are_returned_as_numbers_not_strings(): void
+    {
+        // Arrange — a decimal column reads back as a string unless it is cast, and a map SDK
+        // needs numbers.
+        $headers = $this->auth();
+        $payload = $this->payload([
+            'shops' => [['name' => 'فرع', 'latitude' => 32.8872, 'longitude' => 13.1913]],
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $payload);
+
+        // Assert
+        $response->assertCreated();
+        $shop = $response->json('data.shops.0');
+        $this->assertIsFloat($shop['latitude']);
+        $this->assertIsFloat($shop['longitude']);
+    }
+
+    public function test_coordinates_keep_their_precision(): void
+    {
+        // Arrange — decimal(10,7) must not round a 7-place coordinate away.
+        $headers = $this->auth();
+        $payload = $this->payload([
+            'shops' => [['name' => 'فرع', 'latitude' => 32.8872123, 'longitude' => -13.1913456]],
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $payload);
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonPath('data.shops.0.latitude', 32.8872123)
+            ->assertJsonPath('data.shops.0.longitude', -13.1913456);
     }
 
     public function test_create_can_set_the_customer_inactive(): void
@@ -245,9 +282,16 @@ class CustomerTest extends TestCase
             'phone with symbols' => [['phone' => '091-234-5678'], 'phone'],
             'is_active not boolean' => [['is_active' => 'maybe'], 'is_active'],
             'shops not a list' => [['shops' => 'nope'], 'shops'],
-            'shop without a name' => [['shops' => [['location' => 'x']]], 'shops.0.name'],
-            'shop without a location' => [['shops' => [['name' => 'x']]], 'shops.0.location'],
-            'shop with a bad url' => [['shops' => [['name' => 'x', 'location' => 'y', 'page_url' => 'not-a-url']]], 'shops.0.page_url'],
+            'shop without a name' => [['shops' => [['latitude' => 32.1, 'longitude' => 13.1]]], 'shops.0.name'],
+            'shop without a latitude' => [['shops' => [['name' => 'x', 'longitude' => 13.1]]], 'shops.0.latitude'],
+            'shop without a longitude' => [['shops' => [['name' => 'x', 'latitude' => 32.1]]], 'shops.0.longitude'],
+            'latitude above 90' => [['shops' => [['name' => 'x', 'latitude' => 90.1, 'longitude' => 13.1]]], 'shops.0.latitude'],
+            'latitude below -90' => [['shops' => [['name' => 'x', 'latitude' => -90.1, 'longitude' => 13.1]]], 'shops.0.latitude'],
+            'longitude above 180' => [['shops' => [['name' => 'x', 'latitude' => 32.1, 'longitude' => 180.1]]], 'shops.0.longitude'],
+            'longitude below -180' => [['shops' => [['name' => 'x', 'latitude' => 32.1, 'longitude' => -180.1]]], 'shops.0.longitude'],
+            'latitude not numeric' => [['shops' => [['name' => 'x', 'latitude' => 'شمال', 'longitude' => 13.1]]], 'shops.0.latitude'],
+            'longitude not numeric' => [['shops' => [['name' => 'x', 'latitude' => 32.1, 'longitude' => 'شرق']]], 'shops.0.longitude'],
+            'shop with a bad url' => [['shops' => [['name' => 'x', 'latitude' => 32.1, 'longitude' => 13.1, 'page_url' => 'not-a-url']]], 'shops.0.page_url'],
         ];
     }
 
@@ -586,8 +630,8 @@ class CustomerTest extends TestCase
         $headers = $this->auth();
         $payload = $this->payload([
             'shops' => [
-                ['id' => $kept->id, 'name' => 'الأصلي المعدل', 'location' => 'موقع جديد'],
-                ['name' => 'محل مضاف', 'location' => 'موقع ثالث'],
+                ['id' => $kept->id, 'name' => 'الأصلي المعدل', 'latitude' => 32.5000000, 'longitude' => 13.5000000],
+                ['name' => 'محل مضاف', 'latitude' => 31.2000000, 'longitude' => 16.5900000],
             ],
         ]);
 
@@ -601,7 +645,8 @@ class CustomerTest extends TestCase
         $this->assertDatabaseHas('customer_shops', [
             'id' => $kept->id,
             'name' => 'الأصلي المعدل',
-            'location' => 'موقع جديد',
+            'latitude' => 32.5,
+            'longitude' => 13.5,
         ]);
         $this->assertDatabaseMissing('customer_shops', ['id' => $removed->id]);
         $this->assertDatabaseHas('customer_shops', ['customer_id' => $customer->id, 'name' => 'محل مضاف']);
@@ -615,7 +660,7 @@ class CustomerTest extends TestCase
         $otherShop = CustomerShop::factory()->create();
         $headers = $this->auth();
         $payload = $this->payload([
-            'shops' => [['id' => $otherShop->id, 'name' => 'اختراق', 'location' => 'مكان']],
+            'shops' => [['id' => $otherShop->id, 'name' => 'اختراق', 'latitude' => 32.1, 'longitude' => 13.1]],
         ]);
 
         // Act

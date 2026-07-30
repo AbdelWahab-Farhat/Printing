@@ -30,7 +30,10 @@ class StoreCustomerRequest extends FormRequest
             // Shops are created together with the customer; the code never comes from here.
             'shops' => ['sometimes', 'array'],
             'shops.*.name' => ['required', 'string', 'max:255'],
-            'shops.*.location' => ['required', 'string', 'max:255'],
+            // الموقع as coordinates. Bounded to the real ranges so a swapped pair — latitude
+            // holding a longitude — is rejected instead of silently placing the shop wrongly.
+            'shops.*.latitude' => ['required', 'numeric', 'between:-90,90'],
+            'shops.*.longitude' => ['required', 'numeric', 'between:-180,180'],
             'shops.*.page_url' => ['nullable', 'url', 'max:2048'],
         ];
     }
@@ -49,7 +52,12 @@ class StoreCustomerRequest extends FormRequest
             'is_active.boolean' => 'حالة التنشيط يجب أن تكون صحيحة أو خاطئة',
             'shops.array' => 'المحلات يجب أن تكون قائمة',
             'shops.*.name.required' => 'اسم المكان مطلوب',
-            'shops.*.location.required' => 'الموقع مطلوب',
+            'shops.*.latitude.required' => 'خط العرض مطلوب',
+            'shops.*.latitude.numeric' => 'خط العرض يجب أن يكون رقماً',
+            'shops.*.latitude.between' => 'خط العرض يجب أن يكون بين -90 و 90',
+            'shops.*.longitude.required' => 'خط الطول مطلوب',
+            'shops.*.longitude.numeric' => 'خط الطول يجب أن يكون رقماً',
+            'shops.*.longitude.between' => 'خط الطول يجب أن يكون بين -180 و 180',
             'shops.*.page_url.url' => 'رابط الصفحة غير صحيح',
         ];
     }
@@ -65,7 +73,8 @@ class StoreCustomerRequest extends FormRequest
             'is_active' => 'الحالة',
             'shops' => 'المحلات',
             'shops.*.name' => 'اسم المكان',
-            'shops.*.location' => 'الموقع',
+            'shops.*.latitude' => 'خط العرض',
+            'shops.*.longitude' => 'خط الطول',
             'shops.*.page_url' => 'رابط الصفحة',
         ];
     }

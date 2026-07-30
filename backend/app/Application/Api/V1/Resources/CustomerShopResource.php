@@ -21,7 +21,10 @@ class CustomerShopResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'location' => $this->location,
+            // Numbers, not strings — a map SDK can use these directly. Null only for shops
+            // recorded before coordinates were introduced.
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
             'page_url' => $this->page_url,
         ];
     }

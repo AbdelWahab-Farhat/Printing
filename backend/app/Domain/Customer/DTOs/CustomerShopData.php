@@ -8,7 +8,10 @@ final readonly class CustomerShopData
 {
     public function __construct(
         public string $name,
-        public string $location,
+        /** Degrees, -90 to 90. */
+        public float $latitude,
+        /** Degrees, -180 to 180. */
+        public float $longitude,
         public ?string $pageUrl = null,
         /** Present when updating an existing shop; null when creating a new one. */
         public ?int $id = null,
@@ -21,7 +24,8 @@ final readonly class CustomerShopData
     {
         return new self(
             name: (string) $shop['name'],
-            location: (string) $shop['location'],
+            latitude: (float) $shop['latitude'],
+            longitude: (float) $shop['longitude'],
             pageUrl: isset($shop['page_url']) && $shop['page_url'] !== '' ? (string) $shop['page_url'] : null,
             id: isset($shop['id']) ? (int) $shop['id'] : null,
         );

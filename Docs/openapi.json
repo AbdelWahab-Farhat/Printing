@@ -824,8 +824,18 @@
                     "name": {
                         "type": "string"
                     },
-                    "location": {
-                        "type": "string"
+                    "latitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "Numbers, not strings \u2014 a map SDK can use these directly. Null only for shops\nrecorded before coordinates were introduced."
+                    },
+                    "longitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
                     },
                     "page_url": {
                         "type": [
@@ -837,7 +847,8 @@
                 "required": [
                     "id",
                     "name",
-                    "location",
+                    "latitude",
+                    "longitude",
                     "page_url"
                 ],
                 "title": "CustomerShopResource"
@@ -941,9 +952,16 @@
                                     "type": "string",
                                     "maxLength": 255
                                 },
-                                "location": {
-                                    "type": "string",
-                                    "maxLength": 255
+                                "latitude": {
+                                    "type": "number",
+                                    "description": "\u0627\u0644\u0645\u0648\u0642\u0639 as coordinates. Bounded to the real ranges so a swapped pair \u2014 latitude\nholding a longitude \u2014 is rejected instead of silently placing the shop wrongly.",
+                                    "minimum": -90,
+                                    "maximum": 90
+                                },
+                                "longitude": {
+                                    "type": "number",
+                                    "minimum": -180,
+                                    "maximum": 180
                                 },
                                 "page_url": {
                                     "type": [
@@ -956,7 +974,8 @@
                             },
                             "required": [
                                 "name",
-                                "location"
+                                "latitude",
+                                "longitude"
                             ]
                         }
                     }
@@ -998,9 +1017,16 @@
                                     "type": "string",
                                     "maxLength": 255
                                 },
-                                "location": {
-                                    "type": "string",
-                                    "maxLength": 255
+                                "latitude": {
+                                    "type": "number",
+                                    "description": "\u0627\u0644\u0645\u0648\u0642\u0639 as coordinates, bounded to the real ranges \u2014 see StoreCustomerRequest.",
+                                    "minimum": -90,
+                                    "maximum": 90
+                                },
+                                "longitude": {
+                                    "type": "number",
+                                    "minimum": -180,
+                                    "maximum": 180
                                 },
                                 "page_url": {
                                     "type": [
@@ -1013,7 +1039,8 @@
                             },
                             "required": [
                                 "name",
-                                "location"
+                                "latitude",
+                                "longitude"
                             ]
                         }
                     }

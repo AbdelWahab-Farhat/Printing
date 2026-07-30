@@ -22,7 +22,10 @@ class CustomerShopFactory extends Factory
         return [
             'customer_id' => Customer::factory(),
             'name' => fake()->streetName().' — فرع',
-            'location' => fake()->city(),
+            // Bounded to roughly Libya, so factory data looks plausible on a map instead of
+            // scattering shops across the planet.
+            'latitude' => fake()->latitude(24, 33),
+            'longitude' => fake()->longitude(9, 25),
             'page_url' => fake()->boolean(70) ? 'https://facebook.com/'.fake()->userName() : null,
         ];
     }

@@ -40,7 +40,9 @@ class UpdateCustomerRequest extends StoreCustomerRequest
             'shops' => ['sometimes', 'array'],
             'shops.*.id' => ['sometimes', 'integer', $this->shopBelongsToThisCustomer()],
             'shops.*.name' => ['required', 'string', 'max:255'],
-            'shops.*.location' => ['required', 'string', 'max:255'],
+            // الموقع as coordinates, bounded to the real ranges — see StoreCustomerRequest.
+            'shops.*.latitude' => ['required', 'numeric', 'between:-90,90'],
+            'shops.*.longitude' => ['required', 'numeric', 'between:-180,180'],
             'shops.*.page_url' => ['nullable', 'url', 'max:2048'],
         ];
     }
