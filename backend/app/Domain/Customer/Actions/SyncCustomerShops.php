@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Customer\Actions;
 
 use App\Domain\Customer\DTOs\CustomerShopData;
+use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
 use App\Domain\Customer\Models\Customer;
 
 /**
@@ -30,13 +31,16 @@ final class SyncCustomerShops
                 'page_url' => $shop->pageUrl,
             ];
 
-            // Scoped through the relation, so an id belonging to another customer simply
-            // finds nothing and is created fresh rather than being hijacked.
-            $existing = $shop->id !== null
-                ? $customer->shops()->whereKey($shop->id)->first()
-                : null;
+            if ($shop->id !== null) {
+                // Scoped through the relation, so another customer's shop is never found here.
+                $existing = $customer->shops()->whereKey($shop->id)->first();
 
-            if ($existing !== null) {
+                // Refuse rather than silently creating a duplicate: a caller that named a
+                // specific shop and got a different one is a bug worth surfacing.
+                if ($existing === null) {
+                    throw ShopDoesNotBelongToCustomer::make($shop->id, (int) $customer->getKey());
+                }
+
                 $existing->update($attributes);
                 $keptIds[] = $existing->getKey();
 

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Domain\Identity;
 
 use App\Domain\Identity\DTOs\AuthResult;
+use App\Domain\Identity\Exceptions\InvalidCredentials;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 
 /**
  * All authentication business logic. Controllers only translate HTTP to these calls.
@@ -38,7 +38,7 @@ class AuthService
     /**
      * Authenticate by email *or* phone.
      *
-     * @throws ValidationException when the credentials do not match.
+     * @throws InvalidCredentials when the identifier and password do not match an account.
      */
     public function login(string $login, string $password, ?string $deviceName = null): AuthResult
     {
@@ -47,12 +47,11 @@ class AuthService
             ->orWhere('phone', $login)
             ->first();
 
-        // One message for both "no such user" and "wrong password" — telling them apart
-        // would let an attacker enumerate registered accounts.
+        // One failure for both "no such user" and "wrong password" — telling them apart
+        // would let an attacker enumerate registered accounts. Thrown rather than returned:
+        // the service's job is to state the failure, and the boundary decides how it looks.
         if (! $user || ! Hash::check($password, $user->password)) {
-            throw ValidationException::withMessages([
-                'login' => ['بيانات الدخول غير صحيحة'],
-            ]);
+            throw InvalidCredentials::make();
         }
 
         return new AuthResult($user, $this->issueToken($user, $deviceName));

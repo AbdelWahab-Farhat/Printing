@@ -26,13 +26,14 @@ class HealthController extends Controller
      */
     public function __invoke(): JsonResponse
     {
-        $databaseConnected = true;
-
-        try {
-            DB::connection()->getPdo();
-        } catch (\Throwable) {
-            $databaseConnected = false;
-        }
+        // An unreachable database is the answer this endpoint exists to give, not an error to
+        // propagate — so the probe is expressed with rescue() rather than try/catch, and is
+        // not reported, since a health check that logs every failed poll is just noise.
+        $databaseConnected = rescue(
+            fn (): bool => (bool) DB::connection()->getPdo(),
+            rescue: false,
+            report: false,
+        );
 
         $payload = [
             'application' => config('app.name'),

@@ -1,6 +1,7 @@
 <?php
 
 use App\Support\ApiEnvelope;
+use App\Support\Exceptions\ProvidesApiFailure;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -34,6 +35,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Every API error leaves through the same envelope as a success, so a client has
         // exactly one response shape to parse. Most specific exception first.
+
+        // The whole error-handling pattern hinges on this one mapping. Any exception that
+        // implements ProvidesApiFailure describes its own status, message and field errors, so
+        // domain code only ever has to *throw* — it never catches anything to translate it.
+        // Matching on the interface rather than a base class means a new failure type is
+        // rendered correctly the moment it is written, with no registration step to forget.
+        $exceptions->render(function (ProvidesApiFailure $e, Request $request) {
+            return $request->is('api/*')
+                ? ApiEnvelope::fail($e->userMessage(), $e->httpStatus(), $e->fieldErrors() ?: null)
+                : null;
+        });
+
         $exceptions->render(function (ValidationException $e, Request $request) {
             return $request->is('api/*')
                 ? ApiEnvelope::fail('البيانات المدخلة غير صحيحة', 422, $e->errors())
