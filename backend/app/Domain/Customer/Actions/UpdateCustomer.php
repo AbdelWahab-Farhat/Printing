@@ -17,7 +17,7 @@ final class UpdateCustomer
         return DB::transaction(function () use ($customer, $data): Customer {
             $attributes = [
                 'name' => $data->name,
-                'primary_phone' => $data->primaryPhone,
+                'phone' => $data->phone,
             ];
 
             // Only touched when the caller actually sent it, so an update that omits the

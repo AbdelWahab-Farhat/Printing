@@ -778,7 +778,7 @@
                     "name": {
                         "type": "string"
                     },
-                    "primary_phone": {
+                    "phone": {
                         "type": "string"
                     },
                     "is_active": {
@@ -808,7 +808,7 @@
                     "id",
                     "code",
                     "name",
-                    "primary_phone",
+                    "phone",
                     "is_active",
                     "created_at",
                     "updated_at"
@@ -923,7 +923,7 @@
                         "minLength": 2,
                         "maxLength": 255
                     },
-                    "primary_phone": {
+                    "phone": {
                         "type": "string",
                         "description": "Digits only, wide enough for both Libyan mobiles (0912345678) and\nlandlines (0213334444). One number identifies exactly one customer, so it is\nunique here *and* in the database \u2014 validation gives a readable 422, the unique\nindex is what actually holds under concurrent requests.",
                         "pattern": "^\\d{9,15}$"
@@ -963,7 +963,7 @@
                 },
                 "required": [
                     "name",
-                    "primary_phone"
+                    "phone"
                 ],
                 "title": "StoreCustomerRequest"
             },
@@ -976,7 +976,7 @@
                         "minLength": 2,
                         "maxLength": 255
                     },
-                    "primary_phone": {
+                    "phone": {
                         "type": "string",
                         "description": "Digits only, wide enough for both Libyan mobiles (0912345678) and\nlandlines (0213334444). Unique across customers, ignoring this one \u2014 otherwise\nsaving the form without touching the phone would collide with itself.",
                         "pattern": "^\\d{9,15}$"
@@ -1020,7 +1020,7 @@
                 },
                 "required": [
                     "name",
-                    "primary_phone"
+                    "phone"
                 ],
                 "title": "UpdateCustomerRequest"
             },

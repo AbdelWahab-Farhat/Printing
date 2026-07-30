@@ -13,7 +13,7 @@ final readonly class CustomerData
      */
     public function __construct(
         public string $name,
-        public string $primaryPhone,
+        public string $phone,
         /**
          * null means "not supplied". On create that becomes active; on update the current
          * value is kept, so omitting the field can never silently reactivate a customer.
@@ -32,7 +32,7 @@ final readonly class CustomerData
     {
         return new self(
             name: (string) $validated['name'],
-            primaryPhone: (string) $validated['primary_phone'],
+            phone: (string) $validated['phone'],
             isActive: array_key_exists('is_active', $validated) && $validated['is_active'] !== null
                 ? (bool) $validated['is_active']
                 : null,

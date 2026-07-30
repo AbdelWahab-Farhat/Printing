@@ -22,7 +22,7 @@ class CustomerResource extends JsonResource
             'id' => $this->id,
             'code' => $this->code,
             'name' => $this->name,
-            'primary_phone' => $this->primary_phone,
+            'phone' => $this->phone,
             'is_active' => $this->is_active,
             // whenLoaded keeps this resource honest: a caller that forgot to eager-load gets
             // no `shops` key rather than a silent query per row.

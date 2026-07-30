@@ -48,7 +48,7 @@ class CustomerTest extends TestCase
     {
         return array_merge([
             'name' => 'مخبز النخيل',
-            'primary_phone' => '0912345678',
+            'phone' => '0912345678',
         ], $overrides);
     }
 
@@ -81,7 +81,7 @@ class CustomerTest extends TestCase
             $codes[] = $this->withHeaders($headers)
                 ->postJson('/api/v1/customers', $this->payload([
                     'name' => $name,
-                    'primary_phone' => '09120000'.(10 + $index),
+                    'phone' => '09120000'.(10 + $index),
                 ]))
                 ->assertCreated()
                 ->json('data.code');
@@ -154,7 +154,7 @@ class CustomerTest extends TestCase
                 'message' => 'تم إضافة العميل بنجاح',
                 'data' => [
                     'name' => 'مخبز النخيل',
-                    'primary_phone' => '0912345678',
+                    'phone' => '0912345678',
                     'is_active' => true,
                     'shops' => [],
                 ],
@@ -162,7 +162,7 @@ class CustomerTest extends TestCase
             ->assertJsonStructure([
                 'status',
                 'message',
-                'data' => ['id', 'code', 'name', 'primary_phone', 'is_active', 'shops', 'created_at', 'updated_at'],
+                'data' => ['id', 'code', 'name', 'phone', 'is_active', 'shops', 'created_at', 'updated_at'],
             ]);
 
         $this->assertDatabaseHas('customers', ['name' => 'مخبز النخيل', 'is_active' => true]);
@@ -239,10 +239,10 @@ class CustomerTest extends TestCase
         return [
             'name missing' => [['name' => ''], 'name'],
             'name too short' => [['name' => 'م'], 'name'],
-            'phone missing' => [['primary_phone' => ''], 'primary_phone'],
-            'phone too short' => [['primary_phone' => '12345'], 'primary_phone'],
-            'phone with letters' => [['primary_phone' => '09abcdefgh'], 'primary_phone'],
-            'phone with symbols' => [['primary_phone' => '091-234-5678'], 'primary_phone'],
+            'phone missing' => [['phone' => ''], 'phone'],
+            'phone too short' => [['phone' => '12345'], 'phone'],
+            'phone with letters' => [['phone' => '09abcdefgh'], 'phone'],
+            'phone with symbols' => [['phone' => '091-234-5678'], 'phone'],
             'is_active not boolean' => [['is_active' => 'maybe'], 'is_active'],
             'shops not a list' => [['shops' => 'nope'], 'shops'],
             'shop without a name' => [['shops' => [['location' => 'x']]], 'shops.0.name'],
@@ -256,17 +256,17 @@ class CustomerTest extends TestCase
     public function test_create_rejects_a_phone_already_used_by_another_customer(): void
     {
         // Arrange
-        Customer::factory()->create(['primary_phone' => '0915550009']);
+        Customer::factory()->create(['phone' => '0915550009']);
         $headers = $this->auth();
 
         // Act
         $response = $this->withHeaders($headers)
-            ->postJson('/api/v1/customers', $this->payload(['primary_phone' => '0915550009']));
+            ->postJson('/api/v1/customers', $this->payload(['phone' => '0915550009']));
 
         // Assert
         $response->assertStatus(422)
-            ->assertJsonValidationErrors('primary_phone')
-            ->assertJsonPath('errors.primary_phone.0', 'رقم الهاتف مستخدم مسبقاً لعميل آخر');
+            ->assertJsonValidationErrors('phone')
+            ->assertJsonPath('errors.phone.0', 'رقم الهاتف مستخدم مسبقاً لعميل آخر');
 
         $this->assertDatabaseCount('customers', 1);
     }
@@ -274,47 +274,47 @@ class CustomerTest extends TestCase
     public function test_update_allows_a_customer_to_keep_its_own_phone(): void
     {
         // Arrange
-        $customer = Customer::factory()->create(['primary_phone' => '0915551111']);
+        $customer = Customer::factory()->create(['phone' => '0915551111']);
         $headers = $this->auth();
 
         // Act — saving the form untouched must not collide with itself.
         $response = $this->withHeaders($headers)->putJson("/api/v1/customers/{$customer->id}", [
             'name' => 'اسم محدث',
-            'primary_phone' => '0915551111',
+            'phone' => '0915551111',
         ]);
 
         // Assert
-        $response->assertOk()->assertJsonPath('data.primary_phone', '0915551111');
+        $response->assertOk()->assertJsonPath('data.phone', '0915551111');
     }
 
     public function test_update_rejects_a_phone_taken_by_a_different_customer(): void
     {
         // Arrange
-        $customer = Customer::factory()->create(['primary_phone' => '0915552222']);
-        Customer::factory()->create(['primary_phone' => '0915553333']);
+        $customer = Customer::factory()->create(['phone' => '0915552222']);
+        Customer::factory()->create(['phone' => '0915553333']);
         $headers = $this->auth();
 
         // Act
         $response = $this->withHeaders($headers)->putJson("/api/v1/customers/{$customer->id}", [
             'name' => 'اسم',
-            'primary_phone' => '0915553333',
+            'phone' => '0915553333',
         ]);
 
         // Assert
-        $response->assertStatus(422)->assertJsonValidationErrors('primary_phone');
-        $this->assertDatabaseHas('customers', ['id' => $customer->id, 'primary_phone' => '0915552222']);
+        $response->assertStatus(422)->assertJsonValidationErrors('phone');
+        $this->assertDatabaseHas('customers', ['id' => $customer->id, 'phone' => '0915552222']);
     }
 
     public function test_the_database_itself_refuses_a_duplicate_phone(): void
     {
         // Arrange — validation can be bypassed by a seeder or a race; the index cannot.
-        Customer::factory()->create(['primary_phone' => '0915554444']);
+        Customer::factory()->create(['phone' => '0915554444']);
 
         // Assert
         $this->expectException(QueryException::class);
 
         // Act
-        Customer::factory()->create(['primary_phone' => '0915554444']);
+        Customer::factory()->create(['phone' => '0915554444']);
     }
 
     public function test_create_requires_authentication(): void
@@ -342,7 +342,7 @@ class CustomerTest extends TestCase
             ->assertJsonStructure([
                 'status',
                 'message',
-                'data' => [['id', 'code', 'name', 'primary_phone', 'is_active', 'shops']],
+                'data' => [['id', 'code', 'name', 'phone', 'is_active', 'shops']],
                 'meta' => ['current_page', 'per_page', 'last_page', 'total'],
             ]);
 
@@ -399,8 +399,8 @@ class CustomerTest extends TestCase
     public function test_index_searches_by_name_code_and_phone(): void
     {
         // Arrange
-        $target = Customer::factory()->create(['name' => 'مطبعة الأمل', 'primary_phone' => '0915550001']);
-        Customer::factory()->create(['name' => 'شركة أخرى', 'primary_phone' => '0918880002']);
+        $target = Customer::factory()->create(['name' => 'مطبعة الأمل', 'phone' => '0915550001']);
+        Customer::factory()->create(['name' => 'شركة أخرى', 'phone' => '0918880002']);
         $headers = $this->auth();
 
         foreach (['مطبعة', $target->code, '5550001'] as $term) {
@@ -510,13 +510,13 @@ class CustomerTest extends TestCase
     public function test_update_changes_the_basic_fields(): void
     {
         // Arrange
-        $customer = Customer::factory()->create(['name' => 'قديم', 'primary_phone' => '0911111111']);
+        $customer = Customer::factory()->create(['name' => 'قديم', 'phone' => '0911111111']);
         $headers = $this->auth();
 
         // Act
         $response = $this->withHeaders($headers)->putJson("/api/v1/customers/{$customer->id}", [
             'name' => 'جديد',
-            'primary_phone' => '0922222222',
+            'phone' => '0922222222',
         ]);
 
         // Assert
@@ -524,7 +524,7 @@ class CustomerTest extends TestCase
             ->assertJson([
                 'status' => true,
                 'message' => 'تم تحديث بيانات العميل بنجاح',
-                'data' => ['name' => 'جديد', 'primary_phone' => '0922222222'],
+                'data' => ['name' => 'جديد', 'phone' => '0922222222'],
             ]);
 
         $this->assertDatabaseHas('customers', ['id' => $customer->id, 'name' => 'جديد']);
@@ -634,10 +634,10 @@ class CustomerTest extends TestCase
 
         // Act
         $response = $this->withHeaders($headers)
-            ->putJson("/api/v1/customers/{$customer->id}", ['name' => '', 'primary_phone' => 'abc']);
+            ->putJson("/api/v1/customers/{$customer->id}", ['name' => '', 'phone' => 'abc']);
 
         // Assert
-        $response->assertStatus(422)->assertJsonValidationErrors(['name', 'primary_phone']);
+        $response->assertStatus(422)->assertJsonValidationErrors(['name', 'phone']);
     }
 
     public function test_update_returns_404_for_an_unknown_customer(): void

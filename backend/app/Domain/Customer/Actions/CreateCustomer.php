@@ -22,7 +22,7 @@ final class CreateCustomer
 
             $customer = new Customer([
                 'name' => $data->name,
-                'primary_phone' => $data->primaryPhone,
+                'phone' => $data->phone,
                 // Not supplied means active — a new customer is someone you just started
                 // working with.
                 'is_active' => $data->isActive ?? true,

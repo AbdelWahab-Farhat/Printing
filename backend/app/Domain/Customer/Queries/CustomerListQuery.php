@@ -31,7 +31,7 @@ final class CustomerListQuery
                 $query->where(function ($query) use ($term) {
                     $query->where('name', 'ilike', $term)
                         ->orWhere('code', 'ilike', $term)
-                        ->orWhere('primary_phone', 'like', $term);
+                        ->orWhere('phone', 'like', $term);
                 });
             })
             ->when($filters->isActive !== null, fn ($query) => $query->where('is_active', $filters->isActive))

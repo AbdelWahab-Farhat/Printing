@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * settable from a request.
  */
 #[UseFactory(CustomerFactory::class)]
-#[Fillable(['name', 'primary_phone', 'is_active'])]
+#[Fillable(['name', 'phone', 'is_active'])]
 class Customer extends Model
 {
     /** @use HasFactory<CustomerFactory> */

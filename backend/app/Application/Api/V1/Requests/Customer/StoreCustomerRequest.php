@@ -24,7 +24,7 @@ class StoreCustomerRequest extends FormRequest
             // landlines (0213334444). One number identifies exactly one customer, so it is
             // unique here *and* in the database — validation gives a readable 422, the unique
             // index is what actually holds under concurrent requests.
-            'primary_phone' => ['required', 'string', 'regex:/^\d{9,15}$/', 'unique:customers,primary_phone'],
+            'phone' => ['required', 'string', 'regex:/^\d{9,15}$/', 'unique:customers,phone'],
             'is_active' => ['sometimes', 'boolean'],
 
             // Shops are created together with the customer; the code never comes from here.
@@ -43,9 +43,9 @@ class StoreCustomerRequest extends FormRequest
         return [
             'name.required' => 'اسم العميل مطلوب',
             'name.min' => 'اسم العميل يجب أن يكون حرفين على الأقل',
-            'primary_phone.required' => 'رقم الهاتف مطلوب',
-            'primary_phone.regex' => 'رقم الهاتف يجب أن يكون أرقاماً فقط (من 9 إلى 15 رقماً)',
-            'primary_phone.unique' => 'رقم الهاتف مستخدم مسبقاً لعميل آخر',
+            'phone.required' => 'رقم الهاتف مطلوب',
+            'phone.regex' => 'رقم الهاتف يجب أن يكون أرقاماً فقط (من 9 إلى 15 رقماً)',
+            'phone.unique' => 'رقم الهاتف مستخدم مسبقاً لعميل آخر',
             'is_active.boolean' => 'حالة التنشيط يجب أن تكون صحيحة أو خاطئة',
             'shops.array' => 'المحلات يجب أن تكون قائمة',
             'shops.*.name.required' => 'اسم المكان مطلوب',
@@ -61,7 +61,7 @@ class StoreCustomerRequest extends FormRequest
     {
         return [
             'name' => 'اسم العميل',
-            'primary_phone' => 'رقم الهاتف',
+            'phone' => 'رقم الهاتف',
             'is_active' => 'الحالة',
             'shops' => 'المحلات',
             'shops.*.name' => 'اسم المكان',

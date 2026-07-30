@@ -30,7 +30,7 @@ class UpdateCustomerRequest extends StoreCustomerRequest
             // Digits only, wide enough for both Libyan mobiles (0912345678) and
             // landlines (0213334444). Unique across customers, ignoring this one — otherwise
             // saving the form without touching the phone would collide with itself.
-            'primary_phone' => ['required', 'string', 'regex:/^\d{9,15}$/', $this->phoneUniqueAmongOtherCustomers()],
+            'phone' => ['required', 'string', 'regex:/^\d{9,15}$/', $this->phoneUniqueAmongOtherCustomers()],
             // Omit to leave the customer's current state alone.
             'is_active' => ['sometimes', 'boolean'],
 
@@ -53,7 +53,7 @@ class UpdateCustomerRequest extends StoreCustomerRequest
         /** @var Customer $customer */
         $customer = $this->route('customer');
 
-        return Rule::unique('customers', 'primary_phone')->ignore($customer->getKey());
+        return Rule::unique('customers', 'phone')->ignore($customer->getKey());
     }
 
     /**

@@ -26,7 +26,7 @@ class CustomerFactory extends Factory
             'name' => fake()->company(),
             // A counter rather than a random number: phones are unique in the database, and a
             // random 8-digit tail would collide eventually and fail an unrelated test.
-            'primary_phone' => '09'.str_pad((string) (++self::$phoneSequence), 8, '0', STR_PAD_LEFT),
+            'phone' => '09'.str_pad((string) (++self::$phoneSequence), 8, '0', STR_PAD_LEFT),
             'is_active' => true,
         ];
     }
