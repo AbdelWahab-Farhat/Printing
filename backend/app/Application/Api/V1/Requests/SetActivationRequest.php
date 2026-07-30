@@ -2,15 +2,17 @@
 
 declare(strict_types=1);
 
-namespace App\Application\Api\V1\Requests\Customer;
+namespace App\Application\Api\V1\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Activating / deactivating a customer is its own request so a list screen's toggle does not
- * have to send the whole record back.
+ * Activating or deactivating a record.
+ *
+ * Shared across contexts because the payload genuinely is the same one flag — a Customer-named
+ * request used by Products would tie two contexts together for no reason.
  */
-class SetCustomerActivationRequest extends FormRequest
+class SetActivationRequest extends FormRequest
 {
     public function authorize(): bool
     {

@@ -3,6 +3,7 @@
 use App\Application\Api\V1\Controllers\AuthController;
 use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\HealthController;
+use App\Application\Api\V1\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -44,5 +45,18 @@ Route::prefix('v1')->group(function (): void {
 
         Route::patch('customers/{customer}/activation', [CustomerController::class, 'setActivation'])
             ->name('customers.activation');
+
+        // Same rule as customers: a product is deactivated, never deleted, so past orders keep
+        // pointing at a row that still exists.
+        Route::apiResource('products', ProductController::class)
+            ->only(['index', 'store', 'show', 'update']);
+
+        Route::patch('products/{product}/activation', [ProductController::class, 'setActivation'])
+            ->name('products.activation');
+
+        // Pricing lives behind an endpoint rather than in the client, so the number a customer
+        // is shown and the number written to an order come from the same code.
+        Route::post('products/{product}/quote', [ProductController::class, 'quote'])
+            ->name('products.quote');
     });
 });

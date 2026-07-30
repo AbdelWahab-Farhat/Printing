@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
-use App\Application\Api\V1\Requests\Customer\SetCustomerActivationRequest;
 use App\Application\Api\V1\Requests\Customer\StoreCustomerRequest;
 use App\Application\Api\V1\Requests\Customer\UpdateCustomerRequest;
+use App\Application\Api\V1\Requests\SetActivationRequest;
 use App\Application\Api\V1\Resources\CustomerResource;
 use App\Application\Controller;
 use App\Domain\Customer\CustomerService;
@@ -85,7 +85,7 @@ class CustomerController extends Controller
      *
      * Customers are never deleted — deactivating keeps their history intact.
      */
-    public function setActivation(SetCustomerActivationRequest $request, Customer $customer): JsonResponse
+    public function setActivation(SetActivationRequest $request, Customer $customer): JsonResponse
     {
         $updated = $this->customers->setActive($customer, $request->boolean('is_active'));
 
