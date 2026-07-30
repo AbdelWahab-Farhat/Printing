@@ -7,6 +7,7 @@ namespace Tests\Feature\Api\V1;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Identity\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -74,11 +75,15 @@ class CustomerTest extends TestCase
         $this->resetCustomerSequence();
         $headers = $this->auth();
 
-        // Act
+        // Act — each needs its own phone number, since one number belongs to one customer.
         $codes = [];
-        foreach (['أول', 'ثاني', 'ثالث'] as $name) {
+        foreach (['أول', 'ثاني', 'ثالث'] as $index => $name) {
             $codes[] = $this->withHeaders($headers)
-                ->postJson('/api/v1/customers', $this->payload(['name' => $name]))
+                ->postJson('/api/v1/customers', $this->payload([
+                    'name' => $name,
+                    'primary_phone' => '09120000'.(10 + $index),
+                ]))
+                ->assertCreated()
                 ->json('data.code');
         }
 
@@ -244,6 +249,72 @@ class CustomerTest extends TestCase
             'shop without a location' => [['shops' => [['name' => 'x']]], 'shops.0.location'],
             'shop with a bad url' => [['shops' => [['name' => 'x', 'location' => 'y', 'page_url' => 'not-a-url']]], 'shops.0.page_url'],
         ];
+    }
+
+    // ─────────────────── one phone belongs to one customer ───────────────────
+
+    public function test_create_rejects_a_phone_already_used_by_another_customer(): void
+    {
+        // Arrange
+        Customer::factory()->create(['primary_phone' => '0915550009']);
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->postJson('/api/v1/customers', $this->payload(['primary_phone' => '0915550009']));
+
+        // Assert
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('primary_phone')
+            ->assertJsonPath('errors.primary_phone.0', 'رقم الهاتف مستخدم مسبقاً لعميل آخر');
+
+        $this->assertDatabaseCount('customers', 1);
+    }
+
+    public function test_update_allows_a_customer_to_keep_its_own_phone(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->create(['primary_phone' => '0915551111']);
+        $headers = $this->auth();
+
+        // Act — saving the form untouched must not collide with itself.
+        $response = $this->withHeaders($headers)->putJson("/api/v1/customers/{$customer->id}", [
+            'name' => 'اسم محدث',
+            'primary_phone' => '0915551111',
+        ]);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.primary_phone', '0915551111');
+    }
+
+    public function test_update_rejects_a_phone_taken_by_a_different_customer(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->create(['primary_phone' => '0915552222']);
+        Customer::factory()->create(['primary_phone' => '0915553333']);
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/customers/{$customer->id}", [
+            'name' => 'اسم',
+            'primary_phone' => '0915553333',
+        ]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('primary_phone');
+        $this->assertDatabaseHas('customers', ['id' => $customer->id, 'primary_phone' => '0915552222']);
+    }
+
+    public function test_the_database_itself_refuses_a_duplicate_phone(): void
+    {
+        // Arrange — validation can be bypassed by a seeder or a race; the index cannot.
+        Customer::factory()->create(['primary_phone' => '0915554444']);
+
+        // Assert
+        $this->expectException(QueryException::class);
+
+        // Act
+        Customer::factory()->create(['primary_phone' => '0915554444']);
     }
 
     public function test_create_requires_authentication(): void

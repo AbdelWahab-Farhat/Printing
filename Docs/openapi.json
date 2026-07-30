@@ -925,7 +925,7 @@
                     },
                     "primary_phone": {
                         "type": "string",
-                        "description": "Digits only, wide enough for both Libyan mobiles (0912345678) and\nlandlines (0213334444).",
+                        "description": "Digits only, wide enough for both Libyan mobiles (0912345678) and\nlandlines (0213334444). One number identifies exactly one customer, so it is\nunique here *and* in the database \u2014 validation gives a readable 422, the unique\nindex is what actually holds under concurrent requests.",
                         "pattern": "^\\d{9,15}$"
                     },
                     "is_active": {
@@ -978,7 +978,7 @@
                     },
                     "primary_phone": {
                         "type": "string",
-                        "description": "Digits only, wide enough for both Libyan mobiles (0912345678) and\nlandlines (0213334444).",
+                        "description": "Digits only, wide enough for both Libyan mobiles (0912345678) and\nlandlines (0213334444). Unique across customers, ignoring this one \u2014 otherwise\nsaving the form without touching the phone would collide with itself.",
                         "pattern": "^\\d{9,15}$"
                     },
                     "is_active": {

@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Requests\Customer;
 use App\Domain\Customer\Models\Customer;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
+use Illuminate\Validation\Rules\Unique;
 
 /**
  * Same shape as creating, plus an optional `shops.*.id` so an existing shop can be edited in
@@ -27,8 +28,9 @@ class UpdateCustomerRequest extends StoreCustomerRequest
         return [
             'name' => ['required', 'string', 'min:2', 'max:255'],
             // Digits only, wide enough for both Libyan mobiles (0912345678) and
-            // landlines (0213334444).
-            'primary_phone' => ['required', 'string', 'regex:/^\d{9,15}$/'],
+            // landlines (0213334444). Unique across customers, ignoring this one — otherwise
+            // saving the form without touching the phone would collide with itself.
+            'primary_phone' => ['required', 'string', 'regex:/^\d{9,15}$/', $this->phoneUniqueAmongOtherCustomers()],
             // Omit to leave the customer's current state alone.
             'is_active' => ['sometimes', 'boolean'],
 
@@ -41,6 +43,17 @@ class UpdateCustomerRequest extends StoreCustomerRequest
             'shops.*.location' => ['required', 'string', 'max:255'],
             'shops.*.page_url' => ['nullable', 'url', 'max:2048'],
         ];
+    }
+
+    /**
+     * No two customers may share a phone number, but a customer keeping their own is fine.
+     */
+    private function phoneUniqueAmongOtherCustomers(): Unique
+    {
+        /** @var Customer $customer */
+        $customer = $this->route('customer');
+
+        return Rule::unique('customers', 'primary_phone')->ignore($customer->getKey());
     }
 
     /**
