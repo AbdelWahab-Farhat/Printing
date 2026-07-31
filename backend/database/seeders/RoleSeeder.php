@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Enums\RoleName;
+use App\Domain\Identity\Models\Role;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * The roles the system starts with.
+ * The permission catalogue, and the roles the system starts with.
  *
- * No permissions are attached yet, by design. The administrator does not need any — the gate in
- * AppServiceProvider grants everything to that role — and the rest are empty shells waiting for
- * permissions to be granted as the business decides what each job may do.
- *
- * Roles are ordinary rows, so more can be added at runtime without touching this file.
+ * Permissions come from {@see PermissionName} — the code defines them, because a permission is
+ * only real when something checks for it. Roles are seeded with a starting shape and are then
+ * entirely the administrator's to change through the API.
  *
  * Idempotent: safe to re-run.
  */
@@ -24,12 +24,34 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
+        foreach (PermissionName::cases() as $permission) {
+            Permission::findOrCreate($permission->value, 'web');
+        }
+
         foreach (RoleName::cases() as $role) {
             Role::findOrCreate($role->value, 'web');
         }
 
-        // Spatie caches roles and permissions; without this a role created here would be
-        // invisible to checks made later in the same process, such as the next seeder.
+        // The administrator is granted nothing on purpose: the gate in AppServiceProvider gives
+        // that role everything, so listing permissions here would be duplicated truth that can
+        // drift out of step with the catalogue.
+
+        // A starting point, not a policy — day-to-day staff serve customers but do not set
+        // prices or hand out access. Change it from the API; nothing in the code depends on it.
+        Role::findByName(RoleName::Staff->value, 'web')->syncPermissions([
+            PermissionName::ViewCustomers->value,
+            PermissionName::ManageCustomers->value,
+            PermissionName::ViewProducts->value,
+            // Needed to take an order at all — the city and region lists are what an address is
+            // chosen from. Curating that map is a separate, rarer job.
+            PermissionName::ViewDeliveryLocations->value,
+        ]);
+
+        // «محاسب» is left deliberately empty — it is the worked example of a role waiting for
+        // the business to decide what it may do.
+
+        // Spatie caches roles and permissions; without this, anything created here would be
+        // invisible to checks made later in the same process.
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

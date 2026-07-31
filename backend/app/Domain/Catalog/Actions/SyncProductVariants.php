@@ -8,6 +8,7 @@ use App\Domain\Catalog\DTOs\ProductVariantData;
 use App\Domain\Catalog\Exceptions\DuplicateVariantLabel;
 use App\Domain\Catalog\Exceptions\VariantDoesNotBelongToProduct;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
 
 /**
@@ -32,7 +33,12 @@ final class SyncProductVariants
             $keptIds[] = $variant->getKey();
 
             // Replace the whole price list for this variant.
-            $variant->priceTiers()->delete();
+            //
+            // One model at a time, not `->delete()` on the relation. A mass delete fires no
+            // model events, which since prices became soft-deleted and audited would mean the
+            // single most consequential change in the catalogue — a price disappearing — left
+            // no entry saying who did it.
+            $variant->priceTiers()->each(fn (ProductPriceTier $tier) => $tier->delete());
 
             foreach ($variantData->priceTiers as $tier) {
                 $variant->priceTiers()->create([
@@ -42,8 +48,13 @@ final class SyncProductVariants
             }
         }
 
-        // Tiers of removed variants go with them via the cascade.
-        $product->variants()->whereKeyNot($keptIds)->delete();
+        // One model at a time, not a bulk delete on the relation: a mass delete fires no model
+        // events, so the removed sizes would leave nothing behind in the audit trail — and
+        // their price tiers would not go with them, because the cascade is a model event now
+        // (see CascadesSoftDeletes) rather than the foreign key it used to be.
+        $product->variants()
+            ->whereKeyNot($keptIds)
+            ->each(fn (ProductVariant $variant) => $variant->delete());
     }
 
     private function upsertVariant(Product $product, ProductVariantData $data): ProductVariant

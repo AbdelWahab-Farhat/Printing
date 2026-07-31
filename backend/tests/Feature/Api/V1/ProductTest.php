@@ -7,6 +7,8 @@ namespace Tests\Feature\Api\V1;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Identity\Enums\RoleName;
+use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -27,6 +29,12 @@ class ProductTest extends TestCase
     private function auth(): array
     {
         $user = User::factory()->create();
+
+        // Acts as an administrator. Endpoints are permission-guarded, and these tests are about
+        // the feature rather than who may reach it — authorization has its own suites in
+        // RoleTest and RoleManagementTest.
+        Role::findOrCreate(RoleName::Admin->value, 'web');
+        $user->syncRoles([RoleName::Admin->value]);
 
         return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
     }
@@ -501,9 +509,11 @@ class ProductTest extends TestCase
 
         // The kept variant survived with its id, and its price list was replaced.
         $this->assertDatabaseHas('product_variants', ['id' => $kept->id, 'label' => '25*35']);
-        $this->assertDatabaseMissing('product_variants', ['id' => $removed->id]);
+        // Soft deleted rather than erased — out of the live set, still on record.
+        $this->assertSoftDeleted('product_variants', ['id' => $removed->id]);
         $this->assertDatabaseHas('product_price_tiers', ['product_variant_id' => $kept->id, 'unit_price' => '1.100']);
-        $this->assertDatabaseMissing('product_price_tiers', ['unit_price' => '9.999']);
+        $this->assertSoftDeleted('product_price_tiers', ['unit_price' => '9.999']);
+        $this->assertSame(0, ProductPriceTier::query()->where('unit_price', '9.999')->count());
     }
 
     public function test_update_removing_a_variant_removes_its_prices_too(): void
@@ -520,8 +530,8 @@ class ProductTest extends TestCase
 
         // Assert
         $response->assertOk()->assertJsonCount(0, 'data.variants');
-        $this->assertDatabaseCount('product_variants', 0);
-        $this->assertDatabaseCount('product_price_tiers', 0);
+        $this->assertSame(0, ProductVariant::query()->count());
+        $this->assertSame(0, ProductPriceTier::query()->count());
     }
 
     public function test_update_matches_an_existing_size_by_label_when_no_id_is_sent(): void
@@ -564,10 +574,12 @@ class ProductTest extends TestCase
         $second = $this->withHeaders($headers)->putJson("/api/v1/products/{$product->id}", $payload);
 
         // Assert
+        // Counted through the models so the soft-delete scope applies: replacing a price list
+        // leaves the previous rows behind as history, and only the live set must stay at one.
         $first->assertOk();
         $second->assertOk()->assertJsonCount(1, 'data.variants');
-        $this->assertDatabaseCount('product_variants', 1);
-        $this->assertDatabaseCount('product_price_tiers', 1);
+        $this->assertSame(1, ProductVariant::query()->count());
+        $this->assertSame(1, ProductPriceTier::query()->count());
     }
 
     public function test_update_rejects_the_same_size_listed_twice_in_one_request(): void
@@ -688,18 +700,19 @@ class ProductTest extends TestCase
 
     // ─────────────────────────── cascade ───────────────────────────
 
-    public function test_deleting_a_product_in_the_database_cascades_to_variants_and_prices(): void
+    public function test_force_deleting_a_product_cascades_to_variants_and_prices(): void
     {
-        // Arrange
+        // Arrange — the database-level guarantee, which only a real delete exercises. A soft
+        // delete leaves the product row in place, so nothing cascades.
         $product = Product::factory()->create();
         $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
         ProductPriceTier::factory()->count(2)->create(['product_variant_id' => $variant->id]);
 
         // Act
-        $product->delete();
+        $product->forceDelete();
 
         // Assert
-        $this->assertDatabaseCount('product_variants', 0);
-        $this->assertDatabaseCount('product_price_tiers', 0);
+        $this->assertSame(0, ProductVariant::withTrashed()->count());
+        $this->assertSame(0, ProductPriceTier::withTrashed()->count());
     }
 }

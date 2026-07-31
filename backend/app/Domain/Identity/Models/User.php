@@ -3,6 +3,8 @@
 namespace App\Domain\Identity\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Domain\Audit\Concerns\Auditable;
+use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Identity\Enums\RoleName;
 use App\Providers\AppServiceProvider;
 use Database\Factories\UserFactory;
@@ -10,9 +12,11 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Activitylog\Models\Concerns\CausesActivity;
 use Spatie\Permission\Traits\HasRoles;
 
 // Models live under app/Domain/, so Laravel's App\Models convention can no longer
@@ -20,10 +24,22 @@ use Spatie\Permission\Traits\HasRoles;
 #[UseFactory(UserFactory::class)]
 #[Fillable(['name', 'email', 'phone', 'password'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements HasAuditTrail
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable;
+    use Auditable, CausesActivity, HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
+
+    /**
+     * A user is soft deleted, and that is what makes deleting one safe.
+     *
+     * Laravel's user provider and Sanctum both resolve through this model, so the global
+     * `deleted_at is null` scope applies to logging in and to every token lookup: a deleted
+     * account stops authenticating immediately, without a single line of code checking for it.
+     * The row survives, so the accounts they touched still name who touched them.
+     *
+     * Their password never reaches the audit trail —
+     * `activitylog.default_except_attributes` strips it for every model.
+     */
 
     /**
      * Roles and permissions are stored against the `web` guard.

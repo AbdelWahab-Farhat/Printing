@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
+use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Product\QuoteProductRequest;
 use App\Application\Api\V1\Requests\Product\StoreProductRequest;
 use App\Application\Api\V1\Requests\Product\UpdateProductRequest;
@@ -11,6 +13,7 @@ use App\Application\Api\V1\Requests\SetActivationRequest;
 use App\Application\Api\V1\Resources\PriceQuoteResource;
 use App\Application\Api\V1\Resources\ProductResource;
 use App\Application\Controller;
+use App\Domain\Audit\AuditService;
 use App\Domain\Catalog\CatalogService;
 use App\Domain\Catalog\DTOs\ProductData;
 use App\Domain\Catalog\Models\Product;
@@ -34,7 +37,7 @@ use Illuminate\Http\Request;
  */
 class ProductController extends Controller
 {
-    use ResponseTrait;
+    use ReadsAuditTrail, ResponseTrait;
 
     public function __construct(private readonly CatalogService $catalog) {}
 
@@ -124,5 +127,22 @@ class ProductController extends Controller
         $quote = $this->catalog->quote($product, $variant, (string) $request->input('quantity'));
 
         return $this->success(new PriceQuoteResource($quote));
+    }
+
+    /**
+     * A product's history
+     *
+     * Every change to the product, its sizes, its price breaks and its photos, newest first —
+     * who made it and what it was before.
+     *
+     * The sizes and prices are included on purpose: "who put 25*35 up to 0.850?" is the question
+     * this endpoint exists to answer, and that number lives on a different table. A client
+     * should not have to know that to ask.
+     *
+     * Filter with `event`, `causer_id`, `from` and `to`.
+     */
+    public function logs(ActivityLogFilterRequest $request, Product $product, AuditService $audit): JsonResponse
+    {
+        return $this->auditTrailResponse($request, $product, $audit);
     }
 }

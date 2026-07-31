@@ -7,6 +7,7 @@ namespace App\Domain\Customer\Actions;
 use App\Domain\Customer\DTOs\CustomerShopData;
 use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Customer\Models\CustomerShop;
 
 /**
  * Makes a customer's shops match the given set exactly.
@@ -51,6 +52,11 @@ final class SyncCustomerShops
             $keptIds[] = $customer->shops()->create($attributes)->getKey();
         }
 
-        $customer->shops()->whereKeyNot($keptIds)->delete();
+        // One model at a time rather than a mass delete on the relation: a mass delete fires no
+        // model events, so a shop dropped from the set would leave the API with nothing in the
+        // audit trail to say it ever existed. A customer has a handful of shops.
+        $customer->shops()
+            ->whereKeyNot($keptIds)
+            ->each(fn (CustomerShop $shop) => $shop->delete());
     }
 }

@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
+use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Customer\StoreCustomerRequest;
 use App\Application\Api\V1\Requests\Customer\UpdateCustomerRequest;
 use App\Application\Api\V1\Requests\SetActivationRequest;
 use App\Application\Api\V1\Resources\CustomerResource;
 use App\Application\Controller;
+use App\Domain\Audit\AuditService;
 use App\Domain\Customer\CustomerService;
 use App\Domain\Customer\DTOs\CustomerData;
 use App\Domain\Customer\Models\Customer;
@@ -27,7 +30,7 @@ use Illuminate\Http\Request;
  */
 class CustomerController extends Controller
 {
-    use ResponseTrait;
+    use ReadsAuditTrail, ResponseTrait;
 
     public function __construct(private readonly CustomerService $customers) {}
 
@@ -93,5 +96,19 @@ class CustomerController extends Controller
             new CustomerResource($updated),
             $updated->is_active ? 'تم تنشيط العميل' : 'تم إلغاء تنشيط العميل',
         );
+    }
+
+    /**
+     * A customer's history
+     *
+     * Every change to the customer and to their shops, newest first — who made it and what it
+     * was before. Shops are included because they are edited through the customer and have no
+     * screen of their own.
+     *
+     * Filter with `event`, `causer_id`, `from` and `to`.
+     */
+    public function logs(ActivityLogFilterRequest $request, Customer $customer, AuditService $audit): JsonResponse
+    {
+        return $this->auditTrailResponse($request, $customer, $audit);
     }
 }

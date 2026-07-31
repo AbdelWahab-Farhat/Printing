@@ -7,6 +7,8 @@ namespace Tests\Feature\Api\V1;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Identity\Enums\RoleName;
+use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -27,6 +29,12 @@ class ProductPricingTest extends TestCase
     private function auth(): array
     {
         $user = User::factory()->create();
+
+        // Acts as an administrator. Endpoints are permission-guarded, and these tests are about
+        // the feature rather than who may reach it — authorization has its own suites in
+        // RoleTest and RoleManagementTest.
+        Role::findOrCreate(RoleName::Admin->value, 'web');
+        $user->syncRoles([RoleName::Admin->value]);
 
         return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
     }

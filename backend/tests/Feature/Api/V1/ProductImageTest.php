@@ -6,6 +6,8 @@ namespace Tests\Feature\Api\V1;
 
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductImage;
+use App\Domain\Identity\Enums\RoleName;
+use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,6 +43,12 @@ class ProductImageTest extends TestCase
     private function auth(): array
     {
         $user = User::factory()->create();
+
+        // Acts as an administrator. Endpoints are permission-guarded, and these tests are about
+        // the feature rather than who may reach it — authorization has its own suites in
+        // RoleTest and RoleManagementTest.
+        Role::findOrCreate(RoleName::Admin->value, 'web');
+        $user->syncRoles([RoleName::Admin->value]);
 
         return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
     }
@@ -371,8 +379,12 @@ class ProductImageTest extends TestCase
             ->deleteJson("/api/v1/products/{$product->id}/images/{$uploaded}");
 
         // Assert
+        // The row is soft deleted so the audit trail keeps it; the *file* is removed for real,
+        // because object storage has no deleted_at and keeping every replaced photo grows without
+        // bound.
         $response->assertOk()->assertJson(['status' => true, 'data' => null]);
-        $this->assertDatabaseCount('product_images', 0);
+        $this->assertSoftDeleted('product_images', ['id' => $uploaded]);
+        $this->assertSame(0, ProductImage::query()->count());
         Storage::disk($this->disk)->assertMissing($path);
     }
 
@@ -406,7 +418,7 @@ class ProductImageTest extends TestCase
 
         // Assert
         $response->assertOk();
-        $this->assertDatabaseCount('product_images', 0);
+        $this->assertSame(0, ProductImage::query()->count());
     }
 
     public function test_delete_requires_authentication(): void
@@ -460,16 +472,17 @@ class ProductImageTest extends TestCase
         $this->assertNotSame('', $url);
     }
 
-    public function test_deleting_a_product_in_the_database_cascades_to_its_images(): void
+    public function test_force_deleting_a_product_cascades_to_its_images(): void
     {
-        // Arrange
+        // Arrange — the database-level guarantee, which only a real delete exercises. A soft
+        // delete leaves the product row in place, so nothing cascades.
         $product = Product::factory()->create();
         ProductImage::factory()->count(2)->create(['product_id' => $product->id]);
 
         // Act
-        $product->delete();
+        $product->forceDelete();
 
         // Assert
-        $this->assertDatabaseCount('product_images', 0);
+        $this->assertSame(0, ProductImage::withTrashed()->count());
     }
 }

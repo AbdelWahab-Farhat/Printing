@@ -4,31 +4,35 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
+use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\User\SyncUserRolesRequest;
 use App\Application\Api\V1\Resources\UserResource;
 use App\Application\Controller;
+use App\Domain\Audit\AuditService;
+use App\Domain\Identity\AccessService;
 use App\Domain\Identity\Models\User;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * Users
  *
- * Staff accounts and the roles they hold. Managing access is an administrator's job.
+ * Staff accounts and the roles they hold. Access is declared on the routes: reading needs
+ * `users.view`, changing someone's roles needs `users.manage`.
  */
 class UserController extends Controller
 {
-    use ResponseTrait;
+    use ReadsAuditTrail, ResponseTrait;
+
+    public function __construct(private readonly AccessService $access) {}
 
     /**
      * List users
      */
     public function index(Request $request): JsonResponse
     {
-        Gate::authorize('manage users');
-
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
         $users = User::query()
@@ -56,13 +60,23 @@ class UserController extends Controller
      */
     public function syncRoles(SyncUserRolesRequest $request, User $user): JsonResponse
     {
-        Gate::authorize('manage users');
+        $updated = $this->access->syncUserRoles($user, $request->roleNames());
 
-        $user->syncRoles($request->roleNames());
+        return $this->success(new UserResource($updated), 'تم تحديث أدوار المستخدم بنجاح');
+    }
 
-        return $this->success(
-            new UserResource($user->load('roles')),
-            'تم تحديث أدوار المستخدم بنجاح',
-        );
+    /**
+     * A user's history
+     *
+     * Every change to this account, newest first — including the changes someone else made to
+     * it. To see what this user *did* rather than what was done to them, filter any history
+     * endpoint with `causer_id`.
+     *
+     * Role assignments are not here: a user's roles live in a pivot table that fires no model
+     * events. The change is recorded against the role instead — see `GET /roles/{role}/logs`.
+     */
+    public function logs(ActivityLogFilterRequest $request, User $user, AuditService $audit): JsonResponse
+    {
+        return $this->auditTrailResponse($request, $user, $audit);
     }
 }

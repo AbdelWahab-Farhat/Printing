@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Requests\Customer;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCustomerRequest extends FormRequest
 {
@@ -24,7 +25,7 @@ class StoreCustomerRequest extends FormRequest
             // landlines (0213334444). One number identifies exactly one customer, so it is
             // unique here *and* in the database — validation gives a readable 422, the unique
             // index is what actually holds under concurrent requests.
-            'phone' => ['required', 'string', 'regex:/^\d{9,15}$/', 'unique:customers,phone'],
+            'phone' => ['required', 'string', 'regex:/^\d{9,15}$/', Rule::unique('customers', 'phone')->withoutTrashed()],
             'is_active' => ['sometimes', 'boolean'],
 
             // Shops are created together with the customer; the code never comes from here.

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Catalog\Models;
 
+use App\Domain\Audit\Concerns\Auditable;
+use App\Domain\Catalog\Actions\DeleteProductImage;
 use Database\Factories\ProductImageFactory;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -11,10 +13,17 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 /**
  * One photo of a product.
+ *
+ * Soft deleted like everything else, with one asymmetry worth knowing: the *file* is deleted for
+ * real. Object storage has no `deleted_at`, and keeping every replaced photo forever would grow
+ * without bound. So a restored image row would point at a missing object — which is why
+ * {@see DeleteProductImage} is the only place that removes one, and
+ * why nothing offers to restore it.
  */
 #[UseFactory(ProductImageFactory::class)]
 #[Fillable([
@@ -24,7 +33,7 @@ use Illuminate\Support\Facades\Storage;
 class ProductImage extends Model
 {
     /** @use HasFactory<ProductImageFactory> */
-    use HasFactory;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * @return array<string, string>

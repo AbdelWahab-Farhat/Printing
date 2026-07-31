@@ -55,7 +55,7 @@ class UpdateCustomerRequest extends StoreCustomerRequest
         /** @var Customer $customer */
         $customer = $this->route('customer');
 
-        return Rule::unique('customers', 'phone')->ignore($customer->getKey());
+        return Rule::unique('customers', 'phone')->ignore($customer->getKey())->withoutTrashed();
     }
 
     /**

@@ -6,6 +6,8 @@ namespace Tests\Feature\Api\V1;
 
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerShop;
+use App\Domain\Identity\Enums\RoleName;
+use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,6 +29,12 @@ class CustomerTest extends TestCase
     private function auth(): array
     {
         $user = User::factory()->create();
+
+        // Acts as an administrator. Endpoints are permission-guarded, and these tests are about
+        // the feature rather than who may reach it — authorization has its own suites in
+        // RoleTest and RoleManagementTest.
+        Role::findOrCreate(RoleName::Admin->value, 'web');
+        $user->syncRoles([RoleName::Admin->value]);
 
         return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
     }
@@ -616,9 +624,12 @@ class CustomerTest extends TestCase
         $response = $this->withHeaders($headers)
             ->putJson("/api/v1/customers/{$customer->id}", $this->payload(['shops' => []]));
 
-        // Assert
+        // Assert — shops are soft deleted, so the rows survive; what must be gone is the
+        // customer's *live* set. Counting through the model applies the soft-delete scope,
+        // which assertDatabaseCount does not.
         $response->assertOk()->assertJsonCount(0, 'data.shops');
-        $this->assertDatabaseCount('customer_shops', 0);
+        $this->assertSame(0, CustomerShop::query()->count());
+        $this->assertSame(2, CustomerShop::withTrashed()->count());
     }
 
     public function test_update_syncs_shops_updating_adding_and_removing_in_one_call(): void
@@ -648,9 +659,10 @@ class CustomerTest extends TestCase
             'latitude' => 32.5,
             'longitude' => 13.5,
         ]);
-        $this->assertDatabaseMissing('customer_shops', ['id' => $removed->id]);
+        // Soft deleted, not erased — the row stays for the audit trail, but it is out of the set.
+        $this->assertSoftDeleted('customer_shops', ['id' => $removed->id]);
         $this->assertDatabaseHas('customer_shops', ['customer_id' => $customer->id, 'name' => 'محل مضاف']);
-        $this->assertDatabaseCount('customer_shops', 2);
+        $this->assertSame(2, CustomerShop::query()->count());
     }
 
     public function test_update_rejects_a_shop_id_belonging_to_another_customer(): void
@@ -789,7 +801,7 @@ class CustomerTest extends TestCase
 
     // ─────────────────────────── relation integrity ───────────────────────────
 
-    public function test_deleting_a_customer_in_the_database_cascades_to_its_shops(): void
+    public function test_soft_deleting_a_customer_leaves_its_shops_in_place(): void
     {
         // Arrange
         $customer = Customer::factory()->create();
@@ -798,7 +810,22 @@ class CustomerTest extends TestCase
         // Act
         $customer->delete();
 
+        // Assert — a soft delete does not touch the child rows, because the row itself is still
+        // there. Nothing in the API reaches them, since every route goes through the customer.
+        $this->assertSoftDeleted('customers', ['id' => $customer->id]);
+        $this->assertSame(2, CustomerShop::query()->count());
+    }
+
+    public function test_force_deleting_a_customer_cascades_to_its_shops(): void
+    {
+        // Arrange — the database-level guarantee, which only a real delete exercises.
+        $customer = Customer::factory()->create();
+        CustomerShop::factory()->count(2)->create(['customer_id' => $customer->id]);
+
+        // Act
+        $customer->forceDelete();
+
         // Assert
-        $this->assertDatabaseCount('customer_shops', 0);
+        $this->assertSame(0, CustomerShop::withTrashed()->count());
     }
 }

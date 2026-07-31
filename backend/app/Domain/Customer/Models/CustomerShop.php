@@ -4,25 +4,31 @@ declare(strict_types=1);
 
 namespace App\Domain\Customer\Models;
 
+use App\Domain\Audit\Concerns\Auditable;
+use App\Domain\Audit\Contracts\HasAuditTrail;
 use Database\Factories\CustomerShopFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * A place where a customer sells — اسم المكان / الموقع (إحداثيات) / رابط الصفحة.
  *
  * Owned entirely by its customer; it has no independent lifecycle and is managed
  * through the customer's own endpoints.
+ *
+ * Audited but not a {@see HasAuditTrail}: there is no screen for one
+ * shop, so its entries are read through `GET /customers/{customer}/logs`.
  */
 #[UseFactory(CustomerShopFactory::class)]
 #[Fillable(['name', 'latitude', 'longitude', 'page_url'])]
 class CustomerShop extends Model
 {
     /** @use HasFactory<CustomerShopFactory> */
-    use HasFactory;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * Cast to float, not the default decimal-as-string: a map SDK expects numbers, and the

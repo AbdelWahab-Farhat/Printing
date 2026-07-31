@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Catalog\Models;
 
+use App\Domain\Audit\Concerns\Auditable;
+use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Enums\ProductCategory;
@@ -13,19 +15,24 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * A bag type in the catalogue.
+ *
+ * As with customers, soft deleting does not open a destroy route — a product is deactivated so
+ * that past orders keep pointing at it. It is the guarantee underneath: nothing can remove the
+ * row an order refers to, whatever calls `delete()`.
  */
 #[UseFactory(ProductFactory::class)]
 #[Fillable([
     'slug', 'name', 'description', 'features', 'category',
     'pricing_unit', 'pricing_mode', 'min_order_quantity', 'is_active', 'sort_order',
 ])]
-class Product extends Model
+class Product extends Model implements HasAuditTrail
 {
     /** @use HasFactory<ProductFactory> */
-    use HasFactory;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * @return array<string, mixed>
@@ -75,5 +82,32 @@ class Product extends Model
     public function meetsMinimumOrder(string $quantity): bool
     {
         return bccomp($quantity, (string) $this->min_order_quantity, 3) >= 0;
+    }
+
+    /**
+     * A product's history is the whole aggregate's: the sizes, the prices and the photos too.
+     *
+     * "Who put the price of 25*35 up?" is the single most likely question this endpoint will be
+     * asked, and the answer lives on `product_price_tiers`. Making the client fetch four
+     * histories and merge them would push the shape of our tables into its code.
+     *
+     * Two queries, not four: the tier ids come from the variant ids already in hand.
+     *
+     * @return array<string, list<int|string>>
+     */
+    public function auditTrailSubjects(): array
+    {
+        $variantIds = $this->variants()->withTrashed()->pluck('id')->all();
+
+        return [
+            $this->getMorphClass() => [$this->getKey()],
+            (new ProductVariant)->getMorphClass() => $variantIds,
+            (new ProductPriceTier)->getMorphClass() => ProductPriceTier::query()
+                ->withTrashed()
+                ->whereIn('product_variant_id', $variantIds)
+                ->pluck('id')
+                ->all(),
+            (new ProductImage)->getMorphClass() => $this->images()->withTrashed()->pluck('id')->all(),
+        ];
     }
 }

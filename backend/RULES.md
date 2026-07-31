@@ -9,7 +9,7 @@
 
 ---
 
-## 0. The five rules that matter most
+## 0. The six rules that matter most
 
 If you remember nothing else:
 
@@ -18,6 +18,7 @@ If you remember nothing else:
 3. **Organise by domain, not by file type.** Business logic in `Domain/`, HTTP in `Application/`. → [§3](#3-architecture)
 4. **Never hand-write API docs.** If the spec is wrong, fix the *code*. → [§7](#7-api-spec)
 5. **Migrations are forward-only.** Fix a mistake with a new migration, never by editing an applied one. → [§8](#8-database)
+6. **Every model soft deletes and keeps an audit trail.** A test fails the build if one does not. → [§10](#10-soft-deletes-and-the-audit-trail)
 
 ---
 
@@ -89,7 +90,9 @@ app/
 └── Support/                    ApiEnvelope, ResponseTrait, base exceptions
 ```
 
-Existing contexts: `Identity` (users, auth) and `Customer` (customers, shops).
+Existing contexts: `Identity` (users, roles, auth), `Customer` (customers, shops), `Catalog`
+(products, sizes, prices, photos), `Delivery` (cities, regions) and `Audit` (the trail every
+other context writes to without asking).
 
 ### The rules
 
@@ -326,7 +329,78 @@ Every endpoint is published as OpenAPI 3.1 automatically. **Never hand-write API
 
 ---
 
-## 10. Domain notes
+## 10. Soft deletes and the audit trail
+
+> **Every model soft deletes and keeps an audit trail. Every record a user opens has a
+> `/logs` endpoint. This is not optional, and
+> [ModelConventionsTest](tests/Feature/Audit/ModelConventionsTest.php) fails the build when a new
+> model skips it.**
+
+Adding a model is three lines and one migration column:
+
+```php
+class Invoice extends Model implements HasAuditTrail   // only if it gets a /logs endpoint
+{
+    use Auditable, SoftDeletes;                        // Auditable brings the logging
+}
+```
+
+1. `use Auditable` — [App\Domain\Audit\Concerns\Auditable](app/Domain/Audit/Concerns/Auditable.php).
+   Logs every attribute, only what changed, with the Arabic sentence and the signed-in causer.
+   No per-model configuration: a policy you have to remember to write gets forgotten on the model
+   where it mattered. Secrets are stripped globally by `activitylog.default_except_attributes`.
+2. `use SoftDeletes`, plus `$table->softDeletes()->index()` in the migration.
+3. **Add a case to [AuditSubject](app/Domain/Audit/Enums/AuditSubject.php).** It is the
+   application's morph map, so `activity_log.subject_type` reads `invoice` rather than a PHP
+   class name — a published value that must not move when a file does.
+4. If a user opens a screen for it, implement `HasAuditTrail` and add
+   `GET /invoices/{invoice}/logs` with `can:logs.view`, using the
+   [ReadsAuditTrail](app/Application/Api/V1/Controllers/Concerns/ReadsAuditTrail.php) trait.
+
+### What soft deleting breaks, and how each is handled
+
+Three things stop working the moment a table gains `deleted_at`. All three are already solved;
+the point of listing them is that the *next* table needs the same three.
+
+- **Unique indexes count deleted rows.** Deleting the city طرابلس and adding it back would fail
+  against a row the API says does not exist. Every unique index is *partial*
+  (`WHERE deleted_at IS NULL`) — see
+  [the migration](database/migrations/2026_07_31_130300_make_unique_indexes_ignore_soft_deleted_rows.php).
+  A new unique index is written the same way.
+- **Validation has to agree with it.** `unique:` ignores trashed rows exactly as the model does,
+  so every rule carries `->withoutTrashed()`. Without it the index allows what the 422 refuses.
+- **`cascadeOnDelete` never fires.** Nothing is deleted, so the database's cascade is dead code.
+  Children go through [CascadesSoftDeletes](app/Domain/Audit/Concerns/CascadesSoftDeletes.php),
+  on the *model* rather than in the action that deletes — otherwise the cascade holds only for
+  callers that remember to use that action. Only records that are genuinely deleted carry it:
+  cities and product variants do; customers and products are deactivated, never deleted, so
+  their children stay attached and come back with them.
+
+### Two more traps
+
+- **A mass delete fires no model events.** `$parent->children()->delete()` removes rows and
+  records nothing — a hole in the history exactly where someone will look. Iterate:
+  `->each(fn ($child) => $child->delete())`. These sets are small.
+- **A pivot table has no model, so it has no history.** A role's permissions live in
+  `role_has_permissions`, and it is the most consequential edit this API allows. It is recorded
+  by hand in [RecordRolePermissionChange](app/Domain/Identity/Actions/RecordRolePermissionChange.php).
+  Any future pivot that matters needs the same.
+
+### Reading it
+
+`GET /logs` is the whole feed; `GET /{resource}/{id}/logs` is one record's story, **including
+the rows it owns** — a product's history covers its sizes, prices and photos, because "who put
+25*35 up?" is the question it exists to answer and that number lives on another table. Filter
+any of them with `event`, `causer_id`, `subject_type`, `from` and `to`. All behind `logs.view`,
+which is deliberately *not* the permission that guards the record: someone allowed to edit
+products is not automatically someone allowed to audit their colleagues.
+
+🎯 No restore endpoint yet. Recovering a deleted record is a console job today; when a restore
+endpoint lands, decide there whether it cascades.
+
+---
+
+## 11. Domain notes
 
 **Customer codes** are `C1`, `C2`, `C3` … always `'C'` + the row id. The id is reserved from the
 table's sequence *before* insert
@@ -343,12 +417,14 @@ still exists. There is deliberately no destroy route. An update that omits `is_a
 alone — omitting a field must never silently reactivate someone.
 
 **Shops belong entirely to their customer** — no independent lifecycle, managed inline through the
-customer's endpoints, cascading on delete. Sending `shops` replaces the whole set (`id` = update,
-no `id` = create, absent from the set = delete); omitting the key leaves them untouched.
+customer's endpoints. Sending `shops` replaces the whole set (`id` = update, no `id` = create,
+absent from the set = delete); omitting the key leaves them untouched. A shop dropped from the set
+is soft deleted and the removal is recorded. Soft-deleting the *customer* leaves the shops
+attached, so restoring one brings them back whole — see [§10](#10-soft-deletes-and-the-audit-trail).
 
 ---
 
-## 11. Git
+## 12. Git
 
 - Feature branches; focused commits; the message explains **why**, not just what.
 - The bar for merging: **Pint clean, `scramble:analyze` clean, whole suite green.**

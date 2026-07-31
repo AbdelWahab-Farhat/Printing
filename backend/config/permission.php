@@ -1,8 +1,8 @@
 <?php
 
+use App\Domain\Identity\Models\Role;
 use Spatie\Permission\DefaultTeamResolver;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 return [
 
@@ -28,6 +28,9 @@ return [
          * `Spatie\Permission\Contracts\Role` contract.
          */
 
+        // Our subclass, not Spatie's: it adds the soft deletes and audit trail that every
+        // model in this application carries. Pointing the package here is what makes it hand
+        // that class back everywhere, so no caller has to know the difference.
         'role' => Role::class,
 
         /*

@@ -4,22 +4,28 @@ declare(strict_types=1);
 
 namespace App\Domain\Catalog\Models;
 
+use App\Domain\Audit\Concerns\Auditable;
 use Database\Factories\ProductPriceTierFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * "From this quantity upward, one unit costs this much."
+ *
+ * The most audit-worthy table in the catalogue: this is where the number a customer is charged
+ * comes from, so "who changed this price, and from what" has to be answerable. Its entries are
+ * read through the product that owns it.
  */
 #[UseFactory(ProductPriceTierFactory::class)]
 #[Fillable(['min_quantity', 'unit_price'])]
 class ProductPriceTier extends Model
 {
     /** @use HasFactory<ProductPriceTierFactory> */
-    use HasFactory;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * decimal, never float — these values are multiplied by quantities and compared.

@@ -63,7 +63,7 @@ class UpdateProductRequest extends StoreProductRequest
         /** @var Product $product */
         $product = $this->route('product');
 
-        return Rule::unique('products', 'slug')->ignore($product->getKey());
+        return Rule::unique('products', 'slug')->ignore($product->getKey())->withoutTrashed();
     }
 
     /**
