@@ -1,0 +1,2841 @@
+{
+    "cities": [
+        {
+            "id": 1,
+            "name": "إستلام مكتب",
+            "is_region_required": 0,
+            "price": "0.00",
+            "darb_branch": null,
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-01-15 14:50:51"
+        },
+        {
+            "id": 2,
+            "name": "طرابلس",
+            "is_region_required": 1,
+            "price": "15.00",
+            "darb_branch": "زناتة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:09:54"
+        },
+        {
+            "id": 3,
+            "name": "ضواحي طرابلس",
+            "is_region_required": 1,
+            "price": "20.00",
+            "darb_branch": "عين زارة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:26:36"
+        },
+        {
+            "id": 4,
+            "name": "بنغازي",
+            "is_region_required": 1,
+            "price": "25.00",
+            "darb_branch": "سلوق، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:31:17"
+        },
+        {
+            "id": 5,
+            "name": "ضواحي بنغازي",
+            "is_region_required": 1,
+            "price": "25.00",
+            "darb_branch": "حي السلام، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:35:45"
+        },
+        {
+            "id": 6,
+            "name": "مصراتة",
+            "is_region_required": 1,
+            "price": "20.00",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:32:59"
+        },
+        {
+            "id": 7,
+            "name": "زليتن",
+            "is_region_required": 0,
+            "price": "20.00",
+            "darb_branch": "زليتن، الخمس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:36:58"
+        },
+        {
+            "id": 8,
+            "name": "زلطن",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "زلطن، زوارة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:37:18"
+        },
+        {
+            "id": 9,
+            "name": "الخمس",
+            "is_region_required": 0,
+            "price": "20.00",
+            "darb_branch": "الخمس، الخمس",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:47:16"
+        },
+        {
+            "id": 10,
+            "name": "الزاوية",
+            "is_region_required": 1,
+            "price": "20.00",
+            "darb_branch": "الزاوية، الزاوية",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:47:31"
+        },
+        {
+            "id": 11,
+            "name": "صبراتة",
+            "is_region_required": 1,
+            "price": "25.00",
+            "darb_branch": "صرمان، صبراتة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:48:51"
+        },
+        {
+            "id": 12,
+            "name": "صرمان",
+            "is_region_required": 1,
+            "price": "25.00",
+            "darb_branch": "صرمان، صبراتة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-06-14 18:43:57"
+        },
+        {
+            "id": 13,
+            "name": "البيضاء",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "البيضاء، البيضاء",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:49:19"
+        },
+        {
+            "id": 14,
+            "name": "شحات",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "شحات، البيضاء",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:49:30"
+        },
+        {
+            "id": 15,
+            "name": "درنة",
+            "is_region_required": 0,
+            "price": "40.00",
+            "darb_branch": "درنة، درنة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:49:40"
+        },
+        {
+            "id": 16,
+            "name": "طبرق",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "طبرق، طبرق",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:49:51"
+        },
+        {
+            "id": 17,
+            "name": "سبها",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "سبها، سبها",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:50:01"
+        },
+        {
+            "id": 18,
+            "name": "غريان",
+            "is_region_required": 0,
+            "price": "25.00",
+            "darb_branch": "غريان، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:52:53"
+        },
+        {
+            "id": 19,
+            "name": "يفرن",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "يفرن، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:51:09"
+        },
+        {
+            "id": 20,
+            "name": "زوارة",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "زوارة، زوارة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:51:20"
+        },
+        {
+            "id": 21,
+            "name": "غات",
+            "is_region_required": 0,
+            "price": "50.00",
+            "darb_branch": "غات، سبها",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:51:28"
+        },
+        {
+            "id": 22,
+            "name": "أوباري",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": "اوباري، سبها",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:51:39"
+        },
+        {
+            "id": 23,
+            "name": "مرزق",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": "مرزق، سبها",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:51:49"
+        },
+        {
+            "id": 24,
+            "name": "بني وليد",
+            "is_region_required": 0,
+            "price": "25.00",
+            "darb_branch": "بني وليد، بني وليد",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:51:59"
+        },
+        {
+            "id": 25,
+            "name": "ترهونة",
+            "is_region_required": 0,
+            "price": "20.00",
+            "darb_branch": "ترهونة، ترهونة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:52:08"
+        },
+        {
+            "id": 26,
+            "name": "مسلاتة",
+            "is_region_required": 0,
+            "price": "25.00",
+            "darb_branch": "مسلاتة، الخمس",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:52:17"
+        },
+        {
+            "id": 27,
+            "name": "الجميل",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "الجميل، زوارة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:52:34"
+        },
+        {
+            "id": 28,
+            "name": "رقدالين",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "رقدالين، زوارة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:52:44"
+        },
+        {
+            "id": 29,
+            "name": "العجيلات",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "العجيلات، العجيلات",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:43:29"
+        },
+        {
+            "id": 30,
+            "name": "القلعة",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "القلعة، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:47:04"
+        },
+        {
+            "id": 31,
+            "name": "مزدة",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "مزدة، سبها",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:43:14"
+        },
+        {
+            "id": 32,
+            "name": "الرجبان",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "الرجبان، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:43:03"
+        },
+        {
+            "id": 33,
+            "name": "ككلة",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "ككلة، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:42:51"
+        },
+        {
+            "id": 34,
+            "name": "تازربو",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": "تازربو، جالو اوجلة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:42:15"
+        },
+        {
+            "id": 35,
+            "name": "جالو",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": "جالو اوجلة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-02-27 03:01:06"
+        },
+        {
+            "id": 36,
+            "name": "أجخرة",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": null,
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-01-15 15:50:29"
+        },
+        {
+            "id": 37,
+            "name": "الكفرة",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": "الكفرة، الكفرة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:44:01"
+        },
+        {
+            "id": 38,
+            "name": "هون",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "هون، الجفرة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:41:24"
+        },
+        {
+            "id": 39,
+            "name": "ودان",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "ودان، الجفرة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:44:11"
+        },
+        {
+            "id": 40,
+            "name": "سوكنة",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "سوكنة، الجفرة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:44:21"
+        },
+        {
+            "id": 41,
+            "name": "براك الشاطئ",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "براك الشاطي، سبها",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:44:33"
+        },
+        {
+            "id": 42,
+            "name": "الزنتان",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "الزنتان، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:44:46"
+        },
+        {
+            "id": 43,
+            "name": "غدامس",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": "غدامس، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:45:00"
+        },
+        {
+            "id": 44,
+            "name": "أجدابيا",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "اجدابيا، اجدابيا",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:45:10"
+        },
+        {
+            "id": 45,
+            "name": "سرت",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "سرت، سرت",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:45:31"
+        },
+        {
+            "id": 46,
+            "name": "راس لانوف",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "رأس لانوف، رأس لانوف",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:46:43"
+        },
+        {
+            "id": 47,
+            "name": "البريقة",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "البريقة، البريقة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:46:54"
+        },
+        {
+            "id": 48,
+            "name": "المرج",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "المرج، المرج",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:50:22"
+        },
+        {
+            "id": 49,
+            "name": "بن وليد",
+            "is_region_required": 0,
+            "price": "25.00",
+            "darb_branch": "بني وليد، بني وليد",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:00:15"
+        },
+        {
+            "id": 50,
+            "name": "تاورغاء",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "تاورغاء، سرت",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:10:13"
+        },
+        {
+            "id": 51,
+            "name": "بن جواد",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "بن جواد، رأس لانوف",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:00:29"
+        },
+        {
+            "id": 52,
+            "name": "قمينس",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "قمينس، بنغازي",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:00:42"
+        },
+        {
+            "id": 53,
+            "name": "توكرة",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "توكرة، المرج",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:00:53"
+        },
+        {
+            "id": 54,
+            "name": "سوسة",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "سوسة، البيضاء",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:25:04"
+        },
+        {
+            "id": 55,
+            "name": "ورشفانة",
+            "is_region_required": 0,
+            "price": "25.00",
+            "darb_branch": "ورشفانة، طرابلس",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:07:54"
+        },
+        {
+            "id": 57,
+            "name": "الجفرة",
+            "is_region_required": 0,
+            "price": "40.00",
+            "darb_branch": "الجفرة، الجفرة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:09:27"
+        },
+        {
+            "id": 58,
+            "name": "زلة",
+            "is_region_required": 0,
+            "price": "40.00",
+            "darb_branch": "زلة، الجفرة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:09:52"
+        },
+        {
+            "id": 59,
+            "name": "اوباري",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": "اوباري، سبها",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:10:04"
+        },
+        {
+            "id": 60,
+            "name": "ام الارانب",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": null,
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-01-15 15:27:26"
+        },
+        {
+            "id": 61,
+            "name": "تراغن",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": "تراغن، سبها",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:16:04"
+        },
+        {
+            "id": 62,
+            "name": "جادو",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "جادو، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:15:50"
+        },
+        {
+            "id": 63,
+            "name": "الرحيبات",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "الرحيبات، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:15:40"
+        },
+        {
+            "id": 64,
+            "name": "الأصابعة",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "الأصابعة، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:15:28"
+        },
+        {
+            "id": 65,
+            "name": "الجوش",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": null,
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-01-15 15:28:47"
+        },
+        {
+            "id": 67,
+            "name": "الجبل الغربي",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": null,
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-01-15 15:30:13"
+        },
+        {
+            "id": 68,
+            "name": "نالوت",
+            "is_region_required": 0,
+            "price": "40.00",
+            "darb_branch": "نالوت، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:11:51"
+        },
+        {
+            "id": 69,
+            "name": "القواليش",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "الأصابعة، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:26:00"
+        },
+        {
+            "id": 70,
+            "name": "الرياينة",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "الرياينة، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:16:16"
+        },
+        {
+            "id": 71,
+            "name": "تيجي",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "تيجي، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:57:05"
+        },
+        {
+            "id": 72,
+            "name": "بدر",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "بدر، غريان",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:53:02"
+        },
+        {
+            "id": 73,
+            "name": "وازن",
+            "is_region_required": 0,
+            "price": "40.00",
+            "darb_branch": null,
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-01-15 15:07:11"
+        },
+        {
+            "id": 74,
+            "name": "الشويرف",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "الشويرف، سبها",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:54:55"
+        },
+        {
+            "id": 75,
+            "name": "أوجلة",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": "جالو اوجلة، جالو اوجلة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-30 21:04:19"
+        },
+        {
+            "id": 76,
+            "name": "المايه",
+            "is_region_required": 0,
+            "price": "20.00",
+            "darb_branch": "الماية، الزاوية",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:55:26"
+        },
+        {
+            "id": 77,
+            "name": "القبة",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "القبة، القبة",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:55:37"
+        },
+        {
+            "id": 78,
+            "name": "وادي الربيع",
+            "is_region_required": 0,
+            "price": "25.00",
+            "darb_branch": "وادي الربيع، طرابلس",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:55:49"
+        },
+        {
+            "id": 79,
+            "name": "القره بولي",
+            "is_region_required": 0,
+            "price": "20.00",
+            "darb_branch": "القره بولي، قصر خيار",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:55:58"
+        },
+        {
+            "id": 81,
+            "name": "الابيار",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "الأبيار، المرج",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:24:45"
+        },
+        {
+            "id": 82,
+            "name": "قصر بن غشير",
+            "is_region_required": 0,
+            "price": "20.00",
+            "darb_branch": "قصر بن غشير، طرابلس",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 15:00:03"
+        },
+        {
+            "id": 83,
+            "name": "سلوق",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "سلوق، بنغازي",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:57:14"
+        },
+        {
+            "id": 84,
+            "name": "برقة",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": null,
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-01-15 15:17:07"
+        },
+        {
+            "id": 85,
+            "name": "السبيعة",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "السبيعة، طرابلس",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:57:59"
+        },
+        {
+            "id": 86,
+            "name": "قصر الخيار",
+            "is_region_required": 0,
+            "price": "20.00",
+            "darb_branch": "قصر خيار، قصر خيار",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:58:13"
+        },
+        {
+            "id": 87,
+            "name": "الرجمة",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "الرجمه، بنغازي",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:58:24"
+        },
+        {
+            "id": 88,
+            "name": "سوق السبت",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "سوق السبت، طرابلس",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:58:34"
+        },
+        {
+            "id": 89,
+            "name": "وادي عتبة",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": "وادى عتبة، سبها",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:58:51"
+        },
+        {
+            "id": 91,
+            "name": "ابو قرين",
+            "is_region_required": 0,
+            "price": "30.00",
+            "darb_branch": "أبوقرين، سرت",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:59:23"
+        },
+        {
+            "id": 92,
+            "name": "سيدي السايح",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": "سيد السائح، طرابلس",
+            "created_at": "2025-10-06 15:15:29",
+            "updated_at": "2026-04-22 14:59:35"
+        },
+        {
+            "id": 94,
+            "name": "الشقيقة",
+            "is_region_required": 0,
+            "price": "35.00",
+            "darb_branch": null,
+            "created_at": "2025-10-15 15:11:36",
+            "updated_at": "2026-01-15 15:31:22"
+        },
+        {
+            "id": 95,
+            "name": "القطرون",
+            "is_region_required": 0,
+            "price": "50.00",
+            "darb_branch": "القطرون، سبها",
+            "created_at": "2025-10-15 16:26:55",
+            "updated_at": "2026-04-22 15:17:28"
+        },
+        {
+            "id": 96,
+            "name": "سيناون",
+            "is_region_required": 0,
+            "price": "45.00",
+            "darb_branch": null,
+            "created_at": "2025-10-30 17:37:39",
+            "updated_at": "2026-01-15 15:31:59"
+        },
+        {
+            "id": 97,
+            "name": "تساوة",
+            "is_region_required": 0,
+            "price": null,
+            "darb_branch": null,
+            "created_at": "2026-01-23 16:01:05",
+            "updated_at": "2026-01-23 16:01:05"
+        },
+        {
+            "id": 98,
+            "name": "ضواحي الزاوية",
+            "is_region_required": 1,
+            "price": null,
+            "darb_branch": "المطرد، الزاوية",
+            "created_at": "2026-02-01 21:08:49",
+            "updated_at": "2026-04-22 15:19:32"
+        },
+        {
+            "id": 99,
+            "name": "ضواحي صبراتة",
+            "is_region_required": 0,
+            "price": null,
+            "darb_branch": "صبراتة، صبراتة",
+            "created_at": "2026-02-01 22:02:49",
+            "updated_at": "2026-04-22 15:20:16"
+        }
+    ],
+    "regions": [
+        {
+            "id": 1,
+            "city_id": 1,
+            "name": "إستلام مكتب",
+            "code": "s6",
+            "darb_branch": null,
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2025-10-06 15:15:28"
+        },
+        {
+            "id": 2,
+            "city_id": 2,
+            "name": "سوق الجمعة",
+            "code": "s18",
+            "darb_branch": "سوق الجمعة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:27:08"
+        },
+        {
+            "id": 3,
+            "city_id": 2,
+            "name": "زناتة",
+            "code": "s18",
+            "darb_branch": "زناتة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:33:12"
+        },
+        {
+            "id": 4,
+            "city_id": 2,
+            "name": "11 يوليو",
+            "code": "s18",
+            "darb_branch": "سوق الجمعة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:38:06"
+        },
+        {
+            "id": 6,
+            "city_id": 2,
+            "name": "طريق الشوك",
+            "code": "s18",
+            "darb_branch": "الكراريم، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:38:34"
+        },
+        {
+            "id": 7,
+            "city_id": 2,
+            "name": "السبعة",
+            "code": "s21",
+            "darb_branch": "السبعة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 14:39:24"
+        },
+        {
+            "id": 8,
+            "city_id": 2,
+            "name": "الفرناج",
+            "code": "s21",
+            "darb_branch": "الفرناج، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:27:43"
+        },
+        {
+            "id": 9,
+            "city_id": 2,
+            "name": "هضبة طول",
+            "code": "s19",
+            "darb_branch": "الهضبة طول، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:27:54"
+        },
+        {
+            "id": 10,
+            "city_id": 2,
+            "name": "الترسانة",
+            "code": "s18",
+            "darb_branch": "سوق الجمعة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:28:49"
+        },
+        {
+            "id": 11,
+            "city_id": 2,
+            "name": "حي الاندلس",
+            "code": "s23",
+            "darb_branch": "حي الأندلس، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:29:10"
+        },
+        {
+            "id": 12,
+            "city_id": 2,
+            "name": "عرادة",
+            "code": "s18",
+            "darb_branch": "عرادة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:29:21"
+        },
+        {
+            "id": 13,
+            "city_id": 2,
+            "name": "الحشان",
+            "code": "s18",
+            "darb_branch": "الحشان، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:29:34"
+        },
+        {
+            "id": 14,
+            "city_id": 2,
+            "name": "الظهرة",
+            "code": "s18",
+            "darb_branch": "الظهرة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:29:45"
+        },
+        {
+            "id": 15,
+            "city_id": 2,
+            "name": "زاوية الدهماني",
+            "code": "s18",
+            "darb_branch": "النوفليين، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:31:44"
+        },
+        {
+            "id": 16,
+            "city_id": 2,
+            "name": "بن عاشور",
+            "code": "s25",
+            "darb_branch": "بن عاشور، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:32:12"
+        },
+        {
+            "id": 17,
+            "city_id": 2,
+            "name": "شارع الظل",
+            "code": "s25",
+            "darb_branch": "شارع الظل، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:32:43"
+        },
+        {
+            "id": 18,
+            "city_id": 2,
+            "name": "راس حسن",
+            "code": "s25",
+            "darb_branch": "رأس حسن، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:33:10"
+        },
+        {
+            "id": 19,
+            "city_id": 2,
+            "name": "شارع المدار",
+            "code": "s25",
+            "darb_branch": "بن عاشور، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:34:00"
+        },
+        {
+            "id": 20,
+            "city_id": 2,
+            "name": "باب بن غشير",
+            "code": "s25",
+            "darb_branch": "باب بن غشير، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:34:11"
+        },
+        {
+            "id": 21,
+            "city_id": 2,
+            "name": "عمر المختار",
+            "code": "s25",
+            "darb_branch": "عمر المختار، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:34:23"
+        },
+        {
+            "id": 22,
+            "city_id": 2,
+            "name": "المدينة القديمة",
+            "code": "s25",
+            "darb_branch": "المدينة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:34:34"
+        },
+        {
+            "id": 23,
+            "city_id": 2,
+            "name": "الجرابة",
+            "code": "s25",
+            "darb_branch": "جرابة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:34:44"
+        },
+        {
+            "id": 24,
+            "city_id": 2,
+            "name": "المنصورة",
+            "code": "s25",
+            "darb_branch": "المنصورة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:35:10"
+        },
+        {
+            "id": 25,
+            "city_id": 2,
+            "name": "قرجي",
+            "code": "s23",
+            "darb_branch": "قرجي، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:35:22"
+        },
+        {
+            "id": 26,
+            "city_id": 2,
+            "name": "قرقارش",
+            "code": "s23",
+            "darb_branch": "قرقارش، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:35:42"
+        },
+        {
+            "id": 27,
+            "city_id": 2,
+            "name": "السراج",
+            "code": "s24",
+            "darb_branch": "السراج، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:36:24"
+        },
+        {
+            "id": 28,
+            "city_id": 2,
+            "name": "الدريبي",
+            "code": "s23",
+            "darb_branch": "الدريبي، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:36:44"
+        },
+        {
+            "id": 29,
+            "city_id": 2,
+            "name": "غوط الشعال",
+            "code": "s23",
+            "darb_branch": "غوط الشعال، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:36:55"
+        },
+        {
+            "id": 30,
+            "city_id": 2,
+            "name": "الفلاح",
+            "code": "s23",
+            "darb_branch": "طريق الفلاح، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:37:06"
+        },
+        {
+            "id": 31,
+            "city_id": 2,
+            "name": "قدح",
+            "code": "s23",
+            "darb_branch": "طريق الفلاح، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:37:22"
+        },
+        {
+            "id": 32,
+            "city_id": 2,
+            "name": "قرية صالح",
+            "code": "s23",
+            "darb_branch": "طريق الفلاح، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:37:49"
+        },
+        {
+            "id": 33,
+            "city_id": 2,
+            "name": "كشلاف",
+            "code": "s23",
+            "darb_branch": "كشلاف، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:38:00"
+        },
+        {
+            "id": 34,
+            "city_id": 2,
+            "name": "ابوسليم",
+            "code": "s19",
+            "darb_branch": "ابوسليم، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:39:10"
+        },
+        {
+            "id": 35,
+            "city_id": 2,
+            "name": "الهضبة البدري",
+            "code": "s19",
+            "darb_branch": "الهضبة البدري، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:42:35"
+        },
+        {
+            "id": 36,
+            "city_id": 2,
+            "name": "حي دمشق",
+            "code": "s19",
+            "darb_branch": "حي دمشق، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:42:52"
+        },
+        {
+            "id": 37,
+            "city_id": 2,
+            "name": "حي الاكواخ",
+            "code": "s19",
+            "darb_branch": "حي الاكواخ، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:54:14"
+        },
+        {
+            "id": 38,
+            "city_id": 2,
+            "name": "الرياضية",
+            "code": "s23",
+            "darb_branch": "الرياضية، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:54:38"
+        },
+        {
+            "id": 39,
+            "city_id": 2,
+            "name": "شارع الزاوية",
+            "code": "s25",
+            "darb_branch": "شارع الزاوية، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:56:54"
+        },
+        {
+            "id": 40,
+            "city_id": 2,
+            "name": "شارع الجمهورية",
+            "code": "s25",
+            "darb_branch": "شارع الجمهورية، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:57:04"
+        },
+        {
+            "id": 41,
+            "city_id": 2,
+            "name": "ميزران",
+            "code": "s25",
+            "darb_branch": "المنصورة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-07-02 23:12:13"
+        },
+        {
+            "id": 42,
+            "city_id": 2,
+            "name": "حي الاسلامي",
+            "code": "s23",
+            "darb_branch": "الحي الإسلامي، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-07-02 23:12:13"
+        },
+        {
+            "id": 43,
+            "city_id": 2,
+            "name": "النوفليين",
+            "code": "s18",
+            "darb_branch": "النوفليين، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:02:29"
+        },
+        {
+            "id": 44,
+            "city_id": 2,
+            "name": "السياحية",
+            "code": "s23",
+            "darb_branch": "السياحية، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:02:38"
+        },
+        {
+            "id": 45,
+            "city_id": 2,
+            "name": "طريق السور",
+            "code": "s25",
+            "darb_branch": "السياحية، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:03:00"
+        },
+        {
+            "id": 46,
+            "city_id": 2,
+            "name": "فشلوم",
+            "code": "s18",
+            "darb_branch": "فشلوم، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:03:09"
+        },
+        {
+            "id": 47,
+            "city_id": 2,
+            "name": "الهضبه الكيزه",
+            "code": "s19",
+            "darb_branch": "الكيزة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:03:53"
+        },
+        {
+            "id": 48,
+            "city_id": 2,
+            "name": "الهضبه القاسي",
+            "code": "s19",
+            "darb_branch": "الكيزة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:12:16"
+        },
+        {
+            "id": 49,
+            "city_id": 2,
+            "name": "الهضبه الشرقيه",
+            "code": "s19",
+            "darb_branch": "الهضبة الشرقية، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:12:30"
+        },
+        {
+            "id": 50,
+            "city_id": 2,
+            "name": "جامع الصقع",
+            "code": "s18",
+            "darb_branch": "جامع الصقع، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:13:00"
+        },
+        {
+            "id": 51,
+            "city_id": 2,
+            "name": "غرغور",
+            "code": null,
+            "darb_branch": "غرغور، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:13:30"
+        },
+        {
+            "id": 53,
+            "city_id": 3,
+            "name": "عين زارة",
+            "code": "s21",
+            "darb_branch": "عين زارة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:15:36"
+        },
+        {
+            "id": 54,
+            "city_id": 3,
+            "name": "طريق المشتل",
+            "code": "s21",
+            "darb_branch": "طريق المشتل، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:18:50"
+        },
+        {
+            "id": 55,
+            "city_id": 3,
+            "name": "بئر اسطي ميلاد",
+            "code": "s77",
+            "darb_branch": "البيفي، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:20:33"
+        },
+        {
+            "id": 56,
+            "city_id": 3,
+            "name": "الباعيش \/ عين زارة",
+            "code": "s21",
+            "darb_branch": "عين زارة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:20:45"
+        },
+        {
+            "id": 57,
+            "city_id": 3,
+            "name": "الدعوة الاسلامية",
+            "code": "s20",
+            "darb_branch": "الدعوة الإسلامية، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:20:56"
+        },
+        {
+            "id": 58,
+            "city_id": 3,
+            "name": "طريق المطار",
+            "code": "s20",
+            "darb_branch": "طريق المطار، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:22:15"
+        },
+        {
+            "id": 59,
+            "city_id": 3,
+            "name": "جنزور",
+            "code": "s24",
+            "darb_branch": "جنزور، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:22:25"
+        },
+        {
+            "id": 60,
+            "city_id": 3,
+            "name": "النجيلة",
+            "code": "s24",
+            "darb_branch": "النجيلة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:22:35"
+        },
+        {
+            "id": 61,
+            "city_id": 3,
+            "name": "خلة الفرجان",
+            "code": "s19",
+            "darb_branch": "الخلة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:22:47"
+        },
+        {
+            "id": 62,
+            "city_id": 3,
+            "name": "الكريمية",
+            "code": "s20",
+            "darb_branch": "الكريمية، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 15:27:12"
+        },
+        {
+            "id": 63,
+            "city_id": 3,
+            "name": "مشروع الهضبة",
+            "code": "s20",
+            "darb_branch": "مشروع الهضبة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:23:05"
+        },
+        {
+            "id": 64,
+            "city_id": 3,
+            "name": "السواني",
+            "code": "s20",
+            "darb_branch": "السواني، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:23:29"
+        },
+        {
+            "id": 65,
+            "city_id": 3,
+            "name": "تاجوراء",
+            "code": "s77",
+            "darb_branch": "تاجوراء، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:23:42"
+        },
+        {
+            "id": 66,
+            "city_id": 3,
+            "name": "عين زارة \/ السدرة",
+            "code": null,
+            "darb_branch": "عين زارة، طرابلس",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:23:52"
+        },
+        {
+            "id": 68,
+            "city_id": 4,
+            "name": "راس اعبيد",
+            "code": "s48",
+            "darb_branch": "راس عبيدة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:27:05"
+        },
+        {
+            "id": 69,
+            "city_id": 4,
+            "name": "بوز غيبه",
+            "code": "s48",
+            "darb_branch": "بوزغيبة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:27:15"
+        },
+        {
+            "id": 70,
+            "city_id": 4,
+            "name": "الكيش",
+            "code": "s48",
+            "darb_branch": "الكيش، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:27:29"
+        },
+        {
+            "id": 72,
+            "city_id": 4,
+            "name": "شارع فينيسيا",
+            "code": "s48",
+            "darb_branch": "فينسيا، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:28:53"
+        },
+        {
+            "id": 73,
+            "city_id": 4,
+            "name": "حي السلام",
+            "code": "s48",
+            "darb_branch": "حي السلام، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:29:06"
+        },
+        {
+            "id": 74,
+            "city_id": 4,
+            "name": "شبنة",
+            "code": "s48",
+            "darb_branch": "شبنة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:29:19"
+        },
+        {
+            "id": 76,
+            "city_id": 4,
+            "name": "الماجوري",
+            "code": "s48",
+            "darb_branch": "الماجورى، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:30:15"
+        },
+        {
+            "id": 77,
+            "city_id": 4,
+            "name": "سيدي حسين",
+            "code": "s48",
+            "darb_branch": "سيدي حسين، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:30:30"
+        },
+        {
+            "id": 78,
+            "city_id": 4,
+            "name": "البركة",
+            "code": "s48",
+            "darb_branch": "البركة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:30:45"
+        },
+        {
+            "id": 79,
+            "city_id": 4,
+            "name": "الحدائق",
+            "code": "s48",
+            "darb_branch": "الحدائق، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:31:00"
+        },
+        {
+            "id": 80,
+            "city_id": 4,
+            "name": "أرض الملموم",
+            "code": "s48",
+            "darb_branch": "ارض لملوم، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:31:18"
+        },
+        {
+            "id": 81,
+            "city_id": 4,
+            "name": "السلماني",
+            "code": "s48",
+            "darb_branch": "السلماني، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:31:29"
+        },
+        {
+            "id": 82,
+            "city_id": 4,
+            "name": "الوحيشي",
+            "code": "s48",
+            "darb_branch": "الوحيشي، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:31:40"
+        },
+        {
+            "id": 83,
+            "city_id": 4,
+            "name": "سيدي يونس",
+            "code": "s48",
+            "darb_branch": "سيدي يونس، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:31:51"
+        },
+        {
+            "id": 84,
+            "city_id": 4,
+            "name": "أرض الحراسة",
+            "code": "s48",
+            "darb_branch": "ارض الحراسة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:32:02"
+        },
+        {
+            "id": 86,
+            "city_id": 4,
+            "name": "الرحبة",
+            "code": "s48",
+            "darb_branch": "الرحبة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:32:33"
+        },
+        {
+            "id": 87,
+            "city_id": 4,
+            "name": "بلعون",
+            "code": "s48",
+            "darb_branch": "بلعون، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:32:43"
+        },
+        {
+            "id": 88,
+            "city_id": 4,
+            "name": "بو هديمة",
+            "code": "s48",
+            "darb_branch": "بو هديمة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:32:55"
+        },
+        {
+            "id": 89,
+            "city_id": 4,
+            "name": "الليثي",
+            "code": "s48",
+            "darb_branch": "الليثي، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:33:09"
+        },
+        {
+            "id": 90,
+            "city_id": 4,
+            "name": "الفويهات",
+            "code": "s48",
+            "darb_branch": "الفويهات، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:33:24"
+        },
+        {
+            "id": 91,
+            "city_id": 4,
+            "name": "سوق الفحم",
+            "code": "s48",
+            "darb_branch": "سوق الفحم، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:33:42"
+        },
+        {
+            "id": 93,
+            "city_id": 4,
+            "name": "الفعكات",
+            "code": "s48",
+            "darb_branch": "الفعكات، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:35:02"
+        },
+        {
+            "id": 95,
+            "city_id": 4,
+            "name": "بود زيره",
+            "code": "s48",
+            "darb_branch": "بوتزيرة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:35:28"
+        },
+        {
+            "id": 96,
+            "city_id": 4,
+            "name": "صابري",
+            "code": "s48",
+            "darb_branch": "الصابري، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:36:00"
+        },
+        {
+            "id": 97,
+            "city_id": 4,
+            "name": "زواوه",
+            "code": "s48",
+            "darb_branch": "زلطن، زوارة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:36:19"
+        },
+        {
+            "id": 100,
+            "city_id": 4,
+            "name": "رويصات",
+            "code": "s48",
+            "darb_branch": "الرويسات، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:38:07"
+        },
+        {
+            "id": 102,
+            "city_id": 4,
+            "name": "شارع 20",
+            "code": "s48",
+            "darb_branch": "شارع عشرين، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:46:59"
+        },
+        {
+            "id": 103,
+            "city_id": 4,
+            "name": "الزيتونة",
+            "code": "s48",
+            "darb_branch": "ارض الحراسة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-07-02 23:12:13"
+        },
+        {
+            "id": 104,
+            "city_id": 4,
+            "name": "شارع دبي",
+            "code": "s48",
+            "darb_branch": null,
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2025-10-06 15:15:28"
+        },
+        {
+            "id": 105,
+            "city_id": 4,
+            "name": "سوق الحوت",
+            "code": "s48",
+            "darb_branch": "ارض الحراسة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-07-02 23:12:13"
+        },
+        {
+            "id": 106,
+            "city_id": 4,
+            "name": "جليانة",
+            "code": "s48",
+            "darb_branch": "ارض الحراسة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-07-02 23:12:13"
+        },
+        {
+            "id": 107,
+            "city_id": 4,
+            "name": "مفرق الدرابيك",
+            "code": "s48",
+            "darb_branch": "ارض الحراسة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-07-02 23:12:13"
+        },
+        {
+            "id": 108,
+            "city_id": 4,
+            "name": "شارع سوريا",
+            "code": "s48",
+            "darb_branch": "شبنة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:06:04"
+        },
+        {
+            "id": 109,
+            "city_id": 4,
+            "name": "زمزم",
+            "code": "s48",
+            "darb_branch": "حي السلام، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:06:38"
+        },
+        {
+            "id": 110,
+            "city_id": 4,
+            "name": "أرض قريش",
+            "code": "s48",
+            "darb_branch": "ارض قريش، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:51:21"
+        },
+        {
+            "id": 111,
+            "city_id": 4,
+            "name": "السرتي",
+            "code": "s48",
+            "darb_branch": "السرتية، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 16:51:37"
+        },
+        {
+            "id": 112,
+            "city_id": 4,
+            "name": "شارع البث",
+            "code": "s48",
+            "darb_branch": "الفويهات، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:08:38"
+        },
+        {
+            "id": 114,
+            "city_id": 4,
+            "name": "شارع خليج",
+            "code": "s48",
+            "darb_branch": "الليثي، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:07:36"
+        },
+        {
+            "id": 115,
+            "city_id": 4,
+            "name": "حي الدولار",
+            "code": "s48",
+            "darb_branch": "حي الدولار، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 17:39:40"
+        },
+        {
+            "id": 116,
+            "city_id": 4,
+            "name": "شارع مركبات",
+            "code": "s48",
+            "darb_branch": "حي السلام، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:09:03"
+        },
+        {
+            "id": 117,
+            "city_id": 4,
+            "name": "سيدي فرج",
+            "code": "s48",
+            "darb_branch": "سيدي فرج، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 17:40:21"
+        },
+        {
+            "id": 118,
+            "city_id": 4,
+            "name": "بو صنيب",
+            "code": "s48",
+            "darb_branch": "قاريونس، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:14:16"
+        },
+        {
+            "id": 120,
+            "city_id": 5,
+            "name": "قنفوذه",
+            "code": "s48",
+            "darb_branch": "قنفودة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:48:43"
+        },
+        {
+            "id": 121,
+            "city_id": 5,
+            "name": "سيدي خليفة",
+            "code": "s48",
+            "darb_branch": "سيدى خليفة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:48:52"
+        },
+        {
+            "id": 122,
+            "city_id": 5,
+            "name": "الهواري",
+            "code": "s48",
+            "darb_branch": "الهواري، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:49:00"
+        },
+        {
+            "id": 123,
+            "city_id": 5,
+            "name": "بو هادي",
+            "code": "s48",
+            "darb_branch": "الليثي، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:17:23"
+        },
+        {
+            "id": 124,
+            "city_id": 5,
+            "name": "القوارشة",
+            "code": "s48",
+            "darb_branch": "القوارشة، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:51:09"
+        },
+        {
+            "id": 125,
+            "city_id": 5,
+            "name": "بو عطني",
+            "code": "s48",
+            "darb_branch": "ابوعطني، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:51:22"
+        },
+        {
+            "id": 126,
+            "city_id": 5,
+            "name": "قاريونس",
+            "code": "s48",
+            "darb_branch": "قاريونس، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:51:31"
+        },
+        {
+            "id": 127,
+            "city_id": 5,
+            "name": "الكويفية",
+            "code": "s48",
+            "darb_branch": "الكويفية، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:51:41"
+        },
+        {
+            "id": 128,
+            "city_id": 5,
+            "name": "بنينا",
+            "code": "s48",
+            "darb_branch": "بنينا، بنغازي",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:51:59"
+        },
+        {
+            "id": 129,
+            "city_id": 6,
+            "name": "زاوية المحجوب",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:55:28"
+        },
+        {
+            "id": 130,
+            "city_id": 6,
+            "name": "جزيرة النهر",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:56:14"
+        },
+        {
+            "id": 131,
+            "city_id": 6,
+            "name": "شارع المطبات",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:56:22"
+        },
+        {
+            "id": 132,
+            "city_id": 6,
+            "name": "الشواهدة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:56:28"
+        },
+        {
+            "id": 133,
+            "city_id": 6,
+            "name": "الجزيرة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:56:34"
+        },
+        {
+            "id": 134,
+            "city_id": 6,
+            "name": "إقزير",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:56:44"
+        },
+        {
+            "id": 135,
+            "city_id": 6,
+            "name": "كرزاز",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:56:52"
+        },
+        {
+            "id": 136,
+            "city_id": 6,
+            "name": "الغيران",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:57:07"
+        },
+        {
+            "id": 137,
+            "city_id": 6,
+            "name": "طريق المطار",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:56:57"
+        },
+        {
+            "id": 138,
+            "city_id": 6,
+            "name": "طمينة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:57:15"
+        },
+        {
+            "id": 139,
+            "city_id": 6,
+            "name": "الكراريم",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:57:22"
+        },
+        {
+            "id": 140,
+            "city_id": 6,
+            "name": "قصر حمد",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:57:28"
+        },
+        {
+            "id": 141,
+            "city_id": 6,
+            "name": "الثقيل",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:57:34"
+        },
+        {
+            "id": 142,
+            "city_id": 6,
+            "name": "زريق",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:57:42"
+        },
+        {
+            "id": 143,
+            "city_id": 6,
+            "name": "السكت",
+            "code": "s5",
+            "darb_branch": "قصر أحمد، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-07-02 23:12:13"
+        },
+        {
+            "id": 144,
+            "city_id": 6,
+            "name": "المغدر",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:57:53"
+        },
+        {
+            "id": 145,
+            "city_id": 6,
+            "name": "السواطي",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:57:59"
+        },
+        {
+            "id": 146,
+            "city_id": 6,
+            "name": "سور سعود",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:58:05"
+        },
+        {
+            "id": 147,
+            "city_id": 6,
+            "name": "النباك",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:58:12"
+        },
+        {
+            "id": 148,
+            "city_id": 6,
+            "name": "أولاد بعيوا",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:58:20"
+        },
+        {
+            "id": 149,
+            "city_id": 6,
+            "name": "شارع طرابلس",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:58:27"
+        },
+        {
+            "id": 150,
+            "city_id": 6,
+            "name": "شارع المحطة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:58:35"
+        },
+        {
+            "id": 151,
+            "city_id": 6,
+            "name": "شارع الهلال",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:58:44"
+        },
+        {
+            "id": 152,
+            "city_id": 6,
+            "name": "الجامع العالي",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:58:50"
+        },
+        {
+            "id": 153,
+            "city_id": 6,
+            "name": "شارع سنا محيدلي",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:58:58"
+        },
+        {
+            "id": 154,
+            "city_id": 6,
+            "name": "شارع الاذاعة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:59:05"
+        },
+        {
+            "id": 155,
+            "city_id": 6,
+            "name": "المقاوبة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:59:12"
+        },
+        {
+            "id": 156,
+            "city_id": 6,
+            "name": "شارع مالطا",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:59:19"
+        },
+        {
+            "id": 157,
+            "city_id": 6,
+            "name": "راس السايح",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:59:30"
+        },
+        {
+            "id": 158,
+            "city_id": 6,
+            "name": "راس فريدغ",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:59:37"
+        },
+        {
+            "id": 159,
+            "city_id": 6,
+            "name": "راس التوتة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:59:44"
+        },
+        {
+            "id": 160,
+            "city_id": 6,
+            "name": "شارع الدم",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:59:51"
+        },
+        {
+            "id": 161,
+            "city_id": 6,
+            "name": "الخروبة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 18:59:57"
+        },
+        {
+            "id": 162,
+            "city_id": 6,
+            "name": "طريق رقم 8",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:00:03"
+        },
+        {
+            "id": 163,
+            "city_id": 6,
+            "name": "دائري اقزير",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:00:09"
+        },
+        {
+            "id": 164,
+            "city_id": 6,
+            "name": "طريق البحر",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:00:15"
+        },
+        {
+            "id": 165,
+            "city_id": 6,
+            "name": "الرويسات",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:00:21"
+        },
+        {
+            "id": 166,
+            "city_id": 6,
+            "name": "الجهانات",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:00:26"
+        },
+        {
+            "id": 167,
+            "city_id": 6,
+            "name": "الزوابي",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:00:46"
+        },
+        {
+            "id": 168,
+            "city_id": 6,
+            "name": "الشراكسة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:00:55"
+        },
+        {
+            "id": 169,
+            "city_id": 6,
+            "name": "الكروادة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:01:03"
+        },
+        {
+            "id": 170,
+            "city_id": 6,
+            "name": "القدارية",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:01:10"
+        },
+        {
+            "id": 171,
+            "city_id": 6,
+            "name": "الحيارشة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:01:17"
+        },
+        {
+            "id": 172,
+            "city_id": 6,
+            "name": "السواوة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:01:24"
+        },
+        {
+            "id": 173,
+            "city_id": 6,
+            "name": "بوروية",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:01:31"
+        },
+        {
+            "id": 174,
+            "city_id": 6,
+            "name": "الرعيضات",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:01:38"
+        },
+        {
+            "id": 175,
+            "city_id": 6,
+            "name": "السكيرات",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:01:47"
+        },
+        {
+            "id": 176,
+            "city_id": 6,
+            "name": "الهبارة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:01:53"
+        },
+        {
+            "id": 177,
+            "city_id": 6,
+            "name": "الملايطة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:02:00"
+        },
+        {
+            "id": 178,
+            "city_id": 6,
+            "name": "الزروق",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:02:07"
+        },
+        {
+            "id": 179,
+            "city_id": 6,
+            "name": "الرملة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:02:14"
+        },
+        {
+            "id": 180,
+            "city_id": 6,
+            "name": "قرارة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:02:20"
+        },
+        {
+            "id": 181,
+            "city_id": 6,
+            "name": "يدر",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:02:30"
+        },
+        {
+            "id": 182,
+            "city_id": 6,
+            "name": "المنقوش",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:02:39"
+        },
+        {
+            "id": 183,
+            "city_id": 6,
+            "name": "عباد",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:02:48"
+        },
+        {
+            "id": 184,
+            "city_id": 6,
+            "name": "الدافنية",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:02:55"
+        },
+        {
+            "id": 185,
+            "city_id": 6,
+            "name": "زمورة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:03:00"
+        },
+        {
+            "id": 186,
+            "city_id": 6,
+            "name": "شارع بازينة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:03:05"
+        },
+        {
+            "id": 187,
+            "city_id": 6,
+            "name": "شارع سعدون",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:03:10"
+        },
+        {
+            "id": 188,
+            "city_id": 6,
+            "name": "المقاصبة",
+            "code": "s5",
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2025-10-06 15:15:28",
+            "updated_at": "2026-04-22 19:03:20"
+        },
+        {
+            "id": 190,
+            "city_id": 10,
+            "name": "اسبان",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:40:14",
+            "updated_at": "2026-02-01 21:47:02"
+        },
+        {
+            "id": 191,
+            "city_id": 10,
+            "name": "الركنية",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:40:59",
+            "updated_at": "2026-02-01 21:47:18"
+        },
+        {
+            "id": 192,
+            "city_id": 10,
+            "name": "الشرفاء",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:41:54",
+            "updated_at": "2026-02-01 21:48:24"
+        },
+        {
+            "id": 193,
+            "city_id": 10,
+            "name": "الفاسي",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:42:32",
+            "updated_at": "2026-02-01 21:49:04"
+        },
+        {
+            "id": 194,
+            "city_id": 10,
+            "name": "القرضابية",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:42:34",
+            "updated_at": "2026-02-01 21:49:21"
+        },
+        {
+            "id": 196,
+            "city_id": 10,
+            "name": "الميدان",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:42:40",
+            "updated_at": "2026-02-01 21:50:24"
+        },
+        {
+            "id": 197,
+            "city_id": 10,
+            "name": "بن يوسف",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:42:43",
+            "updated_at": "2026-02-01 21:51:08"
+        },
+        {
+            "id": 198,
+            "city_id": 10,
+            "name": "شارع الجملة",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:42:45",
+            "updated_at": "2026-02-01 21:51:33"
+        },
+        {
+            "id": 199,
+            "city_id": 10,
+            "name": "شارع الخرطوم",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:42:50",
+            "updated_at": "2026-02-01 21:51:59"
+        },
+        {
+            "id": 200,
+            "city_id": 10,
+            "name": "شارع جمال",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:42:52",
+            "updated_at": "2026-02-01 21:52:25"
+        },
+        {
+            "id": 201,
+            "city_id": 10,
+            "name": "شارع عمر",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:42:53",
+            "updated_at": "2026-02-01 21:52:59"
+        },
+        {
+            "id": 202,
+            "city_id": 10,
+            "name": "طريق الصقري",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:42:56",
+            "updated_at": "2026-02-01 21:53:18"
+        },
+        {
+            "id": 203,
+            "city_id": 10,
+            "name": "قمودة",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:42:58",
+            "updated_at": "2026-02-01 21:53:45"
+        },
+        {
+            "id": 204,
+            "city_id": 10,
+            "name": "ولاد صقر",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:43:05",
+            "updated_at": "2026-02-01 21:54:26"
+        },
+        {
+            "id": 205,
+            "city_id": 10,
+            "name": "ولاد جربوع",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 21:54:05",
+            "updated_at": "2026-02-01 21:54:05"
+        },
+        {
+            "id": 206,
+            "city_id": 98,
+            "name": "ابوصرة",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:55:12",
+            "updated_at": "2026-04-19 16:28:35"
+        },
+        {
+            "id": 207,
+            "city_id": 98,
+            "name": "البرناوي",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:55:21",
+            "updated_at": "2026-04-19 16:28:43"
+        },
+        {
+            "id": 208,
+            "city_id": 98,
+            "name": "البرناوي",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:55:23",
+            "updated_at": "2026-04-19 16:29:23"
+        },
+        {
+            "id": 209,
+            "city_id": 98,
+            "name": "التاجوري",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:55:34",
+            "updated_at": "2026-04-19 16:29:35"
+        },
+        {
+            "id": 210,
+            "city_id": 98,
+            "name": "الحرارات",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:55:45",
+            "updated_at": "2026-04-19 16:29:48"
+        },
+        {
+            "id": 211,
+            "city_id": 98,
+            "name": "السلعة التموينية",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:55:57",
+            "updated_at": "2026-04-19 16:29:56"
+        },
+        {
+            "id": 212,
+            "city_id": 98,
+            "name": "السيدة زينب",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:56:08",
+            "updated_at": "2026-04-19 16:30:11"
+        },
+        {
+            "id": 213,
+            "city_id": 98,
+            "name": "الطويبية",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:56:19",
+            "updated_at": "2026-04-19 16:30:20"
+        },
+        {
+            "id": 214,
+            "city_id": 98,
+            "name": "العريوي",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:56:30",
+            "updated_at": "2026-04-19 16:30:43"
+        },
+        {
+            "id": 215,
+            "city_id": 98,
+            "name": "الفروسية",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:56:44",
+            "updated_at": "2026-04-19 16:30:53"
+        },
+        {
+            "id": 217,
+            "city_id": 98,
+            "name": "بن سعيد",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:58:14",
+            "updated_at": "2026-04-19 16:31:08"
+        },
+        {
+            "id": 218,
+            "city_id": 98,
+            "name": "بن ترفاس",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:59:03",
+            "updated_at": "2026-04-19 16:31:15"
+        },
+        {
+            "id": 219,
+            "city_id": 98,
+            "name": "بير معمر",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:59:14",
+            "updated_at": "2026-04-19 16:31:23"
+        },
+        {
+            "id": 220,
+            "city_id": 98,
+            "name": "حرف التي",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:59:48",
+            "updated_at": "2026-04-19 16:31:43"
+        },
+        {
+            "id": 221,
+            "city_id": 98,
+            "name": "شلغودة",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 21:59:59",
+            "updated_at": "2026-04-19 16:31:51"
+        },
+        {
+            "id": 222,
+            "city_id": 98,
+            "name": "قرية ناصر",
+            "code": null,
+            "darb_branch": "الزاوية",
+            "created_at": "2026-02-01 22:00:11",
+            "updated_at": "2026-04-19 16:31:59"
+        },
+        {
+            "id": 223,
+            "city_id": 98,
+            "name": "قرية ناصر",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 22:00:13",
+            "updated_at": "2026-02-01 22:00:13"
+        },
+        {
+            "id": 224,
+            "city_id": 11,
+            "name": "وسط صبراتة",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-02-01 22:02:21",
+            "updated_at": "2026-02-01 22:02:21"
+        },
+        {
+            "id": 225,
+            "city_id": 99,
+            "name": "ضواحي الصبراة",
+            "code": null,
+            "darb_branch": "صبراتة",
+            "created_at": "2026-02-01 22:03:47",
+            "updated_at": "2026-04-19 16:27:07"
+        },
+        {
+            "id": 226,
+            "city_id": 99,
+            "name": "الخطاطبة",
+            "code": null,
+            "darb_branch": "صبراتة",
+            "created_at": "2026-02-01 22:04:23",
+            "updated_at": "2026-04-19 16:27:20"
+        },
+        {
+            "id": 227,
+            "city_id": 99,
+            "name": "الطليبات",
+            "code": null,
+            "darb_branch": "صبراتة",
+            "created_at": "2026-02-01 22:04:34",
+            "updated_at": "2026-04-19 16:27:27"
+        },
+        {
+            "id": 228,
+            "city_id": 99,
+            "name": "تليل",
+            "code": null,
+            "darb_branch": "صبراتة",
+            "created_at": "2026-02-01 22:04:44",
+            "updated_at": "2026-04-19 16:27:33"
+        },
+        {
+            "id": 229,
+            "city_id": 99,
+            "name": "جزيرة العلالقة",
+            "code": null,
+            "darb_branch": "صبراتة",
+            "created_at": "2026-02-01 22:04:59",
+            "updated_at": "2026-04-19 16:27:59"
+        },
+        {
+            "id": 230,
+            "city_id": 99,
+            "name": "راس النهضة",
+            "code": null,
+            "darb_branch": "صبراتة",
+            "created_at": "2026-02-01 22:05:15",
+            "updated_at": "2026-04-19 16:28:08"
+        },
+        {
+            "id": 231,
+            "city_id": 99,
+            "name": "طريق ززواغة",
+            "code": null,
+            "darb_branch": "صبراتة",
+            "created_at": "2026-02-01 22:05:33",
+            "updated_at": "2026-04-19 16:28:17"
+        },
+        {
+            "id": 232,
+            "city_id": 3,
+            "name": "صلاح الدين",
+            "code": null,
+            "darb_branch": "صلاح الدين، طرابلس",
+            "created_at": "2026-02-12 14:29:26",
+            "updated_at": "2026-04-22 16:25:19"
+        },
+        {
+            "id": 234,
+            "city_id": 12,
+            "name": "وسط صرمان",
+            "code": null,
+            "darb_branch": "صرمان، صبراتة",
+            "created_at": "2026-03-12 00:59:52",
+            "updated_at": "2026-04-23 20:47:44"
+        },
+        {
+            "id": 235,
+            "city_id": 5,
+            "name": "السيدة عائشة",
+            "code": null,
+            "darb_branch": "السيدة عائشة، بنغازي",
+            "created_at": "2026-03-16 04:27:07",
+            "updated_at": "2026-04-22 18:52:08"
+        },
+        {
+            "id": 236,
+            "city_id": 2,
+            "name": "حي الانتصار",
+            "code": null,
+            "darb_branch": "غرغور، طرابلس",
+            "created_at": "2026-04-14 21:25:27",
+            "updated_at": "2026-04-22 16:14:14"
+        },
+        {
+            "id": 237,
+            "city_id": 3,
+            "name": "صلاج الدين",
+            "code": null,
+            "darb_branch": null,
+            "created_at": "2026-04-14 21:34:05",
+            "updated_at": "2026-04-14 21:34:05"
+        },
+        {
+            "id": 239,
+            "city_id": 6,
+            "name": "الصوالح",
+            "code": null,
+            "darb_branch": "مصراتة، مصراتة",
+            "created_at": "2026-04-19 16:26:16",
+            "updated_at": "2026-04-22 19:03:25"
+        }
+    ]
+}

@@ -40,7 +40,7 @@ class AuthController extends Controller
         );
 
         return $this->created([
-            'user' => new UserResource($result->user),
+            'user' => new UserResource($result->user->load('roles')),
             'token' => $result->token,
         ], 'تم إنشاء الحساب بنجاح');
     }
@@ -59,7 +59,7 @@ class AuthController extends Controller
         );
 
         return $this->success([
-            'user' => new UserResource($result->user),
+            'user' => new UserResource($result->user->load('roles')),
             'token' => $result->token,
         ], 'تم تسجيل الدخول بنجاح');
     }
@@ -71,7 +71,7 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        return $this->success(new UserResource($request->user()));
+        return $this->success(new UserResource($request->user()->load('roles')));
     }
 
     /**

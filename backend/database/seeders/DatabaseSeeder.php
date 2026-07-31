@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            // Roles first — the accounts below are assigned roles as they are created.
+            RoleSeeder::class,
             AdminSeeder::class,
             CatalogSeeder::class,
         ]);

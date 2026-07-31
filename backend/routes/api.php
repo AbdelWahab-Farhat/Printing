@@ -5,6 +5,8 @@ use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\ProductController;
 use App\Application\Api\V1\Controllers\ProductImageController;
+use App\Application\Api\V1\Controllers\RoleController;
+use App\Application\Api\V1\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -39,6 +41,12 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::middleware('auth:sanctum')->group(function (): void {
+        // Access management. Guarded inside the controllers by the `manage users` ability,
+        // which today only an administrator satisfies.
+        Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::patch('users/{user}/roles', [UserController::class, 'syncRoles'])->name('users.roles');
+
         // No destroy route on purpose: a customer is deactivated, never deleted, so orders
         // and history keep pointing at a row that still exists.
         Route::apiResource('customers', CustomerController::class)
