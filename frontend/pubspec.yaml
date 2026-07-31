@@ -1,0 +1,68 @@
+name: printing
+description: "تطبيق Printing — أكياس مطبوعة حسب الطلب."
+publish_to: "none"
+
+# major.minor.patch+build — the build number is what the stores order releases by.
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+
+# Every dependency is a decision. Nothing is added here "in case we need it" — a package that
+# is not imported anywhere gets removed, because each one is code we ship, review and upgrade.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # ── state ────────────────────────────────────────────────────────────────────
+  flutter_bloc: ^9.1.0 # Cubit — the ViewModel layer
+  get_it: ^8.0.3 # service locator
+
+  # ── network ──────────────────────────────────────────────────────────────────
+  dio: ^5.8.0+1
+  pretty_dio_logger: ^1.4.0 # dev flavor only
+
+  # ── navigation ───────────────────────────────────────────────────────────────
+  go_router: ^15.1.1
+
+  # ── models ───────────────────────────────────────────────────────────────────
+  freezed_annotation: ^3.1.0 # unions + immutable data
+  json_annotation: ^4.12.0 # json_serializable warns on anything older
+  dartz: ^0.10.1 # Either<Failure, T>
+
+  # ── storage ──────────────────────────────────────────────────────────────────
+  # The token lives in the Keychain / Android Keystore, not in SharedPreferences:
+  # a bearer token is a credential, and prefs are plain-text XML on a rooted device.
+  flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.5.3 # non-secret preferences only
+
+  # ── ui ───────────────────────────────────────────────────────────────────────
+  flutter_screenutil: ^5.9.3
+  google_fonts: ^7.0.0 # the generated theme's util.dart needs it
+  cached_network_image: ^3.4.1
+
+  # ── misc ─────────────────────────────────────────────────────────────────────
+  flutter_dotenv: ^5.2.1
+  intl: ^0.20.2
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.15
+  freezed: ^3.2.5
+  json_serializable: ^6.9.5
+  flutter_lints: ^6.0.0
+  bloc_test: ^10.0.0
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - .env
+    - .env.dev
+    - assets/images/
+    - assets/icons/

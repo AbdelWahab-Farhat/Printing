@@ -1,0 +1,54 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    # `flutter analyze` returning clean is part of the merge bar, so anything that only
+    # *warns* is noise nobody reads. These are promoted to build breakers.
+    invalid_annotation_target: ignore # freezed + json_serializable emit this by design
+    missing_required_param: error
+    missing_return: error
+    unused_import: error
+    unused_local_variable: error
+    dead_code: error
+
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    # Vendored, not written here: both come straight out of Material Theme Builder and are
+    # replaced wholesale whenever the palette changes. Linting them would mean re-applying
+    # the same fixes after every export, so they are left exactly as the tool emits them.
+    - "lib/core/theme/theme.dart"
+    - "lib/core/theme/text_theme.dart"
+
+linter:
+  rules:
+    # ── correctness ──────────────────────────────────────────────────────────
+    always_use_package_imports: true # a relative import climbing ../../ hides a layering break
+    avoid_dynamic_calls: true
+    avoid_slow_async_io: true
+    cancel_subscriptions: true
+    close_sinks: true
+    only_throw_errors: true
+    throw_in_finally: true
+    unawaited_futures: true # a forgotten await is how a failed write becomes a silent one
+
+    # ── the rules RULES.md depends on ────────────────────────────────────────
+    avoid_print: true # debugPrint only — print survives into release builds
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_locals: true
+    prefer_single_quotes: true
+    require_trailing_commas: true
+
+    # Off deliberately: dependencies are injected as *named* parameters so a constructor with
+    # three collaborators reads as a sentence, and a named parameter cannot be private — which
+    # is the only form this lint accepts.
+    prefer_initializing_formals: false
+
+    # ── readability ──────────────────────────────────────────────────────────
+    always_declare_return_types: true
+    avoid_unused_constructor_parameters: true
+    directives_ordering: true
+    prefer_interpolation_to_compose_strings: true
+    unnecessary_parenthesis: true
+    use_string_buffers: true
