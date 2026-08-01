@@ -51,6 +51,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Drives the running app from tooling — see test_driver/app.dart. Development only: the
+  # entry point that enables it lives outside lib/, so it cannot reach a release build.
+  flutter_driver:
+    sdk: flutter
   build_runner: ^2.4.15
   freezed: ^3.2.5
   json_serializable: ^6.9.5

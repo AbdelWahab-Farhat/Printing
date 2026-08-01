@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/di/injector.dart';
+import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/features/cities/domain/entities/city.dart';
+import 'package:printing/core/widgets/app_text_field.dart';
+import 'package:printing/features/cities/models/city.dart';
 import 'package:printing/features/cities/presentation/viewmodel/cities_cubit.dart';
 
 /// The delivery map, as the reference implementation of a screen.
@@ -41,14 +43,11 @@ class _CitiesView extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.all(16.w),
-            child: TextField(
-              onChanged: cubit.search,
+            child: AppTextField(
+              hint: 'ابحث عن مدينة أو فرع',
+              prefixIcon: AppIcons.search,
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                hintText: 'ابحث عن مدينة أو فرع',
-                prefixIcon: Icon(Icons.search_rounded),
-                border: OutlineInputBorder(),
-              ),
+              onChanged: cubit.search,
             ),
           ),
           Expanded(

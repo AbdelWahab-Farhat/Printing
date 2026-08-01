@@ -12,10 +12,10 @@
 
 إن لم تتذكر شيئاً غيرها:
 
-1. **الاتجاه واحد: `presentation → domain ← data`.** لا يستورد الـ Widget شيئاً من `data/` أبداً. → [§2](#2-البنية-المعمارية)
+1. **الـ Cubit ينادي UseCase، والـ UseCase ينادي Repository مجرّد.** لا Dio ولا `*Impl` فوق طبقة الـ repositories. → [§2](#2-البنية-المعمارية)
 2. **`Freezed` لكل State ولكل Model.** الـ State اتحاد مغلق (sealed union)، لا حقول nullable متجاورة. → [§4](#4-إدارة-الحالة)
 3. **`try`/`catch` ممنوع خارج [safe_request.dart](lib/core/network/safe_request.dart).** الأخطاء تعود كـ `Either<Failure, T>`. → [§5](#5-الأخطاء)
-4. **لا `setState` ولا منطق أعمال داخل Widget.** الـ Cubit يقرر، الـ Widget يرسم. → [§4](#4-إدارة-الحالة)
+4. **لا منطق أعمال داخل Widget.** الـ Cubit يقرر، الـ Widget يرسم — و`setState` لحالة بصرية بحتة في ويدجت واحد مقبول. → [§4](#4-إدارة-الحالة)
 5. **`flutter analyze` نظيف + الاختبارات خضراء** شرط الدمج. → [§9](#9-الجودة-والتحقق)
 
 ---
@@ -65,14 +65,11 @@ lib/
 │   └── widgets/              الويدجتات المشتركة (Snackbar، Dialog، الحقول)
 │
 └── features/<feature>/
-    ├── data/
-    │   ├── models/           Freezed + JSON — تعرف أسماء مفاتيح الـ API
-    │   ├── datasources/      تنادي Dio، ولا شيء غيرها يناديه
-    │   └── repositories/     *Impl — تنفّذ عقد الـ domain وتحوّل Model → Entity
-    ├── domain/
-    │   ├── entities/         Freezed نقي — لا JSON ولا Dio ولا BuildContext
-    │   ├── repositories/     عقود مجردة (abstract interface class)
-    │   └── usecases/         فعل واحد، صنف واحد، دالة `call`
+    ├── models/               Freezed + JSON — صنف واحد لكل شيء
+    ├── repositories/
+    │   ├── x_repository.dart      العقد المجرد (abstract interface class)
+    │   └── x_repository_impl.dart التنفيذ — ينادي Dio عبر safeRequest
+    ├── usecases/             فعل واحد، صنف واحد، دالة `call`
     └── presentation/
         ├── viewmodel/        الـ Cubit + الـ State
         ├── views/            الشاشات
@@ -82,24 +79,33 @@ lib/
 ### قاعدة الاتجاه — الأهم في هذا الملف
 
 ```text
-presentation  ──────►  domain  ◄──────  data
+presentation  ──►  usecases  ──►  repository (مجرد)  ◄──  repository_impl
 ```
 
-- `domain/` لا يستورد شيئاً من `data/` ولا من `presentation/` ولا حتى `material.dart`.
-- `presentation/` يستورد من `domain/` فقط — **لا يعرف أن `CityModel` موجود**.
-- `data/` يعرف الاثنين: ينفّذ عقد الـ domain ويحوّل إليه.
+- **الـ Cubit ينادي UseCase**، والـ UseCase ينادي **العقد المجرد** لا التنفيذ.
+- **لا أحد فوق طبقة الـ repositories يعرف `*Impl` ولا يستورد `dio`.** الـ `Impl` معروف لـ [Injector](lib/core/di/injector.dart) وحده.
+- **`models/` مشتركة** — الـ Cubit والـ Widget يقرآن `City` مباشرة.
 
-**الاختبار العملي:** لو أردت استبدال Dio بـ GraphQL غداً، يجب أن يتغير `data/` وحده. إن اضطررت لفتح ملف داخل `presentation/`، فالاتجاه مكسور.
+**الاختبار العملي:** لو استُبدل Dio بـ GraphQL غداً، يجب أن يتغير `*_repository_impl.dart` وحده.
 
-### لماذا Entity و Model منفصلان رغم التشابه؟
+### لماذا لا يوجد `domain/` ولا `datasources/`؟
 
-هذا هو **الفاصل**. حين يعيد الباك إند تسمية `delivery_price`، يتغير سطر `@JsonKey` واحد في [city_model.dart](lib/features/cities/data/models/city_model.dart) ولا يُلمس شيء في `domain/` أو `presentation/`. بدون الفاصل، تسمية واحدة في Laravel تصبح بحثاً واستبدالاً في كل Widget قرأ الحقل — والمترجم لا يستطيع إخبارك بما فاتك.
+كان هناك، وأُزيلا بعد أن تبيّن أنهما لا يشتريان شيئاً في هذا المشروع:
+
+**`Entity` منفصل عن `Model`** كان مبرَّراً بأنه «الفاصل الذي يمنع تسمية في Laravel من الوصول إلى الويدجت» — لكن **`@JsonKey` هو ذلك الفاصل بالفعل**. حين يعيد الباك إند تسمية `delivery_price` يتغير سطر واحد في [city.dart](lib/features/cities/models/city.dart)، تماماً كما كان. الصنف الثاني و`toEntity()` لكل حقل كانا ملفاً إضافياً وتحويلاً يجب إبقاؤه متزامناً، مقابل صفر حماية إضافية.
+
+**`DataSource` منفصل عن `RepositoryImpl`** كان صنفاً يمرّر لصنف. لمصدر بيانات واحد، هذا ملف إضافي تفتحه في طريقك إلى الطلب.
+
+> **متى يعودان؟** الـ DataSource يستحق الوجود يوم يظهر **مصدر ثانٍ** بجانب الشبكة — كاش محلي مثلاً — فيصير `Impl` هو من يوفّق بينهما. والـ Entity المنفصل يستحقه يوم يختلف **شكل المجال عن شكل الـ API** اختلافاً حقيقياً (حقل مُركّب من ثلاثة، أو نوع من مصدرين). العقد المجرد يعني أن أياً منهما تغييرٌ تحت السطر، بلا أثر فوقه.
+
+### ما بقي، وسبب بقائه
+
+- **العقد المجرد (`abstract interface class`)** — هذا ما يجعل اختبار الـ Cubit سطراً واحداً بلا Dio ولا Keychain. أغلى ما في الطبقات، وأرخصها.
+- **UseCase = فعل واحد** (`GetCities`, `Login`) مع `call` واحدة. يبدو رقيقاً اليوم، وهو المكان الذي تحطّ فيه قاعدة العمل حين تظهر بدل أن تُنسخ في كل Cubit.
 
 ### القواعد
 
-- **لا يستورد Widget من `data/`** — ولا `Dio`، ولا `dio` package.
-- **الـ Cubit ينادي UseCase**، لا Repository ولا Dio.
-- **UseCase = فعل واحد** (`GetCities`, `CreateOrder`) مع `call` واحدة. يبدو رقيقاً اليوم، وهو المكان الذي تحطّ فيه قاعدة العمل حين تظهر.
+- **لا يستورد Widget ولا Cubit من `*_repository_impl.dart`** — ولا `dio` package.
 - **`abstract interface class`** لعقود الـ repositories — يمنع التوريث غير المقصود.
 - **الويدجت المشترك في `core/widgets/`**، والخاص بالميزة في `features/<f>/presentation/widgets/`.
 - **الاستيراد بـ `package:`** دائماً — `always_use_package_imports` مفعّل، لأن `../../../` يخفي كسر الطبقات.
@@ -247,6 +253,7 @@ result.fold(
 
 - **`context.colorScheme` دائماً** ([context_extensions.dart](lib/core/utils/context_extensions.dart)). **لا `Color(0xff…)` ثابت** — الثيم يتغير والألوان المكتوبة يدوياً لا.
 - **الثيم مولّد** من Material Theme Builder في [core/theme/](lib/core/theme/) — يُستبدل كاملاً عند تغيير اللوحة، ولذلك هو مستثنى من الـ linter ولا يُحرَّر يدوياً.
+- **الأيقونات من [AppIcons](lib/core/utils/app_icons.dart) دائماً** — `Icons.*` أو `CupertinoIcons.*` مباشرة في شاشة ممنوع. أندرويد يأخذ مجموعة Material وiOS يأخذ Cupertino، والقرار في مكان واحد: أيقونة iOS في يد مستخدم أندرويد تُقرأ قبل أن تُفهم.
 - **`.w` / `.h` / `.sp`** من ScreenUtil للأبعاد.
 - **`withValues(alpha:)` لا `withOpacity()`** (Material 3).
 - **`const` حيثما أمكن** — مفعّل كـ lint.
@@ -257,12 +264,33 @@ result.fold(
 
 | الأداة | الاستخدام |
 |---|---|
+| [`AppButton`](lib/core/widgets/app_button.dart) | **كل زر في الشاشات.** `AppButton` للإجراء الرئيسي، `.tonal` للمساند، `.outlined` للخروج |
+| [`AppTextField`](lib/core/widgets/app_text_field.dart) | كل حقل إدخال — و`.password` لكلمة المرور بزر الإظهار |
 | `showCustomSnackBar` / `context.showSuccess` / `context.showError` / `context.showFailure` | الرسائل |
 | `showCustomDialog` | تأكيد |
 | `showDestructiveDialog` | تأكيد حذف — زر أحمر، ولا إغلاق بالنقر خارجاً |
 | `Validators` | تحقق الحقول |
 
 `showCustomSnackBar` يستخدم `Overlay` لا `ScaffoldMessenger`، ليظهر فوق الحوارات والأوراق السفلية — وواحد فقط على الشاشة في أي لحظة.
+
+**`FilledButton` / `OutlinedButton` مباشرةً ممنوعان في الشاشات** — استعمل `AppButton`. الاستثناء الوحيد `showCustomDialog`: `AlertDialog.actions` يرتّب أزراره بنفسه.
+
+**الانشغال يُمرَّر بـ `isLoading` لا بـ `onPressed: null`:**
+
+```dart
+AppButton(label: 'تسجيل الدخول', isLoading: state.isSubmitting, onPressed: _submit)
+```
+
+`onPressed: null` يعني «غير متاح» فيصير الزر رمادياً؛ الزر الذي يشحب في منتصف الطلب يبدو معطّلاً لا مشغولاً. `AppButton` يرفض النقر أثناء `isLoading` بنفسه.
+
+### الحركة
+
+- **الحركة داخل العنصر، ومقاسه لا يتغيّر.** لا `Transform.scale`، ولا عرض أو نصف قطر أو ظل متحرّك. كل قيمة متحركة يجب أن تكون **إزاحة أو شفافية** — وحدهما لا يستطيعان تغيير المقاس. العنصر الذي يكبر أو يصغر يجرّ ما حوله ويجبر العين على البحث عنه من جديد بعد كل لمسة.
+- **الظل تحديداً ثابت.** الظل يُرسم *خارج* حدود الشكل، فتحريكه تحريكٌ خارج العنصر وتغيير في امتداده الظاهر.
+- **الحركة صفة العنصر لا صفة الشاشة.** يجب أن تُقرأ صحيحة على «إلغاء» كما على «تسجيل الدخول». التصميم الذي يعمل لغرض واحد فقط ليس مكانه `core/widgets/`.
+- **كل حركة تحترم `MediaQuery.disableAnimationsOf(context)`** — إعداد إمكانية وصول لا ذوق: الحركة تسبّب دواراً لبعض المستخدمين. **يُلغى المخرج نفسه لا المدّة فقط**: الحركة تكون *غائبة* لا *سريعة*، ولا يعمل أي `Ticker` في أي حالة.
+- **في اختبارات الويدجت: لا `pumpAndSettle` مع أي رسم متحرك مكرّر** (`repeat()`، أو `CircularProgressIndicator`) — لا يستقرّ أبداً والاختبار ينتهي بانتهاء المهلة. استعمل `pump(duration)` صريحة.
+- **`AnimationController` بحدّ أدنى سالب يبدأ عند الحدّ الأدنى** لا عند الصفر. اكتب `value: 0` صراحةً.
 
 ---
 
@@ -302,6 +330,16 @@ TextFormField(validator: Validators.optional(Validators.email))   // حقل اخ
 - ✅ الحدود — قائمة فارغة، آخر صفحة، فشل صفحة إضافية
 - ✅ عدم فقدان البيانات المعروضة عند فشل جزئي
 
+### فحص الشاشة على الجهاز
+
+```bash
+flutter run test_driver/app.dart --dart-define=FLAVOR=dev
+```
+
+[test_driver/app.dart](test_driver/app.dart) هو نفس التطبيق مع `enableFlutterDriverExtension()`،
+فيمكن فتح القائمة الجانبية أو تعبئة نموذج وأخذ لقطة لما يراه المستخدم فعلاً. **خارج `lib/`
+عمداً** حتى لا يصل هذا الامتداد إلى بناء إنتاج. لا يحتاجه `flutter test` ولا يستعمله.
+
 ### شرط الدمج
 
 ```bash
@@ -338,16 +376,15 @@ flutter test      # All tests passed!
 
 خذ [features/cities/](lib/features/cities/) كقالب، بهذا الترتيب:
 
-1. `domain/entities/` — الكيان بـ Freezed.
-2. `domain/repositories/` — العقد المجرد.
-3. `domain/usecases/` — فعل لكل عملية.
-4. `data/models/` — النموذج بـ `@JsonKey` + `toEntity()`.
-5. `data/datasources/` — نداءات Dio عبر `safeRequest`.
-6. `data/repositories/` — التنفيذ + التحويل.
-7. `presentation/viewmodel/` — الـ Cubit و State بـ Freezed.
-8. `presentation/views/` — الشاشة مع `switch` شامل.
-9. **سجّل الميزة** في [Injector](lib/core/di/injector.dart) بدالة `_registerX` واحدة.
-10. **اكتب اختبار الـ Cubit**، ثم `dart run build_runner build`، ثم `flutter analyze`.
+1. `models/` — النموذج بـ Freezed + `@JsonKey` لكل مفتاح يختلف اسمه عن الـ API.
+2. `repositories/x_repository.dart` — العقد المجرد.
+3. `repositories/x_repository_impl.dart` — نداءات Dio عبر `safeRequest`.
+4. `usecases/` — فعل لكل عملية.
+5. `presentation/viewmodel/` — الـ Cubit و State بـ Freezed.
+6. `presentation/views/` — الشاشة مع `switch` شامل.
+7. **سجّل الميزة** في [Injector](lib/core/di/injector.dart) بدالة `_registerX` واحدة.
+8. **اكتب اختبار الـ Cubit** — زيّف العقد المجرد، لا الـ `Impl`.
+9. `dart run build_runner build`، ثم `flutter analyze`، ثم `flutter test`.
 
 ---
 

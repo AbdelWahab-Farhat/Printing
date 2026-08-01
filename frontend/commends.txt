@@ -1,0 +1,2 @@
+cd /Users/abdelwahabfarhat/Desktop/Printing-Bags/frontend
+flutter run --dart-define=FLAVOR=dev -d "iPhone 17 Pro Max"

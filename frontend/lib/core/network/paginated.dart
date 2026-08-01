@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'paginated.freezed.dart';
@@ -42,4 +43,21 @@ class Paginated<T> {
   /// Appends the next page — what a "load more" handler does with the result.
   Paginated<T> merge(Paginated<T> next) =>
       Paginated<T>(items: [...items, ...next.items], meta: next.meta);
+
+  /// Two pages holding equal items at the same position in the same list *are* the same page.
+  ///
+  /// Written by hand because this class is not Freezed. Without it, equality is identity: a
+  /// state carrying a page would differ from an identical one, so Bloc could never drop a
+  /// duplicate emission, and every list test would have to compare field by field instead of
+  /// saying what it means. The items themselves are Freezed models, which is what makes the
+  /// element comparison meaningful.
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Paginated<T> && other.meta == meta && listEquals(other.items, items);
+  }
+
+  @override
+  int get hashCode => Object.hash(meta, Object.hashAll(items));
 }

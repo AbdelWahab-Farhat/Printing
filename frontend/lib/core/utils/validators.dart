@@ -26,6 +26,7 @@ abstract final class ValidationMessages {
   static const String email = 'البريد الإلكتروني غير صحيح';
   static const String phoneLength = 'رقم الهاتف يجب أن يكون 10 أرقام';
   static const String phonePrefix = 'رقم الهاتف يجب أن يبدأ بـ 091 أو 092 أو 093 أو 094 أو 095';
+  static const String contactPhoneLength = 'رقم الهاتف يجب أن يكون من 9 إلى 15 رقماً';
   static const String passwordLength = 'كلمة المرور يجب ألا تقل عن 8 أحرف';
   static const String passwordMismatch = 'كلمتا المرور غير متطابقتين';
   static const String url = 'الرابط غير صحيح';
@@ -161,6 +162,24 @@ abstract final class Validators {
     const prefixes = ['091', '092', '093', '094', '095'];
 
     return prefixes.any(digits.startsWith) ? null : ValidationMessages.phonePrefix;
+  }
+
+  /// A number a *customer* can be reached on — nine to fifteen digits, exactly what the API
+  /// accepts.
+  ///
+  /// Looser than [libyanPhone] on purpose, and this is the one place the difference matters:
+  /// a customer may be a shop reached on a landline (0213334444), and the stricter mobile rule
+  /// would refuse a real customer with a message they cannot act on. Staff sign in with a
+  /// mobile, so [libyanPhone] stays as it is for that.
+  static String? contactPhone(String? input) {
+    final error = required(input);
+    if (error != null) return error;
+
+    final digits = toWesternDigits(input!.trim());
+
+    return RegExp(r'^\d{9,15}$').hasMatch(digits)
+        ? null
+        : ValidationMessages.contactPhoneLength;
   }
 
   static String? password(String? input) {

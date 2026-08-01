@@ -4,9 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/cities/domain/entities/city.dart';
-import 'package:printing/features/cities/domain/usecases/get_cities.dart';
-import 'package:printing/features/cities/domain/usecases/get_city_regions.dart';
+import 'package:printing/features/cities/models/city.dart';
+import 'package:printing/features/cities/usecases/get_cities.dart';
+import 'package:printing/features/cities/usecases/get_city_regions.dart';
 
 part 'cities_state.dart';
 part 'cities_cubit.freezed.dart';

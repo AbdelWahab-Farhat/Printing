@@ -39,6 +39,38 @@ void main() {
     });
   });
 
+  group('contactPhone', () {
+    test('accepts a landline, which libyanPhone refuses', () {
+      // A customer may be a shop reached on a landline. Refusing one here would be refusing a
+      // real customer over a rule that only ever applied to staff signing in.
+      expect(Validators.contactPhone('0213334444'), isNull);
+      expect(Validators.libyanPhone('0213334444'), ValidationMessages.phonePrefix);
+    });
+
+    test('accepts a mobile too', () {
+      expect(Validators.contactPhone('0913334444'), isNull);
+    });
+
+    test('holds the API\'s own bounds of nine to fifteen digits', () {
+      expect(Validators.contactPhone('12345678'), ValidationMessages.contactPhoneLength);
+      expect(Validators.contactPhone('1234567890123456'), ValidationMessages.contactPhoneLength);
+      expect(Validators.contactPhone('123456789'), isNull);
+      expect(Validators.contactPhone('123456789012345'), isNull);
+    });
+
+    test('rejects anything that is not a digit', () {
+      expect(Validators.contactPhone('091-333-4444'), ValidationMessages.contactPhoneLength);
+    });
+
+    test('accepts Arabic-Indic digits, because that is what the keyboard produces', () {
+      expect(Validators.contactPhone('٠٩١٣٣٣٤٤٤٤'), isNull);
+    });
+
+    test('is still required', () {
+      expect(Validators.contactPhone(''), ValidationMessages.required);
+    });
+  });
+
   group('integer', () {
     test('rejects a fraction, a sign and a leading zero', () {
       final validate = Validators.integer();

@@ -1,0 +1,333 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:printing/features/products/models/product.dart';
+import 'package:printing/features/products/presentation/widgets/product_card.dart';
+
+/// What one product row tells somebody quoting a customer over the phone.
+///
+/// The card never animates, so nothing here needs `pumpAndSettle` — and nothing here may
+/// introduce a reason for it.
+///
+/// Arrange - Act - Assert throughout.
+void main() {
+  /// The same frame the app boots into: ScreenUtil at the reference size, Arabic, RTL.
+  Widget host(Widget card) {
+    return ScreenUtilInit(
+      designSize: const Size(430, 932),
+      builder: (context, _) => MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: const [Locale('ar')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: Directionality(
+            textDirection: TextDirection.rtl,
+            child: SingleChildScrollView(child: card),
+          ),
+        ),
+      ),
+    );
+  }
+
+  ProductVariant variant(
+    String label,
+    List<(String, String)> tiers, {
+    bool isActive = true,
+    int? widthCm,
+    int? heightCm,
+  }) {
+    return ProductVariant(
+      id: label.hashCode,
+      label: label,
+      isActive: isActive,
+      widthCm: widthCm,
+      heightCm: heightCm,
+      priceTiers: [
+        for (final (minQuantity, unitPrice) in tiers)
+          ProductPriceTier(
+            id: '$label$minQuantity'.hashCode,
+            minQuantity: minQuantity,
+            unitPrice: unitPrice,
+          ),
+      ],
+    );
+  }
+
+  Product product({
+    String name = 'أكياس الشحن',
+    String categoryLabel = 'مطبوعة',
+    String pricingUnitLabel = 'قطعة',
+    String minOrderQuantity = '100.000',
+    bool hasListedPrices = true,
+    bool isActive = true,
+    List<String> features = const [],
+    List<ProductVariant> variants = const [],
+  }) {
+    return Product(
+      id: 1,
+      slug: 'shipping-bag',
+      name: name,
+      features: features,
+      category: 'printed',
+      categoryLabel: categoryLabel,
+      pricingUnit: 'piece',
+      pricingUnitLabel: pricingUnitLabel,
+      pricingMode: 'tiered',
+      pricingModeLabel: 'حسب الكمية',
+      hasListedPrices: hasListedPrices,
+      minOrderQuantity: minOrderQuantity,
+      isActive: isActive,
+      variants: variants,
+    );
+  }
+
+  /// أكياس الشحن exactly as the catalogue has it: four sizes, three breaks each.
+  Product shippingBag() => product(
+    features: const ['مقاومة للماء والتمزق', 'لاصق قوي واحترافي'],
+    variants: [
+      variant('25*35', const [('1.000', '1.10'), ('300.000', '0.95'), ('1000.000', '0.85')],
+          widthCm: 25, heightCm: 35),
+      variant('35*40', const [('1.000', '1.20'), ('300.000', '1.05'), ('1000.000', '0.95')]),
+      variant('45*50', const [('1.000', '1.65'), ('300.000', '1.55'), ('1000.000', '1.40')]),
+      variant('50*60', const [('1.000', '1.99'), ('300.000', '1.90'), ('1000.000', '1.80')]),
+    ],
+  );
+
+  group('the price grid', () {
+    testWidgets('every price of every size is on the card, with no tap', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(ProductCard(product: shippingBag())));
+
+      // Act
+      await tester.pump();
+
+      // Assert — all twelve, because that is the whole point of the redesign.
+      for (final price in const [
+        '1.10', '0.95', '0.85', //
+        '1.20', '1.05', '0.95', //
+        '1.65', '1.55', '1.40', //
+        '1.99', '1.90', '1.80', //
+      ]) {
+        expect(find.text(price), findsWidgets, reason: '$price is missing from the card');
+      }
+
+      // And every size names itself.
+      for (final size in const ['25*35', '35*40', '45*50', '50*60']) {
+        expect(find.text(size), findsOneWidget);
+      }
+    });
+
+    testWidgets('a threshold is named once, not once per size', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(ProductCard(product: shippingBag())));
+
+      // Act
+      await tester.pump();
+
+      // Assert — four size rows share one header, which is what makes the card readable.
+      expect(find.text('300+'), findsOneWidget);
+      expect(find.text('1000+'), findsOneWidget);
+    });
+
+    testWidgets('the entry column is headed by the minimum order, not the tier floor', (
+      tester,
+    ) async {
+      // Arrange — the catalogue's first tier starts at 1, but the shop will not sell under 100.
+      await tester.pumpWidget(host(ProductCard(product: shippingBag())));
+
+      // Act
+      await tester.pump();
+
+      // Assert
+      expect(find.text('100+'), findsOneWidget);
+      expect(find.text('1+'), findsNothing);
+    });
+
+    testWidgets('the currency and the unit are said once, in the corner', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(ProductCard(product: shippingBag())));
+
+      // Act
+      await tester.pump();
+
+      // Assert — twelve cells carry bare numbers because this line carries their unit.
+      expect(find.text('د.ل / قطعة'), findsOneWidget);
+    });
+
+    testWidgets('a size missing a break shows a gap, never a neighbour\'s price', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        host(
+          ProductCard(
+            product: product(
+              variants: [
+                variant('25*35', const [
+                  ('1.000', '1.10'),
+                  ('300.000', '0.95'),
+                  ('1000.000', '0.85'),
+                ]),
+                // No 1000 break of its own.
+                variant('35*40', const [('1.000', '1.20'), ('300.000', '1.05')]),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Act
+      await tester.pump();
+
+      // Assert — a wrong number under a heading is how a quote goes out wrong; a dash is not.
+      expect(find.text('—'), findsOneWidget);
+    });
+
+    testWidgets('the columns are the union across sizes, not the first size\'s', (tester) async {
+      // Arrange — the first variant is the one that lacks the deepest break.
+      await tester.pumpWidget(
+        host(
+          ProductCard(
+            product: product(
+              variants: [
+                variant('25*35', const [('1.000', '1.10')]),
+                variant('35*40', const [('1.000', '1.20'), ('1000.000', '0.95')]),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Act
+      await tester.pump();
+
+      // Assert — trusting `variants.first` would have hidden this column entirely.
+      expect(find.text('1000+'), findsOneWidget);
+      expect(find.text('0.95'), findsOneWidget);
+    });
+  });
+
+  group('the shapes that are not a grid', () {
+    testWidgets('a quote-on-request product shows no number at all', (tester) async {
+      // Arrange — أكياس ورقية 3D: one variant, no tiers.
+      await tester.pumpWidget(
+        host(
+          ProductCard(
+            product: product(
+              name: 'أكياس ورقية 3D (مقواة)',
+              hasListedPrices: false,
+              minOrderQuantity: '200.000',
+              variants: [variant('حسب الطلب', const [])],
+            ),
+          ),
+        ),
+      );
+
+      // Act
+      await tester.pump();
+
+      // Assert
+      expect(find.text('السعر حسب الطلب'), findsOneWidget);
+      expect(find.text('أقل كمية 200 قطعة'), findsOneWidget);
+      expect(find.text('د.ل / قطعة'), findsNothing);
+      expect(find.text('—'), findsNothing);
+    });
+
+    testWidgets('a per-kilo product with one price gets no invented breaks', (tester) async {
+      // Arrange — أكياس الشحن السادة.
+      await tester.pumpWidget(
+        host(
+          ProductCard(
+            product: product(
+              name: 'أكياس الشحن السادة',
+              categoryLabel: 'سادة',
+              pricingUnitLabel: 'كيلوغرام',
+              minOrderQuantity: '1.000',
+              variants: [variant('سادة', const [('1.000', '32.000')])],
+            ),
+          ),
+        ),
+      );
+
+      // Act
+      await tester.pump();
+
+      // Assert — absence of a discount is shown as absence.
+      expect(find.text('32.000'), findsOneWidget);
+      expect(find.text('300+'), findsNothing);
+      expect(find.text('1000+'), findsNothing);
+      expect(find.text('أقل كمية 1 كيلوغرام'), findsOneWidget);
+      // The variant label only repeats the product name, so it is not printed.
+      expect(find.text('سادة'), findsNothing);
+    });
+  });
+
+  group('identity', () {
+    testWidgets('the category and the unit read as one sentence, not as chips', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(ProductCard(product: shippingBag())));
+
+      // Act
+      await tester.pump();
+
+      // Assert — the fix for a category tag that looked exactly like a size tag.
+      expect(find.text('مطبوعة · بالقطعة'), findsOneWidget);
+      expect(find.text('مطبوعة'), findsNothing);
+    });
+
+    testWidgets('a stopped product says so beside its name', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        host(ProductCard(product: product(isActive: false, variants: [
+          variant('25*35', const [('1.000', '1.10')]),
+        ]))),
+      );
+
+      // Act
+      await tester.pump();
+
+      // Assert
+      expect(find.text('· موقوف'), findsOneWidget);
+    });
+
+    testWidgets('a running product says nothing about being running', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(ProductCard(product: shippingBag())));
+
+      // Act
+      await tester.pump();
+
+      // Assert — a badge on every row is a badge nobody reads.
+      expect(find.text('· موقوف'), findsNothing);
+    });
+
+    testWidgets('the selling points are on the card', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(ProductCard(product: shippingBag())));
+
+      // Act
+      await tester.pump();
+
+      // Assert — they were rendered nowhere at all before.
+      expect(find.text('مقاومة للماء والتمزق · لاصق قوي واحترافي'), findsOneWidget);
+    });
+
+    testWidgets('a tap reaches the caller', (tester) async {
+      // Arrange
+      var taps = 0;
+      await tester.pumpWidget(
+        host(ProductCard(product: shippingBag(), onTap: () => taps++)),
+      );
+
+      // Act
+      await tester.tap(find.byType(ProductCard));
+      await tester.pump();
+
+      // Assert
+      expect(taps, 1);
+    });
+  });
+}

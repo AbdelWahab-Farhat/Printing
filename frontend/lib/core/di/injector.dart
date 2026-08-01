@@ -5,12 +5,32 @@ import 'package:get_it/get_it.dart';
 import 'package:printing/core/config/app_config.dart';
 import 'package:printing/core/network/dio_client.dart';
 import 'package:printing/core/storage/token_storage.dart';
-import 'package:printing/features/cities/data/datasources/city_remote_data_source.dart';
-import 'package:printing/features/cities/data/repositories/city_repository_impl.dart';
-import 'package:printing/features/cities/domain/repositories/city_repository.dart';
-import 'package:printing/features/cities/domain/usecases/get_cities.dart';
-import 'package:printing/features/cities/domain/usecases/get_city_regions.dart';
+import 'package:printing/features/auth/presentation/viewmodel/login_cubit.dart';
+import 'package:printing/features/auth/presentation/viewmodel/logout_cubit.dart';
+import 'package:printing/features/auth/repositories/auth_repository.dart';
+import 'package:printing/features/auth/repositories/auth_repository_impl.dart';
+import 'package:printing/features/auth/usecases/get_current_user.dart';
+import 'package:printing/features/auth/usecases/login.dart';
+import 'package:printing/features/auth/usecases/logout.dart';
 import 'package:printing/features/cities/presentation/viewmodel/cities_cubit.dart';
+import 'package:printing/features/cities/repositories/city_repository.dart';
+import 'package:printing/features/cities/repositories/city_repository_impl.dart';
+import 'package:printing/features/cities/usecases/get_cities.dart';
+import 'package:printing/features/cities/usecases/get_city_regions.dart';
+import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
+import 'package:printing/features/customers/presentation/viewmodel/customers_cubit.dart';
+import 'package:printing/features/customers/repositories/customer_repository.dart';
+import 'package:printing/features/customers/repositories/customer_repository_impl.dart';
+import 'package:printing/features/customers/usecases/create_customer.dart';
+import 'package:printing/features/customers/usecases/get_customers.dart';
+import 'package:printing/features/home/presentation/viewmodel/home_cubit.dart';
+import 'package:printing/features/home/repositories/home_repository.dart';
+import 'package:printing/features/home/repositories/home_repository_impl.dart';
+import 'package:printing/features/home/usecases/get_home_summary.dart';
+import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
+import 'package:printing/features/products/repositories/product_repository.dart';
+import 'package:printing/features/products/repositories/product_repository_impl.dart';
+import 'package:printing/features/products/usecases/get_products.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt sl = GetIt.instance;
@@ -60,25 +80,89 @@ abstract final class Injector {
         DioClient.create(tokens: tokens, onUnauthorized: onUnauthorized),
       );
 
+    _registerAuth();
+    _registerHome();
+    _registerProducts();
     _registerCities();
+    _registerCustomers();
 
     _isInitialized = true;
     debugPrint('⏱️ injector ready in ${stopwatch.elapsed}');
+  }
+
+  /// Signing in, and the stored session behind it.
+  static void _registerAuth() {
+    sl
+      // Lazy singleton, not a factory: the splash screen and every future sign-out share one
+      // repository, and it is stateless apart from the token store it already shares.
+      ..registerLazySingleton<AuthRepository>(
+        () => AuthRepositoryImpl(sl<Dio>(), sl<TokenStorage>()),
+      )
+      ..registerLazySingleton<Login>(() => Login(sl<AuthRepository>()))
+      ..registerLazySingleton<GetCurrentUser>(() => GetCurrentUser(sl<AuthRepository>()))
+      ..registerLazySingleton<Logout>(() => Logout(sl<AuthRepository>()))
+      // Factory: the login screen owns its Cubit and closes it on dispose, so a second visit
+      // must not be handed the closed one from the first.
+      ..registerFactory<LoginCubit>(() => LoginCubit(login: sl<Login>()))
+      // Same reasoning, and it matters more here: the drawer that owns this is rebuilt every
+      // time the shell is, and a singleton would be closed by the first one to be disposed.
+      ..registerFactory<LogoutCubit>(() => LogoutCubit(logout: sl<Logout>()));
+  }
+
+  /// The home screen: who is signed in, and the counts it opens on.
+  static void _registerHome() {
+    sl
+      // ⚠️ The implementation still answers with placeholder numbers — see
+      // [HomeRepositoryImpl]. It is registered against the contract exactly as a real one would
+      // be, so the day the endpoint lands this line is the only thing that changes.
+      ..registerLazySingleton<HomeRepository>(HomeRepositoryImpl.new)
+      ..registerLazySingleton<GetHomeSummary>(() => GetHomeSummary(sl<HomeRepository>()))
+      // Factory: the home screen owns its Cubit and closes it on dispose.
+      ..registerFactory<HomeCubit>(
+        () => HomeCubit(
+          getCurrentUser: sl<GetCurrentUser>(),
+          getHomeSummary: sl<GetHomeSummary>(),
+        ),
+      );
+  }
+
+  /// The catalogue — products, their sizes and their price breaks.
+  static void _registerProducts() {
+    sl
+      ..registerLazySingleton<ProductRepository>(() => ProductRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetProducts>(() => GetProducts(sl<ProductRepository>()))
+      // Factory: the catalogue screen owns its Cubit and closes it on dispose.
+      ..registerFactory<ProductsCubit>(() => ProductsCubit(getProducts: sl<GetProducts>()));
   }
 
   /// Cities and their regions — the delivery map. Registered as one block per feature so a new
   /// feature is one method here, not six edits scattered through a 200-line function.
   static void _registerCities() {
     sl
-      ..registerLazySingleton<CityRemoteDataSource>(() => CityRemoteDataSource(sl<Dio>()))
-      ..registerLazySingleton<CityRepository>(
-        () => CityRepositoryImpl(sl<CityRemoteDataSource>()),
-      )
+      ..registerLazySingleton<CityRepository>(() => CityRepositoryImpl(sl<Dio>()))
       ..registerLazySingleton<GetCities>(() => GetCities(sl<CityRepository>()))
       ..registerLazySingleton<GetCityRegions>(() => GetCityRegions(sl<CityRepository>()))
       // Factory: the list screen owns its Cubit and closes it on dispose.
       ..registerFactory<CitiesCubit>(
         () => CitiesCubit(getCities: sl<GetCities>(), getCityRegions: sl<GetCityRegions>()),
+      );
+  }
+
+  /// Customers, and the shops they sell from. Only creating one is wired so far — the list and
+  /// the edit screen land on this same block.
+  static void _registerCustomers() {
+    sl
+      ..registerLazySingleton<CustomerRepository>(() => CustomerRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetCustomers>(() => GetCustomers(sl<CustomerRepository>()))
+      // Factory: the list screen owns its Cubit and closes it on dispose.
+      ..registerFactory<CustomersCubit>(
+        () => CustomersCubit(getCustomers: sl<GetCustomers>()),
+      )
+      ..registerLazySingleton<CreateCustomer>(() => CreateCustomer(sl<CustomerRepository>()))
+      // Factory: the form owns its Cubit and closes it on dispose. A singleton here would hand
+      // the second customer the closed Cubit of the first.
+      ..registerFactory<AddCustomerCubit>(
+        () => AddCustomerCubit(createCustomer: sl<CreateCustomer>()),
       );
   }
 
