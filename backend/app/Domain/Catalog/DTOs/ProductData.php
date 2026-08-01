@@ -16,7 +16,8 @@ final readonly class ProductData
      *                                                   existing variants are left untouched.
      */
     public function __construct(
-        public string $slug,
+        /** null means "not supplied": the model derives one from the name and the code. */
+        public ?string $slug,
         public string $name,
         public ProductCategory $category,
         public PricingUnit $pricingUnit,
@@ -36,7 +37,9 @@ final readonly class ProductData
     public static function fromArray(array $validated): self
     {
         return new self(
-            slug: (string) $validated['slug'],
+            slug: isset($validated['slug']) && $validated['slug'] !== ''
+                ? (string) $validated['slug']
+                : null,
             name: (string) $validated['name'],
             category: ProductCategory::from((string) $validated['category']),
             pricingUnit: PricingUnit::from((string) $validated['pricing_unit']),

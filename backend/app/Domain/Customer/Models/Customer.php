@@ -46,6 +46,18 @@ class Customer extends Model implements HasAuditTrail
     /**
      * @return HasMany<CustomerShop, $this>
      */
+    /**
+     * The artwork this customer wants printed — an image or a PDF each.
+     *
+     * Newest first: the design somebody is looking for is nearly always the one just uploaded.
+     *
+     * @return HasMany<CustomerDesign, $this>
+     */
+    public function designs(): HasMany
+    {
+        return $this->hasMany(CustomerDesign::class)->latest('id');
+    }
+
     public function shops(): HasMany
     {
         return $this->hasMany(CustomerShop::class);
@@ -66,6 +78,10 @@ class Customer extends Model implements HasAuditTrail
         return [
             $this->getMorphClass() => [$this->getKey()],
             (new CustomerShop)->getMorphClass() => $this->shops()->withTrashed()->pluck('id')->all(),
+            // `withTrashed` deliberately: "who removed the logo we were printing?" is exactly
+            // the question this history exists to answer, and a removed design is the only kind
+            // anyone asks about.
+            (new CustomerDesign)->getMorphClass() => $this->designs()->withTrashed()->pluck('id')->all(),
         ];
     }
 }

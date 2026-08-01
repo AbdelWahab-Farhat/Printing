@@ -4,6 +4,7 @@ use App\Application\Api\V1\Controllers\ActivityLogController;
 use App\Application\Api\V1\Controllers\AuthController;
 use App\Application\Api\V1\Controllers\CityController;
 use App\Application\Api\V1\Controllers\CustomerController;
+use App\Application\Api\V1\Controllers\CustomerDesignController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\PermissionController;
 use App\Application\Api\V1\Controllers\ProductController;
@@ -80,6 +81,22 @@ Route::prefix('v1')->group(function (): void {
 
         Route::patch('customers/{customer}/activation', [CustomerController::class, 'setActivation'])
             ->middleware('can:customers.manage')->name('customers.activation');
+
+        // A customer's artwork. `scoped()` makes {design} resolve *within* {customer}, so
+        // another customer's design id is a 404 by construction rather than by a check somebody
+        // has to remember — the same shape products.images and cities.regions already use.
+        //
+        // No `show`: the list carries every field, and a design is only ever met in a list.
+        // No route replaces a file — see CustomerDesignController.
+        Route::apiResource('customers.designs', CustomerDesignController::class)
+            ->only(['index'])
+            ->middleware('can:customers.view')
+            ->scoped();
+
+        Route::apiResource('customers.designs', CustomerDesignController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->middleware('can:customers.manage')
+            ->scoped();
 
         // ── catalogue ───────────────────────────────────────────────────────────────────
         // Reading the catalogue and pricing a quantity are everyday work; changing what things

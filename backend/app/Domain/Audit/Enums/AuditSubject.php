@@ -9,6 +9,7 @@ use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
@@ -44,6 +45,7 @@ enum AuditSubject: string
     // Customers
     case Customer = 'customer';
     case CustomerShop = 'customer_shop';
+    case CustomerDesign = 'customer_design';
 
     // Catalogue
     case Product = 'product';
@@ -65,6 +67,7 @@ enum AuditSubject: string
             self::Role => Role::class,
             self::Customer => Customer::class,
             self::CustomerShop => CustomerShop::class,
+            self::CustomerDesign => CustomerDesign::class,
             self::Product => Product::class,
             self::ProductVariant => ProductVariant::class,
             self::ProductPriceTier => ProductPriceTier::class,
@@ -84,6 +87,7 @@ enum AuditSubject: string
             self::Role => 'دور',
             self::Customer => 'عميل',
             self::CustomerShop => 'محل عميل',
+            self::CustomerDesign => 'تصميم عميل',
             self::Product => 'منتج',
             self::ProductVariant => 'مقاس منتج',
             self::ProductPriceTier => 'شريحة سعر',

@@ -16,7 +16,6 @@ final class UpdateProduct
     {
         return DB::transaction(function () use ($product, $data): Product {
             $attributes = [
-                'slug' => $data->slug,
                 'name' => $data->name,
                 'description' => $data->description,
                 'features' => $data->features,
@@ -26,6 +25,14 @@ final class UpdateProduct
                 'min_order_quantity' => $data->minOrderQuantity,
                 'sort_order' => $data->sortOrder,
             ];
+
+            // Same rule as `is_active`: absent means "leave it". A slug is what links point at,
+            // and an update that simply did not mention it must not blank the column — it is
+            // NOT NULL, so that would be a crash, and if it were nullable it would be worse: a
+            // silently broken link.
+            if ($data->slug !== null) {
+                $attributes['slug'] = $data->slug;
+            }
 
             // Only touched when the caller actually sent it, so an update that omits the field
             // cannot reactivate a product that was deliberately taken off the catalogue.

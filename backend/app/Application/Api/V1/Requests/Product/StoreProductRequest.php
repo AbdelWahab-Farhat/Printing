@@ -24,7 +24,13 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'slug' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9-]+$/', Rule::unique('products', 'slug')->withoutTrashed()],
+            // Optional, and generated from the name when it is left out — see
+            // {@see GenerateProductSlug}. Asking a shop to invent a unique lowercase Latin string
+            // for a product called أكياس الشحن is asking them to do the server's arithmetic.
+            //
+            // Still fully validated when it *is* sent: an import may carry a deliberate slug, and
+            // optional is not the same as unchecked.
+            'slug' => ['sometimes', 'nullable', 'string', 'max:80', 'regex:/^[a-z0-9-]+$/', Rule::unique('products', 'slug')->withoutTrashed()],
             'name' => ['required', 'string', 'min:2', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'features' => ['nullable', 'array', 'max:12'],

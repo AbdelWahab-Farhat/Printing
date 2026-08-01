@@ -211,7 +211,9 @@ class ProductTest extends TestCase
     public static function invalidProductCases(): array
     {
         return [
-            'slug missing' => [['slug' => ''], 'slug'],
+            // A missing slug is no longer invalid: the server derives one from the name and the
+            // product's code. See ProductSlugTest, which owns that behaviour. What is still
+            // refused is a slug that *was* sent and is not one.
             'slug with spaces' => [['slug' => 'shipping bag'], 'slug'],
             'slug with arabic' => [['slug' => 'كيس'], 'slug'],
             'slug uppercase' => [['slug' => 'Shipping-Bag'], 'slug'],
