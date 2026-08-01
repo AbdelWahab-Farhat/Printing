@@ -25,6 +25,9 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
 
+            // What the app puts on the employee's card, next to their name.
+            'employee_code' => $this->employee_code,
+
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->map(fn ($role) => [
                 'name' => $role->name,
                 'label' => RoleName::tryFrom($role->name)?->label() ?? $role->name,

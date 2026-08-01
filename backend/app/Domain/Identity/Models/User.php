@@ -5,6 +5,7 @@ namespace App\Domain\Identity\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
+use App\Domain\Identity\Actions\AllocateEmployeeCode;
 use App\Domain\Identity\Enums\RoleName;
 use App\Providers\AppServiceProvider;
 use Database\Factories\UserFactory;
@@ -50,6 +51,25 @@ class User extends Authenticatable implements HasAuditTrail
      * bug when the two are combined.
      */
     protected string $guard_name = 'web';
+
+    /**
+     * Every account is stamped with an employee code as it is created.
+     *
+     * Here rather than in `AuthService::register`, because "an employee has a code" is an
+     * invariant of the model, not a step in one way of creating one. Registration, a seeder and
+     * a factory all insert users; hanging the rule off the only path that happens to go through
+     * the service would leave the other two writing rows the home screen cannot label — and the
+     * unique index would not catch it, since PostgreSQL lets nulls repeat.
+     *
+     * `??=` so a caller that already allocated one (a data import, say) keeps it. The column is
+     * absent from {@see Fillable} on purpose: a request can never choose its own identifier.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (User $user): void {
+            $user->employee_code ??= app(AllocateEmployeeCode::class)();
+        });
+    }
 
     /**
      * Whether this user is an administrator — full access to everything, always.
