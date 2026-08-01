@@ -140,7 +140,7 @@ class _PickLocationViewState extends State<_PickLocationView> {
                 urlTemplate: AppConfig.mapTileUrl,
                 // Required by the OSM tile policy, and enforced: a request carrying a library's
                 // default agent is refused.
-                userAgentPackageName: AppConfig.mapUserAgent,
+                userAgentPackageName: AppConfig.mapPackageName,
                 tileProvider: widget.tileProvider,
                 errorTileCallback: (tile, error, stack) {
                   if (mounted && !_tilesFailed) setState(() => _tilesFailed = true);
@@ -163,20 +163,16 @@ class _PickLocationViewState extends State<_PickLocationView> {
             ),
           ),
 
-          if (_tilesFailed)
-            Positioned(
-              bottom: 96.h,
-              left: 12.w,
-              right: 12.w,
-              child: _TilesFailedBanner(),
-            ),
-
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: _Footer(
               centre: _centre,
+              // Inside the footer rather than floating above it, and that is not only because
+              // a floated banner was being clipped behind it: a warning about the pin belongs
+              // against the button that commits the pin.
+              hasFailedTiles: _tilesFailed,
               // Advice, never a disabled button: somebody in a town with no map detail to zoom
               // into would be stranded by a confirm that refuses to work.
               isCoarse: _zoom < _preciseEnoughZoom,
@@ -357,6 +353,8 @@ class _Panel extends StatelessWidget {
 }
 
 class _TilesFailedBanner extends StatelessWidget {
+  const _TilesFailedBanner();
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
@@ -381,11 +379,13 @@ class _Footer extends StatelessWidget {
   const _Footer({
     required this.centre,
     required this.isCoarse,
+    required this.hasFailedTiles,
     required this.onConfirm,
   });
 
   final LatLng centre;
   final bool isCoarse;
+  final bool hasFailedTiles;
   final VoidCallback onConfirm;
 
   @override
@@ -405,6 +405,10 @@ class _Footer extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (hasFailedTiles) ...[
+            const _TilesFailedBanner(),
+            SizedBox(height: 10.h),
+          ],
           Text(
             // Six decimals: the column is decimal(10,7), and six is about a tenth of a metre.
             '${centre.latitude.toStringAsFixed(6)}, ${centre.longitude.toStringAsFixed(6)}',

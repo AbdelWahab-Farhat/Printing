@@ -58,11 +58,25 @@ abstract final class AppConfig {
   /// withdrawn at any point". Moving to MapTiler, Stadia or LocationIQ has to be a config change
   /// and a restart, not a release.
   static String get mapTileUrl =>
-      dotenv.env['MAP_TILE_URL'] ?? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+      _orDefault('MAP_TILE_URL', 'https://tile.openstreetmap.org/{z}/{x}/{y}.png');
 
   /// Where a place search goes. Same reasoning as [mapTileUrl].
   static String get geocoderBaseUrl =>
-      dotenv.env['GEOCODER_BASE_URL'] ?? 'https://nominatim.openstreetmap.org';
+      _orDefault('GEOCODER_BASE_URL', 'https://nominatim.openstreetmap.org');
+
+  /// Reads a key, treating **blank as absent**.
+  ///
+  /// `??` alone is not enough and the difference is not academic: `MAP_TILE_URL=` in a `.env`
+  /// gives `''`, not null, so a plain `??` hands an empty string to the map and every tile
+  /// fails with "No host specified in URI" — a blank grey grid that still pans and still
+  /// answers with coordinates.
+  ///
+  /// A key documented as optional will be written blank; that is what "optional" invites.
+  static String _orDefault(String key, String fallback) {
+    final value = dotenv.env[key];
+
+    return (value == null || value.trim().isEmpty) ? fallback : value.trim();
+  }
 
   /// Identifies this app to the tile server and the geocoder.
   ///
@@ -71,6 +85,12 @@ abstract final class AppConfig {
   /// correctly refuses to show HTML as a message, that presents as "search silently finds
   /// nothing" — which is why this has a test of its own.
   static const String mapUserAgent = 'PrintX/1.0 (printing-bags; support@printx.ly)';
+
+  /// What `flutter_map` needs for the tile server: a package name, not a full agent string.
+  ///
+  /// It composes its own — `flutter_map (<this>)` — so handing it [mapUserAgent] would nest one
+  /// agent string inside another.
+  static const String mapPackageName = 'ly.printx.app';
 
   /// Long enough for a slow Libyan mobile connection, short enough that a dead server does not
   /// leave a spinner running for a minute.
