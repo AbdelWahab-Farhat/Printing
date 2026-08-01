@@ -9,7 +9,14 @@ import 'package:printing/features/customers/repositories/customer_repository.dar
 ///
 /// A record rather than a model: it never leaves this feature, it is never serialised, and it
 /// exists only to carry a form row from the screen to the line below that normalises it.
-typedef ShopInput = ({String name, String latitude, String longitude, String? pageUrl});
+typedef ShopInput = ({
+  /// Null for a row the user just added; the existing row's id when it came from the server.
+  int? id,
+  String name,
+  String latitude,
+  String longitude,
+  String? pageUrl,
+});
 
 /// Register a new customer.
 ///
@@ -37,7 +44,7 @@ class CreateCustomer {
         phone: Validators.toWesternDigits(phone.trim()),
         // Absent, not `[]`, when the user added none: to this API an empty array is a statement
         // about the customer's shops rather than silence about them.
-        shops: shops.isEmpty ? null : shops.map(_toShop).toList(),
+        shops: shops.isEmpty ? null : shops.map(toShop).toList(),
       ),
     );
   }
@@ -52,10 +59,11 @@ class CreateCustomer {
   /// `double.parse` and not `tryParse`: the form's validators have already refused anything
   /// unparseable, so a failure here is a bug in this app, and it should be loud rather than a
   /// shop quietly saved at latitude zero.
-  NewCustomerShop _toShop(ShopInput shop) {
+  static NewCustomerShop toShop(ShopInput shop) {
     final pageUrl = shop.pageUrl?.trim();
 
     return NewCustomerShop(
+      id: shop.id,
       name: shop.name.trim(),
       latitude: double.parse(_toDecimal(shop.latitude)),
       longitude: double.parse(_toDecimal(shop.longitude)),
@@ -63,6 +71,6 @@ class CreateCustomer {
     );
   }
 
-  String _toDecimal(String input) =>
+  static String _toDecimal(String input) =>
       Validators.toWesternDigits(input.trim()).replaceAll(',', '.');
 }

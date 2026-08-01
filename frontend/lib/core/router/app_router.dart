@@ -8,7 +8,9 @@ import 'package:printing/core/storage/token_storage.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/features/auth/presentation/views/login_page.dart';
 import 'package:printing/features/cities/presentation/views/cities_page.dart';
+import 'package:printing/features/customers/models/customer.dart';
 import 'package:printing/features/customers/presentation/views/add_customer_page.dart';
+import 'package:printing/features/customers/presentation/views/customer_detail_page.dart';
 import 'package:printing/features/customers/presentation/views/customers_page.dart';
 import 'package:printing/features/home/presentation/views/home_page.dart';
 import 'package:printing/features/location/presentation/views/pick_location_page.dart';
@@ -41,6 +43,22 @@ abstract final class Routes {
   /// so the URL says what is being added — and outside the shell, because a form is a task the
   /// user is *in*, not a tab they are browsing.
   static const String addCustomer = '/customers/new';
+
+  /// One customer, everything about them. Declared **after** `/customers/new` below, because
+  /// GoRouter matches in declaration order and `:id` would otherwise swallow the word `new`.
+  static const String customerDetail = '/customers/:id';
+
+  static String customer(int id) => '/customers/$id';
+
+  /// Editing an existing one. The same screen that registers a customer.
+  static const String editCustomerPath = '/customers/:id/edit';
+
+  static String editCustomer(int id) => '/customers/$id/edit';
+
+  /// A customer's artwork.
+  static const String customerDesignsPath = '/customers/:id/designs';
+
+  static String customerDesigns(int id) => '/customers/$id/designs';
 
   static const String addProduct = '/products/new';
 
@@ -127,6 +145,25 @@ abstract final class AppRouter {
         path: Routes.addCustomer,
         builder: (context, state) => const AddCustomerPage(),
       ),
+      // After `/customers/new`, and that ordering is load-bearing: go_router matches in
+      // declaration order, so `:id` declared first would capture the literal `new` and
+      // `int.parse('new')` would throw on the way into the detail screen.
+      GoRoute(
+        path: Routes.customerDetail,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          return id == null
+              ? const _UnknownCustomer()
+              : CustomerDetailPage(customerId: id);
+        },
+        routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) => AddCustomerPage(customer: state.extra as Customer?),
+          ),
+        ],
+      ),
       GoRoute(
         path: Routes.pickLocation,
         builder: (context, state) => PickLocationPage(initial: state.extra as LatLng?),
@@ -160,4 +197,17 @@ abstract final class AppRouter {
       body: Center(child: Text('الصفحة غير موجودة\n${state.uri}', textAlign: TextAlign.center)),
     ),
   );
+}
+
+/// A `/customers/<something that is not a number>` link.
+class _UnknownCustomer extends StatelessWidget {
+  const _UnknownCustomer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('تفاصيل العميل')),
+      body: const Center(child: Text('رقم العميل غير صحيح')),
+    );
+  }
 }

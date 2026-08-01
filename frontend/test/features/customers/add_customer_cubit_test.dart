@@ -8,6 +8,7 @@ import 'package:printing/features/customers/models/new_customer.dart';
 import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
 import 'package:printing/features/customers/repositories/customer_repository.dart';
 import 'package:printing/features/customers/usecases/create_customer.dart';
+import 'package:printing/features/customers/usecases/update_customer.dart';
 
 /// The repository is faked, nothing touches Dio, and the assertions are on the sequence of
 /// states the screen would have rendered.
@@ -36,7 +37,10 @@ void main() {
 
   setUp(() {
     repository = _MockCustomerRepository();
-    cubit = AddCustomerCubit(createCustomer: CreateCustomer(repository));
+    cubit = AddCustomerCubit(
+      createCustomer: CreateCustomer(repository),
+      updateCustomer: UpdateCustomer(repository),
+    );
   });
 
   tearDown(() => cubit.close());
@@ -47,7 +51,8 @@ void main() {
 
   /// The payload the repository was handed, so a test can assert on what actually goes out.
   NewCustomer sentCustomer() =>
-      verify(() => repository.create(captureAny())).captured.last as NewCustomer;
+      verify(() => repository.create(captureAny())).captured.last
+          as NewCustomer;
 
   // ─────────────────────────── creating ───────────────────────────
 
@@ -162,18 +167,23 @@ void main() {
     expect(cubit.state.phoneError, 'رقم الهاتف مستخدم مسبقاً لعميل آخر');
   });
 
-  test('a network failure carries no field error, so the screen shows a snackbar', () async {
-    // Arrange
-    arrangeCreate(const Left(NetworkFailure(message: FailureMessages.noConnection)));
+  test(
+    'a network failure carries no field error, so the screen shows a snackbar',
+    () async {
+      // Arrange
+      arrangeCreate(
+        const Left(NetworkFailure(message: FailureMessages.noConnection)),
+      );
 
-    // Act
-    await cubit.submit(name: 'مطبعة النور', phone: '0913334444');
+      // Act
+      await cubit.submit(name: 'مطبعة النور', phone: '0913334444');
 
-    // Assert
-    expect(cubit.state.nameError, isNull);
-    expect(cubit.state.phoneError, isNull);
-    expect(cubit.state, isA<AddCustomerFailure>());
-  });
+      // Assert
+      expect(cubit.state.nameError, isNull);
+      expect(cubit.state.phoneError, isNull);
+      expect(cubit.state, isA<AddCustomerFailure>());
+    },
+  );
 
   blocTest<AddCustomerCubit, AddCustomerState>(
     'clearFailure returns to initial so the error under a field disappears while typing',
@@ -225,6 +235,7 @@ void main() {
       phone: '0913334444',
       shops: const [
         (
+          id: null,
           name: '  فرع سوق الجمعة  ',
           latitude: '32.8872',
           longitude: '13.1913',
@@ -241,44 +252,65 @@ void main() {
     expect(shop.pageUrl, 'https://facebook.com/alnoor');
   });
 
-  test('Arabic-Indic coordinates and a decimal comma both reach the API as numbers', () async {
-    // Arrange — ٣٢٫٨٨ is what a Libyan keyboard produces, and 32,88 is what the same keyboard
-    // offers as a decimal mark. Sent through untouched, either is a 422 about a field the user
-    // filled in correctly as far as they can tell.
-    arrangeCreate(const Right(created));
+  test(
+    'Arabic-Indic coordinates and a decimal comma both reach the API as numbers',
+    () async {
+      // Arrange — ٣٢٫٨٨ is what a Libyan keyboard produces, and 32,88 is what the same keyboard
+      // offers as a decimal mark. Sent through untouched, either is a 422 about a field the user
+      // filled in correctly as far as they can tell.
+      arrangeCreate(const Right(created));
 
-    // Act
-    await cubit.submit(
-      name: 'مطبعة النور',
-      phone: '0913334444',
-      shops: const [
-        (name: 'الفرع', latitude: '٣٢٫٨٨', longitude: '13,19', pageUrl: null),
-      ],
-    );
+      // Act
+      await cubit.submit(
+        name: 'مطبعة النور',
+        phone: '0913334444',
+        shops: const [
+          (
+            id: null,
+            name: 'الفرع',
+            latitude: '٣٢٫٨٨',
+            longitude: '13,19',
+            pageUrl: null,
+          ),
+        ],
+      );
 
-    // Assert
-    final shop = sentCustomer().shops!.single;
-    expect(shop.latitude, 32.88);
-    expect(shop.longitude, 13.19);
-  });
+      // Assert
+      final shop = sentCustomer().shops!.single;
+      expect(shop.latitude, 32.88);
+      expect(shop.longitude, 13.19);
+    },
+  );
 
-  test('an empty page link is left out rather than sent as an empty string', () async {
-    // Arrange — the API's rule is `nullable|url`, and '' is neither.
-    arrangeCreate(const Right(created));
+  test(
+    'an empty page link is left out rather than sent as an empty string',
+    () async {
+      // Arrange — the API's rule is `nullable|url`, and '' is neither.
+      arrangeCreate(const Right(created));
 
-    // Act
-    await cubit.submit(
-      name: 'مطبعة النور',
-      phone: '0913334444',
-      shops: const [
-        (name: 'الفرع', latitude: '32.8', longitude: '13.1', pageUrl: '   '),
-      ],
-    );
+      // Act
+      await cubit.submit(
+        name: 'مطبعة النور',
+        phone: '0913334444',
+        shops: const [
+          (
+            id: null,
+            name: 'الفرع',
+            latitude: '32.8',
+            longitude: '13.1',
+            pageUrl: '   ',
+          ),
+        ],
+      );
 
-    // Assert
-    final json = sentCustomer().toJson()['shops'] as List<dynamic>;
-    expect((json.single as Map<String, dynamic>).containsKey('page_url'), isFalse);
-  });
+      // Assert
+      final json = sentCustomer().toJson()['shops'] as List<dynamic>;
+      expect(
+        (json.single as Map<String, dynamic>).containsKey('page_url'),
+        isFalse,
+      );
+    },
+  );
 
   test('several shops keep the order they were entered in', () async {
     // Arrange — the server keys its complaints by index (`shops.1.latitude`), so the order the
@@ -290,17 +322,36 @@ void main() {
       name: 'مطبعة النور',
       phone: '0913334444',
       shops: const [
-        (name: 'الأول', latitude: '32.1', longitude: '13.1', pageUrl: null),
-        (name: 'الثاني', latitude: '32.2', longitude: '13.2', pageUrl: null),
-        (name: 'الثالث', latitude: '32.3', longitude: '13.3', pageUrl: null),
+        (
+          id: null,
+          name: 'الأول',
+          latitude: '32.1',
+          longitude: '13.1',
+          pageUrl: null,
+        ),
+        (
+          id: null,
+          name: 'الثاني',
+          latitude: '32.2',
+          longitude: '13.2',
+          pageUrl: null,
+        ),
+        (
+          id: null,
+          name: 'الثالث',
+          latitude: '32.3',
+          longitude: '13.3',
+          pageUrl: null,
+        ),
       ],
     );
 
     // Assert
-    expect(
-      sentCustomer().shops!.map((shop) => shop.name),
-      ['الأول', 'الثاني', 'الثالث'],
-    );
+    expect(sentCustomer().shops!.map((shop) => shop.name), [
+      'الأول',
+      'الثاني',
+      'الثالث',
+    ]);
   });
 
   test('a rejected shop is blamed on the row the server named', () async {
@@ -321,7 +372,10 @@ void main() {
     await cubit.submit(name: 'مطبعة النور', phone: '0913334444');
 
     // Assert — under the second shop's latitude box, and nowhere else.
-    expect(cubit.state.shopError(1, 'latitude'), 'خط العرض يجب أن يكون بين -90 و 90');
+    expect(
+      cubit.state.shopError(1, 'latitude'),
+      'خط العرض يجب أن يكون بين -90 و 90',
+    );
     expect(cubit.state.shopError(0, 'latitude'), isNull);
     expect(cubit.state.nameError, isNull);
   });

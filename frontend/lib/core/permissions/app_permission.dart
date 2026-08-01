@@ -43,6 +43,40 @@ enum AppPermission {
   viewDeliveryLocations('cities.view', 'عرض مدن ومناطق التوصيل'),
   manageDeliveryLocations('cities.manage', 'إضافة وتعديل مدن ومناطق التوصيل'),
 
+  // Orders. One permission per status the workflow can move *into*, so the business composes
+  // a designer, a printer and a delivery coordinator out of this list without any of those
+  // jobs being named in code. The two dispatch statuses share one permission on purpose; the
+  // three returns stay separate, because a clerk does choose which one happened.
+  viewOrders('orders.view', 'عرض الطلبيات'),
+  manageOrders('orders.manage', 'إضافة وتعديل الطلبيات'),
+  discountOrders('orders.discount', 'منح خصم على الطلبية'),
+  manageOrderDesigns('orders.designs.manage', 'إدارة تصاميم الطلبية واعتمادها'),
+  moveOrderToDesigning(
+    'orders.status.designing',
+    'تحويل الطلبية إلى قيد التصميم',
+  ),
+  moveOrderToPrinting(
+    'orders.status.printing',
+    'تحويل الطلبية إلى قيد الطباعة',
+  ),
+  moveOrderToReady('orders.status.ready', 'تحويل الطلبية إلى جاهزة'),
+  moveOrderToShortage('orders.status.shortage', 'تحويل الطلبية إلى نواقص'),
+  dispatchOrders(
+    'orders.status.dispatch',
+    'تسليم الطلبية للتوصيل أو للاستلام من المكتب',
+  ),
+  markOrdersDelivered('orders.status.delivered', 'تأكيد استلام العميل للطلبية'),
+  recordCourierReturn(
+    'orders.status.returned_courier',
+    'تسجيل راجع لدى المندوب',
+  ),
+  recordCarrierReturn(
+    'orders.status.returned_carrier',
+    'تسجيل راجع لدى شركة التوصيل',
+  ),
+  recordOfficeReturn('orders.status.returned_office', 'تسجيل راجع مكتب'),
+  cancelOrders('orders.status.cancelled', 'إلغاء الطلبية كلياً'),
+
   // The audit trail. One permission, not a pair: nothing writes to it by hand.
   viewActivityLogs('logs.view', 'عرض سجل النشاطات');
 

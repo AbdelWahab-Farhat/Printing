@@ -11,6 +11,7 @@ import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/utils/validators.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
+import 'package:printing/features/customers/models/customer.dart';
 import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
 import 'package:printing/features/customers/usecases/create_customer.dart';
 
@@ -26,7 +27,20 @@ import 'package:printing/features/customers/usecases/create_customer.dart';
 /// recording — so a row that has been started must be finished or removed. That is what the
 /// validators on each row enforce, before a round trip.
 class AddCustomerPage extends StatelessWidget {
-  const AddCustomerPage({super.key});
+  const AddCustomerPage({this.customer, super.key});
+
+  /// The customer being edited, or null to register a new one.
+  ///
+  /// **One screen for both verbs, and that is not laziness.** The expensive parts of this file
+  /// are not the two text boxes — they are the shop rows: a `FormField` wrapper so a map pin can
+  /// be validated, the picker round trip, the controller lifecycle, and the 422 mapping that
+  /// turns `shops.1.latitude` into an error on the second card. A separate edit screen means
+  /// writing all of that twice and then keeping two copies of the map wiring in step.
+  ///
+  /// It also comes out right for free: the server *syncs* shops — a row with an id is updated,
+  /// one without is created, one left out is deleted — so this editor's existing add-and-remove
+  /// behaviour already **is** the update semantics.
+  final Customer? customer;
 
   @override
   Widget build(BuildContext context) {
@@ -35,13 +49,15 @@ class AddCustomerPage extends StatelessWidget {
     // dead stream after the first customer is added.
     return BlocProvider<AddCustomerCubit>(
       create: (_) => sl<AddCustomerCubit>(),
-      child: const _AddCustomerView(),
+      child: _AddCustomerView(customer: customer),
     );
   }
 }
 
 class _AddCustomerView extends StatefulWidget {
-  const _AddCustomerView();
+  const _AddCustomerView({this.customer});
+
+  final Customer? customer;
 
   @override
   State<_AddCustomerView> createState() => _AddCustomerViewState();
@@ -59,6 +75,26 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
   final _shops = <_ShopFields>[];
+
+  bool get _isEditing => widget.customer != null;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final customer = widget.customer;
+    if (customer == null) return;
+
+    _name.text = customer.name;
+    _phone.text = customer.phone;
+
+    // Each existing shop keeps its id, which is what makes saving an *edit* rather than a
+    // replacement: without it the server would delete all three and create three new ones,
+    // and every order pointing at the old rows would be pointing at nothing.
+    for (final shop in customer.shops ?? const []) {
+      _shops.add(_ShopFields.from(shop));
+    }
+  }
 
   @override
   void dispose() {
@@ -89,6 +125,7 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
     if (!_formKey.currentState!.validate()) return;
 
     context.read<AddCustomerCubit>().submit(
+      customerId: widget.customer?.id,
       name: _name.text,
       phone: _phone.text,
       shops: [for (final shop in _shops) shop.toInput()],
@@ -104,7 +141,7 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('إضافة عميل')),
+      appBar: AppBar(title: Text(_isEditing ? 'تعديل بيانات العميل' : 'إضافة عميل')),
       body: SafeArea(
         child: BlocConsumer<AddCustomerCubit, AddCustomerState>(
           listener: (context, state) {
@@ -112,10 +149,17 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
               case AddCustomerSuccess(:final customer):
                 // The code is the server's answer and the number staff look the customer up by
                 // afterwards, so it is read back rather than left to be discovered later.
-                context.showSuccess(
-                  'تم إضافة العميل ${customer.name}',
-                  details: 'رمز العميل: ${customer.code}',
-                );
+                if (_isEditing) {
+                  context.showSuccess('تم حفظ تعديلات ${customer.name}');
+                } else {
+                  // The code is the server's answer and the number staff look the customer up
+                  // by afterwards, so a new one is read back rather than discovered later. An
+                  // edit does not repeat it — it has not changed and cannot.
+                  context.showSuccess(
+                    'تم إضافة العميل ${customer.name}',
+                    details: 'رمز العميل: ${customer.code}',
+                  );
+                }
                 _leave(context);
 
               case AddCustomerFailure(:final failure):
@@ -198,7 +242,7 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
                       // shows the wait inside itself instead of greying out halfway through
                       // the request. Refusing the tap is its own job.
                       AppButton(
-                        label: 'إضافة العميل',
+                        label: _isEditing ? 'حفظ التعديلات' : 'إضافة العميل',
                         isLoading: isSubmitting,
                         onPressed: _submit,
                       ),
@@ -567,6 +611,21 @@ class _ShopLocationFieldState extends State<_ShopLocationField> {
 }
 
 class _ShopFields {
+  _ShopFields();
+
+  /// Seeds a row from a shop the server already has, id included.
+  factory _ShopFields.from(CustomerShop shop) {
+    final fields = _ShopFields()..id = shop.id;
+    fields.name.text = shop.name;
+    // Six decimals, matching what the picker writes, so opening the form and saving without
+    // touching anything sends back exactly what was there.
+    fields.latitude.text = shop.latitude?.toStringAsFixed(6) ?? '';
+    fields.longitude.text = shop.longitude?.toStringAsFixed(6) ?? '';
+    fields.pageUrl.text = shop.pageUrl ?? '';
+
+    return fields;
+  }
+
   final name = TextEditingController();
   final latitude = TextEditingController();
   final longitude = TextEditingController();
@@ -574,7 +633,12 @@ class _ShopFields {
 
   /// What the use case takes: text, exactly as typed. Nothing is parsed here — see
   /// [CreateCustomer], which is the one place in this feature that converts anything.
+  /// Null id for a row the user just added. An existing shop keeps its id so the server updates
+  /// it instead of deleting it and creating a new one.
+  int? id;
+
   ShopInput toInput() => (
+    id: id,
     name: name.text,
     latitude: latitude.text,
     longitude: longitude.text,

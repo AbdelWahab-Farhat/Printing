@@ -19,11 +19,15 @@ import 'package:printing/features/cities/repositories/city_repository_impl.dart'
 import 'package:printing/features/cities/usecases/get_cities.dart';
 import 'package:printing/features/cities/usecases/get_city_regions.dart';
 import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
+import 'package:printing/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customers_cubit.dart';
 import 'package:printing/features/customers/repositories/customer_repository.dart';
 import 'package:printing/features/customers/repositories/customer_repository_impl.dart';
 import 'package:printing/features/customers/usecases/create_customer.dart';
+import 'package:printing/features/customers/usecases/get_customer.dart';
 import 'package:printing/features/customers/usecases/get_customers.dart';
+import 'package:printing/features/customers/usecases/set_customer_activation.dart';
+import 'package:printing/features/customers/usecases/update_customer.dart';
 import 'package:printing/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:printing/features/home/repositories/home_repository.dart';
 import 'package:printing/features/home/repositories/home_repository_impl.dart';
@@ -220,10 +224,28 @@ abstract final class Injector {
         () => CustomersCubit(getCustomers: sl<GetCustomers>()),
       )
       ..registerLazySingleton<CreateCustomer>(() => CreateCustomer(sl<CustomerRepository>()))
+      ..registerLazySingleton<UpdateCustomer>(() => UpdateCustomer(sl<CustomerRepository>()))
+      ..registerLazySingleton<GetCustomer>(() => GetCustomer(sl<CustomerRepository>()))
+      ..registerLazySingleton<SetCustomerActivation>(
+        () => SetCustomerActivation(sl<CustomerRepository>()),
+      )
+      // Parameterised: the detail screen is *about* one customer, so the id is a construction
+      // argument rather than something the Cubit is told after the fact and might be asked for
+      // twice with two different answers.
+      ..registerFactoryParam<CustomerDetailCubit, int, void>(
+        (customerId, _) => CustomerDetailCubit(
+          customerId: customerId,
+          getCustomer: sl<GetCustomer>(),
+          setActivation: sl<SetCustomerActivation>(),
+        ),
+      )
       // Factory: the form owns its Cubit and closes it on dispose. A singleton here would hand
       // the second customer the closed Cubit of the first.
       ..registerFactory<AddCustomerCubit>(
-        () => AddCustomerCubit(createCustomer: sl<CreateCustomer>()),
+        () => AddCustomerCubit(
+          createCustomer: sl<CreateCustomer>(),
+          updateCustomer: sl<UpdateCustomer>(),
+        ),
       );
   }
 

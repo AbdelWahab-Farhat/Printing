@@ -68,6 +68,27 @@ abstract final class AppIcons {
   /// A machine-readable name — a slug, a code.
   static IconData get tag => _pick(Icons.tag_rounded, CupertinoIcons.tag);
 
+  static IconData get edit =>
+      _pick(Icons.edit_outlined, CupertinoIcons.pencil);
+
+  /// Stops selling to a customer. Never a bin — nothing here is deleted.
+  static IconData get deactivate =>
+      _pick(Icons.pause_circle_outline_rounded, CupertinoIcons.pause_circle);
+
+  static IconData get activate =>
+      _pick(Icons.check_circle_outline_rounded, CupertinoIcons.check_mark_circled);
+
+  /// A customer's artwork — the image or PDF printed on their bags.
+  static IconData get designs =>
+      _pick(Icons.palette_outlined, CupertinoIcons.paintbrush);
+
+  /// Opens a speed dial. Not [menu], which opens the app's drawer.
+  static IconData get more =>
+      _pick(Icons.more_horiz_rounded, CupertinoIcons.ellipsis);
+
+  static IconData get close =>
+      _pick(Icons.close_rounded, CupertinoIcons.xmark);
+
   static IconData get copy => _pick(Icons.copy_rounded, CupertinoIcons.doc_on_doc);
 
   static IconData get refresh =>

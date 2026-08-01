@@ -53,7 +53,15 @@ class _CustomersView extends StatelessWidget {
                 skeletonHeight: 88.h,
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
-                itemBuilder: (context, customer, index) => CustomerCard(customer: customer),
+                itemBuilder: (context, customer, index) => CustomerCard(
+                customer: customer,
+                // Reloaded on the way back: the detail screen can rename, deactivate or edit,
+                // and a list still showing the old row is a list nobody trusts.
+                onTap: () async {
+                  await context.push(Routes.customer(customer.id));
+                  await cubit.refresh();
+                },
+              ),
               ),
             ),
           ),

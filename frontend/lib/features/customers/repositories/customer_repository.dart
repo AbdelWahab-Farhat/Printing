@@ -32,4 +32,26 @@ abstract interface class CustomerRepository {
   /// have just started working with, and the API defaults them to active. When deactivating gets
   /// a screen, it belongs on the customer that already exists, not on the form that creates them.
   Future<Either<Failure, Customer>> create(NewCustomer customer);
+
+  /// One customer with their shops.
+  ///
+  /// A second request rather than a row lifted out of the list: the list carries no shops, and
+  /// a detail screen built from a stale list row would show yesterday's phone number.
+  Future<Either<Failure, Customer>> customer(int customerId);
+
+  /// Saves changes to an existing customer, and answers with them as the server stored them.
+  ///
+  /// **Shops are synced, not appended.** A shop carrying an id is updated, one without is
+  /// created, and one the payload leaves out is deleted — so the payload must always carry the
+  /// complete list, and an empty list genuinely means "remove them all".
+  ///
+  /// `is_active` is deliberately not part of this: see [setActivation].
+  Future<Either<Failure, Customer>> update(int customerId, NewCustomer customer);
+
+  /// Turns a customer on or off.
+  ///
+  /// Its own endpoint rather than a field on [update], and that is a safety property rather
+  /// than tidiness: because saving an edit never carries `is_active`, editing a deactivated
+  /// customer can never silently switch them back on.
+  Future<Either<Failure, Customer>> setActivation(int customerId, {required bool isActive});
 }

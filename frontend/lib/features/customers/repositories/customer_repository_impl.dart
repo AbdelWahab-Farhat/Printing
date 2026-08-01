@@ -51,4 +51,31 @@ class CustomerRepositoryImpl implements CustomerRepository {
       parse: (data) => Customer.fromJson(data as Map<String, dynamic>),
     );
   }
+
+  @override
+  Future<Either<Failure, Customer>> customer(int customerId) {
+    return safeRequest<Customer>(
+      () => _dio.get(CustomerEndpoints.show(customerId)),
+      parse: (data) => Customer.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Customer>> update(int customerId, NewCustomer customer) {
+    return safeRequest<Customer>(
+      () => _dio.put(CustomerEndpoints.show(customerId), data: customer.toJson()),
+      parse: (data) => Customer.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Customer>> setActivation(int customerId, {required bool isActive}) {
+    return safeRequest<Customer>(
+      () => _dio.patch(
+        CustomerEndpoints.activation(customerId),
+        data: <String, dynamic>{'is_active': isActive},
+      ),
+      parse: (data) => Customer.fromJson(data as Map<String, dynamic>),
+    );
+  }
 }

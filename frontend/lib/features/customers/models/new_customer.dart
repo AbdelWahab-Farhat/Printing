@@ -38,6 +38,16 @@ abstract class NewCustomer with _$NewCustomer {
 @Freezed(toJson: true, fromJson: false)
 abstract class NewCustomerShop with _$NewCustomerShop {
   const factory NewCustomerShop({
+    /// The row this is, when it already exists.
+    ///
+    /// `SyncCustomerShops` on the server reads this: a shop carrying an id is **updated**, one
+    /// without is **created**, and one the payload leaves out is **deleted**. So the form's
+    /// add-and-remove behaviour already is the update semantics, with no second endpoint.
+    ///
+    /// `includeIfNull: false`, which is what makes one model serve both verbs: a create body is
+    /// byte-identical to what it was before this field existed.
+    @JsonKey(includeIfNull: false) int? id,
+
     required String name,
 
     /// Real numbers, not the text that was typed. `'٣٢٫٨'` from an Arabic keyboard is turned

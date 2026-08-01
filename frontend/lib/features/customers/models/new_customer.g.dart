@@ -15,6 +15,7 @@ Map<String, dynamic> _$NewCustomerToJson(_NewCustomer instance) =>
 
 Map<String, dynamic> _$NewCustomerShopToJson(_NewCustomerShop instance) =>
     <String, dynamic>{
+      'id': ?instance.id,
       'name': instance.name,
       'latitude': instance.latitude,
       'longitude': instance.longitude,

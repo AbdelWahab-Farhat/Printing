@@ -63,6 +63,10 @@ dependencies:
   # flutter_map's LatLng type. Declared rather than used transitively, because our own code
   # names it — which is precisely what depend_on_referenced_packages exists to catch.
   latlong2: ^0.10.1
+  # One floating button that opens into the two or three things a screen can do. Chosen over a
+  # row of buttons or an overflow menu because the actions here are reversible and frequent —
+  # edit, deactivate, designs — and an overflow menu hides them behind a glyph nobody presses.
+  flutter_speed_dial: ^7.0.0
 
 dev_dependencies:
   flutter_test:

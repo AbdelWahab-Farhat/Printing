@@ -64,13 +64,15 @@ void main() {
     // Arrange
     final session = Session();
 
-    // Act — the server is ahead of the app.
-    session.adopt(userWith(['products.view', 'orders.manage']));
+    // Act — the server is ahead of the app. `orders.manage` used to stand in for this and
+    // stopped working the day orders shipped, which is the hazard: the example has to be a
+    // permission nobody is about to build.
+    session.adopt(userWith(['products.view', 'invoices.manage']));
 
     // Assert — it neither throws nor is silently dropped: kept, so a developer can find out
     // the app is behind the API.
     expect(session.can(AppPermission.viewProducts), isTrue);
-    expect(session.unrecognised, {'orders.manage'});
+    expect(session.unrecognised, {'invoices.manage'});
   });
 
   test('a response that did not mention permissions is a bug, not an empty answer', () {
