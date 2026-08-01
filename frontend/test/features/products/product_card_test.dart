@@ -280,7 +280,7 @@ void main() {
       expect(find.text('مطبوعة'), findsNothing);
     });
 
-    testWidgets('the code sits at the end of the name line', (tester) async {
+    testWidgets('the code leads the name line, where the eye lands first', (tester) async {
       // Arrange
       await tester.pumpWidget(host(ProductCard(product: shippingBag())));
 
@@ -289,9 +289,9 @@ void main() {
       final code = tester.getRect(find.text('P1'));
       final name = tester.getRect(find.text('أكياس الشحن'));
 
-      // Assert — the screen is right-to-left, so "the end" is the left edge. Comparing the two
+      // Assert — the screen is right-to-left, so "first" is the right edge. Comparing the two
       // rectangles is what makes this a placement test and not just a "does it render" one.
-      expect(code.left, lessThan(name.left));
+      expect(code.right, greaterThan(name.right));
       expect(code.center.dy, moreOrLessEquals(name.center.dy, epsilon: 2));
     });
 

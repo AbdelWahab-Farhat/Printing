@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +54,6 @@ class _AddProductView extends StatefulWidget {
 class _AddProductViewState extends State<_AddProductView> {
   final _formKey = GlobalKey<FormState>();
 
-  final _slug = TextEditingController();
   final _name = TextEditingController();
   final _minimum = TextEditingController(text: '100');
 
@@ -88,7 +86,6 @@ class _AddProductViewState extends State<_AddProductView> {
 
   @override
   void dispose() {
-    _slug.dispose();
     _name.dispose();
     _minimum.dispose();
 
@@ -174,7 +171,6 @@ class _AddProductViewState extends State<_AddProductView> {
     if (!_formKey.currentState!.validate() || gridError != null) return;
 
     context.read<AddProductCubit>().submit(
-      slug: _slug.text,
       name: _name.text,
       category: _category.wire,
       pricingUnit: _unit.wire,
@@ -262,29 +258,6 @@ class _AddProductViewState extends State<_AddProductView> {
                           Validators.maxLength(255, label: 'اسم المنتج'),
                         ]),
                         errorText: state.nameError,
-                        onChanged: (_) => cubit.clearFailure(),
-                      ),
-                      SizedBox(height: 16.h),
-
-                      AppTextField(
-                        controller: _slug,
-                        label: 'المعرف',
-                        hint: 'shipping-bag',
-                        helperText: 'بالإنجليزية، لا يتكرر بين منتجين',
-                        prefixIcon: AppIcons.tag,
-                        // Typed, not derived from the name: every slug in the catalogue is an
-                        // English *translation* (shipping-bag, outer-handle-bag), and no
-                        // transliteration of أكياس الشحن produces any of them.
-                        //
-                        // The formatter makes the API's `^[a-z0-9-]+$` unfailable, which leaves
-                        // uniqueness as the server's only remaining complaint about this field.
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9-]')),
-                          LengthLimitingTextInputFormatter(80),
-                        ],
-                        textDirection: TextDirection.ltr,
-                        validator: Validators.minLength(2, label: 'المعرف'),
-                        errorText: state.slugError,
                         onChanged: (_) => cubit.clearFailure(),
                       ),
                       SizedBox(height: 16.h),

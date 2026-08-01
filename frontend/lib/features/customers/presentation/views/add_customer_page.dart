@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/router/app_router.dart';
 import 'package:printing/core/utils/app_icons.dart';
@@ -350,51 +351,9 @@ class _ShopCard extends StatelessWidget {
           ),
           SizedBox(height: 14.h),
 
-          Row(
-            children: [
-              Expanded(
-                child: AppTextField(
-                  controller: fields.latitude,
-                  label: 'خط العرض',
-                  hint: '32.8872',
-                  textDirection: TextDirection.ltr,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: true,
-                  ),
-                  // Required, not `Validators.latitude`: that one is the optional flavour, and
-                  // the API refuses a shop that is missing either half of its pin.
-                  validator: Validators.decimal(min: -90, max: 90),
-                  errorText: state.shopError(index, 'latitude'),
-                  onChanged: (_) => onChanged(),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: AppTextField(
-                  controller: fields.longitude,
-                  label: 'خط الطول',
-                  hint: '13.1913',
-                  textDirection: TextDirection.ltr,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: true,
-                  ),
-                  validator: Validators.decimal(min: -180, max: 180),
-                  errorText: state.shopError(index, 'longitude'),
-                  onChanged: (_) => onChanged(),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            // Says where the two numbers come from. Until a map picker lands, copying them out
-            // of Google Maps is what people will actually do, and this is the difference
-            // between that being obvious and being a support call.
-            'انسخ الإحداثيات من خرائط جوجل: اضغط مطولاً على الموقع ثم انسخ الرقمين.',
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
+          // Two number fields and an instruction to copy them out of Google Maps used to live
+          // here. Nobody does that, so what it really produced was shops with no pin at all.
+          _ShopLocationField(fields: fields, onChanged: onChanged),
           SizedBox(height: 14.h),
 
           AppTextField(
@@ -419,6 +378,194 @@ class _ShopCard extends StatelessWidget {
 /// The controllers behind one shop row, kept together so they are created and disposed as a
 /// unit — a row is added and removed as one thing, and four loose controllers would be four
 /// chances to forget one.
+/// The shop's pin: a row that opens the map, and a way out if the map will not load.
+///
+/// Wrapped in a [FormField] so `_formKey.currentState!.validate()` still governs it and
+/// `_submit()` changes by not one line. A plain `Container` cannot be validated, and this is the
+/// entire reason for the wrapper.
+///
+/// **The two controllers are unchanged.** The picker writes `32.887200` into the same
+/// `TextEditingController`s the number fields wrote into, so `_ShopFields.toInput()`,
+/// `CreateCustomer`, `NewCustomerShop`, the request body and every existing customer test are
+/// untouched by this screen changing completely.
+class _ShopLocationField extends StatefulWidget {
+  const _ShopLocationField({required this.fields, required this.onChanged});
+
+  final _ShopFields fields;
+  final VoidCallback onChanged;
+
+  @override
+  State<_ShopLocationField> createState() => _ShopLocationFieldState();
+}
+
+class _ShopLocationFieldState extends State<_ShopLocationField> {
+  /// Reveals the two number fields again.
+  ///
+  /// Not a leftover: with no connection the map is a blank grid that still pans and still
+  /// answers, so typing two numbers read off somebody else's phone is the honest fallback.
+  bool _isManual = false;
+
+  String get _latitude => widget.fields.latitude.text.trim();
+
+  String get _longitude => widget.fields.longitude.text.trim();
+
+  bool get _hasPin => _latitude.isNotEmpty && _longitude.isNotEmpty;
+
+  LatLng? get _point {
+    final latitude = double.tryParse(Validators.toWesternDigits(_latitude));
+    final longitude = double.tryParse(Validators.toWesternDigits(_longitude));
+
+    if (latitude == null || longitude == null) return null;
+
+    return LatLng(latitude, longitude);
+  }
+
+  Future<void> _pick(FormFieldState<void> field) async {
+    final picked = await context.push<LatLng>(Routes.pickLocation, extra: _point);
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      // Six decimals — the column is decimal(10,7), and six is about a tenth of a metre.
+      widget.fields.latitude.text = picked.latitude.toStringAsFixed(6);
+      widget.fields.longitude.text = picked.longitude.toStringAsFixed(6);
+    });
+
+    field.didChange(null);
+    widget.onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return FormField<void>(
+      validator: (_) {
+        if (!_hasPin) return 'حدّد موقع المحل على الخريطة';
+
+        return Validators.decimal(min: -90, max: 90)(_latitude) ??
+            Validators.decimal(min: -180, max: 180)(_longitude);
+      },
+      builder: (field) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Material(
+            color: scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(14.r),
+            child: InkWell(
+              onTap: () => _pick(field),
+              borderRadius: BorderRadius.circular(14.r),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18.r,
+                      backgroundColor: scheme.primaryContainer,
+                      child: Icon(
+                        AppIcons.mapPin,
+                        size: 20.sp,
+                        color: scheme.onPrimaryContainer,
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'الموقع على الخريطة',
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            _hasPin ? '$_latitude, $_longitude' : 'لم يُحدَّد',
+                            textDirection: _hasPin ? TextDirection.ltr : null,
+                            style: context.textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      _hasPin ? 'تعديل' : 'تحديد',
+                      style: context.textTheme.labelLarge?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          if (field.hasError) ...[
+            SizedBox(height: 6.h),
+            Text(
+              field.errorText!,
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
+            ),
+          ],
+
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton(
+              onPressed: () => setState(() => _isManual = !_isManual),
+              child: Text(_isManual ? 'إخفاء الإدخال اليدوي' : 'إدخال الإحداثيات يدوياً'),
+            ),
+          ),
+
+          if (_isManual)
+            Row(
+              children: [
+                Expanded(
+                  child: AppTextField(
+                    controller: widget.fields.latitude,
+                    label: 'خط العرض',
+                    hint: '32.8872',
+                    textDirection: TextDirection.ltr,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
+                    // The existing validator, unchanged — it already accepts Arabic-Indic
+                    // digits and the Arabic decimal mark. No second coordinate parser.
+                    validator: Validators.decimal(min: -90, max: 90),
+                    onChanged: (_) {
+                      field.didChange(null);
+                      widget.onChanged();
+                    },
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: AppTextField(
+                    controller: widget.fields.longitude,
+                    label: 'خط الطول',
+                    hint: '13.1913',
+                    textDirection: TextDirection.ltr,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
+                    validator: Validators.decimal(min: -180, max: 180),
+                    onChanged: (_) {
+                      field.didChange(null);
+                      widget.onChanged();
+                    },
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ShopFields {
   final name = TextEditingController();
   final latitude = TextEditingController();

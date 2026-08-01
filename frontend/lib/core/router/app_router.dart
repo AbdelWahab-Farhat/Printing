@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/session/session.dart';
@@ -10,6 +11,7 @@ import 'package:printing/features/cities/presentation/views/cities_page.dart';
 import 'package:printing/features/customers/presentation/views/add_customer_page.dart';
 import 'package:printing/features/customers/presentation/views/customers_page.dart';
 import 'package:printing/features/home/presentation/views/home_page.dart';
+import 'package:printing/features/location/presentation/views/pick_location_page.dart';
 import 'package:printing/features/products/presentation/views/add_product_page.dart';
 import 'package:printing/features/products/presentation/views/products_page.dart';
 import 'package:printing/features/root/presentation/views/root_page.dart';
@@ -41,6 +43,9 @@ abstract final class Routes {
   static const String addCustomer = '/customers/new';
 
   static const String addProduct = '/products/new';
+
+  /// Choosing a point on the map. Outside the shell, and returns a `LatLng` through `pop`.
+  static const String pickLocation = '/pick-location';
 }
 
 /// The app's navigation.
@@ -121,6 +126,10 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.addCustomer,
         builder: (context, state) => const AddCustomerPage(),
+      ),
+      GoRoute(
+        path: Routes.pickLocation,
+        builder: (context, state) => PickLocationPage(initial: state.extra as LatLng?),
       ),
       GoRoute(
         path: Routes.addProduct,

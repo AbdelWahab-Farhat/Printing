@@ -50,6 +50,10 @@ abstract final class AppIcons {
   static IconData get addCustomer =>
       _pick(Icons.person_add_alt_1_rounded, CupertinoIcons.person_add_solid);
 
+  /// A pin on a map. The crosshair on the location picker, and the marker beside a shop.
+  static IconData get mapPin =>
+      _pick(Icons.location_on_rounded, CupertinoIcons.location_solid);
+
   static IconData get addProduct =>
       _pick(Icons.add_box_outlined, CupertinoIcons.plus_app);
 

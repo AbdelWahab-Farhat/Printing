@@ -7,7 +7,7 @@ part of 'new_product.dart';
 // **************************************************************************
 
 _NewProduct _$NewProductFromJson(Map<String, dynamic> json) => _NewProduct(
-  slug: json['slug'] as String,
+  slug: json['slug'] as String?,
   name: json['name'] as String,
   description: json['description'] as String?,
   features: (json['features'] as List<dynamic>?)
@@ -26,7 +26,7 @@ _NewProduct _$NewProductFromJson(Map<String, dynamic> json) => _NewProduct(
 
 Map<String, dynamic> _$NewProductToJson(_NewProduct instance) =>
     <String, dynamic>{
-      'slug': instance.slug,
+      'slug': ?instance.slug,
       'name': instance.name,
       'description': ?instance.description,
       'features': ?instance.features,

@@ -26,7 +26,6 @@ class CreateProduct {
   final ProductRepository _repository;
 
   Future<Either<Failure, Product>> call({
-    required String slug,
     required String name,
     String? description,
     List<String> features = const [],
@@ -46,9 +45,9 @@ class CreateProduct {
 
     return _repository.create(
       NewProduct(
-        // The slug is ASCII by construction — the field's formatter refuses anything else — so
-        // it is trimmed and lower-cased and nothing more.
-        slug: slug.trim().toLowerCase(),
+        // No slug: the server derives it from the name and the code it allocates. Sending one
+        // is still allowed by the API for imports — see `GenerateProductSlug` — but a person
+        // filling this form is not the right author of a unique Latin identifier.
         name: name.trim(),
         description: _blankToNull(description),
         // Omitted rather than sent empty: the rule is `nullable|array`, and `[]` says "this

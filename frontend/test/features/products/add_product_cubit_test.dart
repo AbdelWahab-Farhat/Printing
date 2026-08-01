@@ -44,7 +44,6 @@ void main() {
   tearDown(() => cubit.close());
 
   Future<void> submit(AddProductCubit cubit) => cubit.submit(
-    slug: 'shipping-bag',
     name: 'أكياس الشحن',
     category: 'printed',
     pricingUnit: 'piece',
@@ -105,8 +104,9 @@ void main() {
   );
 
   group('field errors', () {
-    test('a complaint about the slug is addressed to the slug', () {
-      // Arrange
+    test('a complaint about the slug reaches the snackbar, having no box to sit in', () {
+      // Arrange — the form stopped asking for a slug once the server started generating them,
+      // so an error about one has nowhere to be painted. It must not be swallowed for that.
       const failure = Failure.server(
         message: 'البيانات غير صحيحة',
         fieldErrors: {
@@ -118,10 +118,8 @@ void main() {
       const state = AddProductState.failure(failure);
 
       // Assert
-      expect(state.slugError, 'المعرف مستخدم مسبقاً');
       expect(state.nameError, isNull);
-      // Rendered under the field, so the snackbar must stay quiet.
-      expect(state.hasUnrenderedErrors, isFalse);
+      expect(state.hasUnrenderedErrors, isTrue);
     });
 
     test("a size's price complaint finds its own cell", () {

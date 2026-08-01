@@ -51,6 +51,27 @@ abstract final class AppConfig {
     return url ?? '';
   }
 
+  /// Where map tiles come from.
+  ///
+  /// In `.env` rather than hard-coded, and that is not ceremony: OpenStreetMap's tile policy
+  /// says in as many words that commercial use "should be especially aware that access may be
+  /// withdrawn at any point". Moving to MapTiler, Stadia or LocationIQ has to be a config change
+  /// and a restart, not a release.
+  static String get mapTileUrl =>
+      dotenv.env['MAP_TILE_URL'] ?? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+  /// Where a place search goes. Same reasoning as [mapTileUrl].
+  static String get geocoderBaseUrl =>
+      dotenv.env['GEOCODER_BASE_URL'] ?? 'https://nominatim.openstreetmap.org';
+
+  /// Identifies this app to the tile server and the geocoder.
+  ///
+  /// Nominatim's policy requires it and enforces it: a request carrying a library's default
+  /// user agent is answered with a 403 whose body is HTML. Because the envelope parser
+  /// correctly refuses to show HTML as a message, that presents as "search silently finds
+  /// nothing" — which is why this has a test of its own.
+  static const String mapUserAgent = 'PrintX/1.0 (printing-bags; support@printx.ly)';
+
   /// Long enough for a slow Libyan mobile connection, short enough that a dead server does not
   /// leave a spinner running for a minute.
   static const Duration connectTimeout = Duration(seconds: 15);

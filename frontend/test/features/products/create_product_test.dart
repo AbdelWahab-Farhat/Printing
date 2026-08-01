@@ -51,7 +51,6 @@ void main() {
       verify(() => repository.create(captureAny())).captured.single as NewProduct;
 
   Future<Either<Failure, Product>> submit({
-    String slug = 'shipping-bag',
     String name = 'أكياس الشحن',
     String? description,
     List<String> features = const [],
@@ -61,7 +60,6 @@ void main() {
     List<DraftVariant> variants = const [],
   }) {
     return createProduct(
-      slug: slug,
       name: name,
       description: description,
       features: features,
@@ -158,12 +156,10 @@ void main() {
       // Arrange — a name pasted out of a message carries it, and the product it creates is one
       // nobody finds again by searching.
       // Act
-      await submit(slug: '  Shipping-Bag  ', name: '  أكياس الشحن  ');
+      await submit(name: '  أكياس الشحن  ');
 
-      // Assert — the slug is lower-cased too: the API's rule is `^[a-z0-9-]+$`.
-      final draft = sent();
-      expect(draft.slug, 'shipping-bag');
-      expect(draft.name, 'أكياس الشحن');
+      // Assert
+      expect(sent().name, 'أكياس الشحن');
     });
 
     test('a blank description is absent from the body, not null in it', () async {
@@ -192,8 +188,8 @@ void main() {
       );
 
       // Assert — snake_case all the way down, and nothing the app invented.
+      // No `slug` key at all: the server derives it from the name and the code it allocates.
       expect(sent().toJson(), {
-        'slug': 'shipping-bag',
         'name': 'أكياس الشحن',
         'category': 'printed',
         'pricing_unit': 'piece',

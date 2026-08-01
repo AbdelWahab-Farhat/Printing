@@ -22,8 +22,6 @@ sealed class AddProductState with _$AddProductState {
 extension AddProductStateX on AddProductState {
   bool get isSubmitting => this is AddProductSubmitting;
 
-  String? get slugError => _fieldError('slug');
-
   String? get nameError => _fieldError('name');
 
   String? get minimumError => _fieldError('min_order_quantity');
@@ -63,7 +61,9 @@ extension AddProductStateX on AddProductState {
 
 /// The exact keys the form paints under an input. Everything else goes to a snackbar.
 final RegExp _renderedKey = RegExp(
-  r'^(slug|name|min_order_quantity'
+  // `slug` is deliberately absent: the server generates it and the form has no box for it, so
+  // a complaint about one has nowhere to be painted and belongs in the snackbar instead.
+  r'^(name|min_order_quantity'
   r'|variants\.\d+\.label'
   r'|variants\.\d+\.price_tiers\.\d+\.unit_price)$',
 );

@@ -21,12 +21,18 @@ class AddProductCubit extends Cubit<AddProductState> {
 
   /// Sends the form.
   ///
-  /// **On a [Failure.network] here, retrying is safe** — the same reason the add-customer screen
-  /// gives. `slug` is unique in the database, not merely in validation, so a request that did
-  /// reach the server before the connection dropped makes the retry a 422 rather than a second
-  /// product. That is what makes «أعد المحاولة» an honest offer on this screen.
+  /// **A [Failure.network] here is not safe to retry blindly, and that changed on purpose.**
+  ///
+  /// This screen used to collect the slug, which is unique in the database, so a request that
+  /// reached the server before the connection dropped came back as a 422 on the retry rather
+  /// than a second product. Now the server generates the slug — nobody should have to invent a
+  /// unique Latin string for أكياس الشحن — and with it went the accidental duplicate guard: a
+  /// product has no other natural key, so two POSTs are two products.
+  ///
+  /// The screen still offers «أعد المحاولة», because the alternative — refusing to retry a
+  /// request that probably never arrived — is worse far more often. What it costs when it does
+  /// duplicate is one product to deactivate, which is visible in the catalogue immediately.
   Future<void> submit({
-    required String slug,
     required String name,
     String? description,
     List<String> features = const [],
@@ -36,14 +42,13 @@ class AddProductCubit extends Cubit<AddProductState> {
     required String minOrderQuantity,
     List<DraftVariant> variants = const [],
   }) async {
-    // Ignored rather than queued: a second tap while the first is in flight would be a second
-    // POST, and the slug's uniqueness would turn it into a confusing 422.
+    // Ignored rather than queued: a second tap while the first is in flight is a second POST,
+    // and with the slug generated server-side that is now a second *product* rather than a 422.
     if (state.isSubmitting) return;
 
     emit(const AddProductState.submitting());
 
     final result = await _createProduct(
-      slug: slug,
       name: name,
       description: description,
       features: features,

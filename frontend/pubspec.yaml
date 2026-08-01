@@ -47,6 +47,22 @@ dependencies:
   flutter_dotenv: ^5.2.1
   intl: ^0.20.2
   cupertino_icons: ^1.0.8
+  # ── map ──────────────────────────────────────────────────────────────────────
+  # The map surface only — not a picker. Every ready-made OSM picker on pub.dev is a whole
+  # *screen* carrying its own text fields, buttons and literal colours, which §7 does not allow,
+  # and three of them (open_street_map_search_and_pick, osm_search_and_pick, map_picker_free)
+  # are GPL-3.0 — linking one into a closed app obliges us to publish the whole app's source.
+  # The strongest MIT one pins latlong2 0.9.x and drags in geolocator, an OS location permission
+  # we do not need. flutter_map is what all of them depend on anyway, so we take it directly and
+  # own the screen. BSD-3, fleaflet.dev, pure Dart; the only native code is a transitive
+  # path_provider for the tile cache. No permission required.
+  #
+  # ⚠️ flutter_map_tile_caching is GPL-3.0 too. The day offline maps are asked for, the package
+  # to reach for is flutter_map_cache (MIT) — not that one.
+  flutter_map: ^8.3.1
+  # flutter_map's LatLng type. Declared rather than used transitively, because our own code
+  # names it — which is precisely what depend_on_referenced_packages exists to catch.
+  latlong2: ^0.10.1
 
 dev_dependencies:
   flutter_test:

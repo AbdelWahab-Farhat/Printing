@@ -15,7 +15,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$NewProduct {
 
- String get slug; String get name;/// Omitted from the body when absent — the API's rule is `nullable`, and sending `null`
+/// Omitted by this app: the server generates it from the name and the product's code, so
+/// nobody has to invent `shipping-bag` for a product called أكياس الشحن. Kept on the model
+/// because the API still accepts a deliberate one from an import.
+@JsonKey(includeIfNull: false) String? get slug; String get name;/// Omitted from the body when absent — the API's rule is `nullable`, and sending `null`
 /// says something slightly different from not mentioning it.
 @JsonKey(includeIfNull: false) String? get description;@JsonKey(includeIfNull: false) List<String>? get features; String get category;@JsonKey(name: 'pricing_unit') String get pricingUnit;@JsonKey(name: 'pricing_mode') String get pricingMode;/// A decimal string like `'100'`, already normalised out of whatever the keyboard produced.
 @JsonKey(name: 'min_order_quantity') String get minOrderQuantity;/// Sizes. Empty is allowed: a quote-only product can exist before its sizes are known.
@@ -52,7 +55,7 @@ abstract mixin class $NewProductCopyWith<$Res>  {
   factory $NewProductCopyWith(NewProduct value, $Res Function(NewProduct) _then) = _$NewProductCopyWithImpl;
 @useResult
 $Res call({
- String slug, String name,@JsonKey(includeIfNull: false) String? description,@JsonKey(includeIfNull: false) List<String>? features, String category,@JsonKey(name: 'pricing_unit') String pricingUnit,@JsonKey(name: 'pricing_mode') String pricingMode,@JsonKey(name: 'min_order_quantity') String minOrderQuantity, List<NewProductVariant> variants
+@JsonKey(includeIfNull: false) String? slug, String name,@JsonKey(includeIfNull: false) String? description,@JsonKey(includeIfNull: false) List<String>? features, String category,@JsonKey(name: 'pricing_unit') String pricingUnit,@JsonKey(name: 'pricing_mode') String pricingMode,@JsonKey(name: 'min_order_quantity') String minOrderQuantity, List<NewProductVariant> variants
 });
 
 
@@ -69,10 +72,10 @@ class _$NewProductCopyWithImpl<$Res>
 
 /// Create a copy of NewProduct
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? slug = null,Object? name = null,Object? description = freezed,Object? features = freezed,Object? category = null,Object? pricingUnit = null,Object? pricingMode = null,Object? minOrderQuantity = null,Object? variants = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? slug = freezed,Object? name = null,Object? description = freezed,Object? features = freezed,Object? category = null,Object? pricingUnit = null,Object? pricingMode = null,Object? minOrderQuantity = null,Object? variants = null,}) {
   return _then(_self.copyWith(
-slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
-as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+slug: freezed == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
+as String?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,features: freezed == features ? _self.features : features // ignore: cast_nullable_to_non_nullable
 as List<String>?,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
@@ -165,7 +168,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String slug,  String name, @JsonKey(includeIfNull: false)  String? description, @JsonKey(includeIfNull: false)  List<String>? features,  String category, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity,  List<NewProductVariant> variants)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  String? slug,  String name, @JsonKey(includeIfNull: false)  String? description, @JsonKey(includeIfNull: false)  List<String>? features,  String category, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity,  List<NewProductVariant> variants)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NewProduct() when $default != null:
 return $default(_that.slug,_that.name,_that.description,_that.features,_that.category,_that.pricingUnit,_that.pricingMode,_that.minOrderQuantity,_that.variants);case _:
@@ -186,7 +189,7 @@ return $default(_that.slug,_that.name,_that.description,_that.features,_that.cat
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String slug,  String name, @JsonKey(includeIfNull: false)  String? description, @JsonKey(includeIfNull: false)  List<String>? features,  String category, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity,  List<NewProductVariant> variants)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  String? slug,  String name, @JsonKey(includeIfNull: false)  String? description, @JsonKey(includeIfNull: false)  List<String>? features,  String category, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity,  List<NewProductVariant> variants)  $default,) {final _that = this;
 switch (_that) {
 case _NewProduct():
 return $default(_that.slug,_that.name,_that.description,_that.features,_that.category,_that.pricingUnit,_that.pricingMode,_that.minOrderQuantity,_that.variants);case _:
@@ -206,7 +209,7 @@ return $default(_that.slug,_that.name,_that.description,_that.features,_that.cat
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String slug,  String name, @JsonKey(includeIfNull: false)  String? description, @JsonKey(includeIfNull: false)  List<String>? features,  String category, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity,  List<NewProductVariant> variants)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  String? slug,  String name, @JsonKey(includeIfNull: false)  String? description, @JsonKey(includeIfNull: false)  List<String>? features,  String category, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity,  List<NewProductVariant> variants)?  $default,) {final _that = this;
 switch (_that) {
 case _NewProduct() when $default != null:
 return $default(_that.slug,_that.name,_that.description,_that.features,_that.category,_that.pricingUnit,_that.pricingMode,_that.minOrderQuantity,_that.variants);case _:
@@ -221,10 +224,13 @@ return $default(_that.slug,_that.name,_that.description,_that.features,_that.cat
 @JsonSerializable()
 
 class _NewProduct implements NewProduct {
-  const _NewProduct({required this.slug, required this.name, @JsonKey(includeIfNull: false) this.description, @JsonKey(includeIfNull: false) final  List<String>? features, required this.category, @JsonKey(name: 'pricing_unit') required this.pricingUnit, @JsonKey(name: 'pricing_mode') required this.pricingMode, @JsonKey(name: 'min_order_quantity') required this.minOrderQuantity, final  List<NewProductVariant> variants = const <NewProductVariant>[]}): _features = features,_variants = variants;
+  const _NewProduct({@JsonKey(includeIfNull: false) this.slug, required this.name, @JsonKey(includeIfNull: false) this.description, @JsonKey(includeIfNull: false) final  List<String>? features, required this.category, @JsonKey(name: 'pricing_unit') required this.pricingUnit, @JsonKey(name: 'pricing_mode') required this.pricingMode, @JsonKey(name: 'min_order_quantity') required this.minOrderQuantity, final  List<NewProductVariant> variants = const <NewProductVariant>[]}): _features = features,_variants = variants;
   factory _NewProduct.fromJson(Map<String, dynamic> json) => _$NewProductFromJson(json);
 
-@override final  String slug;
+/// Omitted by this app: the server generates it from the name and the product's code, so
+/// nobody has to invent `shipping-bag` for a product called أكياس الشحن. Kept on the model
+/// because the API still accepts a deliberate one from an import.
+@override@JsonKey(includeIfNull: false) final  String? slug;
 @override final  String name;
 /// Omitted from the body when absent — the API's rule is `nullable`, and sending `null`
 /// says something slightly different from not mentioning it.
@@ -286,7 +292,7 @@ abstract mixin class _$NewProductCopyWith<$Res> implements $NewProductCopyWith<$
   factory _$NewProductCopyWith(_NewProduct value, $Res Function(_NewProduct) _then) = __$NewProductCopyWithImpl;
 @override @useResult
 $Res call({
- String slug, String name,@JsonKey(includeIfNull: false) String? description,@JsonKey(includeIfNull: false) List<String>? features, String category,@JsonKey(name: 'pricing_unit') String pricingUnit,@JsonKey(name: 'pricing_mode') String pricingMode,@JsonKey(name: 'min_order_quantity') String minOrderQuantity, List<NewProductVariant> variants
+@JsonKey(includeIfNull: false) String? slug, String name,@JsonKey(includeIfNull: false) String? description,@JsonKey(includeIfNull: false) List<String>? features, String category,@JsonKey(name: 'pricing_unit') String pricingUnit,@JsonKey(name: 'pricing_mode') String pricingMode,@JsonKey(name: 'min_order_quantity') String minOrderQuantity, List<NewProductVariant> variants
 });
 
 
@@ -303,10 +309,10 @@ class __$NewProductCopyWithImpl<$Res>
 
 /// Create a copy of NewProduct
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? slug = null,Object? name = null,Object? description = freezed,Object? features = freezed,Object? category = null,Object? pricingUnit = null,Object? pricingMode = null,Object? minOrderQuantity = null,Object? variants = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? slug = freezed,Object? name = null,Object? description = freezed,Object? features = freezed,Object? category = null,Object? pricingUnit = null,Object? pricingMode = null,Object? minOrderQuantity = null,Object? variants = null,}) {
   return _then(_NewProduct(
-slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
-as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+slug: freezed == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
+as String?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,features: freezed == features ? _self._features : features // ignore: cast_nullable_to_non_nullable
 as List<String>?,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable

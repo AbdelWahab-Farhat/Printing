@@ -28,6 +28,10 @@ import 'package:printing/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:printing/features/home/repositories/home_repository.dart';
 import 'package:printing/features/home/repositories/home_repository_impl.dart';
 import 'package:printing/features/home/usecases/get_home_summary.dart';
+import 'package:printing/features/location/presentation/viewmodel/pick_location_cubit.dart';
+import 'package:printing/features/location/repositories/geocoding_repository.dart';
+import 'package:printing/features/location/repositories/geocoding_repository_impl.dart';
+import 'package:printing/features/location/usecases/search_places.dart';
 import 'package:printing/features/products/presentation/viewmodel/add_product_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:printing/features/products/repositories/product_repository.dart';
@@ -37,6 +41,11 @@ import 'package:printing/features/products/usecases/get_products.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt sl = GetIt.instance;
+
+/// Names the geocoder's own `Dio`, so nothing resolves it by accident.
+///
+/// See `Injector._registerLocation` for why a second client exists at all.
+const String geocoderDio = 'geocoder';
 
 /// Wires the object graph. Nothing else in the app calls `GetIt.registerX`.
 ///
@@ -97,6 +106,7 @@ abstract final class Injector {
       );
 
     _registerAuth();
+    _registerLocation();
     _registerHome();
     _registerProducts();
     _registerCities();
@@ -123,6 +133,37 @@ abstract final class Injector {
       // Same reasoning, and it matters more here: the drawer that owns this is rebuilt every
       // time the shell is, and a singleton would be closed by the first one to be disposed.
       ..registerFactory<LogoutCubit>(() => LogoutCubit(logout: sl<Logout>()));
+  }
+
+  /// The map picker and the place search behind it.
+  ///
+  /// **The `Dio` here is a second client, and that is the one deliberate exception to "one Dio
+  /// in the app".** Read that rule's reason before removing this: it exists so no request
+  /// silently misses the bearer token. Here missing it is the *requirement* — the shared
+  /// client's `AuthInterceptor` would hand this app's Sanctum token to a public geocoder that
+  /// has no business holding it. No interceptors, its own base URL, and a real `User-Agent`,
+  /// which the geocoder's policy requires and enforces with a 403.
+  static void _registerLocation() {
+    sl
+      ..registerLazySingleton<Dio>(
+        () => Dio(
+          BaseOptions(
+            baseUrl: AppConfig.geocoderBaseUrl,
+            connectTimeout: AppConfig.connectTimeout,
+            receiveTimeout: AppConfig.receiveTimeout,
+            headers: {'User-Agent': AppConfig.mapUserAgent, 'Accept': 'application/json'},
+          ),
+        ),
+        instanceName: geocoderDio,
+      )
+      ..registerLazySingleton<GeocodingRepository>(
+        () => GeocodingRepositoryImpl(sl<Dio>(instanceName: geocoderDio)),
+      )
+      ..registerLazySingleton<SearchPlaces>(() => SearchPlaces(sl<GeocodingRepository>()))
+      // Factory: the picker owns its Cubit and closes it on pop.
+      ..registerFactory<PickLocationCubit>(
+        () => PickLocationCubit(searchPlaces: sl<SearchPlaces>()),
+      );
   }
 
   /// The home screen: who is signed in, and the counts it opens on.

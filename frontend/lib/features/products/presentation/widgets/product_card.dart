@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/features/products/models/product.dart';
 
@@ -94,11 +93,18 @@ class _Identity extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
+    final image = product.primaryImage;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Thumbnail(product: product),
-        SizedBox(width: 10.w),
+        // Only a real photograph earns this slot. It used to hold a tinted box icon whenever a
+        // product had no image — which is every product — so the eye met the same glyph on every
+        // row and learned to skip the whole column. An empty slot says as much and costs nothing.
+        if (image != null) ...[
+          _Thumbnail(image: image),
+          SizedBox(width: 10.w),
+        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,51 +112,43 @@ class _Identity extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  // The name takes what is left after the code, rather than the two sharing the
-                  // row: a code is four characters and always the same four, so giving it a
-                  // flexible share would shorten every name to pay for space it cannot use.
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            product.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: scheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        // One word, no container. A stopped product is a decision, not a fault —
-                        // an error-coloured badge makes the whole row read as broken, and it is
-                        // still a product people ask about.
-                        if (!product.isActive) ...[
-                          SizedBox(width: 6.w),
-                          Text(
-                            '· موقوف',
-                            style: context.textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: scheme.error,
-                            ),
-                          ),
-                        ],
-                      ],
+                  // First thing on the row, and the only coloured thing on it. The code is what
+                  // gets read down a phone line — «عندك P7؟» — so it is where the eye lands, not
+                  // a grey afterthought at the far end. Fixed-width and never truncated: a
+                  // shortened code is a wrong code.
+                  Text(
+                    product.code,
+                    textDirection: TextDirection.ltr,
+                    style: context.textTheme.titleSmall?.copyWith(
+                      color: scheme.primary,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   SizedBox(width: 8.w),
-                  Text(
-                    // Plain text, not a pill: the chips were removed from this card precisely so
-                    // that nothing has to be told apart from anything else, and a bordered code
-                    // would put that vocabulary straight back.
-                    product.code,
-                    textDirection: TextDirection.ltr,
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
+                  Flexible(
+                    child: Text(
+                      product.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurface,
+                      ),
                     ),
                   ),
+                  // One word, no container. A stopped product is a decision, not a fault — an
+                  // error-coloured badge makes the whole row read as broken, and it is still a
+                  // product people ask about.
+                  if (!product.isActive) ...[
+                    SizedBox(width: 6.w),
+                    Text(
+                      '· موقوف',
+                      style: context.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: scheme.error,
+                      ),
+                    ),
+                  ],
                 ],
               ),
               SizedBox(height: 2.h),
@@ -171,14 +169,12 @@ class _Identity extends StatelessWidget {
 }
 
 class _Thumbnail extends StatelessWidget {
-  const _Thumbnail({required this.product});
+  const _Thumbnail({required this.image});
 
-  final Product product;
+  final ProductImage image;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final image = product.primaryImage;
     final side = 48.w;
 
     return ClipRRect(
@@ -186,41 +182,17 @@ class _Thumbnail extends StatelessWidget {
       child: SizedBox(
         height: side,
         width: side,
-        child: image == null
-            ? _Placeholder(scheme: scheme)
-            : Image.network(
-                image.url,
-                fit: BoxFit.cover,
-                // A photo that fails to load must not leave a grey hole where the product was:
-                // the same placeholder stands in, so the row still reads as a product.
-                errorBuilder: (context, error, stack) => _Placeholder(scheme: scheme),
-                loadingBuilder: (context, child, progress) =>
-                    progress == null ? child : _Placeholder(scheme: scheme),
-              ),
-      ),
-    );
-  }
-}
-
-class _Placeholder extends StatelessWidget {
-  const _Placeholder({required this.scheme});
-
-  final ColorScheme scheme;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: AlignmentDirectional.topStart,
-          end: AlignmentDirectional.bottomEnd,
-          colors: [
-            scheme.primaryContainer,
-            scheme.primaryContainer.withValues(alpha: 0.55),
-          ],
+        child: Image.network(
+          image.url,
+          fit: BoxFit.cover,
+          // A photo that fails, or one still arriving, leaves the row exactly as a product with
+          // no photo looks — rather than a broken-image glyph or a grey hole that reads as an
+          // error the user cannot do anything about.
+          errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+          loadingBuilder: (context, child, progress) =>
+              progress == null ? child : const SizedBox.shrink(),
         ),
       ),
-      child: Icon(AppIcons.warehouse, size: 22.sp, color: scheme.onPrimaryContainer),
     );
   }
 }

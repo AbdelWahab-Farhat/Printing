@@ -40,6 +40,26 @@ Future<Either<Failure, T>> safeRequest<T>(
   });
 }
 
+/// The same guarantees, for a server that is not ours.
+///
+/// [safeRequest] unwraps `{status, message, data}`, which is our API's contract and nobody
+/// else's. A geocoder answers a bare JSON array; putting it through the envelope parser would
+/// report "الرد من الخادم غير مفهوم" for a response that is perfectly correct.
+///
+/// So the body is handed to [parse] untouched. Everything else is shared: the same timeout and
+/// connection failures become the same [Failure] cases, and `try`/`catch` still lives only in
+/// this file.
+Future<Either<Failure, T>> safeForeignRequest<T>(
+  Future<Response<dynamic>> Function() send, {
+  required T Function(dynamic body) parse,
+}) async {
+  return _guard(() async {
+    final response = await send();
+
+    return parse(response.data);
+  });
+}
+
 /// The paginated twin: `data` is the list, `meta` sits beside it.
 Future<Either<Failure, Paginated<T>>> safePaginatedRequest<T>(
   Future<Response<dynamic>> Function() send, {

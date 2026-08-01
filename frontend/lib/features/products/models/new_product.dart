@@ -24,7 +24,10 @@ part 'new_product.g.dart';
 @freezed
 abstract class NewProduct with _$NewProduct {
   const factory NewProduct({
-    required String slug,
+    /// Omitted by this app: the server generates it from the name and the product's code, so
+    /// nobody has to invent `shipping-bag` for a product called أكياس الشحن. Kept on the model
+    /// because the API still accepts a deliberate one from an import.
+    @JsonKey(includeIfNull: false) String? slug,
     required String name,
 
     /// Omitted from the body when absent — the API's rule is `nullable`, and sending `null`
