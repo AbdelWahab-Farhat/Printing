@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/router/app_router.dart';
 import 'package:printing/core/theme/text_theme.dart';
 import 'package:printing/core/theme/theme.dart';
+import 'package:printing/core/widgets/dismiss_keyboard.dart';
 
 /// The root widget: theme, locale, direction, router.
 ///
@@ -40,6 +41,12 @@ class PrintingApp extends StatelessWidget {
           ],
 
           routerConfig: AppRouter.instance,
+
+          // Wrapped around every route rather than around each screen: a keyboard that only
+          // closes on some forms is worse than one that never does, because the user stops
+          // trusting the gesture. `builder` is the one place that sits above the router and
+          // below the theme, so it covers dialogs and sheets too.
+          builder: (context, child) => DismissKeyboard(child: child ?? const SizedBox.shrink()),
         );
       },
     );

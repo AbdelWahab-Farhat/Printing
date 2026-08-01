@@ -219,6 +219,14 @@ class _AppTextFieldState extends State<AppTextField> {
       onChanged: widget.onChanged,
       onFieldSubmitted: widget.onSubmitted,
       onTap: widget.onTap,
+      // Closes the keyboard when the user taps anywhere else — including somewhere that claims
+      // the tap for itself, like a button or a list row, which the app-wide [DismissKeyboard]
+      // cannot see because the deeper recogniser wins the gesture arena. `TapRegion` is not in
+      // that arena, so this fires either way.
+      //
+      // Flutter's own default only does this on desktop and web; on a phone it deliberately
+      // keeps focus, which is not what anybody here expects.
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hint,
