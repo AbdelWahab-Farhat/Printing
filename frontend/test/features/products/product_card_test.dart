@@ -59,6 +59,7 @@ void main() {
   }
 
   Product product({
+    String code = 'P1',
     String name = 'أكياس الشحن',
     String categoryLabel = 'مطبوعة',
     String pricingUnitLabel = 'قطعة',
@@ -70,6 +71,7 @@ void main() {
   }) {
     return Product(
       id: 1,
+      code: code,
       slug: 'shipping-bag',
       name: name,
       features: features,
@@ -276,6 +278,45 @@ void main() {
       // Assert — the fix for a category tag that looked exactly like a size tag.
       expect(find.text('مطبوعة · بالقطعة'), findsOneWidget);
       expect(find.text('مطبوعة'), findsNothing);
+    });
+
+    testWidgets('the code sits at the end of the name line', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(ProductCard(product: shippingBag())));
+
+      // Act
+      await tester.pump();
+      final code = tester.getRect(find.text('P1'));
+      final name = tester.getRect(find.text('أكياس الشحن'));
+
+      // Assert — the screen is right-to-left, so "the end" is the left edge. Comparing the two
+      // rectangles is what makes this a placement test and not just a "does it render" one.
+      expect(code.left, lessThan(name.left));
+      expect(code.center.dy, moreOrLessEquals(name.center.dy, epsilon: 2));
+    });
+
+    testWidgets('a long name yields to the code rather than pushing it off', (tester) async {
+      // Arrange — the name has to give way, because a truncated code is a wrong code.
+      await tester.pumpWidget(
+        host(
+          ProductCard(
+            product: product(
+              code: 'P12',
+              name: 'أكياس ورقية عادية بمقاسات كبيرة للمحلات والصيدليات والمخابز',
+              variants: [
+                variant('25*35', const [('1.000', '1.10'), ('300.000', '0.95')]),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Act
+      await tester.pump();
+
+      // Assert
+      expect(find.text('P12'), findsOneWidget);
+      expect(tester.getSize(find.text('P12')).width, greaterThan(0));
     });
 
     testWidgets('a stopped product says so beside its name', (tester) async {

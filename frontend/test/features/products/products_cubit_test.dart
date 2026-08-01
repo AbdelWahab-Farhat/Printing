@@ -20,6 +20,7 @@ void main() {
 
   Product product(int id, String name) => Product(
     id: id,
+    code: 'P$id',
     slug: 'product-$id',
     name: name,
     category: 'printed',

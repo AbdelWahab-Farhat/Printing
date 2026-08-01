@@ -106,30 +106,51 @@ class _Identity extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Flexible(
-                    child: Text(
-                      product.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSurface,
-                      ),
+                  // The name takes what is left after the code, rather than the two sharing the
+                  // row: a code is four characters and always the same four, so giving it a
+                  // flexible share would shorten every name to pay for space it cannot use.
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            product.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        // One word, no container. A stopped product is a decision, not a fault —
+                        // an error-coloured badge makes the whole row read as broken, and it is
+                        // still a product people ask about.
+                        if (!product.isActive) ...[
+                          SizedBox(width: 6.w),
+                          Text(
+                            '· موقوف',
+                            style: context.textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: scheme.error,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  // One word, no container. A stopped product is a decision, not a fault — an
-                  // error-coloured badge makes the whole row read as broken, and it is still a
-                  // product people ask about.
-                  if (!product.isActive) ...[
-                    SizedBox(width: 6.w),
-                    Text(
-                      '· موقوف',
-                      style: context.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: scheme.error,
-                      ),
+                  SizedBox(width: 8.w),
+                  Text(
+                    // Plain text, not a pill: the chips were removed from this card precisely so
+                    // that nothing has to be told apart from anything else, and a bordered code
+                    // would put that vocabulary straight back.
+                    product.code,
+                    textDirection: TextDirection.ltr,
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ],
+                  ),
                 ],
               ),
               SizedBox(height: 2.h),

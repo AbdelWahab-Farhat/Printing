@@ -20,6 +20,11 @@ class ProductResource extends JsonResource
     {
         return [
             'id' => $this->id,
+
+            // What a person says out loud — P7. Always 'P' + the id, so it is safe to read as
+            // one in support.
+            'code' => $this->code,
+
             'slug' => $this->slug,
             'name' => $this->name,
             'description' => $this->description,

@@ -6,6 +6,7 @@ namespace App\Domain\Catalog\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
+use App\Domain\Catalog\Actions\AllocateProductIdentifier;
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Enums\ProductCategory;
@@ -23,6 +24,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * As with customers, soft deleting does not open a destroy route — a product is deactivated so
  * that past orders keep pointing at it. It is the guarantee underneath: nothing can remove the
  * row an order refers to, whatever calls `delete()`.
+ *
+ * `code` is deliberately absent from the fillable list: it is allocated by
+ * {@see AllocateProductIdentifier} and must never arrive in a request.
  */
 #[UseFactory(ProductFactory::class)]
 #[Fillable([
@@ -33,6 +37,32 @@ class Product extends Model implements HasAuditTrail
 {
     /** @use HasFactory<ProductFactory> */
     use Auditable, HasFactory, SoftDeletes;
+
+    /**
+     * Gives every product its code, on whatever path created it.
+     *
+     * On the model rather than in `CreateProduct`, and that is the difference from how customers
+     * do it. Three places create a product — the action, the factory and the catalogue seeder —
+     * and `code` is NOT NULL, so an allocation that lives in only one of them is a crash waiting
+     * for the next caller. There is exactly one correct code for any product, `P` + its id, so
+     * there is no decision here for a caller to make and nothing is taken away from them by
+     * settling it here.
+     *
+     * The reservation itself still belongs to the action; this only guarantees it is asked for.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $product): void {
+            if ($product->code !== null) {
+                return;
+            }
+
+            $identifier = app(AllocateProductIdentifier::class)();
+
+            $product->id = $identifier->id;
+            $product->code = $identifier->code;
+        });
+    }
 
     /**
      * @return array<string, mixed>

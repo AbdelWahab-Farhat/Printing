@@ -13,6 +13,11 @@ part 'product.g.dart';
 abstract class Product with _$Product {
   const factory Product({
     required int id,
+
+    /// What a person says out loud — `P7`. The server allocates it and it never changes, so it
+    /// is the one thing on the card safe to read down a phone line.
+    required String code,
+
     required String slug,
     required String name,
     String? description,
