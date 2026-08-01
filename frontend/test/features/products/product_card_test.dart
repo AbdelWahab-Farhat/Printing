@@ -304,15 +304,17 @@ void main() {
       expect(find.text('· موقوف'), findsNothing);
     });
 
-    testWidgets('the selling points are on the card', (tester) async {
-      // Arrange
+    testWidgets('the selling points are deliberately not on the card', (tester) async {
+      // Arrange — the product carries two of them.
       await tester.pumpWidget(host(ProductCard(product: shippingBag())));
 
       // Act
       await tester.pump();
 
-      // Assert — they were rendered nowhere at all before.
-      expect(find.text('مقاومة للماء والتمزق · لاصق قوي واحترافي'), findsOneWidget);
+      // Assert — a selling point is what a salesperson says *after* the number; on a row whose
+      // job is the number it is a line the eye skips on every card. They stay on the model.
+      expect(find.textContaining('مقاومة للماء'), findsNothing);
+      expect(find.textContaining('لاصق قوي'), findsNothing);
     });
 
     testWidgets('a tap reaches the caller', (tester) async {

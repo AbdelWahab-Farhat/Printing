@@ -46,7 +46,8 @@ class _ProductsView extends StatelessWidget {
               onRefresh: cubit.refresh,
               // A product card carries its whole price grid, so it is about twice the default
               // placeholder. Left at 106 the list would visibly jump when the real rows land.
-              skeletonHeight: 200.h,
+              // 210 is the measured height of a four-size product, which is most of them.
+              skeletonHeight: 210.h,
               itemBuilder: (context, product, index) =>
                   ProductCard(key: ValueKey(product.id), product: product),
             ),

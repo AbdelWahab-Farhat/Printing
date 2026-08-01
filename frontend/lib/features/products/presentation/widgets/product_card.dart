@@ -28,15 +28,18 @@ import 'package:printing/features/products/models/product.dart';
 /// separate them. Now the category is prose (`مطبوعة · بالقطعة`) and the sizes are table rows;
 /// nothing on the card is a chip, so nothing can be mistaken for one.
 ///
-/// **What it costs:** height. A four-size product is ~209 logical pixels against 106, so about
-/// three and a half cards fit a screen instead of six. With ten products and a search box above
-/// them that is the right trade — but **past roughly sixty products this needs a density
-/// toggle**, and that is a decision to take deliberately rather than discover.
+/// **What it costs:** height. Measured at 430×932 — a four-size product is 213 logical pixels
+/// against the old 106, the catalogue's largest (six sizes) is 257, and the two shapes with no
+/// grid are 116. So roughly four cards to a screen instead of six. With ten products and a
+/// search box above them that is the right trade — but **past roughly sixty products this needs
+/// a density toggle**, and that is a decision to take deliberately rather than discover.
 ///
-/// **What it deliberately drops:** features past the first line (ellipsised — they are what a
-/// salesperson adds *after* the number), `description` (a paragraph, on one product in ten), and
-/// `widthCm`/`heightCm` as visible text — though those do become the row's spoken label, so
-/// `25*35` is not read out as "twenty-five star thirty-five".
+/// **What it deliberately drops:** `features`. They were on the card for one revision and taken
+/// off again: a selling point is what a salesperson says *after* the number, so on a row whose
+/// job is the number it was a line of prose the eye had to skip over on every card. They are
+/// still on the model, for the day a product screen wants them. Also dropped: `description` (a
+/// paragraph, on one product in ten) and `widthCm`/`heightCm` as visible text — though those do
+/// become the row's spoken label, so `25*35` is not read out as "twenty-five star thirty-five".
 class ProductCard extends StatelessWidget {
   const ProductCard({required this.product, this.onTap, super.key});
 
@@ -73,19 +76,6 @@ class ProductCard extends StatelessWidget {
               _Identity(product: product),
               SizedBox(height: 10.h),
               _PriceBox(product: product),
-              if (product.features.isNotEmpty) ...[
-                SizedBox(height: 8.h),
-                Text(
-                  // One line, ellipsised. The tail reading as "…and more" is the honest shape
-                  // for a list of selling points on a row that has already said the price.
-                  product.features.join(' · '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
             ],
           ),
         ),
