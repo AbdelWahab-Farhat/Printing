@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/features/customers/models/customer.dart';
+import 'package:printing/features/customers/models/new_customer.dart';
 
 /// What the app can do about customers, stated without saying how.
 ///
@@ -21,16 +22,14 @@ abstract interface class CustomerRepository {
     int perPage = 20,
   });
 
-  /// Registers a new customer and returns them as the server stored them.
+  /// Registers a new customer — with their shops, if any were given — and returns them as the
+  /// server stored them.
   ///
   /// `code` comes back allocated (`C1`, `C2`, …) — it is generated server-side and there is no
   /// way to propose one from here.
   ///
-  /// `is_active` is deliberately not a parameter: a customer being created is one you have just
-  /// started working with, and the API defaults them to active. When deactivating gets a
-  /// screen, it belongs on the customer that already exists, not on the form that creates them.
-  Future<Either<Failure, Customer>> create({
-    required String name,
-    required String phone,
-  });
+  /// `is_active` is deliberately absent from [NewCustomer]: a customer being created is one you
+  /// have just started working with, and the API defaults them to active. When deactivating gets
+  /// a screen, it belongs on the customer that already exists, not on the form that creates them.
+  Future<Either<Failure, Customer>> create(NewCustomer customer);
 }

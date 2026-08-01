@@ -50,6 +50,20 @@ abstract final class AppIcons {
   static IconData get addCustomer =>
       _pick(Icons.person_add_alt_1_rounded, CupertinoIcons.person_add_solid);
 
+  static IconData get addProduct =>
+      _pick(Icons.add_box_outlined, CupertinoIcons.plus_app);
+
+  /// A plain "one more of these" — a size, a price break. Not [addProduct], which names a
+  /// specific thing to create.
+  static IconData get add => _pick(Icons.add_rounded, CupertinoIcons.add);
+
+  /// Removes a row the user added. Distinct from [clear], which empties a field.
+  static IconData get delete =>
+      _pick(Icons.delete_outline_rounded, CupertinoIcons.delete);
+
+  /// A machine-readable name — a slug, a code.
+  static IconData get tag => _pick(Icons.tag_rounded, CupertinoIcons.tag);
+
   static IconData get copy => _pick(Icons.copy_rounded, CupertinoIcons.doc_on_doc);
 
   static IconData get refresh =>

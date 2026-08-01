@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
+import 'package:printing/features/products/models/pricing_unit_filter.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:printing/features/products/repositories/product_repository.dart';
@@ -64,11 +65,35 @@ void main() {
       () => repository.products(
         search: search ?? any(named: 'search'),
         category: any(named: 'category'),
+        pricingUnit: any(named: 'pricingUnit'),
         isActive: any(named: 'isActive'),
         page: onPage ?? any(named: 'page'),
         perPage: any(named: 'perPage'),
       ),
     ).thenAnswer((_) async => result);
+  }
+
+  /// Asserts the API was asked exactly once for this combination.
+  ///
+  /// Every parameter is stated: what matters about a filter is *which* request went out, and a
+  /// matcher per parameter says that in the assertion rather than in index arithmetic over a
+  /// captured list.
+  void verifyAsked({
+    required String? search,
+    required String? pricingUnit,
+    required int page,
+    int times = 1,
+  }) {
+    verify(
+      () => repository.products(
+        search: search,
+        category: any(named: 'category'),
+        pricingUnit: pricingUnit,
+        isActive: any(named: 'isActive'),
+        page: page,
+        perPage: any(named: 'perPage'),
+      ),
+    ).called(times);
   }
 
   group('load', () {
@@ -254,6 +279,109 @@ void main() {
           ),
         ).called(1);
       },
+    );
+  });
+
+  group('filtering by pricing unit', () {
+    blocTest<ProductsCubit, ProductsState>(
+      'starts with no unit filter at all',
+      setUp: () {
+        // Arrange
+        arrangeProducts(right(page([product(1, 'أكياس الشحن')])));
+      },
+      build: () => cubit,
+      // Act
+      act: (cubit) => cubit.load(),
+      // Assert — the parameter is absent, not sent empty.
+      verify: (cubit) {
+        expect(cubit.unit, PricingUnitFilter.all);
+        verifyAsked(search: null, pricingUnit: null, page: 1);
+      },
+    );
+
+    blocTest<ProductsCubit, ProductsState>(
+      'بالكيلوغرام asks the API for kilogram products',
+      setUp: () {
+        // Arrange
+        arrangeProducts(right(page([product(1, 'أكياس الشحن السادة')])));
+      },
+      build: () => cubit,
+      // Act
+      act: (cubit) => cubit.filterByUnit(PricingUnitFilter.kilogram),
+      // Assert — the value the backend enum uses, not the Arabic label.
+      verify: (_) => verifyAsked(search: null, pricingUnit: 'kilogram', page: 1),
+    );
+
+    blocTest<ProductsCubit, ProductsState>(
+      'the search term survives a change of filter',
+      setUp: () {
+        // Arrange
+        arrangeProducts(right(page([product(1, 'الأكياس الشفافة السادة')])));
+      },
+      build: () => cubit,
+      // Act — someone who typed a word and then tapped a chip is narrowing, not restarting.
+      act: (cubit) async {
+        await cubit.load(search: 'شفافة');
+        await cubit.filterByUnit(PricingUnitFilter.kilogram);
+      },
+      // Assert
+      verify: (_) => verifyAsked(search: 'شفافة', pricingUnit: 'kilogram', page: 1),
+    );
+
+    blocTest<ProductsCubit, ProductsState>(
+      'the filter rides along on the next page too',
+      setUp: () {
+        // Arrange
+        arrangeProducts(right(page([product(1, 'الأول')], last: 2)), onPage: 1);
+        arrangeProducts(right(page([product(2, 'الثاني')], current: 2, last: 2)), onPage: 2);
+      },
+      build: () => cubit,
+      // Act
+      act: (cubit) async {
+        await cubit.filterByUnit(PricingUnitFilter.piece);
+        await cubit.loadMore();
+      },
+      // Assert — page two of "بالقطعة" must not arrive as page two of everything.
+      verify: (_) => verifyAsked(search: null, pricingUnit: 'piece', page: 2),
+    );
+
+    blocTest<ProductsCubit, ProductsState>(
+      'الكل widens it back again',
+      setUp: () {
+        // Arrange
+        arrangeProducts(right(page([product(1, 'أكياس الشحن')])));
+      },
+      build: () => cubit,
+      // Act
+      act: (cubit) async {
+        await cubit.filterByUnit(PricingUnitFilter.kilogram);
+        await cubit.filterByUnit(PricingUnitFilter.all);
+      },
+      // Assert — one narrowed request, then one wide one.
+      verify: (_) {
+        verifyAsked(search: null, pricingUnit: 'kilogram', page: 1);
+        verifyAsked(search: null, pricingUnit: null, page: 1);
+      },
+    );
+
+    blocTest<ProductsCubit, ProductsState>(
+      'tapping the chip that is already on costs nothing',
+      setUp: () {
+        // Arrange
+        arrangeProducts(right(page([product(1, 'أكياس الشحن')])));
+      },
+      build: () => cubit,
+      // Act
+      act: (cubit) async {
+        await cubit.filterByUnit(PricingUnitFilter.piece);
+        await cubit.filterByUnit(PricingUnitFilter.piece);
+        await cubit.filterByUnit(PricingUnitFilter.piece);
+      },
+      // Assert — one request, and one screen-blanking `loading` state, not three.
+      expect: () => [
+        const ProductsState.loading(),
+        isA<ProductsLoaded>(),
+      ],
     );
   });
 

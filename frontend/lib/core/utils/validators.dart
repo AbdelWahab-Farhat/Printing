@@ -229,13 +229,25 @@ abstract final class Validators {
 
   /// ٠١٢٣ and ۰۱۲۳ become 0123. Both the Arabic-Indic and the Persian sets appear on keyboards
   /// people actually use here.
+  ///
+  /// The Arabic decimal separator `٫` becomes `.` for the same reason the digits do: it is what
+  /// the keyboard puts under the user's thumb, and `١٫١٠٠` reaching a number parser as `1٫100`
+  /// is a price that silently fails to be a number. The *thousands* separator `٬` is left
+  /// alone — a grouping mark inside a quantity is a typo, and stripping it would quietly accept
+  /// one.
   static String toWesternDigits(String input) {
     const arabicIndic = '٠١٢٣٤٥٦٧٨٩';
     const persian = '۰۱۲۳۴۵۶۷۸۹';
+    const arabicDecimalSeparator = '٫';
     final buffer = StringBuffer();
 
     for (final rune in input.runes) {
       final char = String.fromCharCode(rune);
+
+      if (char == arabicDecimalSeparator) {
+        buffer.write('.');
+        continue;
+      }
 
       final arabicIndex = arabicIndic.indexOf(char);
       if (arabicIndex != -1) {

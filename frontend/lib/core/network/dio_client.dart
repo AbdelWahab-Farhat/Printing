@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:printing/core/config/app_config.dart';
 import 'package:printing/core/network/auth_interceptor.dart';
+import 'package:printing/core/session/session.dart';
 import 'package:printing/core/storage/token_storage.dart';
 
 /// Builds the one `Dio` the whole app shares.
@@ -13,7 +14,9 @@ import 'package:printing/core/storage/token_storage.dart';
 abstract final class DioClient {
   static Dio create({
     required TokenStorage tokens,
+    required Session session,
     required Future<void> Function() onUnauthorized,
+    required Future<void> Function() refreshSession,
   }) {
     final dio = Dio(
       BaseOptions(
@@ -31,7 +34,14 @@ abstract final class DioClient {
       ),
     );
 
-    dio.interceptors.add(AuthInterceptor(tokens, onUnauthorized: onUnauthorized));
+    dio.interceptors.add(
+      AuthInterceptor(
+        tokens,
+        session,
+        onUnauthorized: onUnauthorized,
+        refreshSession: refreshSession,
+      ),
+    );
 
     // Never in release: request and response bodies contain customer data and the bearer
     // token, and `kReleaseMode` is the only check that cannot be forgotten by a flag.

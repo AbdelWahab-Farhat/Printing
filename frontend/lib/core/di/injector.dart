@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:printing/core/config/app_config.dart';
 import 'package:printing/core/network/dio_client.dart';
+import 'package:printing/core/session/session.dart';
 import 'package:printing/core/storage/token_storage.dart';
 import 'package:printing/features/auth/presentation/viewmodel/login_cubit.dart';
 import 'package:printing/features/auth/presentation/viewmodel/logout_cubit.dart';
@@ -27,9 +28,11 @@ import 'package:printing/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:printing/features/home/repositories/home_repository.dart';
 import 'package:printing/features/home/repositories/home_repository_impl.dart';
 import 'package:printing/features/home/usecases/get_home_summary.dart';
+import 'package:printing/features/products/presentation/viewmodel/add_product_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:printing/features/products/repositories/product_repository.dart';
 import 'package:printing/features/products/repositories/product_repository_impl.dart';
+import 'package:printing/features/products/usecases/create_product.dart';
 import 'package:printing/features/products/usecases/get_products.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -73,11 +76,24 @@ abstract final class Injector {
     // the token without awaiting.
     await tokens.read();
 
+    // Who is signed in and what they may do. Registered here beside the token rather than in
+    // `_registerAuth()`, because everything in there serves the auth screens alone while this is
+    // the one object every feature reads. It must exist before `Dio`: the interceptor holds it.
+    final session = Session();
+
     sl
       ..registerSingleton<SharedPreferences>(prefs)
       ..registerSingleton<TokenStorage>(tokens)
+      ..registerSingleton<Session>(session)
       ..registerSingleton<Dio>(
-        DioClient.create(tokens: tokens, onUnauthorized: onUnauthorized),
+        DioClient.create(
+          tokens: tokens,
+          session: session,
+          onUnauthorized: onUnauthorized,
+          // Resolved lazily inside the closure, not captured: the repository is registered
+          // further down and does not exist yet at this line.
+          refreshSession: () => sl<AuthRepository>().currentUser().then((_) {}),
+        ),
       );
 
     _registerAuth();
@@ -96,7 +112,7 @@ abstract final class Injector {
       // Lazy singleton, not a factory: the splash screen and every future sign-out share one
       // repository, and it is stateless apart from the token store it already shares.
       ..registerLazySingleton<AuthRepository>(
-        () => AuthRepositoryImpl(sl<Dio>(), sl<TokenStorage>()),
+        () => AuthRepositoryImpl(sl<Dio>(), sl<TokenStorage>(), sl<Session>()),
       )
       ..registerLazySingleton<Login>(() => Login(sl<AuthRepository>()))
       ..registerLazySingleton<GetCurrentUser>(() => GetCurrentUser(sl<AuthRepository>()))
@@ -131,8 +147,12 @@ abstract final class Injector {
     sl
       ..registerLazySingleton<ProductRepository>(() => ProductRepositoryImpl(sl<Dio>()))
       ..registerLazySingleton<GetProducts>(() => GetProducts(sl<ProductRepository>()))
+      ..registerLazySingleton<CreateProduct>(() => CreateProduct(sl<ProductRepository>()))
       // Factory: the catalogue screen owns its Cubit and closes it on dispose.
-      ..registerFactory<ProductsCubit>(() => ProductsCubit(getProducts: sl<GetProducts>()));
+      ..registerFactory<ProductsCubit>(() => ProductsCubit(getProducts: sl<GetProducts>()))
+      ..registerFactory<AddProductCubit>(
+        () => AddProductCubit(createProduct: sl<CreateProduct>()),
+      );
   }
 
   /// Cities and their regions — the delivery map. Registered as one block per feature so a new

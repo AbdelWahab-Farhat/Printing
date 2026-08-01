@@ -22,6 +22,17 @@ class AuthController extends Controller
 {
     use ResponseTrait;
 
+    /**
+     * Everything UserResource needs to describe who is signed in.
+     *
+     * `permissions` and `roles.permissions` are both here because the resource reports what the
+     * gate allows, and the gate reads direct grants *and* role-granted ones. Without them the
+     * `relationLoaded` guard is false and the key silently disappears from the response — the
+     * app would then hide every control from everyone, which reads as a permissions bug rather
+     * than a missing eager load.
+     */
+    private const IDENTITY_RELATIONS = ['roles', 'permissions', 'roles.permissions'];
+
     public function __construct(private readonly AuthService $auth) {}
 
     /**
@@ -40,7 +51,7 @@ class AuthController extends Controller
         );
 
         return $this->created([
-            'user' => new UserResource($result->user->load('roles')),
+            'user' => new UserResource($result->user->load(self::IDENTITY_RELATIONS)),
             'token' => $result->token,
         ], 'تم إنشاء الحساب بنجاح');
     }
@@ -59,7 +70,7 @@ class AuthController extends Controller
         );
 
         return $this->success([
-            'user' => new UserResource($result->user->load('roles')),
+            'user' => new UserResource($result->user->load(self::IDENTITY_RELATIONS)),
             'token' => $result->token,
         ], 'تم تسجيل الدخول بنجاح');
     }
@@ -71,7 +82,7 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        return $this->success(new UserResource($request->user()->load('roles')));
+        return $this->success(new UserResource($request->user()->load(self::IDENTITY_RELATIONS)));
     }
 
     /**

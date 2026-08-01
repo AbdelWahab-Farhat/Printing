@@ -13,6 +13,7 @@ class GetProducts {
   Future<Either<Failure, Paginated<Product>>> call({
     String? search,
     String? category,
+    String? pricingUnit,
     bool? isActive,
     int page = 1,
     int perPage = 20,
@@ -22,6 +23,7 @@ class GetProducts {
       // silently finds nothing, and every caller would otherwise have to remember this.
       search: search?.trim(),
       category: category,
+      pricingUnit: pricingUnit,
       isActive: isActive,
       page: page,
       perPage: perPage,

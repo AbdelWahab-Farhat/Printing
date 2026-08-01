@@ -25,6 +25,19 @@ abstract class AuthUser with _$AuthUser {
     /// The jobs this account holds. Empty is meaningful — a brand-new employee has none yet.
     @Default(<UserRole>[]) List<UserRole> roles,
 
+    /// What the server says this account may do — the raw permission names, already expanded
+    /// for an administrator.
+    ///
+    /// **Nullable, with no `@Default([])`, and do not "tidy that up".** `null` means "this
+    /// response did not say" and `[]` means "this account may do nothing"; collapsing them
+    /// would turn a missing eager load on the backend into something that looks like a
+    /// permissions problem, with every control hidden from everybody and no way to tell why.
+    /// RULES §3: `null` ≠ صفر.
+    ///
+    /// Read through [Session], never directly — the string is compared against
+    /// [AppPermission.wire] there and nowhere else.
+    List<String>? permissions,
+
     /// Comes from the server rather than being derived from [roles] here.
     ///
     /// An administrator's access is granted by a rule on the backend, not by permission rows,

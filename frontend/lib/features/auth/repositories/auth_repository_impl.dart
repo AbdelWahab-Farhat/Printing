@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/api_endpoints.dart';
 import 'package:printing/core/network/safe_request.dart';
+import 'package:printing/core/session/session.dart';
 import 'package:printing/core/storage/token_storage.dart';
 import 'package:printing/features/auth/models/auth_user.dart';
 import 'package:printing/features/auth/repositories/auth_repository.dart';
@@ -21,10 +22,15 @@ import 'package:printing/features/auth/repositories/auth_repository.dart';
 /// concern, and if the ViewModel had to remember to save it, the one screen that forgot would
 /// produce a session that works until the app restarts and then mysteriously does not.
 class AuthRepositoryImpl implements AuthRepository {
-  const AuthRepositoryImpl(this._dio, this._tokens);
+  const AuthRepositoryImpl(this._dio, this._tokens, this._session);
 
   final Dio _dio;
   final TokenStorage _tokens;
+
+  /// Identity has the same shape as persistence: if a ViewModel had to remember to adopt the
+  /// user, the one screen that forgot would leave every gated control hidden with no clue why.
+  /// So it happens here, beside the token, and only here.
+  final Session _session;
 
   @override
   Future<Either<Failure, AuthSession>> login({
@@ -56,6 +62,7 @@ class AuthRepositoryImpl implements AuthRepository {
         // Written before returning, so the next request is authenticated without the caller
         // having to sequence anything.
         await _tokens.write(session.token);
+        _session.adopt(session.user);
 
         return Right(session);
       },
@@ -73,11 +80,20 @@ class AuthRepositoryImpl implements AuthRepository {
       (failure) async {
         // The server has disowned this token, so keeping it would send the user in a loop:
         // start-up trusts it, the first request 401s, and they land back here.
-        if (failure is UnauthorizedFailure) await _tokens.clear();
+        if (failure is UnauthorizedFailure) {
+          await _tokens.clear();
+          _session.clear();
+        }
 
         return Left(failure);
       },
-      (user) async => Right(user),
+      (user) async {
+        // Inside the call the splash awaits, so the set is filled before the first gated
+        // widget can exist. Do not move this up into the ViewModel.
+        _session.adopt(user);
+
+        return Right(user);
+      },
     );
   }
 
@@ -90,6 +106,7 @@ class AuthRepositoryImpl implements AuthRepository {
     // token that stays valid server-side until it expires, which is far better than a shared
     // phone that never logs out.
     await _tokens.clear();
+    _session.clear();
 
     return result.map((_) => unit);
   }

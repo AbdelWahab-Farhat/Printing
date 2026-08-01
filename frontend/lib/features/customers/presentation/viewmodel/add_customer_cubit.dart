@@ -25,14 +25,18 @@ class AddCustomerCubit extends Cubit<AddCustomerState> {
   /// did reach the server before the connection dropped makes the retry a 422 rather than a
   /// second customer. That is the one fact that makes "أعد المحاولة" an honest offer on this
   /// screen; a create without such a key would need the button to say something else.
-  Future<void> submit({required String name, required String phone}) async {
+  Future<void> submit({
+    required String name,
+    required String phone,
+    List<ShopInput> shops = const [],
+  }) async {
     // Ignored rather than queued: a second tap while the first request is in flight would be a
     // second POST, and the screen has already moved on by the time it answers.
     if (state.isSubmitting) return;
 
     emit(const AddCustomerState.submitting());
 
-    final result = await _createCustomer(name: name, phone: phone);
+    final result = await _createCustomer(name: name, phone: phone, shops: shops);
 
     // The screen may have been popped while the request was in flight, and emitting into a
     // closed Cubit throws.

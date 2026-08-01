@@ -34,6 +34,14 @@ extension AddCustomerStateX on AddCustomerState {
   /// phone box, next to the number the user must change.
   String? get phoneError => _fieldError('phone');
 
+  /// The server's complaint about one field of one shop.
+  ///
+  /// Laravel keys nested errors by path — `shops.0.latitude` — and that path is exactly the
+  /// coordinates of a box on this screen. Threading it through means a rejected shop is marked
+  /// on the shop that was rejected, rather than the whole form turning red and leaving the user
+  /// to guess which of three addresses the server disliked.
+  String? shopError(int index, String field) => _fieldError('shops.$index.$field');
+
   String? _fieldError(String field) => switch (this) {
     AddCustomerFailure(:final failure) => switch (failure) {
       ServerFailure(:final fieldErrors) => fieldErrors?[field]?.firstOrNull,

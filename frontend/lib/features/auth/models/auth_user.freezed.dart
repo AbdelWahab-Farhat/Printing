@@ -19,7 +19,18 @@ mixin _$AuthUser {
 /// name. Nullable because the column was added after the first accounts existed; a server
 /// that predates it simply omits the key.
 @JsonKey(name: 'employee_code') String? get employeeCode;/// The jobs this account holds. Empty is meaningful — a brand-new employee has none yet.
- List<UserRole> get roles;/// Comes from the server rather than being derived from [roles] here.
+ List<UserRole> get roles;/// What the server says this account may do — the raw permission names, already expanded
+/// for an administrator.
+///
+/// **Nullable, with no `@Default([])`, and do not "tidy that up".** `null` means "this
+/// response did not say" and `[]` means "this account may do nothing"; collapsing them
+/// would turn a missing eager load on the backend into something that looks like a
+/// permissions problem, with every control hidden from everybody and no way to tell why.
+/// RULES §3: `null` ≠ صفر.
+///
+/// Read through [Session], never directly — the string is compared against
+/// [AppPermission.wire] there and nowhere else.
+ List<String>? get permissions;/// Comes from the server rather than being derived from [roles] here.
 ///
 /// An administrator's access is granted by a rule on the backend, not by permission rows,
 /// so "is this person an admin" is the backend's answer to give. Re-deriving it in the app
@@ -37,16 +48,16 @@ $AuthUserCopyWith<AuthUser> get copyWith => _$AuthUserCopyWithImpl<AuthUser>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other.roles, roles)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other.roles, roles)&&const DeepCollectionEquality().equals(other.permissions, permissions)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,email,employeeCode,const DeepCollectionEquality().hash(roles),isAdmin);
+int get hashCode => Object.hash(runtimeType,id,name,phone,email,employeeCode,const DeepCollectionEquality().hash(roles),const DeepCollectionEquality().hash(permissions),isAdmin);
 
 @override
 String toString() {
-  return 'AuthUser(id: $id, name: $name, phone: $phone, email: $email, employeeCode: $employeeCode, roles: $roles, isAdmin: $isAdmin)';
+  return 'AuthUser(id: $id, name: $name, phone: $phone, email: $email, employeeCode: $employeeCode, roles: $roles, permissions: $permissions, isAdmin: $isAdmin)';
 }
 
 
@@ -57,7 +68,7 @@ abstract mixin class $AuthUserCopyWith<$Res>  {
   factory $AuthUserCopyWith(AuthUser value, $Res Function(AuthUser) _then) = _$AuthUserCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, String phone, String? email,@JsonKey(name: 'employee_code') String? employeeCode, List<UserRole> roles,@JsonKey(name: 'is_admin') bool isAdmin
+ int id, String name, String phone, String? email,@JsonKey(name: 'employee_code') String? employeeCode, List<UserRole> roles, List<String>? permissions,@JsonKey(name: 'is_admin') bool isAdmin
 });
 
 
@@ -74,7 +85,7 @@ class _$AuthUserCopyWithImpl<$Res>
 
 /// Create a copy of AuthUser
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? employeeCode = freezed,Object? roles = null,Object? isAdmin = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? employeeCode = freezed,Object? roles = null,Object? permissions = freezed,Object? isAdmin = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -82,7 +93,8 @@ as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,employeeCode: freezed == employeeCode ? _self.employeeCode : employeeCode // ignore: cast_nullable_to_non_nullable
 as String?,roles: null == roles ? _self.roles : roles // ignore: cast_nullable_to_non_nullable
-as List<UserRole>,isAdmin: null == isAdmin ? _self.isAdmin : isAdmin // ignore: cast_nullable_to_non_nullable
+as List<UserRole>,permissions: freezed == permissions ? _self.permissions : permissions // ignore: cast_nullable_to_non_nullable
+as List<String>?,isAdmin: null == isAdmin ? _self.isAdmin : isAdmin // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -168,10 +180,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles, @JsonKey(name: 'is_admin')  bool isAdmin)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles,  List<String>? permissions, @JsonKey(name: 'is_admin')  bool isAdmin)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AuthUser() when $default != null:
-return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.isAdmin);case _:
+return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.permissions,_that.isAdmin);case _:
   return orElse();
 
 }
@@ -189,10 +201,10 @@ return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles, @JsonKey(name: 'is_admin')  bool isAdmin)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles,  List<String>? permissions, @JsonKey(name: 'is_admin')  bool isAdmin)  $default,) {final _that = this;
 switch (_that) {
 case _AuthUser():
-return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.isAdmin);case _:
+return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.permissions,_that.isAdmin);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +221,10 @@ return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles, @JsonKey(name: 'is_admin')  bool isAdmin)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles,  List<String>? permissions, @JsonKey(name: 'is_admin')  bool isAdmin)?  $default,) {final _that = this;
 switch (_that) {
 case _AuthUser() when $default != null:
-return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.isAdmin);case _:
+return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.permissions,_that.isAdmin);case _:
   return null;
 
 }
@@ -224,7 +236,7 @@ return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_
 @JsonSerializable()
 
 class _AuthUser extends AuthUser {
-  const _AuthUser({required this.id, required this.name, required this.phone, this.email, @JsonKey(name: 'employee_code') this.employeeCode, final  List<UserRole> roles = const <UserRole>[], @JsonKey(name: 'is_admin') this.isAdmin = false}): _roles = roles,super._();
+  const _AuthUser({required this.id, required this.name, required this.phone, this.email, @JsonKey(name: 'employee_code') this.employeeCode, final  List<UserRole> roles = const <UserRole>[], final  List<String>? permissions, @JsonKey(name: 'is_admin') this.isAdmin = false}): _roles = roles,_permissions = permissions,super._();
   factory _AuthUser.fromJson(Map<String, dynamic> json) => _$AuthUserFromJson(json);
 
 @override final  int id;
@@ -242,6 +254,37 @@ class _AuthUser extends AuthUser {
   if (_roles is EqualUnmodifiableListView) return _roles;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_roles);
+}
+
+/// What the server says this account may do — the raw permission names, already expanded
+/// for an administrator.
+///
+/// **Nullable, with no `@Default([])`, and do not "tidy that up".** `null` means "this
+/// response did not say" and `[]` means "this account may do nothing"; collapsing them
+/// would turn a missing eager load on the backend into something that looks like a
+/// permissions problem, with every control hidden from everybody and no way to tell why.
+/// RULES §3: `null` ≠ صفر.
+///
+/// Read through [Session], never directly — the string is compared against
+/// [AppPermission.wire] there and nowhere else.
+ final  List<String>? _permissions;
+/// What the server says this account may do — the raw permission names, already expanded
+/// for an administrator.
+///
+/// **Nullable, with no `@Default([])`, and do not "tidy that up".** `null` means "this
+/// response did not say" and `[]` means "this account may do nothing"; collapsing them
+/// would turn a missing eager load on the backend into something that looks like a
+/// permissions problem, with every control hidden from everybody and no way to tell why.
+/// RULES §3: `null` ≠ صفر.
+///
+/// Read through [Session], never directly — the string is compared against
+/// [AppPermission.wire] there and nowhere else.
+@override List<String>? get permissions {
+  final value = _permissions;
+  if (value == null) return null;
+  if (_permissions is EqualUnmodifiableListView) return _permissions;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
 }
 
 /// Comes from the server rather than being derived from [roles] here.
@@ -264,16 +307,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other._roles, _roles)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other._roles, _roles)&&const DeepCollectionEquality().equals(other._permissions, _permissions)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,email,employeeCode,const DeepCollectionEquality().hash(_roles),isAdmin);
+int get hashCode => Object.hash(runtimeType,id,name,phone,email,employeeCode,const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_permissions),isAdmin);
 
 @override
 String toString() {
-  return 'AuthUser(id: $id, name: $name, phone: $phone, email: $email, employeeCode: $employeeCode, roles: $roles, isAdmin: $isAdmin)';
+  return 'AuthUser(id: $id, name: $name, phone: $phone, email: $email, employeeCode: $employeeCode, roles: $roles, permissions: $permissions, isAdmin: $isAdmin)';
 }
 
 
@@ -284,7 +327,7 @@ abstract mixin class _$AuthUserCopyWith<$Res> implements $AuthUserCopyWith<$Res>
   factory _$AuthUserCopyWith(_AuthUser value, $Res Function(_AuthUser) _then) = __$AuthUserCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, String phone, String? email,@JsonKey(name: 'employee_code') String? employeeCode, List<UserRole> roles,@JsonKey(name: 'is_admin') bool isAdmin
+ int id, String name, String phone, String? email,@JsonKey(name: 'employee_code') String? employeeCode, List<UserRole> roles, List<String>? permissions,@JsonKey(name: 'is_admin') bool isAdmin
 });
 
 
@@ -301,7 +344,7 @@ class __$AuthUserCopyWithImpl<$Res>
 
 /// Create a copy of AuthUser
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? employeeCode = freezed,Object? roles = null,Object? isAdmin = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? employeeCode = freezed,Object? roles = null,Object? permissions = freezed,Object? isAdmin = null,}) {
   return _then(_AuthUser(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -309,7 +352,8 @@ as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,employeeCode: freezed == employeeCode ? _self.employeeCode : employeeCode // ignore: cast_nullable_to_non_nullable
 as String?,roles: null == roles ? _self._roles : roles // ignore: cast_nullable_to_non_nullable
-as List<UserRole>,isAdmin: null == isAdmin ? _self.isAdmin : isAdmin // ignore: cast_nullable_to_non_nullable
+as List<UserRole>,permissions: freezed == permissions ? _self._permissions : permissions // ignore: cast_nullable_to_non_nullable
+as List<String>?,isAdmin: null == isAdmin ? _self.isAdmin : isAdmin // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

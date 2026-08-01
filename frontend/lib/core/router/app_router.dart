@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:printing/core/di/injector.dart';
+import 'package:printing/core/permissions/app_permission.dart';
+import 'package:printing/core/session/session.dart';
+import 'package:printing/core/storage/token_storage.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/features/auth/presentation/views/login_page.dart';
 import 'package:printing/features/cities/presentation/views/cities_page.dart';
 import 'package:printing/features/customers/presentation/views/add_customer_page.dart';
 import 'package:printing/features/customers/presentation/views/customers_page.dart';
 import 'package:printing/features/home/presentation/views/home_page.dart';
+import 'package:printing/features/products/presentation/views/add_product_page.dart';
 import 'package:printing/features/products/presentation/views/products_page.dart';
 import 'package:printing/features/root/presentation/views/root_page.dart';
 import 'package:printing/features/splash/presentation/views/splash_page.dart';
@@ -34,6 +39,8 @@ abstract final class Routes {
   /// so the URL says what is being added — and outside the shell, because a form is a task the
   /// user is *in*, not a tab they are browsing.
   static const String addCustomer = '/customers/new';
+
+  static const String addProduct = '/products/new';
 }
 
 /// The app's navigation.
@@ -115,7 +122,31 @@ abstract final class AppRouter {
         path: Routes.addCustomer,
         builder: (context, state) => const AddCustomerPage(),
       ),
+      GoRoute(
+        path: Routes.addProduct,
+        // The same courtesy as hiding the button, applied to the other way in: a deep link, a
+        // notification tap or a stale back-stack entry must not open a two-screen form whose
+        // only possible ending is a 403. Expressible only because `can()` answers synchronously
+        // — a redirect cannot await.
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.manageProducts) ? null : Routes.products,
+        builder: (context, state) => const AddProductPage(),
+      ),
     ],
+    // A cold deep link bypasses `initialLocation`, so it can reach a gated route before the
+    // splash has filled the session — and an empty session refuses everything, which would
+    // bounce the user to a shell with no name on it. Send them through the splash instead,
+    // which fills the session and then routes.
+    redirect: (context, state) {
+      final at = state.matchedLocation;
+      if (at == Routes.splash || at == Routes.login) return null;
+
+      if (!sl<Session>().isSignedIn) {
+        return sl<TokenStorage>().hasTokenInMemory ? Routes.splash : Routes.login;
+      }
+
+      return null;
+    },
     errorBuilder: (context, state) => Scaffold(
       body: Center(child: Text('الصفحة غير موجودة\n${state.uri}', textAlign: TextAlign.center)),
     ),

@@ -24,7 +24,7 @@ Map<String, dynamic> _$HomeSummaryToJson(_HomeSummary instance) =>
       'customers_count': instance.customersCount,
       'daily_orders': instance.dailyOrders,
       'monthly_orders': instance.monthlyOrders,
-      'statuses': instance.statuses,
+      'statuses': instance.statuses.map((e) => e.toJson()).toList(),
     };
 
 _OrderStatusCount _$OrderStatusCountFromJson(Map<String, dynamic> json) =>

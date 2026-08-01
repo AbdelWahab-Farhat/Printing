@@ -5,6 +5,7 @@ import 'package:printing/core/network/api_endpoints.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/core/network/safe_request.dart';
 import 'package:printing/features/customers/models/customer.dart';
+import 'package:printing/features/customers/models/new_customer.dart';
 import 'package:printing/features/customers/repositories/customer_repository.dart';
 
 /// Fulfils [CustomerRepository] over HTTP.
@@ -41,15 +42,12 @@ class CustomerRepositoryImpl implements CustomerRepository {
   }
 
   @override
-  Future<Either<Failure, Customer>> create({
-    required String name,
-    required String phone,
-  }) {
+  Future<Either<Failure, Customer>> create(NewCustomer customer) {
     return safeRequest<Customer>(
-      () => _dio.post(
-        CustomerEndpoints.index,
-        data: <String, dynamic>{'name': name, 'phone': phone},
-      ),
+      // `toJson` rather than a Map literal assembled here: the body nests shops inside the
+      // customer, and a literal reachable only through Dio is a shape no test can reach. As a
+      // model it is a pure function.
+      () => _dio.post(CustomerEndpoints.index, data: customer.toJson()),
       parse: (data) => Customer.fromJson(data as Map<String, dynamic>),
     );
   }

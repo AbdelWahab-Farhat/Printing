@@ -17,6 +17,9 @@ _AuthUser _$AuthUserFromJson(Map<String, dynamic> json) => _AuthUser(
           ?.map((e) => UserRole.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <UserRole>[],
+  permissions: (json['permissions'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
   isAdmin: json['is_admin'] as bool? ?? false,
 );
 
@@ -26,7 +29,8 @@ Map<String, dynamic> _$AuthUserToJson(_AuthUser instance) => <String, dynamic>{
   'phone': instance.phone,
   'email': instance.email,
   'employee_code': instance.employeeCode,
-  'roles': instance.roles,
+  'roles': instance.roles.map((e) => e.toJson()).toList(),
+  'permissions': instance.permissions,
   'is_admin': instance.isAdmin,
 };
 
@@ -44,4 +48,4 @@ _AuthSession _$AuthSessionFromJson(Map<String, dynamic> json) => _AuthSession(
 );
 
 Map<String, dynamic> _$AuthSessionToJson(_AuthSession instance) =>
-    <String, dynamic>{'user': instance.user, 'token': instance.token};
+    <String, dynamic>{'user': instance.user.toJson(), 'token': instance.token};

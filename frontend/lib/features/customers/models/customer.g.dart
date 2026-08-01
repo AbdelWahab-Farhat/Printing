@@ -29,7 +29,7 @@ Map<String, dynamic> _$CustomerToJson(_Customer instance) => <String, dynamic>{
   'name': instance.name,
   'phone': instance.phone,
   'is_active': instance.isActive,
-  'shops': instance.shops,
+  'shops': instance.shops?.map((e) => e.toJson()).toList(),
   'created_at': instance.createdAt?.toIso8601String(),
   'updated_at': instance.updatedAt?.toIso8601String(),
 };

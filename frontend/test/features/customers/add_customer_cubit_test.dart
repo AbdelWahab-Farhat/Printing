@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/features/customers/models/customer.dart';
+import 'package:printing/features/customers/models/new_customer.dart';
 import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
 import 'package:printing/features/customers/repositories/customer_repository.dart';
 import 'package:printing/features/customers/usecases/create_customer.dart';
@@ -29,6 +30,10 @@ void main() {
     shops: [],
   );
 
+  // mocktail needs something to hand back for `any()` on a non-nullable custom type. It is
+  // never read — only passed around while matching.
+  setUpAll(() => registerFallbackValue(const NewCustomer(name: '', phone: '')));
+
   setUp(() {
     repository = _MockCustomerRepository();
     cubit = AddCustomerCubit(createCustomer: CreateCustomer(repository));
@@ -37,10 +42,12 @@ void main() {
   tearDown(() => cubit.close());
 
   void arrangeCreate(Either<Failure, Customer> result) {
-    when(
-      () => repository.create(name: any(named: 'name'), phone: any(named: 'phone')),
-    ).thenAnswer((_) async => result);
+    when(() => repository.create(any())).thenAnswer((_) async => result);
   }
+
+  /// The payload the repository was handed, so a test can assert on what actually goes out.
+  NewCustomer sentCustomer() =>
+      verify(() => repository.create(captureAny())).captured.last as NewCustomer;
 
   // ─────────────────────────── creating ───────────────────────────
 
@@ -88,9 +95,7 @@ void main() {
     // Arrange — an impatient double tap on a *create* button is the one that matters: two
     // requests would be two customers if the phone were not unique server-side.
     var calls = 0;
-    when(
-      () => repository.create(name: any(named: 'name'), phone: any(named: 'phone')),
-    ).thenAnswer((_) async {
+    when(() => repository.create(any())).thenAnswer((_) async {
       calls++;
       await Future<void>.delayed(const Duration(milliseconds: 30));
 
@@ -117,9 +122,7 @@ void main() {
     await cubit.submit(name: '  مطبعة النور  ', phone: '0913334444');
 
     // Assert
-    verify(
-      () => repository.create(name: 'مطبعة النور', phone: '0913334444'),
-    ).called(1);
+    expect(sentCustomer().name, 'مطبعة النور');
   });
 
   test('an Arabic-Indic phone number is sent as western digits', () async {
@@ -131,9 +134,7 @@ void main() {
     await cubit.submit(name: 'مطبعة النور', phone: '٠٩١٣٣٣٤٤٤٤');
 
     // Assert
-    verify(
-      () => repository.create(name: 'مطبعة النور', phone: '0913334444'),
-    ).called(1);
+    expect(sentCustomer().phone, '0913334444');
   });
 
   // ─────────────────────────── what the screen reads ───────────────────────────
@@ -197,4 +198,131 @@ void main() {
     act: (cubit) => cubit.clearFailure(),
     expect: () => const <AddCustomerState>[],
   );
+
+  // ─────────────────────────── the shops ───────────────────────────
+
+  test('a customer added without shops mentions none at all', () async {
+    // Arrange — to this API an empty array is a statement about the customer's shops; silence
+    // is the honest thing for a form where the user simply added none.
+    arrangeCreate(const Right(created));
+
+    // Act
+    await cubit.submit(name: 'مطبعة النور', phone: '0913334444');
+
+    // Assert — `verify` consumes the recorded call, so it is read once and asserted on twice.
+    final sent = sentCustomer();
+    expect(sent.shops, isNull);
+    expect(sent.toJson().containsKey('shops'), isFalse);
+  });
+
+  test('a shop is sent with its name and its coordinates as numbers', () async {
+    // Arrange
+    arrangeCreate(const Right(created));
+
+    // Act
+    await cubit.submit(
+      name: 'مطبعة النور',
+      phone: '0913334444',
+      shops: const [
+        (
+          name: '  فرع سوق الجمعة  ',
+          latitude: '32.8872',
+          longitude: '13.1913',
+          pageUrl: 'https://facebook.com/alnoor',
+        ),
+      ],
+    );
+
+    // Assert
+    final shop = sentCustomer().shops!.single;
+    expect(shop.name, 'فرع سوق الجمعة');
+    expect(shop.latitude, 32.8872);
+    expect(shop.longitude, 13.1913);
+    expect(shop.pageUrl, 'https://facebook.com/alnoor');
+  });
+
+  test('Arabic-Indic coordinates and a decimal comma both reach the API as numbers', () async {
+    // Arrange — ٣٢٫٨٨ is what a Libyan keyboard produces, and 32,88 is what the same keyboard
+    // offers as a decimal mark. Sent through untouched, either is a 422 about a field the user
+    // filled in correctly as far as they can tell.
+    arrangeCreate(const Right(created));
+
+    // Act
+    await cubit.submit(
+      name: 'مطبعة النور',
+      phone: '0913334444',
+      shops: const [
+        (name: 'الفرع', latitude: '٣٢٫٨٨', longitude: '13,19', pageUrl: null),
+      ],
+    );
+
+    // Assert
+    final shop = sentCustomer().shops!.single;
+    expect(shop.latitude, 32.88);
+    expect(shop.longitude, 13.19);
+  });
+
+  test('an empty page link is left out rather than sent as an empty string', () async {
+    // Arrange — the API's rule is `nullable|url`, and '' is neither.
+    arrangeCreate(const Right(created));
+
+    // Act
+    await cubit.submit(
+      name: 'مطبعة النور',
+      phone: '0913334444',
+      shops: const [
+        (name: 'الفرع', latitude: '32.8', longitude: '13.1', pageUrl: '   '),
+      ],
+    );
+
+    // Assert
+    final json = sentCustomer().toJson()['shops'] as List<dynamic>;
+    expect((json.single as Map<String, dynamic>).containsKey('page_url'), isFalse);
+  });
+
+  test('several shops keep the order they were entered in', () async {
+    // Arrange — the server keys its complaints by index (`shops.1.latitude`), so the order the
+    // screen shows and the order it sends have to be the same one.
+    arrangeCreate(const Right(created));
+
+    // Act
+    await cubit.submit(
+      name: 'مطبعة النور',
+      phone: '0913334444',
+      shops: const [
+        (name: 'الأول', latitude: '32.1', longitude: '13.1', pageUrl: null),
+        (name: 'الثاني', latitude: '32.2', longitude: '13.2', pageUrl: null),
+        (name: 'الثالث', latitude: '32.3', longitude: '13.3', pageUrl: null),
+      ],
+    );
+
+    // Assert
+    expect(
+      sentCustomer().shops!.map((shop) => shop.name),
+      ['الأول', 'الثاني', 'الثالث'],
+    );
+  });
+
+  test('a rejected shop is blamed on the row the server named', () async {
+    // Arrange
+    arrangeCreate(
+      const Left(
+        ServerFailure(
+          message: 'البيانات غير صحيحة',
+          statusCode: 422,
+          fieldErrors: {
+            'shops.1.latitude': ['خط العرض يجب أن يكون بين -90 و 90'],
+          },
+        ),
+      ),
+    );
+
+    // Act
+    await cubit.submit(name: 'مطبعة النور', phone: '0913334444');
+
+    // Assert — under the second shop's latitude box, and nowhere else.
+    expect(cubit.state.shopError(1, 'latitude'), 'خط العرض يجب أن يكون بين -90 و 90');
+    expect(cubit.state.shopError(0, 'latitude'), isNull);
+    expect(cubit.state.nameError, isNull);
+  });
 }

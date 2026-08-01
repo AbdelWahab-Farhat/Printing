@@ -29,7 +29,7 @@ Map<String, dynamic> _$CityToJson(_City instance) => <String, dynamic>{
   'latitude': instance.latitude,
   'longitude': instance.longitude,
   'regions_count': instance.regionsCount,
-  'regions': instance.regions,
+  'regions': instance.regions?.map((e) => e.toJson()).toList(),
 };
 
 _Region _$RegionFromJson(Map<String, dynamic> json) => _Region(

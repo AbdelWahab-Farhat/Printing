@@ -11,13 +11,19 @@ import 'package:printing/core/utils/validators.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
 import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
+import 'package:printing/features/customers/usecases/create_customer.dart';
 
-/// Register a customer: a name and a number, and they exist.
+/// Register a customer: who they are, how to reach them, and where they sell from.
 ///
-/// The form asks for the two things the API requires and nothing else. `is_active` is not here
-/// because a customer being created is one you have just started working with — the server
-/// defaults them to active, and a toggle that is always left alone is a question the user has
-/// to read and answer for no reason.
+/// The form asks for everything `POST /customers` accepts, which is name, phone and any number
+/// of shops. `is_active` is the one field left out on purpose: a customer being created is one
+/// you have just started working with, the server defaults them to active, and a toggle that is
+/// always left alone is a question the user has to read and answer for no reason.
+///
+/// **Shops are optional as a group and all-or-nothing as a row.** The API requires a name and
+/// both coordinates for every shop it is given — a place the driver cannot find is not worth
+/// recording — so a row that has been started must be finished or removed. That is what the
+/// validators on each row enforce, before a round trip.
 class AddCustomerPage extends StatelessWidget {
   const AddCustomerPage({super.key});
 
@@ -40,21 +46,38 @@ class _AddCustomerView extends StatefulWidget {
   State<_AddCustomerView> createState() => _AddCustomerViewState();
 }
 
-/// Stateful for one reason: it owns a [GlobalKey] and two [TextEditingController]s.
+/// Stateful for one reason: it owns a [GlobalKey] and every [TextEditingController] on the
+/// screen, including the ones that come and go with a shop row.
 ///
 /// Those are widget-lifecycle resources, not application state — they must be disposed, and a
-/// Cubit is not a disposal mechanism. Everything that decides anything lives in
-/// [AddCustomerCubit].
+/// Cubit is not a disposal mechanism. Adding or removing a row is `setState` for the same
+/// reason: it is the *form's* shape, not a decision about a customer. Everything that decides
+/// anything lives in [AddCustomerCubit].
 class _AddCustomerViewState extends State<_AddCustomerView> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _phone = TextEditingController();
+  final _shops = <_ShopFields>[];
 
   @override
   void dispose() {
     _name.dispose();
     _phone.dispose();
+    for (final shop in _shops) {
+      shop.dispose();
+    }
     super.dispose();
+  }
+
+  void _addShop() => setState(() => _shops.add(_ShopFields()));
+
+  void _removeShop(int index) {
+    // Disposed on the way out rather than left to `dispose()`: the row is gone from the tree
+    // immediately, and a controller nobody will ever read again is a leak for as long as this
+    // screen stays open.
+    final removed = _shops.removeAt(index);
+    removed.dispose();
+    setState(() {});
   }
 
   void _submit() {
@@ -64,7 +87,11 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
 
     if (!_formKey.currentState!.validate()) return;
 
-    context.read<AddCustomerCubit>().submit(name: _name.text, phone: _phone.text);
+    context.read<AddCustomerCubit>().submit(
+      name: _name.text,
+      phone: _phone.text,
+      shops: [for (final shop in _shops) shop.toInput()],
+    );
   }
 
   /// Back to wherever this was opened from. `canPop` because the screen has its own route: a
@@ -92,7 +119,8 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
 
               case AddCustomerFailure(:final failure):
                 // Field-level errors are rendered under their inputs, so showing them again in
-                // a snackbar would say the same thing twice.
+                // a snackbar would say the same thing twice. A complaint about a *shop* still
+                // needs the toast: that row may be scrolled off the screen.
                 if (state.nameError == null && state.phoneError == null) {
                   context.showFailure(failure);
                 }
@@ -137,7 +165,7 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
                         helperText: 'رقم واحد لا يتكرر بين عميلين',
                         prefixIcon: AppIcons.phone,
                         keyboardType: TextInputType.phone,
-                        textInputAction: TextInputAction.done,
+                        textInputAction: TextInputAction.next,
                         // A phone number is digits: anything else is a typo, so the keyboard
                         // refuses it rather than the form complaining afterwards. Fifteen, not
                         // ten — the API's ceiling, wide enough for a landline.
@@ -153,7 +181,15 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
                         // آخر" is the one that actually happens.
                         errorText: state.phoneError,
                         onChanged: (_) => context.read<AddCustomerCubit>().clearFailure(),
-                        onSubmitted: (_) => _submit(),
+                      ),
+                      SizedBox(height: 28.h),
+
+                      _ShopsSection(
+                        shops: _shops,
+                        state: state,
+                        onAdd: _addShop,
+                        onRemove: _removeShop,
+                        onChanged: () => context.read<AddCustomerCubit>().clearFailure(),
                       ),
                       SizedBox(height: 32.h),
 
@@ -174,5 +210,234 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
         ),
       ),
     );
+  }
+}
+
+/// المحلات — none, one, or several.
+class _ShopsSection extends StatelessWidget {
+  const _ShopsSection({
+    required this.shops,
+    required this.state,
+    required this.onAdd,
+    required this.onRemove,
+    required this.onChanged,
+  });
+
+  final List<_ShopFields> shops;
+  final AddCustomerState state;
+  final VoidCallback onAdd;
+  final ValueChanged<int> onRemove;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(AppIcons.city, size: 18.sp, color: context.colorScheme.onSurfaceVariant),
+            SizedBox(width: 8.w),
+            Text(
+              'المحلات',
+              style: context.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: context.colorScheme.onSurface,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              // Said once, here, rather than as a hint under every empty row.
+              'اختياري',
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          'المكان الذي يبيع منه العميل، وموقعه على الخريطة.',
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: 12.h),
+
+        for (final (index, shop) in shops.indexed) ...[
+          _ShopCard(
+            key: ObjectKey(shop),
+            index: index,
+            fields: shop,
+            state: state,
+            onRemove: () => onRemove(index),
+            onChanged: onChanged,
+          ),
+          SizedBox(height: 12.h),
+        ],
+
+        AppButton(
+          label: shops.isEmpty ? 'إضافة محل' : 'إضافة محل آخر',
+          variant: AppButtonVariant.outlined,
+          icon: AppIcons.add,
+          onPressed: onAdd,
+        ),
+      ],
+    );
+  }
+}
+
+/// One shop's four boxes, in a card that can be taken away again.
+class _ShopCard extends StatelessWidget {
+  const _ShopCard({
+    required this.index,
+    required this.fields,
+    required this.state,
+    required this.onRemove,
+    required this.onChanged,
+    super.key,
+  });
+
+  final int index;
+  final _ShopFields fields;
+  final AddCustomerState state;
+  final VoidCallback onRemove;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(14.w, 8.h, 14.w, 16.h),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Text(
+                'محل ${index + 1}',
+                style: context.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: onRemove,
+                icon: Icon(AppIcons.delete, color: scheme.error),
+                tooltip: 'حذف المحل',
+              ),
+            ],
+          ),
+
+          AppTextField(
+            controller: fields.name,
+            label: 'اسم المكان',
+            hint: 'مثال: فرع سوق الجمعة',
+            prefixIcon: AppIcons.city,
+            validator: Validators.compose([
+              Validators.required,
+              Validators.maxLength(255, label: 'اسم المكان'),
+            ]),
+            errorText: state.shopError(index, 'name'),
+            onChanged: (_) => onChanged(),
+          ),
+          SizedBox(height: 14.h),
+
+          Row(
+            children: [
+              Expanded(
+                child: AppTextField(
+                  controller: fields.latitude,
+                  label: 'خط العرض',
+                  hint: '32.8872',
+                  textDirection: TextDirection.ltr,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  // Required, not `Validators.latitude`: that one is the optional flavour, and
+                  // the API refuses a shop that is missing either half of its pin.
+                  validator: Validators.decimal(min: -90, max: 90),
+                  errorText: state.shopError(index, 'latitude'),
+                  onChanged: (_) => onChanged(),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: AppTextField(
+                  controller: fields.longitude,
+                  label: 'خط الطول',
+                  hint: '13.1913',
+                  textDirection: TextDirection.ltr,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  validator: Validators.decimal(min: -180, max: 180),
+                  errorText: state.shopError(index, 'longitude'),
+                  onChanged: (_) => onChanged(),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            // Says where the two numbers come from. Until a map picker lands, copying them out
+            // of Google Maps is what people will actually do, and this is the difference
+            // between that being obvious and being a support call.
+            'انسخ الإحداثيات من خرائط جوجل: اضغط مطولاً على الموقع ثم انسخ الرقمين.',
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          SizedBox(height: 14.h),
+
+          AppTextField(
+            controller: fields.pageUrl,
+            label: 'رابط الصفحة',
+            hint: 'https://facebook.com/...',
+            textDirection: TextDirection.ltr,
+            keyboardType: TextInputType.url,
+            textInputAction: TextInputAction.done,
+            // Optional, and only checked once something is in it — an empty box is a fact, not
+            // a mistake.
+            validator: Validators.optional(Validators.url),
+            errorText: state.shopError(index, 'page_url'),
+            onChanged: (_) => onChanged(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The controllers behind one shop row, kept together so they are created and disposed as a
+/// unit — a row is added and removed as one thing, and four loose controllers would be four
+/// chances to forget one.
+class _ShopFields {
+  final name = TextEditingController();
+  final latitude = TextEditingController();
+  final longitude = TextEditingController();
+  final pageUrl = TextEditingController();
+
+  /// What the use case takes: text, exactly as typed. Nothing is parsed here — see
+  /// [CreateCustomer], which is the one place in this feature that converts anything.
+  ShopInput toInput() => (
+    name: name.text,
+    latitude: latitude.text,
+    longitude: longitude.text,
+    pageUrl: pageUrl.text,
+  );
+
+  void dispose() {
+    name.dispose();
+    latitude.dispose();
+    longitude.dispose();
+    pageUrl.dispose();
   }
 }

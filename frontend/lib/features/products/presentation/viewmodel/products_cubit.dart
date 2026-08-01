@@ -3,6 +3,7 @@ import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/core/pagination/paged_cubit.dart';
 import 'package:printing/core/pagination/paged_state.dart';
+import 'package:printing/features/products/models/pricing_unit_filter.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/usecases/get_products.dart';
 
@@ -16,12 +17,30 @@ class ProductsCubit extends PagedCubit<Product> {
 
   final GetProducts _getProducts;
 
+  /// Which unit the catalogue is narrowed to. Read by the chips row, which is inside the same
+  /// `BlocBuilder` as the list — and every change goes through [filterByUnit], which emits, so
+  /// the selected chip and the list can never disagree.
+  PricingUnitFilter unit = PricingUnitFilter.all;
+
   @override
   Future<Either<Failure, Paginated<Product>>> fetchPage({
     String? search,
     required int page,
   }) {
-    return _getProducts(search: search, page: page);
+    // The filter rides along with every page, including the ones `loadMore` asks for: page two
+    // of "بالكيلوغرام" must not arrive as page two of everything.
+    return _getProducts(search: search, pricingUnit: unit.value, page: page);
+  }
+
+  /// Narrows the catalogue to one pricing unit, or widens it back to all of them.
+  ///
+  /// The search term survives: someone who typed "شفافة" and then tapped بالكيلوغرام is asking a
+  /// narrower question, not starting a new one.
+  Future<void> filterByUnit(PricingUnitFilter next) async {
+    if (next == unit) return;
+
+    unit = next;
+    await load(search: currentSearch);
   }
 }
 

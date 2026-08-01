@@ -1,0 +1,19 @@
+# Code generation settings. One option, and it is not cosmetic.
+#
+# `explicit_to_json` makes a generated `toJson` call `toJson()` on nested models instead of
+# dropping the objects into the map as they are. Without it, a payload that nests — a customer
+# carrying shops, a product carrying variants carrying price tiers — produces
+#
+#     {'shops': [Instance of '_NewCustomerShop']}
+#
+# which `jsonEncode` refuses at the moment of sending. The failure surfaces inside Dio, on a
+# screen, with a stack trace that names neither the model nor the field; the model's own
+# `toJson` test passes happily, because `Map` equality on the unencoded object is true.
+#
+# It applies to every generated model, and `fromJson` is unaffected.
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          explicit_to_json: true

@@ -54,8 +54,8 @@ Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
   'min_order_quantity': instance.minOrderQuantity,
   'is_active': instance.isActive,
   'sort_order': instance.sortOrder,
-  'variants': instance.variants,
-  'images': instance.images,
+  'variants': instance.variants.map((e) => e.toJson()).toList(),
+  'images': instance.images.map((e) => e.toJson()).toList(),
 };
 
 _ProductVariant _$ProductVariantFromJson(Map<String, dynamic> json) =>
@@ -81,7 +81,7 @@ Map<String, dynamic> _$ProductVariantToJson(_ProductVariant instance) =>
       'height_cm': instance.heightCm,
       'is_active': instance.isActive,
       'sort_order': instance.sortOrder,
-      'price_tiers': instance.priceTiers,
+      'price_tiers': instance.priceTiers.map((e) => e.toJson()).toList(),
     };
 
 _ProductPriceTier _$ProductPriceTierFromJson(Map<String, dynamic> json) =>
