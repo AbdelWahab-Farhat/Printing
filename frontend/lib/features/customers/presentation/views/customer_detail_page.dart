@@ -4,16 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:go_router/go_router.dart';
 import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/session/session.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_dialog.dart';
+import 'package:printing/core/widgets/app_speed_dial.dart';
 import 'package:printing/features/customers/models/customer.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 
@@ -49,6 +48,7 @@ class _CustomerDetailView extends StatelessWidget {
     final cubit = context.read<CustomerDetailCubit>();
 
     return Scaffold(
+      floatingActionButtonLocation: AppSpeedDial.location,
       appBar: AppBar(
         title: BlocBuilder<CustomerDetailCubit, CustomerDetailState>(
           // The name once it is known, so the bar stops saying something generic the moment it
@@ -88,11 +88,11 @@ class _CustomerDetailView extends StatelessWidget {
   }
 }
 
-/// The speed dial: the two or three things this screen can do.
+/// What this screen can do, as data.
 ///
-/// A dial rather than an overflow menu, because these are the actions staff came here for —
-/// a glyph in the corner of the app bar is where an action goes to be forgotten. It is absent
-/// entirely without `customers.manage`: an empty dial is furniture.
+/// The button itself is [AppSpeedDial] in `core/widgets/` — it filters these by permission,
+/// collapses to a plain button when only one survives, and owns the right-to-left handling that
+/// every screen would otherwise get wrong on its own.
 class _Actions extends StatelessWidget {
   const _Actions({required this.customer});
 
@@ -136,44 +136,29 @@ class _Actions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!sl<Session>().can(AppPermission.manageCustomers)) return const SizedBox.shrink();
-
-    final scheme = context.colorScheme;
-
-    return SpeedDial(
-      icon: AppIcons.more,
-      activeIcon: AppIcons.close,
-      backgroundColor: scheme.primary,
-      foregroundColor: scheme.onPrimary,
-      overlayColor: scheme.scrim,
-      overlayOpacity: 0.35,
-      spacing: 10,
-      spaceBetweenChildren: 8,
-      children: [
-        SpeedDialChild(
-          child: Icon(AppIcons.designs),
-          label: 'التصاميم',
-          backgroundColor: scheme.secondaryContainer,
-          foregroundColor: scheme.onSecondaryContainer,
-          onTap: () => unawaited(context.push(Routes.customerDesigns(customer.id))),
-        ),
-        SpeedDialChild(
-          child: Icon(customer.isActive ? AppIcons.deactivate : AppIcons.activate),
-          label: customer.isActive ? 'تعطيل العميل' : 'تنشيط العميل',
-          // The one action that changes who can see this customer wears the warning colour —
-          // and only in the direction that takes something away.
-          backgroundColor: customer.isActive ? scheme.errorContainer : scheme.tertiaryContainer,
-          foregroundColor: customer.isActive
-              ? scheme.onErrorContainer
-              : scheme.onTertiaryContainer,
-          onTap: () => unawaited(_toggleActive(context)),
-        ),
-        SpeedDialChild(
-          child: Icon(AppIcons.edit),
+    return AppSpeedDial(
+      actions: [
+        AppAction(
           label: 'تعديل العميل',
-          backgroundColor: scheme.primaryContainer,
-          foregroundColor: scheme.onPrimaryContainer,
-          onTap: () => unawaited(_edit(context)),
+          icon: AppIcons.edit,
+          tone: AppActionTone.primary,
+          permission: AppPermission.manageCustomers,
+          onTap: _edit,
+        ),
+        AppAction(
+          label: customer.isActive ? 'تعطيل العميل' : 'تنشيط العميل',
+          icon: customer.isActive ? AppIcons.deactivate : AppIcons.activate,
+          // Only the direction that takes something away wears the warning colour.
+          tone: customer.isActive ? AppActionTone.warning : AppActionTone.neutral,
+          permission: AppPermission.manageCustomers,
+          onTap: _toggleActive,
+        ),
+        AppAction(
+          label: 'التصاميم',
+          icon: AppIcons.designs,
+          // Only `view`: looking at a customer's artwork is reading the customer.
+          permission: AppPermission.viewCustomers,
+          onTap: (context) => context.push(Routes.customerDesigns(customer.id)),
         ),
       ],
     );
