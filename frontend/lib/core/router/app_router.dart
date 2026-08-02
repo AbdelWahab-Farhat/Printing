@@ -6,6 +6,8 @@ import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/session/session.dart';
 import 'package:printing/core/storage/token_storage.dart';
 import 'package:printing/core/utils/app_icons.dart';
+import 'package:printing/features/audit/models/audit_subject.dart';
+import 'package:printing/features/audit/presentation/views/activity_log_page.dart';
 import 'package:printing/features/auth/presentation/views/login_page.dart';
 import 'package:printing/features/cities/presentation/views/cities_page.dart';
 import 'package:printing/features/customers/models/customer.dart';
@@ -14,6 +16,8 @@ import 'package:printing/features/customers/presentation/views/customer_detail_p
 import 'package:printing/features/customers/presentation/views/customers_page.dart';
 import 'package:printing/features/home/presentation/views/home_page.dart';
 import 'package:printing/features/location/presentation/views/pick_location_page.dart';
+import 'package:printing/features/orders/presentation/views/order_detail_page.dart';
+import 'package:printing/features/orders/presentation/views/orders_page.dart';
 import 'package:printing/features/products/presentation/views/add_product_page.dart';
 import 'package:printing/features/products/presentation/views/products_page.dart';
 import 'package:printing/features/root/presentation/views/root_page.dart';
@@ -60,7 +64,18 @@ abstract final class Routes {
 
   static String customerDesigns(int id) => '/customers/$id/designs';
 
+  /// Any record's history. One screen for every model — see [AuditSubject].
+  static const String activityLogPath = '/logs/:type/:id';
+
+  static String activityLog(AuditSubject subject, int id) => '/logs/${subject.path}/$id';
+
   static const String addProduct = '/products/new';
+
+  /// One order, everything about it. Outside the shell, because opening an order is a task the
+  /// user is *in* — the bottom bar claiming they are still browsing a tab would be wrong.
+  static const String orderDetailPath = '/orders/:id';
+
+  static String order(int id) => '/orders/$id';
 
   /// Choosing a point on the map. Outside the shell, and returns a `LatLng` through `pop`.
   static const String pickLocation = '/pick-location';
@@ -101,8 +116,7 @@ abstract final class AppRouter {
             routes: [
               GoRoute(
                 path: Routes.orders,
-                builder: (context, state) =>
-                    ComingSoonPage(title: 'قائمة الطلبات', icon: AppIcons.orders),
+                builder: (context, state) => const OrdersPage(),
               ),
             ],
           ),
@@ -134,6 +148,14 @@ abstract final class AppRouter {
           body: ComingSoonPage(title: 'المخزن', icon: AppIcons.warehouse),
         ),
       ),
+      // Declared outside the shell and *after* the tab, so `/orders` still selects the tab
+      // while `/orders/7` covers it.
+      GoRoute(
+        path: Routes.orderDetailPath,
+        builder: (context, state) => OrderDetailPage(
+          orderId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
       GoRoute(
         path: Routes.cities,
         builder: (context, state) => const CitiesPage(),
@@ -163,6 +185,23 @@ abstract final class AppRouter {
             builder: (context, state) => AddCustomerPage(customer: state.extra as Customer?),
           ),
         ],
+      ),
+      GoRoute(
+        path: Routes.activityLogPath,
+        builder: (context, state) {
+          final subject = AuditSubject.tryFromPath(state.pathParameters['type']);
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          // A deep link is somebody else's text. An unknown model or a non-numeric id is a
+          // polite screen, not a crash.
+          return subject == null || id == null
+              ? const _UnknownRecord()
+              : ActivityLogPage(
+                  subject: subject,
+                  recordId: id,
+                  title: state.extra as String?,
+                );
+        },
       ),
       GoRoute(
         path: Routes.pickLocation,
@@ -197,6 +236,19 @@ abstract final class AppRouter {
       body: Center(child: Text('الصفحة غير موجودة\n${state.uri}', textAlign: TextAlign.center)),
     ),
   );
+}
+
+/// A `/logs/<a model nobody has>/…` link.
+class _UnknownRecord extends StatelessWidget {
+  const _UnknownRecord();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('السجل')),
+      body: const Center(child: Text('لا يوجد سجل لهذا النوع من السجلات')),
+    );
+  }
 }
 
 /// A `/customers/<something that is not a number>` link.

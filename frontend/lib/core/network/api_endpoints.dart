@@ -34,6 +34,21 @@ abstract final class ProductEndpoints {
   static String quote(int productId) => '/products/$productId/quote';
 }
 
+abstract final class OrderEndpoints {
+  static const String index = '/orders';
+
+  static String show(int orderId) => '/orders/$orderId';
+
+  /// Moving an order. A POST, not a PATCH: the server records a row on the order's timeline as
+  /// well as changing the field, so it is an event rather than an edit to a value.
+  static String status(int orderId) => '/orders/$orderId/status';
+
+  static String designs(int orderId) => '/orders/$orderId/designs';
+
+  static String reviewDesign(int orderId, int designId) =>
+      '/orders/$orderId/designs/$designId/review';
+}
+
 abstract final class CustomerEndpoints {
   static const String index = '/customers';
 

@@ -73,17 +73,23 @@ class AppAction {
 ///     real: a staff account with `customers.view` and nothing else sees one action here.
 ///   * **more than one** → the dial.
 ///
-/// ## The right-to-left problem this exists to solve, once
+/// ## The right-to-left problem, and how it stopped being one
 ///
-/// `flutter_speed_dial` lays each child out as `Row([label, button])` with
-/// `mainAxisAlignment.start` and `mainAxisSize.max`. Under an Arabic `Directionality` that start
-/// becomes the right edge, so the row packs itself against the opposite side from the button the
-/// `Scaffold` placed — and the labels walk off the screen. The first build of this showed
-/// «تعديل ال…» clipped at the left margin with its buttons nowhere.
+/// `flutter_speed_dial` lays a child out as `Row([label, button])` with
+/// `mainAxisAlignment.start`. Under an Arabic `Directionality` that start is the right edge, so
+/// the row packs against the opposite side from the button the `Scaffold` placed and the labels
+/// walk off screen — this shipped once showing «تعديل ال…» clipped at the margin.
 ///
-/// So the dial is given the direction it was written for, and only the label text is turned back
-/// around. That pairs with [location], which must be passed to the `Scaffold` — the two are one
-/// decision and neither works alone.
+/// The fix is three things that only work together: the dial is given the direction it was
+/// written for, `switchLabelPosition` puts each label on the side there is room on, and
+/// [location] pins the button to the edge that leaves that room. Undo any one and the labels
+/// leave the screen.
+///
+/// The package's own `label` slot is not used at all, and that is the fix rather than a
+/// preference: it renders inside the `Scaffold`'s floating-button slot, which is 56 wide, so
+/// «تعديل العميل» came out squeezed to 26 pixels and painted over its own icon. Each action is
+/// one pill instead — icon and name inside the child button — whose width this file measures
+/// from the longest name in the dial.
 class AppSpeedDial extends StatelessWidget {
   const AppSpeedDial({required this.actions, super.key});
 
@@ -111,7 +117,8 @@ class AppSpeedDial extends StatelessWidget {
       builder: (context, _, _) {
         final allowed = [
           for (final action in actions)
-            if (action.permission == null || session.can(action.permission!)) action,
+            if (action.permission == null || session.can(action.permission!))
+              action,
         ];
 
         if (allowed.isEmpty) return const SizedBox.shrink();
@@ -133,7 +140,8 @@ class _Single extends StatelessWidget {
     final colours = _colours(context, action.tone);
 
     return FloatingActionButton.extended(
-      onPressed: () => unawaited(Future<void>.sync(() => action.onTap(context))),
+      onPressed: () =>
+          unawaited(Future<void>.sync(() => action.onTap(context))),
       backgroundColor: colours.$1,
       foregroundColor: colours.$2,
       icon: Icon(action.icon),
@@ -147,12 +155,39 @@ class _Dial extends StatelessWidget {
 
   final List<AppAction> actions;
 
+  /// How wide one pill has to be for the longest name in this dial.
+  ///
+  /// Measured rather than guessed: `childrenButtonSize` is a single size for every child, so a
+  /// fixed number either floats «التصاميم» in empty space or cuts «تسجيل راجع لدى المندوب».
+  /// Capped so a very long name shortens instead of hanging off the screen.
+  double _pillWidth(BuildContext context) {
+    final style = context.textTheme.labelLarge?.copyWith(
+      fontWeight: FontWeight.w700,
+    );
+    var widest = 0.0;
+
+    for (final action in actions) {
+      final painter = TextPainter(
+        text: TextSpan(text: action.label, style: style),
+        textDirection: TextDirection.rtl,
+      )..layout();
+
+      widest = widest > painter.width ? widest : painter.width;
+    }
+
+    // icon + gap + text + the padding on both ends.
+    final needed = 20.sp + 10.w + widest + 32.w;
+    final ceiling = MediaQuery.sizeOf(context).width - 48.w;
+
+    return needed > ceiling ? ceiling : needed;
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
     // See the class doc: the package's own geometry, with the Arabic put back only where it is
-    // read. Removing this puts the labels off the side of the screen.
+    // read. Removing this puts the children off the side of the screen.
     return Directionality(
       textDirection: TextDirection.ltr,
       child: SpeedDial(
@@ -164,10 +199,10 @@ class _Dial extends StatelessWidget {
         overlayOpacity: 0.4,
         spacing: 12,
         spaceBetweenChildren: 10,
-        // Labels on the far side of their buttons. With the dial on the left edge that is the
-        // only side with room — without it the package packs them against the opposite margin
-        // and they run off the screen, which is exactly how this first shipped.
+        // Start-aligns the children column. A pill is far wider than the 56 the main button is,
+        // and centred on it, it hangs 54 pixels off the left edge — measured, not guessed.
         switchLabelPosition: true,
+        childrenButtonSize: Size(_pillWidth(context), 52.h),
         children: [
           // Reversed so the first action a screen declares ends up nearest the thumb. A list
           // reads top-down; a dial opens bottom-up.
@@ -181,32 +216,33 @@ class _Dial extends StatelessWidget {
     final colours = _colours(context, action.tone);
 
     return SpeedDialChild(
-      child: Icon(action.icon),
-      backgroundColor: colours.$1,
-      foregroundColor: colours.$2,
-      // `labelWidget`, not `label`: the dial around it is left-to-right by necessity, and the
-      // Arabic inside it must not be.
-      labelWidget: Directionality(
+      // The icon and its name in **one** pill. They used to be a coloured square and a separate
+      // white card beside it, which reads as two stickers stuck together rather than as one
+      // thing to press — and only half of it looked pressable.
+      child: Directionality(
+        // The dial around this is left-to-right out of necessity; the Arabic inside it is not.
         textDirection: TextDirection.rtl,
-        child: Container(
-          // The gap between a button and its own label. `spaceBetweenChildren` spaces the rows
-          // vertically and there is no horizontal equivalent, so it lives here. `only(left:)`
-          // and not a directional edge, because this subtree is deliberately left-to-right.
-          margin: EdgeInsets.only(left: 12.w),
-          child: Material(
-            elevation: 3,
-            color: context.colorScheme.surface,
-            borderRadius: BorderRadius.circular(10.r),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(action.icon, size: 20.sp),
+            SizedBox(width: 10.w),
+            Flexible(
               child: Text(
                 action.label,
-                style: context.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
+      shape: const StadiumBorder(),
+      backgroundColor: colours.$1,
+      foregroundColor: colours.$2,
       onTap: () => unawaited(Future<void>.sync(() => action.onTap(context))),
     );
   }
@@ -217,8 +253,14 @@ class _Dial extends StatelessWidget {
   final scheme = context.colorScheme;
 
   return switch (tone) {
-    AppActionTone.primary => (scheme.primaryContainer, scheme.onPrimaryContainer),
-    AppActionTone.neutral => (scheme.secondaryContainer, scheme.onSecondaryContainer),
+    AppActionTone.primary => (
+      scheme.primaryContainer,
+      scheme.onPrimaryContainer,
+    ),
+    AppActionTone.neutral => (
+      scheme.secondaryContainer,
+      scheme.onSecondaryContainer,
+    ),
     AppActionTone.warning => (scheme.errorContainer, scheme.onErrorContainer),
   };
 }

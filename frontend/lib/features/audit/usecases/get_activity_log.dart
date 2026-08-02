@@ -1,0 +1,20 @@
+import 'package:dartz/dartz.dart';
+import 'package:printing/core/error/failure.dart';
+import 'package:printing/core/network/paginated.dart';
+import 'package:printing/features/audit/models/activity_log_entry.dart';
+import 'package:printing/features/audit/models/audit_subject.dart';
+import 'package:printing/features/audit/repositories/audit_repository.dart';
+
+/// One page of a record's history, newest first.
+class GetActivityLog {
+  const GetActivityLog(this._repository);
+
+  final AuditRepository _repository;
+
+  Future<Either<Failure, Paginated<ActivityLogEntry>>> call(
+    AuditSubject subject,
+    int recordId, {
+    int page = 1,
+    int perPage = 20,
+  }) => _repository.logs(subject, recordId, page: page, perPage: perPage);
+}

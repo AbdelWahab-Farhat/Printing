@@ -13,6 +13,7 @@ import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_dialog.dart';
 import 'package:printing/core/widgets/app_speed_dial.dart';
+import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/customers/models/customer.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 
@@ -154,12 +155,20 @@ class _Actions extends StatelessWidget {
           onTap: _toggleActive,
         ),
         AppAction(
-          label: 'التصاميم',
-          icon: AppIcons.designs,
-          // Only `view`: looking at a customer's artwork is reading the customer.
-          permission: AppPermission.viewCustomers,
-          onTap: (context) => context.push(Routes.customerDesigns(customer.id)),
+          label: 'سجل التعديلات',
+          icon: AppIcons.history,
+          // `logs.view`, not `customers.view`, and that is the server's own line: a history
+          // shows what *everyone* has done, including people and prices the reader may have no
+          // other way to see. Editing a customer does not make somebody an auditor.
+          permission: AppPermission.viewActivityLogs,
+          onTap: (context) => context.push(
+            Routes.activityLog(AuditSubject.customer, customer.id),
+            extra: customer.name,
+          ),
         ),
+        // ⚠️ «التصاميم» belonged here and has been taken out until its screen exists. The route
+        // was declared and never registered, so the action opened «الصفحة غير موجودة» — a dead
+        // link is worse than a missing one. It comes back with the upload sheet.
       ],
     );
   }

@@ -30,7 +30,11 @@ void main() {
 
   tearDown(Injector.reset);
 
-  AppAction action(String label, {AppPermission? permission, VoidCallback? onTap}) => AppAction(
+  AppAction action(
+    String label, {
+    AppPermission? permission,
+    VoidCallback? onTap,
+  }) => AppAction(
     label: label,
     icon: AppIcons.edit,
     permission: permission,
@@ -71,19 +75,26 @@ void main() {
     ),
   );
 
-  testWidgets('nothing survives the permission filter, so nothing is rendered', (tester) async {
-    // Arrange — a staff account with only the read permission.
-    useAPhone(tester);
-    session.adopt(userWith(['customers.view']));
+  testWidgets(
+    'nothing survives the permission filter, so nothing is rendered',
+    (tester) async {
+      // Arrange — a staff account with only the read permission.
+      useAPhone(tester);
+      session.adopt(userWith(['customers.view']));
 
-    // Act
-    await tester.pumpWidget(host([action('تعديل', permission: AppPermission.manageCustomers)]));
+      // Act
+      await tester.pumpWidget(
+        host([action('تعديل', permission: AppPermission.manageCustomers)]),
+      );
 
-    // Assert — an empty dial is furniture.
-    expect(find.byType(FloatingActionButton), findsNothing);
-  });
+      // Assert — an empty dial is furniture.
+      expect(find.byType(FloatingActionButton), findsNothing);
+    },
+  );
 
-  testWidgets('one surviving action is a plain button, not a dial to open', (tester) async {
+  testWidgets('one surviving action is a plain button, not a dial to open', (
+    tester,
+  ) async {
     // Arrange — this really happens: the same screen shows three actions to an admin and one
     // to somebody who may only read.
     session.adopt(userWith(['customers.view']));
@@ -101,7 +112,9 @@ void main() {
     expect(find.text('تعديل'), findsNothing);
   });
 
-  testWidgets('several actions open as a dial, with every label on screen', (tester) async {
+  testWidgets('several actions open as a dial, with every label on screen', (
+    tester,
+  ) async {
     // Arrange — the bug this widget exists to prevent: the package lays its rows out from the
     // start edge, which in Arabic is the far side from the button, and the labels walk off.
     useAPhone(tester);
@@ -123,14 +136,23 @@ void main() {
 
     for (final label in const ['تعديل العميل', 'تعطيل العميل', 'التصاميم']) {
       final rect = tester.getRect(find.text(label));
-      expect(rect.left, greaterThanOrEqualTo(0), reason: '«$label» runs off the left edge');
-      expect(rect.right, lessThanOrEqualTo(width), reason: '«$label» runs off the right edge');
+      expect(
+        rect.left,
+        greaterThanOrEqualTo(0),
+        reason: '«$label» runs off the left edge',
+      );
+      expect(
+        rect.right,
+        lessThanOrEqualTo(width),
+        reason: '«$label» runs off the right edge',
+      );
     }
   });
 
-  testWidgets('a label never touches its own button', (tester) async {
-    // Arrange — the two used to sit flush against each other, which reads as one smudged
-    // control rather than an icon and its name.
+  testWidgets('a name is readable, not squeezed against its icon', (tester) async {
+    // Arrange — the defect this replaced: the package's own label slot renders inside the
+    // Scaffold's 56-wide floating-button slot, so «تعديل العميل» came out 26 pixels wide and
+    // painted over its own icon.
     useAPhone(tester);
     session.adopt(userWith(['customers.view', 'customers.manage']));
     await tester.pumpWidget(
@@ -144,24 +166,25 @@ void main() {
     await tester.tap(find.byType(FloatingActionButton).first);
     await tester.pumpAndSettle();
 
-    // Assert — every label is clear of every button by a visible margin.
-    final buttons = [
-      for (final fab in tester.widgetList(find.byType(FloatingActionButton)))
-        tester.getRect(find.byWidget(fab)),
-    ];
-
+    // Assert
     for (final label in const ['تعديل العميل', 'التصاميم']) {
-      final rect = tester.getRect(find.text(label));
+      final text = tester.getRect(find.text(label));
+      final icon = tester.getRect(
+        find
+            .descendant(
+              of: find.ancestor(of: find.text(label), matching: find.byType(Row)).first,
+              matching: find.byType(Icon),
+            )
+            .first,
+      );
 
-      for (final button in buttons) {
-        final overlapsVertically = rect.top < button.bottom && rect.bottom > button.top;
-        if (!overlapsVertically) continue;
+      // Which side the icon sits on is the row's business — Arabic puts it on the right — so
+      // the gap is measured whichever way round they came out.
+      final gap = text.left > icon.left ? text.left - icon.right : icon.left - text.right;
 
-        final gap = rect.left > button.left
-            ? rect.left - button.right
-            : button.left - rect.right;
-        expect(gap, greaterThan(4), reason: '«$label» is flush against a button');
-      }
+      // Wide enough to be the whole name rather than an ellipsis, and clear of the icon.
+      expect(text.width, greaterThan(40), reason: '«$label» is squeezed');
+      expect(gap, greaterThan(4), reason: '«$label» touches its icon');
     }
   });
 
@@ -171,7 +194,13 @@ void main() {
     var taps = 0;
 
     await tester.pumpWidget(
-      host([action('التصاميم', permission: AppPermission.viewCustomers, onTap: () => taps++)]),
+      host([
+        action(
+          'التصاميم',
+          permission: AppPermission.viewCustomers,
+          onTap: () => taps++,
+        ),
+      ]),
     );
 
     // Act
@@ -182,7 +211,9 @@ void main() {
     expect(taps, 1);
   });
 
-  testWidgets('an action with no permission is shown to everybody', (tester) async {
+  testWidgets('an action with no permission is shown to everybody', (
+    tester,
+  ) async {
     // Arrange — an account holding nothing at all.
     session.adopt(userWith([]));
 
@@ -193,7 +224,9 @@ void main() {
     expect(find.text('رجوع'), findsOneWidget);
   });
 
-  testWidgets('the dial follows the session while it is on screen', (tester) async {
+  testWidgets('the dial follows the session while it is on screen', (
+    tester,
+  ) async {
     // Arrange — a pull-to-refresh elsewhere can withdraw a permission with this mounted, and an
     // action left behind would offer work that ends in a 403.
     session.adopt(userWith(['customers.view']));

@@ -6,6 +6,9 @@ import 'package:printing/core/config/app_config.dart';
 import 'package:printing/core/network/dio_client.dart';
 import 'package:printing/core/session/session.dart';
 import 'package:printing/core/storage/token_storage.dart';
+import 'package:printing/features/audit/repositories/audit_repository.dart';
+import 'package:printing/features/audit/repositories/audit_repository_impl.dart';
+import 'package:printing/features/audit/usecases/get_activity_log.dart';
 import 'package:printing/features/auth/presentation/viewmodel/login_cubit.dart';
 import 'package:printing/features/auth/presentation/viewmodel/logout_cubit.dart';
 import 'package:printing/features/auth/repositories/auth_repository.dart';
@@ -36,6 +39,13 @@ import 'package:printing/features/location/presentation/viewmodel/pick_location_
 import 'package:printing/features/location/repositories/geocoding_repository.dart';
 import 'package:printing/features/location/repositories/geocoding_repository_impl.dart';
 import 'package:printing/features/location/usecases/search_places.dart';
+import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:printing/features/orders/presentation/viewmodel/orders_cubit.dart';
+import 'package:printing/features/orders/repositories/order_repository.dart';
+import 'package:printing/features/orders/repositories/order_repository_impl.dart';
+import 'package:printing/features/orders/usecases/change_order_status.dart';
+import 'package:printing/features/orders/usecases/get_order.dart';
+import 'package:printing/features/orders/usecases/get_orders.dart';
 import 'package:printing/features/products/presentation/viewmodel/add_product_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:printing/features/products/repositories/product_repository.dart';
@@ -109,15 +119,28 @@ abstract final class Injector {
         ),
       );
 
+    _registerAudit();
     _registerAuth();
     _registerLocation();
     _registerHome();
     _registerProducts();
     _registerCities();
     _registerCustomers();
+    _registerOrders();
 
     _isInitialized = true;
     debugPrint('⏱️ injector ready in ${stopwatch.elapsed}');
+  }
+
+  /// Every record's history. One repository for every model — the API's log endpoints are one
+  /// shape, and `AuditSubject` carries the only part that differs.
+  ///
+  /// No Cubit here: `ActivityLogCubit` is constructed by the screen, because it needs *which*
+  /// record and a factory taking two parameters is a worse way to say that than a constructor.
+  static void _registerAudit() {
+    sl
+      ..registerLazySingleton<AuditRepository>(() => AuditRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetActivityLog>(() => GetActivityLog(sl<AuditRepository>()));
   }
 
   /// Signing in, and the stored session behind it.
@@ -197,6 +220,33 @@ abstract final class Injector {
       ..registerFactory<ProductsCubit>(() => ProductsCubit(getProducts: sl<GetProducts>()))
       ..registerFactory<AddProductCubit>(
         () => AddProductCubit(createProduct: sl<CreateProduct>()),
+      );
+  }
+
+  /// Orders — the workshop's whole workflow.
+  ///
+  /// The status machine's rules are not registered here and are not in this app at all: the
+  /// server sends each order's legal moves with the order, already narrowed to what the
+  /// signed-in user may do. A copy of that map in Dart would be a second source of truth that
+  /// nothing keeps honest.
+  static void _registerOrders() {
+    sl
+      ..registerLazySingleton<OrderRepository>(() => OrderRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetOrders>(() => GetOrders(sl<OrderRepository>()))
+      ..registerLazySingleton<GetOrder>(() => GetOrder(sl<OrderRepository>()))
+      ..registerLazySingleton<ChangeOrderStatus>(
+        () => ChangeOrderStatus(sl<OrderRepository>()),
+      )
+      // Factory: the list screen owns its Cubit and closes it on dispose.
+      ..registerFactory<OrdersCubit>(() => OrdersCubit(getOrders: sl<GetOrders>()))
+      // Parameterised, like the customer's: the detail screen is *about* one order, so the id
+      // is a construction argument rather than something the Cubit is told afterwards.
+      ..registerFactoryParam<OrderDetailCubit, int, void>(
+        (orderId, _) => OrderDetailCubit(
+          orderId: orderId,
+          getOrder: sl<GetOrder>(),
+          changeStatus: sl<ChangeOrderStatus>(),
+        ),
       );
   }
 

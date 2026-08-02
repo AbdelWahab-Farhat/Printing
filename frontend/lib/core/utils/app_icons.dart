@@ -79,6 +79,10 @@ abstract final class AppIcons {
       _pick(Icons.check_circle_outline_rounded, CupertinoIcons.check_mark_circled);
 
   /// A customer's artwork — the image or PDF printed on their bags.
+  /// A record's change log. Every model has one.
+  static IconData get history =>
+      _pick(Icons.history_rounded, CupertinoIcons.clock);
+
   static IconData get designs =>
       _pick(Icons.palette_outlined, CupertinoIcons.paintbrush);
 
@@ -129,6 +133,20 @@ abstract final class AppIcons {
   /// Empties a field — the small circle inside a search box, not a delete.
   static IconData get clear =>
       _pick(Icons.close_rounded, CupertinoIcons.clear_circled_solid);
+
+  static IconData get notifications =>
+      _pick(Icons.notifications_none_rounded, CupertinoIcons.bell);
+
+  static IconData get settings =>
+      _pick(Icons.settings_outlined, CupertinoIcons.gear_alt);
+
+  static IconData get about =>
+      _pick(Icons.info_outline_rounded, CupertinoIcons.info);
+
+  /// The connection, not the server: a dropped line is a different problem from a refusal, and
+  /// the two are fixed by different people.
+  static IconData get offline =>
+      _pick(Icons.wifi_off_rounded, CupertinoIcons.wifi_slash);
 
   static IconData get error =>
       _pick(Icons.error_outline_rounded, CupertinoIcons.exclamationmark_circle);
