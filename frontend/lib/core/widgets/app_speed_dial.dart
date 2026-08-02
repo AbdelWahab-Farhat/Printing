@@ -91,12 +91,13 @@ class AppSpeedDial extends StatelessWidget {
 
   /// Where a `Scaffold` has to put this.
   ///
-  /// `startFloat` is the **right** edge in Arabic, and that is the point: the labels open
-  /// inwards from the button, so the button has to be on the side there is room to open into.
-  /// A plain FAB elsewhere in the app has no labels and no such constraint, which is why they
-  /// are not all the same.
+  /// The trailing edge — the bottom **left** in Arabic, where every other floating button in
+  /// this app already sits. It is a constant rather than each screen's own choice because it is
+  /// one decision with `switchLabelPosition` in [_Dial]: measured on a 430-wide phone, this
+  /// pairing puts the whole dial inside 40–276, while the other side pushes the buttons out to
+  /// 618 and off the screen.
   static const FloatingActionButtonLocation location =
-      FloatingActionButtonLocation.startFloat;
+      FloatingActionButtonLocation.endFloat;
 
   @override
   Widget build(BuildContext context) {
@@ -163,6 +164,10 @@ class _Dial extends StatelessWidget {
         overlayOpacity: 0.4,
         spacing: 12,
         spaceBetweenChildren: 10,
+        // Labels on the far side of their buttons. With the dial on the left edge that is the
+        // only side with room — without it the package packs them against the opposite margin
+        // and they run off the screen, which is exactly how this first shipped.
+        switchLabelPosition: true,
         children: [
           // Reversed so the first action a screen declares ends up nearest the thumb. A list
           // reads top-down; a dial opens bottom-up.
@@ -183,15 +188,21 @@ class _Dial extends StatelessWidget {
       // Arabic inside it must not be.
       labelWidget: Directionality(
         textDirection: TextDirection.rtl,
-        child: Material(
-          elevation: 3,
-          color: context.colorScheme.surface,
-          borderRadius: BorderRadius.circular(10.r),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-            child: Text(
-              action.label,
-              style: context.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+        child: Container(
+          // The gap between a button and its own label. `spaceBetweenChildren` spaces the rows
+          // vertically and there is no horizontal equivalent, so it lives here. `only(left:)`
+          // and not a directional edge, because this subtree is deliberately left-to-right.
+          margin: EdgeInsets.only(left: 12.w),
+          child: Material(
+            elevation: 3,
+            color: context.colorScheme.surface,
+            borderRadius: BorderRadius.circular(10.r),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+              child: Text(
+                action.label,
+                style: context.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
             ),
           ),
         ),

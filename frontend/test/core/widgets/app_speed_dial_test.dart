@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:printing/core/di/injector.dart';
@@ -47,17 +48,25 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
+  /// The frame the app actually boots into.
+  ///
+  /// The locale goes on `MaterialApp`, not on a `Directionality` around the `Scaffold`, and the
+  /// difference is not cosmetic: the dial draws its children into the app's **overlay**, which
+  /// sits above the Scaffold. Wrapping only the Scaffold leaves that overlay left-to-right and
+  /// the test measures a layout the app never produces.
   Widget host(List<AppAction> actions) => ScreenUtilInit(
     designSize: const Size(430, 932),
     builder: (context, _) => MaterialApp(
-      home: Directionality(
-        // Arabic, like every screen in this app — which is the direction the dial gets wrong
-        // if it is left to its own devices.
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
-          floatingActionButtonLocation: AppSpeedDial.location,
-          floatingActionButton: AppSpeedDial(actions: actions),
-        ),
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: Scaffold(
+        floatingActionButtonLocation: AppSpeedDial.location,
+        floatingActionButton: AppSpeedDial(actions: actions),
       ),
     ),
   );
@@ -116,6 +125,43 @@ void main() {
       final rect = tester.getRect(find.text(label));
       expect(rect.left, greaterThanOrEqualTo(0), reason: '«$label» runs off the left edge');
       expect(rect.right, lessThanOrEqualTo(width), reason: '«$label» runs off the right edge');
+    }
+  });
+
+  testWidgets('a label never touches its own button', (tester) async {
+    // Arrange — the two used to sit flush against each other, which reads as one smudged
+    // control rather than an icon and its name.
+    useAPhone(tester);
+    session.adopt(userWith(['customers.view', 'customers.manage']));
+    await tester.pumpWidget(
+      host([
+        action('تعديل العميل', permission: AppPermission.manageCustomers),
+        action('التصاميم', permission: AppPermission.viewCustomers),
+      ]),
+    );
+
+    // Act
+    await tester.tap(find.byType(FloatingActionButton).first);
+    await tester.pumpAndSettle();
+
+    // Assert — every label is clear of every button by a visible margin.
+    final buttons = [
+      for (final fab in tester.widgetList(find.byType(FloatingActionButton)))
+        tester.getRect(find.byWidget(fab)),
+    ];
+
+    for (final label in const ['تعديل العميل', 'التصاميم']) {
+      final rect = tester.getRect(find.text(label));
+
+      for (final button in buttons) {
+        final overlapsVertically = rect.top < button.bottom && rect.bottom > button.top;
+        if (!overlapsVertically) continue;
+
+        final gap = rect.left > button.left
+            ? rect.left - button.right
+            : button.left - rect.right;
+        expect(gap, greaterThan(4), reason: '«$label» is flush against a button');
+      }
     }
   });
 
