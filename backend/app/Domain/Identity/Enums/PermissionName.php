@@ -36,6 +36,13 @@ enum PermissionName: string
     case ViewDeliveryLocations = 'cities.view';
     case ManageDeliveryLocations = 'cities.manage';
 
+    // Stock. One pair covers warehouses, balances and the ledger: whoever may move stock between
+    // two warehouses is necessarily administering both, so splitting them would produce a
+    // permission that cannot usefully be granted alone. Reading is separate because taking an
+    // order needs to know whether stock exists, while moving it is the storekeeper's job.
+    case ViewInventory = 'inventory.view';
+    case ManageInventory = 'inventory.manage';
+
     // The audit trail. One permission, not a pair: nothing writes to it by hand, so there is
     // nothing to manage — and reading it is its own decision, because it exposes every change
     // anyone has made to records the reader may not otherwise be allowed to see.
@@ -53,6 +60,8 @@ enum PermissionName: string
             self::ManageProducts => 'إضافة وتعديل المنتجات والأسعار',
             self::ViewDeliveryLocations => 'عرض مدن ومناطق التوصيل',
             self::ManageDeliveryLocations => 'إضافة وتعديل مدن ومناطق التوصيل',
+            self::ViewInventory => 'عرض المخازن والأرصدة والحركات',
+            self::ManageInventory => 'إدارة المخازن وتسجيل حركات المخزون',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
         };
     }
@@ -67,6 +76,7 @@ enum PermissionName: string
             self::ViewCustomers, self::ManageCustomers => 'العملاء',
             self::ViewProducts, self::ManageProducts => 'المنتجات',
             self::ViewDeliveryLocations, self::ManageDeliveryLocations => 'مدن ومناطق التوصيل',
+            self::ViewInventory, self::ManageInventory => 'المخازن والمخزون',
             self::ViewActivityLogs => 'سجل النشاطات',
         };
     }

@@ -15,6 +15,9 @@ use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\StockMovement;
+use App\Domain\Inventory\Models\Warehouse;
+use App\Domain\Inventory\Models\WarehouseStock;
 use App\Providers\AppServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -57,6 +60,11 @@ enum AuditSubject: string
     case City = 'city';
     case Region = 'region';
 
+    // Inventory
+    case Warehouse = 'warehouse';
+    case WarehouseStock = 'warehouse_stock';
+    case StockMovement = 'stock_movement';
+
     /**
      * @return class-string<Model>
      */
@@ -74,6 +82,9 @@ enum AuditSubject: string
             self::ProductImage => ProductImage::class,
             self::City => City::class,
             self::Region => Region::class,
+            self::Warehouse => Warehouse::class,
+            self::WarehouseStock => WarehouseStock::class,
+            self::StockMovement => StockMovement::class,
         };
     }
 
@@ -94,6 +105,9 @@ enum AuditSubject: string
             self::ProductImage => 'صورة منتج',
             self::City => 'مدينة',
             self::Region => 'منطقة',
+            self::Warehouse => 'مخزن',
+            self::WarehouseStock => 'رصيد مخزني',
+            self::StockMovement => 'حركة مخزنية',
         };
     }
 

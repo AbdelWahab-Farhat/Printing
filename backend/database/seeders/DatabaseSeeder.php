@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
             CatalogSeeder::class,
             DeliveryLocationSeeder::class,
+            // Warehouses only. Stock arrives by being recorded, never by being seeded.
+            InventorySeeder::class,
         ]);
     }
 }
