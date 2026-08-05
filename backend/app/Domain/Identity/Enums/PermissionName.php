@@ -27,6 +27,13 @@ enum PermissionName: string
     case ViewCustomers = 'customers.view';
     case ManageCustomers = 'customers.manage';
 
+    // مجالات العمل — what a customer's shop sells. Reading is split from managing and granted
+    // to every role, because anyone recording a customer needs the list to pick from; curating
+    // the list itself is a rarer, deliberate job. Same shape as the delivery map, for the same
+    // reason.
+    case ViewBusinessFields = 'business_fields.view';
+    case ManageBusinessFields = 'business_fields.manage';
+
     // Catalogue
     case ViewProducts = 'products.view';
     case ManageProducts = 'products.manage';
@@ -35,6 +42,11 @@ enum PermissionName: string
     // administered by anyone who is not also administering its city.
     case ViewDeliveryLocations = 'cities.view';
     case ManageDeliveryLocations = 'cities.manage';
+
+    // Who carries the parcels. Separate from the map above: the person who agrees rates with a
+    // carrier is not the person who maintains the list of neighbourhoods.
+    case ViewShippingCompanies = 'shipping_companies.view';
+    case ManageShippingCompanies = 'shipping_companies.manage';
 
     // Orders. One permission per status the machine can move *into*, so the business composes
     // a designer, a printer and a delivery coordinator out of this list without any of those
@@ -74,10 +86,14 @@ enum PermissionName: string
             self::ManageRoles => 'إدارة الأدوار والصلاحيات',
             self::ViewCustomers => 'عرض العملاء',
             self::ManageCustomers => 'إضافة وتعديل العملاء',
+            self::ViewBusinessFields => 'عرض مجالات العمل',
+            self::ManageBusinessFields => 'إضافة وتعديل مجالات العمل',
             self::ViewProducts => 'عرض المنتجات والأسعار',
             self::ManageProducts => 'إضافة وتعديل المنتجات والأسعار',
             self::ViewDeliveryLocations => 'عرض مدن ومناطق التوصيل',
             self::ManageDeliveryLocations => 'إضافة وتعديل مدن ومناطق التوصيل',
+            self::ViewShippingCompanies => 'عرض شركات التوصيل',
+            self::ManageShippingCompanies => 'إضافة وتعديل شركات التوصيل',
             self::ViewOrders => 'عرض الطلبيات',
             self::ManageOrders => 'إضافة وتعديل الطلبيات',
             self::DiscountOrders => 'منح خصم على الطلبية',
@@ -106,8 +122,10 @@ enum PermissionName: string
         return match ($this) {
             self::ViewUsers, self::ManageUsers, self::ManageRoles => 'الصلاحيات والمستخدمون',
             self::ViewCustomers, self::ManageCustomers => 'العملاء',
+            self::ViewBusinessFields, self::ManageBusinessFields => 'مجالات العمل',
             self::ViewProducts, self::ManageProducts => 'المنتجات',
             self::ViewDeliveryLocations, self::ManageDeliveryLocations => 'مدن ومناطق التوصيل',
+            self::ViewShippingCompanies, self::ManageShippingCompanies => 'شركات التوصيل',
             self::ViewOrders, self::ManageOrders, self::DiscountOrders,
             self::ManageOrderDesigns => 'الطلبيات',
             self::MoveOrderToDesigning, self::MoveOrderToPrinting, self::MoveOrderToReady,

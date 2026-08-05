@@ -10,17 +10,53 @@ import 'package:printing/features/home/models/home_summary.dart';
 /// Two by two rather than a row of four: at four across, the digits shrink to where 9651 and
 /// 9,651 are the same smudge, and these numbers exist to be read from arm's length.
 class SummaryTiles extends StatelessWidget {
-  const SummaryTiles({required this.summary, super.key});
+  const SummaryTiles({
+    required this.summary,
+    this.onAllOrders,
+    this.onCustomers,
+    this.onDay,
+    this.onMonth,
+    super.key,
+  });
 
   final HomeSummary summary;
+
+  /// What each number opens. Null leaves that one inert — a tile with nowhere honest to go is
+  /// better flat than tappable.
+  final VoidCallback? onAllOrders;
+  final VoidCallback? onCustomers;
+  final VoidCallback? onDay;
+  final VoidCallback? onMonth;
 
   @override
   Widget build(BuildContext context) {
     final tiles = [
-      _Tile(label: 'الطلبات الكلية', value: summary.totalOrders, icon: AppIcons.orders),
-      _Tile(label: 'عدد العملاء', value: summary.customersCount, icon: AppIcons.customers),
-      _Tile(label: 'الطلبات اليومية', value: summary.dailyOrders, icon: AppIcons.today),
-      _Tile(label: 'الطلبات الشهرية', value: summary.monthlyOrders, icon: AppIcons.month),
+      _Tile(
+        label: 'الطلبات الكلية',
+        value: summary.totalOrders,
+        icon: AppIcons.orders,
+        onTap: onAllOrders,
+      ),
+      _Tile(
+        label: 'عدد العملاء',
+        value: summary.customersCount,
+        icon: AppIcons.customers,
+        onTap: onCustomers,
+      ),
+      // A day or a month with nothing in it opens a screen that says so, which is a tap that
+      // teaches the reader nothing they cannot already see.
+      _Tile(
+        label: 'الطلبات اليومية',
+        value: summary.dailyOrders,
+        icon: AppIcons.today,
+        onTap: summary.dailyOrders == 0 ? null : onDay,
+      ),
+      _Tile(
+        label: 'الطلبات الشهرية',
+        value: summary.monthlyOrders,
+        icon: AppIcons.month,
+        onTap: summary.monthlyOrders == 0 ? null : onMonth,
+      ),
     ];
 
     return GridView.count(
@@ -39,21 +75,28 @@ class SummaryTiles extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile({required this.label, required this.value, required this.icon});
+  const _Tile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.onTap,
+  });
 
   final String label;
   final int value;
   final IconData icon;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final radius = BorderRadius.circular(20.r);
 
-    return Container(
+    final tile = Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20.r),
+        borderRadius: radius,
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
       ),
       child: Column(
@@ -87,6 +130,22 @@ class _Tile extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    if (onTap == null) return tile;
+
+    // Over the tile rather than under it, for the reason the status cards give: the tile paints
+    // its own surface, and a Material beneath would draw a second one behind it.
+    return Stack(
+      children: [
+        tile,
+        Positioned.fill(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(borderRadius: radius, onTap: onTap),
+          ),
+        ),
+      ],
     );
   }
 }

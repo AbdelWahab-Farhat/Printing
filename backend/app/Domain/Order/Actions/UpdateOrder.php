@@ -81,9 +81,7 @@ final class UpdateOrder
                 'recipient_phone' => $data->recipientPhone,
                 'address_details' => $data->addressDetails,
                 'notes' => $data->notes,
-                'shipping_company' => $data->shippingCompany,
                 'tracking_number' => $data->trackingNumber,
-                'courier_name' => $data->courierName,
             ]);
 
             $order->forceFill([

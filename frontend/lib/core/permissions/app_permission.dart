@@ -38,6 +38,11 @@ enum AppPermission {
   viewCustomers('customers.view', 'عرض العملاء'),
   manageCustomers('customers.manage', 'إضافة وتعديل العملاء'),
 
+  // مجالات العمل — what a customer's shop sells. Reading is granted to every role, because
+  // the customer form cannot be filled in without the list; curating the list is the rare job.
+  viewBusinessFields('business_fields.view', 'عرض مجالات العمل'),
+  manageBusinessFields('business_fields.manage', 'إضافة وتعديل مجالات العمل'),
+
   // Catalogue
   viewProducts('products.view', 'عرض المنتجات والأسعار'),
   manageProducts('products.manage', 'إضافة وتعديل المنتجات والأسعار'),
@@ -46,6 +51,11 @@ enum AppPermission {
   // somebody who is not also administering its city.
   viewDeliveryLocations('cities.view', 'عرض مدن ومناطق التوصيل'),
   manageDeliveryLocations('cities.manage', 'إضافة وتعديل مدن ومناطق التوصيل'),
+
+  // Who carries the parcels. Its own pair: agreeing rates with a carrier is not the same job as
+  // maintaining the list of neighbourhoods.
+  viewShippingCompanies('shipping_companies.view', 'عرض شركات التوصيل'),
+  manageShippingCompanies('shipping_companies.manage', 'إضافة وتعديل شركات التوصيل'),
 
   // Orders. One permission per status the workflow can move *into*, so the business composes
   // a designer, a printer and a delivery coordinator out of this list without any of those

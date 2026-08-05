@@ -56,6 +56,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
       : OrderProgress.fromJson(json['progress'] as Map<String, dynamic>),
   itemsAreEditable: json['items_are_editable'] as bool? ?? false,
   designsAreEditable: json['designs_are_editable'] as bool? ?? false,
+  destinationIsEditable: json['destination_is_editable'] as bool? ?? false,
   itemsCount: (json['items_count'] as num?)?.toInt(),
   items: (json['items'] as List<dynamic>?)
       ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
@@ -120,6 +121,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'progress': instance.progress.toJson(),
   'items_are_editable': instance.itemsAreEditable,
   'designs_are_editable': instance.designsAreEditable,
+  'destination_is_editable': instance.destinationIsEditable,
   'items_count': instance.itemsCount,
   'items': instance.items?.map((e) => e.toJson()).toList(),
   'designs': instance.designs?.map((e) => e.toJson()).toList(),
@@ -259,6 +261,12 @@ Map<String, dynamic> _$OrderDesignToJson(_OrderDesign instance) =>
       'created_at': instance.createdAt?.toIso8601String(),
     };
 
+_OrderActor _$OrderActorFromJson(Map<String, dynamic> json) =>
+    _OrderActor(id: (json['id'] as num).toInt(), name: json['name'] as String);
+
+Map<String, dynamic> _$OrderActorToJson(_OrderActor instance) =>
+    <String, dynamic>{'id': instance.id, 'name': instance.name};
+
 _OrderTransitionRecord _$OrderTransitionRecordFromJson(
   Map<String, dynamic> json,
 ) => _OrderTransitionRecord(
@@ -266,6 +274,9 @@ _OrderTransitionRecord _$OrderTransitionRecordFromJson(
   fromStatusLabel: json['from_status_label'] as String?,
   toStatusLabel: json['to_status_label'] as String,
   reason: json['reason'] as String?,
+  user: json['user'] == null
+      ? null
+      : OrderActor.fromJson(json['user'] as Map<String, dynamic>),
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -278,5 +289,6 @@ Map<String, dynamic> _$OrderTransitionRecordToJson(
   'from_status_label': instance.fromStatusLabel,
   'to_status_label': instance.toStatusLabel,
   'reason': instance.reason,
+  'user': instance.user?.toJson(),
   'created_at': instance.createdAt?.toIso8601String(),
 };

@@ -6,6 +6,7 @@ namespace App\Domain\Order\DTOs;
 
 use App\Domain\Order\Enums\TransitionFieldType;
 use App\Domain\Order\Support\TransitionFields;
+use Illuminate\Validation\Rule;
 
 /**
  * One thing a status change asks the person making it for.
@@ -91,6 +92,26 @@ final class TransitionField
     }
 
     /**
+     * One of the carriers the business deals with.
+     *
+     * No options travel with it — see {@see TransitionFieldType::ShippingCompany}.
+     */
+    public static function shippingCompany(
+        string $key,
+        string $label,
+        bool $required = false,
+        ?string $hint = null,
+    ): self {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::ShippingCompany,
+            label: $label,
+            required: $required,
+            hint: $hint,
+        );
+    }
+
+    /**
      * What the app renders.
      *
      * Every key is always present, `null` included: a client that has to distinguish "absent"
@@ -142,6 +163,15 @@ final class TransitionField
                 "fields.{$this->key}" => [$presence, 'array', ...($this->required ? ['min:1'] : [])],
                 "fields.{$this->key}.*" => ['integer'],
             ],
+            // withoutTrashed: a carrier removed from the list may not be chosen for a new
+            // dispatch, which is the same answer the picker gives.
+            TransitionFieldType::ShippingCompany => [
+                "fields.{$this->key}" => [
+                    $presence,
+                    'integer',
+                    Rule::exists('shipping_companies', 'id')->withoutTrashed(),
+                ],
+            ],
         };
     }
 
@@ -162,6 +192,10 @@ final class TransitionField
                 "fields.{$this->key}.required" => "{$this->label} مطلوب",
                 "fields.{$this->key}.numeric" => "{$this->label} يجب أن يكون رقماً",
                 "fields.{$this->key}.max" => "{$this->label} أكبر مما في الطلبية",
+            ],
+            TransitionFieldType::ShippingCompany => [
+                "fields.{$this->key}.required" => "{$this->label} مطلوبة",
+                "fields.{$this->key}.exists" => 'شركة التوصيل المختارة غير موجودة',
             ],
         };
     }

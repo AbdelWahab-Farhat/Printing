@@ -36,6 +36,10 @@ class StoreCustomerRequest extends FormRequest
             'shops.*.latitude' => ['required', 'numeric', 'between:-90,90'],
             'shops.*.longitude' => ['required', 'numeric', 'between:-180,180'],
             'shops.*.page_url' => ['nullable', 'url', 'max:2048'],
+            // مجال العمل. Optional — most shops on record have none — and `exists` keeps a
+            // stale id from a client's cached list out of the database. Deactivated fields are
+            // still accepted: a shop already recorded under one must survive being saved again.
+            'shops.*.business_field_id' => ['nullable', 'integer', Rule::exists('business_fields', 'id')->withoutTrashed()],
         ];
     }
 
@@ -60,6 +64,7 @@ class StoreCustomerRequest extends FormRequest
             'shops.*.longitude.numeric' => 'خط الطول يجب أن يكون رقماً',
             'shops.*.longitude.between' => 'خط الطول يجب أن يكون بين -180 و 180',
             'shops.*.page_url.url' => 'رابط الصفحة غير صحيح',
+            'shops.*.business_field_id.exists' => 'مجال العمل المختار غير موجود',
         ];
     }
 
@@ -77,6 +82,7 @@ class StoreCustomerRequest extends FormRequest
             'shops.*.latitude' => 'خط العرض',
             'shops.*.longitude' => 'خط الطول',
             'shops.*.page_url' => 'رابط الصفحة',
+            'shops.*.business_field_id' => 'مجال العمل',
         ];
     }
 }

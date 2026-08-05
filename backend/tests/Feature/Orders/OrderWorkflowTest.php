@@ -7,6 +7,7 @@ namespace Tests\Feature\Orders;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Delivery\Models\City;
+use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\DesignSource;
@@ -77,10 +78,25 @@ class OrderWorkflowTest extends TestCase
 
     private function move(array $headers, Order $order, OrderStatus $to, ?string $reason = null): TestResponse
     {
-        return $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", array_filter([
-            'status' => $to->value,
-            'reason' => $reason,
-        ]));
+        return $this->withHeaders($headers)->postJson(
+            "/api/v1/orders/{$order->id}/status",
+            array_filter([
+                'status' => $to->value,
+                'reason' => $reason,
+                // Sending a parcel out names the carrier, and every test that dispatches would
+                // otherwise be a test about that rather than about what it is checking. The
+                // rule itself is pinned by its own test in OrderTransitionFieldsTest.
+                'fields' => $to->isDispatch() && ! $order->fulfilment_type->isOfficePickup()
+                    ? ['shipping_company_id' => $this->carrier()->id]
+                    : null,
+            ]),
+        );
+    }
+
+    /** One carrier, made once and reused, so a fixture is never the subject of the test. */
+    private function carrier(): ShippingCompany
+    {
+        return ShippingCompany::query()->firstOr(fn () => ShippingCompany::factory()->create());
     }
 
     // ───────────────────────────── moving an order ─────────────────────────────

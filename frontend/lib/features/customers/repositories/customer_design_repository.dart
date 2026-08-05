@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/features/customers/models/customer_design.dart';
@@ -45,6 +47,16 @@ abstract interface class CustomerDesignRepository {
     required String label,
     String? notes,
   });
+
+  /// The file's own bytes, for saving it onto the phone.
+  ///
+  /// [fileUrl] rather than an id, because the address is what the server signed for *this*
+  /// request — see the note on [CustomerDesign]. A link held for an hour is a 403, which is why
+  /// this takes the URL the screen is holding right now instead of one it stored earlier.
+  ///
+  /// Ours or not: on production the file sits on a private bucket and the signed link points at
+  /// the storage host, not at the API. So this is a plain GET with no envelope to unwrap.
+  Future<Either<Failure, Uint8List>> fileBytes(String fileUrl);
 
   /// Takes a design out of the customer's library.
   ///

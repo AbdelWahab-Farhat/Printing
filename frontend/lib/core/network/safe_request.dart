@@ -14,6 +14,7 @@
 library;
 
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
@@ -87,6 +88,30 @@ Future<Either<Failure, Paginated<T>>> safePaginatedRequest<T>(
       // which of them matter.
       extraMeta: meta,
     );
+  });
+}
+
+/// A call whose answer is a **file**, not JSON.
+///
+/// A design's bytes come back raw — no envelope to unwrap and nothing to parse — so neither
+/// [safeRequest] nor [safeForeignRequest] fits: the first would look for `data` in a PNG, and
+/// the second would hand back a `List<int>` typed as `dynamic` at every call site.
+///
+/// It goes through the same guard as everything else, which is the whole point: a signed link
+/// that expired is a 403 and a dropped connection is a network failure, and both have to reach
+/// the screen as the same [Failure] the rest of the app already knows how to show.
+Future<Either<Failure, Uint8List>> safeDownload(
+  Future<Response<List<int>>> Function() send,
+) async {
+  return _guard(() async {
+    final response = await send();
+    final bytes = response.data;
+
+    if (bytes == null || bytes.isEmpty) {
+      throw const _MalformedResponse('الملف الذي وصل فارغ');
+    }
+
+    return Uint8List.fromList(bytes);
   });
 }
 

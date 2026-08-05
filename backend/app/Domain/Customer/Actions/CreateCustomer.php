@@ -36,7 +36,7 @@ final class CreateCustomer
 
             ($this->syncShops)($customer, $data->shops ?? []);
 
-            return $customer->load('shops');
+            return $customer->load('shops.businessField');
         });
     }
 }

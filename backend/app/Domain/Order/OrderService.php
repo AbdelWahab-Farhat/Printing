@@ -18,6 +18,7 @@ use App\Domain\Order\Models\OrderDesign;
 use App\Domain\Order\Queries\OrderFilters;
 use App\Domain\Order\Queries\OrderListQuery;
 use App\Domain\Order\Queries\OrderStatusCountsQuery;
+use App\Domain\Order\Queries\OrderTotalsQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
@@ -38,6 +39,7 @@ class OrderService
         private readonly ReviewOrderDesign $reviewDesign,
         private readonly OrderListQuery $listQuery,
         private readonly OrderStatusCountsQuery $statusCounts,
+        private readonly OrderTotalsQuery $totals,
     ) {}
 
     /**
@@ -56,6 +58,19 @@ class OrderService
     public function statusCounts(OrderFilters $filters): array
     {
         return ($this->statusCounts)($filters);
+    }
+
+    /**
+     * How much work has come in: ever, today, and this month.
+     *
+     * Unfiltered on purpose — these are the shop's own numbers, not a view of a list somebody
+     * is looking at.
+     *
+     * @return array{total: int, daily: int, monthly: int}
+     */
+    public function totals(): array
+    {
+        return ($this->totals)();
     }
 
     public function create(OrderData $data, ?User $actor = null): Order

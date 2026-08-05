@@ -68,6 +68,9 @@ class _CustomersView extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+                              // Unique per screen, because the shell keeps every tab alive in an IndexedStack:
+                              // two default-tagged FABs in one subtree is the «multiple heroes» assertion.
+                              heroTag: 'fab-customers',
         // Refreshes on the way back: a customer registered on that form belongs at the top of
         // this list without the user having to think about pulling down.
         onPressed: () async {

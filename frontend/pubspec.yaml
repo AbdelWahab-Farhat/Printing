@@ -86,6 +86,20 @@ dependencies:
   # to *show a file*, not to annotate one. The link is the signed URL the API mints per request,
   # so it expires — which is the point, since a design is the customer's property.
   url_launcher: ^6.3.2
+  # ── saving a design onto the phone ───────────────────────────────────────────
+  # «تحميل» is not a download button in a browser here: on a phone the file has to end up
+  # somewhere the person can find it — Photos, Files, or straight into WhatsApp — and only the
+  # operating system's own sheet knows which of those exist on this device. So the app fetches
+  # the bytes, writes them to its temp directory, and hands that file to the share sheet, where
+  # «حفظ الصورة» and «حفظ في الملفات» are rows the OS itself provides.
+  #
+  # Deliberately not a gallery-writing package (gal, image_gallery_saver): those need the photo
+  # library permission on both platforms, cannot save a PDF at all, and would put a permission
+  # prompt in front of a staff member who only wanted to forward the artwork to the printer.
+  share_plus: ^12.0.2
+  # Where that temp file goes. Already present transitively for flutter_map's tile cache;
+  # declared because our own code names it, which is what `depend_on_referenced_packages` is for.
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

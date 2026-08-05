@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
             CatalogSeeder::class,
             DeliveryLocationSeeder::class,
+            BusinessFieldSeeder::class,
         ]);
     }
 }

@@ -16,6 +16,10 @@ typedef ShopInput = ({
   String latitude,
   String longitude,
   String? pageUrl,
+
+  /// مجال العمل as picked from the list, or null for a shop left unclassified. Already an id
+  /// rather than text: it comes from a picker, not from a box somebody typed into.
+  int? businessFieldId,
 });
 
 /// Register a new customer.
@@ -68,6 +72,7 @@ class CreateCustomer {
       latitude: double.parse(_toDecimal(shop.latitude)),
       longitude: double.parse(_toDecimal(shop.longitude)),
       pageUrl: pageUrl == null || pageUrl.isEmpty ? null : pageUrl,
+      businessFieldId: shop.businessFieldId,
     );
   }
 

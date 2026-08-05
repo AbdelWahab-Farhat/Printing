@@ -311,10 +311,7 @@ mixin _$OrderStatusCount {
 /// The machine name to switch on once these become our own statuses — `pending`,
 /// `rejected`. Kept apart from [label] so the UI never compares against Arabic text.
  String get status;/// The Arabic label to show, sent by the server so the app holds no translation table.
- String get label; int get count;/// Whether this status is one the user is expected to act on today. The server decides —
-/// "needs attention" is a business rule, and re-deriving it here would make two places to
-/// change when it moves.
-@JsonKey(name: 'needs_attention') bool get needsAttention;
+ String get label; int get count;
 /// Create a copy of OrderStatusCount
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -327,16 +324,16 @@ $OrderStatusCountCopyWith<OrderStatusCount> get copyWith => _$OrderStatusCountCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusCount&&(identical(other.status, status) || other.status == status)&&(identical(other.label, label) || other.label == label)&&(identical(other.count, count) || other.count == count)&&(identical(other.needsAttention, needsAttention) || other.needsAttention == needsAttention));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusCount&&(identical(other.status, status) || other.status == status)&&(identical(other.label, label) || other.label == label)&&(identical(other.count, count) || other.count == count));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,status,label,count,needsAttention);
+int get hashCode => Object.hash(runtimeType,status,label,count);
 
 @override
 String toString() {
-  return 'OrderStatusCount(status: $status, label: $label, count: $count, needsAttention: $needsAttention)';
+  return 'OrderStatusCount(status: $status, label: $label, count: $count)';
 }
 
 
@@ -347,7 +344,7 @@ abstract mixin class $OrderStatusCountCopyWith<$Res>  {
   factory $OrderStatusCountCopyWith(OrderStatusCount value, $Res Function(OrderStatusCount) _then) = _$OrderStatusCountCopyWithImpl;
 @useResult
 $Res call({
- String status, String label, int count,@JsonKey(name: 'needs_attention') bool needsAttention
+ String status, String label, int count
 });
 
 
@@ -364,13 +361,12 @@ class _$OrderStatusCountCopyWithImpl<$Res>
 
 /// Create a copy of OrderStatusCount
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? label = null,Object? count = null,Object? needsAttention = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? label = null,Object? count = null,}) {
   return _then(_self.copyWith(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
-as int,needsAttention: null == needsAttention ? _self.needsAttention : needsAttention // ignore: cast_nullable_to_non_nullable
-as bool,
+as int,
   ));
 }
 
@@ -455,10 +451,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String status,  String label,  int count, @JsonKey(name: 'needs_attention')  bool needsAttention)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String status,  String label,  int count)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OrderStatusCount() when $default != null:
-return $default(_that.status,_that.label,_that.count,_that.needsAttention);case _:
+return $default(_that.status,_that.label,_that.count);case _:
   return orElse();
 
 }
@@ -476,10 +472,10 @@ return $default(_that.status,_that.label,_that.count,_that.needsAttention);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String status,  String label,  int count, @JsonKey(name: 'needs_attention')  bool needsAttention)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String status,  String label,  int count)  $default,) {final _that = this;
 switch (_that) {
 case _OrderStatusCount():
-return $default(_that.status,_that.label,_that.count,_that.needsAttention);case _:
+return $default(_that.status,_that.label,_that.count);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -496,10 +492,10 @@ return $default(_that.status,_that.label,_that.count,_that.needsAttention);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String status,  String label,  int count, @JsonKey(name: 'needs_attention')  bool needsAttention)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String status,  String label,  int count)?  $default,) {final _that = this;
 switch (_that) {
 case _OrderStatusCount() when $default != null:
-return $default(_that.status,_that.label,_that.count,_that.needsAttention);case _:
+return $default(_that.status,_that.label,_that.count);case _:
   return null;
 
 }
@@ -511,7 +507,7 @@ return $default(_that.status,_that.label,_that.count,_that.needsAttention);case 
 @JsonSerializable()
 
 class _OrderStatusCount implements OrderStatusCount {
-  const _OrderStatusCount({required this.status, required this.label, required this.count, @JsonKey(name: 'needs_attention') this.needsAttention = false});
+  const _OrderStatusCount({required this.status, required this.label, required this.count});
   factory _OrderStatusCount.fromJson(Map<String, dynamic> json) => _$OrderStatusCountFromJson(json);
 
 /// The machine name to switch on once these become our own statuses — `pending`,
@@ -520,10 +516,6 @@ class _OrderStatusCount implements OrderStatusCount {
 /// The Arabic label to show, sent by the server so the app holds no translation table.
 @override final  String label;
 @override final  int count;
-/// Whether this status is one the user is expected to act on today. The server decides —
-/// "needs attention" is a business rule, and re-deriving it here would make two places to
-/// change when it moves.
-@override@JsonKey(name: 'needs_attention') final  bool needsAttention;
 
 /// Create a copy of OrderStatusCount
 /// with the given fields replaced by the non-null parameter values.
@@ -538,16 +530,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderStatusCount&&(identical(other.status, status) || other.status == status)&&(identical(other.label, label) || other.label == label)&&(identical(other.count, count) || other.count == count)&&(identical(other.needsAttention, needsAttention) || other.needsAttention == needsAttention));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderStatusCount&&(identical(other.status, status) || other.status == status)&&(identical(other.label, label) || other.label == label)&&(identical(other.count, count) || other.count == count));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,status,label,count,needsAttention);
+int get hashCode => Object.hash(runtimeType,status,label,count);
 
 @override
 String toString() {
-  return 'OrderStatusCount(status: $status, label: $label, count: $count, needsAttention: $needsAttention)';
+  return 'OrderStatusCount(status: $status, label: $label, count: $count)';
 }
 
 
@@ -558,7 +550,7 @@ abstract mixin class _$OrderStatusCountCopyWith<$Res> implements $OrderStatusCou
   factory _$OrderStatusCountCopyWith(_OrderStatusCount value, $Res Function(_OrderStatusCount) _then) = __$OrderStatusCountCopyWithImpl;
 @override @useResult
 $Res call({
- String status, String label, int count,@JsonKey(name: 'needs_attention') bool needsAttention
+ String status, String label, int count
 });
 
 
@@ -575,13 +567,12 @@ class __$OrderStatusCountCopyWithImpl<$Res>
 
 /// Create a copy of OrderStatusCount
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? label = null,Object? count = null,Object? needsAttention = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? label = null,Object? count = null,}) {
   return _then(_OrderStatusCount(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
-as int,needsAttention: null == needsAttention ? _self.needsAttention : needsAttention // ignore: cast_nullable_to_non_nullable
-as bool,
+as int,
   ));
 }
 

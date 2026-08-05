@@ -43,11 +43,6 @@ abstract class OrderStatusCount with _$OrderStatusCount {
     required String label,
 
     required int count,
-
-    /// Whether this status is one the user is expected to act on today. The server decides —
-    /// "needs attention" is a business rule, and re-deriving it here would make two places to
-    /// change when it moves.
-    @JsonKey(name: 'needs_attention') @Default(false) bool needsAttention,
   }) = _OrderStatusCount;
 
   factory OrderStatusCount.fromJson(Map<String, dynamic> json) =>

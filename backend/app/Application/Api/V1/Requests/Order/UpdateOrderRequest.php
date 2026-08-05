@@ -41,9 +41,7 @@ class UpdateOrderRequest extends StoreOrderRequest
             'design_fee' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'discount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
 
-            'shipping_company' => ['nullable', 'string', 'max:255'],
             'tracking_number' => ['nullable', 'string', 'max:100'],
-            'courier_name' => ['nullable', 'string', 'max:255'],
 
             // Optional here: omit to leave the lines untouched, send to replace the whole set.
             'items' => ['sometimes', 'array', 'min:1', 'max:100'],

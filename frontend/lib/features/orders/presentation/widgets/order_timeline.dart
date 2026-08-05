@@ -76,10 +76,10 @@ class _Entry extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (record.createdAt case final at?) ...[
+                  if (_meta(record) case final meta when meta.isNotEmpty) ...[
                     SizedBox(height: 2.h),
                     Text(
-                      _stamp(at),
+                      meta,
                       style: context.textTheme.bodySmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -103,6 +103,19 @@ class _Entry extends StatelessWidget {
       ),
     );
   }
+
+  /// `2026-08-02 · 14:30 · بواسطة أحمد` — when it happened, and who did it.
+  ///
+  /// One line, because they are one fact: «من فعل هذا، ومتى». Split in two they read as two
+  /// entries, and this column is already made of short lines.
+  ///
+  /// **A move with nobody behind it says nothing rather than guessing.** The column is nullable
+  /// on purpose — a seeder or a console command moves an order without a signed-in user — and
+  /// attributing that to whoever happens to be reading the screen would be worse than the gap.
+  String _meta(OrderTransitionRecord record) => [
+    if (record.createdAt case final at?) _stamp(at),
+    if (record.user?.name case final name?) 'بواسطة $name',
+  ].join(' · ');
 
   /// `2026-08-02 · 14:30`, in the device's own local time.
   ///

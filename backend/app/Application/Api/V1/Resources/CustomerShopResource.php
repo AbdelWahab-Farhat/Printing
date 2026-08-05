@@ -26,6 +26,15 @@ class CustomerShopResource extends JsonResource
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'page_url' => $this->page_url,
+
+            // The id for a form to preselect, and the whole field for a screen to render —
+            // sending the id alone would make every client fetch the list to translate one
+            // number. Null for a shop recorded without a trade, which is most of the old ones.
+            'business_field_id' => $this->business_field_id,
+            'business_field' => $this->whenLoaded(
+                'businessField',
+                fn () => new BusinessFieldResource($this->businessField),
+            ),
         ];
     }
 }

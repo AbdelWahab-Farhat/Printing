@@ -108,6 +108,14 @@ abstract class Order with _$Order {
     /// makes on purpose.
     @JsonKey(name: 'designs_are_editable') @Default(false) bool designsAreEditable,
 
+    /// Whether where it is going may still be changed.
+    ///
+    /// **A third line, later than both of the others.** The lines close when the bags exist and
+    /// the artwork closes when the press starts, but an address stays correctable right up to
+    /// the moment somebody is driving to it — «جاري التوصيل» is the one open status that
+    /// refuses, because there the label has already left and only the label is real.
+    @JsonKey(name: 'destination_is_editable') @Default(false) bool destinationIsEditable,
+
     /// Present on the list endpoint.
     @JsonKey(name: 'items_count') int? itemsCount,
 
@@ -306,6 +314,19 @@ abstract class OrderDesign with _$OrderDesign {
   bool get isRejected => status == 'rejected';
 }
 
+/// The member of staff behind a move.
+///
+/// Two fields, because two is what the timeline shows and what the API sends beside each
+/// transition. Deliberately not the app's full user model: this is a name on a log line, not an
+/// account somebody is about to edit, and pulling in the larger model would make the timeline
+/// depend on the access feature to render a word.
+@freezed
+abstract class OrderActor with _$OrderActor {
+  const factory OrderActor({required int id, required String name}) = _OrderActor;
+
+  factory OrderActor.fromJson(Map<String, dynamic> json) => _$OrderActorFromJson(json);
+}
+
 /// One move the order actually made — a row on its timeline.
 @freezed
 abstract class OrderTransitionRecord with _$OrderTransitionRecord {
@@ -316,6 +337,15 @@ abstract class OrderTransitionRecord with _$OrderTransitionRecord {
     @JsonKey(name: 'from_status_label') String? fromStatusLabel,
     @JsonKey(name: 'to_status_label') required String toStatusLabel,
     String? reason,
+
+    /// Who moved it. Null for a move made by a console command or a seeder — the column is
+    /// nullable for exactly that — and for a build of the API that did not load the relation.
+    ///
+    /// It is the other half of [reason]: «تم الإلغاء — العميل غيّر رأيه» is a different fact
+    /// from the same sentence with a name against it, and the name is what makes the timeline
+    /// answerable rather than merely readable.
+    OrderActor? user,
+
     @JsonKey(name: 'created_at') DateTime? createdAt,
   }) = _OrderTransitionRecord;
 

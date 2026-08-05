@@ -16,6 +16,8 @@ class GetOrders {
     String? search,
     List<String> statuses = const <String>[],
     int? customerId,
+    String? from,
+    String? to,
     int page = 1,
     int perPage = 20,
   }) {
@@ -23,6 +25,8 @@ class GetOrders {
       search: search,
       statuses: statuses,
       customerId: customerId,
+      from: from,
+      to: to,
       page: page,
       perPage: perPage,
     );

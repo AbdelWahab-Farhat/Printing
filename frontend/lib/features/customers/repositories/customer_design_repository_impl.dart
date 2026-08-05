@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:printing/core/error/failure.dart';
@@ -52,6 +54,24 @@ class CustomerDesignRepositoryImpl implements CustomerDesignRepository {
       // 201 for a new file, 200 for one the server already had — the same body either way, and
       // the caller does not need to know which. Its answer is *the design that now exists*.
       parse: (data) => CustomerDesign.fromJson(data! as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Uint8List>> fileBytes(String fileUrl) {
+    return safeDownload(
+      // The URL is absolute and may point at the storage host rather than at our API, so it is
+      // passed whole — Dio leaves an absolute address alone and the `baseUrl` is not prefixed.
+      // `responseType: bytes` is what stops Dio trying to decode a PNG as JSON.
+      () => _dio.get<List<int>>(
+        fileUrl,
+        options: Options(
+          responseType: ResponseType.bytes,
+          // A print-ready file is megabytes over a phone connection; the client's default
+          // receive timeout is tuned for a JSON page and would abandon it halfway.
+          receiveTimeout: const Duration(minutes: 2),
+        ),
+      ),
     );
   }
 

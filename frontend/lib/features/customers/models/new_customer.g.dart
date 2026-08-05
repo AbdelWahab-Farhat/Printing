@@ -6,16 +6,19 @@ part of 'new_customer.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Map<String, dynamic> _$NewCustomerToJson(_NewCustomer instance) => <String, dynamic>{
-  'name': instance.name,
-  'phone': instance.phone,
-  'shops': ?instance.shops?.map((e) => e.toJson()).toList(),
-};
+Map<String, dynamic> _$NewCustomerToJson(_NewCustomer instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'phone': instance.phone,
+      'shops': ?instance.shops?.map((e) => e.toJson()).toList(),
+    };
 
-Map<String, dynamic> _$NewCustomerShopToJson(_NewCustomerShop instance) => <String, dynamic>{
-  'id': ?instance.id,
-  'name': instance.name,
-  'latitude': instance.latitude,
-  'longitude': instance.longitude,
-  'page_url': ?instance.pageUrl,
-};
+Map<String, dynamic> _$NewCustomerShopToJson(_NewCustomerShop instance) =>
+    <String, dynamic>{
+      'id': ?instance.id,
+      'name': instance.name,
+      'latitude': instance.latitude,
+      'longitude': instance.longitude,
+      'page_url': ?instance.pageUrl,
+      'business_field_id': instance.businessFieldId,
+    };

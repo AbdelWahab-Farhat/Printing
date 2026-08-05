@@ -52,6 +52,9 @@ class _ProductsView extends StatelessWidget {
           // And it is a courtesy, not a boundary — `can:products.manage` on the route is what
           // actually refuses the write.
           ? FloatingActionButton.extended(
+              // Unique per screen, because the shell keeps every tab alive in an IndexedStack:
+              // two default-tagged FABs in one subtree is the «multiple heroes» assertion.
+              heroTag: 'fab-products',
               // Refreshes on the way back: a bag added on that form belongs in this list
               // without the user having to think about pulling down.
               onPressed: () async {

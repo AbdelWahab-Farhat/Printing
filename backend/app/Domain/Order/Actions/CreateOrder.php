@@ -68,9 +68,7 @@ final class CreateOrder
                 'recipient_phone' => $data->recipientPhone,
                 'address_details' => $data->addressDetails,
                 'notes' => $data->notes,
-                'shipping_company' => $data->shippingCompany,
                 'tracking_number' => $data->trackingNumber,
-                'courier_name' => $data->courierName,
             ]);
 
             // Server-assigned, so they go on directly rather than through the fillable list —

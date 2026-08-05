@@ -40,6 +40,9 @@ class _RolesView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('الأدوار والصلاحيات')),
       floatingActionButton: FloatingActionButton.extended(
+                              // Unique per screen, because the shell keeps every tab alive in an IndexedStack:
+                              // two default-tagged FABs in one subtree is the «multiple heroes» assertion.
+                              heroTag: 'fab-roles',
         onPressed: () async {
           // Whatever the form returns, the list is stale: a created role is not on it, and the
           // form is also where an existing one gets renamed.

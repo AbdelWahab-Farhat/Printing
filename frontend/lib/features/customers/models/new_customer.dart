@@ -59,5 +59,12 @@ abstract class NewCustomerShop with _$NewCustomerShop {
     /// A Facebook page, usually. Absent rather than null when the user left it blank: the API's
     /// rule is `nullable|url`, and an empty string is neither.
     @JsonKey(name: 'page_url', includeIfNull: false) String? pageUrl,
+
+    /// مجال العمل, or null for a shop nobody classified.
+    ///
+    /// **Sent even when null**, unlike [pageUrl] and [id]: both endpoints replace the shop
+    /// whole, so an omitted key would mean «اتركه كما هو» and a trade the user cleared would
+    /// quietly come back on the next save.
+    @JsonKey(name: 'business_field_id') int? businessFieldId,
   }) = _NewCustomerShop;
 }

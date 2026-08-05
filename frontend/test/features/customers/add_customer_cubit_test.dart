@@ -229,6 +229,7 @@ void main() {
           latitude: '32.8872',
           longitude: '13.1913',
           pageUrl: 'https://facebook.com/alnoor',
+          businessFieldId: null,
         ),
       ],
     );
@@ -252,7 +253,7 @@ void main() {
       name: 'مطبعة النور',
       phone: '0913334444',
       shops: const [
-        (id: null, name: 'الفرع', latitude: '٣٢٫٨٨', longitude: '13,19', pageUrl: null),
+        (id: null, name: 'الفرع', latitude: '٣٢٫٨٨', longitude: '13,19', pageUrl: null, businessFieldId: null),
       ],
     );
 
@@ -260,6 +261,29 @@ void main() {
     final shop = sentCustomer().shops!.single;
     expect(shop.latitude, 32.88);
     expect(shop.longitude, 13.19);
+  });
+
+  test('the shop\'s trade travels as an id, and «غير محدد» travels as null', () async {
+    // Arrange — the whole point of مجال العمل: it has to reach the server, and leaving it
+    // unanswered has to reach it too, or clearing one would never take effect.
+    arrangeCreate(const Right(created));
+
+    // Act
+    await cubit.submit(
+      name: 'مطبعة النور',
+      phone: '0913334444',
+      shops: const [
+        (id: null, name: 'محل الأناقة', latitude: '32.1', longitude: '13.1', pageUrl: null, businessFieldId: 3),
+        (id: null, name: 'فرع بلا تصنيف', latitude: '32.2', longitude: '13.2', pageUrl: null, businessFieldId: null),
+      ],
+    );
+
+    // Assert — the key is present either way: both endpoints replace the shop whole, so an
+    // omitted key would mean «اتركه كما هو» and a cleared trade would come back on the next save.
+    final shops = sentCustomer().toJson()['shops'] as List<dynamic>;
+    expect((shops.first as Map<String, dynamic>)['business_field_id'], 3);
+    expect((shops.last as Map<String, dynamic>).containsKey('business_field_id'), isTrue);
+    expect((shops.last as Map<String, dynamic>)['business_field_id'], isNull);
   });
 
   test('an empty page link is left out rather than sent as an empty string', () async {
@@ -271,7 +295,7 @@ void main() {
       name: 'مطبعة النور',
       phone: '0913334444',
       shops: const [
-        (id: null, name: 'الفرع', latitude: '32.8', longitude: '13.1', pageUrl: '   '),
+        (id: null, name: 'الفرع', latitude: '32.8', longitude: '13.1', pageUrl: '   ', businessFieldId: null),
       ],
     );
 
@@ -290,9 +314,9 @@ void main() {
       name: 'مطبعة النور',
       phone: '0913334444',
       shops: const [
-        (id: null, name: 'الأول', latitude: '32.1', longitude: '13.1', pageUrl: null),
-        (id: null, name: 'الثاني', latitude: '32.2', longitude: '13.2', pageUrl: null),
-        (id: null, name: 'الثالث', latitude: '32.3', longitude: '13.3', pageUrl: null),
+        (id: null, name: 'الأول', latitude: '32.1', longitude: '13.1', pageUrl: null, businessFieldId: null),
+        (id: null, name: 'الثاني', latitude: '32.2', longitude: '13.2', pageUrl: null, businessFieldId: null),
+        (id: null, name: 'الثالث', latitude: '32.3', longitude: '13.3', pageUrl: null, businessFieldId: null),
       ],
     );
 

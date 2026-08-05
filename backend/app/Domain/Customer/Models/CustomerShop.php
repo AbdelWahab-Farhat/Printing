@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * shop, so its entries are read through `GET /customers/{customer}/logs`.
  */
 #[UseFactory(CustomerShopFactory::class)]
-#[Fillable(['name', 'latitude', 'longitude', 'page_url'])]
+#[Fillable(['name', 'latitude', 'longitude', 'page_url', 'business_field_id'])]
 class CustomerShop extends Model
 {
     /** @use HasFactory<CustomerShopFactory> */
@@ -50,5 +50,15 @@ class CustomerShop extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * مجال العمل — the trade this shop is in, or none.
+     *
+     * @return BelongsTo<BusinessField, $this>
+     */
+    public function businessField(): BelongsTo
+    {
+        return $this->belongsTo(BusinessField::class);
     }
 }

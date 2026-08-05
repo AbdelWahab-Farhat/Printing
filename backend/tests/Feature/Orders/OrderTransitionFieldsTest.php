@@ -7,6 +7,7 @@ namespace Tests\Feature\Orders;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
+use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\DesignSource;
@@ -74,6 +75,22 @@ class OrderTransitionFieldsTest extends TestCase
         $user->givePermissionTo([
             PermissionName::ViewOrders->value,
             PermissionName::SettleOrders->value,
+        ]);
+
+        return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+    }
+
+    /**
+     * Somebody who sends parcels out.
+     *
+     * @return array<string, string>
+     */
+    private function dispatcher(): array
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo([
+            PermissionName::ViewOrders->value,
+            PermissionName::DispatchOrders->value,
         ]);
 
         return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
@@ -238,6 +255,104 @@ class OrderTransitionFieldsTest extends TestCase
         // thing on the form is the note, which is on every form and is never required.
         $this->assertSame(['reason'], array_column($printing['fields'], 'key'));
         $this->assertFalse($printing['fields'][0]['required']);
+    }
+
+    // ──────────────────────── what «جاري التوصيل» asks for ────────────────────────
+
+    public function test_sending_a_parcel_out_names_the_carrier(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Ready)->create();
+        $headers = $this->dispatcher();
+
+        // Act
+        $out = $this->transition($this->show($headers, $order), OrderStatus::OutForDelivery);
+        $fields = collect($out['fields']);
+
+        // Assert — the company is compulsory and the driver is not: the company is answerable
+        // for the parcel, while the man carrying it is merely useful to be able to ring, and
+        // often nobody has his number at the moment it leaves.
+        $carrier = $fields->firstWhere('key', 'shipping_company_id');
+        $this->assertNotNull($carrier);
+        $this->assertSame('shipping_company', $carrier['type']);
+        $this->assertTrue($carrier['required']);
+
+        $courier = $fields->firstWhere('key', 'courier_phone');
+        $this->assertNotNull($courier);
+        $this->assertSame('هاتف المندوب', $courier['label']);
+        $this->assertFalse($courier['required']);
+    }
+
+    public function test_an_order_the_customer_is_collecting_is_asked_for_no_carrier(): void
+    {
+        // Arrange — a branch order. The clerk still presses one dispatch button.
+        $order = Order::factory()->officePickup()->status(OrderStatus::Ready)->create();
+        $headers = $this->dispatcher();
+
+        // Act
+        $dispatch = $this->transition($this->show($headers, $order), OrderStatus::OfficePickup);
+
+        // Assert — nobody carries a parcel the customer is coming to fetch. The description
+        // resolves the dispatch pair exactly as the move does, so what is asked for and what
+        // is accepted cannot disagree.
+        $this->assertSame(['reason'], array_column($dispatch['fields'], 'key'));
+    }
+
+    public function test_a_parcel_cannot_leave_with_nobody_named(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Ready)->create();
+        $headers = $this->dispatcher();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::OutForDelivery);
+
+        // Assert — a parcel on the road with no carrier recorded is a parcel nobody can chase,
+        // and the return chain has nothing to be answered from.
+        $response->assertStatus(422)->assertJsonValidationErrors('fields.shipping_company_id');
+        $this->assertSame(OrderStatus::Ready, $order->fresh()->status);
+    }
+
+    public function test_the_carrier_is_written_down_by_name_as_well_as_by_key(): void
+    {
+        // Arrange
+        $company = ShippingCompany::factory()->create(['name' => 'درب']);
+        $order = Order::factory()->status(OrderStatus::Ready)->create();
+        $headers = $this->dispatcher();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::OutForDelivery, [
+            'fields' => ['shipping_company_id' => $company->id, 'courier_phone' => '0913334444'],
+        ]);
+
+        // Assert — the key for filtering and for opening the record, the name for what the
+        // order said on the day. Renaming the company later must not rewrite this order.
+        $response->assertOk();
+
+        $dispatched = $order->fresh();
+        $this->assertSame($company->id, $dispatched->shipping_company_id);
+        $this->assertSame('درب', $dispatched->shipping_company);
+        $this->assertSame('0913334444', $dispatched->courier_phone);
+
+        $company->update(['name' => 'درب للشحن السريع']);
+        $this->assertSame('درب', $order->fresh()->shipping_company);
+    }
+
+    public function test_a_carrier_removed_from_the_list_cannot_be_chosen(): void
+    {
+        // Arrange
+        $company = ShippingCompany::factory()->create();
+        $company->delete();
+        $order = Order::factory()->status(OrderStatus::Ready)->create();
+        $headers = $this->dispatcher();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::OutForDelivery, [
+            'fields' => ['shipping_company_id' => $company->id],
+        ]);
+
+        // Assert — the rule agrees with the picker: what is not offered is not accepted.
+        $response->assertStatus(422)->assertJsonValidationErrors('fields.shipping_company_id');
     }
 
     // ──────────────────────── what «تم التسوية» asks for ────────────────────────

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/app_icons.dart';
@@ -5,6 +7,7 @@ import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
 import 'package:printing/features/customers/presentation/widgets/design_thumbnail.dart';
+import 'package:printing/features/customers/presentation/widgets/design_viewer.dart';
 import 'package:printing/features/orders/models/order.dart';
 
 /// The artwork conversation, version by version — and the three things staff do to it.
@@ -21,7 +24,13 @@ import 'package:printing/features/orders/models/order.dart';
 /// own. Both stay available for as long as the order is open, so the artwork can be corrected
 /// whenever, without pretending to move the order to do it.
 ///
-/// Every callback is null for somebody without `orders.designs.manage`, and then this reads.
+/// **Looking at the artwork needs no permission and no callback.** Tapping a version opens the
+/// file full screen, and the button beside it saves a copy to the phone — both read the same
+/// signed link the row already carries, so anyone who may see the order may see what is being
+/// printed on it. Judging one is the part that is gated.
+///
+/// Every *action* callback is null for somebody without `orders.designs.manage`, and then this
+/// section reads.
 class OrderDesignsSection extends StatelessWidget {
   const OrderDesignsSection({
     required this.designs,
@@ -91,30 +100,59 @@ class OrderDesignsSection extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    // The artwork itself. «نسخة ٢» and «نسخة ٣» are the same three characters
-                    // apart, and which one was approved is a question about what is *on* them.
+                    // The artwork itself, and now the way into it: tapping opens the file full
+                    // screen. «نسخة ٢» and «نسخة ٣» are the same three characters apart, and
+                    // what was approved is a question about what is *on* them — which used to
+                    // be unanswerable from this screen without opening the customer's library.
                     if (design.design case final file?) ...[
-                      DesignThumbnail(design: file, size: 48),
+                      InkWell(
+                        onTap: () => unawaited(showDesign(context, file)),
+                        borderRadius: BorderRadius.circular(10.r),
+                        child: DesignThumbnail(design: file, size: 48),
+                      ),
                       SizedBox(width: 12.w),
                     ],
-                    Text(
-                      'نسخة ${design.version}',
-                      style: context.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'نسخة ${design.version}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Flexible(
+                            child: Text(
+                              design.statusLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textTheme.labelMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: design.isApproved
+                                    ? scheme.tertiary
+                                    : design.isRejected
+                                    ? scheme.error
+                                    : scheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(width: 8.w),
-                    Text(
-                      design.statusLabel,
-                      style: context.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: design.isApproved
-                            ? scheme.tertiary
-                            : design.isRejected
-                            ? scheme.error
-                            : scheme.onSurfaceVariant,
+                    // Saving is one tap from the row, not two from a viewer: the person who
+                    // needs the file usually needs to send it to the printer, and never looked
+                    // at it on this screen at all.
+                    if (design.design case final file?)
+                      IconButton(
+                        tooltip: 'تحميل',
+                        onPressed: () => unawaited(saveDesign(context, file)),
+                        icon: Icon(AppIcons.download, color: scheme.onSurfaceVariant),
                       ),
-                    ),
                   ],
                 ),
                 if (design.rejectionReason case final reason?) ...[

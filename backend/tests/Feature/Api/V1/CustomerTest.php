@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
+use App\Domain\Customer\Models\BusinessField;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Identity\Enums\RoleName;
@@ -507,6 +508,100 @@ class CustomerTest extends TestCase
 
         // Assert
         $response->assertStatus(401);
+    }
+
+    // ─────────────────────────── مجال العمل ───────────────────────────
+
+    public function test_a_shop_records_the_trade_it_is_in(): void
+    {
+        // Arrange — the whole reason the field exists: knowing who we sell to, from records
+        // rather than from memory.
+        $field = BusinessField::factory()->named('بيع ملابس')->create();
+        $headers = $this->auth();
+        $payload = $this->payload([
+            'shops' => [
+                [
+                    'name' => 'محل الأناقة',
+                    'latitude' => 32.8872,
+                    'longitude' => 13.1913,
+                    'business_field_id' => $field->id,
+                ],
+            ],
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $payload);
+
+        // Assert — the id for a form to preselect, and the field itself so a screen never has
+        // to fetch the list to translate one number.
+        $response->assertCreated()
+            ->assertJsonPath('data.shops.0.business_field_id', $field->id)
+            ->assertJsonPath('data.shops.0.business_field.name', 'بيع ملابس');
+    }
+
+    public function test_a_shop_may_be_recorded_without_a_trade(): void
+    {
+        // Arrange — every shop on record predates this field, and a shop entered in a hurry
+        // still has to save.
+        $headers = $this->auth();
+        $payload = $this->payload([
+            'shops' => [['name' => 'فرع طرابلس', 'latitude' => 32.8872, 'longitude' => 13.1913]],
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $payload);
+
+        // Assert
+        $response->assertCreated()->assertJsonPath('data.shops.0.business_field_id', null);
+    }
+
+    public function test_the_trade_of_an_existing_shop_can_be_changed_and_cleared(): void
+    {
+        // Arrange
+        $field = BusinessField::factory()->named('مطاعم ومقاهي')->create();
+        $customer = Customer::factory()->create();
+        $shop = CustomerShop::factory()->create([
+            'customer_id' => $customer->id,
+            'business_field_id' => $field->id,
+        ]);
+        $headers = $this->auth();
+
+        // Act — the shop is sent back with its id and without a trade, which is how this API
+        // says «امسحه»: both endpoints send the shop's whole representation.
+        $response = $this->withHeaders($headers)->putJson("/api/v1/customers/{$customer->id}", [
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+            'shops' => [[
+                'id' => $shop->id,
+                'name' => $shop->name,
+                'latitude' => $shop->latitude,
+                'longitude' => $shop->longitude,
+            ]],
+        ]);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.shops.0.business_field_id', null);
+        $this->assertNull($shop->fresh()->business_field_id);
+    }
+
+    public function test_a_trade_that_does_not_exist_is_refused(): void
+    {
+        // Arrange — a stale id from a client's cached list must not reach the database.
+        $headers = $this->auth();
+        $payload = $this->payload([
+            'shops' => [[
+                'name' => 'فرع طرابلس',
+                'latitude' => 32.8872,
+                'longitude' => 13.1913,
+                'business_field_id' => 999999,
+            ]],
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $payload);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('shops.0.business_field_id');
     }
 
     // ─────────────────────────── show ───────────────────────────

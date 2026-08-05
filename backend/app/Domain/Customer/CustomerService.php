@@ -4,11 +4,19 @@ declare(strict_types=1);
 
 namespace App\Domain\Customer;
 
+use App\Domain\Customer\Actions\CreateBusinessField;
 use App\Domain\Customer\Actions\CreateCustomer;
+use App\Domain\Customer\Actions\DeleteBusinessField;
+use App\Domain\Customer\Actions\UpdateBusinessField;
 use App\Domain\Customer\Actions\UpdateCustomer;
+use App\Domain\Customer\DTOs\BusinessFieldData;
 use App\Domain\Customer\DTOs\CustomerData;
+use App\Domain\Customer\Exceptions\BusinessFieldInUse;
+use App\Domain\Customer\Models\BusinessField;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
+use App\Domain\Customer\Queries\BusinessFieldFilters;
+use App\Domain\Customer\Queries\BusinessFieldListQuery;
 use App\Domain\Customer\Queries\CustomerFilters;
 use App\Domain\Customer\Queries\CustomerListQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -27,6 +35,10 @@ class CustomerService
         private readonly CreateCustomer $createCustomer,
         private readonly UpdateCustomer $updateCustomer,
         private readonly CustomerListQuery $listQuery,
+        private readonly CreateBusinessField $createBusinessField,
+        private readonly UpdateBusinessField $updateBusinessField,
+        private readonly DeleteBusinessField $deleteBusinessField,
+        private readonly BusinessFieldListQuery $businessFieldListQuery,
     ) {}
 
     /**
@@ -35,6 +47,18 @@ class CustomerService
     public function paginate(CustomerFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return ($this->listQuery)($filters, $perPage);
+    }
+
+    /**
+     * How many customers the shop has.
+     *
+     * Everyone, including the ones no longer sold to: a customer is deactivated rather than
+     * deleted, and «عدد العملاء» is a count of the people this business has dealt with. Soft
+     * deleted rows are excluded by the model's global scope, as they are from every list.
+     */
+    public function count(): int
+    {
+        return Customer::query()->count();
     }
 
     public function find(int $id): Customer
@@ -71,6 +95,56 @@ class CustomerService
     {
         $customer->update(['is_active' => $isActive]);
 
-        return $customer->load('shops');
+        return $customer->load('shops.businessField');
+    }
+
+    // ─────────────────────────── مجالات العمل ───────────────────────────
+    //
+    // The trades a customer's shop can be in. Reference data rather than a customer, but it
+    // exists only to describe one, so it comes through the same front door instead of a module
+    // of its own for a single lookup table.
+
+    /**
+     * @return LengthAwarePaginator<int, BusinessField>
+     */
+    public function paginateBusinessFields(
+        BusinessFieldFilters $filters,
+        int $perPage = 15,
+    ): LengthAwarePaginator {
+        return ($this->businessFieldListQuery)($filters, $perPage);
+    }
+
+    public function createBusinessField(BusinessFieldData $data): BusinessField
+    {
+        return ($this->createBusinessField)($data);
+    }
+
+    public function updateBusinessField(BusinessField $field, BusinessFieldData $data): BusinessField
+    {
+        return ($this->updateBusinessField)($field, $data);
+    }
+
+    /**
+     * Hides a field from the pickers without touching the shops already recorded under it.
+     *
+     * The ordinary way to retire one — {@see DeleteBusinessField} refuses outright once any
+     * shop points at it.
+     */
+    public function setBusinessFieldActive(BusinessField $field, bool $isActive): BusinessField
+    {
+        $field->update(['is_active' => $isActive]);
+
+        return $field->loadCount('shops');
+    }
+
+    /**
+     * For the row that should never have existed — a typo, a duplicate.
+     *
+     * Throws {@see BusinessFieldInUse} when shops are recorded
+     * under it; deactivation is what that case wants.
+     */
+    public function deleteBusinessField(BusinessField $field): void
+    {
+        ($this->deleteBusinessField)($field);
     }
 }

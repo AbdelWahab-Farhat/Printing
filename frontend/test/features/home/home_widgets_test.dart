@@ -138,8 +138,8 @@ void main() {
     testWidgets('renders whatever statuses it is handed', (tester) async {
       // Arrange
       const statuses = [
-        OrderStatusCount(status: 'new', label: 'الجديدة', count: 72, needsAttention: true),
-        OrderStatusCount(status: 'rejected', label: 'مرفوض', count: 76),
+        OrderStatusCount(status: 'new', label: 'جديدة', count: 72),
+        OrderStatusCount(status: 'cancelled', label: 'ملغاة', count: 76),
       ];
 
       // Act
@@ -147,17 +147,17 @@ void main() {
 
       // Assert
       expect(find.text('حالات الطلبات'), findsOneWidget);
-      expect(find.text('الجديدة'), findsOneWidget);
+      expect(find.text('جديدة'), findsOneWidget);
       expect(find.text('72'), findsOneWidget);
-      expect(find.text('مرفوض'), findsOneWidget);
+      expect(find.text('ملغاة'), findsOneWidget);
       expect(find.text('76'), findsOneWidget);
     });
 
-    testWidgets('every card is the same colour, urgent or not', (tester) async {
+    testWidgets('every card is the same colour, and none is marked', (tester) async {
       // Arrange
       const statuses = [
-        OrderStatusCount(status: 'new', label: 'الجديدة', count: 72, needsAttention: true),
-        OrderStatusCount(status: 'rejected', label: 'مرفوض', count: 76),
+        OrderStatusCount(status: 'new', label: 'جديدة', count: 72),
+        OrderStatusCount(status: 'cancelled', label: 'ملغاة', count: 76),
       ];
       await tester.pumpWidget(host(const StatusBoard(statuses: statuses)));
       await tester.pumpAndSettle();
@@ -171,9 +171,11 @@ void main() {
           .map((decoration) => decoration.color)
           .toSet();
 
-      // Assert — one fill across the board. Urgency is carried by the dot, not by a tint.
+      // Assert — one fill across the board, and nothing else claiming attention. The dot that
+      // used to sit here marked a *status*, so «جديدة» wore it while counting zero — a warning
+      // about nothing, which teaches the reader to stop believing the mark.
       expect(backgrounds, hasLength(1));
-      expect(find.text('1 تحتاج متابعة'), findsOneWidget);
+      expect(find.textContaining('تحتاج متابعة'), findsNothing);
     });
 
     testWidgets('takes up no room at all when there is nothing to show', (tester) async {
@@ -186,6 +188,95 @@ void main() {
       // Assert — no orphan heading over an empty grid.
       expect(find.text('حالات الطلبات'), findsNothing);
       expect(size.height, 0);
+    });
+  });
+
+  group('cards that open something', () {
+    const shortage = OrderStatusCount(status: 'shortage', label: 'نواقص', count: 14);
+    const empty = OrderStatusCount(status: 'resend', label: 'إعادة إرسال', count: 0);
+
+    testWidgets('tapping a status card asks for that status by its wire name', (tester) async {
+      // Arrange
+      OrderStatusCount? opened;
+
+      await tester.pumpWidget(
+        host(
+          StatusBoard(
+            statuses: const [shortage],
+            onOpen: (status) => opened = status,
+          ),
+        ),
+      );
+
+      // Act — the ink sits over the card, so the tap goes to it rather than to the label
+      // painted underneath.
+      await tester.tap(find.byType(InkWell));
+      await tester.pump();
+
+      // Assert — the card hands over its own row, so the screen it opens gets both the filter
+      // and the Arabic to put at the top of it.
+      expect(opened?.status, 'shortage');
+      expect(opened?.label, 'نواقص');
+    });
+
+    testWidgets('a status with nothing in it does not respond', (tester) async {
+      // Arrange
+      var taps = 0;
+
+      await tester.pumpWidget(
+        host(StatusBoard(statuses: const [empty], onOpen: (_) => taps++)),
+      );
+
+      // Act
+      // The miss is the assertion: there is no ink to hit on a card with nothing to open.
+      await tester.tap(find.text('إعادة إرسال'), warnIfMissed: false);
+      await tester.pump();
+
+      // Assert — a tap that opens «لا توجد طلبيات» teaches the reader nothing the card did not
+      // already say.
+      expect(taps, isZero);
+    });
+
+    testWidgets('a board with nowhere to go is still readable', (tester) async {
+      // Arrange & Act — no `onOpen`, which is what it was before any of this.
+      await tester.pumpWidget(host(const StatusBoard(statuses: [shortage])));
+
+      // Assert
+      expect(find.text('نواقص'), findsOneWidget);
+      expect(find.byType(InkWell), findsNothing);
+    });
+
+    testWidgets('the day tile is inert when the day was quiet', (tester) async {
+      // Arrange
+      var days = 0;
+      var alls = 0;
+
+      const summary = HomeSummary(
+        totalOrders: 26,
+        customersCount: 9,
+        dailyOrders: 0,
+        monthlyOrders: 11,
+      );
+
+      // Act
+      await tester.pumpWidget(
+        host(
+          SummaryTiles(
+            summary: summary,
+            onAllOrders: () => alls++,
+            onDay: () => days++,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('الطلبات اليومية'), warnIfMissed: false);
+      // The only ink on screen: the quiet day has none.
+      await tester.tap(find.byType(InkWell));
+      await tester.pump();
+
+      // Assert
+      expect(days, isZero);
+      expect(alls, 1);
     });
   });
 }

@@ -8,11 +8,13 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Customer\Models\BusinessField;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
+use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Models\Order;
@@ -50,6 +52,7 @@ enum AuditSubject: string
     case Customer = 'customer';
     case CustomerShop = 'customer_shop';
     case CustomerDesign = 'customer_design';
+    case BusinessField = 'business_field';
 
     // Catalogue
     case Product = 'product';
@@ -66,6 +69,7 @@ enum AuditSubject: string
     // Delivery map
     case City = 'city';
     case Region = 'region';
+    case ShippingCompany = 'shipping_company';
 
     /**
      * @return class-string<Model>
@@ -78,6 +82,7 @@ enum AuditSubject: string
             self::Customer => Customer::class,
             self::CustomerShop => CustomerShop::class,
             self::CustomerDesign => CustomerDesign::class,
+            self::BusinessField => BusinessField::class,
             self::Product => Product::class,
             self::ProductVariant => ProductVariant::class,
             self::ProductPriceTier => ProductPriceTier::class,
@@ -88,6 +93,7 @@ enum AuditSubject: string
             self::OrderStatusTransition => OrderStatusTransition::class,
             self::City => City::class,
             self::Region => Region::class,
+            self::ShippingCompany => ShippingCompany::class,
         };
     }
 
@@ -102,6 +108,7 @@ enum AuditSubject: string
             self::Customer => 'عميل',
             self::CustomerShop => 'محل عميل',
             self::CustomerDesign => 'تصميم عميل',
+            self::BusinessField => 'مجال عمل',
             self::Product => 'منتج',
             self::ProductVariant => 'مقاس منتج',
             self::ProductPriceTier => 'شريحة سعر',
@@ -112,6 +119,7 @@ enum AuditSubject: string
             self::OrderStatusTransition => 'انتقال حالة طلبية',
             self::City => 'مدينة',
             self::Region => 'منطقة',
+            self::ShippingCompany => 'شركة توصيل',
         };
     }
 

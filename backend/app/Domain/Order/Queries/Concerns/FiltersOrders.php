@@ -9,6 +9,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Queries\OrderFilters;
 use App\Domain\Order\Queries\OrderSearchKind;
 use App\Domain\Order\Queries\OrderSearchTerm;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -45,8 +46,36 @@ trait FiltersOrders
             )
             ->when($filters->customerId !== null, fn (Builder $q) => $q->where('customer_id', $filters->customerId))
             ->when($filters->cityId !== null, fn (Builder $q) => $q->where('city_id', $filters->cityId))
-            ->when($filters->from !== null, fn (Builder $q) => $q->whereDate('created_at', '>=', $filters->from))
-            ->when($filters->to !== null, fn (Builder $q) => $q->whereDate('created_at', '<=', $filters->to));
+            // **`placed_at`, in the shop's own timezone, and both of those matter.**
+            //
+            // The column, because that is what «طلبات اليوم» counts on the home screen — and a
+            // card whose number and whose list disagree is worse than either alone. They are the
+            // same instant for every order this API takes and part company the day an old one is
+            // imported.
+            //
+            // The timezone, because `whereDate` compares a local date against a UTC column:
+            // Libya is two hours ahead, so an order taken at one in the morning is 23:00
+            // *yesterday* in UTC and drops out of today — quietly, for the first two hours of
+            // every day. The day is turned into a pair of UTC instants instead.
+            ->when($filters->from !== null, fn (Builder $q) => $q->where('placed_at', '>=', $this->dayStart($filters->from)))
+            ->when($filters->to !== null, fn (Builder $q) => $q->where('placed_at', '<=', $this->dayEnd($filters->to)));
+    }
+
+    /** The first instant of that local day, as UTC. */
+    private function dayStart(string $date): CarbonImmutable
+    {
+        return CarbonImmutable::parse($date, $this->businessTimezone())->startOfDay()->utc();
+    }
+
+    /** The last instant of that local day, as UTC. */
+    private function dayEnd(string $date): CarbonImmutable
+    {
+        return CarbonImmutable::parse($date, $this->businessTimezone())->endOfDay()->utc();
+    }
+
+    private function businessTimezone(): string
+    {
+        return (string) config('app.business_timezone', 'Africa/Tripoli');
     }
 
     /**

@@ -40,5 +40,6 @@ const _$TransitionFieldTypeEnumMap = {
   TransitionFieldType.text: 'text',
   TransitionFieldType.number: 'number',
   TransitionFieldType.customerDesigns: 'customer_designs',
+  TransitionFieldType.shippingCompany: 'shipping_company',
   TransitionFieldType.unknown: 'unknown',
 };

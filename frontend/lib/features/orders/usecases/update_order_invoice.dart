@@ -28,10 +28,14 @@ class InvoiceLineUpdate {
   };
 }
 
-/// Replacing an order's lines and its discount.
+/// Editing an open order: its lines, its discount, and where it is going.
 ///
 /// `PUT /orders/{id}` replaces the whole set — the same contract a product's sizes follow — so
 /// a removed line is expressed by sending the ones that remain, not by a delete call.
+///
+/// **Every argument is optional, because the three parts close at three different moments.**
+/// An order in «جاهزة» has its lines shut and its address open, so the only honest way to
+/// express that edit is to send the address and say nothing at all about the lines.
 class UpdateOrderInvoice {
   const UpdateOrderInvoice(this._repository);
 
@@ -39,9 +43,17 @@ class UpdateOrderInvoice {
 
   Future<Either<Failure, Order>> call(
     int orderId, {
-    required List<InvoiceLineUpdate> lines,
-    required String discount,
+    List<InvoiceLineUpdate>? lines,
+    String? discount,
+    int? cityId,
+    int? regionId,
   }) {
-    return _repository.updateInvoice(orderId, lines: lines, discount: discount);
+    return _repository.updateInvoice(
+      orderId,
+      lines: lines,
+      discount: discount,
+      cityId: cityId,
+      regionId: regionId,
+    );
   }
 }

@@ -38,6 +38,12 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
           discount: order.discount,
           designFee: order.designFee,
           deliveryPrice: order.deliveryPrice,
+          cityId: order.cityId,
+          cityName: order.cityName,
+          regionId: order.regionId,
+          regionName: order.regionName,
+          linesAreEditable: order.itemsAreEditable,
+          destinationIsEditable: order.destinationIsEditable,
         ),
       );
 
@@ -77,6 +83,32 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
     emit(state.copyWith(discount: discount, isDirty: true, failure: null));
   }
 
+  /// Moves the order to another city.
+  ///
+  /// **The region is cleared with it, always.** A region belongs to one city, so carrying the
+  /// old one across would send the server a neighbourhood from somewhere else — which it
+  /// refuses, correctly, with a message about a field the user never touched.
+  void setCity({required int id, required String name}) {
+    if (id == state.cityId) return;
+
+    emit(
+      state.copyWith(
+        cityId: id,
+        cityName: name,
+        regionId: null,
+        regionName: null,
+        isDirty: true,
+        failure: null,
+      ),
+    );
+  }
+
+  void setRegion({required int id, required String name}) {
+    emit(
+      state.copyWith(regionId: id, regionName: name, isDirty: true, failure: null),
+    );
+  }
+
   Future<void> save() async {
     if (!state.isValid || state.isSaving) return;
 
@@ -84,15 +116,21 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
 
     final result = await _updateInvoice(
       state.orderId,
-      lines: [
-        for (final line in state.lines)
-          InvoiceLineUpdate(
-            productId: line.productId,
-            variantId: line.variantId,
-            quantity: _ascii(line.quantity),
-          ),
-      ],
-      discount: _ascii(state.discount),
+      // Omitted entirely when the lines are shut: `items` absent means "leave them alone",
+      // which is the only way to save an address change on an order past «جاهزة».
+      lines: state.linesAreEditable
+          ? [
+              for (final line in state.lines)
+                InvoiceLineUpdate(
+                  productId: line.productId,
+                  variantId: line.variantId,
+                  quantity: _ascii(line.quantity),
+                ),
+            ]
+          : null,
+      discount: state.linesAreEditable ? _ascii(state.discount) : null,
+      cityId: state.cityId,
+      regionId: state.regionId,
     );
 
     if (isClosed) return;

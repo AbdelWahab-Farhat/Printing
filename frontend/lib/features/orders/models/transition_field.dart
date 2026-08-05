@@ -23,6 +23,13 @@ enum TransitionFieldType {
   @JsonValue('customer_designs')
   customerDesigns,
 
+  /// One of the carriers the business maintains.
+  ///
+  /// No options arrive with the field: this app already owns that list — it manages it — so the
+  /// picker fetches the active companies itself and only the id travels back.
+  @JsonValue('shipping_company')
+  shippingCompany,
+
   /// A kind this build has no widget for. Rendered as a note rather than silently skipped: a
   /// field the server thinks is required and the screen never shows is a form that cannot be
   /// submitted with nothing on screen to explain why.

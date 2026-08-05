@@ -15,6 +15,7 @@ import 'package:printing/features/access/presentation/views/roles_page.dart';
 import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/audit/presentation/views/activity_log_page.dart';
 import 'package:printing/features/auth/presentation/views/login_page.dart';
+import 'package:printing/features/business_fields/presentation/views/business_fields_page.dart';
 import 'package:printing/features/cities/models/city.dart';
 import 'package:printing/features/cities/presentation/views/cities_page.dart';
 import 'package:printing/features/cities/presentation/views/city_regions_page.dart';
@@ -25,6 +26,8 @@ import 'package:printing/features/customers/presentation/views/customer_detail_p
 import 'package:printing/features/customers/presentation/views/customers_page.dart';
 import 'package:printing/features/home/presentation/views/home_page.dart';
 import 'package:printing/features/location/presentation/views/pick_location_page.dart';
+import 'package:printing/features/orders/models/orders_filter.dart';
+import 'package:printing/features/orders/presentation/views/filtered_orders_page.dart';
 import 'package:printing/features/orders/presentation/views/order_detail_page.dart';
 import 'package:printing/features/orders/presentation/views/order_edit_page.dart';
 import 'package:printing/features/orders/presentation/views/order_status_page.dart';
@@ -34,6 +37,9 @@ import 'package:printing/features/products/presentation/views/product_detail_pag
 import 'package:printing/features/products/presentation/views/products_page.dart';
 import 'package:printing/features/root/presentation/views/root_page.dart';
 import 'package:printing/features/settings/presentation/views/settings_page.dart';
+import 'package:printing/features/shipping_companies/models/shipping_company.dart';
+import 'package:printing/features/shipping_companies/presentation/views/shipping_companies_page.dart';
+import 'package:printing/features/shipping_companies/presentation/views/shipping_company_form_page.dart';
 import 'package:printing/features/splash/presentation/views/splash_page.dart';
 
 /// Route names, as constants.
@@ -48,6 +54,10 @@ abstract final class Routes {
   /// `context.go(Routes.products)` selects that tab rather than covering the shell.
   static const String home = '/';
   static const String orders = '/orders';
+
+  /// The orders behind one number on the home screen. Takes an [OrdersFilter] as `extra` — the
+  /// Arabic title travels with it, because this app deliberately holds no table of status names.
+  static const String ordersFiltered = '/orders/filter';
   static const String products = '/products';
   static const String customers = '/customers';
 
@@ -55,6 +65,15 @@ abstract final class Routes {
   /// bottom bar never claims the user is on a tab they have left.
   static const String warehouse = '/warehouse';
   static const String cities = '/cities';
+
+  /// مجالات العمل — the trades a customer's shop can be in.
+  static const String businessFields = '/business-fields';
+
+  /// Who carries our parcels. A flat pair rather than a nested form, because adding a company
+  /// is reached from the list *and* — one day — from the dispatch screen when the carrier
+  /// somebody wants is not on it yet.
+  static const String shippingCompanies = '/shipping-companies';
+  static const String shippingCompanyForm = '/shipping-companies/form';
 
   /// The neighbourhoods inside one city. Declared as a child of `/cities`, because that is what
   /// they are: a region has no life outside its city, and the path saying so matches the API,
@@ -214,6 +233,20 @@ abstract final class AppRouter {
           body: ComingSoonPage(title: 'المخزن', icon: AppIcons.warehouse),
         ),
       ),
+      // Declared **before** `/orders/:id`, or go_router reads the literal word «filter» as an
+      // id and `int.parse` throws — the same trap `/products/new` sits beside.
+      GoRoute(
+        path: Routes.ordersFiltered,
+        builder: (context, state) {
+          final filter = state.extra as OrdersFilter?;
+
+          // A deep link carries no `extra`. Rather than an error screen, it answers the widest
+          // honest version of the question it was given.
+          return FilteredOrdersPage(
+            filter: filter ?? const OrdersFilter(title: 'الطلبيات'),
+          );
+        },
+      ),
       // Declared outside the shell and *after* the tab, so `/orders` still selects the tab
       // while `/orders/7` covers it.
       GoRoute(
@@ -238,6 +271,25 @@ abstract final class AppRouter {
             ),
           ),
         ],
+      ),
+      // Declared **before** the list, so the literal word is not captured by a sibling and, as
+      // with `/products/new`, guarded on the permission its every request would need.
+      GoRoute(
+        path: Routes.shippingCompanyForm,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.manageShippingCompanies) ? null : Routes.shippingCompanies,
+        builder: (context, state) =>
+            ShippingCompanyFormPage(company: state.extra as ShippingCompany?),
+      ),
+      GoRoute(
+        path: Routes.shippingCompanies,
+        builder: (context, state) => const ShippingCompaniesPage(),
+      ),
+      // Reading is granted to every role, so the route carries no guard of its own; the screen
+      // hides the controls a reader cannot use, and the server refuses either way.
+      GoRoute(
+        path: Routes.businessFields,
+        builder: (context, state) => const BusinessFieldsPage(),
       ),
       GoRoute(
         path: Routes.cities,

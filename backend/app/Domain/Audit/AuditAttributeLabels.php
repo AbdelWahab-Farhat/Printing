@@ -124,6 +124,9 @@ final class AuditAttributeLabels
             'city_id' => 'المدينة',
             'name' => 'اسم المنطقة',
         ],
+        'shipping_company' => [
+            'name' => 'اسم شركة التوصيل',
+        ],
 
         'order' => [
             'customer_id' => 'العميل',

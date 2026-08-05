@@ -26,6 +26,8 @@ class OrderRepositoryImpl implements OrderRepository {
     String? search,
     List<String> statuses = const <String>[],
     int? customerId,
+    String? from,
+    String? to,
     int page = 1,
     int perPage = 20,
   }) {
@@ -43,6 +45,11 @@ class OrderRepositoryImpl implements OrderRepository {
           // The null-aware element: same meaning as the `if` above it, and the form the
           // analyzer asks for when the condition is only a null check.
           'customer_id': ?customerId,
+          // Plain days. The server turns each into the instants that day starts and ends *in
+          // the shop's timezone*, which is why this sends a date and not a timestamp: a
+          // boundary computed here would be computed in the phone's zone.
+          'from': ?from,
+          'to': ?to,
         },
       ),
       parseItem: Order.fromJson,
@@ -74,22 +81,29 @@ class OrderRepositoryImpl implements OrderRepository {
   @override
   Future<Either<Failure, Order>> updateInvoice(
     int orderId, {
-    required List<InvoiceLineUpdate> lines,
-    required String discount,
+    List<InvoiceLineUpdate>? lines,
+    String? discount,
+    int? cityId,
+    int? regionId,
   }) async {
-    // `PUT` replaces the whole order, so the fields the sheet does not touch have to be sent
+    // `PUT` replaces the whole order, so the fields this screen does not touch have to be sent
     // back as they are — omitting `city_id` would be an instruction to clear the destination.
-    // Read first rather than trusting a copy the sheet has been holding: the order may have
+    // Read first rather than trusting a copy the screen has been holding: the order may have
     // moved while it was open, and the write should carry the current address, not a stale one.
     final current = await order(orderId);
 
     return current.fold(Left.new, (order) {
+      // A move to a city whose regions are different: the old region belongs to the old city
+      // and sending it on would be refused, correctly, as a region from somewhere else.
+      final movedCity = cityId != null && cityId != order.cityId;
+      final region = movedCity ? regionId : (regionId ?? order.regionId);
+
       return safeRequest<Order>(
         () => _dio.put(
           OrderEndpoints.show(orderId),
           data: <String, dynamic>{
-            'city_id': order.cityId,
-            'region_id': ?order.regionId,
+            'city_id': cityId ?? order.cityId,
+            'region_id': ?region,
             'customer_shop_id': ?order.customerShopId,
             'design_source': order.designSource,
             'recipient_name': ?order.recipientName,
@@ -97,11 +111,13 @@ class OrderRepositoryImpl implements OrderRepository {
             'address_details': ?order.addressDetails,
             'notes': ?order.notes,
             'design_fee': order.designFee,
-            'discount': discount,
-            'shipping_company': ?order.shippingCompany,
+            'discount': discount ?? order.discount,
             'tracking_number': ?order.trackingNumber,
-            'courier_name': ?order.courierName,
-            'items': lines.map((line) => line.toJson()).toList(growable: false),
+            // Omitted entirely when this edit is not about the lines: `items` is the one field
+            // whose absence means "leave them alone" rather than "clear them", which is what
+            // lets an address be corrected on an order whose lines are already closed.
+            if (lines != null)
+              'items': lines.map((line) => line.toJson()).toList(growable: false),
           },
         ),
         parse: (data) => Order.fromJson(data as Map<String, dynamic>),

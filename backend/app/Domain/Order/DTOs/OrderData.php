@@ -36,9 +36,7 @@ final readonly class OrderData
         public ?string $notes = null,
         public string $designFee = '0.00',
         public string $discount = '0.00',
-        public ?string $shippingCompany = null,
         public ?string $trackingNumber = null,
-        public ?string $courierName = null,
         public ?array $items = null,
     ) {}
 
@@ -64,9 +62,7 @@ final readonly class OrderData
             // Through string, never float: these are added to a total that must stay exact.
             designFee: self::money($validated['design_fee'] ?? null),
             discount: self::money($validated['discount'] ?? null),
-            shippingCompany: self::textOrNull($validated['shipping_company'] ?? null),
             trackingNumber: self::textOrNull($validated['tracking_number'] ?? null),
-            courierName: self::textOrNull($validated['courier_name'] ?? null),
             items: array_key_exists('items', $validated) && is_array($validated['items'])
                 ? array_values(array_map(
                     fn (array $item, int $index) => OrderItemData::fromArray($item, $index),

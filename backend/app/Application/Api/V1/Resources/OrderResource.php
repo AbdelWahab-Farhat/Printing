@@ -112,9 +112,12 @@ class OrderResource extends JsonResource
             // total. A value here is a discrepancy, deliberately.
             'collected_amount' => $this->collected_amount === null ? null : (string) $this->collected_amount,
 
+            // The snapshot beside the key, like the city's: what the order said carried it,
+            // which survives the company being renamed or removed from the list.
+            'shipping_company_id' => $this->shipping_company_id,
             'shipping_company' => $this->shipping_company,
+            'courier_phone' => $this->courier_phone,
             'tracking_number' => $this->tracking_number,
-            'courier_name' => $this->courier_name,
 
             'placed_at' => $this->placed_at?->toIso8601String(),
             'design_started_at' => $this->design_started_at?->toIso8601String(),

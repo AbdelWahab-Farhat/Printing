@@ -48,7 +48,13 @@ mixin _$Order {
 /// press runs against an approved file, so the artwork settles when printing starts;
 /// changing it means sending the order back to «قيد التصميم», which is a move somebody
 /// makes on purpose.
-@JsonKey(name: 'designs_are_editable') bool get designsAreEditable;/// Present on the list endpoint.
+@JsonKey(name: 'designs_are_editable') bool get designsAreEditable;/// Whether where it is going may still be changed.
+///
+/// **A third line, later than both of the others.** The lines close when the bags exist and
+/// the artwork closes when the press starts, but an address stays correctable right up to
+/// the moment somebody is driving to it — «جاري التوصيل» is the one open status that
+/// refuses, because there the label has already left and only the label is real.
+@JsonKey(name: 'destination_is_editable') bool get destinationIsEditable;/// Present on the list endpoint.
 @JsonKey(name: 'items_count') int? get itemsCount;/// Present when one order was fetched.
  List<OrderItem>? get items; List<OrderDesign>? get designs; List<OrderTransitionRecord>? get transitions;@JsonKey(name: 'placed_at') DateTime? get placedAt;@JsonKey(name: 'delivered_at') DateTime? get deliveredAt;@JsonKey(name: 'settled_at') DateTime? get settledAt;@JsonKey(name: 'created_at') DateTime? get createdAt;
 /// Create a copy of Order
@@ -63,16 +69,16 @@ $OrderCopyWith<Order> get copyWith => _$OrderCopyWithImpl<Order>(this as Order, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Order&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isFinal, isFinal) || other.isFinal == isFinal)&&(identical(other.isClosed, isClosed) || other.isClosed == isClosed)&&const DeepCollectionEquality().equals(other.availableTransitions, availableTransitions)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.designSource, designSource) || other.designSource == designSource)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.isOfficePickup, isOfficePickup) || other.isOfficePickup == isOfficePickup)&&(identical(other.designSourceLabel, designSourceLabel) || other.designSourceLabel == designSourceLabel)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.collectedAmount, collectedAmount) || other.collectedAmount == collectedAmount)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.customerShopName, customerShopName) || other.customerShopName == customerShopName)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.shippingCompany, shippingCompany) || other.shippingCompany == shippingCompany)&&(identical(other.trackingNumber, trackingNumber) || other.trackingNumber == trackingNumber)&&(identical(other.courierName, courierName) || other.courierName == courierName)&&(identical(other.cancellationReason, cancellationReason) || other.cancellationReason == cancellationReason)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.itemsAreEditable, itemsAreEditable) || other.itemsAreEditable == itemsAreEditable)&&(identical(other.designsAreEditable, designsAreEditable) || other.designsAreEditable == designsAreEditable)&&(identical(other.itemsCount, itemsCount) || other.itemsCount == itemsCount)&&const DeepCollectionEquality().equals(other.items, items)&&const DeepCollectionEquality().equals(other.designs, designs)&&const DeepCollectionEquality().equals(other.transitions, transitions)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt)&&(identical(other.deliveredAt, deliveredAt) || other.deliveredAt == deliveredAt)&&(identical(other.settledAt, settledAt) || other.settledAt == settledAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Order&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isFinal, isFinal) || other.isFinal == isFinal)&&(identical(other.isClosed, isClosed) || other.isClosed == isClosed)&&const DeepCollectionEquality().equals(other.availableTransitions, availableTransitions)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.designSource, designSource) || other.designSource == designSource)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.isOfficePickup, isOfficePickup) || other.isOfficePickup == isOfficePickup)&&(identical(other.designSourceLabel, designSourceLabel) || other.designSourceLabel == designSourceLabel)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.collectedAmount, collectedAmount) || other.collectedAmount == collectedAmount)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.customerShopName, customerShopName) || other.customerShopName == customerShopName)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.shippingCompany, shippingCompany) || other.shippingCompany == shippingCompany)&&(identical(other.trackingNumber, trackingNumber) || other.trackingNumber == trackingNumber)&&(identical(other.courierName, courierName) || other.courierName == courierName)&&(identical(other.cancellationReason, cancellationReason) || other.cancellationReason == cancellationReason)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.itemsAreEditable, itemsAreEditable) || other.itemsAreEditable == itemsAreEditable)&&(identical(other.designsAreEditable, designsAreEditable) || other.designsAreEditable == designsAreEditable)&&(identical(other.destinationIsEditable, destinationIsEditable) || other.destinationIsEditable == destinationIsEditable)&&(identical(other.itemsCount, itemsCount) || other.itemsCount == itemsCount)&&const DeepCollectionEquality().equals(other.items, items)&&const DeepCollectionEquality().equals(other.designs, designs)&&const DeepCollectionEquality().equals(other.transitions, transitions)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt)&&(identical(other.deliveredAt, deliveredAt) || other.deliveredAt == deliveredAt)&&(identical(other.settledAt, settledAt) || other.settledAt == settledAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,status,statusLabel,isFinal,isClosed,const DeepCollectionEquality().hash(availableTransitions),customerId,cityId,designSource,cityName,fulfilmentTypeLabel,isOfficePickup,designSourceLabel,itemsTotal,designFee,deliveryPrice,discount,grandTotal,weightKg,collectedAmount,customer,regionId,customerShopId,regionName,customerShopName,recipientName,recipientPhone,addressDetails,notes,shippingCompany,trackingNumber,courierName,cancellationReason,progress,itemsAreEditable,designsAreEditable,itemsCount,const DeepCollectionEquality().hash(items),const DeepCollectionEquality().hash(designs),const DeepCollectionEquality().hash(transitions),placedAt,deliveredAt,settledAt,createdAt]);
+int get hashCode => Object.hashAll([runtimeType,id,code,status,statusLabel,isFinal,isClosed,const DeepCollectionEquality().hash(availableTransitions),customerId,cityId,designSource,cityName,fulfilmentTypeLabel,isOfficePickup,designSourceLabel,itemsTotal,designFee,deliveryPrice,discount,grandTotal,weightKg,collectedAmount,customer,regionId,customerShopId,regionName,customerShopName,recipientName,recipientPhone,addressDetails,notes,shippingCompany,trackingNumber,courierName,cancellationReason,progress,itemsAreEditable,designsAreEditable,destinationIsEditable,itemsCount,const DeepCollectionEquality().hash(items),const DeepCollectionEquality().hash(designs),const DeepCollectionEquality().hash(transitions),placedAt,deliveredAt,settledAt,createdAt]);
 
 @override
 String toString() {
-  return 'Order(id: $id, code: $code, status: $status, statusLabel: $statusLabel, isFinal: $isFinal, isClosed: $isClosed, availableTransitions: $availableTransitions, customerId: $customerId, cityId: $cityId, designSource: $designSource, cityName: $cityName, fulfilmentTypeLabel: $fulfilmentTypeLabel, isOfficePickup: $isOfficePickup, designSourceLabel: $designSourceLabel, itemsTotal: $itemsTotal, designFee: $designFee, deliveryPrice: $deliveryPrice, discount: $discount, grandTotal: $grandTotal, weightKg: $weightKg, collectedAmount: $collectedAmount, customer: $customer, regionId: $regionId, customerShopId: $customerShopId, regionName: $regionName, customerShopName: $customerShopName, recipientName: $recipientName, recipientPhone: $recipientPhone, addressDetails: $addressDetails, notes: $notes, shippingCompany: $shippingCompany, trackingNumber: $trackingNumber, courierName: $courierName, cancellationReason: $cancellationReason, progress: $progress, itemsAreEditable: $itemsAreEditable, designsAreEditable: $designsAreEditable, itemsCount: $itemsCount, items: $items, designs: $designs, transitions: $transitions, placedAt: $placedAt, deliveredAt: $deliveredAt, settledAt: $settledAt, createdAt: $createdAt)';
+  return 'Order(id: $id, code: $code, status: $status, statusLabel: $statusLabel, isFinal: $isFinal, isClosed: $isClosed, availableTransitions: $availableTransitions, customerId: $customerId, cityId: $cityId, designSource: $designSource, cityName: $cityName, fulfilmentTypeLabel: $fulfilmentTypeLabel, isOfficePickup: $isOfficePickup, designSourceLabel: $designSourceLabel, itemsTotal: $itemsTotal, designFee: $designFee, deliveryPrice: $deliveryPrice, discount: $discount, grandTotal: $grandTotal, weightKg: $weightKg, collectedAmount: $collectedAmount, customer: $customer, regionId: $regionId, customerShopId: $customerShopId, regionName: $regionName, customerShopName: $customerShopName, recipientName: $recipientName, recipientPhone: $recipientPhone, addressDetails: $addressDetails, notes: $notes, shippingCompany: $shippingCompany, trackingNumber: $trackingNumber, courierName: $courierName, cancellationReason: $cancellationReason, progress: $progress, itemsAreEditable: $itemsAreEditable, designsAreEditable: $designsAreEditable, destinationIsEditable: $destinationIsEditable, itemsCount: $itemsCount, items: $items, designs: $designs, transitions: $transitions, placedAt: $placedAt, deliveredAt: $deliveredAt, settledAt: $settledAt, createdAt: $createdAt)';
 }
 
 
@@ -83,7 +89,7 @@ abstract mixin class $OrderCopyWith<$Res>  {
   factory $OrderCopyWith(Order value, $Res Function(Order) _then) = _$OrderCopyWithImpl;
 @useResult
 $Res call({
- int id, String code,@JsonKey(unknownEnumValue: OrderStatus.unknown) OrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_final') bool isFinal,@JsonKey(name: 'is_closed') bool isClosed,@JsonKey(name: 'available_transitions') List<OrderTransition> availableTransitions,@JsonKey(name: 'customer_id') int customerId,@JsonKey(name: 'city_id') int cityId,@JsonKey(name: 'design_source') String designSource,@JsonKey(name: 'city_name') String cityName,@JsonKey(name: 'fulfilment_type_label') String fulfilmentTypeLabel,@JsonKey(name: 'is_office_pickup') bool isOfficePickup,@JsonKey(name: 'design_source_label') String designSourceLabel,@JsonKey(name: 'items_total') String itemsTotal,@JsonKey(name: 'design_fee') String designFee,@JsonKey(name: 'delivery_price') String deliveryPrice, String discount,@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'weight_kg') String? weightKg,@JsonKey(name: 'collected_amount') String? collectedAmount, Customer? customer,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'customer_shop_id') int? customerShopId,@JsonKey(name: 'region_name') String? regionName,@JsonKey(name: 'customer_shop_name') String? customerShopName,@JsonKey(name: 'recipient_name') String? recipientName,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'address_details') String? addressDetails, String? notes,@JsonKey(name: 'shipping_company') String? shippingCompany,@JsonKey(name: 'tracking_number') String? trackingNumber,@JsonKey(name: 'courier_name') String? courierName,@JsonKey(name: 'cancellation_reason') String? cancellationReason, OrderProgress progress,@JsonKey(name: 'items_are_editable') bool itemsAreEditable,@JsonKey(name: 'designs_are_editable') bool designsAreEditable,@JsonKey(name: 'items_count') int? itemsCount, List<OrderItem>? items, List<OrderDesign>? designs, List<OrderTransitionRecord>? transitions,@JsonKey(name: 'placed_at') DateTime? placedAt,@JsonKey(name: 'delivered_at') DateTime? deliveredAt,@JsonKey(name: 'settled_at') DateTime? settledAt,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, String code,@JsonKey(unknownEnumValue: OrderStatus.unknown) OrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_final') bool isFinal,@JsonKey(name: 'is_closed') bool isClosed,@JsonKey(name: 'available_transitions') List<OrderTransition> availableTransitions,@JsonKey(name: 'customer_id') int customerId,@JsonKey(name: 'city_id') int cityId,@JsonKey(name: 'design_source') String designSource,@JsonKey(name: 'city_name') String cityName,@JsonKey(name: 'fulfilment_type_label') String fulfilmentTypeLabel,@JsonKey(name: 'is_office_pickup') bool isOfficePickup,@JsonKey(name: 'design_source_label') String designSourceLabel,@JsonKey(name: 'items_total') String itemsTotal,@JsonKey(name: 'design_fee') String designFee,@JsonKey(name: 'delivery_price') String deliveryPrice, String discount,@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'weight_kg') String? weightKg,@JsonKey(name: 'collected_amount') String? collectedAmount, Customer? customer,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'customer_shop_id') int? customerShopId,@JsonKey(name: 'region_name') String? regionName,@JsonKey(name: 'customer_shop_name') String? customerShopName,@JsonKey(name: 'recipient_name') String? recipientName,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'address_details') String? addressDetails, String? notes,@JsonKey(name: 'shipping_company') String? shippingCompany,@JsonKey(name: 'tracking_number') String? trackingNumber,@JsonKey(name: 'courier_name') String? courierName,@JsonKey(name: 'cancellation_reason') String? cancellationReason, OrderProgress progress,@JsonKey(name: 'items_are_editable') bool itemsAreEditable,@JsonKey(name: 'designs_are_editable') bool designsAreEditable,@JsonKey(name: 'destination_is_editable') bool destinationIsEditable,@JsonKey(name: 'items_count') int? itemsCount, List<OrderItem>? items, List<OrderDesign>? designs, List<OrderTransitionRecord>? transitions,@JsonKey(name: 'placed_at') DateTime? placedAt,@JsonKey(name: 'delivered_at') DateTime? deliveredAt,@JsonKey(name: 'settled_at') DateTime? settledAt,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -100,7 +106,7 @@ class _$OrderCopyWithImpl<$Res>
 
 /// Create a copy of Order
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? isFinal = null,Object? isClosed = null,Object? availableTransitions = null,Object? customerId = null,Object? cityId = null,Object? designSource = null,Object? cityName = null,Object? fulfilmentTypeLabel = null,Object? isOfficePickup = null,Object? designSourceLabel = null,Object? itemsTotal = null,Object? designFee = null,Object? deliveryPrice = null,Object? discount = null,Object? grandTotal = null,Object? weightKg = freezed,Object? collectedAmount = freezed,Object? customer = freezed,Object? regionId = freezed,Object? customerShopId = freezed,Object? regionName = freezed,Object? customerShopName = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? addressDetails = freezed,Object? notes = freezed,Object? shippingCompany = freezed,Object? trackingNumber = freezed,Object? courierName = freezed,Object? cancellationReason = freezed,Object? progress = null,Object? itemsAreEditable = null,Object? designsAreEditable = null,Object? itemsCount = freezed,Object? items = freezed,Object? designs = freezed,Object? transitions = freezed,Object? placedAt = freezed,Object? deliveredAt = freezed,Object? settledAt = freezed,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? isFinal = null,Object? isClosed = null,Object? availableTransitions = null,Object? customerId = null,Object? cityId = null,Object? designSource = null,Object? cityName = null,Object? fulfilmentTypeLabel = null,Object? isOfficePickup = null,Object? designSourceLabel = null,Object? itemsTotal = null,Object? designFee = null,Object? deliveryPrice = null,Object? discount = null,Object? grandTotal = null,Object? weightKg = freezed,Object? collectedAmount = freezed,Object? customer = freezed,Object? regionId = freezed,Object? customerShopId = freezed,Object? regionName = freezed,Object? customerShopName = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? addressDetails = freezed,Object? notes = freezed,Object? shippingCompany = freezed,Object? trackingNumber = freezed,Object? courierName = freezed,Object? cancellationReason = freezed,Object? progress = null,Object? itemsAreEditable = null,Object? designsAreEditable = null,Object? destinationIsEditable = null,Object? itemsCount = freezed,Object? items = freezed,Object? designs = freezed,Object? transitions = freezed,Object? placedAt = freezed,Object? deliveredAt = freezed,Object? settledAt = freezed,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -139,6 +145,7 @@ as String?,cancellationReason: freezed == cancellationReason ? _self.cancellatio
 as String?,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
 as OrderProgress,itemsAreEditable: null == itemsAreEditable ? _self.itemsAreEditable : itemsAreEditable // ignore: cast_nullable_to_non_nullable
 as bool,designsAreEditable: null == designsAreEditable ? _self.designsAreEditable : designsAreEditable // ignore: cast_nullable_to_non_nullable
+as bool,destinationIsEditable: null == destinationIsEditable ? _self.destinationIsEditable : destinationIsEditable // ignore: cast_nullable_to_non_nullable
 as bool,itemsCount: freezed == itemsCount ? _self.itemsCount : itemsCount // ignore: cast_nullable_to_non_nullable
 as int?,items: freezed == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
 as List<OrderItem>?,designs: freezed == designs ? _self.designs : designs // ignore: cast_nullable_to_non_nullable
@@ -253,10 +260,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStatus.unknown)  OrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_final')  bool isFinal, @JsonKey(name: 'is_closed')  bool isClosed, @JsonKey(name: 'available_transitions')  List<OrderTransition> availableTransitions, @JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource, @JsonKey(name: 'city_name')  String cityName, @JsonKey(name: 'fulfilment_type_label')  String fulfilmentTypeLabel, @JsonKey(name: 'is_office_pickup')  bool isOfficePickup, @JsonKey(name: 'design_source_label')  String designSourceLabel, @JsonKey(name: 'items_total')  String itemsTotal, @JsonKey(name: 'design_fee')  String designFee, @JsonKey(name: 'delivery_price')  String deliveryPrice,  String discount, @JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'weight_kg')  String? weightKg, @JsonKey(name: 'collected_amount')  String? collectedAmount,  Customer? customer, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'customer_shop_name')  String? customerShopName, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'address_details')  String? addressDetails,  String? notes, @JsonKey(name: 'shipping_company')  String? shippingCompany, @JsonKey(name: 'tracking_number')  String? trackingNumber, @JsonKey(name: 'courier_name')  String? courierName, @JsonKey(name: 'cancellation_reason')  String? cancellationReason,  OrderProgress progress, @JsonKey(name: 'items_are_editable')  bool itemsAreEditable, @JsonKey(name: 'designs_are_editable')  bool designsAreEditable, @JsonKey(name: 'items_count')  int? itemsCount,  List<OrderItem>? items,  List<OrderDesign>? designs,  List<OrderTransitionRecord>? transitions, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'delivered_at')  DateTime? deliveredAt, @JsonKey(name: 'settled_at')  DateTime? settledAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStatus.unknown)  OrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_final')  bool isFinal, @JsonKey(name: 'is_closed')  bool isClosed, @JsonKey(name: 'available_transitions')  List<OrderTransition> availableTransitions, @JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource, @JsonKey(name: 'city_name')  String cityName, @JsonKey(name: 'fulfilment_type_label')  String fulfilmentTypeLabel, @JsonKey(name: 'is_office_pickup')  bool isOfficePickup, @JsonKey(name: 'design_source_label')  String designSourceLabel, @JsonKey(name: 'items_total')  String itemsTotal, @JsonKey(name: 'design_fee')  String designFee, @JsonKey(name: 'delivery_price')  String deliveryPrice,  String discount, @JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'weight_kg')  String? weightKg, @JsonKey(name: 'collected_amount')  String? collectedAmount,  Customer? customer, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'customer_shop_name')  String? customerShopName, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'address_details')  String? addressDetails,  String? notes, @JsonKey(name: 'shipping_company')  String? shippingCompany, @JsonKey(name: 'tracking_number')  String? trackingNumber, @JsonKey(name: 'courier_name')  String? courierName, @JsonKey(name: 'cancellation_reason')  String? cancellationReason,  OrderProgress progress, @JsonKey(name: 'items_are_editable')  bool itemsAreEditable, @JsonKey(name: 'designs_are_editable')  bool designsAreEditable, @JsonKey(name: 'destination_is_editable')  bool destinationIsEditable, @JsonKey(name: 'items_count')  int? itemsCount,  List<OrderItem>? items,  List<OrderDesign>? designs,  List<OrderTransitionRecord>? transitions, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'delivered_at')  DateTime? deliveredAt, @JsonKey(name: 'settled_at')  DateTime? settledAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Order() when $default != null:
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.isFinal,_that.isClosed,_that.availableTransitions,_that.customerId,_that.cityId,_that.designSource,_that.cityName,_that.fulfilmentTypeLabel,_that.isOfficePickup,_that.designSourceLabel,_that.itemsTotal,_that.designFee,_that.deliveryPrice,_that.discount,_that.grandTotal,_that.weightKg,_that.collectedAmount,_that.customer,_that.regionId,_that.customerShopId,_that.regionName,_that.customerShopName,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes,_that.shippingCompany,_that.trackingNumber,_that.courierName,_that.cancellationReason,_that.progress,_that.itemsAreEditable,_that.designsAreEditable,_that.itemsCount,_that.items,_that.designs,_that.transitions,_that.placedAt,_that.deliveredAt,_that.settledAt,_that.createdAt);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.isFinal,_that.isClosed,_that.availableTransitions,_that.customerId,_that.cityId,_that.designSource,_that.cityName,_that.fulfilmentTypeLabel,_that.isOfficePickup,_that.designSourceLabel,_that.itemsTotal,_that.designFee,_that.deliveryPrice,_that.discount,_that.grandTotal,_that.weightKg,_that.collectedAmount,_that.customer,_that.regionId,_that.customerShopId,_that.regionName,_that.customerShopName,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes,_that.shippingCompany,_that.trackingNumber,_that.courierName,_that.cancellationReason,_that.progress,_that.itemsAreEditable,_that.designsAreEditable,_that.destinationIsEditable,_that.itemsCount,_that.items,_that.designs,_that.transitions,_that.placedAt,_that.deliveredAt,_that.settledAt,_that.createdAt);case _:
   return orElse();
 
 }
@@ -274,10 +281,10 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.isFinal
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStatus.unknown)  OrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_final')  bool isFinal, @JsonKey(name: 'is_closed')  bool isClosed, @JsonKey(name: 'available_transitions')  List<OrderTransition> availableTransitions, @JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource, @JsonKey(name: 'city_name')  String cityName, @JsonKey(name: 'fulfilment_type_label')  String fulfilmentTypeLabel, @JsonKey(name: 'is_office_pickup')  bool isOfficePickup, @JsonKey(name: 'design_source_label')  String designSourceLabel, @JsonKey(name: 'items_total')  String itemsTotal, @JsonKey(name: 'design_fee')  String designFee, @JsonKey(name: 'delivery_price')  String deliveryPrice,  String discount, @JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'weight_kg')  String? weightKg, @JsonKey(name: 'collected_amount')  String? collectedAmount,  Customer? customer, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'customer_shop_name')  String? customerShopName, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'address_details')  String? addressDetails,  String? notes, @JsonKey(name: 'shipping_company')  String? shippingCompany, @JsonKey(name: 'tracking_number')  String? trackingNumber, @JsonKey(name: 'courier_name')  String? courierName, @JsonKey(name: 'cancellation_reason')  String? cancellationReason,  OrderProgress progress, @JsonKey(name: 'items_are_editable')  bool itemsAreEditable, @JsonKey(name: 'designs_are_editable')  bool designsAreEditable, @JsonKey(name: 'items_count')  int? itemsCount,  List<OrderItem>? items,  List<OrderDesign>? designs,  List<OrderTransitionRecord>? transitions, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'delivered_at')  DateTime? deliveredAt, @JsonKey(name: 'settled_at')  DateTime? settledAt, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStatus.unknown)  OrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_final')  bool isFinal, @JsonKey(name: 'is_closed')  bool isClosed, @JsonKey(name: 'available_transitions')  List<OrderTransition> availableTransitions, @JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource, @JsonKey(name: 'city_name')  String cityName, @JsonKey(name: 'fulfilment_type_label')  String fulfilmentTypeLabel, @JsonKey(name: 'is_office_pickup')  bool isOfficePickup, @JsonKey(name: 'design_source_label')  String designSourceLabel, @JsonKey(name: 'items_total')  String itemsTotal, @JsonKey(name: 'design_fee')  String designFee, @JsonKey(name: 'delivery_price')  String deliveryPrice,  String discount, @JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'weight_kg')  String? weightKg, @JsonKey(name: 'collected_amount')  String? collectedAmount,  Customer? customer, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'customer_shop_name')  String? customerShopName, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'address_details')  String? addressDetails,  String? notes, @JsonKey(name: 'shipping_company')  String? shippingCompany, @JsonKey(name: 'tracking_number')  String? trackingNumber, @JsonKey(name: 'courier_name')  String? courierName, @JsonKey(name: 'cancellation_reason')  String? cancellationReason,  OrderProgress progress, @JsonKey(name: 'items_are_editable')  bool itemsAreEditable, @JsonKey(name: 'designs_are_editable')  bool designsAreEditable, @JsonKey(name: 'destination_is_editable')  bool destinationIsEditable, @JsonKey(name: 'items_count')  int? itemsCount,  List<OrderItem>? items,  List<OrderDesign>? designs,  List<OrderTransitionRecord>? transitions, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'delivered_at')  DateTime? deliveredAt, @JsonKey(name: 'settled_at')  DateTime? settledAt, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _Order():
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.isFinal,_that.isClosed,_that.availableTransitions,_that.customerId,_that.cityId,_that.designSource,_that.cityName,_that.fulfilmentTypeLabel,_that.isOfficePickup,_that.designSourceLabel,_that.itemsTotal,_that.designFee,_that.deliveryPrice,_that.discount,_that.grandTotal,_that.weightKg,_that.collectedAmount,_that.customer,_that.regionId,_that.customerShopId,_that.regionName,_that.customerShopName,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes,_that.shippingCompany,_that.trackingNumber,_that.courierName,_that.cancellationReason,_that.progress,_that.itemsAreEditable,_that.designsAreEditable,_that.itemsCount,_that.items,_that.designs,_that.transitions,_that.placedAt,_that.deliveredAt,_that.settledAt,_that.createdAt);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.isFinal,_that.isClosed,_that.availableTransitions,_that.customerId,_that.cityId,_that.designSource,_that.cityName,_that.fulfilmentTypeLabel,_that.isOfficePickup,_that.designSourceLabel,_that.itemsTotal,_that.designFee,_that.deliveryPrice,_that.discount,_that.grandTotal,_that.weightKg,_that.collectedAmount,_that.customer,_that.regionId,_that.customerShopId,_that.regionName,_that.customerShopName,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes,_that.shippingCompany,_that.trackingNumber,_that.courierName,_that.cancellationReason,_that.progress,_that.itemsAreEditable,_that.designsAreEditable,_that.destinationIsEditable,_that.itemsCount,_that.items,_that.designs,_that.transitions,_that.placedAt,_that.deliveredAt,_that.settledAt,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -294,10 +301,10 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.isFinal
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStatus.unknown)  OrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_final')  bool isFinal, @JsonKey(name: 'is_closed')  bool isClosed, @JsonKey(name: 'available_transitions')  List<OrderTransition> availableTransitions, @JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource, @JsonKey(name: 'city_name')  String cityName, @JsonKey(name: 'fulfilment_type_label')  String fulfilmentTypeLabel, @JsonKey(name: 'is_office_pickup')  bool isOfficePickup, @JsonKey(name: 'design_source_label')  String designSourceLabel, @JsonKey(name: 'items_total')  String itemsTotal, @JsonKey(name: 'design_fee')  String designFee, @JsonKey(name: 'delivery_price')  String deliveryPrice,  String discount, @JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'weight_kg')  String? weightKg, @JsonKey(name: 'collected_amount')  String? collectedAmount,  Customer? customer, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'customer_shop_name')  String? customerShopName, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'address_details')  String? addressDetails,  String? notes, @JsonKey(name: 'shipping_company')  String? shippingCompany, @JsonKey(name: 'tracking_number')  String? trackingNumber, @JsonKey(name: 'courier_name')  String? courierName, @JsonKey(name: 'cancellation_reason')  String? cancellationReason,  OrderProgress progress, @JsonKey(name: 'items_are_editable')  bool itemsAreEditable, @JsonKey(name: 'designs_are_editable')  bool designsAreEditable, @JsonKey(name: 'items_count')  int? itemsCount,  List<OrderItem>? items,  List<OrderDesign>? designs,  List<OrderTransitionRecord>? transitions, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'delivered_at')  DateTime? deliveredAt, @JsonKey(name: 'settled_at')  DateTime? settledAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStatus.unknown)  OrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_final')  bool isFinal, @JsonKey(name: 'is_closed')  bool isClosed, @JsonKey(name: 'available_transitions')  List<OrderTransition> availableTransitions, @JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource, @JsonKey(name: 'city_name')  String cityName, @JsonKey(name: 'fulfilment_type_label')  String fulfilmentTypeLabel, @JsonKey(name: 'is_office_pickup')  bool isOfficePickup, @JsonKey(name: 'design_source_label')  String designSourceLabel, @JsonKey(name: 'items_total')  String itemsTotal, @JsonKey(name: 'design_fee')  String designFee, @JsonKey(name: 'delivery_price')  String deliveryPrice,  String discount, @JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'weight_kg')  String? weightKg, @JsonKey(name: 'collected_amount')  String? collectedAmount,  Customer? customer, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'customer_shop_name')  String? customerShopName, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'address_details')  String? addressDetails,  String? notes, @JsonKey(name: 'shipping_company')  String? shippingCompany, @JsonKey(name: 'tracking_number')  String? trackingNumber, @JsonKey(name: 'courier_name')  String? courierName, @JsonKey(name: 'cancellation_reason')  String? cancellationReason,  OrderProgress progress, @JsonKey(name: 'items_are_editable')  bool itemsAreEditable, @JsonKey(name: 'designs_are_editable')  bool designsAreEditable, @JsonKey(name: 'destination_is_editable')  bool destinationIsEditable, @JsonKey(name: 'items_count')  int? itemsCount,  List<OrderItem>? items,  List<OrderDesign>? designs,  List<OrderTransitionRecord>? transitions, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'delivered_at')  DateTime? deliveredAt, @JsonKey(name: 'settled_at')  DateTime? settledAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Order() when $default != null:
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.isFinal,_that.isClosed,_that.availableTransitions,_that.customerId,_that.cityId,_that.designSource,_that.cityName,_that.fulfilmentTypeLabel,_that.isOfficePickup,_that.designSourceLabel,_that.itemsTotal,_that.designFee,_that.deliveryPrice,_that.discount,_that.grandTotal,_that.weightKg,_that.collectedAmount,_that.customer,_that.regionId,_that.customerShopId,_that.regionName,_that.customerShopName,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes,_that.shippingCompany,_that.trackingNumber,_that.courierName,_that.cancellationReason,_that.progress,_that.itemsAreEditable,_that.designsAreEditable,_that.itemsCount,_that.items,_that.designs,_that.transitions,_that.placedAt,_that.deliveredAt,_that.settledAt,_that.createdAt);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.isFinal,_that.isClosed,_that.availableTransitions,_that.customerId,_that.cityId,_that.designSource,_that.cityName,_that.fulfilmentTypeLabel,_that.isOfficePickup,_that.designSourceLabel,_that.itemsTotal,_that.designFee,_that.deliveryPrice,_that.discount,_that.grandTotal,_that.weightKg,_that.collectedAmount,_that.customer,_that.regionId,_that.customerShopId,_that.regionName,_that.customerShopName,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes,_that.shippingCompany,_that.trackingNumber,_that.courierName,_that.cancellationReason,_that.progress,_that.itemsAreEditable,_that.designsAreEditable,_that.destinationIsEditable,_that.itemsCount,_that.items,_that.designs,_that.transitions,_that.placedAt,_that.deliveredAt,_that.settledAt,_that.createdAt);case _:
   return null;
 
 }
@@ -309,7 +316,7 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.isFinal
 @JsonSerializable()
 
 class _Order extends Order {
-  const _Order({required this.id, required this.code, @JsonKey(unknownEnumValue: OrderStatus.unknown) required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'is_final') required this.isFinal, @JsonKey(name: 'is_closed') this.isClosed = false, @JsonKey(name: 'available_transitions') final  List<OrderTransition> availableTransitions = const <OrderTransition>[], @JsonKey(name: 'customer_id') required this.customerId, @JsonKey(name: 'city_id') required this.cityId, @JsonKey(name: 'design_source') required this.designSource, @JsonKey(name: 'city_name') required this.cityName, @JsonKey(name: 'fulfilment_type_label') required this.fulfilmentTypeLabel, @JsonKey(name: 'is_office_pickup') required this.isOfficePickup, @JsonKey(name: 'design_source_label') required this.designSourceLabel, @JsonKey(name: 'items_total') required this.itemsTotal, @JsonKey(name: 'design_fee') required this.designFee, @JsonKey(name: 'delivery_price') required this.deliveryPrice, required this.discount, @JsonKey(name: 'grand_total') required this.grandTotal, @JsonKey(name: 'weight_kg') this.weightKg, @JsonKey(name: 'collected_amount') this.collectedAmount, this.customer, @JsonKey(name: 'region_id') this.regionId, @JsonKey(name: 'customer_shop_id') this.customerShopId, @JsonKey(name: 'region_name') this.regionName, @JsonKey(name: 'customer_shop_name') this.customerShopName, @JsonKey(name: 'recipient_name') this.recipientName, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'address_details') this.addressDetails, this.notes, @JsonKey(name: 'shipping_company') this.shippingCompany, @JsonKey(name: 'tracking_number') this.trackingNumber, @JsonKey(name: 'courier_name') this.courierName, @JsonKey(name: 'cancellation_reason') this.cancellationReason, this.progress = OrderProgress.unknown, @JsonKey(name: 'items_are_editable') this.itemsAreEditable = false, @JsonKey(name: 'designs_are_editable') this.designsAreEditable = false, @JsonKey(name: 'items_count') this.itemsCount, final  List<OrderItem>? items, final  List<OrderDesign>? designs, final  List<OrderTransitionRecord>? transitions, @JsonKey(name: 'placed_at') this.placedAt, @JsonKey(name: 'delivered_at') this.deliveredAt, @JsonKey(name: 'settled_at') this.settledAt, @JsonKey(name: 'created_at') this.createdAt}): _availableTransitions = availableTransitions,_items = items,_designs = designs,_transitions = transitions,super._();
+  const _Order({required this.id, required this.code, @JsonKey(unknownEnumValue: OrderStatus.unknown) required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'is_final') required this.isFinal, @JsonKey(name: 'is_closed') this.isClosed = false, @JsonKey(name: 'available_transitions') final  List<OrderTransition> availableTransitions = const <OrderTransition>[], @JsonKey(name: 'customer_id') required this.customerId, @JsonKey(name: 'city_id') required this.cityId, @JsonKey(name: 'design_source') required this.designSource, @JsonKey(name: 'city_name') required this.cityName, @JsonKey(name: 'fulfilment_type_label') required this.fulfilmentTypeLabel, @JsonKey(name: 'is_office_pickup') required this.isOfficePickup, @JsonKey(name: 'design_source_label') required this.designSourceLabel, @JsonKey(name: 'items_total') required this.itemsTotal, @JsonKey(name: 'design_fee') required this.designFee, @JsonKey(name: 'delivery_price') required this.deliveryPrice, required this.discount, @JsonKey(name: 'grand_total') required this.grandTotal, @JsonKey(name: 'weight_kg') this.weightKg, @JsonKey(name: 'collected_amount') this.collectedAmount, this.customer, @JsonKey(name: 'region_id') this.regionId, @JsonKey(name: 'customer_shop_id') this.customerShopId, @JsonKey(name: 'region_name') this.regionName, @JsonKey(name: 'customer_shop_name') this.customerShopName, @JsonKey(name: 'recipient_name') this.recipientName, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'address_details') this.addressDetails, this.notes, @JsonKey(name: 'shipping_company') this.shippingCompany, @JsonKey(name: 'tracking_number') this.trackingNumber, @JsonKey(name: 'courier_name') this.courierName, @JsonKey(name: 'cancellation_reason') this.cancellationReason, this.progress = OrderProgress.unknown, @JsonKey(name: 'items_are_editable') this.itemsAreEditable = false, @JsonKey(name: 'designs_are_editable') this.designsAreEditable = false, @JsonKey(name: 'destination_is_editable') this.destinationIsEditable = false, @JsonKey(name: 'items_count') this.itemsCount, final  List<OrderItem>? items, final  List<OrderDesign>? designs, final  List<OrderTransitionRecord>? transitions, @JsonKey(name: 'placed_at') this.placedAt, @JsonKey(name: 'delivered_at') this.deliveredAt, @JsonKey(name: 'settled_at') this.settledAt, @JsonKey(name: 'created_at') this.createdAt}): _availableTransitions = availableTransitions,_items = items,_designs = designs,_transitions = transitions,super._();
   factory _Order.fromJson(Map<String, dynamic> json) => _$OrderFromJson(json);
 
 @override final  int id;
@@ -391,6 +398,13 @@ class _Order extends Order {
 /// changing it means sending the order back to «قيد التصميم», which is a move somebody
 /// makes on purpose.
 @override@JsonKey(name: 'designs_are_editable') final  bool designsAreEditable;
+/// Whether where it is going may still be changed.
+///
+/// **A third line, later than both of the others.** The lines close when the bags exist and
+/// the artwork closes when the press starts, but an address stays correctable right up to
+/// the moment somebody is driving to it — «جاري التوصيل» is the one open status that
+/// refuses, because there the label has already left and only the label is real.
+@override@JsonKey(name: 'destination_is_editable') final  bool destinationIsEditable;
 /// Present on the list endpoint.
 @override@JsonKey(name: 'items_count') final  int? itemsCount;
 /// Present when one order was fetched.
@@ -440,16 +454,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Order&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isFinal, isFinal) || other.isFinal == isFinal)&&(identical(other.isClosed, isClosed) || other.isClosed == isClosed)&&const DeepCollectionEquality().equals(other._availableTransitions, _availableTransitions)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.designSource, designSource) || other.designSource == designSource)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.isOfficePickup, isOfficePickup) || other.isOfficePickup == isOfficePickup)&&(identical(other.designSourceLabel, designSourceLabel) || other.designSourceLabel == designSourceLabel)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.collectedAmount, collectedAmount) || other.collectedAmount == collectedAmount)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.customerShopName, customerShopName) || other.customerShopName == customerShopName)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.shippingCompany, shippingCompany) || other.shippingCompany == shippingCompany)&&(identical(other.trackingNumber, trackingNumber) || other.trackingNumber == trackingNumber)&&(identical(other.courierName, courierName) || other.courierName == courierName)&&(identical(other.cancellationReason, cancellationReason) || other.cancellationReason == cancellationReason)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.itemsAreEditable, itemsAreEditable) || other.itemsAreEditable == itemsAreEditable)&&(identical(other.designsAreEditable, designsAreEditable) || other.designsAreEditable == designsAreEditable)&&(identical(other.itemsCount, itemsCount) || other.itemsCount == itemsCount)&&const DeepCollectionEquality().equals(other._items, _items)&&const DeepCollectionEquality().equals(other._designs, _designs)&&const DeepCollectionEquality().equals(other._transitions, _transitions)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt)&&(identical(other.deliveredAt, deliveredAt) || other.deliveredAt == deliveredAt)&&(identical(other.settledAt, settledAt) || other.settledAt == settledAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Order&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isFinal, isFinal) || other.isFinal == isFinal)&&(identical(other.isClosed, isClosed) || other.isClosed == isClosed)&&const DeepCollectionEquality().equals(other._availableTransitions, _availableTransitions)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.designSource, designSource) || other.designSource == designSource)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.isOfficePickup, isOfficePickup) || other.isOfficePickup == isOfficePickup)&&(identical(other.designSourceLabel, designSourceLabel) || other.designSourceLabel == designSourceLabel)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.collectedAmount, collectedAmount) || other.collectedAmount == collectedAmount)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.customerShopName, customerShopName) || other.customerShopName == customerShopName)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.shippingCompany, shippingCompany) || other.shippingCompany == shippingCompany)&&(identical(other.trackingNumber, trackingNumber) || other.trackingNumber == trackingNumber)&&(identical(other.courierName, courierName) || other.courierName == courierName)&&(identical(other.cancellationReason, cancellationReason) || other.cancellationReason == cancellationReason)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.itemsAreEditable, itemsAreEditable) || other.itemsAreEditable == itemsAreEditable)&&(identical(other.designsAreEditable, designsAreEditable) || other.designsAreEditable == designsAreEditable)&&(identical(other.destinationIsEditable, destinationIsEditable) || other.destinationIsEditable == destinationIsEditable)&&(identical(other.itemsCount, itemsCount) || other.itemsCount == itemsCount)&&const DeepCollectionEquality().equals(other._items, _items)&&const DeepCollectionEquality().equals(other._designs, _designs)&&const DeepCollectionEquality().equals(other._transitions, _transitions)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt)&&(identical(other.deliveredAt, deliveredAt) || other.deliveredAt == deliveredAt)&&(identical(other.settledAt, settledAt) || other.settledAt == settledAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,status,statusLabel,isFinal,isClosed,const DeepCollectionEquality().hash(_availableTransitions),customerId,cityId,designSource,cityName,fulfilmentTypeLabel,isOfficePickup,designSourceLabel,itemsTotal,designFee,deliveryPrice,discount,grandTotal,weightKg,collectedAmount,customer,regionId,customerShopId,regionName,customerShopName,recipientName,recipientPhone,addressDetails,notes,shippingCompany,trackingNumber,courierName,cancellationReason,progress,itemsAreEditable,designsAreEditable,itemsCount,const DeepCollectionEquality().hash(_items),const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_transitions),placedAt,deliveredAt,settledAt,createdAt]);
+int get hashCode => Object.hashAll([runtimeType,id,code,status,statusLabel,isFinal,isClosed,const DeepCollectionEquality().hash(_availableTransitions),customerId,cityId,designSource,cityName,fulfilmentTypeLabel,isOfficePickup,designSourceLabel,itemsTotal,designFee,deliveryPrice,discount,grandTotal,weightKg,collectedAmount,customer,regionId,customerShopId,regionName,customerShopName,recipientName,recipientPhone,addressDetails,notes,shippingCompany,trackingNumber,courierName,cancellationReason,progress,itemsAreEditable,designsAreEditable,destinationIsEditable,itemsCount,const DeepCollectionEquality().hash(_items),const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_transitions),placedAt,deliveredAt,settledAt,createdAt]);
 
 @override
 String toString() {
-  return 'Order(id: $id, code: $code, status: $status, statusLabel: $statusLabel, isFinal: $isFinal, isClosed: $isClosed, availableTransitions: $availableTransitions, customerId: $customerId, cityId: $cityId, designSource: $designSource, cityName: $cityName, fulfilmentTypeLabel: $fulfilmentTypeLabel, isOfficePickup: $isOfficePickup, designSourceLabel: $designSourceLabel, itemsTotal: $itemsTotal, designFee: $designFee, deliveryPrice: $deliveryPrice, discount: $discount, grandTotal: $grandTotal, weightKg: $weightKg, collectedAmount: $collectedAmount, customer: $customer, regionId: $regionId, customerShopId: $customerShopId, regionName: $regionName, customerShopName: $customerShopName, recipientName: $recipientName, recipientPhone: $recipientPhone, addressDetails: $addressDetails, notes: $notes, shippingCompany: $shippingCompany, trackingNumber: $trackingNumber, courierName: $courierName, cancellationReason: $cancellationReason, progress: $progress, itemsAreEditable: $itemsAreEditable, designsAreEditable: $designsAreEditable, itemsCount: $itemsCount, items: $items, designs: $designs, transitions: $transitions, placedAt: $placedAt, deliveredAt: $deliveredAt, settledAt: $settledAt, createdAt: $createdAt)';
+  return 'Order(id: $id, code: $code, status: $status, statusLabel: $statusLabel, isFinal: $isFinal, isClosed: $isClosed, availableTransitions: $availableTransitions, customerId: $customerId, cityId: $cityId, designSource: $designSource, cityName: $cityName, fulfilmentTypeLabel: $fulfilmentTypeLabel, isOfficePickup: $isOfficePickup, designSourceLabel: $designSourceLabel, itemsTotal: $itemsTotal, designFee: $designFee, deliveryPrice: $deliveryPrice, discount: $discount, grandTotal: $grandTotal, weightKg: $weightKg, collectedAmount: $collectedAmount, customer: $customer, regionId: $regionId, customerShopId: $customerShopId, regionName: $regionName, customerShopName: $customerShopName, recipientName: $recipientName, recipientPhone: $recipientPhone, addressDetails: $addressDetails, notes: $notes, shippingCompany: $shippingCompany, trackingNumber: $trackingNumber, courierName: $courierName, cancellationReason: $cancellationReason, progress: $progress, itemsAreEditable: $itemsAreEditable, designsAreEditable: $designsAreEditable, destinationIsEditable: $destinationIsEditable, itemsCount: $itemsCount, items: $items, designs: $designs, transitions: $transitions, placedAt: $placedAt, deliveredAt: $deliveredAt, settledAt: $settledAt, createdAt: $createdAt)';
 }
 
 
@@ -460,7 +474,7 @@ abstract mixin class _$OrderCopyWith<$Res> implements $OrderCopyWith<$Res> {
   factory _$OrderCopyWith(_Order value, $Res Function(_Order) _then) = __$OrderCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String code,@JsonKey(unknownEnumValue: OrderStatus.unknown) OrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_final') bool isFinal,@JsonKey(name: 'is_closed') bool isClosed,@JsonKey(name: 'available_transitions') List<OrderTransition> availableTransitions,@JsonKey(name: 'customer_id') int customerId,@JsonKey(name: 'city_id') int cityId,@JsonKey(name: 'design_source') String designSource,@JsonKey(name: 'city_name') String cityName,@JsonKey(name: 'fulfilment_type_label') String fulfilmentTypeLabel,@JsonKey(name: 'is_office_pickup') bool isOfficePickup,@JsonKey(name: 'design_source_label') String designSourceLabel,@JsonKey(name: 'items_total') String itemsTotal,@JsonKey(name: 'design_fee') String designFee,@JsonKey(name: 'delivery_price') String deliveryPrice, String discount,@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'weight_kg') String? weightKg,@JsonKey(name: 'collected_amount') String? collectedAmount, Customer? customer,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'customer_shop_id') int? customerShopId,@JsonKey(name: 'region_name') String? regionName,@JsonKey(name: 'customer_shop_name') String? customerShopName,@JsonKey(name: 'recipient_name') String? recipientName,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'address_details') String? addressDetails, String? notes,@JsonKey(name: 'shipping_company') String? shippingCompany,@JsonKey(name: 'tracking_number') String? trackingNumber,@JsonKey(name: 'courier_name') String? courierName,@JsonKey(name: 'cancellation_reason') String? cancellationReason, OrderProgress progress,@JsonKey(name: 'items_are_editable') bool itemsAreEditable,@JsonKey(name: 'designs_are_editable') bool designsAreEditable,@JsonKey(name: 'items_count') int? itemsCount, List<OrderItem>? items, List<OrderDesign>? designs, List<OrderTransitionRecord>? transitions,@JsonKey(name: 'placed_at') DateTime? placedAt,@JsonKey(name: 'delivered_at') DateTime? deliveredAt,@JsonKey(name: 'settled_at') DateTime? settledAt,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, String code,@JsonKey(unknownEnumValue: OrderStatus.unknown) OrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_final') bool isFinal,@JsonKey(name: 'is_closed') bool isClosed,@JsonKey(name: 'available_transitions') List<OrderTransition> availableTransitions,@JsonKey(name: 'customer_id') int customerId,@JsonKey(name: 'city_id') int cityId,@JsonKey(name: 'design_source') String designSource,@JsonKey(name: 'city_name') String cityName,@JsonKey(name: 'fulfilment_type_label') String fulfilmentTypeLabel,@JsonKey(name: 'is_office_pickup') bool isOfficePickup,@JsonKey(name: 'design_source_label') String designSourceLabel,@JsonKey(name: 'items_total') String itemsTotal,@JsonKey(name: 'design_fee') String designFee,@JsonKey(name: 'delivery_price') String deliveryPrice, String discount,@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'weight_kg') String? weightKg,@JsonKey(name: 'collected_amount') String? collectedAmount, Customer? customer,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'customer_shop_id') int? customerShopId,@JsonKey(name: 'region_name') String? regionName,@JsonKey(name: 'customer_shop_name') String? customerShopName,@JsonKey(name: 'recipient_name') String? recipientName,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'address_details') String? addressDetails, String? notes,@JsonKey(name: 'shipping_company') String? shippingCompany,@JsonKey(name: 'tracking_number') String? trackingNumber,@JsonKey(name: 'courier_name') String? courierName,@JsonKey(name: 'cancellation_reason') String? cancellationReason, OrderProgress progress,@JsonKey(name: 'items_are_editable') bool itemsAreEditable,@JsonKey(name: 'designs_are_editable') bool designsAreEditable,@JsonKey(name: 'destination_is_editable') bool destinationIsEditable,@JsonKey(name: 'items_count') int? itemsCount, List<OrderItem>? items, List<OrderDesign>? designs, List<OrderTransitionRecord>? transitions,@JsonKey(name: 'placed_at') DateTime? placedAt,@JsonKey(name: 'delivered_at') DateTime? deliveredAt,@JsonKey(name: 'settled_at') DateTime? settledAt,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -477,7 +491,7 @@ class __$OrderCopyWithImpl<$Res>
 
 /// Create a copy of Order
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? isFinal = null,Object? isClosed = null,Object? availableTransitions = null,Object? customerId = null,Object? cityId = null,Object? designSource = null,Object? cityName = null,Object? fulfilmentTypeLabel = null,Object? isOfficePickup = null,Object? designSourceLabel = null,Object? itemsTotal = null,Object? designFee = null,Object? deliveryPrice = null,Object? discount = null,Object? grandTotal = null,Object? weightKg = freezed,Object? collectedAmount = freezed,Object? customer = freezed,Object? regionId = freezed,Object? customerShopId = freezed,Object? regionName = freezed,Object? customerShopName = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? addressDetails = freezed,Object? notes = freezed,Object? shippingCompany = freezed,Object? trackingNumber = freezed,Object? courierName = freezed,Object? cancellationReason = freezed,Object? progress = null,Object? itemsAreEditable = null,Object? designsAreEditable = null,Object? itemsCount = freezed,Object? items = freezed,Object? designs = freezed,Object? transitions = freezed,Object? placedAt = freezed,Object? deliveredAt = freezed,Object? settledAt = freezed,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? isFinal = null,Object? isClosed = null,Object? availableTransitions = null,Object? customerId = null,Object? cityId = null,Object? designSource = null,Object? cityName = null,Object? fulfilmentTypeLabel = null,Object? isOfficePickup = null,Object? designSourceLabel = null,Object? itemsTotal = null,Object? designFee = null,Object? deliveryPrice = null,Object? discount = null,Object? grandTotal = null,Object? weightKg = freezed,Object? collectedAmount = freezed,Object? customer = freezed,Object? regionId = freezed,Object? customerShopId = freezed,Object? regionName = freezed,Object? customerShopName = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? addressDetails = freezed,Object? notes = freezed,Object? shippingCompany = freezed,Object? trackingNumber = freezed,Object? courierName = freezed,Object? cancellationReason = freezed,Object? progress = null,Object? itemsAreEditable = null,Object? designsAreEditable = null,Object? destinationIsEditable = null,Object? itemsCount = freezed,Object? items = freezed,Object? designs = freezed,Object? transitions = freezed,Object? placedAt = freezed,Object? deliveredAt = freezed,Object? settledAt = freezed,Object? createdAt = freezed,}) {
   return _then(_Order(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -516,6 +530,7 @@ as String?,cancellationReason: freezed == cancellationReason ? _self.cancellatio
 as String?,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
 as OrderProgress,itemsAreEditable: null == itemsAreEditable ? _self.itemsAreEditable : itemsAreEditable // ignore: cast_nullable_to_non_nullable
 as bool,designsAreEditable: null == designsAreEditable ? _self.designsAreEditable : designsAreEditable // ignore: cast_nullable_to_non_nullable
+as bool,destinationIsEditable: null == destinationIsEditable ? _self.destinationIsEditable : destinationIsEditable // ignore: cast_nullable_to_non_nullable
 as bool,itemsCount: freezed == itemsCount ? _self.itemsCount : itemsCount // ignore: cast_nullable_to_non_nullable
 as int?,items: freezed == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
 as List<OrderItem>?,designs: freezed == designs ? _self._designs : designs // ignore: cast_nullable_to_non_nullable
@@ -2022,10 +2037,282 @@ $CustomerDesignCopyWith<$Res>? get design {
 
 
 /// @nodoc
+mixin _$OrderActor {
+
+ int get id; String get name;
+/// Create a copy of OrderActor
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$OrderActorCopyWith<OrderActor> get copyWith => _$OrderActorCopyWithImpl<OrderActor>(this as OrderActor, _$identity);
+
+  /// Serializes this OrderActor to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderActor&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name);
+
+@override
+String toString() {
+  return 'OrderActor(id: $id, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $OrderActorCopyWith<$Res>  {
+  factory $OrderActorCopyWith(OrderActor value, $Res Function(OrderActor) _then) = _$OrderActorCopyWithImpl;
+@useResult
+$Res call({
+ int id, String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$OrderActorCopyWithImpl<$Res>
+    implements $OrderActorCopyWith<$Res> {
+  _$OrderActorCopyWithImpl(this._self, this._then);
+
+  final OrderActor _self;
+  final $Res Function(OrderActor) _then;
+
+/// Create a copy of OrderActor
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [OrderActor].
+extension OrderActorPatterns on OrderActor {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _OrderActor value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _OrderActor() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _OrderActor value)  $default,){
+final _that = this;
+switch (_that) {
+case _OrderActor():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _OrderActor value)?  $default,){
+final _that = this;
+switch (_that) {
+case _OrderActor() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _OrderActor() when $default != null:
+return $default(_that.id,_that.name);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name)  $default,) {final _that = this;
+switch (_that) {
+case _OrderActor():
+return $default(_that.id,_that.name);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name)?  $default,) {final _that = this;
+switch (_that) {
+case _OrderActor() when $default != null:
+return $default(_that.id,_that.name);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _OrderActor implements OrderActor {
+  const _OrderActor({required this.id, required this.name});
+  factory _OrderActor.fromJson(Map<String, dynamic> json) => _$OrderActorFromJson(json);
+
+@override final  int id;
+@override final  String name;
+
+/// Create a copy of OrderActor
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$OrderActorCopyWith<_OrderActor> get copyWith => __$OrderActorCopyWithImpl<_OrderActor>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$OrderActorToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderActor&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name);
+
+@override
+String toString() {
+  return 'OrderActor(id: $id, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$OrderActorCopyWith<$Res> implements $OrderActorCopyWith<$Res> {
+  factory _$OrderActorCopyWith(_OrderActor value, $Res Function(_OrderActor) _then) = __$OrderActorCopyWithImpl;
+@override @useResult
+$Res call({
+ int id, String name
+});
+
+
+
+
+}
+/// @nodoc
+class __$OrderActorCopyWithImpl<$Res>
+    implements _$OrderActorCopyWith<$Res> {
+  __$OrderActorCopyWithImpl(this._self, this._then);
+
+  final _OrderActor _self;
+  final $Res Function(_OrderActor) _then;
+
+/// Create a copy of OrderActor
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,}) {
+  return _then(_OrderActor(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$OrderTransitionRecord {
 
  int get id;/// Null exactly once per order: the row that records it being taken.
-@JsonKey(name: 'from_status_label') String? get fromStatusLabel;@JsonKey(name: 'to_status_label') String get toStatusLabel; String? get reason;@JsonKey(name: 'created_at') DateTime? get createdAt;
+@JsonKey(name: 'from_status_label') String? get fromStatusLabel;@JsonKey(name: 'to_status_label') String get toStatusLabel; String? get reason;/// Who moved it. Null for a move made by a console command or a seeder — the column is
+/// nullable for exactly that — and for a build of the API that did not load the relation.
+///
+/// It is the other half of [reason]: «تم الإلغاء — العميل غيّر رأيه» is a different fact
+/// from the same sentence with a name against it, and the name is what makes the timeline
+/// answerable rather than merely readable.
+ OrderActor? get user;@JsonKey(name: 'created_at') DateTime? get createdAt;
 /// Create a copy of OrderTransitionRecord
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2038,16 +2325,16 @@ $OrderTransitionRecordCopyWith<OrderTransitionRecord> get copyWith => _$OrderTra
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderTransitionRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.fromStatusLabel, fromStatusLabel) || other.fromStatusLabel == fromStatusLabel)&&(identical(other.toStatusLabel, toStatusLabel) || other.toStatusLabel == toStatusLabel)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderTransitionRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.fromStatusLabel, fromStatusLabel) || other.fromStatusLabel == fromStatusLabel)&&(identical(other.toStatusLabel, toStatusLabel) || other.toStatusLabel == toStatusLabel)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.user, user) || other.user == user)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fromStatusLabel,toStatusLabel,reason,createdAt);
+int get hashCode => Object.hash(runtimeType,id,fromStatusLabel,toStatusLabel,reason,user,createdAt);
 
 @override
 String toString() {
-  return 'OrderTransitionRecord(id: $id, fromStatusLabel: $fromStatusLabel, toStatusLabel: $toStatusLabel, reason: $reason, createdAt: $createdAt)';
+  return 'OrderTransitionRecord(id: $id, fromStatusLabel: $fromStatusLabel, toStatusLabel: $toStatusLabel, reason: $reason, user: $user, createdAt: $createdAt)';
 }
 
 
@@ -2058,11 +2345,11 @@ abstract mixin class $OrderTransitionRecordCopyWith<$Res>  {
   factory $OrderTransitionRecordCopyWith(OrderTransitionRecord value, $Res Function(OrderTransitionRecord) _then) = _$OrderTransitionRecordCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'from_status_label') String? fromStatusLabel,@JsonKey(name: 'to_status_label') String toStatusLabel, String? reason,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'from_status_label') String? fromStatusLabel,@JsonKey(name: 'to_status_label') String toStatusLabel, String? reason, OrderActor? user,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
-
+$OrderActorCopyWith<$Res>? get user;
 
 }
 /// @nodoc
@@ -2075,17 +2362,30 @@ class _$OrderTransitionRecordCopyWithImpl<$Res>
 
 /// Create a copy of OrderTransitionRecord
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fromStatusLabel = freezed,Object? toStatusLabel = null,Object? reason = freezed,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fromStatusLabel = freezed,Object? toStatusLabel = null,Object? reason = freezed,Object? user = freezed,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,fromStatusLabel: freezed == fromStatusLabel ? _self.fromStatusLabel : fromStatusLabel // ignore: cast_nullable_to_non_nullable
 as String?,toStatusLabel: null == toStatusLabel ? _self.toStatusLabel : toStatusLabel // ignore: cast_nullable_to_non_nullable
 as String,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
-as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String?,user: freezed == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
+as OrderActor?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
+/// Create a copy of OrderTransitionRecord
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$OrderActorCopyWith<$Res>? get user {
+    if (_self.user == null) {
+    return null;
+  }
 
+  return $OrderActorCopyWith<$Res>(_self.user!, (value) {
+    return _then(_self.copyWith(user: value));
+  });
+}
 }
 
 
@@ -2167,10 +2467,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'from_status_label')  String? fromStatusLabel, @JsonKey(name: 'to_status_label')  String toStatusLabel,  String? reason, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'from_status_label')  String? fromStatusLabel, @JsonKey(name: 'to_status_label')  String toStatusLabel,  String? reason,  OrderActor? user, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OrderTransitionRecord() when $default != null:
-return $default(_that.id,_that.fromStatusLabel,_that.toStatusLabel,_that.reason,_that.createdAt);case _:
+return $default(_that.id,_that.fromStatusLabel,_that.toStatusLabel,_that.reason,_that.user,_that.createdAt);case _:
   return orElse();
 
 }
@@ -2188,10 +2488,10 @@ return $default(_that.id,_that.fromStatusLabel,_that.toStatusLabel,_that.reason,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'from_status_label')  String? fromStatusLabel, @JsonKey(name: 'to_status_label')  String toStatusLabel,  String? reason, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'from_status_label')  String? fromStatusLabel, @JsonKey(name: 'to_status_label')  String toStatusLabel,  String? reason,  OrderActor? user, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _OrderTransitionRecord():
-return $default(_that.id,_that.fromStatusLabel,_that.toStatusLabel,_that.reason,_that.createdAt);case _:
+return $default(_that.id,_that.fromStatusLabel,_that.toStatusLabel,_that.reason,_that.user,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2208,10 +2508,10 @@ return $default(_that.id,_that.fromStatusLabel,_that.toStatusLabel,_that.reason,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'from_status_label')  String? fromStatusLabel, @JsonKey(name: 'to_status_label')  String toStatusLabel,  String? reason, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'from_status_label')  String? fromStatusLabel, @JsonKey(name: 'to_status_label')  String toStatusLabel,  String? reason,  OrderActor? user, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _OrderTransitionRecord() when $default != null:
-return $default(_that.id,_that.fromStatusLabel,_that.toStatusLabel,_that.reason,_that.createdAt);case _:
+return $default(_that.id,_that.fromStatusLabel,_that.toStatusLabel,_that.reason,_that.user,_that.createdAt);case _:
   return null;
 
 }
@@ -2223,7 +2523,7 @@ return $default(_that.id,_that.fromStatusLabel,_that.toStatusLabel,_that.reason,
 @JsonSerializable()
 
 class _OrderTransitionRecord extends OrderTransitionRecord {
-  const _OrderTransitionRecord({required this.id, @JsonKey(name: 'from_status_label') this.fromStatusLabel, @JsonKey(name: 'to_status_label') required this.toStatusLabel, this.reason, @JsonKey(name: 'created_at') this.createdAt}): super._();
+  const _OrderTransitionRecord({required this.id, @JsonKey(name: 'from_status_label') this.fromStatusLabel, @JsonKey(name: 'to_status_label') required this.toStatusLabel, this.reason, this.user, @JsonKey(name: 'created_at') this.createdAt}): super._();
   factory _OrderTransitionRecord.fromJson(Map<String, dynamic> json) => _$OrderTransitionRecordFromJson(json);
 
 @override final  int id;
@@ -2231,6 +2531,13 @@ class _OrderTransitionRecord extends OrderTransitionRecord {
 @override@JsonKey(name: 'from_status_label') final  String? fromStatusLabel;
 @override@JsonKey(name: 'to_status_label') final  String toStatusLabel;
 @override final  String? reason;
+/// Who moved it. Null for a move made by a console command or a seeder — the column is
+/// nullable for exactly that — and for a build of the API that did not load the relation.
+///
+/// It is the other half of [reason]: «تم الإلغاء — العميل غيّر رأيه» is a different fact
+/// from the same sentence with a name against it, and the name is what makes the timeline
+/// answerable rather than merely readable.
+@override final  OrderActor? user;
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
 
 /// Create a copy of OrderTransitionRecord
@@ -2246,16 +2553,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderTransitionRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.fromStatusLabel, fromStatusLabel) || other.fromStatusLabel == fromStatusLabel)&&(identical(other.toStatusLabel, toStatusLabel) || other.toStatusLabel == toStatusLabel)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderTransitionRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.fromStatusLabel, fromStatusLabel) || other.fromStatusLabel == fromStatusLabel)&&(identical(other.toStatusLabel, toStatusLabel) || other.toStatusLabel == toStatusLabel)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.user, user) || other.user == user)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fromStatusLabel,toStatusLabel,reason,createdAt);
+int get hashCode => Object.hash(runtimeType,id,fromStatusLabel,toStatusLabel,reason,user,createdAt);
 
 @override
 String toString() {
-  return 'OrderTransitionRecord(id: $id, fromStatusLabel: $fromStatusLabel, toStatusLabel: $toStatusLabel, reason: $reason, createdAt: $createdAt)';
+  return 'OrderTransitionRecord(id: $id, fromStatusLabel: $fromStatusLabel, toStatusLabel: $toStatusLabel, reason: $reason, user: $user, createdAt: $createdAt)';
 }
 
 
@@ -2266,11 +2573,11 @@ abstract mixin class _$OrderTransitionRecordCopyWith<$Res> implements $OrderTran
   factory _$OrderTransitionRecordCopyWith(_OrderTransitionRecord value, $Res Function(_OrderTransitionRecord) _then) = __$OrderTransitionRecordCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'from_status_label') String? fromStatusLabel,@JsonKey(name: 'to_status_label') String toStatusLabel, String? reason,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'from_status_label') String? fromStatusLabel,@JsonKey(name: 'to_status_label') String toStatusLabel, String? reason, OrderActor? user,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
-
+@override $OrderActorCopyWith<$Res>? get user;
 
 }
 /// @nodoc
@@ -2283,18 +2590,31 @@ class __$OrderTransitionRecordCopyWithImpl<$Res>
 
 /// Create a copy of OrderTransitionRecord
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromStatusLabel = freezed,Object? toStatusLabel = null,Object? reason = freezed,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromStatusLabel = freezed,Object? toStatusLabel = null,Object? reason = freezed,Object? user = freezed,Object? createdAt = freezed,}) {
   return _then(_OrderTransitionRecord(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,fromStatusLabel: freezed == fromStatusLabel ? _self.fromStatusLabel : fromStatusLabel // ignore: cast_nullable_to_non_nullable
 as String?,toStatusLabel: null == toStatusLabel ? _self.toStatusLabel : toStatusLabel // ignore: cast_nullable_to_non_nullable
 as String,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
-as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String?,user: freezed == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
+as OrderActor?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
 
+/// Create a copy of OrderTransitionRecord
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$OrderActorCopyWith<$Res>? get user {
+    if (_self.user == null) {
+    return null;
+  }
 
+  return $OrderActorCopyWith<$Res>(_self.user!, (value) {
+    return _then(_self.copyWith(user: value));
+  });
+}
 }
 
 // dart format on

@@ -787,6 +787,52 @@ class OrderTest extends TestCase
         $response->assertStatus(422)->assertJsonValidationErrors('city_id');
     }
 
+    public function test_a_parcel_on_its_way_back_can_still_be_readdressed(): void
+    {
+        // Arrange — with the courier, coming home.
+        $order = Order::factory()->status(OrderStatus::ReturnedCourier)->create();
+        $elsewhere = City::factory()->create(['name' => 'الزاوية', 'delivery_price' => '35.00']);
+        $headers = $this->clerk();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/orders/{$order->id}", [
+            'city_id' => $elsewhere->getKey(),
+        ]);
+
+        // Assert — «ابعثها للفرع الثاني بدل ما ترجع» is said about a parcel in exactly this
+        // state, and the new address has to be on the order *before* it goes out again.
+        $response->assertOk();
+
+        $moved = $order->fresh();
+        $this->assertSame($elsewhere->getKey(), $moved->city_id);
+        $this->assertSame('الزاوية', $moved->city_name);
+        $this->assertSame('35.00', $moved->delivery_price);
+    }
+
+    public function test_moving_an_order_re_prices_the_delivery_and_the_total(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Ready)->create();
+        OrderItem::factory()->for($order)->create([
+            'quantity' => '10',
+            'unit_price' => '10.00',
+            'line_total' => '100.00',
+        ]);
+        $dearer = City::factory()->create(['delivery_price' => '50.00']);
+        $headers = $this->clerk();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/orders/{$order->id}", [
+            'city_id' => $dearer->getKey(),
+        ]);
+
+        // Assert — the rate travels with the address, and the total is recomputed rather than
+        // left saying what the old city cost.
+        $response->assertOk()
+            ->assertJsonPath('data.delivery_price', '50.00')
+            ->assertJsonPath('data.grand_total', '150.00');
+    }
+
     public function test_a_finished_order_cannot_be_edited(): void
     {
         // Arrange

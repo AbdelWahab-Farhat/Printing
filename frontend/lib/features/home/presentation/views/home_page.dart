@@ -11,6 +11,7 @@ import 'package:printing/features/home/presentation/widgets/employee_card.dart';
 import 'package:printing/features/home/presentation/widgets/quick_actions.dart';
 import 'package:printing/features/home/presentation/widgets/status_board.dart';
 import 'package:printing/features/home/presentation/widgets/summary_tiles.dart';
+import 'package:printing/features/orders/models/orders_filter.dart';
 
 /// The first screen of the signed-in app.
 ///
@@ -52,15 +53,68 @@ class _HomeView extends StatelessWidget {
               SizedBox(height: 20.h),
               QuickActions(actions: _actionsFor(context)),
               SizedBox(height: 20.h),
-              SummaryTiles(summary: summary),
+              SummaryTiles(
+                summary: summary,
+                // Two of these switch tabs and two open a screen, and the difference is what
+                // the number means: «الطلبات الكلية» *is* the orders tab, while «طلبات اليوم»
+                // is a question the tab has no way to ask.
+                onAllOrders: () => context.go(Routes.orders),
+                onCustomers: () => context.go(Routes.customers),
+                onDay: () => _openOrders(
+                  context,
+                  OrdersFilter(title: 'طلبات اليوم', from: _today, to: _today),
+                ),
+                onMonth: () => _openOrders(
+                  context,
+                  OrdersFilter(
+                    title: 'طلبات هذا الشهر',
+                    from: _firstOfMonth,
+                    to: _today,
+                  ),
+                ),
+              ),
               SizedBox(height: 24.h),
-              StatusBoard(statuses: summary.statuses),
+              StatusBoard(
+                statuses: summary.statuses,
+                // The card's own word travels with it: this app holds no table of status names,
+                // so the title of the screen it opens can only come from the card that opened it.
+                onOpen: (status) => _openOrders(
+                  context,
+                  OrdersFilter(title: status.label, statuses: [status.status]),
+                ),
+              ),
             ],
           ),
         ),
       },
     );
   }
+
+  void _openOrders(BuildContext context, OrdersFilter filter) {
+    // Pushed over the shell rather than switching to the orders tab: the tab's chips are
+    // *groups* — «رواجع» is four statuses — so selecting one would show a list longer than the
+    // number that was tapped, and a card that opens a screen contradicting it is worse than a
+    // card that does nothing.
+    context.push(Routes.ordersFiltered, extra: filter);
+  }
+
+  /// Today and the first of this month, as the plain days the API filters on.
+  ///
+  /// Formatted from the phone's own clock, which is the same day the person reading the screen
+  /// is living in. Where that day *begins* is the server's business — it knows the shop's
+  /// timezone and this does not.
+  static String get _today => _day(DateTime.now());
+
+  static String get _firstOfMonth {
+    final now = DateTime.now();
+
+    return _day(DateTime(now.year, now.month));
+  }
+
+  static String _day(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 
   /// Both shortcuts push over the shell rather than switching tabs.
   ///

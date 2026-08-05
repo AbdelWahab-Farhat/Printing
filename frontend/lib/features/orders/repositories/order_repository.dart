@@ -12,10 +12,15 @@ import 'package:printing/features/orders/usecases/update_order_invoice.dart';
 ///
 /// The Cubit depends on this, so a test hands it a fake in one line and never constructs Dio.
 abstract interface class OrderRepository {
+  /// [from] and [to] are plain `Y-m-d` days in the *shop's* timezone, and the server turns
+  /// each into the instants that day begins and ends. Sending the same date for both is how a
+  /// single day is asked for.
   Future<Either<Failure, Paginated<Order>>> orders({
     String? search,
     List<String> statuses,
     int? customerId,
+    String? from,
+    String? to,
     int page,
     int perPage,
   });
@@ -38,10 +43,17 @@ abstract interface class OrderRepository {
   ///
   /// The destination has to be re-sent because `PUT` replaces the whole order — leaving
   /// `city_id` out would be an instruction to clear it, which is what PUT means.
+  /// [lines] null leaves the order's own lines alone — which is how an edit that only moves
+  /// the destination is expressed, on an order whose lines are already closed.
+  ///
+  /// [cityId] null keeps the address as it is; anything else re-addresses the order, and the
+  /// server re-snapshots the city's name and re-prices the delivery from it.
   Future<Either<Failure, Order>> updateInvoice(
     int orderId, {
-    required List<InvoiceLineUpdate> lines,
-    required String discount,
+    List<InvoiceLineUpdate>? lines,
+    String? discount,
+    int? cityId,
+    int? regionId,
   });
 
   /// [fields] is whatever the chosen transition asked for, keyed as the server described it —

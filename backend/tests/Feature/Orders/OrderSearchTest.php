@@ -12,6 +12,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Queries\OrderSearchKind;
 use App\Domain\Order\Queries\OrderSearchTerm;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -234,5 +235,30 @@ class OrderSearchTest extends TestCase
         $response->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.status', 'printing');
+    }
+
+    // ─────────────────────── narrowing by day ───────────────────────
+
+    public function test_a_day_asked_for_is_the_shop_s_day_not_the_server_s(): void
+    {
+        // Arrange — 00:30 in Tripoli on the 15th is 22:30 UTC on the *14th*. Both the home
+        // screen's count and this list have to agree that it belongs to the 15th, or a card
+        // opens a list that contradicts the number on it.
+        $business = new \DateTimeZone((string) config('app.business_timezone'));
+        $justAfterMidnight = Carbon::create(2026, 8, 15, 0, 30, 0, $business);
+
+        $today = Order::factory()->create(['placed_at' => $justAfterMidnight->copy()->utc()]);
+        Order::factory()->create(['placed_at' => $justAfterMidnight->copy()->subHours(3)->utc()]);
+
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson('/api/v1/orders?from=2026-08-15&to=2026-08-15');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $today->id);
     }
 }

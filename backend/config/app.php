@@ -69,6 +69,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Business Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Where the shop is, which is not the same question as where the server is.
+    | Everything is *stored* in UTC and always will be; this is only used to decide
+    | where a day starts when a number is reported to a person — «طلبات اليوم» must
+    | mean the day the person is living in, not the one the database is in.
+    |
+    */
+
+    'business_timezone' => env('BUSINESS_TIMEZONE', 'Africa/Tripoli'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

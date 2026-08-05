@@ -381,9 +381,30 @@ class _ShopRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          shop.name,
-          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                shop.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            // مجال العمل beside the name, because it is what the name only hints at: «فرع سوق
+            // الجمعة» says where, this says what they sell. Absent — not «غير محدد» — for the
+            // shops recorded before the list existed: a row of nulls on every old customer
+            // would be a screen full of a word that means nothing.
+            if (shop.businessField case final field?) ...[
+              SizedBox(width: 8.w),
+              Text(
+                '· ${field.name}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ],
+          ],
         ),
         if (shop.hasPin) ...[
           SizedBox(height: 6.h),

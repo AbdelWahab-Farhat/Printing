@@ -10,11 +10,14 @@ import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
+import 'package:printing/features/cities/models/city.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:printing/features/orders/presentation/widgets/design_picker_sheet.dart';
+import 'package:printing/features/orders/presentation/widgets/destination_picker_sheet.dart';
 import 'package:printing/features/orders/presentation/widgets/order_designs_section.dart';
+import 'package:printing/features/orders/presentation/widgets/place_picker_tile.dart';
 
 /// Everything about one order that can be changed: its lines, its discount, and its artwork.
 ///
@@ -153,6 +156,9 @@ class _OrderEditViewState extends State<_OrderEditView> {
                 mayDiscount: session.can(AppPermission.discountOrders),
                 mayEditItems:
                     order.itemsAreEditable && session.can(AppPermission.manageOrders),
+                // A third line, and later than the other two: the address stays correctable
+                // until somebody is driving to it.
+                mayEditDestination: session.can(AppPermission.manageOrders),
                 onSaved: () => setState(() => _changed = true),
                 // Both lines come from the server — `designs_are_editable` closes when the
                 // press starts, which `items_are_editable` deliberately does not.
@@ -181,6 +187,7 @@ class _Form extends StatelessWidget {
     required this.isWorking,
     required this.mayDiscount,
     required this.mayEditItems,
+    required this.mayEditDestination,
     required this.onSaved,
     required this.onAddDesign,
     required this.onReviewDesign,
@@ -193,6 +200,10 @@ class _Form extends StatelessWidget {
   /// The lines close once printing starts, and the server enforces it. False also for somebody
   /// who may read the order and not change it.
   final bool mayEditItems;
+
+  /// The address closes later than the lines do — only when somebody is driving to it — so it
+  /// gets its own permission check rather than riding on [mayEditItems].
+  final bool mayEditDestination;
 
   final VoidCallback onSaved;
   final Future<void> Function()? onAddDesign;
@@ -221,6 +232,20 @@ class _Form extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
               children: [
+                // First, as it is on the order screen — and because on an order past «جاهزة»
+                // it is the only section with anything to do in it.
+                if (state.destinationIsEditable && mayEditDestination) ...[
+                  _Section(
+                    title: 'مكان الاستلام',
+                    child: _Destination(
+                      state: state,
+                      onCity: (city) => cubit.setCity(id: city.id, name: city.name),
+                      onRegion: (region) =>
+                          cubit.setRegion(id: region.id, name: region.name),
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                ],
                 _Section(
                   title: 'البنود',
                   child: Column(
@@ -287,7 +312,7 @@ class _Form extends StatelessWidget {
               ],
             ),
           ),
-          if (mayEditItems)
+          if (mayEditItems || (state.destinationIsEditable && mayEditDestination))
             SafeArea(
               top: false,
               child: Padding(
@@ -306,6 +331,81 @@ class _Form extends StatelessWidget {
     );
   }
 }
+
+/// Where the order goes: the city, and the neighbourhood inside it.
+///
+/// **The office branches are in the same list as the delivery cities**, so choosing
+/// «إستلام مكتب(قرجي)» is how an order becomes a collection — the server reads the fulfilment
+/// type off whichever city is chosen, and there is no second switch here to disagree with it.
+class _Destination extends StatelessWidget {
+  const _Destination({required this.state, required this.onCity, required this.onRegion});
+
+  final OrderInvoiceState state;
+  final ValueChanged<City> onCity;
+  final ValueChanged<Region> onRegion;
+
+  Future<void> _pickCity(BuildContext context) async {
+    final city = await showCityPicker(context: context, selectedId: state.cityId);
+
+    if (city != null) onCity(city);
+  }
+
+  Future<void> _pickRegion(BuildContext context) async {
+    final region = await showRegionPicker(
+      context: context,
+      cityId: state.cityId,
+      selectedId: state.regionId,
+    );
+
+    if (region != null) onRegion(region);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Side by side, because they are one address read left to right: «زليتن، وسط المدينة».
+        // Stacked full-width buttons made two lines of a single fact and took a third of the
+        // screen to say it — and the region, which is optional, arrived looking like the more
+        // important half.
+        Row(
+          children: [
+            Expanded(
+              child: PlacePickerTile(
+                caption: 'المدينة',
+                value: state.cityName,
+                isChosen: true,
+                onTap: () => _pickCity(context),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: PlacePickerTile(
+                caption: 'المنطقة',
+                // Named when there is one, invited when there is not — «بلا منطقة» would read
+                // as a choice somebody made rather than as a box still to fill.
+                value: state.regionName ?? 'اختياري',
+                isChosen: state.regionName != null,
+                onTap: () => _pickRegion(context),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 6.h),
+        Text(
+          // Said out loud, because it is the part that surprises people: the rate follows the
+          // address, and the total on the invoice moves with it.
+          'تغيير المدينة يعيد حساب سعر التوصيل والإجمالي',
+          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+      ],
+    );
+  }
+}
+
 
 /// One line: what it is, what it costs, and the only number that may be changed.
 ///

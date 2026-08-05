@@ -54,6 +54,9 @@ class _EmployeesView extends StatelessWidget {
       // `can:users.create` on the route is what actually refuses.
       floatingActionButton: session.isAdmin
           ? FloatingActionButton.extended(
+              // Unique per screen, because the shell keeps every tab alive in an IndexedStack:
+              // two default-tagged FABs in one subtree is the «multiple heroes» assertion.
+              heroTag: 'fab-employees',
               onPressed: () async {
                 final created = await context.push(Routes.addEmployee);
 

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -20,7 +19,7 @@ import 'package:printing/features/customers/models/customer_design.dart';
 import 'package:printing/features/customers/models/design_rules.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
 import 'package:printing/features/customers/presentation/widgets/design_thumbnail.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:printing/features/customers/presentation/widgets/design_viewer.dart';
 
 /// A customer's library of artwork.
 ///
@@ -316,7 +315,7 @@ class _DesignTile extends StatelessWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(14.r),
-                  onTap: () => unawaited(_open(context, design)),
+                  onTap: () => unawaited(showDesign(context, design)),
                   onLongPress: () => unawaited(_showOptions(context, design)),
                 ),
               ),
@@ -465,41 +464,8 @@ class _FailureView extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // What a design can be told to do.
 
-/// Shows it: full screen if this app can draw it, otherwise handed to the phone.
-Future<void> _open(BuildContext context, CustomerDesign design) async {
-  if (design.isImage && design.fileUrl != null) {
-    await showDialog<void>(
-      context: context,
-      builder: (context) => _DesignViewer(design: design),
-    );
-
-    return;
-  }
-
-  await _openExternally(context, design);
-}
-
-/// Hands the file to whatever the phone already opens PDFs with.
-///
-/// **No `try`/`catch`, and no PDF renderer either.** Every renderer on pub.dev ships a native
-/// engine to solve a problem the operating system already solved. Each step here answers
-/// instead of throwing — an unparsable URL is null, a scheme nothing handles is `false` — so
-/// the one boundary rule this app has is not bent for a convenience.
-Future<void> _openExternally(BuildContext context, CustomerDesign design) async {
-  final url = design.fileUrl;
-  final uri = url == null ? null : Uri.tryParse(url);
-
-  if (uri == null) {
-    context.showError('لا يوجد رابط لهذا الملف');
-
-    return;
-  }
-
-  final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-  if (opened || !context.mounted) return;
-
-  context.showError('لا يوجد تطبيق على هذا الجهاز يفتح هذا الملف');
-}
+// Viewing, saving and opening a design live in `design_viewer.dart`: an order is printed from
+// the same file this library holds, and that screen shows it too.
 
 Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
   final cubit = context.read<CustomerDesignsCubit>();
@@ -533,6 +499,11 @@ Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
             title: const Text('فتح الملف'),
             onTap: () => Navigator.of(sheetContext).pop(_DesignAction.open),
           ),
+          ListTile(
+            leading: Icon(AppIcons.download),
+            title: const Text('تحميل'),
+            onTap: () => Navigator.of(sheetContext).pop(_DesignAction.save),
+          ),
           // Hidden, not disabled, for somebody who may only read: a greyed-out «حذف» advertises
           // a job that is not theirs. The server refuses it either way.
           if (mayManage) ...[
@@ -557,7 +528,9 @@ Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
 
   switch (choice) {
     case _DesignAction.open:
-      await _open(context, design);
+      await showDesign(context, design);
+    case _DesignAction.save:
+      await saveDesign(context, design);
     case _DesignAction.rename:
       await _rename(context, cubit, design);
     case _DesignAction.delete:
@@ -565,7 +538,7 @@ Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
   }
 }
 
-enum _DesignAction { open, rename, delete }
+enum _DesignAction { open, save, rename, delete }
 
 Future<void> _rename(
   BuildContext context,
@@ -682,72 +655,6 @@ class _RenameDialogState extends State<_RenameDialog> {
           child: const Text('حفظ'),
         ),
       ],
-    );
-  }
-}
-
-/// One image, as large as the screen allows, and zoomable.
-class _DesignViewer extends StatelessWidget {
-  const _DesignViewer({required this.design});
-
-  final CustomerDesign design;
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog.fullscreen(
-      backgroundColor: Colors.black,
-      child: Stack(
-        children: [
-          Center(
-            child: InteractiveViewer(
-              // Artwork is read close up — a logo's kerning, a colour against a background —
-              // so it zooms further than a photo viewer would.
-              maxScale: 6,
-              child: CachedNetworkImage(
-                imageUrl: design.fileUrl!,
-                cacheKey: 'customer-design-${design.id}',
-                fit: BoxFit.contain,
-                placeholder: (context, _) => const Center(child: CircularProgressIndicator()),
-                errorWidget: (context, _, _) => Center(
-                  child: Icon(AppIcons.offline, size: 40.sp, color: Colors.white70),
-                ),
-              ),
-            ),
-          ),
-          PositionedDirectional(
-            top: MediaQuery.paddingOf(context).top + 8.h,
-            start: 8.w,
-            child: IconButton(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: Icon(AppIcons.close, color: Colors.white),
-              style: IconButton.styleFrom(backgroundColor: Colors.black45),
-            ),
-          ),
-          PositionedDirectional(
-            top: MediaQuery.paddingOf(context).top + 8.h,
-            end: 8.w,
-            child: IconButton(
-              tooltip: 'فتح خارج التطبيق',
-              onPressed: () => unawaited(_openExternally(context, design)),
-              icon: Icon(AppIcons.openExternal, color: Colors.white),
-              style: IconButton.styleFrom(backgroundColor: Colors.black45),
-            ),
-          ),
-          // What it is, at the bottom, where it does not sit over the artwork.
-          PositionedDirectional(
-            bottom: MediaQuery.paddingOf(context).bottom + 16.h,
-            start: 16.w,
-            end: 16.w,
-            child: Text(
-              [design.label, ?design.dimensionsLabel, ?design.sizeLabel].join('  ·  '),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: context.textTheme.bodySmall?.copyWith(color: Colors.white70),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

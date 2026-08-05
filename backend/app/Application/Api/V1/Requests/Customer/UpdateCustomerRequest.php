@@ -44,6 +44,10 @@ class UpdateCustomerRequest extends StoreCustomerRequest
             'shops.*.latitude' => ['required', 'numeric', 'between:-90,90'],
             'shops.*.longitude' => ['required', 'numeric', 'between:-180,180'],
             'shops.*.page_url' => ['nullable', 'url', 'max:2048'],
+            // مجال العمل. Optional — most shops on record have none — and `exists` keeps a
+            // stale id from a client's cached list out of the database. Deactivated fields are
+            // still accepted: a shop already recorded under one must survive being saved again.
+            'shops.*.business_field_id' => ['nullable', 'integer', Rule::exists('business_fields', 'id')->withoutTrashed()],
         ];
     }
 

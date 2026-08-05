@@ -33,4 +33,14 @@ enum TransitionFieldType: string
      * belongs on their record — but what travels here is only ever `customer_designs.id`.
      */
     case CustomerDesigns = 'customer_designs';
+
+    /**
+     * One of the carriers, chosen from the list the business maintains.
+     *
+     * **The options are deliberately not sent with the field.** The app already has the carrier
+     * list — it manages it — so inlining the choices here would make every order in a page of
+     * fifteen carry the same twenty rows, and would cost a query per row to build. What travels
+     * is `shipping_companies.id`, exactly as {@see CustomerDesigns} travels design ids.
+     */
+    case ShippingCompany = 'shipping_company';
 }

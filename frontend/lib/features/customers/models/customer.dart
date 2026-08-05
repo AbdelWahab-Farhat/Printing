@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:printing/features/business_fields/models/business_field.dart';
 
 part 'customer.freezed.dart';
 part 'customer.g.dart';
@@ -54,6 +55,14 @@ abstract class CustomerShop with _$CustomerShop {
     double? longitude,
 
     @JsonKey(name: 'page_url') String? pageUrl,
+
+    /// مجال العمل — what this shop sells. Null for the shops recorded before the list existed,
+    /// and for one entered in a hurry; «لم يُحدَّد» is a real answer here, not a missing one.
+    @JsonKey(name: 'business_field_id') int? businessFieldId,
+
+    /// The trade itself, so a screen renders its name without fetching the list to translate
+    /// one number. Sent whenever the shop is loaded with it.
+    @JsonKey(name: 'business_field') BusinessField? businessField,
   }) = _CustomerShop;
 
   const CustomerShop._();

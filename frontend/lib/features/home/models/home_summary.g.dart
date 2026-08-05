@@ -32,7 +32,6 @@ _OrderStatusCount _$OrderStatusCountFromJson(Map<String, dynamic> json) =>
       status: json['status'] as String,
       label: json['label'] as String,
       count: (json['count'] as num).toInt(),
-      needsAttention: json['needs_attention'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$OrderStatusCountToJson(_OrderStatusCount instance) =>
@@ -40,5 +39,4 @@ Map<String, dynamic> _$OrderStatusCountToJson(_OrderStatusCount instance) =>
       'status': instance.status,
       'label': instance.label,
       'count': instance.count,
-      'needs_attention': instance.needsAttention,
     };

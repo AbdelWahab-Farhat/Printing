@@ -11,6 +11,9 @@ import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/utils/validators.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
+import 'package:printing/features/business_fields/models/business_field.dart';
+import 'package:printing/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
+import 'package:printing/features/business_fields/presentation/widgets/business_field_picker.dart';
 import 'package:printing/features/customers/models/customer.dart';
 import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
 import 'package:printing/features/customers/usecases/create_customer.dart';
@@ -47,8 +50,20 @@ class AddCustomerPage extends StatelessWidget {
     // Created here rather than injected app-wide: the Cubit belongs to this screen and is
     // closed with it. A screen-scoped Cubit registered as a singleton keeps emitting into a
     // dead stream after the first customer is added.
-    return BlocProvider<AddCustomerCubit>(
-      create: (_) => sl<AddCustomerCubit>(),
+    return MultiBlocProvider(
+      providers: [
+        // Created here rather than injected app-wide: the Cubit belongs to this screen and is
+        // closed with it. A screen-scoped Cubit registered as a singleton keeps emitting into a
+        // dead stream after the first customer is added.
+        BlocProvider<AddCustomerCubit>(create: (_) => sl<AddCustomerCubit>()),
+        // The «مجال العمل» list, loaded once for the whole form: three shop rows offer the same
+        // trades, and one request answers all three. `active-only`, because a stopped trade is
+        // one nobody should be able to pick today — a shop already on one keeps it, which
+        // BusinessFieldPicker handles itself.
+        BlocProvider<BusinessFieldsCubit>(
+          create: (_) => sl<BusinessFieldsCubit>(instanceName: 'active-only')..load(),
+        ),
+      ],
       child: _AddCustomerView(customer: customer),
     );
   }
@@ -395,6 +410,19 @@ class _ShopCard extends StatelessWidget {
           ),
           SizedBox(height: 14.h),
 
+          // Right under the name, because it answers the same question the name only hints at:
+          // «فرع سوق الجمعة» says where, and this says what they sell.
+          BusinessFieldPicker(
+            value: fields.businessFieldId,
+            current: fields.businessField,
+            errorText: state.shopError(index, 'business_field_id'),
+            onChanged: (fieldId) {
+              fields.businessFieldId = fieldId;
+              onChanged();
+            },
+          ),
+          SizedBox(height: 14.h),
+
           // Two number fields and an instruction to copy them out of Google Maps used to live
           // here. Nobody does that, so what it really produced was shops with no pin at all.
           _ShopLocationField(fields: fields, onChanged: onChanged),
@@ -615,7 +643,12 @@ class _ShopFields {
 
   /// Seeds a row from a shop the server already has, id included.
   factory _ShopFields.from(CustomerShop shop) {
-    final fields = _ShopFields()..id = shop.id;
+    final fields = _ShopFields()
+      ..id = shop.id
+      ..businessFieldId = shop.businessFieldId
+      // Kept whole, not just its id: it is what keeps a trade that is no longer offered
+      // selectable on the shop that is already recorded under it.
+      ..businessField = shop.businessField;
     fields.name.text = shop.name;
     // Six decimals, matching what the picker writes, so opening the form and saving without
     // touching anything sends back exactly what was there.
@@ -637,12 +670,21 @@ class _ShopFields {
   /// it instead of deleting it and creating a new one.
   int? id;
 
+  /// مجال العمل as picked, or null for «غير محدد». Not a controller: it comes from a list, so
+  /// there is no text to hold and nothing to dispose.
+  int? businessFieldId;
+
+  /// The trade this shop arrived with, kept so the picker can still offer it after the business
+  /// stops offering it to everybody else.
+  BusinessField? businessField;
+
   ShopInput toInput() => (
     id: id,
     name: name.text,
     latitude: latitude.text,
     longitude: longitude.text,
     pageUrl: pageUrl.text,
+    businessFieldId: businessFieldId,
   );
 
   void dispose() {

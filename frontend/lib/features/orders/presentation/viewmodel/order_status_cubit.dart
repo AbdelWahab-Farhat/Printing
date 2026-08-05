@@ -6,6 +6,7 @@ import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/transition_field.dart';
 import 'package:printing/features/orders/usecases/change_order_status.dart';
 import 'package:printing/features/orders/usecases/get_order.dart';
+import 'package:printing/features/shipping_companies/models/shipping_company.dart';
 
 part 'order_status_state.dart';
 part 'order_status_cubit.freezed.dart';
@@ -133,6 +134,9 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
         if (values[field.key] case final value?)
           field.key: switch (value) {
             final List<CustomerDesign> designs => [for (final design in designs) design.id],
+            // The picker hands over the whole company so the button can say its name; only the
+            // id crosses the wire, exactly as for a design.
+            final ShippingCompany carrier => carrier.id,
             final String text => text.trim(),
             _ => value,
           },

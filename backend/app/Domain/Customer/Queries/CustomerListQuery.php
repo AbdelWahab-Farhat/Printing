@@ -21,9 +21,9 @@ final class CustomerListQuery
     public function __invoke(CustomerFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return Customer::query()
-            // Eager-loaded: the resource renders shops for every row, which would otherwise
-            // be one query per customer.
-            ->with('shops')
+            // Eager-loaded: the resource renders shops for every row, and each shop names its
+            // trade — one query per customer otherwise, and one per shop after that.
+            ->with('shops.businessField')
             ->when($filters->search !== null, function ($query) use ($filters) {
                 $term = '%'.$filters->search.'%';
 

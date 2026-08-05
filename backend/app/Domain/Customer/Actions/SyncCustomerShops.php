@@ -31,6 +31,7 @@ final class SyncCustomerShops
                 'latitude' => $shop->latitude,
                 'longitude' => $shop->longitude,
                 'page_url' => $shop->pageUrl,
+                'business_field_id' => $shop->businessFieldId,
             ];
 
             if ($shop->id !== null) {

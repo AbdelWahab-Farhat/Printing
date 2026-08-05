@@ -16,6 +16,13 @@ abstract final class AuthEndpoints {
   static const String logoutAll = '/auth/logout-all';
 }
 
+/// The numbers the app opens on.
+abstract final class HomeEndpoints {
+  /// Four counts and one row per order status, in one call — they are read together and go
+  /// stale together.
+  static const String summary = '/home/summary';
+}
+
 /// Who works here, what jobs exist, and what each job may do.
 abstract final class AccessEndpoints {
   /// Staff accounts. Read-only from the app: accounts are created elsewhere, and all this
@@ -43,6 +50,21 @@ abstract final class CityEndpoints {
   static String regions(int cityId) => '/cities/$cityId/regions';
 
   static String region(int cityId, int regionId) => '/cities/$cityId/regions/$regionId';
+}
+
+abstract final class ShippingCompanyEndpoints {
+  static const String index = '/shipping-companies';
+
+  static String show(int companyId) => '/shipping-companies/$companyId';
+}
+
+/// مجالات العمل — what a customer's shop sells.
+abstract final class BusinessFieldEndpoints {
+  static const String index = '/business-fields';
+
+  static String show(int fieldId) => '/business-fields/$fieldId';
+
+  static String activation(int fieldId) => '/business-fields/$fieldId/activation';
 }
 
 abstract final class ProductEndpoints {

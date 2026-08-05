@@ -36,6 +36,14 @@ import 'package:printing/features/auth/usecases/get_current_user.dart';
 import 'package:printing/features/auth/usecases/has_stored_session.dart';
 import 'package:printing/features/auth/usecases/login.dart';
 import 'package:printing/features/auth/usecases/logout.dart';
+import 'package:printing/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
+import 'package:printing/features/business_fields/presentation/viewmodel/save_business_field_cubit.dart';
+import 'package:printing/features/business_fields/repositories/business_field_repository.dart';
+import 'package:printing/features/business_fields/repositories/business_field_repository_impl.dart';
+import 'package:printing/features/business_fields/usecases/delete_business_field.dart';
+import 'package:printing/features/business_fields/usecases/get_business_fields.dart';
+import 'package:printing/features/business_fields/usecases/save_business_field.dart';
+import 'package:printing/features/business_fields/usecases/set_business_field_activation.dart';
 import 'package:printing/features/cities/presentation/viewmodel/cities_cubit.dart';
 import 'package:printing/features/cities/presentation/viewmodel/city_regions_cubit.dart';
 import 'package:printing/features/cities/repositories/city_repository.dart';
@@ -56,6 +64,7 @@ import 'package:printing/features/customers/usecases/get_customer.dart';
 import 'package:printing/features/customers/usecases/get_customer_designs.dart';
 import 'package:printing/features/customers/usecases/get_customers.dart';
 import 'package:printing/features/customers/usecases/rename_customer_design.dart';
+import 'package:printing/features/customers/usecases/save_design_to_device.dart';
 import 'package:printing/features/customers/usecases/set_customer_activation.dart';
 import 'package:printing/features/customers/usecases/update_customer.dart';
 import 'package:printing/features/customers/usecases/upload_customer_design.dart';
@@ -68,6 +77,8 @@ import 'package:printing/features/location/repositories/geocoding_repository.dar
 import 'package:printing/features/location/repositories/geocoding_repository_impl.dart';
 import 'package:printing/features/location/usecases/search_places.dart';
 import 'package:printing/features/orders/models/order.dart';
+import 'package:printing/features/orders/models/orders_filter.dart';
+import 'package:printing/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_status_cubit.dart';
@@ -93,6 +104,12 @@ import 'package:printing/features/settings/repositories/settings_repository.dart
 import 'package:printing/features/settings/repositories/settings_repository_impl.dart';
 import 'package:printing/features/settings/usecases/get_settings.dart';
 import 'package:printing/features/settings/usecases/set_notifications_enabled.dart';
+import 'package:printing/features/shipping_companies/presentation/viewmodel/save_shipping_company_cubit.dart';
+import 'package:printing/features/shipping_companies/presentation/viewmodel/shipping_companies_cubit.dart';
+import 'package:printing/features/shipping_companies/repositories/shipping_company_repository.dart';
+import 'package:printing/features/shipping_companies/repositories/shipping_company_repository_impl.dart';
+import 'package:printing/features/shipping_companies/usecases/get_shipping_companies.dart';
+import 'package:printing/features/shipping_companies/usecases/save_shipping_company.dart';
 import 'package:printing/features/splash/presentation/viewmodel/splash_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -174,6 +191,8 @@ abstract final class Injector {
     _registerHome();
     _registerProducts();
     _registerCities();
+    _registerBusinessFields();
+    _registerShippingCompanies();
     _registerCustomers();
     _registerSettings();
     _registerOrders();
@@ -312,10 +331,9 @@ abstract final class Injector {
   /// The home screen: who is signed in, and the counts it opens on.
   static void _registerHome() {
     sl
-      // ⚠️ The implementation still answers with placeholder numbers — see
-      // [HomeRepositoryImpl]. It is registered against the contract exactly as a real one would
-      // be, so the day the endpoint lands this line is the only thing that changes.
-      ..registerLazySingleton<HomeRepository>(HomeRepositoryImpl.new)
+      // The endpoint landed, and this line is the only one that changed: the contract above it
+      // and everything above that never knew the numbers were stand-ins.
+      ..registerLazySingleton<HomeRepository>(() => HomeRepositoryImpl(sl<Dio>()))
       ..registerLazySingleton<GetHomeSummary>(() => GetHomeSummary(sl<HomeRepository>()))
       // Factory: the home screen owns its Cubit and closes it on dispose.
       ..registerFactory<HomeCubit>(
@@ -372,6 +390,14 @@ abstract final class Injector {
         () => ReviewOrderDesign(sl<OrderRepository>()),
       )
       // Factory: the list screen owns its Cubit and closes it on dispose.
+      // Parameterised on the question it answers: this screen is *about* one filter, so it is
+      // a construction argument rather than something the Cubit is told afterwards.
+      ..registerFactoryParam<FilteredOrdersCubit, OrdersFilter, void>(
+        (filter, _) => FilteredOrdersCubit(
+          getOrders: sl<GetOrders>(),
+          filter: filter,
+        ),
+      )
       ..registerFactory<OrdersCubit>(
         () => OrdersCubit(getOrders: sl<GetOrders>(), getCounts: sl<GetOrderCounts>()),
       )
@@ -407,6 +433,84 @@ abstract final class Injector {
 
   /// Cities and their regions — the delivery map. Registered as one block per feature so a new
   /// feature is one method here, not six edits scattered through a 200-line function.
+  /// Who carries our parcels.
+  ///
+  /// Two Cubits from one list: the management screen shows every company, and the dispatch
+  /// picker shows only the ones a parcel may still be handed to — so `onlyActive` is a
+  /// construction argument rather than a filter the screen has to remember to apply.
+  static void _registerShippingCompanies() {
+    sl
+      ..registerLazySingleton<ShippingCompanyRepository>(
+        () => ShippingCompanyRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetShippingCompanies>(
+        () => GetShippingCompanies(sl<ShippingCompanyRepository>()),
+      )
+      ..registerLazySingleton<SaveShippingCompany>(
+        () => SaveShippingCompany(sl<ShippingCompanyRepository>()),
+      )
+      ..registerFactory<ShippingCompaniesCubit>(
+        () => ShippingCompaniesCubit(getCompanies: sl<GetShippingCompanies>()),
+      )
+      // A second registration rather than a parameter, because the caller never chooses: the
+      // picker wants the carriers a parcel may still be handed to, always.
+      ..registerFactory<ShippingCompaniesCubit>(
+        () => ShippingCompaniesCubit(
+          getCompanies: sl<GetShippingCompanies>(),
+          onlyActive: true,
+        ),
+        instanceName: 'active-only',
+      )
+      ..registerFactory<SaveShippingCompanyCubit>(
+        () => SaveShippingCompanyCubit(saveCompany: sl<SaveShippingCompany>()),
+      );
+  }
+
+  /// مجالات العمل — the trades a customer's shop can be in.
+  ///
+  /// Registered beside the delivery map rather than inside customers, because it is the same
+  /// kind of thing: a short curated list that other screens pick from.
+  static void _registerBusinessFields() {
+    sl
+      ..registerLazySingleton<BusinessFieldRepository>(
+        () => BusinessFieldRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetBusinessFields>(
+        () => GetBusinessFields(sl<BusinessFieldRepository>()),
+      )
+      ..registerLazySingleton<SaveBusinessField>(
+        () => SaveBusinessField(sl<BusinessFieldRepository>()),
+      )
+      ..registerLazySingleton<SetBusinessFieldActivation>(
+        () => SetBusinessFieldActivation(sl<BusinessFieldRepository>()),
+      )
+      ..registerLazySingleton<DeleteBusinessField>(
+        () => DeleteBusinessField(sl<BusinessFieldRepository>()),
+      )
+      // Factory: the list screen owns its Cubit and closes it on dispose.
+      ..registerFactory<BusinessFieldsCubit>(
+        () => BusinessFieldsCubit(
+          getBusinessFields: sl<GetBusinessFields>(),
+          setActivation: sl<SetBusinessFieldActivation>(),
+          deleteBusinessField: sl<DeleteBusinessField>(),
+        ),
+      )
+      // The customer form's picker asks for the offered fields only — a stopped trade is one
+      // nobody should be able to pick *today*, while the management screen must still see it.
+      // A named registration rather than a parameter, so the sheet asks for what it means.
+      ..registerFactory<BusinessFieldsCubit>(
+        () => BusinessFieldsCubit(
+          getBusinessFields: sl<GetBusinessFields>(),
+          setActivation: sl<SetBusinessFieldActivation>(),
+          deleteBusinessField: sl<DeleteBusinessField>(),
+        )..isActive = true,
+        instanceName: 'active-only',
+      )
+      ..registerFactory<SaveBusinessFieldCubit>(
+        () => SaveBusinessFieldCubit(saveBusinessField: sl<SaveBusinessField>()),
+      );
+  }
+
   static void _registerCities() {
     sl
       ..registerLazySingleton<CityRepository>(() => CityRepositoryImpl(sl<Dio>()))
@@ -474,6 +578,11 @@ abstract final class Injector {
       )
       ..registerLazySingleton<RenameCustomerDesign>(
         () => RenameCustomerDesign(sl<CustomerDesignRepository>()),
+      )
+      // Not owned by a Cubit: saving a file is a one-shot action with no state to hold — the
+      // sheet the OS opens is the state — so the viewer calls it directly.
+      ..registerLazySingleton<SaveDesignToDevice>(
+        () => SaveDesignToDevice(sl<CustomerDesignRepository>()),
       )
       ..registerLazySingleton<DeleteCustomerDesign>(
         () => DeleteCustomerDesign(sl<CustomerDesignRepository>()),

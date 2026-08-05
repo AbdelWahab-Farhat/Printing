@@ -140,6 +140,10 @@ class _Single extends StatelessWidget {
     final colours = _colours(context, action.tone);
 
     return FloatingActionButton.extended(
+      // Constant, and that is safe: a screen has at most one dial, and two screens are never
+      // in one another's subtree. It is here so that «every FAB names its own tag» is a rule
+      // with no exceptions to remember — see floating_action_button_hero_test.dart.
+      heroTag: 'fab-speed-dial',
       onPressed: () =>
           unawaited(Future<void>.sync(() => action.onTap(context))),
       backgroundColor: colours.$1,

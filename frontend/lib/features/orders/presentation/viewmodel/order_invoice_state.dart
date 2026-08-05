@@ -49,6 +49,23 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
     required String discount,
     required String designFee,
     required String deliveryPrice,
+
+    /// Where the order is going, as it stands on screen.
+    ///
+    /// Seeded from the order's own snapshot and replaced wholesale when a city is picked — the
+    /// region goes with it, because a region belongs to one city and keeping the old one would
+    /// send the server a neighbourhood from somewhere else.
+    required int cityId,
+    required String cityName,
+    int? regionId,
+    String? regionName,
+
+    /// Whether the lines may be touched at all. False from «جاهزة» onwards, where this screen
+    /// is open for the address alone.
+    @Default(false) bool linesAreEditable,
+
+    /// Whether the address may be touched. Open in every status but «جاري التوصيل».
+    @Default(false) bool destinationIsEditable,
     @Default(false) bool isSaving,
     @Default(false) bool isSaved,
     @Default(false) bool isDirty,
@@ -59,8 +76,15 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
 
   /// An order must keep at least one line, and every quantity has to be a real number — the
   /// same two rules the server enforces, checked here so the refusal is instant.
+  ///
+  /// Only asked of the lines when they are editable: on an order past «جاهزة» this screen never
+  /// sends them, so a quantity it is merely displaying cannot be a reason to refuse a save.
   bool get isValid =>
-      lines.isNotEmpty && lines.every((line) => line.hasValidQuantity);
+      !linesAreEditable ||
+      (lines.isNotEmpty && lines.every((line) => line.hasValidQuantity));
+
+  /// Where it goes, as one line: «طرابلس — سوق الجمعة».
+  String get destination => regionName == null ? cityName : '$cityName — $regionName';
 
   /// What the total will *probably* be. The server's arithmetic is the invoice; this exists so
   /// the number moves while somebody is typing.

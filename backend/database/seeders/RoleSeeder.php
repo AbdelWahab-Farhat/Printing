@@ -41,6 +41,10 @@ class RoleSeeder extends Seeder
         Role::findByName(RoleName::Staff->value, 'web')->syncPermissions([
             PermissionName::ViewCustomers->value,
             PermissionName::ManageCustomers->value,
+            // Not a policy choice: the customer form has a «مجال العمل» picker on every shop
+            // row, and it cannot be filled in without the list. Curating that list is the
+            // separate, rarer job and stays with the administrator.
+            PermissionName::ViewBusinessFields->value,
             PermissionName::ViewProducts->value,
             // Needed to take an order at all — the city and region lists are what an address is
             // chosen from. Curating that map is a separate, rarer job.

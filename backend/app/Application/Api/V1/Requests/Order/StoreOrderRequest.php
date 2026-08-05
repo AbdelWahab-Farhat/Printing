@@ -45,9 +45,7 @@ class StoreOrderRequest extends FormRequest
             // import cannot get past it either.
             'discount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
 
-            'shipping_company' => ['nullable', 'string', 'max:255'],
             'tracking_number' => ['nullable', 'string', 'max:100'],
-            'courier_name' => ['nullable', 'string', 'max:255'],
 
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->withoutTrashed()],

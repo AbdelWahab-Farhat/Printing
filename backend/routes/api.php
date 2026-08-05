@@ -2,16 +2,19 @@
 
 use App\Application\Api\V1\Controllers\ActivityLogController;
 use App\Application\Api\V1\Controllers\AuthController;
+use App\Application\Api\V1\Controllers\BusinessFieldController;
 use App\Application\Api\V1\Controllers\CityController;
 use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\CustomerDesignController;
 use App\Application\Api\V1\Controllers\HealthController;
+use App\Application\Api\V1\Controllers\HomeController;
 use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\PermissionController;
 use App\Application\Api\V1\Controllers\ProductController;
 use App\Application\Api\V1\Controllers\ProductImageController;
 use App\Application\Api\V1\Controllers\RegionController;
 use App\Application\Api\V1\Controllers\RoleController;
+use App\Application\Api\V1\Controllers\ShippingCompanyController;
 use App\Application\Api\V1\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +58,12 @@ Route::prefix('v1')->group(function (): void {
          * An administrator satisfies all of these by rule (Gate::before), so none of them ever
          * needs granting to that role.
          */
+
+        // ── the home screen ─────────────────────────────────────────────────────────────
+        // The one endpoint in this file with no `can:` beside it. See HomeController: it is the
+        // landing screen, and a permission here would show a blank front door to somebody whose
+        // job is a single status transition.
+        Route::get('home/summary', [HomeController::class, 'summary'])->name('home.summary');
 
         // ── access management ───────────────────────────────────────────────────────────
         Route::get('permissions', [PermissionController::class, 'index'])
@@ -105,6 +114,27 @@ Route::prefix('v1')->group(function (): void {
             ->only(['store', 'update', 'destroy'])
             ->middleware('can:customers.manage')
             ->scoped();
+
+        // ── مجالات العمل ────────────────────────────────────────────────────────────────
+        // What a customer's shop sells. Reading is granted to every role — the customer form
+        // cannot be filled in without the list — while curating the list is a rarer job, so it
+        // is split off exactly as the delivery map's is.
+        //
+        // A destroy route exists, unlike customers and products, because this is a curated list
+        // and a typo in it should be removable. The action refuses once any shop points at the
+        // field; deactivation is what retires one in use.
+        Route::apiResource('business-fields', BusinessFieldController::class)
+            ->only(['index', 'show'])
+            ->middleware('can:business_fields.view')
+            ->parameters(['business-fields' => 'business_field']);
+
+        Route::apiResource('business-fields', BusinessFieldController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->middleware('can:business_fields.manage')
+            ->parameters(['business-fields' => 'business_field']);
+
+        Route::patch('business-fields/{business_field}/activation', [BusinessFieldController::class, 'setActivation'])
+            ->middleware('can:business_fields.manage')->name('business-fields.activation');
 
         // ── catalogue ───────────────────────────────────────────────────────────────────
         // Reading the catalogue and pricing a quantity are everyday work; changing what things
@@ -188,6 +218,16 @@ Route::prefix('v1')->group(function (): void {
             ->only(['store', 'update', 'destroy'])
             ->middleware('can:cities.manage');
 
+        // Who carries the parcels. Its own permission pair: the person who agrees rates with
+        // a carrier is not the person who maintains the list of neighbourhoods.
+        Route::apiResource('shipping-companies', ShippingCompanyController::class)
+            ->only(['index', 'show'])
+            ->middleware('can:shipping_companies.view');
+
+        Route::apiResource('shipping-companies', ShippingCompanyController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->middleware('can:shipping_companies.manage');
+
         // Nested and scoped: a region has no life outside its city, so {region} resolves
         // *within* {city} and another city's region id is a 404 by construction.
         Route::apiResource('cities.regions', RegionController::class)
@@ -217,9 +257,13 @@ Route::prefix('v1')->group(function (): void {
             Route::get('users/{user}/logs', [UserController::class, 'logs'])->name('users.logs');
             Route::get('roles/{role}/logs', [RoleController::class, 'logs'])->name('roles.logs');
             Route::get('customers/{customer}/logs', [CustomerController::class, 'logs'])->name('customers.logs');
+            Route::get('business-fields/{business_field}/logs', [BusinessFieldController::class, 'logs'])
+                ->name('business-fields.logs');
             Route::get('products/{product}/logs', [ProductController::class, 'logs'])->name('products.logs');
             Route::get('cities/{city}/logs', [CityController::class, 'logs'])->name('cities.logs');
             Route::get('orders/{order}/logs', [OrderController::class, 'logs'])->name('orders.logs');
+            Route::get('shipping-companies/{shippingCompany}/logs', [ShippingCompanyController::class, 'logs'])
+                ->name('shipping-companies.logs');
 
             // Scoped like the rest of the nested region routes: another city's region id is a
             // 404 here too, not a history leaked from the wrong place.

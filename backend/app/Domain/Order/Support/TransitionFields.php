@@ -26,6 +26,15 @@ final class TransitionFields
      */
     public static function for(Order $order, OrderStatus $target): array
     {
+        // **Resolved exactly as the move itself resolves it.** A clerk says "it is going out"
+        // and the destination decides whether that means «جاري التوصيل» or «استلام مكتب» — see
+        // {@see ChangeOrderStatus::resolve()}. Describing the *requested* status instead would
+        // ask an office-pickup order for a shipping company and then refuse the answer, because
+        // the move it actually performs never asked.
+        if ($target->isDispatch()) {
+            $target = OrderStatus::dispatchFor($order->fulfilment_type);
+        }
+
         $fields = [];
 
         // Every order, whatever its `design_source`. That column answers *whose work the
@@ -44,6 +53,30 @@ final class TransitionFields
             );
         }
 
+        // Who is carrying it, and the man holding it.
+        //
+        // **Only on «جاري التوصيل».** The dispatch pair resolves from the order's own address
+        // before it reaches here, so an office pickup never sees these: nobody carries a parcel
+        // the customer is coming to collect.
+        if ($target === OrderStatus::OutForDelivery) {
+            $fields[] = TransitionField::shippingCompany(
+                key: 'shipping_company_id',
+                label: 'شركة التوصيل',
+                // Required, because a parcel that has left with nobody named is a parcel nobody
+                // can chase. This is the question the return chain is answered from later.
+                required: true,
+                hint: 'تُسجَّل على الطلبية، ويبقى اسمها فيها ولو حُذفت الشركة لاحقاً',
+            );
+
+            $fields[] = TransitionField::text(
+                key: 'courier_phone',
+                label: 'هاتف المندوب',
+                // The company is answerable; the driver is merely reachable, and often nobody
+                // has his number at the moment the parcel goes out.
+                hint: 'رقم المندوب الذي أخذ الطلبية، إن توفّر',
+            );
+        }
+
         // What came off the press, weighed once for the whole parcel.
         //
         // **Required only when the scale is the invoice.** A run priced by the kilo cannot be
@@ -59,7 +92,7 @@ final class TransitionFields
                 required: $byWeight,
                 hint: $byWeight
                     ? 'الطلبية مسعّرة بالكيلوغرام — الوزن هو ما تُحاسب عليه'
-                    : 'اختياري — يفيد شركة التوصيل',
+                    : 'اختياري',
             );
         }
 

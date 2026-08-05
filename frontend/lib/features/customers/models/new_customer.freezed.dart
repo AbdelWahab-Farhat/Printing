@@ -321,7 +321,12 @@ mixin _$NewCustomerShop {
 /// so the JSON carries `32.8` and not a string the API would have to coerce.
  double get latitude; double get longitude;/// A Facebook page, usually. Absent rather than null when the user left it blank: the API's
 /// rule is `nullable|url`, and an empty string is neither.
-@JsonKey(name: 'page_url', includeIfNull: false) String? get pageUrl;
+@JsonKey(name: 'page_url', includeIfNull: false) String? get pageUrl;/// مجال العمل, or null for a shop nobody classified.
+///
+/// **Sent even when null**, unlike [pageUrl] and [id]: both endpoints replace the shop
+/// whole, so an omitted key would mean «اتركه كما هو» and a trade the user cleared would
+/// quietly come back on the next save.
+@JsonKey(name: 'business_field_id') int? get businessFieldId;
 /// Create a copy of NewCustomerShop
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -334,16 +339,16 @@ $NewCustomerShopCopyWith<NewCustomerShop> get copyWith => _$NewCustomerShopCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewCustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewCustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,latitude,longitude,pageUrl);
+int get hashCode => Object.hash(runtimeType,id,name,latitude,longitude,pageUrl,businessFieldId);
 
 @override
 String toString() {
-  return 'NewCustomerShop(id: $id, name: $name, latitude: $latitude, longitude: $longitude, pageUrl: $pageUrl)';
+  return 'NewCustomerShop(id: $id, name: $name, latitude: $latitude, longitude: $longitude, pageUrl: $pageUrl, businessFieldId: $businessFieldId)';
 }
 
 
@@ -354,7 +359,7 @@ abstract mixin class $NewCustomerShopCopyWith<$Res>  {
   factory $NewCustomerShopCopyWith(NewCustomerShop value, $Res Function(NewCustomerShop) _then) = _$NewCustomerShopCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(includeIfNull: false) int? id, String name, double latitude, double longitude,@JsonKey(name: 'page_url', includeIfNull: false) String? pageUrl
+@JsonKey(includeIfNull: false) int? id, String name, double latitude, double longitude,@JsonKey(name: 'page_url', includeIfNull: false) String? pageUrl,@JsonKey(name: 'business_field_id') int? businessFieldId
 });
 
 
@@ -371,14 +376,15 @@ class _$NewCustomerShopCopyWithImpl<$Res>
 
 /// Create a copy of NewCustomerShop
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? name = null,Object? latitude = null,Object? longitude = null,Object? pageUrl = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? name = null,Object? latitude = null,Object? longitude = null,Object? pageUrl = freezed,Object? businessFieldId = freezed,}) {
   return _then(_self.copyWith(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,latitude: null == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
 as double,longitude: null == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
 as double,pageUrl: freezed == pageUrl ? _self.pageUrl : pageUrl // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,businessFieldId: freezed == businessFieldId ? _self.businessFieldId : businessFieldId // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -463,10 +469,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String name,  double latitude,  double longitude, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String name,  double latitude,  double longitude, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NewCustomerShop() when $default != null:
-return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl);case _:
+return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId);case _:
   return orElse();
 
 }
@@ -484,10 +490,10 @@ return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String name,  double latitude,  double longitude, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String name,  double latitude,  double longitude, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId)  $default,) {final _that = this;
 switch (_that) {
 case _NewCustomerShop():
-return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl);case _:
+return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -504,10 +510,10 @@ return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  int? id,  String name,  double latitude,  double longitude, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  int? id,  String name,  double latitude,  double longitude, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId)?  $default,) {final _that = this;
 switch (_that) {
 case _NewCustomerShop() when $default != null:
-return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl);case _:
+return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId);case _:
   return null;
 
 }
@@ -519,7 +525,7 @@ return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl
 @JsonSerializable(createFactory: false)
 
 class _NewCustomerShop implements NewCustomerShop {
-  const _NewCustomerShop({@JsonKey(includeIfNull: false) this.id, required this.name, required this.latitude, required this.longitude, @JsonKey(name: 'page_url', includeIfNull: false) this.pageUrl});
+  const _NewCustomerShop({@JsonKey(includeIfNull: false) this.id, required this.name, required this.latitude, required this.longitude, @JsonKey(name: 'page_url', includeIfNull: false) this.pageUrl, @JsonKey(name: 'business_field_id') this.businessFieldId});
   
 
 /// The row this is, when it already exists.
@@ -540,6 +546,12 @@ class _NewCustomerShop implements NewCustomerShop {
 /// A Facebook page, usually. Absent rather than null when the user left it blank: the API's
 /// rule is `nullable|url`, and an empty string is neither.
 @override@JsonKey(name: 'page_url', includeIfNull: false) final  String? pageUrl;
+/// مجال العمل, or null for a shop nobody classified.
+///
+/// **Sent even when null**, unlike [pageUrl] and [id]: both endpoints replace the shop
+/// whole, so an omitted key would mean «اتركه كما هو» and a trade the user cleared would
+/// quietly come back on the next save.
+@override@JsonKey(name: 'business_field_id') final  int? businessFieldId;
 
 /// Create a copy of NewCustomerShop
 /// with the given fields replaced by the non-null parameter values.
@@ -554,16 +566,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewCustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewCustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,latitude,longitude,pageUrl);
+int get hashCode => Object.hash(runtimeType,id,name,latitude,longitude,pageUrl,businessFieldId);
 
 @override
 String toString() {
-  return 'NewCustomerShop(id: $id, name: $name, latitude: $latitude, longitude: $longitude, pageUrl: $pageUrl)';
+  return 'NewCustomerShop(id: $id, name: $name, latitude: $latitude, longitude: $longitude, pageUrl: $pageUrl, businessFieldId: $businessFieldId)';
 }
 
 
@@ -574,7 +586,7 @@ abstract mixin class _$NewCustomerShopCopyWith<$Res> implements $NewCustomerShop
   factory _$NewCustomerShopCopyWith(_NewCustomerShop value, $Res Function(_NewCustomerShop) _then) = __$NewCustomerShopCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(includeIfNull: false) int? id, String name, double latitude, double longitude,@JsonKey(name: 'page_url', includeIfNull: false) String? pageUrl
+@JsonKey(includeIfNull: false) int? id, String name, double latitude, double longitude,@JsonKey(name: 'page_url', includeIfNull: false) String? pageUrl,@JsonKey(name: 'business_field_id') int? businessFieldId
 });
 
 
@@ -591,14 +603,15 @@ class __$NewCustomerShopCopyWithImpl<$Res>
 
 /// Create a copy of NewCustomerShop
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? name = null,Object? latitude = null,Object? longitude = null,Object? pageUrl = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? name = null,Object? latitude = null,Object? longitude = null,Object? pageUrl = freezed,Object? businessFieldId = freezed,}) {
   return _then(_NewCustomerShop(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,latitude: null == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
 as double,longitude: null == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
 as double,pageUrl: freezed == pageUrl ? _self.pageUrl : pageUrl // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,businessFieldId: freezed == businessFieldId ? _self.businessFieldId : businessFieldId // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

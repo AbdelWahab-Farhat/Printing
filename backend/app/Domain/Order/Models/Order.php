@@ -45,7 +45,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'customer_shop_id', 'customer_shop_name', 'city_id', 'region_id',
     'city_name', 'region_name', 'fulfilment_type',
     'design_source', 'recipient_name', 'recipient_phone', 'address_details', 'notes',
-    'shipping_company', 'tracking_number', 'courier_name',
+    'tracking_number',
 ])]
 class Order extends Model implements HasAuditTrail
 {
@@ -226,20 +226,22 @@ class Order extends Model implements HasAuditTrail
     /**
      * Whether the destination may still be changed.
      *
-     * Refused once the parcel is with somebody outside the business: at that point the address
-     * on our screen and the address on the label have already parted company, and only the
-     * label is real.
+     * **Refused in exactly one open status: «جاري التوصيل».** That is the only moment the
+     * address on our screen and the address on the label can part company while somebody is
+     * acting on the label — the parcel is moving, and only the label is real.
+     *
+     * The three returns used to be refused too, on the same reasoning. They are open again
+     * because the reasoning did not survive the return chain: a parcel at «راجع لدى المندوب» is
+     * on its way *back to us*, and the commonest thing said about it is «ابعثها للفرع الثاني
+     * بدل ما ترجع». Refusing that meant the address was corrected after the re-send instead of
+     * before it, which is the same edit made later and read by nobody.
      *
      * Closed rather than final, because those two came apart: «تم الاستلام» has a move left —
      * the money — but the bags are with the customer, so its address is history.
      */
     public function destinationIsEditable(): bool
     {
-        return ! in_array($this->status, [
-            OrderStatus::OutForDelivery,
-            OrderStatus::ReturnedCourier,
-            OrderStatus::ReturnedCarrier,
-        ], true) && ! $this->status->isClosed();
+        return $this->status !== OrderStatus::OutForDelivery && ! $this->status->isClosed();
     }
 
     /**

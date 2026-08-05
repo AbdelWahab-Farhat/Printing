@@ -9,6 +9,8 @@ import 'package:printing/features/customers/models/customer_design.dart';
 import 'package:printing/features/customers/presentation/widgets/design_thumbnail.dart';
 import 'package:printing/features/orders/models/transition_field.dart';
 import 'package:printing/features/orders/presentation/widgets/design_picker_sheet.dart';
+import 'package:printing/features/orders/presentation/widgets/shipping_company_picker_sheet.dart';
+import 'package:printing/features/shipping_companies/models/shipping_company.dart';
 
 /// One field of a move, drawn from the description the server sent with it.
 ///
@@ -55,8 +57,61 @@ class TransitionFieldInput extends StatelessWidget {
         chosen: value is List<CustomerDesign> ? value! as List<CustomerDesign> : const [],
         onChanged: onChanged,
       ),
+      TransitionFieldType.shippingCompany => _Carrier(
+        field: field,
+        chosen: value is ShippingCompany ? value! as ShippingCompany : null,
+        onChanged: onChanged,
+      ),
       TransitionFieldType.unknown => _Unsupported(field: field),
     };
+  }
+}
+
+/// Who takes the parcel.
+///
+/// Holds the whole company rather than its id, so the button can say the name that was picked;
+/// the cubit turns it into an id on the way out, exactly as it does for the artwork.
+class _Carrier extends StatelessWidget {
+  const _Carrier({required this.field, required this.chosen, required this.onChanged});
+
+  final TransitionField field;
+  final ShippingCompany? chosen;
+  final ValueChanged<Object?> onChanged;
+
+  Future<void> _pick(BuildContext context) async {
+    final picked = await showShippingCompanyPicker(context: context, selected: chosen);
+
+    // Null is a dismissal and changes nothing — there is no "clear" here, because a parcel
+    // that has left has a carrier.
+    if (picked != null) onChanged(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          field.isRequired ? field.label : '${field.label} (اختياري)',
+          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        if (field.hint case final hint?) ...[
+          SizedBox(height: 4.h),
+          Text(
+            hint,
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+        SizedBox(height: 10.h),
+        AppButton.tonal(
+          label: chosen?.name ?? 'اختيار شركة التوصيل',
+          icon: AppIcons.warehouse,
+          onPressed: () => _pick(context),
+        ),
+      ],
+    );
   }
 }
 

@@ -368,11 +368,14 @@ class _Actions extends StatelessWidget {
 
   /// Whether «تعديل الطلبية» has anything at all to offer this person.
   ///
-  /// Two questions, each answered by the server's own flag and this user's own grant: the lines
-  /// stay open while the press runs, the artwork does not, and an order past both — «جاهزة»
-  /// onwards — has nothing on that screen to change.
+  /// Three questions, each answered by the server's own flag and this user's own grant, and they
+  /// close at three different moments: the lines when the bags exist, the artwork when the press
+  /// starts, and the address only when somebody is already driving to it. An order in «جاهزة»
+  /// has both of the first two shut and the third wide open — which is exactly the case that
+  /// used to hide this button on a screen that had a section to offer.
   bool get _mayEditSomething =>
       (order.itemsAreEditable && sl<Session>().can(AppPermission.manageOrders)) ||
+      (order.destinationIsEditable && sl<Session>().can(AppPermission.manageOrders)) ||
       (order.designsAreEditable &&
           sl<Session>().can(AppPermission.manageOrderDesigns));
 

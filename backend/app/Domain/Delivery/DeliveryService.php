@@ -6,17 +6,24 @@ namespace App\Domain\Delivery;
 
 use App\Domain\Delivery\Actions\CreateCity;
 use App\Domain\Delivery\Actions\CreateRegion;
+use App\Domain\Delivery\Actions\CreateShippingCompany;
 use App\Domain\Delivery\Actions\DeleteCity;
 use App\Domain\Delivery\Actions\DeleteRegion;
+use App\Domain\Delivery\Actions\DeleteShippingCompany;
 use App\Domain\Delivery\Actions\UpdateCity;
 use App\Domain\Delivery\Actions\UpdateRegion;
+use App\Domain\Delivery\Actions\UpdateShippingCompany;
 use App\Domain\Delivery\DTOs\CityData;
 use App\Domain\Delivery\DTOs\RegionData;
+use App\Domain\Delivery\DTOs\ShippingCompanyData;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
+use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Delivery\Queries\CityFilters;
 use App\Domain\Delivery\Queries\CityListQuery;
 use App\Domain\Delivery\Queries\RegionListQuery;
+use App\Domain\Delivery\Queries\ShippingCompanyFilters;
+use App\Domain\Delivery\Queries\ShippingCompanyListQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
@@ -37,6 +44,10 @@ class DeliveryService
         private readonly DeleteRegion $deleteRegion,
         private readonly CityListQuery $cityListQuery,
         private readonly RegionListQuery $regionListQuery,
+        private readonly CreateShippingCompany $createShippingCompany,
+        private readonly UpdateShippingCompany $updateShippingCompany,
+        private readonly DeleteShippingCompany $deleteShippingCompany,
+        private readonly ShippingCompanyListQuery $shippingCompanyListQuery,
     ) {}
 
     /**
@@ -110,5 +121,43 @@ class DeliveryService
     public function deleteRegion(Region $region): void
     {
         ($this->deleteRegion)($region);
+    }
+
+    // ─────────────────────────── the carriers ───────────────────────────
+
+    /**
+     * @return LengthAwarePaginator<int, ShippingCompany>
+     */
+    public function paginateShippingCompanies(
+        ShippingCompanyFilters $filters,
+        int $perPage = 15,
+    ): LengthAwarePaginator {
+        return ($this->shippingCompanyListQuery)($filters, $perPage);
+    }
+
+    public function findShippingCompany(int $id): ShippingCompany
+    {
+        return ShippingCompany::query()->findOrFail($id);
+    }
+
+    public function createShippingCompany(ShippingCompanyData $data): ShippingCompany
+    {
+        return ($this->createShippingCompany)($data);
+    }
+
+    public function updateShippingCompany(
+        ShippingCompany $company,
+        ShippingCompanyData $data,
+    ): ShippingCompany {
+        return ($this->updateShippingCompany)($company, $data);
+    }
+
+    /**
+     * Removes it from the list. The orders it carried keep naming it — see
+     * {@see DeleteShippingCompany}.
+     */
+    public function deleteShippingCompany(ShippingCompany $company): void
+    {
+        ($this->deleteShippingCompany)($company);
     }
 }

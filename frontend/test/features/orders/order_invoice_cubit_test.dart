@@ -50,6 +50,11 @@ void main() {
       deliveryPrice: '20.00',
       discount: discount,
       grandTotal: '350.00',
+      // «جديدة»: the lines are open, which is what these tests are about. The screen only
+      // sends quantities when they are, so a fixture that left this false would make every
+      // assertion below vacuous.
+      itemsAreEditable: true,
+      destinationIsEditable: true,
       items: items ?? [itemWith()],
     );
   }
@@ -65,6 +70,8 @@ void main() {
         any(),
         lines: any(named: 'lines'),
         discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
       ),
     ).thenAnswer(
       (_) async => failure != null ? Left(failure) : Right(orderWith()),
@@ -200,6 +207,8 @@ void main() {
         any(),
         lines: captureAny(named: 'lines'),
         discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
       ),
     ).captured.last as List<InvoiceLineUpdate>;
 
@@ -222,6 +231,8 @@ void main() {
         any(),
         lines: captureAny(named: 'lines'),
         discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
       ),
     ).captured.last as List<InvoiceLineUpdate>;
 
@@ -243,6 +254,8 @@ void main() {
         any(),
         lines: any(named: 'lines'),
         discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
       ),
     );
   });
@@ -288,5 +301,65 @@ void main() {
     // Assert
     expect(cubit.state.isSaved, isTrue);
     expect(cubit.state.isSaving, isFalse);
+  });
+
+  // ─────────────────────── moving where the order goes ───────────────────────
+
+  test('an order past «جاهزة» saves its address without touching its lines', () async {
+    // Arrange — the lines are shut and the address is not, which is the whole case this
+    // screen was reopened for.
+    stubSave();
+    final cubit = cubitFor(
+      orderWith().copyWith(itemsAreEditable: false, destinationIsEditable: true),
+    );
+
+    // Act
+    cubit.setCity(id: 9, name: 'الزاوية');
+    await cubit.save();
+
+    // Assert — `lines` absent means "leave them alone"; sending them would be refused, and
+    // rightly, as an edit to an invoice that is already agreed.
+    final captured = verify(
+      () => repository.updateInvoice(
+        any(),
+        lines: captureAny(named: 'lines'),
+        discount: any(named: 'discount'),
+        cityId: captureAny(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+      ),
+    ).captured;
+
+    expect(captured[0], isNull);
+    expect(captured[1], 9);
+  });
+
+  test('moving to another city drops the region that belonged to the old one', () async {
+    // Arrange
+    stubSave();
+    final cubit = cubitFor(
+      orderWith().copyWith(regionId: 4, regionName: 'سوق الجمعة'),
+    );
+
+    // Act
+    cubit.setCity(id: 9, name: 'الزاوية');
+
+    // Assert — a region belongs to one city, and carrying it across would have the server
+    // refuse a field the user never touched.
+    expect(cubit.state.regionId, isNull);
+    expect(cubit.state.regionName, isNull);
+    expect(cubit.state.destination, 'الزاوية');
+  });
+
+  test('picking the city it is already in changes nothing', () async {
+    // Arrange
+    stubSave();
+    final cubit = cubitFor(orderWith().copyWith(regionId: 4, regionName: 'سوق الجمعة'));
+
+    // Act — a picker that answers with the current city is a dismissal by another name.
+    cubit.setCity(id: 3, name: 'طرابلس');
+
+    // Assert — the region survives, and nothing is marked dirty.
+    expect(cubit.state.regionId, 4);
+    expect(cubit.state.isDirty, isFalse);
   });
 }

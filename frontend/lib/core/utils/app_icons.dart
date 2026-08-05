@@ -136,6 +136,15 @@ abstract final class AppIcons {
   static IconData get openExternal =>
       _pick(Icons.open_in_new_rounded, CupertinoIcons.arrow_up_right_square);
 
+  /// Puts a copy of the file on the phone — Photos, Files, or another app.
+  ///
+  /// An arrow *down* on Android and the share glyph on iOS, and that is not inconsistency: on
+  /// iOS saving a file genuinely is the share sheet, and an iPhone owner looks for the box with
+  /// the arrow coming out of it. Naming it for what it does — [download] — lets each platform
+  /// draw the control its owner already knows.
+  static IconData get download =>
+      _pick(Icons.download_rounded, CupertinoIcons.share);
+
   /// Opens a speed dial. Not [menu], which opens the app's drawer.
   static IconData get more =>
       _pick(Icons.more_horiz_rounded, CupertinoIcons.ellipsis);
@@ -162,6 +171,15 @@ abstract final class AppIcons {
 
   static IconData get city =>
       _pick(Icons.location_city_rounded, CupertinoIcons.building_2_fill);
+
+  /// مجال العمل — the trade a customer's shop is in. A shopfront, because that is what the
+  /// field describes: the kind of place, not the place itself ([mapPin]) and not the customer
+  /// who owns it ([customers]).
+  ///
+  /// It shares iOS's office building with [city] and [officePickup], which is a duplicate on
+  /// paper and never on screen: no view draws this one beside either of those.
+  static IconData get businessField =>
+      _pick(Icons.storefront_outlined, CupertinoIcons.building_2_fill);
 
   /// A branch the customer walks into and collects from.
   ///

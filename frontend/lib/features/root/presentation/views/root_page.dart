@@ -169,6 +169,24 @@ class _RootDrawer extends StatelessWidget {
               label: 'مدن التوصيل',
               onTap: () => context.push(Routes.cities),
             ),
+            // Gated: unlike the map above, this list is not needed to fill any form in — a
+            // carrier is chosen from the dispatch screen's own picker.
+            PermissionGate(
+              permission: AppPermission.viewShippingCompanies,
+              child: _DrawerLink(
+                icon: AppIcons.warehouse,
+                label: 'شركات التوصيل',
+                onTap: () => context.push(Routes.shippingCompanies),
+              ),
+            ),
+            // Not gated: `business_fields.view` is granted to every role, because the customer
+            // form cannot be filled in without this list. The screen itself hides the controls
+            // an account without `business_fields.manage` cannot use.
+            _DrawerLink(
+              icon: AppIcons.businessField,
+              label: 'مجالات العمل',
+              onTap: () => context.push(Routes.businessFields),
+            ),
             // Gated, not greyed: a link that only ever leads to a screen this account cannot
             // read is a row to leave out, not one to explain. The route guards it again — this
             // is the courtesy, that is the boundary.

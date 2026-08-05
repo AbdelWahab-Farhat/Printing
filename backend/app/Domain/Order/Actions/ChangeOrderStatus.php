@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Actions;
 
+use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Exceptions\DesignRequiredBeforeDesigning;
@@ -31,6 +32,9 @@ final class ChangeOrderStatus
     public function __construct(
         private readonly RecordStatusTransition $record,
         private readonly AddOrderDesign $addDesign,
+        // Through the module's front door, never `ShippingCompany::query()` — the same seam
+        // every other cross-context read here goes through.
+        private readonly DeliveryService $delivery,
     ) {}
 
     /**
@@ -75,6 +79,17 @@ final class ChangeOrderStatus
 
             if ($target === OrderStatus::Cancelled) {
                 $attributes['cancellation_reason'] = $reason;
+            }
+
+            // Who took it. The name is snapshotted beside the key for the same reason the
+            // city's is: what an order says carried it is a fact about that day, and it must
+            // survive the company being renamed or removed from the list.
+            if ($target === OrderStatus::OutForDelivery && isset($fields['shipping_company_id'])) {
+                $carrier = $this->delivery->findShippingCompany((int) $fields['shipping_company_id']);
+
+                $attributes['shipping_company_id'] = $carrier->getKey();
+                $attributes['shipping_company'] = $carrier->name;
+                $attributes['courier_phone'] = $fields['courier_phone'] ?? null;
             }
 
             // Weighed on the way onto the shelf. Kept even when the order later moves on: it is

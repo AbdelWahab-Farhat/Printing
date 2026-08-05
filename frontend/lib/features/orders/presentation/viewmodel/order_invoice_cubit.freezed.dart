@@ -292,7 +292,15 @@ as String,
 /// @nodoc
 mixin _$OrderInvoiceState {
 
- int get orderId; List<InvoiceLine> get lines; String get discount; String get designFee; String get deliveryPrice; bool get isSaving; bool get isSaved; bool get isDirty; Failure? get failure;
+ int get orderId; List<InvoiceLine> get lines; String get discount; String get designFee; String get deliveryPrice;/// Where the order is going, as it stands on screen.
+///
+/// Seeded from the order's own snapshot and replaced wholesale when a city is picked — the
+/// region goes with it, because a region belongs to one city and keeping the old one would
+/// send the server a neighbourhood from somewhere else.
+ int get cityId; String get cityName; int? get regionId; String? get regionName;/// Whether the lines may be touched at all. False from «جاهزة» onwards, where this screen
+/// is open for the address alone.
+ bool get linesAreEditable;/// Whether the address may be touched. Open in every status but «جاري التوصيل».
+ bool get destinationIsEditable; bool get isSaving; bool get isSaved; bool get isDirty; Failure? get failure;
 /// Create a copy of OrderInvoiceState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -303,16 +311,16 @@ $OrderInvoiceStateCopyWith<OrderInvoiceState> get copyWith => _$OrderInvoiceStat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderInvoiceState&&(identical(other.orderId, orderId) || other.orderId == orderId)&&const DeepCollectionEquality().equals(other.lines, lines)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.isSaved, isSaved) || other.isSaved == isSaved)&&(identical(other.isDirty, isDirty) || other.isDirty == isDirty)&&(identical(other.failure, failure) || other.failure == failure));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderInvoiceState&&(identical(other.orderId, orderId) || other.orderId == orderId)&&const DeepCollectionEquality().equals(other.lines, lines)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.linesAreEditable, linesAreEditable) || other.linesAreEditable == linesAreEditable)&&(identical(other.destinationIsEditable, destinationIsEditable) || other.destinationIsEditable == destinationIsEditable)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.isSaved, isSaved) || other.isSaved == isSaved)&&(identical(other.isDirty, isDirty) || other.isDirty == isDirty)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,orderId,const DeepCollectionEquality().hash(lines),discount,designFee,deliveryPrice,isSaving,isSaved,isDirty,failure);
+int get hashCode => Object.hash(runtimeType,orderId,const DeepCollectionEquality().hash(lines),discount,designFee,deliveryPrice,cityId,cityName,regionId,regionName,linesAreEditable,destinationIsEditable,isSaving,isSaved,isDirty,failure);
 
 @override
 String toString() {
-  return 'OrderInvoiceState(orderId: $orderId, lines: $lines, discount: $discount, designFee: $designFee, deliveryPrice: $deliveryPrice, isSaving: $isSaving, isSaved: $isSaved, isDirty: $isDirty, failure: $failure)';
+  return 'OrderInvoiceState(orderId: $orderId, lines: $lines, discount: $discount, designFee: $designFee, deliveryPrice: $deliveryPrice, cityId: $cityId, cityName: $cityName, regionId: $regionId, regionName: $regionName, linesAreEditable: $linesAreEditable, destinationIsEditable: $destinationIsEditable, isSaving: $isSaving, isSaved: $isSaved, isDirty: $isDirty, failure: $failure)';
 }
 
 
@@ -323,7 +331,7 @@ abstract mixin class $OrderInvoiceStateCopyWith<$Res>  {
   factory $OrderInvoiceStateCopyWith(OrderInvoiceState value, $Res Function(OrderInvoiceState) _then) = _$OrderInvoiceStateCopyWithImpl;
 @useResult
 $Res call({
- int orderId, List<InvoiceLine> lines, String discount, String designFee, String deliveryPrice, bool isSaving, bool isSaved, bool isDirty, Failure? failure
+ int orderId, List<InvoiceLine> lines, String discount, String designFee, String deliveryPrice, int cityId, String cityName, int? regionId, String? regionName, bool linesAreEditable, bool destinationIsEditable, bool isSaving, bool isSaved, bool isDirty, Failure? failure
 });
 
 
@@ -340,14 +348,20 @@ class _$OrderInvoiceStateCopyWithImpl<$Res>
 
 /// Create a copy of OrderInvoiceState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? orderId = null,Object? lines = null,Object? discount = null,Object? designFee = null,Object? deliveryPrice = null,Object? isSaving = null,Object? isSaved = null,Object? isDirty = null,Object? failure = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? orderId = null,Object? lines = null,Object? discount = null,Object? designFee = null,Object? deliveryPrice = null,Object? cityId = null,Object? cityName = null,Object? regionId = freezed,Object? regionName = freezed,Object? linesAreEditable = null,Object? destinationIsEditable = null,Object? isSaving = null,Object? isSaved = null,Object? isDirty = null,Object? failure = freezed,}) {
   return _then(_self.copyWith(
 orderId: null == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
 as int,lines: null == lines ? _self.lines : lines // ignore: cast_nullable_to_non_nullable
 as List<InvoiceLine>,discount: null == discount ? _self.discount : discount // ignore: cast_nullable_to_non_nullable
 as String,designFee: null == designFee ? _self.designFee : designFee // ignore: cast_nullable_to_non_nullable
 as String,deliveryPrice: null == deliveryPrice ? _self.deliveryPrice : deliveryPrice // ignore: cast_nullable_to_non_nullable
-as String,isSaving: null == isSaving ? _self.isSaving : isSaving // ignore: cast_nullable_to_non_nullable
+as String,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as int,cityName: null == cityName ? _self.cityName : cityName // ignore: cast_nullable_to_non_nullable
+as String,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
+as int?,regionName: freezed == regionName ? _self.regionName : regionName // ignore: cast_nullable_to_non_nullable
+as String?,linesAreEditable: null == linesAreEditable ? _self.linesAreEditable : linesAreEditable // ignore: cast_nullable_to_non_nullable
+as bool,destinationIsEditable: null == destinationIsEditable ? _self.destinationIsEditable : destinationIsEditable // ignore: cast_nullable_to_non_nullable
+as bool,isSaving: null == isSaving ? _self.isSaving : isSaving // ignore: cast_nullable_to_non_nullable
 as bool,isSaved: null == isSaved ? _self.isSaved : isSaved // ignore: cast_nullable_to_non_nullable
 as bool,isDirty: null == isDirty ? _self.isDirty : isDirty // ignore: cast_nullable_to_non_nullable
 as bool,failure: freezed == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
@@ -448,10 +462,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int orderId,  List<InvoiceLine> lines,  String discount,  String designFee,  String deliveryPrice,  bool isSaving,  bool isSaved,  bool isDirty,  Failure? failure)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int orderId,  List<InvoiceLine> lines,  String discount,  String designFee,  String deliveryPrice,  int cityId,  String cityName,  int? regionId,  String? regionName,  bool linesAreEditable,  bool destinationIsEditable,  bool isSaving,  bool isSaved,  bool isDirty,  Failure? failure)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OrderInvoiceState() when $default != null:
-return $default(_that.orderId,_that.lines,_that.discount,_that.designFee,_that.deliveryPrice,_that.isSaving,_that.isSaved,_that.isDirty,_that.failure);case _:
+return $default(_that.orderId,_that.lines,_that.discount,_that.designFee,_that.deliveryPrice,_that.cityId,_that.cityName,_that.regionId,_that.regionName,_that.linesAreEditable,_that.destinationIsEditable,_that.isSaving,_that.isSaved,_that.isDirty,_that.failure);case _:
   return orElse();
 
 }
@@ -469,10 +483,10 @@ return $default(_that.orderId,_that.lines,_that.discount,_that.designFee,_that.d
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int orderId,  List<InvoiceLine> lines,  String discount,  String designFee,  String deliveryPrice,  bool isSaving,  bool isSaved,  bool isDirty,  Failure? failure)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int orderId,  List<InvoiceLine> lines,  String discount,  String designFee,  String deliveryPrice,  int cityId,  String cityName,  int? regionId,  String? regionName,  bool linesAreEditable,  bool destinationIsEditable,  bool isSaving,  bool isSaved,  bool isDirty,  Failure? failure)  $default,) {final _that = this;
 switch (_that) {
 case _OrderInvoiceState():
-return $default(_that.orderId,_that.lines,_that.discount,_that.designFee,_that.deliveryPrice,_that.isSaving,_that.isSaved,_that.isDirty,_that.failure);case _:
+return $default(_that.orderId,_that.lines,_that.discount,_that.designFee,_that.deliveryPrice,_that.cityId,_that.cityName,_that.regionId,_that.regionName,_that.linesAreEditable,_that.destinationIsEditable,_that.isSaving,_that.isSaved,_that.isDirty,_that.failure);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -489,10 +503,10 @@ return $default(_that.orderId,_that.lines,_that.discount,_that.designFee,_that.d
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int orderId,  List<InvoiceLine> lines,  String discount,  String designFee,  String deliveryPrice,  bool isSaving,  bool isSaved,  bool isDirty,  Failure? failure)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int orderId,  List<InvoiceLine> lines,  String discount,  String designFee,  String deliveryPrice,  int cityId,  String cityName,  int? regionId,  String? regionName,  bool linesAreEditable,  bool destinationIsEditable,  bool isSaving,  bool isSaved,  bool isDirty,  Failure? failure)?  $default,) {final _that = this;
 switch (_that) {
 case _OrderInvoiceState() when $default != null:
-return $default(_that.orderId,_that.lines,_that.discount,_that.designFee,_that.deliveryPrice,_that.isSaving,_that.isSaved,_that.isDirty,_that.failure);case _:
+return $default(_that.orderId,_that.lines,_that.discount,_that.designFee,_that.deliveryPrice,_that.cityId,_that.cityName,_that.regionId,_that.regionName,_that.linesAreEditable,_that.destinationIsEditable,_that.isSaving,_that.isSaved,_that.isDirty,_that.failure);case _:
   return null;
 
 }
@@ -504,7 +518,7 @@ return $default(_that.orderId,_that.lines,_that.discount,_that.designFee,_that.d
 
 
 class _OrderInvoiceState extends OrderInvoiceState {
-  const _OrderInvoiceState({required this.orderId, required final  List<InvoiceLine> lines, required this.discount, required this.designFee, required this.deliveryPrice, this.isSaving = false, this.isSaved = false, this.isDirty = false, this.failure}): _lines = lines,super._();
+  const _OrderInvoiceState({required this.orderId, required final  List<InvoiceLine> lines, required this.discount, required this.designFee, required this.deliveryPrice, required this.cityId, required this.cityName, this.regionId, this.regionName, this.linesAreEditable = false, this.destinationIsEditable = false, this.isSaving = false, this.isSaved = false, this.isDirty = false, this.failure}): _lines = lines,super._();
   
 
 @override final  int orderId;
@@ -518,6 +532,20 @@ class _OrderInvoiceState extends OrderInvoiceState {
 @override final  String discount;
 @override final  String designFee;
 @override final  String deliveryPrice;
+/// Where the order is going, as it stands on screen.
+///
+/// Seeded from the order's own snapshot and replaced wholesale when a city is picked — the
+/// region goes with it, because a region belongs to one city and keeping the old one would
+/// send the server a neighbourhood from somewhere else.
+@override final  int cityId;
+@override final  String cityName;
+@override final  int? regionId;
+@override final  String? regionName;
+/// Whether the lines may be touched at all. False from «جاهزة» onwards, where this screen
+/// is open for the address alone.
+@override@JsonKey() final  bool linesAreEditable;
+/// Whether the address may be touched. Open in every status but «جاري التوصيل».
+@override@JsonKey() final  bool destinationIsEditable;
 @override@JsonKey() final  bool isSaving;
 @override@JsonKey() final  bool isSaved;
 @override@JsonKey() final  bool isDirty;
@@ -533,16 +561,16 @@ _$OrderInvoiceStateCopyWith<_OrderInvoiceState> get copyWith => __$OrderInvoiceS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderInvoiceState&&(identical(other.orderId, orderId) || other.orderId == orderId)&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.isSaved, isSaved) || other.isSaved == isSaved)&&(identical(other.isDirty, isDirty) || other.isDirty == isDirty)&&(identical(other.failure, failure) || other.failure == failure));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderInvoiceState&&(identical(other.orderId, orderId) || other.orderId == orderId)&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.linesAreEditable, linesAreEditable) || other.linesAreEditable == linesAreEditable)&&(identical(other.destinationIsEditable, destinationIsEditable) || other.destinationIsEditable == destinationIsEditable)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.isSaved, isSaved) || other.isSaved == isSaved)&&(identical(other.isDirty, isDirty) || other.isDirty == isDirty)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,orderId,const DeepCollectionEquality().hash(_lines),discount,designFee,deliveryPrice,isSaving,isSaved,isDirty,failure);
+int get hashCode => Object.hash(runtimeType,orderId,const DeepCollectionEquality().hash(_lines),discount,designFee,deliveryPrice,cityId,cityName,regionId,regionName,linesAreEditable,destinationIsEditable,isSaving,isSaved,isDirty,failure);
 
 @override
 String toString() {
-  return 'OrderInvoiceState(orderId: $orderId, lines: $lines, discount: $discount, designFee: $designFee, deliveryPrice: $deliveryPrice, isSaving: $isSaving, isSaved: $isSaved, isDirty: $isDirty, failure: $failure)';
+  return 'OrderInvoiceState(orderId: $orderId, lines: $lines, discount: $discount, designFee: $designFee, deliveryPrice: $deliveryPrice, cityId: $cityId, cityName: $cityName, regionId: $regionId, regionName: $regionName, linesAreEditable: $linesAreEditable, destinationIsEditable: $destinationIsEditable, isSaving: $isSaving, isSaved: $isSaved, isDirty: $isDirty, failure: $failure)';
 }
 
 
@@ -553,7 +581,7 @@ abstract mixin class _$OrderInvoiceStateCopyWith<$Res> implements $OrderInvoiceS
   factory _$OrderInvoiceStateCopyWith(_OrderInvoiceState value, $Res Function(_OrderInvoiceState) _then) = __$OrderInvoiceStateCopyWithImpl;
 @override @useResult
 $Res call({
- int orderId, List<InvoiceLine> lines, String discount, String designFee, String deliveryPrice, bool isSaving, bool isSaved, bool isDirty, Failure? failure
+ int orderId, List<InvoiceLine> lines, String discount, String designFee, String deliveryPrice, int cityId, String cityName, int? regionId, String? regionName, bool linesAreEditable, bool destinationIsEditable, bool isSaving, bool isSaved, bool isDirty, Failure? failure
 });
 
 
@@ -570,14 +598,20 @@ class __$OrderInvoiceStateCopyWithImpl<$Res>
 
 /// Create a copy of OrderInvoiceState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? orderId = null,Object? lines = null,Object? discount = null,Object? designFee = null,Object? deliveryPrice = null,Object? isSaving = null,Object? isSaved = null,Object? isDirty = null,Object? failure = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? orderId = null,Object? lines = null,Object? discount = null,Object? designFee = null,Object? deliveryPrice = null,Object? cityId = null,Object? cityName = null,Object? regionId = freezed,Object? regionName = freezed,Object? linesAreEditable = null,Object? destinationIsEditable = null,Object? isSaving = null,Object? isSaved = null,Object? isDirty = null,Object? failure = freezed,}) {
   return _then(_OrderInvoiceState(
 orderId: null == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
 as int,lines: null == lines ? _self._lines : lines // ignore: cast_nullable_to_non_nullable
 as List<InvoiceLine>,discount: null == discount ? _self.discount : discount // ignore: cast_nullable_to_non_nullable
 as String,designFee: null == designFee ? _self.designFee : designFee // ignore: cast_nullable_to_non_nullable
 as String,deliveryPrice: null == deliveryPrice ? _self.deliveryPrice : deliveryPrice // ignore: cast_nullable_to_non_nullable
-as String,isSaving: null == isSaving ? _self.isSaving : isSaving // ignore: cast_nullable_to_non_nullable
+as String,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as int,cityName: null == cityName ? _self.cityName : cityName // ignore: cast_nullable_to_non_nullable
+as String,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
+as int?,regionName: freezed == regionName ? _self.regionName : regionName // ignore: cast_nullable_to_non_nullable
+as String?,linesAreEditable: null == linesAreEditable ? _self.linesAreEditable : linesAreEditable // ignore: cast_nullable_to_non_nullable
+as bool,destinationIsEditable: null == destinationIsEditable ? _self.destinationIsEditable : destinationIsEditable // ignore: cast_nullable_to_non_nullable
+as bool,isSaving: null == isSaving ? _self.isSaving : isSaving // ignore: cast_nullable_to_non_nullable
 as bool,isSaved: null == isSaved ? _self.isSaved : isSaved // ignore: cast_nullable_to_non_nullable
 as bool,isDirty: null == isDirty ? _self.isDirty : isDirty // ignore: cast_nullable_to_non_nullable
 as bool,failure: freezed == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
