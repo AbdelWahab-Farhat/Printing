@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:printing/core/di/injector.dart';
+import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/router/app_router.dart';
+import 'package:printing/core/session/session.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/features/home/presentation/viewmodel/home_cubit.dart';
@@ -128,11 +130,15 @@ class _HomeView extends StatelessWidget {
         icon: AppIcons.addCustomer,
         onTap: () => context.push(Routes.addCustomer),
       ),
-      QuickAction(
-        label: 'المخزن',
-        icon: AppIcons.warehouse,
-        onTap: () => context.push(Routes.warehouse),
-      ),
+      // Left out entirely without `inventory.view`: the route redirects home, and a shortcut
+      // that bounces the user back where they were reads as a broken button rather than as a
+      // permission they do not hold.
+      if (sl<Session>().can(AppPermission.viewInventory))
+        QuickAction(
+          label: 'المخزن',
+          icon: AppIcons.warehouse,
+          onTap: () => context.push(Routes.warehouse),
+        ),
     ];
   }
 }

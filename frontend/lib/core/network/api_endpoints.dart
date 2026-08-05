@@ -67,6 +67,30 @@ abstract final class BusinessFieldEndpoints {
   static String activation(int fieldId) => '/business-fields/$fieldId/activation';
 }
 
+/// المخازن — where stock sits, what sits on each shelf, and the ledger that explains it.
+abstract final class WarehouseEndpoints {
+  static const String index = '/warehouses';
+
+  static String show(int warehouseId) => '/warehouses/$warehouseId';
+
+  static String stocks(int warehouseId) => '/warehouses/$warehouseId/stocks';
+
+  /// The one thing a balance line accepts a write for. The quantity never is: it moves because
+  /// a movement below explains it.
+  static String stockThreshold(int warehouseId, int stockId) =>
+      '/warehouses/$warehouseId/stocks/$stockId/threshold';
+}
+
+/// The ledger. One feed to read, and an endpoint per *kind* of write — an arrival has no
+/// source, a transfer has both ends, an adjustment has a direction instead of either.
+abstract final class StockMovementEndpoints {
+  static const String index = '/stock-movements';
+
+  static const String arrivals = '/stock-movements/arrivals';
+  static const String transfers = '/stock-movements/transfers';
+  static const String adjustments = '/stock-movements/adjustments';
+}
+
 abstract final class ProductEndpoints {
   static const String index = '/products';
 

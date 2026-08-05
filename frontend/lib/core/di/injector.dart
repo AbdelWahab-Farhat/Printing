@@ -111,6 +111,20 @@ import 'package:printing/features/shipping_companies/repositories/shipping_compa
 import 'package:printing/features/shipping_companies/usecases/get_shipping_companies.dart';
 import 'package:printing/features/shipping_companies/usecases/save_shipping_company.dart';
 import 'package:printing/features/splash/presentation/viewmodel/splash_cubit.dart';
+import 'package:printing/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
+import 'package:printing/features/warehouses/presentation/viewmodel/save_warehouse_cubit.dart';
+import 'package:printing/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
+import 'package:printing/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
+import 'package:printing/features/warehouses/presentation/viewmodel/warehouses_cubit.dart';
+import 'package:printing/features/warehouses/repositories/warehouse_repository.dart';
+import 'package:printing/features/warehouses/repositories/warehouse_repository_impl.dart';
+import 'package:printing/features/warehouses/usecases/delete_warehouse.dart';
+import 'package:printing/features/warehouses/usecases/get_stock_movements.dart';
+import 'package:printing/features/warehouses/usecases/get_warehouse_stocks.dart';
+import 'package:printing/features/warehouses/usecases/get_warehouses.dart';
+import 'package:printing/features/warehouses/usecases/record_stock_movement.dart';
+import 'package:printing/features/warehouses/usecases/save_warehouse.dart';
+import 'package:printing/features/warehouses/usecases/set_low_stock_threshold.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt sl = GetIt.instance;
@@ -192,6 +206,7 @@ abstract final class Injector {
     _registerProducts();
     _registerCities();
     _registerBusinessFields();
+    _registerWarehouses();
     _registerShippingCompanies();
     _registerCustomers();
     _registerSettings();
@@ -508,6 +523,64 @@ abstract final class Injector {
       )
       ..registerFactory<SaveBusinessFieldCubit>(
         () => SaveBusinessFieldCubit(saveBusinessField: sl<SaveBusinessField>()),
+      );
+  }
+
+  /// المخزن — the places, the shelves and the ledger.
+  ///
+  /// One repository for all three, because they are one context: a balance only ever changes
+  /// through a movement, and a screen that showed one without the other would be showing half
+  /// an answer.
+  static void _registerWarehouses() {
+    sl
+      ..registerLazySingleton<WarehouseRepository>(
+        () => WarehouseRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetWarehouses>(() => GetWarehouses(sl<WarehouseRepository>()))
+      ..registerLazySingleton<SaveWarehouse>(() => SaveWarehouse(sl<WarehouseRepository>()))
+      ..registerLazySingleton<DeleteWarehouse>(
+        () => DeleteWarehouse(sl<WarehouseRepository>()),
+      )
+      ..registerLazySingleton<GetWarehouseStocks>(
+        () => GetWarehouseStocks(sl<WarehouseRepository>()),
+      )
+      ..registerLazySingleton<SetLowStockThreshold>(
+        () => SetLowStockThreshold(sl<WarehouseRepository>()),
+      )
+      ..registerLazySingleton<GetStockMovements>(
+        () => GetStockMovements(sl<WarehouseRepository>()),
+      )
+      ..registerLazySingleton<RecordStockMovement>(
+        () => RecordStockMovement(sl<WarehouseRepository>()),
+      )
+      // Factories: each list screen owns its Cubit and closes it on dispose.
+      ..registerFactory<WarehousesCubit>(
+        () => WarehousesCubit(
+          getWarehouses: sl<GetWarehouses>(),
+          deleteWarehouse: sl<DeleteWarehouse>(),
+        ),
+      )
+      // Parameterised: the shelves screen is *about* one warehouse, so the id is a construction
+      // argument rather than something the Cubit is told afterwards.
+      ..registerFactoryParam<WarehouseStocksCubit, int, void>(
+        (warehouseId, _) => WarehouseStocksCubit(
+          warehouseId: warehouseId,
+          getStocks: sl<GetWarehouseStocks>(),
+          setThreshold: sl<SetLowStockThreshold>(),
+        ),
+      )
+      // Nullable param: the ledger is either about one place or about all of them.
+      ..registerFactoryParam<StockMovementsCubit, int?, void>(
+        (warehouseId, _) => StockMovementsCubit(
+          getMovements: sl<GetStockMovements>(),
+          warehouseId: warehouseId,
+        ),
+      )
+      ..registerFactory<SaveWarehouseCubit>(
+        () => SaveWarehouseCubit(saveWarehouse: sl<SaveWarehouse>()),
+      )
+      ..registerFactory<RecordMovementCubit>(
+        () => RecordMovementCubit(recordMovement: sl<RecordStockMovement>()),
       );
   }
 

@@ -5,7 +5,6 @@ import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/session/session.dart';
 import 'package:printing/core/storage/token_storage.dart';
-import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/features/access/models/role.dart';
 import 'package:printing/features/access/presentation/views/add_employee_page.dart';
 import 'package:printing/features/access/presentation/views/employees_page.dart';
@@ -41,6 +40,10 @@ import 'package:printing/features/shipping_companies/models/shipping_company.dar
 import 'package:printing/features/shipping_companies/presentation/views/shipping_companies_page.dart';
 import 'package:printing/features/shipping_companies/presentation/views/shipping_company_form_page.dart';
 import 'package:printing/features/splash/presentation/views/splash_page.dart';
+import 'package:printing/features/warehouses/models/warehouse.dart';
+import 'package:printing/features/warehouses/presentation/views/stock_movements_page.dart';
+import 'package:printing/features/warehouses/presentation/views/warehouse_stocks_page.dart';
+import 'package:printing/features/warehouses/presentation/views/warehouses_page.dart';
 
 /// Route names, as constants.
 ///
@@ -64,6 +67,18 @@ abstract final class Routes {
   /// Reached from the drawer and from the home screen's shortcuts. Outside the shell, so the
   /// bottom bar never claims the user is on a tab they have left.
   static const String warehouse = '/warehouse';
+
+  /// The shelves of one warehouse, and the ledger narrowed to it. Declared as children of
+  /// `/warehouse`, because that is what they are: a balance has no life outside its place.
+  static String warehouseStocks(int warehouseId) => '/warehouse/$warehouseId/stocks';
+
+  static String warehouseMovements(int warehouseId) => '/warehouse/$warehouseId/movements';
+
+  static const String warehouseStocksPath = ':id/stocks';
+  static const String warehouseMovementsPath = ':id/movements';
+
+  /// Every movement in the workshop, whatever the place.
+  static const String stockMovements = '/stock-movements';
   static const String cities = '/cities';
 
   /// مجالات العمل — the trades a customer's shop can be in.
@@ -226,12 +241,46 @@ abstract final class AppRouter {
 
       // Outside the shell on purpose: these are reached from the drawer and cover the tabs, so
       // the bottom bar does not claim the user is still on a tab they have left.
+      // Guarded like every other screen whose every request would answer 403 without the
+      // permission: `can()` answers synchronously, so a deep link cannot open it either.
       GoRoute(
         path: Routes.warehouse,
-        builder: (context, state) => Scaffold(
-          appBar: AppBar(title: const Text('المخزن')),
-          body: ComingSoonPage(title: 'المخزن', icon: AppIcons.warehouse),
-        ),
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewInventory) ? null : Routes.home,
+        builder: (context, state) => const WarehousesPage(),
+        routes: [
+          GoRoute(
+            path: Routes.warehouseStocksPath,
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+              // A deep link is somebody else's text; `extra` is ours and is absent on one. The
+              // screen copes with a missing warehouse — it cannot cope with a missing id.
+              return id == null
+                  ? const _UnknownWarehouse()
+                  : WarehouseStocksPage(
+                      warehouseId: id,
+                      warehouse: state.extra as Warehouse?,
+                    );
+            },
+          ),
+          GoRoute(
+            path: Routes.warehouseMovementsPath,
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+              return id == null
+                  ? const _UnknownWarehouse()
+                  : StockMovementsPage(warehouseId: id, warehouseName: state.extra as String?);
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: Routes.stockMovements,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewInventory) ? null : Routes.home,
+        builder: (context, state) => const StockMovementsPage(),
       ),
       // Declared **before** `/orders/:id`, or go_router reads the literal word «filter» as an
       // id and `int.parse` throws — the same trap `/products/new` sits beside.
@@ -506,6 +555,19 @@ class _UnknownCity extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('المناطق')),
       body: const Center(child: Text('رقم المدينة غير صحيح')),
+    );
+  }
+}
+
+/// A `/warehouse/<something that is not a number>/…` link.
+class _UnknownWarehouse extends StatelessWidget {
+  const _UnknownWarehouse();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('المخزن')),
+      body: const Center(child: Text('رقم المخزن غير صحيح')),
     );
   }
 }

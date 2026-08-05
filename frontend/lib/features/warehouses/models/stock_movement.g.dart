@@ -1,0 +1,91 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'stock_movement.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_StockMovement _$StockMovementFromJson(
+  Map<String, dynamic> json,
+) => _StockMovement(
+  id: (json['id'] as num).toInt(),
+  movementType: $enumDecode(
+    _$MovementTypeEnumMap,
+    json['movement_type'],
+    unknownValue: MovementType.unknown,
+  ),
+  movementTypeLabel: json['movement_type_label'] as String,
+  quantity: json['quantity'] as String,
+  productVariantId: (json['product_variant_id'] as num).toInt(),
+  variant: json['product_variant'] == null
+      ? null
+      : StockVariant.fromJson(json['product_variant'] as Map<String, dynamic>),
+  fromWarehouseId: (json['from_warehouse_id'] as num?)?.toInt(),
+  fromWarehouse: json['from_warehouse'] == null
+      ? null
+      : MovementPlace.fromJson(json['from_warehouse'] as Map<String, dynamic>),
+  toWarehouseId: (json['to_warehouse_id'] as num?)?.toInt(),
+  toWarehouse: json['to_warehouse'] == null
+      ? null
+      : MovementPlace.fromJson(json['to_warehouse'] as Map<String, dynamic>),
+  referenceId: (json['reference_id'] as num?)?.toInt(),
+  employeeId: (json['employee_id'] as num?)?.toInt(),
+  employee: json['employee'] == null
+      ? null
+      : MovementActor.fromJson(json['employee'] as Map<String, dynamic>),
+  notes: json['notes'] as String?,
+  createdAt: json['created_at'] == null
+      ? null
+      : DateTime.parse(json['created_at'] as String),
+);
+
+Map<String, dynamic> _$StockMovementToJson(_StockMovement instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'movement_type': _$MovementTypeEnumMap[instance.movementType]!,
+      'movement_type_label': instance.movementTypeLabel,
+      'quantity': instance.quantity,
+      'product_variant_id': instance.productVariantId,
+      'product_variant': instance.variant?.toJson(),
+      'from_warehouse_id': instance.fromWarehouseId,
+      'from_warehouse': instance.fromWarehouse?.toJson(),
+      'to_warehouse_id': instance.toWarehouseId,
+      'to_warehouse': instance.toWarehouse?.toJson(),
+      'reference_id': instance.referenceId,
+      'employee_id': instance.employeeId,
+      'employee': instance.employee?.toJson(),
+      'notes': instance.notes,
+      'created_at': instance.createdAt?.toIso8601String(),
+    };
+
+const _$MovementTypeEnumMap = {
+  MovementType.purchaseArrival: 'purchase_arrival',
+  MovementType.internalTransfer: 'internal_transfer',
+  MovementType.orderFulfillment: 'order_fulfillment',
+  MovementType.adjustment: 'adjustment',
+  MovementType.unknown: 'unknown',
+};
+
+_MovementPlace _$MovementPlaceFromJson(Map<String, dynamic> json) =>
+    _MovementPlace(
+      id: (json['id'] as num).toInt(),
+      name: json['name'] as String,
+    );
+
+Map<String, dynamic> _$MovementPlaceToJson(_MovementPlace instance) =>
+    <String, dynamic>{'id': instance.id, 'name': instance.name};
+
+_MovementActor _$MovementActorFromJson(Map<String, dynamic> json) =>
+    _MovementActor(
+      id: (json['id'] as num).toInt(),
+      name: json['name'] as String,
+      employeeCode: json['employee_code'] as String?,
+    );
+
+Map<String, dynamic> _$MovementActorToJson(_MovementActor instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'employee_code': instance.employeeCode,
+    };

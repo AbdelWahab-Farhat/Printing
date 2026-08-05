@@ -159,10 +159,16 @@ class _RootDrawer extends StatelessWidget {
               ),
             ),
             const Divider(height: 1),
-            _DrawerLink(
-              icon: AppIcons.warehouse,
-              label: 'المخزن',
-              onTap: () => context.push(Routes.warehouse),
+            // Gated, not greyed: a link that only ever leads to a screen this account cannot
+            // read is a row to leave out. The route guards it again — this is the courtesy,
+            // that is the boundary.
+            PermissionGate(
+              permission: AppPermission.viewInventory,
+              child: _DrawerLink(
+                icon: AppIcons.warehouse,
+                label: 'المخزن',
+                onTap: () => context.push(Routes.warehouse),
+              ),
             ),
             _DrawerLink(
               icon: AppIcons.city,
