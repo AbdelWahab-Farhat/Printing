@@ -49,6 +49,10 @@ class RoleSeeder extends Seeder
             // Needed to take an order at all — the city and region lists are what an address is
             // chosen from. Curating that map is a separate, rarer job.
             PermissionName::ViewDeliveryLocations->value,
+            // Reading stock, not moving it: someone taking an order needs to know whether the
+            // size is on the shelf. Recording a transfer or a stocktake is the storekeeper's
+            // job, and `inventory.manage` is what the business grants when it decides who that is.
+            PermissionName::ViewInventory->value,
         ]);
 
         // «محاسب» is left deliberately empty — it is the worked example of a role waiting for

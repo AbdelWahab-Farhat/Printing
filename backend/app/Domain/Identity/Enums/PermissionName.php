@@ -73,6 +73,13 @@ enum PermissionName: string
     case ResendOrders = 'orders.status.resend';
     case CancelOrders = 'orders.status.cancelled';
 
+    // Stock. One pair covers warehouses, balances and the ledger: whoever may move stock between
+    // two warehouses is necessarily administering both, so splitting them would produce a
+    // permission that cannot usefully be granted alone. Reading is separate because taking an
+    // order needs to know whether stock exists, while moving it is the storekeeper's job.
+    case ViewInventory = 'inventory.view';
+    case ManageInventory = 'inventory.manage';
+
     // The audit trail. One permission, not a pair: nothing writes to it by hand, so there is
     // nothing to manage — and reading it is its own decision, because it exposes every change
     // anyone has made to records the reader may not otherwise be allowed to see.
@@ -110,6 +117,9 @@ enum PermissionName: string
             self::RecordOfficeReturn => 'تسجيل راجع مكتب',
             self::ResendOrders => 'إعادة إرسال طلبية راجعة',
             self::CancelOrders => 'إلغاء الطلبية',
+
+            self::ViewInventory => 'عرض المخازن والأرصدة والحركات',
+            self::ManageInventory => 'إدارة المخازن وتسجيل حركات المخزون',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
         };
     }
@@ -133,6 +143,8 @@ enum PermissionName: string
             self::SettleOrders, self::RecordCourierReturn, self::RecordCarrierReturn,
             self::RecordOfficeReturn, self::ResendOrders,
             self::CancelOrders => 'حالات الطلبيات',
+
+            self::ViewInventory, self::ManageInventory => 'المخازن والمخزون',
             self::ViewActivityLogs => 'سجل النشاطات',
         };
     }

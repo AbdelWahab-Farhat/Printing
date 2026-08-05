@@ -9,8 +9,10 @@ use App\Domain\Catalog\Actions\QuoteProductPrice;
 use App\Domain\Catalog\Actions\UpdateProduct;
 use App\Domain\Catalog\DTOs\PriceQuote;
 use App\Domain\Catalog\DTOs\ProductData;
+use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Catalog\Queries\FindProductVariant;
 use App\Domain\Catalog\Queries\ProductFilters;
 use App\Domain\Catalog\Queries\ProductListQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -21,6 +23,12 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
  * When Orders arrive they price a line by calling `quote()` here — never by reading price tiers
  * themselves. That is what guarantees the number a customer was shown and the number written to
  * their order are produced by the same code.
+ *
+ * Inventory asks the same way: a stock movement resolves the size it names through
+ * `findVariant()` and asks `requiresWholeQuantities()` whether a fraction of it is meaningful,
+ * rather than reading `products.pricing_unit` itself. Same reason — the rule that stops an order
+ * for half a bag and the rule that stops half a bag being moved between warehouses have to be
+ * one rule, or they will eventually disagree.
  */
 class CatalogService
 {
@@ -29,6 +37,7 @@ class CatalogService
         private readonly UpdateProduct $updateProduct,
         private readonly QuoteProductPrice $quoteProductPrice,
         private readonly ProductListQuery $listQuery,
+        private readonly FindProductVariant $findProductVariant,
     ) {}
 
     /**
@@ -74,5 +83,30 @@ class CatalogService
     public function quote(Product $product, ProductVariant $variant, string $quantity): PriceQuote
     {
         return ($this->quoteProductPrice)($product, $variant, $quantity);
+    }
+
+    /**
+     * One size, by id, with its product loaded. 404s on its own if there is no such size.
+     *
+     * The seam another context reaches a variant through — it never queries
+     * {@see ProductVariant} itself.
+     */
+    public function findVariant(int $variantId): ProductVariant
+    {
+        return ($this->findProductVariant)($variantId);
+    }
+
+    /**
+     * Whether a fraction of this size means anything.
+     *
+     * Pieces are countable, so half a shipping bag is a typo; a per-kilo product's quantity is a
+     * weight and fractions are the normal case. The rule itself lives on
+     * {@see PricingUnit}, next to the two cases it distinguishes —
+     * this only carries it across the context boundary so a caller does not have to walk into
+     * the product to find it.
+     */
+    public function requiresWholeQuantities(ProductVariant $variant): bool
+    {
+        return $variant->loadMissing('product')->product->pricing_unit->requiresWholeQuantities();
     }
 }

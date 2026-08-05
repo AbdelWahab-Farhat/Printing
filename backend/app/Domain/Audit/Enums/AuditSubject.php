@@ -17,6 +17,9 @@ use App\Domain\Delivery\Models\Region;
 use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\StockMovement;
+use App\Domain\Inventory\Models\Warehouse;
+use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
 use App\Domain\Order\Models\OrderItem;
@@ -71,6 +74,11 @@ enum AuditSubject: string
     case Region = 'region';
     case ShippingCompany = 'shipping_company';
 
+    // Inventory
+    case Warehouse = 'warehouse';
+    case WarehouseStock = 'warehouse_stock';
+    case StockMovement = 'stock_movement';
+
     /**
      * @return class-string<Model>
      */
@@ -94,6 +102,9 @@ enum AuditSubject: string
             self::City => City::class,
             self::Region => Region::class,
             self::ShippingCompany => ShippingCompany::class,
+            self::Warehouse => Warehouse::class,
+            self::WarehouseStock => WarehouseStock::class,
+            self::StockMovement => StockMovement::class,
         };
     }
 
@@ -120,6 +131,9 @@ enum AuditSubject: string
             self::City => 'مدينة',
             self::Region => 'منطقة',
             self::ShippingCompany => 'شركة توصيل',
+            self::Warehouse => 'مخزن',
+            self::WarehouseStock => 'رصيد مخزني',
+            self::StockMovement => 'حركة مخزنية',
         };
     }
 

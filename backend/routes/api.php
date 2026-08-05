@@ -15,7 +15,10 @@ use App\Application\Api\V1\Controllers\ProductImageController;
 use App\Application\Api\V1\Controllers\RegionController;
 use App\Application\Api\V1\Controllers\RoleController;
 use App\Application\Api\V1\Controllers\ShippingCompanyController;
+use App\Application\Api\V1\Controllers\StockMovementController;
 use App\Application\Api\V1\Controllers\UserController;
+use App\Application\Api\V1\Controllers\WarehouseController;
+use App\Application\Api\V1\Controllers\WarehouseStockController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -240,6 +243,48 @@ Route::prefix('v1')->group(function (): void {
             ->middleware('can:cities.manage')
             ->scoped();
 
+        // ── inventory ───────────────────────────────────────────────────────────────────
+        // One pair of permissions covers warehouses, balances and the ledger. Splitting them
+        // would produce guards that cannot usefully be granted alone: whoever may transfer
+        // stock between two warehouses is administering both of them.
+        Route::apiResource('warehouses', WarehouseController::class)
+            ->only(['index', 'show'])
+            ->middleware('can:inventory.view');
+
+        Route::apiResource('warehouses', WarehouseController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->middleware('can:inventory.manage');
+
+        // A balance line has no life outside its warehouse, so `scoped()` resolves {stock}
+        // *within* {warehouse} — another warehouse's line id is a 404 by construction, the
+        // same shape products.images and cities.regions already use.
+        //
+        // Read-only apart from the alert threshold, and that is the point of the whole context:
+        // a quantity is never written by a request. It moves because a movement below explains
+        // it, in the same transaction. There is deliberately no PUT on a stock line.
+        Route::get('warehouses/{warehouse}/stocks', [WarehouseStockController::class, 'index'])
+            ->middleware('can:inventory.view')->name('warehouses.stocks.index');
+
+        Route::patch('warehouses/{warehouse}/stocks/{stock}/threshold', [WarehouseStockController::class, 'setThreshold'])
+            ->scopeBindings()
+            ->middleware('can:inventory.manage')->name('warehouses.stocks.threshold');
+
+        // The ledger. One feed to read, four ways to write to it — an arrival has no source, a
+        // fulfillment has no destination, an adjustment has a direction instead of either, so
+        // each is its own endpoint with its own body rather than one route carrying a type
+        // discriminator and four optional fields.
+        Route::get('stock-movements', [StockMovementController::class, 'index'])
+            ->middleware('can:inventory.view')->name('stock-movements.index');
+
+        Route::prefix('stock-movements')->name('stock-movements.')
+            ->middleware('can:inventory.manage')
+            ->group(function (): void {
+                Route::post('arrivals', [StockMovementController::class, 'arrivals'])->name('arrivals');
+                Route::post('transfers', [StockMovementController::class, 'transfers'])->name('transfers');
+                Route::post('fulfillments', [StockMovementController::class, 'fulfillments'])->name('fulfillments');
+                Route::post('adjustments', [StockMovementController::class, 'adjustments'])->name('adjustments');
+            });
+
         // ── audit trail ─────────────────────────────────────────────────────────────────
         // Every record's history hangs off the record itself, so `{product}` resolves, 404s
         // and — where a resource is scoped — nests exactly as it does on the endpoint beside
@@ -264,6 +309,11 @@ Route::prefix('v1')->group(function (): void {
             Route::get('orders/{order}/logs', [OrderController::class, 'logs'])->name('orders.logs');
             Route::get('shipping-companies/{shippingCompany}/logs', [ShippingCompanyController::class, 'logs'])
                 ->name('shipping-companies.logs');
+
+            // The warehouse and the alert thresholds set on its shelves. Not the movements —
+            // those are a ledger rather than a change log, and `/stock-movements?warehouse_id=`
+            // is the reader built for them.
+            Route::get('warehouses/{warehouse}/logs', [WarehouseController::class, 'logs'])->name('warehouses.logs');
 
             // Scoped like the rest of the nested region routes: another city's region id is a
             // 404 here too, not a history leaked from the wrong place.

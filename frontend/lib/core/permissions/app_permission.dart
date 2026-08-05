@@ -57,6 +57,13 @@ enum AppPermission {
   viewShippingCompanies('shipping_companies.view', 'عرض شركات التوصيل'),
   manageShippingCompanies('shipping_companies.manage', 'إضافة وتعديل شركات التوصيل'),
 
+  // Stock. One pair covers warehouses, balances and the ledger, exactly as on the backend:
+  // whoever may move stock between two warehouses is administering both. Declared here before
+  // any screen reads them, because this enum is the contract with `PermissionName.php` — a case
+  // missing on one side is what `permission_contract_test.dart` fails the build for.
+  viewInventory('inventory.view', 'عرض المخازن والأرصدة والحركات'),
+  manageInventory('inventory.manage', 'إدارة المخازن وتسجيل حركات المخزون'),
+
   // Orders. One permission per status the workflow can move *into*, so the business composes
   // a designer, a printer and a delivery coordinator out of this list without any of those
   // jobs being named in code. The two dispatch statuses share one permission on purpose; the
