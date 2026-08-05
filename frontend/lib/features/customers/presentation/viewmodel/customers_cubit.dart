@@ -17,10 +17,7 @@ class CustomersCubit extends PagedCubit<Customer> {
   final GetCustomers _getCustomers;
 
   @override
-  Future<Either<Failure, Paginated<Customer>>> fetchPage({
-    String? search,
-    required int page,
-  }) {
+  Future<Either<Failure, Paginated<Customer>>> fetchPage({String? search, required int page}) {
     return _getCustomers(search: search, page: page);
   }
 }

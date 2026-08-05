@@ -26,6 +26,25 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!--
+		Why this app asks for the camera and the photo library, in the words iOS shows the user
+		in the permission alert.
+
+		In Arabic, and deliberately: this app has one language and its users are the staff of a
+		printing business in Libya. An English sentence in the one system alert they cannot skip
+		would be the only English they ever see.
+
+		Each names what the app does with it rather than what it wants. Apple rejects a build
+		whose purpose string is vague, and a person reading «يحتاج التطبيق إلى الكاميرا» has been
+		told nothing they did not already infer from being asked.
+
+		No NSMicrophoneUsageDescription: nothing here records video, and a permission string for
+		a capability the app never uses is one more thing to justify at review.
+	-->
+	<key>NSCameraUsageDescription</key>
+	<string>لتصوير تصميم أو عيّنة مطبوعة وإضافتها مباشرةً إلى تصاميم العميل.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>لاختيار تصاميم العميل من صورك — كالتي تصلك عبر واتساب — ورفعها إلى ملفه.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Identity;
 
+use App\Domain\Identity\Actions\CreateEmployee;
 use App\Domain\Identity\Actions\CreateRole;
 use App\Domain\Identity\Actions\DeleteRole;
 use App\Domain\Identity\Actions\UpdateRole;
@@ -23,7 +24,23 @@ class AccessService
         private readonly CreateRole $createRole,
         private readonly UpdateRole $updateRole,
         private readonly DeleteRole $deleteRole,
+        private readonly CreateEmployee $createEmployee,
     ) {}
+
+    /**
+     * Creates a staff account with the roles it starts with.
+     *
+     * @param  list<string>  $roleNames
+     */
+    public function createUser(
+        string $name,
+        string $email,
+        string $phone,
+        string $password,
+        array $roleNames = [],
+    ): User {
+        return ($this->createEmployee)($name, $email, $phone, $password, $roleNames);
+    }
 
     /**
      * @return Collection<int, Role>

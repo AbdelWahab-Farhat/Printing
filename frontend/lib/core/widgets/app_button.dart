@@ -312,15 +312,27 @@ class _AppButtonState extends State<AppButton> with TickerProviderStateMixin {
   Widget _buildContent(_Palette palette, bool hasMotion) {
     return AnimatedBuilder(
       animation: Listenable.merge([_press, _reveal]),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (widget.icon != null) ...[
-            Icon(widget.icon, size: 20.sp),
-            SizedBox(width: 8.w),
+      child: Padding(
+        // The gutter, and it is structural rather than decorative: a button nobody gave a width
+        // measures itself against this Row, so without it the shape is drawn on the writing —
+        // the label touching both rims with nothing around it. Where a width *was* given the
+        // legend is centred anyway and this changes nothing.
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (widget.icon != null) ...[
+              Icon(widget.icon, size: 20.sp),
+              SizedBox(width: 8.w),
+            ],
+            // Flexible, because the label is the one part of this button whose width the app
+            // does not control: a long Arabic string in a narrow box overflowed the Row and was
+            // painted across the rim. It gives way to the gutter instead, and says so.
+            Flexible(
+              child: Text(widget.label, softWrap: false, overflow: TextOverflow.ellipsis),
+            ),
           ],
-          Text(widget.label, softWrap: false, overflow: TextOverflow.clip),
-        ],
+        ),
       ),
       builder: (context, child) {
         final press = _press.value;

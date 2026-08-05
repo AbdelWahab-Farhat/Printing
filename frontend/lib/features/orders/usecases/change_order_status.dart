@@ -24,6 +24,7 @@ class ChangeOrderStatus {
     int orderId, {
     required OrderStatus status,
     String? reason,
+    Map<String, Object?> fields = const {},
   }) {
     final trimmed = reason?.trim();
 
@@ -31,6 +32,19 @@ class ChangeOrderStatus {
       orderId,
       status: status,
       reason: trimmed != null && trimmed.isNotEmpty ? trimmed : null,
+      // Empty answers are dropped rather than sent as null: an optional field the user left
+      // alone is a field they did not fill, and `{"notes": null}` says something else.
+      fields: {
+        for (final entry in fields.entries)
+          if (!_isEmpty(entry.value)) entry.key: entry.value,
+      },
     );
   }
+
+  static bool _isEmpty(Object? value) => switch (value) {
+    null => true,
+    String(:final isEmpty) => isEmpty,
+    Iterable(:final isEmpty) => isEmpty,
+    _ => false,
+  };
 }

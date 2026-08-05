@@ -8,6 +8,19 @@ import 'package:printing/features/customers/models/customer.dart';
 ///
 /// Name, code and phone — the three things a customer is looked up by, so all three are on the
 /// card rather than one screen deeper.
+///
+/// **A square holds the code, not an initial.** It used to show the first letter of the name,
+/// and on a list of Libyan print shops that is «م» on almost every row: the eye met the same
+/// glyph each time and learned to skip the column. That is the exact failure `ProductCard`
+/// records for the placeholder thumbnail it removed for the same reason. The code is the one
+/// thing on the row that is unique, short, and said out loud on the phone — so it gets a square
+/// of its own, and the faint grey chip that used to carry it is gone rather than duplicated.
+///
+/// **The square sits at the far left, so it lands last in Arabic reading order.** The name is
+/// what a row is found by and it keeps the start of the line; the code is what the row is then
+/// *quoted* by, and a column of codes down one edge is a column to run a finger along. Being
+/// the last child of an RTL row is what puts it there — not an alignment, so it cannot drift
+/// when the name grows.
 class CustomerCard extends StatelessWidget {
   const CustomerCard({required this.customer, this.onTap, super.key});
 
@@ -39,8 +52,6 @@ class CustomerCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              _Avatar(name: customer.name, isActive: customer.isActive),
-              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,13 +88,15 @@ class CustomerCard extends StatelessWidget {
                             color: scheme.onSurfaceVariant,
                           ),
                         ),
-                        const Spacer(),
-                        _CodeChip(code: customer.code),
                       ],
                     ),
                   ],
                 ),
               ),
+              SizedBox(width: 12.w),
+              // Last child of an RTL row, so it lands on the far left — a column of codes down
+              // one edge, in the place Arabic reading order arrives at rather than starts from.
+              _CodeBadge(code: customer.code, isActive: customer.isActive),
             ],
           ),
         ),
@@ -92,58 +105,41 @@ class CustomerCard extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.name, required this.isActive});
+/// The customer's code, in the card's most prominent slot.
+class _CodeBadge extends StatelessWidget {
+  const _CodeBadge({required this.code, required this.isActive});
 
-  final String name;
+  final String code;
   final bool isActive;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
-    // `characters`, not `[0]`: an Arabic letter carrying a mark is more than one code unit and
-    // slicing it renders a broken glyph.
-    final initial = name.trim().isEmpty ? '؟' : name.trim().characters.first;
-
     return Container(
       height: 48.w,
       width: 48.w,
       alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: 4.w),
       decoration: BoxDecoration(
+        // The square keeps saying whether the customer is switched off, which is the one thing
+        // it was already carrying that was worth carrying.
         color: isActive ? scheme.primaryContainer : scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(14.r),
       ),
-      child: Text(
-        initial,
-        style: context.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: isActive ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}
-
-class _CodeChip extends StatelessWidget {
-  const _CodeChip({required this.code});
-
-  final String code;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-      decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(8.r),
-      ),
-      child: Text(
-        code,
-        textDirection: TextDirection.ltr,
-        style: context.textTheme.labelMedium?.copyWith(
-          color: context.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w700,
+      // Codes are 'C' + the row id, so they grow: C9 today, C1284 in two years. Scaled down to
+      // fit rather than clipped — half a code is worse than a small one, because «C12…» and
+      // «C128…» read as the same customer.
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          code,
+          // A Latin letter and digits: they read left-to-right even inside this RTL card.
+          textDirection: TextDirection.ltr,
+          style: context.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: isActive ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+          ),
         ),
       ),
     );

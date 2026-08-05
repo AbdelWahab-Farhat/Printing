@@ -16,7 +16,13 @@ T _$identity<T>(T value) => value;
 mixin _$City {
 
  int get id; String get name;/// Whether the customer *must* pick a region — not whether the city has any.
-@JsonKey(name: 'is_region_required') bool get isRegionRequired;/// Money as a string, exactly as the API sends it ("15.00"). Never a `double`: a price is
+@JsonKey(name: 'is_region_required') bool get isRegionRequired;/// Delivered, or collected in person.
+///
+/// `unknownEnumValue` rather than a throw: the server may grow a case before this build
+/// reaches the phone, and a row we cannot classify is still a place on the map. It defaults
+/// on the way in too, so a fixture written before this field existed still constructs.
+@JsonKey(name: 'fulfilment_type', unknownEnumValue: FulfilmentType.delivery) FulfilmentType get fulfilmentType;/// The server's own Arabic for [fulfilmentType], so the app keeps no translation table.
+@JsonKey(name: 'fulfilment_type_label') String? get fulfilmentTypeLabel;/// Money as a string, exactly as the API sends it ("15.00"). Never a `double`: a price is
 /// added to an order total, and binary floating point does not add money correctly.
 /// `null` means no rate has been agreed yet — which is not the same as free.
 @JsonKey(name: 'delivery_price') String? get deliveryPrice;/// The شركة درب branch that serves this city.
@@ -35,16 +41,16 @@ $CityCopyWith<City> get copyWith => _$CityCopyWithImpl<City>(this as City, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is City&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.isRegionRequired, isRegionRequired) || other.isRegionRequired == isRegionRequired)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.darbBranch, darbBranch) || other.darbBranch == darbBranch)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.regionsCount, regionsCount) || other.regionsCount == regionsCount)&&const DeepCollectionEquality().equals(other.regions, regions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is City&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.isRegionRequired, isRegionRequired) || other.isRegionRequired == isRegionRequired)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.darbBranch, darbBranch) || other.darbBranch == darbBranch)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.regionsCount, regionsCount) || other.regionsCount == regionsCount)&&const DeepCollectionEquality().equals(other.regions, regions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,isRegionRequired,deliveryPrice,darbBranch,latitude,longitude,regionsCount,const DeepCollectionEquality().hash(regions));
+int get hashCode => Object.hash(runtimeType,id,name,isRegionRequired,fulfilmentType,fulfilmentTypeLabel,deliveryPrice,darbBranch,latitude,longitude,regionsCount,const DeepCollectionEquality().hash(regions));
 
 @override
 String toString() {
-  return 'City(id: $id, name: $name, isRegionRequired: $isRegionRequired, deliveryPrice: $deliveryPrice, darbBranch: $darbBranch, latitude: $latitude, longitude: $longitude, regionsCount: $regionsCount, regions: $regions)';
+  return 'City(id: $id, name: $name, isRegionRequired: $isRegionRequired, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, deliveryPrice: $deliveryPrice, darbBranch: $darbBranch, latitude: $latitude, longitude: $longitude, regionsCount: $regionsCount, regions: $regions)';
 }
 
 
@@ -55,7 +61,7 @@ abstract mixin class $CityCopyWith<$Res>  {
   factory $CityCopyWith(City value, $Res Function(City) _then) = _$CityCopyWithImpl;
 @useResult
 $Res call({
- int id, String name,@JsonKey(name: 'is_region_required') bool isRegionRequired,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'darb_branch') String? darbBranch, double? latitude, double? longitude,@JsonKey(name: 'regions_count') int? regionsCount, List<Region>? regions
+ int id, String name,@JsonKey(name: 'is_region_required') bool isRegionRequired,@JsonKey(name: 'fulfilment_type', unknownEnumValue: FulfilmentType.delivery) FulfilmentType fulfilmentType,@JsonKey(name: 'fulfilment_type_label') String? fulfilmentTypeLabel,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'darb_branch') String? darbBranch, double? latitude, double? longitude,@JsonKey(name: 'regions_count') int? regionsCount, List<Region>? regions
 });
 
 
@@ -72,12 +78,14 @@ class _$CityCopyWithImpl<$Res>
 
 /// Create a copy of City
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? isRegionRequired = null,Object? deliveryPrice = freezed,Object? darbBranch = freezed,Object? latitude = freezed,Object? longitude = freezed,Object? regionsCount = freezed,Object? regions = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? isRegionRequired = null,Object? fulfilmentType = null,Object? fulfilmentTypeLabel = freezed,Object? deliveryPrice = freezed,Object? darbBranch = freezed,Object? latitude = freezed,Object? longitude = freezed,Object? regionsCount = freezed,Object? regions = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,isRegionRequired: null == isRegionRequired ? _self.isRegionRequired : isRegionRequired // ignore: cast_nullable_to_non_nullable
-as bool,deliveryPrice: freezed == deliveryPrice ? _self.deliveryPrice : deliveryPrice // ignore: cast_nullable_to_non_nullable
+as bool,fulfilmentType: null == fulfilmentType ? _self.fulfilmentType : fulfilmentType // ignore: cast_nullable_to_non_nullable
+as FulfilmentType,fulfilmentTypeLabel: freezed == fulfilmentTypeLabel ? _self.fulfilmentTypeLabel : fulfilmentTypeLabel // ignore: cast_nullable_to_non_nullable
+as String?,deliveryPrice: freezed == deliveryPrice ? _self.deliveryPrice : deliveryPrice // ignore: cast_nullable_to_non_nullable
 as String?,darbBranch: freezed == darbBranch ? _self.darbBranch : darbBranch // ignore: cast_nullable_to_non_nullable
 as String?,latitude: freezed == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
 as double?,longitude: freezed == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
@@ -168,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name, @JsonKey(name: 'is_region_required')  bool isRegionRequired, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'darb_branch')  String? darbBranch,  double? latitude,  double? longitude, @JsonKey(name: 'regions_count')  int? regionsCount,  List<Region>? regions)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name, @JsonKey(name: 'is_region_required')  bool isRegionRequired, @JsonKey(name: 'fulfilment_type', unknownEnumValue: FulfilmentType.delivery)  FulfilmentType fulfilmentType, @JsonKey(name: 'fulfilment_type_label')  String? fulfilmentTypeLabel, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'darb_branch')  String? darbBranch,  double? latitude,  double? longitude, @JsonKey(name: 'regions_count')  int? regionsCount,  List<Region>? regions)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _City() when $default != null:
-return $default(_that.id,_that.name,_that.isRegionRequired,_that.deliveryPrice,_that.darbBranch,_that.latitude,_that.longitude,_that.regionsCount,_that.regions);case _:
+return $default(_that.id,_that.name,_that.isRegionRequired,_that.fulfilmentType,_that.fulfilmentTypeLabel,_that.deliveryPrice,_that.darbBranch,_that.latitude,_that.longitude,_that.regionsCount,_that.regions);case _:
   return orElse();
 
 }
@@ -189,10 +197,10 @@ return $default(_that.id,_that.name,_that.isRegionRequired,_that.deliveryPrice,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name, @JsonKey(name: 'is_region_required')  bool isRegionRequired, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'darb_branch')  String? darbBranch,  double? latitude,  double? longitude, @JsonKey(name: 'regions_count')  int? regionsCount,  List<Region>? regions)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name, @JsonKey(name: 'is_region_required')  bool isRegionRequired, @JsonKey(name: 'fulfilment_type', unknownEnumValue: FulfilmentType.delivery)  FulfilmentType fulfilmentType, @JsonKey(name: 'fulfilment_type_label')  String? fulfilmentTypeLabel, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'darb_branch')  String? darbBranch,  double? latitude,  double? longitude, @JsonKey(name: 'regions_count')  int? regionsCount,  List<Region>? regions)  $default,) {final _that = this;
 switch (_that) {
 case _City():
-return $default(_that.id,_that.name,_that.isRegionRequired,_that.deliveryPrice,_that.darbBranch,_that.latitude,_that.longitude,_that.regionsCount,_that.regions);case _:
+return $default(_that.id,_that.name,_that.isRegionRequired,_that.fulfilmentType,_that.fulfilmentTypeLabel,_that.deliveryPrice,_that.darbBranch,_that.latitude,_that.longitude,_that.regionsCount,_that.regions);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +217,10 @@ return $default(_that.id,_that.name,_that.isRegionRequired,_that.deliveryPrice,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name, @JsonKey(name: 'is_region_required')  bool isRegionRequired, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'darb_branch')  String? darbBranch,  double? latitude,  double? longitude, @JsonKey(name: 'regions_count')  int? regionsCount,  List<Region>? regions)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name, @JsonKey(name: 'is_region_required')  bool isRegionRequired, @JsonKey(name: 'fulfilment_type', unknownEnumValue: FulfilmentType.delivery)  FulfilmentType fulfilmentType, @JsonKey(name: 'fulfilment_type_label')  String? fulfilmentTypeLabel, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'darb_branch')  String? darbBranch,  double? latitude,  double? longitude, @JsonKey(name: 'regions_count')  int? regionsCount,  List<Region>? regions)?  $default,) {final _that = this;
 switch (_that) {
 case _City() when $default != null:
-return $default(_that.id,_that.name,_that.isRegionRequired,_that.deliveryPrice,_that.darbBranch,_that.latitude,_that.longitude,_that.regionsCount,_that.regions);case _:
+return $default(_that.id,_that.name,_that.isRegionRequired,_that.fulfilmentType,_that.fulfilmentTypeLabel,_that.deliveryPrice,_that.darbBranch,_that.latitude,_that.longitude,_that.regionsCount,_that.regions);case _:
   return null;
 
 }
@@ -224,13 +232,21 @@ return $default(_that.id,_that.name,_that.isRegionRequired,_that.deliveryPrice,_
 @JsonSerializable()
 
 class _City extends City {
-  const _City({required this.id, required this.name, @JsonKey(name: 'is_region_required') required this.isRegionRequired, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'darb_branch') this.darbBranch, this.latitude, this.longitude, @JsonKey(name: 'regions_count') this.regionsCount, final  List<Region>? regions}): _regions = regions,super._();
+  const _City({required this.id, required this.name, @JsonKey(name: 'is_region_required') required this.isRegionRequired, @JsonKey(name: 'fulfilment_type', unknownEnumValue: FulfilmentType.delivery) this.fulfilmentType = FulfilmentType.delivery, @JsonKey(name: 'fulfilment_type_label') this.fulfilmentTypeLabel, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'darb_branch') this.darbBranch, this.latitude, this.longitude, @JsonKey(name: 'regions_count') this.regionsCount, final  List<Region>? regions}): _regions = regions,super._();
   factory _City.fromJson(Map<String, dynamic> json) => _$CityFromJson(json);
 
 @override final  int id;
 @override final  String name;
 /// Whether the customer *must* pick a region — not whether the city has any.
 @override@JsonKey(name: 'is_region_required') final  bool isRegionRequired;
+/// Delivered, or collected in person.
+///
+/// `unknownEnumValue` rather than a throw: the server may grow a case before this build
+/// reaches the phone, and a row we cannot classify is still a place on the map. It defaults
+/// on the way in too, so a fixture written before this field existed still constructs.
+@override@JsonKey(name: 'fulfilment_type', unknownEnumValue: FulfilmentType.delivery) final  FulfilmentType fulfilmentType;
+/// The server's own Arabic for [fulfilmentType], so the app keeps no translation table.
+@override@JsonKey(name: 'fulfilment_type_label') final  String? fulfilmentTypeLabel;
 /// Money as a string, exactly as the API sends it ("15.00"). Never a `double`: a price is
 /// added to an order total, and binary floating point does not add money correctly.
 /// `null` means no rate has been agreed yet — which is not the same as free.
@@ -266,16 +282,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _City&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.isRegionRequired, isRegionRequired) || other.isRegionRequired == isRegionRequired)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.darbBranch, darbBranch) || other.darbBranch == darbBranch)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.regionsCount, regionsCount) || other.regionsCount == regionsCount)&&const DeepCollectionEquality().equals(other._regions, _regions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _City&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.isRegionRequired, isRegionRequired) || other.isRegionRequired == isRegionRequired)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.darbBranch, darbBranch) || other.darbBranch == darbBranch)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.regionsCount, regionsCount) || other.regionsCount == regionsCount)&&const DeepCollectionEquality().equals(other._regions, _regions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,isRegionRequired,deliveryPrice,darbBranch,latitude,longitude,regionsCount,const DeepCollectionEquality().hash(_regions));
+int get hashCode => Object.hash(runtimeType,id,name,isRegionRequired,fulfilmentType,fulfilmentTypeLabel,deliveryPrice,darbBranch,latitude,longitude,regionsCount,const DeepCollectionEquality().hash(_regions));
 
 @override
 String toString() {
-  return 'City(id: $id, name: $name, isRegionRequired: $isRegionRequired, deliveryPrice: $deliveryPrice, darbBranch: $darbBranch, latitude: $latitude, longitude: $longitude, regionsCount: $regionsCount, regions: $regions)';
+  return 'City(id: $id, name: $name, isRegionRequired: $isRegionRequired, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, deliveryPrice: $deliveryPrice, darbBranch: $darbBranch, latitude: $latitude, longitude: $longitude, regionsCount: $regionsCount, regions: $regions)';
 }
 
 
@@ -286,7 +302,7 @@ abstract mixin class _$CityCopyWith<$Res> implements $CityCopyWith<$Res> {
   factory _$CityCopyWith(_City value, $Res Function(_City) _then) = __$CityCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name,@JsonKey(name: 'is_region_required') bool isRegionRequired,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'darb_branch') String? darbBranch, double? latitude, double? longitude,@JsonKey(name: 'regions_count') int? regionsCount, List<Region>? regions
+ int id, String name,@JsonKey(name: 'is_region_required') bool isRegionRequired,@JsonKey(name: 'fulfilment_type', unknownEnumValue: FulfilmentType.delivery) FulfilmentType fulfilmentType,@JsonKey(name: 'fulfilment_type_label') String? fulfilmentTypeLabel,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'darb_branch') String? darbBranch, double? latitude, double? longitude,@JsonKey(name: 'regions_count') int? regionsCount, List<Region>? regions
 });
 
 
@@ -303,12 +319,14 @@ class __$CityCopyWithImpl<$Res>
 
 /// Create a copy of City
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? isRegionRequired = null,Object? deliveryPrice = freezed,Object? darbBranch = freezed,Object? latitude = freezed,Object? longitude = freezed,Object? regionsCount = freezed,Object? regions = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? isRegionRequired = null,Object? fulfilmentType = null,Object? fulfilmentTypeLabel = freezed,Object? deliveryPrice = freezed,Object? darbBranch = freezed,Object? latitude = freezed,Object? longitude = freezed,Object? regionsCount = freezed,Object? regions = freezed,}) {
   return _then(_City(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,isRegionRequired: null == isRegionRequired ? _self.isRegionRequired : isRegionRequired // ignore: cast_nullable_to_non_nullable
-as bool,deliveryPrice: freezed == deliveryPrice ? _self.deliveryPrice : deliveryPrice // ignore: cast_nullable_to_non_nullable
+as bool,fulfilmentType: null == fulfilmentType ? _self.fulfilmentType : fulfilmentType // ignore: cast_nullable_to_non_nullable
+as FulfilmentType,fulfilmentTypeLabel: freezed == fulfilmentTypeLabel ? _self.fulfilmentTypeLabel : fulfilmentTypeLabel // ignore: cast_nullable_to_non_nullable
+as String?,deliveryPrice: freezed == deliveryPrice ? _self.deliveryPrice : deliveryPrice // ignore: cast_nullable_to_non_nullable
 as String?,darbBranch: freezed == darbBranch ? _self.darbBranch : darbBranch // ignore: cast_nullable_to_non_nullable
 as String?,latitude: freezed == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
 as double?,longitude: freezed == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable

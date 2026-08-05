@@ -16,6 +16,25 @@ abstract final class AuthEndpoints {
   static const String logoutAll = '/auth/logout-all';
 }
 
+/// Who works here, what jobs exist, and what each job may do.
+abstract final class AccessEndpoints {
+  /// Staff accounts. Read-only from the app: accounts are created elsewhere, and all this
+  /// screen changes is which roles somebody holds.
+  static const String users = '/users';
+
+  /// Replaces a user's whole set of roles — send every role they should end up with.
+  static String userRoles(int userId) => '/users/$userId/roles';
+
+  static const String roles = '/roles';
+
+  static String role(int roleId) => '/roles/$roleId';
+
+  /// The catalogue of everything the system can check for, already grouped into the sections a
+  /// role screen renders. Read-only by design: a permission is real only because code checks
+  /// for it, so there is nothing here to create.
+  static const String permissions = '/permissions';
+}
+
 abstract final class CityEndpoints {
   static const String index = '/cities';
 
@@ -37,6 +56,9 @@ abstract final class ProductEndpoints {
 abstract final class OrderEndpoints {
   static const String index = '/orders';
 
+  /// How many orders sit in each status, under the same filters as the list.
+  static const String summary = '/orders/summary';
+
   static String show(int orderId) => '/orders/$orderId';
 
   /// Moving an order. A POST, not a PATCH: the server records a row on the order's timeline as
@@ -55,4 +77,11 @@ abstract final class CustomerEndpoints {
   static String show(int customerId) => '/customers/$customerId';
 
   static String activation(int customerId) => '/customers/$customerId/activation';
+
+  /// A customer's artwork. Nested under the customer because the API scopes it that way —
+  /// another customer's design id is a 404 by construction rather than by a check.
+  static String designs(int customerId) => '/customers/$customerId/designs';
+
+  static String design(int customerId, int designId) =>
+      '/customers/$customerId/designs/$designId';
 }

@@ -6,6 +6,7 @@ use App\Application\Api\V1\Controllers\CityController;
 use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\CustomerDesignController;
 use App\Application\Api\V1\Controllers\HealthController;
+use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\PermissionController;
 use App\Application\Api\V1\Controllers\ProductController;
 use App\Application\Api\V1\Controllers\ProductImageController;
@@ -64,6 +65,13 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('users', [UserController::class, 'index'])
             ->middleware('can:users.view')->name('users.index');
+
+        // `users.create` is deliberately **not** a PermissionName case — it is a gate ability
+        // defined in AppServiceProvider, so it cannot be ticked onto a role from the roles
+        // screen and only an administrator satisfies it. Reads like every other guard on this
+        // page precisely so that delegating it later changes nothing here.
+        Route::post('users', [UserController::class, 'store'])
+            ->middleware('can:users.create')->name('users.store');
 
         Route::patch('users/{user}/roles', [UserController::class, 'syncRoles'])
             ->middleware('can:users.manage')->name('users.roles');
@@ -127,6 +135,44 @@ Route::prefix('v1')->group(function (): void {
             ->middleware('can:products.manage')
             ->scoped();
 
+        // ── orders ──────────────────────────────────────────────────────────────────────
+        // The state machine's guards are *not* here, and that is the one deliberate exception
+        // to this file's own rule. The permission a status change costs depends on the status
+        // being asked for, which lives in the request body — a route cannot see it. So
+        // ChangeOrderStatusRequest::authorize() looks it up from OrderStatus and answers 403,
+        // and the route below only asks that the caller be allowed to see the order at all.
+        //
+        // Same reasoning for the discount: `orders.discount` is enforced inside the domain, so
+        // it holds for a console command and a future import too, not only for this endpoint.
+        // Declared *before* the resource: `apiResource` registers `/orders/{order}`, and
+        // implicit binding would try to resolve the word "summary" as an order id and 404.
+        Route::get('orders/summary', [OrderController::class, 'statusCounts'])
+            ->middleware('can:orders.view')->name('orders.summary');
+
+        Route::apiResource('orders', OrderController::class)
+            ->only(['index', 'show'])
+            ->middleware('can:orders.view');
+
+        Route::apiResource('orders', OrderController::class)
+            ->only(['store', 'update'])
+            ->middleware('can:orders.manage');
+
+        // No destroy route, for the same reason customers and products have none: an order is
+        // the record everything else points at, and «ملغاة كلياً» is the business's own way of
+        // ending one — with a reason attached, which a delete would throw away.
+        Route::post('orders/{order}/status', [OrderController::class, 'changeStatus'])
+            ->middleware('can:orders.view')->name('orders.status');
+
+        // Designs are chosen from the customer's library, never uploaded here. scoped() makes
+        // {design} resolve *within* {order}, so another order's design id is a 404 by
+        // construction rather than by a check somebody has to remember.
+        Route::post('orders/{order}/designs', [OrderController::class, 'storeDesign'])
+            ->middleware('can:orders.designs.manage')->name('orders.designs.store');
+
+        Route::post('orders/{order}/designs/{design}/review', [OrderController::class, 'reviewDesign'])
+            ->scopeBindings()
+            ->middleware('can:orders.designs.manage')->name('orders.designs.review');
+
         // ── delivery map ────────────────────────────────────────────────────────────────
         // Reading is its own permission because anyone taking an order needs the city and
         // region lists to fill it in; curating that map is a separate, rarer job.
@@ -173,6 +219,7 @@ Route::prefix('v1')->group(function (): void {
             Route::get('customers/{customer}/logs', [CustomerController::class, 'logs'])->name('customers.logs');
             Route::get('products/{product}/logs', [ProductController::class, 'logs'])->name('products.logs');
             Route::get('cities/{city}/logs', [CityController::class, 'logs'])->name('cities.logs');
+            Route::get('orders/{order}/logs', [OrderController::class, 'logs'])->name('orders.logs');
 
             // Scoped like the rest of the nested region routes: another city's region id is a
             // 404 here too, not a history leaked from the wrong place.

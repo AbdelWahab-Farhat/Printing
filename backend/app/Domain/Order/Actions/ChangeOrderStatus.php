@@ -1,0 +1,220 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Order\Actions;
+
+use App\Domain\Identity\Models\User;
+use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Exceptions\DesignRequiredBeforeDesigning;
+use App\Domain\Order\Exceptions\OrderIsClosed;
+use App\Domain\Order\Exceptions\ShortageNeedsAQuantity;
+use App\Domain\Order\Exceptions\TransitionNotAllowed;
+use App\Domain\Order\Exceptions\TransitionRequiresReason;
+use App\Domain\Order\Models\Order;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Moves an order, or refuses to.
+ *
+ * The only way a status changes. Everything the machine promises is enforced here — the map,
+ * the reason a cancellation owes, the quantity a shortage owes, the stamp each milestone leaves
+ * and the row in the timeline — so no caller can get half of it right.
+ *
+ * **The destination decides which way "out" means.** A clerk presses one button; whether that
+ * lands on «استلام مكتب» or «جاري التوصيل» is read from the order's own fulfilment type rather
+ * than taken from the request. A payload naming the wrong one of the two is corrected rather
+ * than refused: the clerk did not choose it, so there is nothing to tell them off for.
+ */
+final class ChangeOrderStatus
+{
+    public function __construct(
+        private readonly RecordStatusTransition $record,
+        private readonly AddOrderDesign $addDesign,
+    ) {}
+
+    /**
+     * @param  array<string, mixed>  $fields  What the move asked for — see {@see TransitionFields}.
+     *
+     * @throws OrderIsClosed
+     * @throws TransitionNotAllowed
+     * @throws TransitionRequiresReason
+     * @throws DesignRequiredBeforeDesigning
+     */
+    public function __invoke(
+        Order $order,
+        OrderStatus $target,
+        ?string $reason = null,
+        ?User $actor = null,
+        array $fields = [],
+    ): Order {
+        $from = $order->status;
+
+        if ($from->isFinal()) {
+            throw OrderIsClosed::make($from);
+        }
+
+        $target = $this->resolve($order, $target);
+
+        if (! $from->canMoveTo($target)) {
+            throw TransitionNotAllowed::make($from, $target);
+        }
+
+        $reason = $reason !== null && trim($reason) !== '' ? trim($reason) : null;
+
+        if ($target->requiresReason() && $reason === null) {
+            throw TransitionRequiresReason::make($target);
+        }
+
+        return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields): Order {
+            $attributes = ['status' => $target];
+
+            if ($column = $target->timestampColumn()) {
+                $attributes[$column] = now();
+            }
+
+            if ($target === OrderStatus::Cancelled) {
+                $attributes['cancellation_reason'] = $reason;
+            }
+
+            // Weighed on the way onto the shelf. Kept even when the order later moves on: it is
+            // what the parcel weighs, not a note about one moment.
+            if ($target === OrderStatus::Ready && isset($fields['weight_kg'])) {
+                $attributes['weight_kg'] = $fields['weight_kg'];
+            }
+
+            // Only when it differs from the invoice — see {@see TransitionFields}. An empty
+            // field settles the order at its own total and leaves the column null, so a value
+            // here always means somebody counted something different.
+            if ($target === OrderStatus::Settled) {
+                $collected = $fields['collected_amount'] ?? null;
+
+                $attributes['collected_amount'] = $collected === null || $collected === ''
+                    ? null
+                    : $collected;
+            }
+
+            $order->forceFill($attributes)->save();
+
+            // **The status is written first, and the order matters.** Artwork may only be
+            // attached to an order in a status that allows it — see `designsAreEditable()` —
+            // and the commonest case of a move carrying artwork is the correction path, «قيد
+            // الطباعة» back to «قيد التصميم», where the *old* status forbids it and the new one
+            // is the whole point. Everything here is one transaction, so a design that turns
+            // out to belong to somebody else takes the status change back with it: there is no
+            // order left holding a version it should never have had.
+            $this->attachDesigns($order, $fields);
+            $this->recordShortages($order, $target, $fields);
+
+            $this->guardDesigning($order, $target);
+            $this->guardShortage($order, $target);
+
+            ($this->record)($order, $from, $target, $reason, $actor);
+
+            return $order->refresh();
+        });
+    }
+
+    /**
+     * Either dispatch status means "it is leaving"; the city says which one that is.
+     */
+    private function resolve(Order $order, OrderStatus $target): OrderStatus
+    {
+        return $target->isDispatch()
+            ? OrderStatus::dispatchFor($order->fulfilment_type)
+            : $target;
+    }
+
+    /**
+     * Versions of the artwork that came with the move.
+     *
+     * Each goes through {@see AddOrderDesign}, so a design belonging to another customer is
+     * refused by the one place that knows the rule, and the version numbers are allocated the
+     * same way they are when a design is added on its own.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    private function attachDesigns(Order $order, array $fields): void
+    {
+        foreach ((array) ($fields['design_ids'] ?? []) as $designId) {
+            ($this->addDesign)($order, (int) $designId);
+        }
+    }
+
+    /**
+     * What is missing, written against the line it is missing from.
+     *
+     * Each line's own field, because «كم الناقص» asked of an order has no answer — it is a
+     * question about a size. A line left alone is cleared rather than left holding what a
+     * previous visit to «نواقص» recorded: an order bounces in and out of this status, and a
+     * stale number is worse than none.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    private function recordShortages(Order $order, OrderStatus $target, array $fields): void
+    {
+        if ($target !== OrderStatus::Shortage) {
+            return;
+        }
+
+        foreach ($order->items as $item) {
+            $missing = $fields["shortage_{$item->getKey()}"] ?? null;
+
+            $item->forceFill([
+                'shortage_quantity' => $missing === null || $missing === '' ? null : $missing,
+            ])->save();
+        }
+    }
+
+    /**
+     * A «نواقص» that does not say what is missing is a status nobody can act on.
+     *
+     * The fields are each optional — most shortages are one size out of several, and marking
+     * them all required would have staff typing zeros to get past the form — so the rule that
+     * matters is this one: at least one line short by something.
+     *
+     * @throws ShortageNeedsAQuantity
+     */
+    private function guardShortage(Order $order, OrderStatus $target): void
+    {
+        if ($target !== OrderStatus::Shortage) {
+            return;
+        }
+
+        $recorded = $order->items()
+            ->whereNotNull('shortage_quantity')
+            ->where('shortage_quantity', '>', 0)
+            ->exists();
+
+        if (! $recorded) {
+            throw ShortageNeedsAQuantity::make();
+        }
+    }
+
+    /**
+     * «قيد التصميم» means there is artwork to look at.
+     *
+     * The field that asks for it refuses the empty payload with a friendlier message; this is
+     * the same rule for every other caller — a queue worker, an importer, a future endpoint.
+     *
+     * **This is a rule about entering the step, not about reaching the press.** Nothing forces
+     * an order through design at all: plain (سادة) bags and jobs whose artwork was settled
+     * beforehand go «جديدة» straight to «قيد الطباعة». But an order that *is* sent to design is
+     * being sent there to have something looked at, and a design queue full of orders carrying
+     * nothing is a queue nobody can work.
+     *
+     * @throws DesignRequiredBeforeDesigning
+     */
+    private function guardDesigning(Order $order, OrderStatus $target): void
+    {
+        if ($target !== OrderStatus::Designing) {
+            return;
+        }
+
+        if ($order->designs()->exists()) {
+            return;
+        }
+
+        throw DesignRequiredBeforeDesigning::make();
+    }
+}

@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:printing/features/audit/models/audit_event.dart';
 
 part 'activity_log_entry.freezed.dart';
 part 'activity_log_entry.g.dart';
@@ -28,6 +29,14 @@ abstract class ActivityLogEntry with _$ActivityLogEntry {
 
     AuditChanges? changes,
 
+    /// What to call each column that moved — `page_url` → «رابط الصفحة».
+    ///
+    /// **Sent by the server, never kept here.** The screen used to show raw column names, and
+    /// the alternative to this was a dictionary in the app — which is wrong the first morning
+    /// somebody adds a column, with no build failing to say so. Carrying only the columns this
+    /// entry touched keeps a page of fifteen entries small.
+    @JsonKey(name: 'attribute_labels') Map<String, String>? attributeLabels,
+
     @JsonKey(name: 'created_at') DateTime? createdAt,
   }) = _ActivityLogEntry;
 
@@ -39,8 +48,18 @@ abstract class ActivityLogEntry with _$ActivityLogEntry {
   /// True when this is the line that says the record came into existence.
   bool get isCreation => event == 'created';
 
+  /// Which of the four this is, or null for one this build has no case for.
+  AuditEvent? get kind => AuditEvent.tryFromWire(event);
+
   /// Who to name. «النظام» when nobody did it by hand, which is honest rather than blank.
   String get byWhom => causer?.name ?? 'النظام';
+
+  /// What to call one column.
+  ///
+  /// Falls back to the raw name, which is exactly what this screen showed before labels
+  /// existed. An unlabelled column looking unlabelled is what gets the label written; a guessed
+  /// Arabic name would look right and be wrong.
+  String labelFor(String field) => attributeLabels?[field] ?? field;
 }
 
 /// The person behind a change.
@@ -61,10 +80,8 @@ abstract class AuditCauser with _$AuditCauser {
 /// those cases.
 @freezed
 abstract class AuditChanges with _$AuditChanges {
-  const factory AuditChanges({
-    Map<String, dynamic>? old,
-    Map<String, dynamic>? attributes,
-  }) = _AuditChanges;
+  const factory AuditChanges({Map<String, dynamic>? old, Map<String, dynamic>? attributes}) =
+      _AuditChanges;
 
   const AuditChanges._();
 
@@ -79,4 +96,23 @@ abstract class AuditChanges with _$AuditChanges {
     for (final entry in (attributes ?? const <String, dynamic>{}).entries)
       (entry.key, old?[entry.key], entry.value),
   ];
+
+  /// True when both halves exist — an edit, and the only case that reads as «قبل ← بعد».
+  ///
+  /// A creation has no "from" and a deletion has no "to"; drawing an arrow for either would
+  /// invent a value that never existed.
+  bool get isMovement => (old?.isNotEmpty ?? false) && (attributes?.isNotEmpty ?? false);
+
+  /// The values this entry simply states, for the cases that are not a movement.
+  ///
+  /// A creation states what the record started as; a deletion restates what it last was —
+  /// which is the only place that information survives, since the row itself is gone from
+  /// every list.
+  List<(String, Object?)> get statedValues => [
+    for (final entry in (attributes ?? old ?? const <String, dynamic>{}).entries)
+      (entry.key, entry.value),
+  ];
+
+  /// Whether there is anything at all to draw under the heading.
+  bool get isEmpty => (old?.isEmpty ?? true) && (attributes?.isEmpty ?? true);
 }

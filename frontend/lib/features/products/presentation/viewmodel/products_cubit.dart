@@ -3,8 +3,8 @@ import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/core/pagination/paged_cubit.dart';
 import 'package:printing/core/pagination/paged_state.dart';
-import 'package:printing/features/products/models/pricing_unit_filter.dart';
 import 'package:printing/features/products/models/product.dart';
+import 'package:printing/features/products/models/product_category.dart';
 import 'package:printing/features/products/usecases/get_products.dart';
 
 /// The catalogue screen's ViewModel.
@@ -17,10 +17,10 @@ class ProductsCubit extends PagedCubit<Product> {
 
   final GetProducts _getProducts;
 
-  /// Which unit the catalogue is narrowed to. Read by the chips row, which is inside the same
-  /// `BlocBuilder` as the list — and every change goes through [filterByUnit], which emits, so
-  /// the selected chip and the list can never disagree.
-  PricingUnitFilter unit = PricingUnitFilter.all;
+  /// Which kind of bag the catalogue is narrowed to. Read by the chips row, which is inside the
+  /// same `BlocBuilder` as the list — and every change goes through [filterByCategory], which
+  /// emits, so the selected chip and the list can never disagree.
+  ProductCategoryFilter category = ProductCategoryFilter.all;
 
   @override
   Future<Either<Failure, Paginated<Product>>> fetchPage({
@@ -28,18 +28,18 @@ class ProductsCubit extends PagedCubit<Product> {
     required int page,
   }) {
     // The filter rides along with every page, including the ones `loadMore` asks for: page two
-    // of "بالكيلوغرام" must not arrive as page two of everything.
-    return _getProducts(search: search, pricingUnit: unit.value, page: page);
+    // of "سادة" must not arrive as page two of everything.
+    return _getProducts(search: search, category: category.value, page: page);
   }
 
-  /// Narrows the catalogue to one pricing unit, or widens it back to all of them.
+  /// Narrows the catalogue to one category, or widens it back to all of them.
   ///
-  /// The search term survives: someone who typed "شفافة" and then tapped بالكيلوغرام is asking a
+  /// The search term survives: someone who typed "شفافة" and then tapped سادة is asking a
   /// narrower question, not starting a new one.
-  Future<void> filterByUnit(PricingUnitFilter next) async {
-    if (next == unit) return;
+  Future<void> filterByCategory(ProductCategoryFilter next) async {
+    if (next == category) return;
 
-    unit = next;
+    category = next;
     await load(search: currentSearch);
   }
 }

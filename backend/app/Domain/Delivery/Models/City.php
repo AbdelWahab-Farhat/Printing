@@ -7,6 +7,7 @@ namespace App\Domain\Delivery\Models;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Concerns\CascadesSoftDeletes;
 use App\Domain\Audit\Contracts\HasAuditTrail;
+use App\Domain\Delivery\Enums\FulfilmentType;
 use Database\Factories\CityFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Now both are recoverable, and the trail records who did it.
  */
 #[UseFactory(CityFactory::class)]
-#[Fillable(['name', 'is_region_required', 'delivery_price', 'darb_branch', 'latitude', 'longitude'])]
+#[Fillable(['name', 'fulfilment_type', 'is_region_required', 'delivery_price', 'darb_branch', 'latitude', 'longitude'])]
 class City extends Model implements HasAuditTrail
 {
     /** @use HasFactory<CityFactory> */
@@ -39,6 +40,7 @@ class City extends Model implements HasAuditTrail
     protected function casts(): array
     {
         return [
+            'fulfilment_type' => FulfilmentType::class,
             'is_region_required' => 'boolean',
             // String, not float: this price is added to an order total, and money that is summed
             // must stay exact.
@@ -65,6 +67,18 @@ class City extends Model implements HasAuditTrail
     public function hasDeliveryPrice(): bool
     {
         return $this->delivery_price !== null;
+    }
+
+    /**
+     * One of our branches, collected from in person.
+     *
+     * The single question orders ask of the delivery map, so it is answered here rather than by
+     * every caller reaching for the enum — and by the column rather than by the name it used to
+     * be guessed from. See {@see FulfilmentType}.
+     */
+    public function isOfficePickup(): bool
+    {
+        return $this->fulfilment_type->isOfficePickup();
     }
 
     /**

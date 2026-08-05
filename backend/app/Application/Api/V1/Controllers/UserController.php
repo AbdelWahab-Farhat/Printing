@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Controllers;
 
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
+use App\Application\Api\V1\Requests\User\StoreUserRequest;
 use App\Application\Api\V1\Requests\User\SyncUserRolesRequest;
 use App\Application\Api\V1\Resources\UserResource;
 use App\Application\Controller;
@@ -50,6 +51,29 @@ class UserController extends Controller
             ->paginate($perPage);
 
         return $this->successWithPagination(UserResource::collection($users));
+    }
+
+    /**
+     * Create a staff account
+     *
+     * **Administrators only**, and not by permission: `users.create` is a gate ability rather
+     * than a case in the permission catalogue, so it cannot be ticked onto a role. See
+     * `AppServiceProvider::boot()` for why, and for the one edit that delegates it later.
+     *
+     * The account is usable immediately — the password given here is the one the employee signs
+     * in with. No token is issued: the person holding the phone is not the person being created.
+     */
+    public function store(StoreUserRequest $request): JsonResponse
+    {
+        $user = $this->access->createUser(
+            $request->string('name')->toString(),
+            $request->string('email')->toString(),
+            $request->string('phone')->toString(),
+            $request->string('password')->toString(),
+            $request->roleNames(),
+        );
+
+        return $this->created(new UserResource($user), 'تم إنشاء حساب الموظف بنجاح');
     }
 
     /**

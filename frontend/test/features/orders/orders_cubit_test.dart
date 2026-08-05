@@ -5,9 +5,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/features/orders/models/order.dart';
+import 'package:printing/features/orders/models/order_counts.dart';
 import 'package:printing/features/orders/models/order_status.dart';
 import 'package:printing/features/orders/presentation/viewmodel/orders_cubit.dart';
 import 'package:printing/features/orders/repositories/order_repository.dart';
+import 'package:printing/features/orders/usecases/get_order_counts.dart';
 import 'package:printing/features/orders/usecases/get_orders.dart';
 
 /// The orders list's ViewModel. The repository is faked, nothing touches Dio, and the
@@ -30,6 +32,8 @@ void main() {
       statusLabel: label,
       isFinal: false,
       customerId: 5,
+      cityId: 3,
+      designSource: 'none',
       cityName: 'طرابلس',
       fulfilmentTypeLabel: 'توصيل',
       isOfficePickup: false,
@@ -54,7 +58,29 @@ void main() {
     );
   }
 
+  /// The list and the counts are fetched together, so a fake that only answers one of them
+  /// leaves the other throwing — which would fail every test for a reason none of them is about.
+  void stubCounts({Map<String, int>? byStatus, Failure? failure}) {
+    when(
+      () => repository.statusCounts(
+        search: any(named: 'search'),
+        customerId: any(named: 'customerId'),
+      ),
+    ).thenAnswer(
+      (_) async => failure != null
+          ? Left(failure)
+          : Right(
+              OrderCounts(
+                byStatus: byStatus ?? const <String, int>{'ready': 2, 'printing': 1},
+                total: 3,
+              ),
+            ),
+    );
+  }
+
   void stub({List<Order>? orders, Failure? failure, int lastPage = 1}) {
+    stubCounts();
+
     when(
       () => repository.orders(
         search: any(named: 'search'),
@@ -72,7 +98,10 @@ void main() {
 
   setUp(() {
     repository = _MockOrderRepository();
-    cubit = OrdersCubit(getOrders: GetOrders(repository));
+    cubit = OrdersCubit(
+      getOrders: GetOrders(repository),
+      getCounts: GetOrderCounts(repository),
+    );
   });
 
   tearDown(() => cubit.close());
@@ -143,7 +172,8 @@ void main() {
     // Act
     await cubit.showQueue(OrderQueue.returned);
 
-    // Assert — «رواجع» is three statuses; asking for one of them would hide the other two.
+    // Assert — «رواجع» is four statuses; asking for one of them would hide the rest. The parcel
+    // being sent out again is still a parcel that came back, and it is still on our shelf.
     final captured = verify(
       () => repository.orders(
         search: any(named: 'search'),
@@ -158,6 +188,7 @@ void main() {
       'returned_courier',
       'returned_carrier',
       'returned_office',
+      'resend',
     ]);
   });
 
@@ -263,6 +294,111 @@ void main() {
     cubit.replace(orderWith());
 
     expect(cubit.state, isA<OrdersInitial>());
+  });
+
+  // ───────────────── the numbers beside the filter ─────────────────
+
+  test('the counts arrive with the first page', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+    stubCounts(byStatus: {'ready': 4, 'printing': 2});
+
+    // Act
+    await cubit.load();
+    await Future<void>.delayed(Duration.zero);
+
+    // Assert
+    expect(cubit.counts.value.byStatus['ready'], 4);
+  });
+
+  test('a queue is counted as the sum of the statuses it covers', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+    stubCounts(
+      byStatus: {
+        'returned_courier': 2,
+        'returned_carrier': 1,
+        'returned_office': 3,
+        'ready': 9,
+      },
+    );
+    await cubit.load();
+    await Future<void>.delayed(Duration.zero);
+
+    // Act
+    final returned = cubit.counts.value.forQueue(OrderQueue.returned);
+
+    // Assert — «رواجع» is three statuses, and the server counts by status.
+    expect(returned, 6);
+  });
+
+  test('changing the queue does not refetch the counts', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+    await cubit.load();
+    await Future<void>.delayed(Duration.zero);
+    clearInteractions(repository);
+
+    // Act
+    await cubit.showQueue(OrderQueue.ready);
+    await Future<void>.delayed(Duration.zero);
+
+    // Assert — the numbers describe the unfiltered set, so picking a queue cannot move them.
+    verifyNever(
+      () => repository.statusCounts(
+        search: any(named: 'search'),
+        customerId: any(named: 'customerId'),
+      ),
+    );
+  });
+
+  test('a new search does refetch them', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+    await cubit.load();
+    await Future<void>.delayed(Duration.zero);
+    clearInteractions(repository);
+
+    // Act — the search is the one filter that changes what there is to count.
+    await cubit.load(search: 'أحمد');
+    await Future<void>.delayed(Duration.zero);
+
+    // Assert
+    verify(
+      () => repository.statusCounts(
+        search: any(named: 'search'),
+        customerId: any(named: 'customerId'),
+      ),
+    ).called(1);
+  });
+
+  test('a failed count leaves the last numbers standing', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+    stubCounts(byStatus: {'ready': 7});
+    await cubit.load();
+    await Future<void>.delayed(Duration.zero);
+
+    stubCounts(failure: const Failure.network(message: 'لا يوجد اتصال'));
+
+    // Act
+    await cubit.load(search: 'أحمد');
+    await Future<void>.delayed(Duration.zero);
+
+    // Assert — the list is what the user came for; a missing number is a smaller lie than a
+    // zero that claims there is nothing there.
+    expect(cubit.counts.value.byStatus['ready'], 7);
+  });
+
+  test('closing twice does not throw', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+    await cubit.load();
+
+    // Act & Assert — `Cubit.close()` is idempotent and callers rely on it; the notifier inside
+    // must not take that away.
+    await cubit.close();
+    await expectLater(cubit.close(), completes);
   });
 
   // ───────────────────────────── paging ─────────────────────────────

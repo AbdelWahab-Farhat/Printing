@@ -21,6 +21,9 @@ _ActivityLogEntry _$ActivityLogEntryFromJson(Map<String, dynamic> json) =>
       changes: json['changes'] == null
           ? null
           : AuditChanges.fromJson(json['changes'] as Map<String, dynamic>),
+      attributeLabels: (json['attribute_labels'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ),
       createdAt: json['created_at'] == null
           ? null
           : DateTime.parse(json['created_at'] as String),
@@ -37,6 +40,7 @@ Map<String, dynamic> _$ActivityLogEntryToJson(_ActivityLogEntry instance) =>
       'subject_id': instance.subjectId,
       'causer': instance.causer?.toJson(),
       'changes': instance.changes?.toJson(),
+      'attribute_labels': instance.attributeLabels,
       'created_at': instance.createdAt?.toIso8601String(),
     };
 

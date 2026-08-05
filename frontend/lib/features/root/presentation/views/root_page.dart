@@ -1,15 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
+import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/router/app_router.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_dialog.dart';
-import 'package:printing/features/auth/presentation/viewmodel/logout_cubit.dart';
+import 'package:printing/core/widgets/permission_gate.dart';
 
 /// The frame every signed-in screen sits inside: one app bar, one bottom bar, one drawer.
 ///
@@ -129,21 +125,13 @@ enum _IconOf {
         };
 }
 
-/// The sidebar: everything that is not a tab, and the way out.
+/// The sidebar: everything that is not a tab.
+///
+/// Signing out used to live at the bottom of this panel. It moved into الإعدادات with the rest
+/// of the account, because two ways to do the irreversible thing is one more than necessary —
+/// and a drawer is for going somewhere, which is what this now does.
 class _RootDrawer extends StatelessWidget {
   const _RootDrawer();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider<LogoutCubit>(
-      create: (_) => sl<LogoutCubit>(),
-      child: const _RootDrawerBody(),
-    );
-  }
-}
-
-class _RootDrawerBody extends StatelessWidget {
-  const _RootDrawerBody();
 
   @override
   Widget build(BuildContext context) {
@@ -181,9 +169,32 @@ class _RootDrawerBody extends StatelessWidget {
               label: 'مدن التوصيل',
               onTap: () => context.push(Routes.cities),
             ),
+            // Gated, not greyed: a link that only ever leads to a screen this account cannot
+            // read is a row to leave out, not one to explain. The route guards it again — this
+            // is the courtesy, that is the boundary.
+            PermissionGate(
+              permission: AppPermission.viewUsers,
+              child: _DrawerLink(
+                icon: AppIcons.employees,
+                label: 'الموظفون',
+                onTap: () => context.push(Routes.employees),
+              ),
+            ),
+            PermissionGate(
+              permission: AppPermission.manageRoles,
+              child: _DrawerLink(
+                icon: AppIcons.roles,
+                label: 'الأدوار والصلاحيات',
+                onTap: () => context.push(Routes.roles),
+              ),
+            ),
             const Spacer(),
             const Divider(height: 1),
-            const _LogoutTile(),
+            _DrawerLink(
+              icon: AppIcons.settings,
+              label: 'الإعدادات',
+              onTap: () => context.push(Routes.settings),
+            ),
             SizedBox(height: 8.h),
           ],
         ),
@@ -211,66 +222,5 @@ class _DrawerLink extends StatelessWidget {
         onTap();
       },
     );
-  }
-}
-
-/// The way out, in the error colour, behind a confirmation.
-///
-/// Signing out is one tap from losing a half-finished screen and needing a password to get back
-/// in — cheap to confirm, expensive to do by accident with a thumb.
-class _LogoutTile extends StatelessWidget {
-  const _LogoutTile();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocConsumer<LogoutCubit, LogoutState>(
-      listener: (context, state) {
-        if (state is! LogoutSignedOut) return;
-
-        // `go`, not `push`: the session is over, so there must be nothing behind the login
-        // screen for the back button to return to.
-        context.go(Routes.login);
-        // Said the same way whether or not the server was reached, because from here it is the
-        // same thing: the token is off this device. `state.failure` records the difference for
-        // anyone who needs it, and nobody signing out needs to read about it.
-        context.showSuccess('تم تسجيل الخروج');
-      },
-      builder: (context, state) {
-        final isSubmitting = state is LogoutSubmitting;
-        final scheme = context.colorScheme;
-
-        return ListTile(
-          leading: isSubmitting
-              ? SizedBox(
-                  height: 22.w,
-                  width: 22.w,
-                  child: CircularProgressIndicator(strokeWidth: 2.4, color: scheme.error),
-                )
-              : Icon(AppIcons.logout, color: scheme.error),
-          title: Text(
-            'تسجيل الخروج',
-            style: context.textTheme.bodyLarge?.copyWith(
-              color: scheme.error,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          onTap: isSubmitting ? null : () => unawaited(_confirmAndSubmit(context)),
-        );
-      },
-    );
-  }
-
-  Future<void> _confirmAndSubmit(BuildContext context) async {
-    final cubit = context.read<LogoutCubit>();
-
-    final confirmed = await showCustomDialog(
-      context: context,
-      title: 'تسجيل الخروج',
-      description: 'سيتم إنهاء جلستك على هذا الجهاز، وستحتاج إلى إدخال كلمة المرور مرة أخرى.',
-      confirmLabel: 'خروج',
-      severity: DialogSeverity.warning,
-    );
-
-    if (confirmed ?? false) await cubit.submit();
   }
 }

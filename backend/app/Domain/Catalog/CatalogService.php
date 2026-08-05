@@ -39,6 +39,17 @@ class CatalogService
         return ($this->listQuery)($filters, $perPage);
     }
 
+    /**
+     * One product with everything pricing needs already loaded.
+     *
+     * Eager-loads the tiers because the caller is about to quote against them, and strict mode
+     * turns a forgotten load into an exception rather than a silent query per line.
+     */
+    public function findProduct(int $id): Product
+    {
+        return Product::query()->with('variants.priceTiers')->findOrFail($id);
+    }
+
     public function create(ProductData $data): Product
     {
         return ($this->createProduct)($data);

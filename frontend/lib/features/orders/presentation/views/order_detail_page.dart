@@ -3,25 +3,34 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:printing/core/di/injector.dart';
+import 'package:printing/core/permissions/app_permission.dart';
+import 'package:printing/core/router/app_router.dart';
+import 'package:printing/core/session/session.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/widgets/app_button.dart';
+import 'package:printing/core/widgets/app_speed_dial.dart';
+import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:printing/features/orders/presentation/widgets/order_customer_card.dart';
 import 'package:printing/features/orders/presentation/widgets/order_designs_section.dart';
-import 'package:printing/features/orders/presentation/widgets/order_move_sheet.dart';
-import 'package:printing/features/orders/presentation/widgets/order_status_chip.dart';
+import 'package:printing/features/orders/presentation/widgets/order_status_bar.dart';
 import 'package:printing/features/orders/presentation/widgets/order_timeline.dart';
 import 'package:printing/features/orders/presentation/widgets/order_totals.dart';
 
 /// One order, everything about it, and the moves staff make on it.
 ///
-/// **The action buttons are drawn from `available_transitions` and from nothing else.** The
-/// server sends that list already narrowed to what the signed-in user may do, so this screen
-/// holds no copy of the state machine — no "if ready show dispatch", no permission checks of its
-/// own. Add a status on the backend and the button appears here without an app release; take a
-/// permission away and it disappears. A second copy of those rules in Dart is the one that
-/// drifts, and it drifts on the side that guards the button.
+/// **The moves are drawn from `available_transitions` and from nothing else.** The server sends
+/// that list already narrowed to what the signed-in user may do, so this screen holds no copy of
+/// the state machine — no "if ready show dispatch", no permission checks of its own. Add a status
+/// on the backend and it appears here without an app release; take a permission away and it
+/// disappears. A second copy of those rules in Dart is the one that drifts, and it drifts on the
+/// side that guards the button.
+///
+/// **The route is drawn once, at the bottom.** «سجل الحالات» already says where the order has
+/// been and where it is; a rail across the top said the same thing a second time in a different
+/// shape, and two answers to one question is one answer too many.
 ///
 /// Pops with the updated [Order] when a move succeeded, so the list behind replaces its row
 /// instead of re-fetching a page.
@@ -63,6 +72,21 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
         context.pop(_moved);
       },
       child: Scaffold(
+        // The dial pins to the edge that leaves room for its labels in Arabic — see
+        // AppSpeedDial's own notes on why the three parts of that only work together.
+        floatingActionButtonLocation: AppSpeedDial.location,
+        floatingActionButton: BlocBuilder<OrderDetailCubit, OrderDetailState>(
+          builder: (context, state) {
+            final order = state.order;
+            if (order == null) return const SizedBox.shrink();
+
+            return _Actions(
+              order: order,
+              onChangeStatus: _changeStatus,
+              onEdit: _edit,
+            );
+          },
+        ),
         appBar: AppBar(
           title: BlocBuilder<OrderDetailCubit, OrderDetailState>(
             builder: (context, state) {
@@ -90,8 +114,12 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               onRefresh: cubit.load,
               child: _Body(
                 order: state.order!,
-                isMoving: state.isMoving,
-                onMove: _move,
+                // A courtesy, never a boundary: the customer screen refuses on its own. Without
+                // the grant the card still shows the three facts the order carries — it simply
+                // stops advertising a door that opens onto a 403.
+                onOpenCustomer: sl<Session>().can(AppPermission.viewCustomers)
+                    ? _openCustomer
+                    : null,
               ),
             ),
           },
@@ -100,40 +128,101 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     );
   }
 
-  Future<void> _move(OrderTransition transition) async {
+  /// Hands the editing to its own screen, and re-reads whatever it changed.
+  ///
+  /// Re-read rather than trusting what came back: the totals are the server's arithmetic, an
+  /// approved version changes what the order may do next, and this screen is the one that has
+  /// to be right about both.
+  Future<void> _edit(BuildContext context) async {
     final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
 
-    // Asked for *before* sending, so the server's 422 for a missing reason is a case the user
-    // never reaches. `requires_reason` comes from the server too, so a future status that starts
-    // demanding one gets the field with no app change.
-    final reason = await showOrderMoveSheet(context: context, transition: transition);
-    if (reason == null) return;
+    final changed = await context.push<bool>(Routes.editOrder(order.id));
+    if (changed != true || !mounted) return;
 
-    final updated = await cubit.move(transition.status, reason: reason.value);
-    if (updated == null || !mounted) return;
+    await cubit.load();
 
-    setState(() => _moved = updated);
-    context.showSuccess('تم نقل الطلبية إلى «${updated.statusLabel}»');
+    final updated = cubit.state.order;
+    if (updated != null) setState(() => _moved = updated);
   }
+
+  /// Opens the customer's own screen.
+  ///
+  /// The order carries the id whether or not the customer object came with it, so this works on
+  /// a cold deep link too. Re-reads on the way back: an edit made over there — a corrected phone
+  /// number, a deactivation — is exactly the sort of thing somebody does *because* of the order
+  /// they were looking at.
+  Future<void> _openCustomer() async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    await context.push(Routes.customer(order.customerId));
+    if (!mounted) return;
+
+    await cubit.load();
+  }
+
+  /// Hands the move to its own screen, and takes back whatever it did.
+  ///
+  /// **Nothing about the move is decided here.** The destinations, the fields each of them asks
+  /// for and the request itself all belong to [OrderStatusPage]; this screen only learns the
+  /// result — which it keeps, so backing out of it hands the updated order to the list behind.
+  Future<void> _changeStatus(BuildContext context) async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final moved = await context.push<Order>(Routes.orderStatus(order.id));
+    if (moved == null || !mounted) return;
+
+    cubit.replace(moved);
+    setState(() => _moved = moved);
+  }
+
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.order, required this.isMoving, required this.onMove});
+  const _Body({required this.order, required this.onOpenCustomer});
 
   final Order order;
-  final bool isMoving;
-  final Future<void> Function(OrderTransition transition) onMove;
+
+  /// Null for anybody without `customers.view` — see [OrderCustomerCard].
+  final Future<void> Function()? onOpenCustomer;
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       // Scrollable even when short, so pull-to-refresh works on every state.
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 32.h),
+      // Deep bottom padding: the floating dial hangs over this list, and a total it covers
+      // is a number somebody has to move the screen to read.
+      padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 96.h),
       children: [
+        // First, across the width, in the status's own colour. It is the question the screen is
+        // opened to answer, and it used to be a chip the size of a list row's sharing a line
+        // with the total.
+        OrderStatusBar(status: order.status, label: order.statusLabel),
+        SizedBox(height: 16.h),
         _Header(order: order),
         SizedBox(height: 16.h),
-        _MoveActions(order: order, isMoving: isMoving, onMove: onMove),
+        // Who it is for, and the way to them. Second, because "whose is this" is the question
+        // asked right after "what state is it in" — and the phone number here is the one that
+        // gets rung when either answer is a surprise.
+        OrderCustomerCard(order: order, onTap: onOpenCustomer),
+        // Moving the order lives on the floating button. Silence is not an explanation, so an
+        // order that can go nowhere still says which of the two reasons applies: the dial is
+        // simply not rendered, and a finished order and a user without the grant look identical
+        // otherwise.
+        if (!order.hasActions) ...[
+          SizedBox(height: 16.h),
+          _Note(
+            text: order.isFinal
+                ? 'الطلبية ${order.statusLabel} — لا مزيد من الإجراءات'
+                : 'لا تملك صلاحية تغيير حالة هذه الطلبية',
+          ),
+        ],
         SizedBox(height: 16.h),
         _Destination(order: order),
         SizedBox(height: 16.h),
@@ -142,10 +231,16 @@ class _Body extends StatelessWidget {
           SizedBox(height: 16.h),
         ],
         _Section(title: 'الحساب', child: OrderTotals(order: order)),
-        if (order.designs != null && order.designs!.isNotEmpty) ...[
+        // Shown even when no version exists yet, because that is exactly the order somebody
+        // opens this screen to add one to. Any order may carry artwork — `design_source` says
+        // whose work it was, which is a question about money, not about whether there is a file.
+        if (order.designs != null) ...[
           SizedBox(height: 16.h),
           _Section(
             title: 'التصاميم',
+            // Read here, changed on «تعديل الطلبية». Adding a version and judging one are both
+            // edits, and this screen having its own copies of them would be a second door onto
+            // the same room.
             child: OrderDesignsSection(designs: order.designs!),
           ),
         ],
@@ -181,7 +276,16 @@ class _Header extends StatelessWidget {
         children: [
           Row(
             children: [
-              OrderStatusChip(status: order.status, label: order.statusLabel),
+              // Named now that it stands alone. It shared this line with the status chip, which
+              // said what the big number was by standing next to it; the status has the bar
+              // above, so the total has to introduce itself.
+              Text(
+                'الإجمالي',
+                style: context.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
               const Spacer(),
               Text(
                 order.grandTotal,
@@ -192,20 +296,34 @@ class _Header extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 12.h),
-          Text(
-            order.customer?.name ?? 'عميل #${order.customerId}',
-            style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          if (order.customer?.phone case final phone?) ...[
-            SizedBox(height: 4.h),
-            Text(
-              phone,
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+          // Only ever present when it disagrees with the total above — that is the whole reason
+          // the server records it — so it is drawn as a discrepancy rather than as a second
+          // number in a list. Somebody reading this screen needs to see the gap, not hunt for it.
+          if (order.collectedAmount case final collected?) ...[
+            SizedBox(height: 8.h),
+            Row(
+              children: [
+                Text(
+                  'المستلم فعلياً',
+                  style: context.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: scheme.error,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  collected,
+                  style: context.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: scheme.error,
+                  ),
+                ),
+              ],
             ),
           ],
+          // The customer used to be repeated here. They have their own card now, with the code
+          // and a way into their file — three facts and a door, where this had two facts and
+          // nowhere to go.
           if (order.cancellationReason case final reason?) ...[
             SizedBox(height: 12.h),
             Container(
@@ -229,42 +347,78 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// The buttons, and only the ones the server offered.
-class _MoveActions extends StatelessWidget {
-  const _MoveActions({required this.order, required this.isMoving, required this.onMove});
+/// What the floating button offers on this screen.
+///
+/// **One arm for the status, not one per status.** An order in «جاهزة» offers five moves, and a
+/// dial with five arms covers the screen it is acting on. The arm opens the move on its own
+/// screen, where the fields a destination asks for have room to be asked for.
+///
+/// The dial collapses to a plain button when only one entry survives, which is the common case
+/// for a printer with one grant, and renders nothing at all when none does.
+class _Actions extends StatelessWidget {
+  const _Actions({
+    required this.order,
+    required this.onChangeStatus,
+    required this.onEdit,
+  });
 
   final Order order;
-  final bool isMoving;
-  final Future<void> Function(OrderTransition transition) onMove;
+  final Future<void> Function(BuildContext context) onChangeStatus;
+  final Future<void> Function(BuildContext context) onEdit;
+
+  /// Whether «تعديل الطلبية» has anything at all to offer this person.
+  ///
+  /// Two questions, each answered by the server's own flag and this user's own grant: the lines
+  /// stay open while the press runs, the artwork does not, and an order past both — «جاهزة»
+  /// onwards — has nothing on that screen to change.
+  bool get _mayEditSomething =>
+      (order.itemsAreEditable && sl<Session>().can(AppPermission.manageOrders)) ||
+      (order.designsAreEditable &&
+          sl<Session>().can(AppPermission.manageOrderDesigns));
 
   @override
   Widget build(BuildContext context) {
-    if (!order.hasActions) {
-      // Two different silences, said differently. A finished order has nothing left to do; an
-      // open one with no buttons means this user holds none of its permissions, and "لا توجد
-      // إجراءات" would read as a bug to them.
-      return _Note(
-        text: order.isFinal
-            ? 'الطلبية ${order.statusLabel} — لا مزيد من الإجراءات'
-            : 'لا تملك صلاحية تغيير حالة هذه الطلبية',
-      );
-    }
-
-    return Wrap(
-      spacing: 8.w,
-      runSpacing: 8.h,
-      children: [
-        for (final transition in order.availableTransitions)
-          AppButton.tonal(
-            label: transition.label,
-            // Busy, not unavailable: `onPressed: null` greys the button out, which reads as
-            // "you may not" rather than "in progress". AppButton refuses the tap itself.
-            isLoading: isMoving,
-            onPressed: () => onMove(transition),
+    return AppSpeedDial(
+      actions: [
+        // No `permission` of its own: `available_transitions` arrives already narrowed to what
+        // this user may do, and a second check in Dart could only disagree with the one that
+        // matters.
+        if (order.hasActions)
+          AppAction(
+            label: 'تغيير الحالة',
+            icon: AppIcons.statusChange,
+            tone: AppActionTone.primary,
+            onTap: onChangeStatus,
           ),
+
+        // Offered while *either* half of that screen is still open — the lines, or the artwork
+        // — and they close at different points, which is why one flag could not answer for
+        // both. The server owns both answers; this only stops offering a screen with nothing
+        // on it to change.
+        //
+        // Checked here rather than declared as the action's `permission`, because it is an
+        // *either*: a clerk holds `orders.manage` and a designer holds `orders.designs.manage`,
+        // and each has something to do there the other has not.
+        if (_mayEditSomething)
+          AppAction(
+            label: 'تعديل الطلبية',
+            icon: AppIcons.edit,
+            onTap: onEdit,
+          ),
+
+        AppAction(
+          label: 'سجل التعديلات',
+          icon: AppIcons.history,
+          // `logs.view`, not `orders.view`, and that is the server's own line: a history shows
+          // what everyone has done, including prices the reader may have no other way to see.
+          permission: AppPermission.viewActivityLogs,
+          onTap: (context) =>
+              context.push(Routes.activityLog(AuditSubject.order, order.id)),
+        ),
       ],
     );
   }
+
 }
 
 class _Destination extends StatelessWidget {
@@ -296,6 +450,8 @@ class _Destination extends StatelessWidget {
             _Row(icon: AppIcons.tag, label: 'رقم التتبع', value: tracking),
           if (order.shippingCompany case final company?)
             _Row(icon: AppIcons.warehouse, label: 'شركة الشحن', value: company),
+          if (order.weightKg case final weight?)
+            _Row(icon: AppIcons.warehouse, label: 'الوزن', value: '$weight كجم'),
           if (order.notes case final notes?)
             _Row(icon: AppIcons.edit, label: 'ملاحظات', value: notes),
         ],
@@ -340,6 +496,18 @@ class _Items extends StatelessWidget {
                           color: scheme.onSurfaceVariant,
                         ),
                       ),
+                      // On the line it is missing from, because that is the only place the
+                      // number means anything: «ناقص ٤٠» of *which* size.
+                      if (item.shortageQuantity case final missing?) ...[
+                        SizedBox(height: 2.h),
+                        Text(
+                          'ناقص: $missing ${item.pricingUnitLabel}',
+                          style: context.textTheme.bodySmall?.copyWith(
+                            color: scheme.error,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

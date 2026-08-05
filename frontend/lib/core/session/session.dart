@@ -49,6 +49,24 @@ class Session {
 
   bool canAny(Iterable<AppPermission> permissions) => permissions.any(can);
 
+  /// Whether this account is an administrator.
+  ///
+  /// **The one gate in this app that is not a permission, and it is deliberate.** Creating a
+  /// staff account is administrators-only for now, and the server enforces it with a *gate
+  /// ability* rather than a permission — precisely so it cannot be ticked onto a role from the
+  /// roles screen. There is no `AppPermission` to ask for, because there is no permission.
+  ///
+  /// The server's answer, never derived from [AuthUser.roles] here: an administrator's access
+  /// comes from a rule on the backend, and re-deriving it would be a second copy of that rule
+  /// with nothing keeping the two in step.
+  ///
+  /// Fail-closed like [can]: an unfilled session is not an administrator.
+  ///
+  /// **Reach for [can] first.** Anything gated on *what a job may do* belongs in
+  /// [AppPermission]; this is only for the handful of things reserved to the role itself. The
+  /// day creating staff is delegated, this call site becomes a `can(...)` and this getter goes.
+  bool get isAdmin => _user?.isAdmin ?? false;
+
   /// Names the server granted that this build has no case for.
   ///
   /// Kept rather than dropped, and that is why [_granted] holds strings and not

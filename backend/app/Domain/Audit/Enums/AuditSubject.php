@@ -15,6 +15,10 @@ use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderDesign;
+use App\Domain\Order\Models\OrderItem;
+use App\Domain\Order\Models\OrderStatusTransition;
 use App\Providers\AppServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -53,6 +57,12 @@ enum AuditSubject: string
     case ProductPriceTier = 'product_price_tier';
     case ProductImage = 'product_image';
 
+    // Orders
+    case Order = 'order';
+    case OrderItem = 'order_item';
+    case OrderDesign = 'order_design';
+    case OrderStatusTransition = 'order_status_transition';
+
     // Delivery map
     case City = 'city';
     case Region = 'region';
@@ -72,6 +82,10 @@ enum AuditSubject: string
             self::ProductVariant => ProductVariant::class,
             self::ProductPriceTier => ProductPriceTier::class,
             self::ProductImage => ProductImage::class,
+            self::Order => Order::class,
+            self::OrderItem => OrderItem::class,
+            self::OrderDesign => OrderDesign::class,
+            self::OrderStatusTransition => OrderStatusTransition::class,
             self::City => City::class,
             self::Region => Region::class,
         };
@@ -92,6 +106,10 @@ enum AuditSubject: string
             self::ProductVariant => 'مقاس منتج',
             self::ProductPriceTier => 'شريحة سعر',
             self::ProductImage => 'صورة منتج',
+            self::Order => 'طلبية',
+            self::OrderItem => 'بند طلبية',
+            self::OrderDesign => 'تصميم طلبية',
+            self::OrderStatusTransition => 'انتقال حالة طلبية',
             self::City => 'مدينة',
             self::Region => 'منطقة',
         };

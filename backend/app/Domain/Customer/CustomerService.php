@@ -8,6 +8,7 @@ use App\Domain\Customer\Actions\CreateCustomer;
 use App\Domain\Customer\Actions\UpdateCustomer;
 use App\Domain\Customer\DTOs\CustomerData;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Customer\Queries\CustomerFilters;
 use App\Domain\Customer\Queries\CustomerListQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -34,6 +35,23 @@ class CustomerService
     public function paginate(CustomerFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return ($this->listQuery)($filters, $perPage);
+    }
+
+    public function find(int $id): Customer
+    {
+        return Customer::query()->findOrFail($id);
+    }
+
+    /**
+     * One design from a customer's library.
+     *
+     * Whether it belongs to the customer placing the order is the caller's rule — Order throws
+     * its own refusal for that, because "not this customer's artwork" is an order's problem to
+     * describe, not the customer module's.
+     */
+    public function findDesign(int $id): CustomerDesign
+    {
+        return CustomerDesign::query()->findOrFail($id);
     }
 
     public function create(CustomerData $data): Customer

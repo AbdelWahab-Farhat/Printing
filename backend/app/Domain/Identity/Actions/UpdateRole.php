@@ -15,7 +15,10 @@ use Spatie\Permission\PermissionRegistrar;
  */
 final class UpdateRole
 {
-    public function __construct(private readonly RecordRolePermissionChange $recordPermissionChange) {}
+    public function __construct(
+        private readonly RecordRolePermissionChange $recordPermissionChange,
+        private readonly EnsurePermissionsExist $ensurePermissionsExist,
+    ) {}
 
     /**
      * @param  list<string>|null  $permissions  null leaves the current set untouched.
@@ -40,6 +43,11 @@ final class UpdateRole
             $role->update(['name' => $name]);
 
             if ($permissions !== null) {
+                // Before the sync, for the same reason as in CreateRole: a permission the code
+                // declares and validation accepts must be grantable, whether or not the seeder
+                // has caught up.
+                ($this->ensurePermissionsExist)($permissions);
+
                 // Read before the sync, because afterwards there is nothing left to compare
                 // against — the pivot table keeps no history of its own.
                 $before = $role->permissions()->pluck('name')->all();

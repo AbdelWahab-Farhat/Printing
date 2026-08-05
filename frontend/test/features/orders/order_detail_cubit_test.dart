@@ -7,8 +7,8 @@ import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/order_status.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:printing/features/orders/repositories/order_repository.dart';
-import 'package:printing/features/orders/usecases/change_order_status.dart';
 import 'package:printing/features/orders/usecases/get_order.dart';
+import 'package:printing/features/orders/usecases/manage_order_designs.dart';
 
 class _MockOrderRepository extends Mock implements OrderRepository {}
 
@@ -29,6 +29,8 @@ void main() {
       isFinal: false,
       availableTransitions: transitions,
       customerId: 5,
+      cityId: 3,
+      designSource: 'none',
       cityName: 'طرابلس',
       fulfilmentTypeLabel: 'توصيل',
       isOfficePickup: false,
@@ -48,7 +50,8 @@ void main() {
     cubit = OrderDetailCubit(
       orderId: 7,
       getOrder: GetOrder(repository),
-      changeStatus: ChangeOrderStatus(repository),
+      addDesign: AddOrderDesign(repository),
+      reviewDesign: ReviewOrderDesign(repository),
     );
   });
 
@@ -110,100 +113,81 @@ void main() {
     await future;
   });
 
-  // ───────────────────────────── moving ─────────────────────────────
+  // ───────────────────────────── taking the move back ─────────────────────────────
 
-  test('a successful move keeps the order the server returned', () async {
+  test('the order the move screen came back with replaces what is on screen', () async {
     // Arrange
     when(() => repository.order(7)).thenAnswer((_) async => Right(orderWith()));
     await cubit.load();
 
-    final moved = orderWith(status: OrderStatus.printing, label: 'قيد الطباعة');
-    when(
-      () => repository.changeStatus(
-        7,
-        status: any(named: 'status'),
-        reason: any(named: 'reason'),
-      ),
-    ).thenAnswer((_) async => Right(moved));
+    // Act — what `OrderStatusPage` popped with, which *is* the server's own answer.
+    cubit.replace(orderWith(status: OrderStatus.printing, label: 'قيد الطباعة'));
 
-    // Act
-    final result = await cubit.move(OrderStatus.printing);
-
-    // Assert — the response *is* the new order, including a different set of legal moves, so
-    // taking it is one round trip instead of two.
-    expect(result?.statusLabel, 'قيد الطباعة');
+    // Assert — no second read: the response to a move carries the new order whole, including
+    // the different set of moves that now follow it.
     expect(cubit.state.order?.statusLabel, 'قيد الطباعة');
-    expect(cubit.state.isMoving, isFalse);
+    expect(cubit.state, isA<OrderDetailLoaded>());
+    verifyNever(() => repository.changeStatus(any(), status: any(named: 'status')));
   });
 
-  test('a refused move leaves the order on screen', () async {
+  // ───────────────────────────── the artwork conversation ─────────────────────────────
+
+  test('versions are proposed one at a time, then the order is read again', () async {
     // Arrange
     when(() => repository.order(7)).thenAnswer((_) async => Right(orderWith()));
     await cubit.load();
-
     when(
-      () => repository.changeStatus(
-        7,
-        status: any(named: 'status'),
-        reason: any(named: 'reason'),
-      ),
+      () => repository.addDesign(7, customerDesignId: any(named: 'customerDesignId')),
+    ).thenAnswer((_) async => const Right(null));
+
+    // Act
+    final failure = await cubit.addDesigns([12, 13]);
+
+    // Assert — one at a time because the server allocates the version number, and «النسخة
+    // الثالثة» has to mean the file the conversation called the third.
+    expect(failure, isNull);
+    verify(() => repository.addDesign(7, customerDesignId: 12)).called(1);
+    verify(() => repository.addDesign(7, customerDesignId: 13)).called(1);
+    verify(() => repository.order(7)).called(2);
+  });
+
+  test('a refused version stops the ones behind it and is handed back', () async {
+    // Arrange
+    when(() => repository.order(7)).thenAnswer((_) async => Right(orderWith()));
+    await cubit.load();
+    when(
+      () => repository.addDesign(7, customerDesignId: 12),
     ).thenAnswer(
-      (_) async => const Left(
-        Failure.server(
-          message: 'لا يمكن نقل الطلبية من «جاهزة» إلى «تم الاستلام»',
-        ),
-      ),
+      (_) async => const Left(Failure.server(message: 'هذا التصميم لا يخص هذا العميل')),
     );
 
     // Act
-    final result = await cubit.move(OrderStatus.delivered);
+    final failure = await cubit.addDesigns([12, 13]);
 
-    // Assert — the screen keeps what it was showing, with the server's sentence over the top.
-    expect(result, isNull);
-    expect(cubit.state, isA<OrderDetailFailure>());
-    expect(cubit.state.order?.statusLabel, 'جاهزة');
+    // Assert — the screen shows the sentence; the second file is not sent into the same wall.
+    expect(failure?.message, 'هذا التصميم لا يخص هذا العميل');
+    verifyNever(() => repository.addDesign(7, customerDesignId: 13));
   });
 
-  test('a blank reason is not sent at all', () async {
+  test('judging a version re-reads the order, because what follows it has changed', () async {
     // Arrange
     when(() => repository.order(7)).thenAnswer((_) async => Right(orderWith()));
     await cubit.load();
     when(
-      () => repository.changeStatus(
+      () => repository.reviewDesign(
         7,
-        status: any(named: 'status'),
-        reason: any(named: 'reason'),
+        4,
+        isApproved: any(named: 'isApproved'),
+        rejectionReason: any(named: 'rejectionReason'),
       ),
-    ).thenAnswer((_) async => Right(orderWith()));
+    ).thenAnswer((_) async => const Right(null));
 
-    // Act — a field the user tabbed through and left as spaces.
-    await cubit.move(OrderStatus.printing, reason: '   ');
-
-    // Assert — sending it would satisfy a required-field check while telling the next reader
-    // nothing.
-    final captured = verify(
-      () => repository.changeStatus(
-        7,
-        status: any(named: 'status'),
-        reason: captureAny(named: 'reason'),
-      ),
-    ).captured.last;
-
-    expect(captured, isNull);
-  });
-
-  test('moving before the order has loaded does nothing', () async {
     // Act
-    final result = await cubit.move(OrderStatus.printing);
+    final failure = await cubit.reviewDesign(4, isApproved: true);
 
-    // Assert
-    expect(result, isNull);
-    verifyNever(
-      () => repository.changeStatus(
-        any(),
-        status: any(named: 'status'),
-        reason: any(named: 'reason'),
-      ),
-    );
+    // Assert — an approved version is what lets the order be printed, and whether it may now
+    // is the server's answer rather than this app's inference.
+    expect(failure, isNull);
+    verify(() => repository.order(7)).called(2);
   });
 }

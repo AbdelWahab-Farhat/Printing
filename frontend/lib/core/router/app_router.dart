@@ -6,21 +6,34 @@ import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/session/session.dart';
 import 'package:printing/core/storage/token_storage.dart';
 import 'package:printing/core/utils/app_icons.dart';
+import 'package:printing/features/access/models/role.dart';
+import 'package:printing/features/access/presentation/views/add_employee_page.dart';
+import 'package:printing/features/access/presentation/views/employees_page.dart';
+import 'package:printing/features/access/presentation/views/role_detail_page.dart';
+import 'package:printing/features/access/presentation/views/role_form_page.dart';
+import 'package:printing/features/access/presentation/views/roles_page.dart';
 import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/audit/presentation/views/activity_log_page.dart';
 import 'package:printing/features/auth/presentation/views/login_page.dart';
+import 'package:printing/features/cities/models/city.dart';
 import 'package:printing/features/cities/presentation/views/cities_page.dart';
+import 'package:printing/features/cities/presentation/views/city_regions_page.dart';
 import 'package:printing/features/customers/models/customer.dart';
 import 'package:printing/features/customers/presentation/views/add_customer_page.dart';
+import 'package:printing/features/customers/presentation/views/customer_designs_page.dart';
 import 'package:printing/features/customers/presentation/views/customer_detail_page.dart';
 import 'package:printing/features/customers/presentation/views/customers_page.dart';
 import 'package:printing/features/home/presentation/views/home_page.dart';
 import 'package:printing/features/location/presentation/views/pick_location_page.dart';
 import 'package:printing/features/orders/presentation/views/order_detail_page.dart';
+import 'package:printing/features/orders/presentation/views/order_edit_page.dart';
+import 'package:printing/features/orders/presentation/views/order_status_page.dart';
 import 'package:printing/features/orders/presentation/views/orders_page.dart';
 import 'package:printing/features/products/presentation/views/add_product_page.dart';
+import 'package:printing/features/products/presentation/views/product_detail_page.dart';
 import 'package:printing/features/products/presentation/views/products_page.dart';
 import 'package:printing/features/root/presentation/views/root_page.dart';
+import 'package:printing/features/settings/presentation/views/settings_page.dart';
 import 'package:printing/features/splash/presentation/views/splash_page.dart';
 
 /// Route names, as constants.
@@ -42,6 +55,40 @@ abstract final class Routes {
   /// bottom bar never claims the user is on a tab they have left.
   static const String warehouse = '/warehouse';
   static const String cities = '/cities';
+
+  /// The neighbourhoods inside one city. Declared as a child of `/cities`, because that is what
+  /// they are: a region has no life outside its city, and the path saying so matches the API,
+  /// where `/cities/{city}/regions/{region}` makes another city's region a 404 by construction.
+  static const String cityRegionsPath = ':id/regions';
+
+  static String cityRegions(int cityId) => '/cities/$cityId/regions';
+
+  /// Who works here. Reached from the drawer, and guarded by `users.view`.
+  static const String employees = '/employees';
+
+  /// Registering a colleague. Administrators only — see `Session.isAdmin`.
+  static const String addEmployee = '/employees/new';
+
+  /// The jobs this business has. A sibling of [employees] rather than a child: a role exists
+  /// whether or not anybody holds it, and it is administered by a different permission.
+  static const String roles = '/roles';
+
+  /// Creating one. Declared **before** `/roles/:id` below, because GoRouter matches in
+  /// declaration order and `:id` would otherwise swallow the word `new`.
+  static const String newRole = '/roles/new';
+
+  static const String roleDetailPath = '/roles/:id';
+
+  static String role(int roleId) => '/roles/$roleId';
+
+  /// Editing an existing one — the same screen that creates.
+  static const String editRolePath = '/roles/:id/edit';
+
+  static String editRole(int roleId) => '/roles/$roleId/edit';
+
+  /// Preferences, what this build is, and the way out. Outside the shell: it is a place the
+  /// user goes *to*, not a tab they browse between.
+  static const String settings = '/settings';
 
   /// Registering a customer. A path under `/customers` rather than a top-level `/add-customer`,
   /// so the URL says what is being added — and outside the shell, because a form is a task the
@@ -71,11 +118,30 @@ abstract final class Routes {
 
   static const String addProduct = '/products/new';
 
+  /// One product, everything about it. Declared **after** `/products/new` below, because
+  /// GoRouter matches in declaration order and `:id` would otherwise swallow the word `new`.
+  static const String productDetailPath = '/products/:id';
+
+  static String product(int id) => '/products/$id';
+
   /// One order, everything about it. Outside the shell, because opening an order is a task the
   /// user is *in* — the bottom bar claiming they are still browsing a tab would be wrong.
   static const String orderDetailPath = '/orders/:id';
 
   static String order(int id) => '/orders/$id';
+
+  /// Moving one order. A screen of its own rather than a sheet, because a destination may ask
+  /// for artwork — a picker, an upload, a library — and it pops with the updated order.
+  static const String orderStatusPath = 'status';
+
+  static String orderStatus(int id) => '/orders/$id/status';
+
+  /// Changing what an order *says*: its lines, its discount and its artwork. A screen of its
+  /// own for the same reason the move is one — it opens pickers and a keyboard, and it pops
+  /// with whether anything was written.
+  static const String orderEditPath = 'edit';
+
+  static String editOrder(int id) => '/orders/$id/edit';
 
   /// Choosing a point on the map. Outside the shell, and returns a `LatLng` through `pop`.
   static const String pickLocation = '/pick-location';
@@ -155,10 +221,95 @@ abstract final class AppRouter {
         builder: (context, state) => OrderDetailPage(
           orderId: int.parse(state.pathParameters['id']!),
         ),
+        routes: [
+          // A child of the order, because that is what it is: moving *this* order. No guard of
+          // its own — which moves are on offer, and to whom, is a question only the server
+          // answers, and the screen shows what it was sent.
+          GoRoute(
+            path: Routes.orderStatusPath,
+            builder: (context, state) => OrderStatusPage(
+              orderId: int.parse(state.pathParameters['id']!),
+            ),
+          ),
+          GoRoute(
+            path: Routes.orderEditPath,
+            builder: (context, state) => OrderEditPage(
+              orderId: int.parse(state.pathParameters['id']!),
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: Routes.cities,
         builder: (context, state) => const CitiesPage(),
+        routes: [
+          GoRoute(
+            path: Routes.cityRegionsPath,
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+              // A deep link is somebody else's text; `extra` is ours and is absent on one.
+              // The screen copes with a missing city — it cannot cope with a missing id.
+              return id == null
+                  ? const _UnknownCity()
+                  : CityRegionsPage(cityId: id, city: state.extra as City?);
+            },
+          ),
+        ],
+      ),
+      // Access management. Guarded the same way `/products/new` is: `can()` answers
+      // synchronously, so a deep link, a notification tap or a stale back-stack entry cannot
+      // open a screen whose every request would answer 403.
+      // Declared **before** `/employees`, so the more specific path is not shadowed — and with
+      // the stricter guard, because creating an account is the administrator's alone while
+      // reading the list is a permission anyone may be granted.
+      GoRoute(
+        path: Routes.addEmployee,
+        // The only route in this file guarded by a role rather than a permission. The server
+        // enforces it with a gate ability that cannot be ticked onto a role; this is the
+        // matching courtesy, so a deep link cannot open a form whose only ending is a 403.
+        redirect: (context, state) => sl<Session>().isAdmin ? null : Routes.home,
+        builder: (context, state) => const AddEmployeePage(),
+      ),
+      GoRoute(
+        path: Routes.employees,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewUsers) ? null : Routes.home,
+        builder: (context, state) => const EmployeesPage(),
+      ),
+      GoRoute(
+        path: Routes.newRole,
+        redirect: _requiresRoleManagement,
+        builder: (context, state) => const RoleFormPage(),
+      ),
+      // After `/roles/new`, and that ordering is load-bearing: go_router matches in declaration
+      // order, so `:id` declared first would capture the literal `new` and `int.parse('new')`
+      // would throw on the way into the detail screen.
+      GoRoute(
+        path: Routes.roles,
+        redirect: _requiresRoleManagement,
+        builder: (context, state) => const RolesPage(),
+      ),
+      GoRoute(
+        path: Routes.roleDetailPath,
+        redirect: _requiresRoleManagement,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          return id == null ? const _UnknownRole() : RoleDetailPage(roleId: id);
+        },
+        routes: [
+          GoRoute(
+            path: 'edit',
+            // `extra` carries the role the user was just looking at, so the form opens with its
+            // name and ticks already in place instead of fetching what the caller already held.
+            builder: (context, state) => RoleFormPage(role: state.extra as Role?),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: Routes.settings,
+        builder: (context, state) => const SettingsPage(),
       ),
       // Declared beside them rather than nested under the العملاء branch: `/customers` has no
       // sub-routes, so this is the only thing `/customers/new` can match, and the form covers
@@ -183,6 +334,15 @@ abstract final class AppRouter {
           GoRoute(
             path: 'edit',
             builder: (context, state) => AddCustomerPage(customer: state.extra as Customer?),
+          ),
+          GoRoute(
+            path: 'designs',
+            builder: (context, state) => CustomerDesignsPage(
+              customerId: int.parse(state.pathParameters['id']!),
+              // The name, so the bar can say whose library this is without a second request.
+              // Null on a cold deep link, where the heading stands alone.
+              customerName: state.extra as String?,
+            ),
           ),
         ],
       ),
@@ -217,6 +377,21 @@ abstract final class AppRouter {
             sl<Session>().can(AppPermission.manageProducts) ? null : Routes.products,
         builder: (context, state) => const AddProductPage(),
       ),
+      // After `/products/new`, and that ordering is load-bearing: go_router matches in
+      // declaration order, so `:id` declared first would capture the literal `new` and
+      // `int.parse('new')` would throw on the way into the detail screen.
+      GoRoute(
+        path: Routes.productDetailPath,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          // A deep link is somebody else's text. A non-numeric id is a polite screen, not a
+          // crash.
+          return id == null
+              ? const _UnknownProduct()
+              : ProductDetailPage(productId: id);
+        },
+      ),
     ],
     // A cold deep link bypasses `initialLocation`, so it can reach a gated route before the
     // splash has filled the session — and an empty session refuses everything, which would
@@ -247,6 +422,51 @@ class _UnknownRecord extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('السجل')),
       body: const Center(child: Text('لا يوجد سجل لهذا النوع من السجلات')),
+    );
+  }
+}
+
+/// Curating roles is one job behind one permission, so all four of its routes ask the same
+/// question. Written once here rather than four times inline — a guard that is *almost* the
+/// same on one of four routes is the shape this file is trying not to have.
+String? _requiresRoleManagement(BuildContext context, GoRouterState state) =>
+    sl<Session>().can(AppPermission.manageRoles) ? null : Routes.home;
+
+/// A `/roles/<something that is not a number>` link.
+class _UnknownRole extends StatelessWidget {
+  const _UnknownRole();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('الدور')),
+      body: const Center(child: Text('رقم الدور غير صحيح')),
+    );
+  }
+}
+
+/// A `/cities/<something that is not a number>/regions` link.
+class _UnknownCity extends StatelessWidget {
+  const _UnknownCity();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('المناطق')),
+      body: const Center(child: Text('رقم المدينة غير صحيح')),
+    );
+  }
+}
+
+/// A `/products/<something that is not a number>` link.
+class _UnknownProduct extends StatelessWidget {
+  const _UnknownProduct();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('تفاصيل المنتج')),
+      body: const Center(child: Text('رقم المنتج غير صحيح')),
     );
   }
 }

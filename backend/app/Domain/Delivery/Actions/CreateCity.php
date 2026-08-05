@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Delivery\Actions;
 
 use App\Domain\Delivery\DTOs\CityData;
+use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Delivery\Models\City;
 
 final class CreateCity
@@ -13,6 +14,9 @@ final class CreateCity
     {
         $city = City::create([
             'name' => $data->name,
+            // Somewhere we deliver to unless the caller says otherwise: that is what all but two
+            // of the ninety-five rows on the map are.
+            'fulfilment_type' => $data->fulfilmentType ?? FulfilmentType::Delivery,
             'is_region_required' => $data->isRegionRequired,
             'delivery_price' => $data->deliveryPrice,
             'darb_branch' => $data->darbBranch,

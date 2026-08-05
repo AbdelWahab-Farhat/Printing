@@ -46,6 +46,12 @@ abstract class Product with _$Product {
 
     @Default(<ProductVariant>[]) List<ProductVariant> variants,
     @Default(<ProductImage>[]) List<ProductImage> images,
+
+    /// When the bag entered the catalogue, and when it was last touched. Absent from nothing —
+    /// the API sends both on every product — but nullable because a `DateTime` this app failed
+    /// to parse should leave a line off a screen rather than take the whole screen down.
+    @JsonKey(name: 'created_at') DateTime? createdAt,
+    @JsonKey(name: 'updated_at') DateTime? updatedAt,
   }) = _Product;
 
   const Product._();
@@ -76,6 +82,23 @@ abstract class Product with _$Product {
 
   /// `'100.000'` reads as a quantity to a database and as noise to a person: `'100'`.
   String get minOrderQuantityLabel => _trimDecimals(minOrderQuantity);
+
+  bool get hasDescription => description != null && description!.trim().isNotEmpty;
+
+  bool get hasFeatures => features.isNotEmpty;
+
+  /// The sizes that can actually be ordered today.
+  ///
+  /// Kept apart from [variants] rather than filtering it away: a stopped size still has to be
+  /// *shown* — it is what a past order was priced at — so the detail screen lists all of them
+  /// and marks these. Only a count of what is on offer uses this.
+  List<ProductVariant> get activeVariants =>
+      variants.where((variant) => variant.isActive).toList(growable: false);
+
+  /// Whether any size at all is priced. `false` for a bag quoted by hand, and also for one
+  /// somebody added without filling the grid in — two different situations that both mean
+  /// «there is no number to show».
+  bool get hasAnyPrice => startingPrice != null;
 }
 
 /// One size of a product, with its own price breaks.
@@ -98,6 +121,26 @@ abstract class ProductVariant with _$ProductVariant {
   const ProductVariant._();
 
   factory ProductVariant.fromJson(Map<String, dynamic> json) => _$ProductVariantFromJson(json);
+
+  /// `'25 × 35 سم'`, or `null` for a size recorded as a name only.
+  ///
+  /// Built here rather than assumed equal to [label]: the two are not always the same thing —
+  /// a shop may call a size «كبير» and still have measured it — which is exactly why the API
+  /// sends both.
+  String? get dimensionsLabel =>
+      widthCm != null && heightCm != null ? '$widthCm × $heightCm سم' : null;
+
+  bool get hasPrices => priceTiers.isNotEmpty;
+
+  /// The tiers cheapest-last, which is the order somebody reads a price ladder in: «١٠٠ فأكثر،
+  /// ٣٠٠ فأكثر، ١٠٠٠ فأكثر». `num.parse` only ever *orders* them; every value shown is the
+  /// server's own text.
+  List<ProductPriceTier> get tiersByQuantity {
+    final sorted = [...priceTiers]
+      ..sort((a, b) => num.parse(a.minQuantity).compareTo(num.parse(b.minQuantity)));
+
+    return sorted;
+  }
 }
 
 /// "This many or more, at this price."
@@ -127,9 +170,36 @@ abstract class ProductImage with _$ProductImage {
     @JsonKey(name: 'alt_text') String? altText,
     @JsonKey(name: 'is_primary') @Default(false) bool isPrimary,
     @JsonKey(name: 'sort_order') @Default(0) int sortOrder,
+
+    /// What the file actually is. The API has sent these since the media layer landed; nothing
+    /// read them until a screen existed with room to say what it is showing.
+    @JsonKey(name: 'mime_type') String? mimeType,
+    @JsonKey(name: 'size_bytes') int? sizeBytes,
+    @JsonKey(name: 'width_px') int? widthPx,
+    @JsonKey(name: 'height_px') int? heightPx,
   }) = _ProductImage;
 
+  const ProductImage._();
+
   factory ProductImage.fromJson(Map<String, dynamic> json) => _$ProductImageFromJson(json);
+
+  /// `'1200 × 800'`, or `null` for a file whose dimensions were never measured.
+  String? get dimensionsLabel =>
+      widthPx != null && heightPx != null ? '$widthPx × $heightPx' : null;
+
+  /// `'٢٤٠ ك.ب'`. Kilobytes to three digits, then megabytes — a photograph is never small
+  /// enough for bytes to be the useful unit, and never large enough for gigabytes.
+  String? get sizeLabel {
+    final bytes = sizeBytes;
+    if (bytes == null) return null;
+
+    if (bytes < 1024) return '$bytes بايت';
+
+    final kilobytes = bytes / 1024;
+    if (kilobytes < 1024) return '${kilobytes.toStringAsFixed(0)} ك.ب';
+
+    return '${(kilobytes / 1024).toStringAsFixed(1)} م.ب';
+  }
 }
 
 /// `'100.000'` → `'100'`, `'0.850'` → `'0.85'`.

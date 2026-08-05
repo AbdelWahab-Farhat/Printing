@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show listEquals, mapEquals;
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'paginated.freezed.dart';
@@ -31,18 +31,39 @@ abstract class PageMeta with _$PageMeta {
 /// `T`. It is still immutable, which is the property that actually matters.
 @immutable
 class Paginated<T> {
-  const Paginated({required this.items, required this.meta});
+  const Paginated({
+    required this.items,
+    required this.meta,
+    this.extraMeta = const <String, dynamic>{},
+  });
 
   final List<T> items;
   final PageMeta meta;
+
+  /// Whatever else the endpoint put in `meta`, untouched.
+  ///
+  /// Facts about the **whole filtered set** rather than about this page — the history
+  /// endpoints' `event_counts`, which the filter chips display. It has to live in `meta`
+  /// because anything a client could count from `items` would be wrong from page two onwards.
+  ///
+  /// A raw map on purpose: `core/` must not learn what an event count is, so the feature that
+  /// asked for the key is the one that names it. Empty for every endpoint that sends nothing
+  /// extra, which is most of them.
+  final Map<String, dynamic> extraMeta;
 
   bool get isEmpty => items.isEmpty;
 
   bool get hasMore => meta.hasMore;
 
   /// Appends the next page — what a "load more" handler does with the result.
-  Paginated<T> merge(Paginated<T> next) =>
-      Paginated<T>(items: [...items, ...next.items], meta: next.meta);
+  ///
+  /// The later page's [extraMeta] wins, for the same reason its `meta` does: it is the more
+  /// recent answer to the same question.
+  Paginated<T> merge(Paginated<T> next) => Paginated<T>(
+    items: [...items, ...next.items],
+    meta: next.meta,
+    extraMeta: next.extraMeta,
+  );
 
   /// Two pages holding equal items at the same position in the same list *are* the same page.
   ///
@@ -55,9 +76,18 @@ class Paginated<T> {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other is Paginated<T> && other.meta == meta && listEquals(other.items, items);
+    return other is Paginated<T> &&
+        other.meta == meta &&
+        listEquals(other.items, items) &&
+        mapEquals(other.extraMeta, extraMeta);
   }
 
   @override
-  int get hashCode => Object.hash(meta, Object.hashAll(items));
+  int get hashCode => Object.hash(
+    meta,
+    Object.hashAll(items),
+    // Order-independent, because a JSON map's key order is not meaningful and two responses
+    // carrying the same counts must hash alike or Bloc stops dropping duplicate emissions.
+    Object.hashAllUnordered(extraMeta.entries.map((e) => Object.hash(e.key, e.value))),
+  );
 }

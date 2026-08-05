@@ -142,6 +142,133 @@ class ActivityLogTest extends TestCase
             ->assertJsonPath('data.0.description', 'تم إنشاء مدينة');
     }
 
+    public function test_every_column_in_an_entry_is_named_in_arabic(): void
+    {
+        // Arrange — the screen used to read `page_url`, `latitude`, `customer_id`. Those are
+        // this schema's words, not a printing shop's.
+        $customer = Customer::factory()->create();
+        CustomerShop::factory()->create(['customer_id' => $customer->id, 'name' => 'فرع الظهرة']);
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/customers/{$customer->id}/logs");
+
+        // Assert — the dictionary travels with the entry, so a column added tomorrow is
+        // unlabelled everywhere at once rather than in one app nobody rebuilt.
+        $response->assertOk();
+        $shop = collect($response->json('data'))->firstWhere('subject_type', 'customer_shop');
+        $this->assertNotNull($shop);
+        $this->assertSame('اسم المحل', $shop['attribute_labels']['name']);
+        $this->assertSame('رابط الصفحة', $shop['attribute_labels']['page_url']);
+        $this->assertSame('خط العرض', $shop['attribute_labels']['latitude']);
+    }
+
+    public function test_the_same_column_on_two_records_is_named_for_the_record_it_is_on(): void
+    {
+        // Arrange — «اسم العميل» and «اسم المحل» sit in the same list on one screen, and one
+        // «الاسم» twice would be the ambiguity the labels exist to remove.
+        $customer = Customer::factory()->create();
+        CustomerShop::factory()->create(['customer_id' => $customer->id]);
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/customers/{$customer->id}/logs");
+
+        // Assert
+        $entries = collect($response->assertOk()->json('data'));
+        $this->assertSame('اسم العميل', $entries->firstWhere('subject_type', 'customer')['attribute_labels']['name']);
+        $this->assertSame('اسم المحل', $entries->firstWhere('subject_type', 'customer_shop')['attribute_labels']['name']);
+    }
+
+    public function test_only_the_columns_this_entry_touched_are_named(): void
+    {
+        // Arrange — the order dictionary alone is forty entries; sending every model's whole
+        // vocabulary with each of fifteen rows would be most of the response.
+        $customer = Customer::factory()->create();
+        $customer->update(['phone' => '0915556666']);
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/customers/{$customer->id}/logs");
+
+        // Assert
+        $update = collect($response->assertOk()->json('data'))->firstWhere('event', 'updated');
+        $this->assertSame(['phone' => 'رقم الهاتف'], $update['attribute_labels']);
+    }
+
+    public function test_an_unlabelled_column_is_absent_rather_than_guessed_at(): void
+    {
+        // Arrange — a column added to the schema and not to the dictionary. The client falls
+        // back to the raw name, which is exactly what the screen showed before labels existed;
+        // inventing one here would be worse than saying nothing.
+        $city = City::factory()->create();
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/cities/{$city->id}/logs");
+
+        // Assert
+        $labels = $response->assertOk()->json('data.0.attribute_labels');
+        $this->assertArrayHasKey('name', $labels);
+        $this->assertArrayNotHasKey('id', $labels, 'the id is never logged, so it can never need a label');
+    }
+
+    public function test_the_history_says_how_many_entries_of_each_kind_it_holds(): void
+    {
+        // Arrange — these numbers sit on the filter chips. Counted on the client they would be
+        // a lie from page two onwards.
+        $customer = Customer::factory()->create();
+        $customer->update(['phone' => '0915556666']);
+        $customer->update(['name' => 'مطبعة الأمل']);
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/customers/{$customer->id}/logs");
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('meta.event_counts.created', 1)
+            ->assertJsonPath('meta.event_counts.updated', 2)
+            // Present at zero: a chip that appears and disappears is a control whose position
+            // cannot be learnt.
+            ->assertJsonPath('meta.event_counts.deleted', 0)
+            ->assertJsonPath('meta.event_counts.restored', 0);
+    }
+
+    public function test_filtering_by_event_does_not_change_the_counts_on_the_other_chips(): void
+    {
+        // Arrange — applied to itself, every chip but the active one would read zero, which is
+        // the opposite of what a filter control is for.
+        $customer = Customer::factory()->create();
+        $customer->update(['phone' => '0915556666']);
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/customers/{$customer->id}/logs?event=updated");
+
+        // Assert — one row comes back, and the counts still describe the whole trail.
+        $response->assertOk()->assertJsonCount(1, 'data');
+        $this->assertSame('updated', $response->json('data.0.event'));
+        $response->assertJsonPath('meta.event_counts.created', 1)
+            ->assertJsonPath('meta.event_counts.updated', 1);
+    }
+
+    public function test_the_counts_cover_the_records_this_one_owns(): void
+    {
+        // Arrange — a customer's history includes their shops, so the number under «إنشاء» has
+        // to count those too or the chip disagrees with the list under it.
+        $customer = Customer::factory()->create();
+        CustomerShop::factory()->count(2)->create(['customer_id' => $customer->id]);
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/customers/{$customer->id}/logs");
+
+        // Assert
+        $response->assertOk()->assertJsonPath('meta.event_counts.created', 3);
+    }
+
     public function test_a_products_history_includes_its_sizes_prices_and_photos(): void
     {
         // Arrange

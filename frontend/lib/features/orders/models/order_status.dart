@@ -27,12 +27,16 @@ enum OrderStatus {
   outForDelivery('out_for_delivery'),
   @JsonValue('delivered')
   delivered('delivered'),
+  @JsonValue('settled')
+  settled('settled'),
   @JsonValue('returned_courier')
   returnedCourier('returned_courier'),
   @JsonValue('returned_carrier')
   returnedCarrier('returned_carrier'),
   @JsonValue('returned_office')
   returnedOffice('returned_office'),
+  @JsonValue('resend')
+  resend('resend'),
   @JsonValue('cancelled')
   cancelled('cancelled'),
 
@@ -59,10 +63,12 @@ enum OrderStatus {
     OrderStatus.ready => OrderStatusTone.ready,
     OrderStatus.shortage => OrderStatusTone.attention,
     OrderStatus.officePickup || OrderStatus.outForDelivery => OrderStatusTone.moving,
-    OrderStatus.delivered => OrderStatusTone.done,
+    OrderStatus.delivered || OrderStatus.settled => OrderStatusTone.done,
     OrderStatus.returnedCourier ||
     OrderStatus.returnedCarrier ||
     OrderStatus.returnedOffice => OrderStatusTone.returned,
+    // On our shelf and going out again — the same colour as anything else waiting to leave.
+    OrderStatus.resend => OrderStatusTone.ready,
     OrderStatus.cancelled => OrderStatusTone.cancelled,
     OrderStatus.unknown => OrderStatusTone.neutral,
   };
@@ -84,12 +90,16 @@ enum OrderQueue {
   ready('جاهزة', [OrderStatus.ready]),
   shortage('نواقص', [OrderStatus.shortage]),
   moving('عند العميل', [OrderStatus.officePickup, OrderStatus.outForDelivery]),
+  // A re-send belongs here rather than beside «جاهزة»: the parcel is one that came back, and
+  // the person working this queue is working the shelf of returns.
   returned('رواجع', [
     OrderStatus.returnedCourier,
     OrderStatus.returnedCarrier,
     OrderStatus.returnedOffice,
+    OrderStatus.resend,
   ]),
   delivered('تم الاستلام', [OrderStatus.delivered]),
+  settled('تم التسوية', [OrderStatus.settled]),
   cancelled('ملغاة', [OrderStatus.cancelled]);
 
   const OrderQueue(this.label, this.statuses);

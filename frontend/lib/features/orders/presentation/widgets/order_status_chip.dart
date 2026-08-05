@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/features/orders/models/order_status.dart';
 
@@ -31,7 +32,7 @@ class OrderStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final (background, foreground) = _colours(scheme);
+    final (background, foreground) = toneColour(scheme, status.tone);
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -52,12 +53,43 @@ class OrderStatusChip extends StatelessWidget {
     );
   }
 
+  /// A glyph per status, so a state is read before its word is.
+  ///
+  /// Public and static for the same reason [toneColour] is: the bar on the detail screen and
+  /// anything that names a status later draw from one legend rather than each inventing its own.
+  ///
+  /// Grouped the way the tones are — the three returns share an arrow, the two dispatches do not
+  /// — because twelve distinct glyphs is not a legend anybody learns, and the question asked of
+  /// one is which *kind* of place the order is sitting in.
+  static IconData iconFor(OrderStatus status) => switch (status) {
+    OrderStatus.taken => AppIcons.orders,
+    OrderStatus.designing => AppIcons.designs,
+    OrderStatus.printing => AppIcons.products,
+    OrderStatus.ready => AppIcons.activate,
+    OrderStatus.shortage => AppIcons.error,
+    OrderStatus.officePickup => AppIcons.officePickup,
+    OrderStatus.outForDelivery => AppIcons.mapPin,
+    OrderStatus.delivered => AppIcons.activate,
+    OrderStatus.settled => AppIcons.settled,
+    OrderStatus.returnedCourier ||
+    OrderStatus.returnedCarrier ||
+    OrderStatus.returnedOffice => AppIcons.back,
+    OrderStatus.resend => AppIcons.resend,
+    OrderStatus.cancelled => AppIcons.deactivate,
+    // Nothing is claimed about a status this build has never heard of. The label arrived with
+    // it and says what it is.
+    OrderStatus.unknown => AppIcons.more,
+  };
+
   /// Nine tones out of the scheme's own roles.
+  ///
+  /// Public and static so the status filter's dots read from the same table: a legend the list
+  /// and the filter each derived separately is a legend that drifts.
   ///
   /// `error` is spent on the two that genuinely need to stop someone — a shortage and a return.
   /// A cancelled order is *finished*, not alarming, so it reads as muted rather than red: making
   /// every unhappy ending shout leaves nothing louder for the ones that need attention today.
-  (Color, Color) _colours(ColorScheme scheme) => switch (status.tone) {
+  static (Color, Color) toneColour(ColorScheme scheme, OrderStatusTone tone) => switch (tone) {
     OrderStatusTone.fresh => (scheme.secondaryContainer, scheme.onSecondaryContainer),
     OrderStatusTone.working => (scheme.primaryContainer, scheme.onPrimaryContainer),
     OrderStatusTone.ready => (scheme.tertiaryContainer, scheme.onTertiaryContainer),

@@ -155,6 +155,16 @@ class _Actions extends StatelessWidget {
           onTap: _toggleActive,
         ),
         AppAction(
+          label: 'التصاميم',
+          icon: AppIcons.designs,
+          // `customers.view`, not `manage`: somebody who may only read the customer may still
+          // need to see what gets printed on their bags before quoting an order. Adding and
+          // removing is gated inside that screen.
+          permission: AppPermission.viewCustomers,
+          onTap: (context) =>
+              context.push(Routes.customerDesigns(customer.id), extra: customer.name),
+        ),
+        AppAction(
           label: 'سجل التعديلات',
           icon: AppIcons.history,
           // `logs.view`, not `customers.view`, and that is the server's own line: a history
@@ -166,9 +176,6 @@ class _Actions extends StatelessWidget {
             extra: customer.name,
           ),
         ),
-        // ⚠️ «التصاميم» belonged here and has been taken out until its screen exists. The route
-        // was declared and never registered, so the action opened «الصفحة غير موجودة» — a dead
-        // link is worse than a missing one. It comes back with the upload sheet.
       ],
     );
   }
@@ -488,9 +495,7 @@ class _Meta extends StatelessWidget {
     return Text(
       'أُضيف في ${created.year}/${created.month}/${created.day}',
       textAlign: TextAlign.center,
-      style: context.textTheme.bodySmall?.copyWith(
-        color: context.colorScheme.onSurfaceVariant,
-      ),
+      style: context.textTheme.bodySmall?.copyWith(color: context.colorScheme.onSurfaceVariant),
     );
   }
 }

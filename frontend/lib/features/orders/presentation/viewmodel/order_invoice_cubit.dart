@@ -1,0 +1,109 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:printing/core/error/failure.dart';
+import 'package:printing/features/orders/models/order.dart';
+import 'package:printing/features/orders/usecases/update_order_invoice.dart';
+
+part 'order_invoice_state.dart';
+part 'order_invoice_cubit.freezed.dart';
+
+/// Editing one order's lines and its discount.
+///
+/// Seeded from the order the screen already has rather than re-fetching it: the sheet opens on
+/// top of a page that just loaded, and a spinner over data the user is looking at is a round
+/// trip spent to show them what they can already see.
+///
+/// **Quantities are held as typed.** Not parsed on every keystroke — a half-typed `3.` is not a
+/// number and normalising it mid-edit would fight the person typing. Validity is asked at the
+/// end, and the conversion from Arabic-Indic digits happens once, on the way out.
+class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
+  OrderInvoiceCubit({required Order order, required UpdateOrderInvoice updateInvoice})
+    : _updateInvoice = updateInvoice,
+      super(
+        OrderInvoiceState(
+          orderId: order.id,
+          lines: [
+            for (final item in order.items ?? const <OrderItem>[])
+              InvoiceLine(
+                id: item.id,
+                productId: item.productId,
+                variantId: item.productVariantId,
+                productName: item.productName,
+                variantLabel: item.variantLabel,
+                pricingUnitLabel: item.pricingUnitLabel,
+                unitPrice: item.unitPrice,
+                quantity: item.quantity,
+              ),
+          ],
+          discount: order.discount,
+          designFee: order.designFee,
+          deliveryPrice: order.deliveryPrice,
+        ),
+      );
+
+  final UpdateOrderInvoice _updateInvoice;
+
+  void setQuantity(int lineId, String quantity) {
+    emit(
+      state.copyWith(
+        lines: [
+          for (final line in state.lines)
+            if (line.id == lineId) line.copyWith(quantity: quantity) else line,
+        ],
+        isDirty: true,
+        // Cleared as soon as the user changes something: a refusal from the last attempt sitting
+        // over a form they have since edited is stale advice.
+        failure: null,
+      ),
+    );
+  }
+
+  void remove(int lineId) {
+    // The last line is never removed — an order with nothing on it is refused by the server, and
+    // the button that would do it is hidden. Guarded here too, because a Cubit that only holds
+    // when a widget remembers to is not holding.
+    if (state.lines.length <= 1) return;
+
+    emit(
+      state.copyWith(
+        lines: state.lines.where((line) => line.id != lineId).toList(growable: false),
+        isDirty: true,
+        failure: null,
+      ),
+    );
+  }
+
+  void setDiscount(String discount) {
+    emit(state.copyWith(discount: discount, isDirty: true, failure: null));
+  }
+
+  Future<void> save() async {
+    if (!state.isValid || state.isSaving) return;
+
+    emit(state.copyWith(isSaving: true, failure: null));
+
+    final result = await _updateInvoice(
+      state.orderId,
+      lines: [
+        for (final line in state.lines)
+          InvoiceLineUpdate(
+            productId: line.productId,
+            variantId: line.variantId,
+            quantity: _ascii(line.quantity),
+          ),
+      ],
+      discount: _ascii(state.discount),
+    );
+
+    if (isClosed) return;
+
+    emit(
+      result.fold(
+        // The form stays exactly as it was: a 422 naming a quantity is advice about the thing
+        // still on screen, and rebuilding the sheet would throw away what it is advising on.
+        (failure) => state.copyWith(isSaving: false, failure: failure),
+        (_) => state.copyWith(isSaving: false, isSaved: true),
+      ),
+    );
+  }
+}

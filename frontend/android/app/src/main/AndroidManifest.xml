@@ -51,5 +51,26 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!--
+            Opening a customer's design in whatever the phone already uses for PDFs.
+
+            Android 11 hid the list of installed apps, so without this declaration the launch
+            resolves to nothing and the tap does nothing at all — silently, on Android 11 and
+            up only, which is every phone this will run on. This is the whole configuration
+            url_launcher needs.
+        -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
     </queries>
+
+    <!--
+        No CAMERA permission, and that is deliberate rather than an oversight.
+
+        `image_picker` starts the system camera app through an intent, which needs none. But
+        Android has a trap here: if an app *declares* CAMERA, the OS starts requiring a runtime
+        grant for that same intent — and nothing in this app asks for one, so declaring it would
+        break the button it looks like it enables.
+    -->
 </manifest>

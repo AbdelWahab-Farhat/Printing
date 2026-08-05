@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/features/audit/models/activity_log_entry.dart';
+import 'package:printing/features/audit/models/audit_event.dart';
 import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/audit/repositories/audit_repository.dart';
 
@@ -14,7 +15,8 @@ class GetActivityLog {
   Future<Either<Failure, Paginated<ActivityLogEntry>>> call(
     AuditSubject subject,
     int recordId, {
+    AuditEvent? event,
     int page = 1,
     int perPage = 20,
-  }) => _repository.logs(subject, recordId, page: page, perPage: perPage);
+  }) => _repository.logs(subject, recordId, event: event, page: page, perPage: perPage);
 }

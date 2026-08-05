@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Delivery;
 
+use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Delivery\Models\City;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
@@ -25,6 +26,8 @@ class UpdateCityRequest extends StoreCityRequest
     {
         return [
             'name' => ['required', 'string', 'min:2', 'max:100', $this->nameUniqueAmongOtherCities()],
+            // Left out on purpose keeps whatever is there — see UpdateCity.
+            'fulfilment_type' => ['sometimes', Rule::enum(FulfilmentType::class)],
             'is_region_required' => ['sometimes', 'boolean'],
             'delivery_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'darb_branch' => ['nullable', 'string', 'max:255'],

@@ -35,8 +35,17 @@ trait ReadsAuditTrail
         HasAuditTrail $record,
         AuditService $audit,
     ): JsonResponse {
-        $entries = $audit->paginateFor($record, $request->filters(), $request->perPage());
+        $filters = $request->filters();
+        $entries = $audit->paginateFor($record, $filters, $request->perPage());
 
-        return $this->successWithPagination(ActivityLogResource::collection($entries));
+        return $this->successWithPagination(
+            ActivityLogResource::collection($entries),
+            extraMeta: [
+                // What tapping each filter chip would give. In `meta` and not derived from
+                // `data`, because a client counting the rows in front of it is counting one
+                // page — and the count under an «إنشاء» chip has to mean the whole trail.
+                'event_counts' => $audit->eventCountsFor($record, $filters),
+            ],
+        );
     }
 }

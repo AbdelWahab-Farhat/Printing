@@ -39,6 +39,20 @@ class AuditService
     }
 
     /**
+     * How many entries of each kind one record's history holds.
+     *
+     * Sent beside the page so a history screen's filter chips can say what tapping each one
+     * would give. Counting on the client would be a lie the moment the trail is longer than a
+     * page — which, for a customer of any age, it always is.
+     *
+     * @return array<string, int>
+     */
+    public function eventCountsFor(HasAuditTrail $record, ActivityFilters $filters): array
+    {
+        return $this->listQuery->countsByEvent($record->auditTrailSubjects(), $filters);
+    }
+
+    /**
      * Everything that has happened, newest first.
      *
      * @return LengthAwarePaginator<int, ActivityLog>

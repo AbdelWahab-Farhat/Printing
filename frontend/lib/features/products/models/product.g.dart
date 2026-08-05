@@ -35,6 +35,12 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
           ?.map((e) => ProductImage.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <ProductImage>[],
+  createdAt: json['created_at'] == null
+      ? null
+      : DateTime.parse(json['created_at'] as String),
+  updatedAt: json['updated_at'] == null
+      ? null
+      : DateTime.parse(json['updated_at'] as String),
 );
 
 Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
@@ -56,6 +62,8 @@ Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
   'sort_order': instance.sortOrder,
   'variants': instance.variants.map((e) => e.toJson()).toList(),
   'images': instance.images.map((e) => e.toJson()).toList(),
+  'created_at': instance.createdAt?.toIso8601String(),
+  'updated_at': instance.updatedAt?.toIso8601String(),
 };
 
 _ProductVariant _$ProductVariantFromJson(Map<String, dynamic> json) =>
@@ -105,6 +113,10 @@ _ProductImage _$ProductImageFromJson(Map<String, dynamic> json) =>
       altText: json['alt_text'] as String?,
       isPrimary: json['is_primary'] as bool? ?? false,
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
+      mimeType: json['mime_type'] as String?,
+      sizeBytes: (json['size_bytes'] as num?)?.toInt(),
+      widthPx: (json['width_px'] as num?)?.toInt(),
+      heightPx: (json['height_px'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$ProductImageToJson(_ProductImage instance) =>
@@ -114,4 +126,8 @@ Map<String, dynamic> _$ProductImageToJson(_ProductImage instance) =>
       'alt_text': instance.altText,
       'is_primary': instance.isPrimary,
       'sort_order': instance.sortOrder,
+      'mime_type': instance.mimeType,
+      'size_bytes': instance.sizeBytes,
+      'width_px': instance.widthPx,
+      'height_px': instance.heightPx,
     };

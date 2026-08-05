@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/features/products/models/product.dart';
+import 'package:printing/features/products/presentation/widgets/product_category_badge.dart';
 
 /// One product in the catalogue, priced in full.
 ///
@@ -22,10 +23,14 @@ import 'package:printing/features/products/models/product.dart';
 ///   * **the cheapest column is the only coloured thing** below the title, so the eye lands on
 ///     the floor price and travels right-to-left up the quantities.
 ///
-/// It also drops the chip vocabulary entirely. The category used to render as a pill identical
-/// in shape to a size — two different kinds of data in one visual language, so the eye could not
-/// separate them. Now the category is prose (`مطبوعة · بالقطعة`) and the sizes are table rows;
-/// nothing on the card is a chip, so nothing can be mistaken for one.
+/// The category is the one pill left, and it earns that by being the only one. It used to be a
+/// chip identical in shape to a size — two different kinds of data in one visual language, so
+/// the eye could not separate them — and was then demoted to the first half of a grey subtitle,
+/// which is read only by somebody already reading the whole card. It is now
+/// [ProductCategoryBadge] in the far top corner: sizes are table rows and nothing else on the
+/// card is tinted, so «مطبوعة أو سادة» is answered before the name is and cannot be mistaken for
+/// a measurement. What stayed in the subtitle is the billing unit, which is read *after* a bag
+/// has been found rather than while looking for one.
 ///
 /// **What it costs:** height. Measured at 430×932 — a four-size product is 213 logical pixels
 /// against the old 106, the catalogue's largest (six sizes) is 257, and the two shapes with no
@@ -153,15 +158,25 @@ class _Identity extends StatelessWidget {
               ),
               SizedBox(height: 2.h),
               Text(
-                // Both halves are the server's own Arabic, so the app keeps no translation
-                // table — and prose cannot be mistaken for a size the way a pill could.
-                '${product.categoryLabel} · بال${product.pricingUnitLabel}',
+                // What is left of the old `مطبوعة · بالقطعة` sentence once the category became a
+                // badge: how the bag is *billed*. The server's own Arabic, so the app keeps no
+                // translation table.
+                'بال${product.pricingUnitLabel}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
               ),
             ],
           ),
+        ),
+        SizedBox(width: 8.w),
+        // The far corner — the left one, this being an Arabic layout — and outside the name
+        // column on purpose: a badge inside it would shift with every name length, and the point
+        // of putting it here is that it is in the same place on every card, so the catalogue can
+        // be skimmed for «سادة» without reading a word.
+        ProductCategoryBadge(
+          category: product.category,
+          label: product.categoryLabel,
         ),
       ],
     );

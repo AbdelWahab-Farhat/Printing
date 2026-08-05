@@ -21,6 +21,14 @@ class CityResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+
+            // Value for logic, label so the app keeps no translation table of its own, and the
+            // boolean the order screen actually branches on — so a client never has to know
+            // which enum case means "they collect it".
+            'fulfilment_type' => $this->fulfilment_type->value,
+            'fulfilment_type_label' => $this->fulfilment_type->label(),
+            'is_office_pickup' => $this->isOfficePickup(),
+
             'is_region_required' => $this->is_region_required,
 
             // A string, never a float: this is money, and "15.00" survives a client's JSON

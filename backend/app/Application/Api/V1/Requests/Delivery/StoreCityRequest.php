@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Delivery;
 
+use App\Domain\Delivery\Enums\FulfilmentType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,6 +22,10 @@ class StoreCityRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'min:2', 'max:100', Rule::unique('cities', 'name')->withoutTrashed()],
+
+            // Delivered to, or collected from. Optional because all but two rows on the map are
+            // `delivery`, and making the common case explicit buys nothing.
+            'fulfilment_type' => ['sometimes', Rule::enum(FulfilmentType::class)],
 
             // Whether the customer *must* pick a neighbourhood — not whether the city has any.
             'is_region_required' => ['sometimes', 'boolean'],
@@ -47,6 +52,7 @@ class StoreCityRequest extends FormRequest
             'name.min' => 'اسم المدينة قصير جداً',
             'name.max' => 'اسم المدينة طويل جداً',
             'name.unique' => 'اسم المدينة مستخدم مسبقاً',
+            'fulfilment_type' => 'طريقة التسليم يجب أن تكون توصيلاً أو استلاماً من المكتب',
             'is_region_required' => 'اشتراط المنطقة يجب أن يكون صحيحاً أو خاطئاً',
             'delivery_price.numeric' => 'سعر التوصيل يجب أن يكون رقماً',
             'delivery_price.min' => 'سعر التوصيل لا يمكن أن يكون سالباً',
@@ -66,6 +72,7 @@ class StoreCityRequest extends FormRequest
     {
         return [
             'name' => 'اسم المدينة',
+            'fulfilment_type' => 'طريقة التسليم',
             'is_region_required' => 'اشتراط المنطقة',
             'delivery_price' => 'سعر التوصيل',
             'darb_branch' => 'فرع درب',

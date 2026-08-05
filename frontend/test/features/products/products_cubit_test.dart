@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/products/models/pricing_unit_filter.dart';
 import 'package:printing/features/products/models/product.dart';
+import 'package:printing/features/products/models/product_category.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:printing/features/products/repositories/product_repository.dart';
 import 'package:printing/features/products/usecases/get_products.dart';
@@ -80,15 +80,15 @@ void main() {
   /// captured list.
   void verifyAsked({
     required String? search,
-    required String? pricingUnit,
+    required String? category,
     required int page,
     int times = 1,
   }) {
     verify(
       () => repository.products(
         search: search,
-        category: any(named: 'category'),
-        pricingUnit: pricingUnit,
+        category: category,
+        pricingUnit: any(named: 'pricingUnit'),
         isActive: any(named: 'isActive'),
         page: page,
         perPage: any(named: 'perPage'),
@@ -282,9 +282,9 @@ void main() {
     );
   });
 
-  group('filtering by pricing unit', () {
+  group('filtering by category', () {
     blocTest<ProductsCubit, ProductsState>(
-      'starts with no unit filter at all',
+      'starts with no category filter at all',
       setUp: () {
         // Arrange
         arrangeProducts(right(page([product(1, 'أكياس الشحن')])));
@@ -294,22 +294,22 @@ void main() {
       act: (cubit) => cubit.load(),
       // Assert — the parameter is absent, not sent empty.
       verify: (cubit) {
-        expect(cubit.unit, PricingUnitFilter.all);
-        verifyAsked(search: null, pricingUnit: null, page: 1);
+        expect(cubit.category, ProductCategoryFilter.all);
+        verifyAsked(search: null, category: null, page: 1);
       },
     );
 
     blocTest<ProductsCubit, ProductsState>(
-      'بالكيلوغرام asks the API for kilogram products',
+      'سادة asks the API for the plain bags',
       setUp: () {
         // Arrange
         arrangeProducts(right(page([product(1, 'أكياس الشحن السادة')])));
       },
       build: () => cubit,
       // Act
-      act: (cubit) => cubit.filterByUnit(PricingUnitFilter.kilogram),
+      act: (cubit) => cubit.filterByCategory(ProductCategoryFilter.plain),
       // Assert — the value the backend enum uses, not the Arabic label.
-      verify: (_) => verifyAsked(search: null, pricingUnit: 'kilogram', page: 1),
+      verify: (_) => verifyAsked(search: null, category: 'general', page: 1),
     );
 
     blocTest<ProductsCubit, ProductsState>(
@@ -322,10 +322,10 @@ void main() {
       // Act — someone who typed a word and then tapped a chip is narrowing, not restarting.
       act: (cubit) async {
         await cubit.load(search: 'شفافة');
-        await cubit.filterByUnit(PricingUnitFilter.kilogram);
+        await cubit.filterByCategory(ProductCategoryFilter.plain);
       },
       // Assert
-      verify: (_) => verifyAsked(search: 'شفافة', pricingUnit: 'kilogram', page: 1),
+      verify: (_) => verifyAsked(search: 'شفافة', category: 'general', page: 1),
     );
 
     blocTest<ProductsCubit, ProductsState>(
@@ -338,11 +338,11 @@ void main() {
       build: () => cubit,
       // Act
       act: (cubit) async {
-        await cubit.filterByUnit(PricingUnitFilter.piece);
+        await cubit.filterByCategory(ProductCategoryFilter.printed);
         await cubit.loadMore();
       },
-      // Assert — page two of "بالقطعة" must not arrive as page two of everything.
-      verify: (_) => verifyAsked(search: null, pricingUnit: 'piece', page: 2),
+      // Assert — page two of "مطبوعة" must not arrive as page two of everything.
+      verify: (_) => verifyAsked(search: null, category: 'printed', page: 2),
     );
 
     blocTest<ProductsCubit, ProductsState>(
@@ -354,13 +354,13 @@ void main() {
       build: () => cubit,
       // Act
       act: (cubit) async {
-        await cubit.filterByUnit(PricingUnitFilter.kilogram);
-        await cubit.filterByUnit(PricingUnitFilter.all);
+        await cubit.filterByCategory(ProductCategoryFilter.plain);
+        await cubit.filterByCategory(ProductCategoryFilter.all);
       },
       // Assert — one narrowed request, then one wide one.
       verify: (_) {
-        verifyAsked(search: null, pricingUnit: 'kilogram', page: 1);
-        verifyAsked(search: null, pricingUnit: null, page: 1);
+        verifyAsked(search: null, category: 'general', page: 1);
+        verifyAsked(search: null, category: null, page: 1);
       },
     );
 
@@ -373,9 +373,9 @@ void main() {
       build: () => cubit,
       // Act
       act: (cubit) async {
-        await cubit.filterByUnit(PricingUnitFilter.piece);
-        await cubit.filterByUnit(PricingUnitFilter.piece);
-        await cubit.filterByUnit(PricingUnitFilter.piece);
+        await cubit.filterByCategory(ProductCategoryFilter.printed);
+        await cubit.filterByCategory(ProductCategoryFilter.printed);
+        await cubit.filterByCategory(ProductCategoryFilter.printed);
       },
       // Assert — one request, and one screen-blanking `loading` state, not three.
       expect: () => [

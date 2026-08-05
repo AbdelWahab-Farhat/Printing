@@ -4,13 +4,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/widgets/paged_list_view.dart';
 import 'package:printing/core/widgets/search_field.dart';
 import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/models/order_status.dart';
 import 'package:printing/features/orders/presentation/viewmodel/orders_cubit.dart';
 import 'package:printing/features/orders/presentation/widgets/order_card.dart';
+import 'package:printing/features/orders/presentation/widgets/order_filter_button.dart';
 
 /// الطلبيات — the work queue.
 ///
@@ -46,15 +45,30 @@ class _OrdersView extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
-            child: SearchField(
-              hint: 'ابحث برقم الطلبية أو اسم العميل',
-              onChanged: cubit.search,
+            child: Row(
+              children: [
+                // One box, three questions. What was typed decides which one it is, and that
+                // decision is the server's — duplicating the rule here would give the hint and
+                // the results two chances to disagree. The hint's job is to say the box accepts
+                // all three, not to classify.
+                Expanded(
+                  child: SearchField(
+                    hint: 'رقم الطلبية · كود العميل · رقم الهاتف',
+                    onChanged: cubit.search,
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                // Rebuilt with the list, so the queue named inside the sheet and what is on
+                // screen cannot disagree.
+                BlocBuilder<OrdersCubit, OrdersState>(
+                  builder: (context, state) => OrderFilterButton(
+                    selected: cubit.queue,
+                    counts: cubit.counts,
+                    onSelected: cubit.showQueue,
+                  ),
+                ),
+              ],
             ),
-          ),
-          // Rebuilt with the list, so the selected chip and what is on screen cannot disagree.
-          BlocBuilder<OrdersCubit, OrdersState>(
-            builder: (context, state) =>
-                _QueueBar(selected: cubit.queue, onSelected: cubit.showQueue),
           ),
           Expanded(
             child: BlocBuilder<OrdersCubit, OrdersState>(
@@ -63,8 +77,9 @@ class _OrdersView extends StatelessWidget {
                 emptyMessage: 'لا توجد طلبيات في هذه القائمة',
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
-                // The measured height of a card with a customer, a destination and a count.
-                skeletonHeight: 132.h,
+                // The measured height of a card: a status chip, a rule and two rows of three
+                // labelled facts.
+                skeletonHeight: 172.h,
                 itemBuilder: (context, order, index) => OrderCard(
                   key: ValueKey(order.id),
                   order: order,
@@ -80,58 +95,6 @@ class _OrdersView extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// The queues staff actually think in.
-///
-/// Not one chip per status: «قيد التنفيذ» is two statuses and «رواجع» is three, and asking
-/// somebody to tap each separately to see the work in the workshop would be making them do the
-/// grouping the screen should have done. See [OrderQueue].
-class _QueueBar extends StatelessWidget {
-  const _QueueBar({required this.selected, required this.onSelected});
-
-  final OrderQueue selected;
-  final ValueChanged<OrderQueue> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return SizedBox(
-      height: 42.h,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount: OrderQueue.values.length,
-        separatorBuilder: (context, index) => SizedBox(width: 8.w),
-        itemBuilder: (context, index) {
-          final queue = OrderQueue.values[index];
-          final isSelected = queue == selected;
-
-          return ChoiceChip(
-            label: Text(queue.label),
-            selected: isSelected,
-            // Tapping the chip that is already on is not a way to clear it: «الكل» is, and it
-            // is the first one in the row.
-            onSelected: (_) => onSelected(queue),
-            showCheckmark: false,
-            backgroundColor: scheme.surfaceContainerLowest,
-            selectedColor: scheme.primaryContainer,
-            labelStyle: context.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: isSelected ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
-            ),
-            side: BorderSide(
-              color: isSelected ? Colors.transparent : scheme.outlineVariant,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-          );
-        },
       ),
     );
   }

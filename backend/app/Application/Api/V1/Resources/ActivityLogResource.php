@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Resources;
 
+use App\Domain\Audit\AuditAttributeLabels;
 use App\Domain\Audit\Enums\AuditEvent;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Audit\Models\ActivityLog;
@@ -55,6 +56,19 @@ class ActivityLogResource extends JsonResource
                 'attributes' => $this->attribute_changes?->get('attributes'),
             ],
 
+            // What to call each of those columns in Arabic — «رابط الصفحة», not `page_url`.
+            //
+            // Sent with the entry rather than kept in the app, and that is the whole point: a
+            // dictionary on the phone is wrong the first morning somebody adds a column, with
+            // no build failing to say so. Only the columns this entry actually touched, cast to
+            // an object so an entry that touched none is `{}` and not `[]`.
+            //
+            // A column with no label is simply absent; the client falls back to the raw name.
+            'attribute_labels' => (object) AuditAttributeLabels::forAttributes(
+                $subject,
+                $this->changedAttributeNames(),
+            ),
+
             // Anything recorded by hand rather than by a model event — today, the permissions a
             // role gained or lost. Omitted entirely when there is none.
             'properties' => $this->when(
@@ -64,6 +78,31 @@ class ActivityLogResource extends JsonResource
 
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Every column this entry touched, from whichever half of the change carries it.
+     *
+     * Both halves, not just `attributes`: a deletion records only `old`, and its columns need
+     * naming as much as a creation's do.
+     *
+     * @return list<string>
+     */
+    private function changedAttributeNames(): array
+    {
+        $changes = $this->attribute_changes;
+
+        if ($changes === null) {
+            return [];
+        }
+
+        $old = $changes->get('old');
+        $new = $changes->get('attributes');
+
+        return array_values(array_unique(array_merge(
+            is_array($old) ? array_keys($old) : [],
+            is_array($new) ? array_keys($new) : [],
+        )));
     }
 
     /**

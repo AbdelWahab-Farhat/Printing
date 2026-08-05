@@ -10,7 +10,9 @@ import 'package:printing/core/storage/token_storage.dart';
 /// is a 401 nobody can explain, and handling "session expired" in each Cubit would give the
 /// user a different experience depending on which screen happened to notice first.
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(this._tokens, this._session, {
+  AuthInterceptor(
+    this._tokens,
+    this._session, {
     required this.onUnauthorized,
     required this.refreshSession,
   });
@@ -33,10 +35,7 @@ class AuthInterceptor extends Interceptor {
   final Future<void> Function() onUnauthorized;
 
   @override
-  Future<void> onRequest(
-    RequestOptions options,
-    RequestInterceptorHandler handler,
-  ) async {
+  Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     final token = await _tokens.read();
 
     if (token != null && token.isNotEmpty) {

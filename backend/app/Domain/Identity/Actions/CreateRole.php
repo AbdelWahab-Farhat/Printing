@@ -13,7 +13,10 @@ use Spatie\Permission\PermissionRegistrar;
  */
 final class CreateRole
 {
-    public function __construct(private readonly RecordRolePermissionChange $recordPermissionChange) {}
+    public function __construct(
+        private readonly RecordRolePermissionChange $recordPermissionChange,
+        private readonly EnsurePermissionsExist $ensurePermissionsExist,
+    ) {}
 
     /**
      * @param  list<string>  $permissions
@@ -21,6 +24,10 @@ final class CreateRole
     public function __invoke(string $name, array $permissions = []): Role
     {
         $role = DB::transaction(function () use ($name, $permissions): Role {
+            // Inside the transaction, before the sync: a catalogue row the seeder has not
+            // written yet must not turn a valid selection into a 500. See EnsurePermissionsExist.
+            ($this->ensurePermissionsExist)($permissions);
+
             $role = Role::create(['name' => $name, 'guard_name' => 'web']);
             $role->syncPermissions($permissions);
 

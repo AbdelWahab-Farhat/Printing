@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Delivery\Models\City;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +37,9 @@ class DeliveryLocationSeeder extends Seeder
                 $city = City::updateOrCreate(
                     ['name' => $definition['name']],
                     [
+                        // Absent from all but the two office rows: the file states the exception,
+                        // not the rule.
+                        'fulfilment_type' => $definition['fulfilment_type'] ?? FulfilmentType::Delivery->value,
                         'is_region_required' => $definition['is_region_required'],
                         'delivery_price' => $definition['delivery_price'],
                         'darb_branch' => $definition['darb_branch'],
@@ -55,9 +59,9 @@ class DeliveryLocationSeeder extends Seeder
     }
 
     /**
-     * @return list<array{name: string, is_region_required: bool, delivery_price: string|null,
-     *     darb_branch: string|null, regions: list<array{name: string, code: string|null,
-     *     darb_branch: string|null}>}>
+     * @return list<array{name: string, fulfilment_type?: string, is_region_required: bool,
+     *     delivery_price: string|null, darb_branch: string|null,
+     *     regions: list<array{name: string, code: string|null, darb_branch: string|null}>}>
      */
     private function locations(): array
     {

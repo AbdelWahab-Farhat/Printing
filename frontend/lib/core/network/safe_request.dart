@@ -80,19 +80,18 @@ Future<Either<Failure, Paginated<T>>> safePaginatedRequest<T>(
     }
 
     return Paginated<T>(
-      items: data
-          .whereType<Map<String, dynamic>>()
-          .map(parseItem)
-          .toList(growable: false),
+      items: data.whereType<Map<String, dynamic>>().map(parseItem).toList(growable: false),
       meta: PageMeta.fromJson(meta),
+      // Handed on untouched. Some endpoints put facts about the whole filtered set beside the
+      // page numbers — see `Paginated.extraMeta` — and this layer is the wrong place to decide
+      // which of them matter.
+      extraMeta: meta,
     );
   });
 }
 
 /// A call whose answer is the *message*, not a body — logout, delete.
-Future<Either<Failure, String>> safeCommand(
-  Future<Response<dynamic>> Function() send,
-) async {
+Future<Either<Failure, String>> safeCommand(Future<Response<dynamic>> Function() send) async {
   return _guard(() async {
     final response = await send();
     final envelope = _envelopeOf(response);
@@ -145,10 +144,7 @@ Failure _failureFrom(DioException e) {
   return switch (status) {
     401 => Failure.unauthorized(message: message ?? FailureMessages.unauthorized),
     403 => Failure.forbidden(message: message ?? FailureMessages.forbidden),
-    404 => Failure.server(
-      message: message ?? FailureMessages.notFound,
-      statusCode: status,
-    ),
+    404 => Failure.server(message: message ?? FailureMessages.notFound, statusCode: status),
     _ => Failure.server(
       message: message ?? FailureMessages.generic,
       statusCode: status,

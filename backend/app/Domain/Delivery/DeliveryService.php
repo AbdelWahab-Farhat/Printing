@@ -47,6 +47,24 @@ class DeliveryService
         return ($this->cityListQuery)($filters, $perPage);
     }
 
+    /**
+     * One city by id, for a caller that received it in a request body rather than through
+     * route-model binding — an order names its destination that way.
+     *
+     * Here rather than in Order, because Order must never query City directly: that seam is
+     * what lets the delivery map change internally without a ripple.
+     */
+    public function findCity(int $id): City
+    {
+        return City::query()->findOrFail($id);
+    }
+
+    /** One region by id. Whether it belongs to the chosen city is the caller's rule to enforce. */
+    public function findRegion(int $id): Region
+    {
+        return Region::query()->findOrFail($id);
+    }
+
     public function createCity(CityData $data): City
     {
         return ($this->createCity)($data);

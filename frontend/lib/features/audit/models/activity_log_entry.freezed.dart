@@ -21,7 +21,13 @@ mixin _$ActivityLogEntry {
 /// itself when the code changes is not history.
  String? get description;/// A stable alias like `customer_shop`, never a PHP class name.
 @JsonKey(name: 'subject_type') String? get subjectType;@JsonKey(name: 'subject_type_label') String? get subjectTypeLabel;@JsonKey(name: 'subject_id') int? get subjectId;/// Absent for anything no person did — a seeder, a console command, a queued job.
- AuditCauser? get causer; AuditChanges? get changes;@JsonKey(name: 'created_at') DateTime? get createdAt;
+ AuditCauser? get causer; AuditChanges? get changes;/// What to call each column that moved — `page_url` → «رابط الصفحة».
+///
+/// **Sent by the server, never kept here.** The screen used to show raw column names, and
+/// the alternative to this was a dictionary in the app — which is wrong the first morning
+/// somebody adds a column, with no build failing to say so. Carrying only the columns this
+/// entry touched keeps a page of fifteen entries small.
+@JsonKey(name: 'attribute_labels') Map<String, String>? get attributeLabels;@JsonKey(name: 'created_at') DateTime? get createdAt;
 /// Create a copy of ActivityLogEntry
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,16 +40,16 @@ $ActivityLogEntryCopyWith<ActivityLogEntry> get copyWith => _$ActivityLogEntryCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityLogEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.event, event) || other.event == event)&&(identical(other.eventLabel, eventLabel) || other.eventLabel == eventLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.subjectType, subjectType) || other.subjectType == subjectType)&&(identical(other.subjectTypeLabel, subjectTypeLabel) || other.subjectTypeLabel == subjectTypeLabel)&&(identical(other.subjectId, subjectId) || other.subjectId == subjectId)&&(identical(other.causer, causer) || other.causer == causer)&&(identical(other.changes, changes) || other.changes == changes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityLogEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.event, event) || other.event == event)&&(identical(other.eventLabel, eventLabel) || other.eventLabel == eventLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.subjectType, subjectType) || other.subjectType == subjectType)&&(identical(other.subjectTypeLabel, subjectTypeLabel) || other.subjectTypeLabel == subjectTypeLabel)&&(identical(other.subjectId, subjectId) || other.subjectId == subjectId)&&(identical(other.causer, causer) || other.causer == causer)&&(identical(other.changes, changes) || other.changes == changes)&&const DeepCollectionEquality().equals(other.attributeLabels, attributeLabels)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,event,eventLabel,description,subjectType,subjectTypeLabel,subjectId,causer,changes,createdAt);
+int get hashCode => Object.hash(runtimeType,id,event,eventLabel,description,subjectType,subjectTypeLabel,subjectId,causer,changes,const DeepCollectionEquality().hash(attributeLabels),createdAt);
 
 @override
 String toString() {
-  return 'ActivityLogEntry(id: $id, event: $event, eventLabel: $eventLabel, description: $description, subjectType: $subjectType, subjectTypeLabel: $subjectTypeLabel, subjectId: $subjectId, causer: $causer, changes: $changes, createdAt: $createdAt)';
+  return 'ActivityLogEntry(id: $id, event: $event, eventLabel: $eventLabel, description: $description, subjectType: $subjectType, subjectTypeLabel: $subjectTypeLabel, subjectId: $subjectId, causer: $causer, changes: $changes, attributeLabels: $attributeLabels, createdAt: $createdAt)';
 }
 
 
@@ -54,7 +60,7 @@ abstract mixin class $ActivityLogEntryCopyWith<$Res>  {
   factory $ActivityLogEntryCopyWith(ActivityLogEntry value, $Res Function(ActivityLogEntry) _then) = _$ActivityLogEntryCopyWithImpl;
 @useResult
 $Res call({
- int id, String event,@JsonKey(name: 'event_label') String? eventLabel, String? description,@JsonKey(name: 'subject_type') String? subjectType,@JsonKey(name: 'subject_type_label') String? subjectTypeLabel,@JsonKey(name: 'subject_id') int? subjectId, AuditCauser? causer, AuditChanges? changes,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, String event,@JsonKey(name: 'event_label') String? eventLabel, String? description,@JsonKey(name: 'subject_type') String? subjectType,@JsonKey(name: 'subject_type_label') String? subjectTypeLabel,@JsonKey(name: 'subject_id') int? subjectId, AuditCauser? causer, AuditChanges? changes,@JsonKey(name: 'attribute_labels') Map<String, String>? attributeLabels,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -71,7 +77,7 @@ class _$ActivityLogEntryCopyWithImpl<$Res>
 
 /// Create a copy of ActivityLogEntry
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? event = null,Object? eventLabel = freezed,Object? description = freezed,Object? subjectType = freezed,Object? subjectTypeLabel = freezed,Object? subjectId = freezed,Object? causer = freezed,Object? changes = freezed,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? event = null,Object? eventLabel = freezed,Object? description = freezed,Object? subjectType = freezed,Object? subjectTypeLabel = freezed,Object? subjectId = freezed,Object? causer = freezed,Object? changes = freezed,Object? attributeLabels = freezed,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,event: null == event ? _self.event : event // ignore: cast_nullable_to_non_nullable
@@ -82,7 +88,8 @@ as String?,subjectTypeLabel: freezed == subjectTypeLabel ? _self.subjectTypeLabe
 as String?,subjectId: freezed == subjectId ? _self.subjectId : subjectId // ignore: cast_nullable_to_non_nullable
 as int?,causer: freezed == causer ? _self.causer : causer // ignore: cast_nullable_to_non_nullable
 as AuditCauser?,changes: freezed == changes ? _self.changes : changes // ignore: cast_nullable_to_non_nullable
-as AuditChanges?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as AuditChanges?,attributeLabels: freezed == attributeLabels ? _self.attributeLabels : attributeLabels // ignore: cast_nullable_to_non_nullable
+as Map<String, String>?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
@@ -192,10 +199,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String event, @JsonKey(name: 'event_label')  String? eventLabel,  String? description, @JsonKey(name: 'subject_type')  String? subjectType, @JsonKey(name: 'subject_type_label')  String? subjectTypeLabel, @JsonKey(name: 'subject_id')  int? subjectId,  AuditCauser? causer,  AuditChanges? changes, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String event, @JsonKey(name: 'event_label')  String? eventLabel,  String? description, @JsonKey(name: 'subject_type')  String? subjectType, @JsonKey(name: 'subject_type_label')  String? subjectTypeLabel, @JsonKey(name: 'subject_id')  int? subjectId,  AuditCauser? causer,  AuditChanges? changes, @JsonKey(name: 'attribute_labels')  Map<String, String>? attributeLabels, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ActivityLogEntry() when $default != null:
-return $default(_that.id,_that.event,_that.eventLabel,_that.description,_that.subjectType,_that.subjectTypeLabel,_that.subjectId,_that.causer,_that.changes,_that.createdAt);case _:
+return $default(_that.id,_that.event,_that.eventLabel,_that.description,_that.subjectType,_that.subjectTypeLabel,_that.subjectId,_that.causer,_that.changes,_that.attributeLabels,_that.createdAt);case _:
   return orElse();
 
 }
@@ -213,10 +220,10 @@ return $default(_that.id,_that.event,_that.eventLabel,_that.description,_that.su
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String event, @JsonKey(name: 'event_label')  String? eventLabel,  String? description, @JsonKey(name: 'subject_type')  String? subjectType, @JsonKey(name: 'subject_type_label')  String? subjectTypeLabel, @JsonKey(name: 'subject_id')  int? subjectId,  AuditCauser? causer,  AuditChanges? changes, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String event, @JsonKey(name: 'event_label')  String? eventLabel,  String? description, @JsonKey(name: 'subject_type')  String? subjectType, @JsonKey(name: 'subject_type_label')  String? subjectTypeLabel, @JsonKey(name: 'subject_id')  int? subjectId,  AuditCauser? causer,  AuditChanges? changes, @JsonKey(name: 'attribute_labels')  Map<String, String>? attributeLabels, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _ActivityLogEntry():
-return $default(_that.id,_that.event,_that.eventLabel,_that.description,_that.subjectType,_that.subjectTypeLabel,_that.subjectId,_that.causer,_that.changes,_that.createdAt);case _:
+return $default(_that.id,_that.event,_that.eventLabel,_that.description,_that.subjectType,_that.subjectTypeLabel,_that.subjectId,_that.causer,_that.changes,_that.attributeLabels,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -233,10 +240,10 @@ return $default(_that.id,_that.event,_that.eventLabel,_that.description,_that.su
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String event, @JsonKey(name: 'event_label')  String? eventLabel,  String? description, @JsonKey(name: 'subject_type')  String? subjectType, @JsonKey(name: 'subject_type_label')  String? subjectTypeLabel, @JsonKey(name: 'subject_id')  int? subjectId,  AuditCauser? causer,  AuditChanges? changes, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String event, @JsonKey(name: 'event_label')  String? eventLabel,  String? description, @JsonKey(name: 'subject_type')  String? subjectType, @JsonKey(name: 'subject_type_label')  String? subjectTypeLabel, @JsonKey(name: 'subject_id')  int? subjectId,  AuditCauser? causer,  AuditChanges? changes, @JsonKey(name: 'attribute_labels')  Map<String, String>? attributeLabels, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _ActivityLogEntry() when $default != null:
-return $default(_that.id,_that.event,_that.eventLabel,_that.description,_that.subjectType,_that.subjectTypeLabel,_that.subjectId,_that.causer,_that.changes,_that.createdAt);case _:
+return $default(_that.id,_that.event,_that.eventLabel,_that.description,_that.subjectType,_that.subjectTypeLabel,_that.subjectId,_that.causer,_that.changes,_that.attributeLabels,_that.createdAt);case _:
   return null;
 
 }
@@ -248,7 +255,7 @@ return $default(_that.id,_that.event,_that.eventLabel,_that.description,_that.su
 @JsonSerializable()
 
 class _ActivityLogEntry extends ActivityLogEntry {
-  const _ActivityLogEntry({required this.id, required this.event, @JsonKey(name: 'event_label') this.eventLabel, this.description, @JsonKey(name: 'subject_type') this.subjectType, @JsonKey(name: 'subject_type_label') this.subjectTypeLabel, @JsonKey(name: 'subject_id') this.subjectId, this.causer, this.changes, @JsonKey(name: 'created_at') this.createdAt}): super._();
+  const _ActivityLogEntry({required this.id, required this.event, @JsonKey(name: 'event_label') this.eventLabel, this.description, @JsonKey(name: 'subject_type') this.subjectType, @JsonKey(name: 'subject_type_label') this.subjectTypeLabel, @JsonKey(name: 'subject_id') this.subjectId, this.causer, this.changes, @JsonKey(name: 'attribute_labels') final  Map<String, String>? attributeLabels, @JsonKey(name: 'created_at') this.createdAt}): _attributeLabels = attributeLabels,super._();
   factory _ActivityLogEntry.fromJson(Map<String, dynamic> json) => _$ActivityLogEntryFromJson(json);
 
 @override final  int id;
@@ -266,6 +273,27 @@ class _ActivityLogEntry extends ActivityLogEntry {
 /// Absent for anything no person did — a seeder, a console command, a queued job.
 @override final  AuditCauser? causer;
 @override final  AuditChanges? changes;
+/// What to call each column that moved — `page_url` → «رابط الصفحة».
+///
+/// **Sent by the server, never kept here.** The screen used to show raw column names, and
+/// the alternative to this was a dictionary in the app — which is wrong the first morning
+/// somebody adds a column, with no build failing to say so. Carrying only the columns this
+/// entry touched keeps a page of fifteen entries small.
+ final  Map<String, String>? _attributeLabels;
+/// What to call each column that moved — `page_url` → «رابط الصفحة».
+///
+/// **Sent by the server, never kept here.** The screen used to show raw column names, and
+/// the alternative to this was a dictionary in the app — which is wrong the first morning
+/// somebody adds a column, with no build failing to say so. Carrying only the columns this
+/// entry touched keeps a page of fifteen entries small.
+@override@JsonKey(name: 'attribute_labels') Map<String, String>? get attributeLabels {
+  final value = _attributeLabels;
+  if (value == null) return null;
+  if (_attributeLabels is EqualUnmodifiableMapView) return _attributeLabels;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(value);
+}
+
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
 
 /// Create a copy of ActivityLogEntry
@@ -281,16 +309,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityLogEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.event, event) || other.event == event)&&(identical(other.eventLabel, eventLabel) || other.eventLabel == eventLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.subjectType, subjectType) || other.subjectType == subjectType)&&(identical(other.subjectTypeLabel, subjectTypeLabel) || other.subjectTypeLabel == subjectTypeLabel)&&(identical(other.subjectId, subjectId) || other.subjectId == subjectId)&&(identical(other.causer, causer) || other.causer == causer)&&(identical(other.changes, changes) || other.changes == changes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityLogEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.event, event) || other.event == event)&&(identical(other.eventLabel, eventLabel) || other.eventLabel == eventLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.subjectType, subjectType) || other.subjectType == subjectType)&&(identical(other.subjectTypeLabel, subjectTypeLabel) || other.subjectTypeLabel == subjectTypeLabel)&&(identical(other.subjectId, subjectId) || other.subjectId == subjectId)&&(identical(other.causer, causer) || other.causer == causer)&&(identical(other.changes, changes) || other.changes == changes)&&const DeepCollectionEquality().equals(other._attributeLabels, _attributeLabels)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,event,eventLabel,description,subjectType,subjectTypeLabel,subjectId,causer,changes,createdAt);
+int get hashCode => Object.hash(runtimeType,id,event,eventLabel,description,subjectType,subjectTypeLabel,subjectId,causer,changes,const DeepCollectionEquality().hash(_attributeLabels),createdAt);
 
 @override
 String toString() {
-  return 'ActivityLogEntry(id: $id, event: $event, eventLabel: $eventLabel, description: $description, subjectType: $subjectType, subjectTypeLabel: $subjectTypeLabel, subjectId: $subjectId, causer: $causer, changes: $changes, createdAt: $createdAt)';
+  return 'ActivityLogEntry(id: $id, event: $event, eventLabel: $eventLabel, description: $description, subjectType: $subjectType, subjectTypeLabel: $subjectTypeLabel, subjectId: $subjectId, causer: $causer, changes: $changes, attributeLabels: $attributeLabels, createdAt: $createdAt)';
 }
 
 
@@ -301,7 +329,7 @@ abstract mixin class _$ActivityLogEntryCopyWith<$Res> implements $ActivityLogEnt
   factory _$ActivityLogEntryCopyWith(_ActivityLogEntry value, $Res Function(_ActivityLogEntry) _then) = __$ActivityLogEntryCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String event,@JsonKey(name: 'event_label') String? eventLabel, String? description,@JsonKey(name: 'subject_type') String? subjectType,@JsonKey(name: 'subject_type_label') String? subjectTypeLabel,@JsonKey(name: 'subject_id') int? subjectId, AuditCauser? causer, AuditChanges? changes,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, String event,@JsonKey(name: 'event_label') String? eventLabel, String? description,@JsonKey(name: 'subject_type') String? subjectType,@JsonKey(name: 'subject_type_label') String? subjectTypeLabel,@JsonKey(name: 'subject_id') int? subjectId, AuditCauser? causer, AuditChanges? changes,@JsonKey(name: 'attribute_labels') Map<String, String>? attributeLabels,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -318,7 +346,7 @@ class __$ActivityLogEntryCopyWithImpl<$Res>
 
 /// Create a copy of ActivityLogEntry
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? event = null,Object? eventLabel = freezed,Object? description = freezed,Object? subjectType = freezed,Object? subjectTypeLabel = freezed,Object? subjectId = freezed,Object? causer = freezed,Object? changes = freezed,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? event = null,Object? eventLabel = freezed,Object? description = freezed,Object? subjectType = freezed,Object? subjectTypeLabel = freezed,Object? subjectId = freezed,Object? causer = freezed,Object? changes = freezed,Object? attributeLabels = freezed,Object? createdAt = freezed,}) {
   return _then(_ActivityLogEntry(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,event: null == event ? _self.event : event // ignore: cast_nullable_to_non_nullable
@@ -329,7 +357,8 @@ as String?,subjectTypeLabel: freezed == subjectTypeLabel ? _self.subjectTypeLabe
 as String?,subjectId: freezed == subjectId ? _self.subjectId : subjectId // ignore: cast_nullable_to_non_nullable
 as int?,causer: freezed == causer ? _self.causer : causer // ignore: cast_nullable_to_non_nullable
 as AuditCauser?,changes: freezed == changes ? _self.changes : changes // ignore: cast_nullable_to_non_nullable
-as AuditChanges?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as AuditChanges?,attributeLabels: freezed == attributeLabels ? _self._attributeLabels : attributeLabels // ignore: cast_nullable_to_non_nullable
+as Map<String, String>?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }

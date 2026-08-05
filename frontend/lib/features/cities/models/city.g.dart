@@ -10,6 +10,14 @@ _City _$CityFromJson(Map<String, dynamic> json) => _City(
   id: (json['id'] as num).toInt(),
   name: json['name'] as String,
   isRegionRequired: json['is_region_required'] as bool,
+  fulfilmentType:
+      $enumDecodeNullable(
+        _$FulfilmentTypeEnumMap,
+        json['fulfilment_type'],
+        unknownValue: FulfilmentType.delivery,
+      ) ??
+      FulfilmentType.delivery,
+  fulfilmentTypeLabel: json['fulfilment_type_label'] as String?,
   deliveryPrice: json['delivery_price'] as String?,
   darbBranch: json['darb_branch'] as String?,
   latitude: (json['latitude'] as num?)?.toDouble(),
@@ -24,12 +32,19 @@ Map<String, dynamic> _$CityToJson(_City instance) => <String, dynamic>{
   'id': instance.id,
   'name': instance.name,
   'is_region_required': instance.isRegionRequired,
+  'fulfilment_type': _$FulfilmentTypeEnumMap[instance.fulfilmentType]!,
+  'fulfilment_type_label': instance.fulfilmentTypeLabel,
   'delivery_price': instance.deliveryPrice,
   'darb_branch': instance.darbBranch,
   'latitude': instance.latitude,
   'longitude': instance.longitude,
   'regions_count': instance.regionsCount,
   'regions': instance.regions?.map((e) => e.toJson()).toList(),
+};
+
+const _$FulfilmentTypeEnumMap = {
+  FulfilmentType.delivery: 'delivery',
+  FulfilmentType.officePickup: 'office_pickup',
 };
 
 _Region _$RegionFromJson(Map<String, dynamic> json) => _Region(

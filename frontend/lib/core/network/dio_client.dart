@@ -24,10 +24,7 @@ abstract final class DioClient {
         connectTimeout: AppConfig.connectTimeout,
         receiveTimeout: AppConfig.receiveTimeout,
         sendTimeout: AppConfig.sendTimeout,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
+        headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
         // 4xx must reach the interceptors and `safeRequest` as a DioException carrying the
         // body — that body is where the API's Arabic message and field errors are.
         validateStatus: (status) => status != null && status >= 200 && status < 300,

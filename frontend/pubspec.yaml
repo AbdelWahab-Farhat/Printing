@@ -68,6 +68,25 @@ dependencies:
   # edit, deactivate, designs — and an overflow menu hides them behind a glyph nobody presses.
   flutter_speed_dial: ^7.0.0
 
+  # ── picking a customer's artwork ─────────────────────────────────────────────
+  # Two pickers, not one, and that is not duplication. `file_picker` opens the system's document
+  # browser — Files on iOS, the storage picker on Android — which is where a PDF sent by email
+  # lands. `image_picker` opens the photo library and the camera, which is where a design sent
+  # over WhatsApp lands, and on iOS the Files app cannot see that library at all. Offering only
+  # the first would make the commonest case — «the customer sent it to me on WhatsApp» —
+  # impossible.
+  #
+  # Both are what the sheet in core/widgets/attachment_sheet.dart puts behind its three rows.
+  # `image_picker` is flutter.dev's own; `file_picker` is MIT.
+  file_picker: ^11.0.3
+  image_picker: ^1.2.3
+  # Hands a design to whatever the phone already opens PDFs with.
+  #
+  # Deliberately not a PDF renderer: every one of them ships a native engine, and this app needs
+  # to *show a file*, not to annotate one. The link is the signed URL the API mints per request,
+  # so it expires — which is the point, since a design is the customer's property.
+  url_launcher: ^6.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

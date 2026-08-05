@@ -41,9 +41,20 @@ trait ResponseTrait
 
     /**
      * A paginated collection: items land in `data`, page info in a sibling `meta`.
+     *
+     * [$extraMeta] is for facts about the *whole* filtered set rather than about this page —
+     * today, the per-event counts a history screen's filter chips display. It belongs in `meta`
+     * precisely because it survives paging: anything a client could count from `data` would be
+     * wrong from page two onwards. The page keys always win, so an endpoint cannot overwrite
+     * `total` by accident.
+     *
+     * @param  array<string, mixed>  $extraMeta
      */
-    protected function successWithPagination(ResourceCollection $collection, string $message = ApiEnvelope::DEFAULT_SUCCESS_MESSAGE): JsonResponse
-    {
+    protected function successWithPagination(
+        ResourceCollection $collection,
+        string $message = ApiEnvelope::DEFAULT_SUCCESS_MESSAGE,
+        array $extraMeta = [],
+    ): JsonResponse {
         $paginator = $collection->resource;
 
         if (! $paginator instanceof AbstractPaginator) {
@@ -55,6 +66,7 @@ trait ResponseTrait
             'message' => $message,
             'data' => $collection->collection,
             'meta' => [
+                ...$extraMeta,
                 'current_page' => $paginator->currentPage(),
                 'per_page' => $paginator->perPage(),
                 'last_page' => $paginator->lastPage(),

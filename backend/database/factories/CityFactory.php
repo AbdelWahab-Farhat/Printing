@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Delivery\Models\City;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -23,6 +24,7 @@ class CityFactory extends Factory
     {
         return [
             'name' => 'مدينة '.(++self::$nameSequence),
+            'fulfilment_type' => FulfilmentType::Delivery,
             'is_region_required' => false,
             'delivery_price' => '20.00',
             'darb_branch' => 'فرع '.self::$nameSequence,
@@ -43,6 +45,7 @@ class CityFactory extends Factory
     public function officePickup(): static
     {
         return $this->state(fn () => [
+            'fulfilment_type' => FulfilmentType::OfficePickup,
             'is_region_required' => false,
             'delivery_price' => '0.00',
             'darb_branch' => null,

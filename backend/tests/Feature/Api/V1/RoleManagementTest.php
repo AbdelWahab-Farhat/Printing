@@ -10,6 +10,8 @@ use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /**
@@ -166,6 +168,53 @@ class RoleManagementTest extends TestCase
         // Assert
         $response->assertStatus(422)->assertJsonValidationErrors('permissions.0');
         $this->assertDatabaseMissing('roles', ['name' => 'wizard']);
+    }
+
+    public function test_a_permission_the_seeder_has_not_written_yet_is_still_grantable(): void
+    {
+        // Arrange — the exact failure this guards against, and it has already happened once:
+        // a release adds a case to PermissionName, the seeder is not re-run, and the row is
+        // missing. StoreRoleRequest validates against the enum and lets the name through, so
+        // without EnsurePermissionsExist Spatie throws PermissionDoesNotExist from inside
+        // syncPermissions and the administrator gets a 500 for ticking a box we offered them.
+        $headers = $this->tokenFor($this->admin());
+        Permission::query()->where('name', PermissionName::DispatchOrders->value)->delete();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/roles', [
+            'name' => 'dispatcher',
+            'permissions' => [PermissionName::DispatchOrders->value],
+        ]);
+
+        // Assert — created, and the catalogue row was written on the way.
+        $response->assertCreated()->assertJsonCount(1, 'data.permissions');
+        $this->assertDatabaseHas('permissions', [
+            'name' => PermissionName::DispatchOrders->value,
+            'guard_name' => 'web',
+        ]);
+    }
+
+    public function test_editing_a_role_also_writes_a_catalogue_row_the_seeder_missed(): void
+    {
+        // Arrange — the same gap on the other write path.
+        $headers = $this->tokenFor($this->admin());
+        $role = Role::findOrCreate('dispatcher', 'web');
+        Permission::query()->where('name', PermissionName::DispatchOrders->value)->delete();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson('/api/v1/roles/'.$role->id, [
+            'name' => 'dispatcher',
+            'permissions' => [PermissionName::DispatchOrders->value],
+        ]);
+
+        // Assert
+        $response->assertOk()->assertJsonCount(1, 'data.permissions');
+        $this->assertDatabaseHas('permissions', [
+            'name' => PermissionName::DispatchOrders->value,
+            'guard_name' => 'web',
+        ]);
     }
 
     public function test_role_names_must_be_machine_readable_and_unique(): void

@@ -22,7 +22,10 @@ mixin _$Product {
 @JsonKey(name: 'category_label') String get categoryLabel;@JsonKey(name: 'pricing_unit') String get pricingUnit;@JsonKey(name: 'pricing_unit_label') String get pricingUnitLabel;@JsonKey(name: 'pricing_mode') String get pricingMode;@JsonKey(name: 'pricing_mode_label') String get pricingModeLabel;/// Whether to render a price or "السعر حسب الطلب" — the server's answer, not a rule the app
 /// re-derives from [pricingMode].
 @JsonKey(name: 'has_listed_prices') bool get hasListedPrices;/// A decimal string like `'100.000'`: a quantity in [pricingUnit], not a count of rows.
-@JsonKey(name: 'min_order_quantity') String get minOrderQuantity;@JsonKey(name: 'is_active') bool get isActive;@JsonKey(name: 'sort_order') int get sortOrder; List<ProductVariant> get variants; List<ProductImage> get images;
+@JsonKey(name: 'min_order_quantity') String get minOrderQuantity;@JsonKey(name: 'is_active') bool get isActive;@JsonKey(name: 'sort_order') int get sortOrder; List<ProductVariant> get variants; List<ProductImage> get images;/// When the bag entered the catalogue, and when it was last touched. Absent from nothing —
+/// the API sends both on every product — but nullable because a `DateTime` this app failed
+/// to parse should leave a line off a screen rather than take the whole screen down.
+@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -35,16 +38,16 @@ $ProductCopyWith<Product> get copyWith => _$ProductCopyWithImpl<Product>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Product&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.features, features)&&(identical(other.category, category) || other.category == category)&&(identical(other.categoryLabel, categoryLabel) || other.categoryLabel == categoryLabel)&&(identical(other.pricingUnit, pricingUnit) || other.pricingUnit == pricingUnit)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.pricingMode, pricingMode) || other.pricingMode == pricingMode)&&(identical(other.pricingModeLabel, pricingModeLabel) || other.pricingModeLabel == pricingModeLabel)&&(identical(other.hasListedPrices, hasListedPrices) || other.hasListedPrices == hasListedPrices)&&(identical(other.minOrderQuantity, minOrderQuantity) || other.minOrderQuantity == minOrderQuantity)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&const DeepCollectionEquality().equals(other.variants, variants)&&const DeepCollectionEquality().equals(other.images, images));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Product&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.features, features)&&(identical(other.category, category) || other.category == category)&&(identical(other.categoryLabel, categoryLabel) || other.categoryLabel == categoryLabel)&&(identical(other.pricingUnit, pricingUnit) || other.pricingUnit == pricingUnit)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.pricingMode, pricingMode) || other.pricingMode == pricingMode)&&(identical(other.pricingModeLabel, pricingModeLabel) || other.pricingModeLabel == pricingModeLabel)&&(identical(other.hasListedPrices, hasListedPrices) || other.hasListedPrices == hasListedPrices)&&(identical(other.minOrderQuantity, minOrderQuantity) || other.minOrderQuantity == minOrderQuantity)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&const DeepCollectionEquality().equals(other.variants, variants)&&const DeepCollectionEquality().equals(other.images, images)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,slug,name,description,const DeepCollectionEquality().hash(features),category,categoryLabel,pricingUnit,pricingUnitLabel,pricingMode,pricingModeLabel,hasListedPrices,minOrderQuantity,isActive,sortOrder,const DeepCollectionEquality().hash(variants),const DeepCollectionEquality().hash(images));
+int get hashCode => Object.hashAll([runtimeType,id,code,slug,name,description,const DeepCollectionEquality().hash(features),category,categoryLabel,pricingUnit,pricingUnitLabel,pricingMode,pricingModeLabel,hasListedPrices,minOrderQuantity,isActive,sortOrder,const DeepCollectionEquality().hash(variants),const DeepCollectionEquality().hash(images),createdAt,updatedAt]);
 
 @override
 String toString() {
-  return 'Product(id: $id, code: $code, slug: $slug, name: $name, description: $description, features: $features, category: $category, categoryLabel: $categoryLabel, pricingUnit: $pricingUnit, pricingUnitLabel: $pricingUnitLabel, pricingMode: $pricingMode, pricingModeLabel: $pricingModeLabel, hasListedPrices: $hasListedPrices, minOrderQuantity: $minOrderQuantity, isActive: $isActive, sortOrder: $sortOrder, variants: $variants, images: $images)';
+  return 'Product(id: $id, code: $code, slug: $slug, name: $name, description: $description, features: $features, category: $category, categoryLabel: $categoryLabel, pricingUnit: $pricingUnit, pricingUnitLabel: $pricingUnitLabel, pricingMode: $pricingMode, pricingModeLabel: $pricingModeLabel, hasListedPrices: $hasListedPrices, minOrderQuantity: $minOrderQuantity, isActive: $isActive, sortOrder: $sortOrder, variants: $variants, images: $images, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -55,7 +58,7 @@ abstract mixin class $ProductCopyWith<$Res>  {
   factory $ProductCopyWith(Product value, $Res Function(Product) _then) = _$ProductCopyWithImpl;
 @useResult
 $Res call({
- int id, String code, String slug, String name, String? description, List<String> features, String category,@JsonKey(name: 'category_label') String categoryLabel,@JsonKey(name: 'pricing_unit') String pricingUnit,@JsonKey(name: 'pricing_unit_label') String pricingUnitLabel,@JsonKey(name: 'pricing_mode') String pricingMode,@JsonKey(name: 'pricing_mode_label') String pricingModeLabel,@JsonKey(name: 'has_listed_prices') bool hasListedPrices,@JsonKey(name: 'min_order_quantity') String minOrderQuantity,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder, List<ProductVariant> variants, List<ProductImage> images
+ int id, String code, String slug, String name, String? description, List<String> features, String category,@JsonKey(name: 'category_label') String categoryLabel,@JsonKey(name: 'pricing_unit') String pricingUnit,@JsonKey(name: 'pricing_unit_label') String pricingUnitLabel,@JsonKey(name: 'pricing_mode') String pricingMode,@JsonKey(name: 'pricing_mode_label') String pricingModeLabel,@JsonKey(name: 'has_listed_prices') bool hasListedPrices,@JsonKey(name: 'min_order_quantity') String minOrderQuantity,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder, List<ProductVariant> variants, List<ProductImage> images,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -72,7 +75,7 @@ class _$ProductCopyWithImpl<$Res>
 
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? slug = null,Object? name = null,Object? description = freezed,Object? features = null,Object? category = null,Object? categoryLabel = null,Object? pricingUnit = null,Object? pricingUnitLabel = null,Object? pricingMode = null,Object? pricingModeLabel = null,Object? hasListedPrices = null,Object? minOrderQuantity = null,Object? isActive = null,Object? sortOrder = null,Object? variants = null,Object? images = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? slug = null,Object? name = null,Object? description = freezed,Object? features = null,Object? category = null,Object? categoryLabel = null,Object? pricingUnit = null,Object? pricingUnitLabel = null,Object? pricingMode = null,Object? pricingModeLabel = null,Object? hasListedPrices = null,Object? minOrderQuantity = null,Object? isActive = null,Object? sortOrder = null,Object? variants = null,Object? images = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -92,7 +95,9 @@ as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast
 as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
 as int,variants: null == variants ? _self.variants : variants // ignore: cast_nullable_to_non_nullable
 as List<ProductVariant>,images: null == images ? _self.images : images // ignore: cast_nullable_to_non_nullable
-as List<ProductImage>,
+as List<ProductImage>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -177,10 +182,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String slug,  String name,  String? description,  List<String> features,  String category, @JsonKey(name: 'category_label')  String categoryLabel, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'pricing_mode_label')  String pricingModeLabel, @JsonKey(name: 'has_listed_prices')  bool hasListedPrices, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder,  List<ProductVariant> variants,  List<ProductImage> images)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String slug,  String name,  String? description,  List<String> features,  String category, @JsonKey(name: 'category_label')  String categoryLabel, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'pricing_mode_label')  String pricingModeLabel, @JsonKey(name: 'has_listed_prices')  bool hasListedPrices, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder,  List<ProductVariant> variants,  List<ProductImage> images, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Product() when $default != null:
-return $default(_that.id,_that.code,_that.slug,_that.name,_that.description,_that.features,_that.category,_that.categoryLabel,_that.pricingUnit,_that.pricingUnitLabel,_that.pricingMode,_that.pricingModeLabel,_that.hasListedPrices,_that.minOrderQuantity,_that.isActive,_that.sortOrder,_that.variants,_that.images);case _:
+return $default(_that.id,_that.code,_that.slug,_that.name,_that.description,_that.features,_that.category,_that.categoryLabel,_that.pricingUnit,_that.pricingUnitLabel,_that.pricingMode,_that.pricingModeLabel,_that.hasListedPrices,_that.minOrderQuantity,_that.isActive,_that.sortOrder,_that.variants,_that.images,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -198,10 +203,10 @@ return $default(_that.id,_that.code,_that.slug,_that.name,_that.description,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String slug,  String name,  String? description,  List<String> features,  String category, @JsonKey(name: 'category_label')  String categoryLabel, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'pricing_mode_label')  String pricingModeLabel, @JsonKey(name: 'has_listed_prices')  bool hasListedPrices, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder,  List<ProductVariant> variants,  List<ProductImage> images)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String slug,  String name,  String? description,  List<String> features,  String category, @JsonKey(name: 'category_label')  String categoryLabel, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'pricing_mode_label')  String pricingModeLabel, @JsonKey(name: 'has_listed_prices')  bool hasListedPrices, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder,  List<ProductVariant> variants,  List<ProductImage> images, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Product():
-return $default(_that.id,_that.code,_that.slug,_that.name,_that.description,_that.features,_that.category,_that.categoryLabel,_that.pricingUnit,_that.pricingUnitLabel,_that.pricingMode,_that.pricingModeLabel,_that.hasListedPrices,_that.minOrderQuantity,_that.isActive,_that.sortOrder,_that.variants,_that.images);case _:
+return $default(_that.id,_that.code,_that.slug,_that.name,_that.description,_that.features,_that.category,_that.categoryLabel,_that.pricingUnit,_that.pricingUnitLabel,_that.pricingMode,_that.pricingModeLabel,_that.hasListedPrices,_that.minOrderQuantity,_that.isActive,_that.sortOrder,_that.variants,_that.images,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -218,10 +223,10 @@ return $default(_that.id,_that.code,_that.slug,_that.name,_that.description,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String slug,  String name,  String? description,  List<String> features,  String category, @JsonKey(name: 'category_label')  String categoryLabel, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'pricing_mode_label')  String pricingModeLabel, @JsonKey(name: 'has_listed_prices')  bool hasListedPrices, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder,  List<ProductVariant> variants,  List<ProductImage> images)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String slug,  String name,  String? description,  List<String> features,  String category, @JsonKey(name: 'category_label')  String categoryLabel, @JsonKey(name: 'pricing_unit')  String pricingUnit, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel, @JsonKey(name: 'pricing_mode')  String pricingMode, @JsonKey(name: 'pricing_mode_label')  String pricingModeLabel, @JsonKey(name: 'has_listed_prices')  bool hasListedPrices, @JsonKey(name: 'min_order_quantity')  String minOrderQuantity, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder,  List<ProductVariant> variants,  List<ProductImage> images, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Product() when $default != null:
-return $default(_that.id,_that.code,_that.slug,_that.name,_that.description,_that.features,_that.category,_that.categoryLabel,_that.pricingUnit,_that.pricingUnitLabel,_that.pricingMode,_that.pricingModeLabel,_that.hasListedPrices,_that.minOrderQuantity,_that.isActive,_that.sortOrder,_that.variants,_that.images);case _:
+return $default(_that.id,_that.code,_that.slug,_that.name,_that.description,_that.features,_that.category,_that.categoryLabel,_that.pricingUnit,_that.pricingUnitLabel,_that.pricingMode,_that.pricingModeLabel,_that.hasListedPrices,_that.minOrderQuantity,_that.isActive,_that.sortOrder,_that.variants,_that.images,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -233,7 +238,7 @@ return $default(_that.id,_that.code,_that.slug,_that.name,_that.description,_tha
 @JsonSerializable()
 
 class _Product extends Product {
-  const _Product({required this.id, required this.code, required this.slug, required this.name, this.description, final  List<String> features = const <String>[], required this.category, @JsonKey(name: 'category_label') required this.categoryLabel, @JsonKey(name: 'pricing_unit') required this.pricingUnit, @JsonKey(name: 'pricing_unit_label') required this.pricingUnitLabel, @JsonKey(name: 'pricing_mode') required this.pricingMode, @JsonKey(name: 'pricing_mode_label') required this.pricingModeLabel, @JsonKey(name: 'has_listed_prices') this.hasListedPrices = false, @JsonKey(name: 'min_order_quantity') required this.minOrderQuantity, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'sort_order') this.sortOrder = 0, final  List<ProductVariant> variants = const <ProductVariant>[], final  List<ProductImage> images = const <ProductImage>[]}): _features = features,_variants = variants,_images = images,super._();
+  const _Product({required this.id, required this.code, required this.slug, required this.name, this.description, final  List<String> features = const <String>[], required this.category, @JsonKey(name: 'category_label') required this.categoryLabel, @JsonKey(name: 'pricing_unit') required this.pricingUnit, @JsonKey(name: 'pricing_unit_label') required this.pricingUnitLabel, @JsonKey(name: 'pricing_mode') required this.pricingMode, @JsonKey(name: 'pricing_mode_label') required this.pricingModeLabel, @JsonKey(name: 'has_listed_prices') this.hasListedPrices = false, @JsonKey(name: 'min_order_quantity') required this.minOrderQuantity, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'sort_order') this.sortOrder = 0, final  List<ProductVariant> variants = const <ProductVariant>[], final  List<ProductImage> images = const <ProductImage>[], @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _features = features,_variants = variants,_images = images,super._();
   factory _Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
 
 @override final  int id;
@@ -279,6 +284,11 @@ class _Product extends Product {
   return EqualUnmodifiableListView(_images);
 }
 
+/// When the bag entered the catalogue, and when it was last touched. Absent from nothing —
+/// the API sends both on every product — but nullable because a `DateTime` this app failed
+/// to parse should leave a line off a screen rather than take the whole screen down.
+@override@JsonKey(name: 'created_at') final  DateTime? createdAt;
+@override@JsonKey(name: 'updated_at') final  DateTime? updatedAt;
 
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
@@ -293,16 +303,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Product&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._features, _features)&&(identical(other.category, category) || other.category == category)&&(identical(other.categoryLabel, categoryLabel) || other.categoryLabel == categoryLabel)&&(identical(other.pricingUnit, pricingUnit) || other.pricingUnit == pricingUnit)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.pricingMode, pricingMode) || other.pricingMode == pricingMode)&&(identical(other.pricingModeLabel, pricingModeLabel) || other.pricingModeLabel == pricingModeLabel)&&(identical(other.hasListedPrices, hasListedPrices) || other.hasListedPrices == hasListedPrices)&&(identical(other.minOrderQuantity, minOrderQuantity) || other.minOrderQuantity == minOrderQuantity)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&const DeepCollectionEquality().equals(other._variants, _variants)&&const DeepCollectionEquality().equals(other._images, _images));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Product&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._features, _features)&&(identical(other.category, category) || other.category == category)&&(identical(other.categoryLabel, categoryLabel) || other.categoryLabel == categoryLabel)&&(identical(other.pricingUnit, pricingUnit) || other.pricingUnit == pricingUnit)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.pricingMode, pricingMode) || other.pricingMode == pricingMode)&&(identical(other.pricingModeLabel, pricingModeLabel) || other.pricingModeLabel == pricingModeLabel)&&(identical(other.hasListedPrices, hasListedPrices) || other.hasListedPrices == hasListedPrices)&&(identical(other.minOrderQuantity, minOrderQuantity) || other.minOrderQuantity == minOrderQuantity)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&const DeepCollectionEquality().equals(other._variants, _variants)&&const DeepCollectionEquality().equals(other._images, _images)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,slug,name,description,const DeepCollectionEquality().hash(_features),category,categoryLabel,pricingUnit,pricingUnitLabel,pricingMode,pricingModeLabel,hasListedPrices,minOrderQuantity,isActive,sortOrder,const DeepCollectionEquality().hash(_variants),const DeepCollectionEquality().hash(_images));
+int get hashCode => Object.hashAll([runtimeType,id,code,slug,name,description,const DeepCollectionEquality().hash(_features),category,categoryLabel,pricingUnit,pricingUnitLabel,pricingMode,pricingModeLabel,hasListedPrices,minOrderQuantity,isActive,sortOrder,const DeepCollectionEquality().hash(_variants),const DeepCollectionEquality().hash(_images),createdAt,updatedAt]);
 
 @override
 String toString() {
-  return 'Product(id: $id, code: $code, slug: $slug, name: $name, description: $description, features: $features, category: $category, categoryLabel: $categoryLabel, pricingUnit: $pricingUnit, pricingUnitLabel: $pricingUnitLabel, pricingMode: $pricingMode, pricingModeLabel: $pricingModeLabel, hasListedPrices: $hasListedPrices, minOrderQuantity: $minOrderQuantity, isActive: $isActive, sortOrder: $sortOrder, variants: $variants, images: $images)';
+  return 'Product(id: $id, code: $code, slug: $slug, name: $name, description: $description, features: $features, category: $category, categoryLabel: $categoryLabel, pricingUnit: $pricingUnit, pricingUnitLabel: $pricingUnitLabel, pricingMode: $pricingMode, pricingModeLabel: $pricingModeLabel, hasListedPrices: $hasListedPrices, minOrderQuantity: $minOrderQuantity, isActive: $isActive, sortOrder: $sortOrder, variants: $variants, images: $images, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -313,7 +323,7 @@ abstract mixin class _$ProductCopyWith<$Res> implements $ProductCopyWith<$Res> {
   factory _$ProductCopyWith(_Product value, $Res Function(_Product) _then) = __$ProductCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String code, String slug, String name, String? description, List<String> features, String category,@JsonKey(name: 'category_label') String categoryLabel,@JsonKey(name: 'pricing_unit') String pricingUnit,@JsonKey(name: 'pricing_unit_label') String pricingUnitLabel,@JsonKey(name: 'pricing_mode') String pricingMode,@JsonKey(name: 'pricing_mode_label') String pricingModeLabel,@JsonKey(name: 'has_listed_prices') bool hasListedPrices,@JsonKey(name: 'min_order_quantity') String minOrderQuantity,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder, List<ProductVariant> variants, List<ProductImage> images
+ int id, String code, String slug, String name, String? description, List<String> features, String category,@JsonKey(name: 'category_label') String categoryLabel,@JsonKey(name: 'pricing_unit') String pricingUnit,@JsonKey(name: 'pricing_unit_label') String pricingUnitLabel,@JsonKey(name: 'pricing_mode') String pricingMode,@JsonKey(name: 'pricing_mode_label') String pricingModeLabel,@JsonKey(name: 'has_listed_prices') bool hasListedPrices,@JsonKey(name: 'min_order_quantity') String minOrderQuantity,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder, List<ProductVariant> variants, List<ProductImage> images,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -330,7 +340,7 @@ class __$ProductCopyWithImpl<$Res>
 
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? slug = null,Object? name = null,Object? description = freezed,Object? features = null,Object? category = null,Object? categoryLabel = null,Object? pricingUnit = null,Object? pricingUnitLabel = null,Object? pricingMode = null,Object? pricingModeLabel = null,Object? hasListedPrices = null,Object? minOrderQuantity = null,Object? isActive = null,Object? sortOrder = null,Object? variants = null,Object? images = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? slug = null,Object? name = null,Object? description = freezed,Object? features = null,Object? category = null,Object? categoryLabel = null,Object? pricingUnit = null,Object? pricingUnitLabel = null,Object? pricingMode = null,Object? pricingModeLabel = null,Object? hasListedPrices = null,Object? minOrderQuantity = null,Object? isActive = null,Object? sortOrder = null,Object? variants = null,Object? images = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_Product(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -350,7 +360,9 @@ as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast
 as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
 as int,variants: null == variants ? _self._variants : variants // ignore: cast_nullable_to_non_nullable
 as List<ProductVariant>,images: null == images ? _self._images : images // ignore: cast_nullable_to_non_nullable
-as List<ProductImage>,
+as List<ProductImage>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -921,7 +933,9 @@ as String,
 /// @nodoc
 mixin _$ProductImage {
 
- int get id; String get url;@JsonKey(name: 'alt_text') String? get altText;@JsonKey(name: 'is_primary') bool get isPrimary;@JsonKey(name: 'sort_order') int get sortOrder;
+ int get id; String get url;@JsonKey(name: 'alt_text') String? get altText;@JsonKey(name: 'is_primary') bool get isPrimary;@JsonKey(name: 'sort_order') int get sortOrder;/// What the file actually is. The API has sent these since the media layer landed; nothing
+/// read them until a screen existed with room to say what it is showing.
+@JsonKey(name: 'mime_type') String? get mimeType;@JsonKey(name: 'size_bytes') int? get sizeBytes;@JsonKey(name: 'width_px') int? get widthPx;@JsonKey(name: 'height_px') int? get heightPx;
 /// Create a copy of ProductImage
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -934,16 +948,16 @@ $ProductImageCopyWith<ProductImage> get copyWith => _$ProductImageCopyWithImpl<P
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImage&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url)&&(identical(other.altText, altText) || other.altText == altText)&&(identical(other.isPrimary, isPrimary) || other.isPrimary == isPrimary)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImage&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url)&&(identical(other.altText, altText) || other.altText == altText)&&(identical(other.isPrimary, isPrimary) || other.isPrimary == isPrimary)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,url,altText,isPrimary,sortOrder);
+int get hashCode => Object.hash(runtimeType,id,url,altText,isPrimary,sortOrder,mimeType,sizeBytes,widthPx,heightPx);
 
 @override
 String toString() {
-  return 'ProductImage(id: $id, url: $url, altText: $altText, isPrimary: $isPrimary, sortOrder: $sortOrder)';
+  return 'ProductImage(id: $id, url: $url, altText: $altText, isPrimary: $isPrimary, sortOrder: $sortOrder, mimeType: $mimeType, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx)';
 }
 
 
@@ -954,7 +968,7 @@ abstract mixin class $ProductImageCopyWith<$Res>  {
   factory $ProductImageCopyWith(ProductImage value, $Res Function(ProductImage) _then) = _$ProductImageCopyWithImpl;
 @useResult
 $Res call({
- int id, String url,@JsonKey(name: 'alt_text') String? altText,@JsonKey(name: 'is_primary') bool isPrimary,@JsonKey(name: 'sort_order') int sortOrder
+ int id, String url,@JsonKey(name: 'alt_text') String? altText,@JsonKey(name: 'is_primary') bool isPrimary,@JsonKey(name: 'sort_order') int sortOrder,@JsonKey(name: 'mime_type') String? mimeType,@JsonKey(name: 'size_bytes') int? sizeBytes,@JsonKey(name: 'width_px') int? widthPx,@JsonKey(name: 'height_px') int? heightPx
 });
 
 
@@ -971,14 +985,18 @@ class _$ProductImageCopyWithImpl<$Res>
 
 /// Create a copy of ProductImage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? url = null,Object? altText = freezed,Object? isPrimary = null,Object? sortOrder = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? url = null,Object? altText = freezed,Object? isPrimary = null,Object? sortOrder = null,Object? mimeType = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
 as String,altText: freezed == altText ? _self.altText : altText // ignore: cast_nullable_to_non_nullable
 as String?,isPrimary: null == isPrimary ? _self.isPrimary : isPrimary // ignore: cast_nullable_to_non_nullable
 as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
-as int,
+as int,mimeType: freezed == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String?,sizeBytes: freezed == sizeBytes ? _self.sizeBytes : sizeBytes // ignore: cast_nullable_to_non_nullable
+as int?,widthPx: freezed == widthPx ? _self.widthPx : widthPx // ignore: cast_nullable_to_non_nullable
+as int?,heightPx: freezed == heightPx ? _self.heightPx : heightPx // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -1063,10 +1081,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String url, @JsonKey(name: 'alt_text')  String? altText, @JsonKey(name: 'is_primary')  bool isPrimary, @JsonKey(name: 'sort_order')  int sortOrder)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String url, @JsonKey(name: 'alt_text')  String? altText, @JsonKey(name: 'is_primary')  bool isPrimary, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProductImage() when $default != null:
-return $default(_that.id,_that.url,_that.altText,_that.isPrimary,_that.sortOrder);case _:
+return $default(_that.id,_that.url,_that.altText,_that.isPrimary,_that.sortOrder,_that.mimeType,_that.sizeBytes,_that.widthPx,_that.heightPx);case _:
   return orElse();
 
 }
@@ -1084,10 +1102,10 @@ return $default(_that.id,_that.url,_that.altText,_that.isPrimary,_that.sortOrder
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String url, @JsonKey(name: 'alt_text')  String? altText, @JsonKey(name: 'is_primary')  bool isPrimary, @JsonKey(name: 'sort_order')  int sortOrder)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String url, @JsonKey(name: 'alt_text')  String? altText, @JsonKey(name: 'is_primary')  bool isPrimary, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx)  $default,) {final _that = this;
 switch (_that) {
 case _ProductImage():
-return $default(_that.id,_that.url,_that.altText,_that.isPrimary,_that.sortOrder);case _:
+return $default(_that.id,_that.url,_that.altText,_that.isPrimary,_that.sortOrder,_that.mimeType,_that.sizeBytes,_that.widthPx,_that.heightPx);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1104,10 +1122,10 @@ return $default(_that.id,_that.url,_that.altText,_that.isPrimary,_that.sortOrder
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String url, @JsonKey(name: 'alt_text')  String? altText, @JsonKey(name: 'is_primary')  bool isPrimary, @JsonKey(name: 'sort_order')  int sortOrder)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String url, @JsonKey(name: 'alt_text')  String? altText, @JsonKey(name: 'is_primary')  bool isPrimary, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx)?  $default,) {final _that = this;
 switch (_that) {
 case _ProductImage() when $default != null:
-return $default(_that.id,_that.url,_that.altText,_that.isPrimary,_that.sortOrder);case _:
+return $default(_that.id,_that.url,_that.altText,_that.isPrimary,_that.sortOrder,_that.mimeType,_that.sizeBytes,_that.widthPx,_that.heightPx);case _:
   return null;
 
 }
@@ -1118,8 +1136,8 @@ return $default(_that.id,_that.url,_that.altText,_that.isPrimary,_that.sortOrder
 /// @nodoc
 @JsonSerializable()
 
-class _ProductImage implements ProductImage {
-  const _ProductImage({required this.id, required this.url, @JsonKey(name: 'alt_text') this.altText, @JsonKey(name: 'is_primary') this.isPrimary = false, @JsonKey(name: 'sort_order') this.sortOrder = 0});
+class _ProductImage extends ProductImage {
+  const _ProductImage({required this.id, required this.url, @JsonKey(name: 'alt_text') this.altText, @JsonKey(name: 'is_primary') this.isPrimary = false, @JsonKey(name: 'sort_order') this.sortOrder = 0, @JsonKey(name: 'mime_type') this.mimeType, @JsonKey(name: 'size_bytes') this.sizeBytes, @JsonKey(name: 'width_px') this.widthPx, @JsonKey(name: 'height_px') this.heightPx}): super._();
   factory _ProductImage.fromJson(Map<String, dynamic> json) => _$ProductImageFromJson(json);
 
 @override final  int id;
@@ -1127,6 +1145,12 @@ class _ProductImage implements ProductImage {
 @override@JsonKey(name: 'alt_text') final  String? altText;
 @override@JsonKey(name: 'is_primary') final  bool isPrimary;
 @override@JsonKey(name: 'sort_order') final  int sortOrder;
+/// What the file actually is. The API has sent these since the media layer landed; nothing
+/// read them until a screen existed with room to say what it is showing.
+@override@JsonKey(name: 'mime_type') final  String? mimeType;
+@override@JsonKey(name: 'size_bytes') final  int? sizeBytes;
+@override@JsonKey(name: 'width_px') final  int? widthPx;
+@override@JsonKey(name: 'height_px') final  int? heightPx;
 
 /// Create a copy of ProductImage
 /// with the given fields replaced by the non-null parameter values.
@@ -1141,16 +1165,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductImage&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url)&&(identical(other.altText, altText) || other.altText == altText)&&(identical(other.isPrimary, isPrimary) || other.isPrimary == isPrimary)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductImage&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url)&&(identical(other.altText, altText) || other.altText == altText)&&(identical(other.isPrimary, isPrimary) || other.isPrimary == isPrimary)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,url,altText,isPrimary,sortOrder);
+int get hashCode => Object.hash(runtimeType,id,url,altText,isPrimary,sortOrder,mimeType,sizeBytes,widthPx,heightPx);
 
 @override
 String toString() {
-  return 'ProductImage(id: $id, url: $url, altText: $altText, isPrimary: $isPrimary, sortOrder: $sortOrder)';
+  return 'ProductImage(id: $id, url: $url, altText: $altText, isPrimary: $isPrimary, sortOrder: $sortOrder, mimeType: $mimeType, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx)';
 }
 
 
@@ -1161,7 +1185,7 @@ abstract mixin class _$ProductImageCopyWith<$Res> implements $ProductImageCopyWi
   factory _$ProductImageCopyWith(_ProductImage value, $Res Function(_ProductImage) _then) = __$ProductImageCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String url,@JsonKey(name: 'alt_text') String? altText,@JsonKey(name: 'is_primary') bool isPrimary,@JsonKey(name: 'sort_order') int sortOrder
+ int id, String url,@JsonKey(name: 'alt_text') String? altText,@JsonKey(name: 'is_primary') bool isPrimary,@JsonKey(name: 'sort_order') int sortOrder,@JsonKey(name: 'mime_type') String? mimeType,@JsonKey(name: 'size_bytes') int? sizeBytes,@JsonKey(name: 'width_px') int? widthPx,@JsonKey(name: 'height_px') int? heightPx
 });
 
 
@@ -1178,14 +1202,18 @@ class __$ProductImageCopyWithImpl<$Res>
 
 /// Create a copy of ProductImage
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? url = null,Object? altText = freezed,Object? isPrimary = null,Object? sortOrder = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? url = null,Object? altText = freezed,Object? isPrimary = null,Object? sortOrder = null,Object? mimeType = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,}) {
   return _then(_ProductImage(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
 as String,altText: freezed == altText ? _self.altText : altText // ignore: cast_nullable_to_non_nullable
 as String?,isPrimary: null == isPrimary ? _self.isPrimary : isPrimary // ignore: cast_nullable_to_non_nullable
 as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
-as int,
+as int,mimeType: freezed == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String?,sizeBytes: freezed == sizeBytes ? _self.sizeBytes : sizeBytes // ignore: cast_nullable_to_non_nullable
+as int?,widthPx: freezed == widthPx ? _self.widthPx : widthPx // ignore: cast_nullable_to_non_nullable
+as int?,heightPx: freezed == heightPx ? _self.heightPx : heightPx // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

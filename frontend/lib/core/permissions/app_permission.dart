@@ -19,11 +19,15 @@
 /// ```text
 /// lib/core/permissions/app_permission.dart   every permission that exists
 /// grep -rn "AppPermission\." lib/            every place the app gates on one
-/// grep -rn "isAdmin" lib/features/           must match only the employee card's role chip
+/// grep -rn "Session>().isAdmin" lib/         must match only the two staff-creation gates
 /// ```
 ///
 /// The third is the one that matters: anything else matching it is a second permission system
-/// starting.
+/// starting. It is **not zero**, and that is deliberate — creating a staff account is
+/// administrators-only *for now*, and the server enforces it with a gate ability rather than a
+/// permission, so that it cannot be ticked onto a role. There is no case here to ask for,
+/// because there is no permission. See `Session.isAdmin`; the day it is delegated, a case
+/// arrives here and those two call sites become `can(...)`.
 enum AppPermission {
   // Access management
   viewUsers('users.view', 'عرض المستخدمين'),
@@ -66,6 +70,7 @@ enum AppPermission {
     'تسليم الطلبية للتوصيل أو للاستلام من المكتب',
   ),
   markOrdersDelivered('orders.status.delivered', 'تأكيد استلام العميل للطلبية'),
+  settleOrders('orders.status.settled', 'تسوية مبلغ الطلبية'),
   recordCourierReturn(
     'orders.status.returned_courier',
     'تسجيل راجع لدى المندوب',
@@ -75,7 +80,8 @@ enum AppPermission {
     'تسجيل راجع لدى شركة التوصيل',
   ),
   recordOfficeReturn('orders.status.returned_office', 'تسجيل راجع مكتب'),
-  cancelOrders('orders.status.cancelled', 'إلغاء الطلبية كلياً'),
+  resendOrders('orders.status.resend', 'إعادة إرسال طلبية راجعة'),
+  cancelOrders('orders.status.cancelled', 'إلغاء الطلبية'),
 
   // The audit trail. One permission, not a pair: nothing writes to it by hand.
   viewActivityLogs('logs.view', 'عرض سجل النشاطات');

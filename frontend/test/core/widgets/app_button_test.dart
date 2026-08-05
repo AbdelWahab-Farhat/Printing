@@ -23,7 +23,10 @@ void main() {
   ///
   /// [reducedMotion] is the accessibility setting "remove animations", which the OS reports
   /// through `MediaQuery.disableAnimations`.
-  Widget host(Widget button, {bool reducedMotion = false}) {
+  ///
+  /// [imposeWidth] off is the other half the button meets in real screens — a `Wrap`, or a
+  /// centred `Column` — where nothing hands it a width and it has to measure itself.
+  Widget host(Widget button, {bool reducedMotion = false, bool imposeWidth = true}) {
     return ScreenUtilInit(
       designSize: const Size(430, 932),
       builder: (context, _) => MaterialApp(
@@ -40,7 +43,9 @@ void main() {
               data: MediaQuery.of(context).copyWith(disableAnimations: reducedMotion),
               child: Directionality(
                 textDirection: TextDirection.rtl,
-                child: Center(child: SizedBox(width: width, child: button)),
+                child: Center(
+                  child: imposeWidth ? SizedBox(width: width, child: button) : button,
+                ),
               ),
             ),
           ),
@@ -333,6 +338,61 @@ void main() {
       // Assert
       expect(find.byIcon(Icons.save_outlined), findsOneWidget);
       expect(find.text('حفظ'), findsOneWidget);
+    });
+
+    testWidgets('given no width, it keeps a gutter around its legend', (tester) async {
+      // Arrange — nobody hands it a width, so the label is what it measures itself against. A
+      // button that measures itself as exactly its text is a rectangle drawn on the writing.
+      await tester.pumpWidget(
+        host(
+          AppButton(label: label, height: height, onPressed: () {}),
+          imposeWidth: false,
+        ),
+      );
+
+      // Act
+      final box = tester.getRect(find.byKey(AppButton.surfaceKey));
+      final legend = tester.getRect(find.text(label));
+
+      // Assert — room on both sides, and the label wholly inside the shape.
+      expect(box.width, greaterThan(legend.width + 32));
+      expect(box.left, lessThan(legend.left));
+      expect(box.right, greaterThan(legend.right));
+    });
+
+    testWidgets('given a width, it fills it exactly', (tester) async {
+      // Arrange — the gutter is a floor, not a margin: it must not shrink a stretched button.
+      await tester.pumpWidget(
+        host(AppButton(label: label, height: height, onPressed: () {})),
+      );
+
+      // Act
+      final box = tester.getRect(find.byKey(AppButton.surfaceKey));
+
+      // Assert
+      expect(box.width, width);
+    });
+
+    testWidgets('a label too long for the button is not painted past its rim', (tester) async {
+      // Arrange — a long Arabic label in a narrow box, which is what a small phone does to
+      // every one of these strings.
+      await tester.pumpWidget(
+        host(
+          const AppButton(
+            label: 'حفظ الأدوار وإرسالها إلى الخادم الآن',
+            height: height,
+            onPressed: null,
+          ),
+        ),
+      );
+
+      // Act
+      final box = tester.getRect(find.byKey(AppButton.surfaceKey));
+      final legend = tester.getRect(find.byType(Row).last);
+
+      // Assert — clipped to the shape rather than overflowing it, and no layout exception.
+      expect(legend.width, lessThanOrEqualTo(box.width));
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('the primary variant is filled and has no border', (tester) async {

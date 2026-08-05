@@ -49,19 +49,16 @@ void main() {
     // Act
     act: (cubit) => cubit.load(),
     // Assert
-    expect: () => const [
-      CustomerDetailState.loading(),
-      CustomerDetailState.loaded(active),
-    ],
+    expect: () => const [CustomerDetailState.loading(), CustomerDetailState.loaded(active)],
   );
 
   blocTest<CustomerDetailCubit, CustomerDetailState>(
     "shows the server's own message when it cannot",
     setUp: () {
       // Arrange
-      when(() => repository.customer(7)).thenAnswer(
-        (_) async => const Left(Failure.server(message: 'العميل غير موجود')),
-      );
+      when(
+        () => repository.customer(7),
+      ).thenAnswer((_) async => const Left(Failure.server(message: 'العميل غير موجود')));
     },
     build: () => cubit,
     // Act
@@ -127,9 +124,9 @@ void main() {
     // Arrange — the dial can be tapped again before the first answer arrives, and two PATCHes
     // racing means the last one wins at random.
     when(() => repository.customer(7)).thenAnswer((_) async => const Right(active));
-    when(() => repository.setActivation(7, isActive: false)).thenAnswer(
-      (_) => Future.delayed(const Duration(milliseconds: 40), () => Right(stopped)),
-    );
+    when(
+      () => repository.setActivation(7, isActive: false),
+    ).thenAnswer((_) => Future.delayed(const Duration(milliseconds: 40), () => Right(stopped)));
     await cubit.load();
 
     // Act

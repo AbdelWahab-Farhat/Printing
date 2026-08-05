@@ -1,0 +1,47 @@
+import 'package:dartz/dartz.dart' hide Order;
+import 'package:flutter/foundation.dart';
+import 'package:printing/core/error/failure.dart';
+import 'package:printing/features/orders/models/order.dart';
+import 'package:printing/features/orders/repositories/order_repository.dart';
+
+/// One line as the server needs it to re-price the invoice.
+///
+/// **No unit price.** The rate comes from the catalogue when the server prices the line, which
+/// is what stops an edit from quietly undercutting an agreed rate — the same rule that makes
+/// `unit_price` ignored on creation for any product with listed prices.
+@immutable
+class InvoiceLineUpdate {
+  const InvoiceLineUpdate({
+    required this.productId,
+    required this.variantId,
+    required this.quantity,
+  });
+
+  final int productId;
+  final int variantId;
+  final String quantity;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'product_id': productId,
+    'product_variant_id': variantId,
+    'quantity': quantity,
+  };
+}
+
+/// Replacing an order's lines and its discount.
+///
+/// `PUT /orders/{id}` replaces the whole set — the same contract a product's sizes follow — so
+/// a removed line is expressed by sending the ones that remain, not by a delete call.
+class UpdateOrderInvoice {
+  const UpdateOrderInvoice(this._repository);
+
+  final OrderRepository _repository;
+
+  Future<Either<Failure, Order>> call(
+    int orderId, {
+    required List<InvoiceLineUpdate> lines,
+    required String discount,
+  }) {
+    return _repository.updateInvoice(orderId, lines: lines, discount: discount);
+  }
+}

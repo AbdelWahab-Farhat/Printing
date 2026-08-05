@@ -43,5 +43,18 @@ class AppServiceProvider extends ServiceProvider
         // verdict that short-circuits the real policies and permission checks. Returning null
         // means "no opinion", letting the normal rules decide.
         Gate::before(fn (User $user) => $user->isAdmin() ? true : null);
+
+        // Creating a staff account is the administrator's alone — **for now**.
+        //
+        // A Gate ability rather than a {@see PermissionName} case, and that is the entire point:
+        // a permission is a tick box on the roles screen, so "administrators only" would last
+        // exactly until somebody ticked it onto «محاسب». Nothing can grant this one. It is not
+        // in the catalogue, so it never appears on that screen, and the rule is here in the one
+        // file that already says what an administrator is.
+        //
+        // Delegating it later is one deliberate edit: delete this line and add a case to
+        // PermissionName. The route does not change — it already reads `can:users.create`, the
+        // same as every other guarded route in api.php, and starts meaning the permission.
+        Gate::define('users.create', fn (User $user) => $user->isAdmin());
     }
 }

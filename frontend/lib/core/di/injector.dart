@@ -3,9 +3,28 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:printing/core/config/app_config.dart';
+import 'package:printing/core/files/attachment_picker.dart';
+import 'package:printing/core/files/attachment_picker_impl.dart';
 import 'package:printing/core/network/dio_client.dart';
 import 'package:printing/core/session/session.dart';
 import 'package:printing/core/storage/token_storage.dart';
+import 'package:printing/features/access/presentation/viewmodel/add_employee_cubit.dart';
+import 'package:printing/features/access/presentation/viewmodel/role_detail_cubit.dart';
+import 'package:printing/features/access/presentation/viewmodel/role_form_cubit.dart';
+import 'package:printing/features/access/presentation/viewmodel/roles_cubit.dart';
+import 'package:printing/features/access/presentation/viewmodel/user_roles_cubit.dart';
+import 'package:printing/features/access/presentation/viewmodel/users_cubit.dart';
+import 'package:printing/features/access/repositories/access_repository.dart';
+import 'package:printing/features/access/repositories/access_repository_impl.dart';
+import 'package:printing/features/access/usecases/create_role.dart';
+import 'package:printing/features/access/usecases/create_user.dart';
+import 'package:printing/features/access/usecases/delete_role.dart';
+import 'package:printing/features/access/usecases/get_permissions.dart';
+import 'package:printing/features/access/usecases/get_role.dart';
+import 'package:printing/features/access/usecases/get_roles.dart';
+import 'package:printing/features/access/usecases/get_users.dart';
+import 'package:printing/features/access/usecases/sync_user_roles.dart';
+import 'package:printing/features/access/usecases/update_role.dart';
 import 'package:printing/features/audit/repositories/audit_repository.dart';
 import 'package:printing/features/audit/repositories/audit_repository_impl.dart';
 import 'package:printing/features/audit/usecases/get_activity_log.dart';
@@ -14,23 +33,32 @@ import 'package:printing/features/auth/presentation/viewmodel/logout_cubit.dart'
 import 'package:printing/features/auth/repositories/auth_repository.dart';
 import 'package:printing/features/auth/repositories/auth_repository_impl.dart';
 import 'package:printing/features/auth/usecases/get_current_user.dart';
+import 'package:printing/features/auth/usecases/has_stored_session.dart';
 import 'package:printing/features/auth/usecases/login.dart';
 import 'package:printing/features/auth/usecases/logout.dart';
 import 'package:printing/features/cities/presentation/viewmodel/cities_cubit.dart';
+import 'package:printing/features/cities/presentation/viewmodel/city_regions_cubit.dart';
 import 'package:printing/features/cities/repositories/city_repository.dart';
 import 'package:printing/features/cities/repositories/city_repository_impl.dart';
 import 'package:printing/features/cities/usecases/get_cities.dart';
 import 'package:printing/features/cities/usecases/get_city_regions.dart';
 import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
+import 'package:printing/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customers_cubit.dart';
+import 'package:printing/features/customers/repositories/customer_design_repository.dart';
+import 'package:printing/features/customers/repositories/customer_design_repository_impl.dart';
 import 'package:printing/features/customers/repositories/customer_repository.dart';
 import 'package:printing/features/customers/repositories/customer_repository_impl.dart';
 import 'package:printing/features/customers/usecases/create_customer.dart';
+import 'package:printing/features/customers/usecases/delete_customer_design.dart';
 import 'package:printing/features/customers/usecases/get_customer.dart';
+import 'package:printing/features/customers/usecases/get_customer_designs.dart';
 import 'package:printing/features/customers/usecases/get_customers.dart';
+import 'package:printing/features/customers/usecases/rename_customer_design.dart';
 import 'package:printing/features/customers/usecases/set_customer_activation.dart';
 import 'package:printing/features/customers/usecases/update_customer.dart';
+import 'package:printing/features/customers/usecases/upload_customer_design.dart';
 import 'package:printing/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:printing/features/home/repositories/home_repository.dart';
 import 'package:printing/features/home/repositories/home_repository_impl.dart';
@@ -39,19 +67,33 @@ import 'package:printing/features/location/presentation/viewmodel/pick_location_
 import 'package:printing/features/location/repositories/geocoding_repository.dart';
 import 'package:printing/features/location/repositories/geocoding_repository_impl.dart';
 import 'package:printing/features/location/usecases/search_places.dart';
+import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:printing/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
+import 'package:printing/features/orders/presentation/viewmodel/order_status_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/orders_cubit.dart';
 import 'package:printing/features/orders/repositories/order_repository.dart';
 import 'package:printing/features/orders/repositories/order_repository_impl.dart';
 import 'package:printing/features/orders/usecases/change_order_status.dart';
 import 'package:printing/features/orders/usecases/get_order.dart';
+import 'package:printing/features/orders/usecases/get_order_counts.dart';
 import 'package:printing/features/orders/usecases/get_orders.dart';
+import 'package:printing/features/orders/usecases/manage_order_designs.dart';
+import 'package:printing/features/orders/usecases/update_order_invoice.dart';
 import 'package:printing/features/products/presentation/viewmodel/add_product_cubit.dart';
+import 'package:printing/features/products/presentation/viewmodel/product_detail_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:printing/features/products/repositories/product_repository.dart';
 import 'package:printing/features/products/repositories/product_repository_impl.dart';
 import 'package:printing/features/products/usecases/create_product.dart';
+import 'package:printing/features/products/usecases/get_product.dart';
 import 'package:printing/features/products/usecases/get_products.dart';
+import 'package:printing/features/settings/presentation/viewmodel/settings_cubit.dart';
+import 'package:printing/features/settings/repositories/settings_repository.dart';
+import 'package:printing/features/settings/repositories/settings_repository_impl.dart';
+import 'package:printing/features/settings/usecases/get_settings.dart';
+import 'package:printing/features/settings/usecases/set_notifications_enabled.dart';
+import 'package:printing/features/splash/presentation/viewmodel/splash_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt sl = GetIt.instance;
@@ -117,8 +159,15 @@ abstract final class Injector {
           // further down and does not exist yet at this line.
           refreshSession: () => sl<AuthRepository>().currentUser().then((_) {}),
         ),
-      );
+      )
+      // Getting files off the device. Registered here rather than in a feature block because
+      // nothing about it is a feature's: the same picker serves a customer's designs today and
+      // an order's attachments next. Behind its interface so a widget test can substitute one
+      // — both packages answer through a platform channel that does not exist under
+      // `flutter_test`, so the real one would hang there.
+      ..registerLazySingleton<AttachmentPicker>(AttachmentPickerImpl.new);
 
+    _registerAccess();
     _registerAudit();
     _registerAuth();
     _registerLocation();
@@ -126,10 +175,66 @@ abstract final class Injector {
     _registerProducts();
     _registerCities();
     _registerCustomers();
+    _registerSettings();
     _registerOrders();
 
     _isInitialized = true;
     debugPrint('⏱️ injector ready in ${stopwatch.elapsed}');
+  }
+
+  /// Who works here, what jobs exist, and what each job may do.
+  ///
+  /// One repository for both halves, because they are one screenful of the business: a role
+  /// exists to be given to somebody, and the only thing this app changes about a person is
+  /// which roles they hold.
+  static void _registerAccess() {
+    sl
+      ..registerLazySingleton<AccessRepository>(() => AccessRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetUsers>(() => GetUsers(sl<AccessRepository>()))
+      ..registerLazySingleton<CreateUser>(() => CreateUser(sl<AccessRepository>()))
+      ..registerLazySingleton<SyncUserRoles>(() => SyncUserRoles(sl<AccessRepository>()))
+      ..registerLazySingleton<GetRoles>(() => GetRoles(sl<AccessRepository>()))
+      ..registerLazySingleton<GetRole>(() => GetRole(sl<AccessRepository>()))
+      ..registerLazySingleton<CreateRole>(() => CreateRole(sl<AccessRepository>()))
+      ..registerLazySingleton<UpdateRole>(() => UpdateRole(sl<AccessRepository>()))
+      ..registerLazySingleton<DeleteRole>(() => DeleteRole(sl<AccessRepository>()))
+      ..registerLazySingleton<GetPermissions>(() => GetPermissions(sl<AccessRepository>()))
+      // Factories: each screen owns its Cubit and closes it on dispose.
+      ..registerFactory<UsersCubit>(() => UsersCubit(getUsers: sl<GetUsers>()))
+      // Factory: the form owns its Cubit and closes it on dispose. A singleton here would hand
+      // the second employee the closed Cubit of the first.
+      ..registerFactory<AddEmployeeCubit>(
+        () => AddEmployeeCubit(getRoles: sl<GetRoles>(), createUser: sl<CreateUser>()),
+      )
+      ..registerFactory<RolesCubit>(
+        () => RolesCubit(getRoles: sl<GetRoles>(), deleteRole: sl<DeleteRole>()),
+      )
+      ..registerFactory<RoleFormCubit>(
+        () => RoleFormCubit(
+          getPermissions: sl<GetPermissions>(),
+          createRole: sl<CreateRole>(),
+          updateRole: sl<UpdateRole>(),
+        ),
+      )
+      // Parameterised, like the customer's and the order's: the screen is *about* one role.
+      ..registerFactoryParam<RoleDetailCubit, int, void>(
+        (roleId, _) => RoleDetailCubit(
+          roleId: roleId,
+          getRole: sl<GetRole>(),
+          getPermissions: sl<GetPermissions>(),
+        ),
+      )
+      // Two parameters, and both are needed at construction: which person, and which roles they
+      // already hold. The second comes off the row that was tapped rather than from a second
+      // request for an answer the list already carried.
+      ..registerFactoryParam<UserRolesCubit, int, Set<String>>(
+        (userId, initialRoles) => UserRolesCubit(
+          userId: userId,
+          initialRoles: initialRoles,
+          getRoles: sl<GetRoles>(),
+          syncUserRoles: sl<SyncUserRoles>(),
+        ),
+      );
   }
 
   /// Every record's history. One repository for every model — the API's log endpoints are one
@@ -154,6 +259,17 @@ abstract final class Injector {
       ..registerLazySingleton<Login>(() => Login(sl<AuthRepository>()))
       ..registerLazySingleton<GetCurrentUser>(() => GetCurrentUser(sl<AuthRepository>()))
       ..registerLazySingleton<Logout>(() => Logout(sl<AuthRepository>()))
+      ..registerLazySingleton<HasStoredSession>(() => HasStoredSession(sl<AuthRepository>()))
+      // Factory: the splash screen owns its Cubit. A singleton would keep the result of the
+      // first check for the life of the process, which is exactly wrong for a screen whose
+      // whole job is to check again.
+      ..registerFactory<SplashCubit>(
+        () => SplashCubit(
+          hasStoredSession: sl<HasStoredSession>(),
+          getCurrentUser: sl<GetCurrentUser>(),
+          logout: sl<Logout>(),
+        ),
+      )
       // Factory: the login screen owns its Cubit and closes it on dispose, so a second visit
       // must not be handed the closed one from the first.
       ..registerFactory<LoginCubit>(() => LoginCubit(login: sl<Login>()))
@@ -215,9 +331,17 @@ abstract final class Injector {
     sl
       ..registerLazySingleton<ProductRepository>(() => ProductRepositoryImpl(sl<Dio>()))
       ..registerLazySingleton<GetProducts>(() => GetProducts(sl<ProductRepository>()))
+      ..registerLazySingleton<GetProduct>(() => GetProduct(sl<ProductRepository>()))
       ..registerLazySingleton<CreateProduct>(() => CreateProduct(sl<ProductRepository>()))
       // Factory: the catalogue screen owns its Cubit and closes it on dispose.
       ..registerFactory<ProductsCubit>(() => ProductsCubit(getProducts: sl<GetProducts>()))
+      // Parameterised, like the customer's and the order's: the detail screen is *about* one
+      // product, so the id is a construction argument rather than something the Cubit is told
+      // afterwards and might be asked for twice with two different answers.
+      ..registerFactoryParam<ProductDetailCubit, int, void>(
+        (productId, _) =>
+            ProductDetailCubit(productId: productId, getProduct: sl<GetProduct>()),
+      )
       ..registerFactory<AddProductCubit>(
         () => AddProductCubit(createProduct: sl<CreateProduct>()),
       );
@@ -233,16 +357,47 @@ abstract final class Injector {
     sl
       ..registerLazySingleton<OrderRepository>(() => OrderRepositoryImpl(sl<Dio>()))
       ..registerLazySingleton<GetOrders>(() => GetOrders(sl<OrderRepository>()))
+      ..registerLazySingleton<GetOrderCounts>(() => GetOrderCounts(sl<OrderRepository>()))
       ..registerLazySingleton<GetOrder>(() => GetOrder(sl<OrderRepository>()))
+      ..registerLazySingleton<UpdateOrderInvoice>(
+        () => UpdateOrderInvoice(sl<OrderRepository>()),
+      )
       ..registerLazySingleton<ChangeOrderStatus>(
         () => ChangeOrderStatus(sl<OrderRepository>()),
       )
+      ..registerLazySingleton<AddOrderDesign>(
+        () => AddOrderDesign(sl<OrderRepository>()),
+      )
+      ..registerLazySingleton<ReviewOrderDesign>(
+        () => ReviewOrderDesign(sl<OrderRepository>()),
+      )
       // Factory: the list screen owns its Cubit and closes it on dispose.
-      ..registerFactory<OrdersCubit>(() => OrdersCubit(getOrders: sl<GetOrders>()))
+      ..registerFactory<OrdersCubit>(
+        () => OrdersCubit(getOrders: sl<GetOrders>(), getCounts: sl<GetOrderCounts>()),
+      )
       // Parameterised, like the customer's: the detail screen is *about* one order, so the id
       // is a construction argument rather than something the Cubit is told afterwards.
+      // Parameterised on the order itself: the sheet is seeded from what the screen already
+      // has, so opening it costs no round trip.
+      ..registerFactoryParam<OrderInvoiceCubit, Order, void>(
+        (order, _) => OrderInvoiceCubit(
+          order: order,
+          updateInvoice: sl<UpdateOrderInvoice>(),
+        ),
+      )
       ..registerFactoryParam<OrderDetailCubit, int, void>(
         (orderId, _) => OrderDetailCubit(
+          orderId: orderId,
+          getOrder: sl<GetOrder>(),
+          addDesign: sl<AddOrderDesign>(),
+          reviewDesign: sl<ReviewOrderDesign>(),
+        ),
+      )
+      // The move screen fetches the order itself rather than being handed one: it is reachable
+      // by deep link, and a screen that only works when another filled its hands has a hidden
+      // precondition.
+      ..registerFactoryParam<OrderStatusCubit, int, void>(
+        (orderId, _) => OrderStatusCubit(
           orderId: orderId,
           getOrder: sl<GetOrder>(),
           changeStatus: sl<ChangeOrderStatus>(),
@@ -258,8 +413,15 @@ abstract final class Injector {
       ..registerLazySingleton<GetCities>(() => GetCities(sl<CityRepository>()))
       ..registerLazySingleton<GetCityRegions>(() => GetCityRegions(sl<CityRepository>()))
       // Factory: the list screen owns its Cubit and closes it on dispose.
-      ..registerFactory<CitiesCubit>(
-        () => CitiesCubit(getCities: sl<GetCities>(), getCityRegions: sl<GetCityRegions>()),
+      ..registerFactory<CitiesCubit>(() => CitiesCubit(getCities: sl<GetCities>()))
+      // Parameterised, like the customer's and the order's: the regions screen is *about* one
+      // city, so the id is a construction argument rather than something the Cubit is told
+      // afterwards.
+      ..registerFactoryParam<CityRegionsCubit, int, void>(
+        (cityId, _) => CityRegionsCubit(
+          cityId: cityId,
+          getCityRegions: sl<GetCityRegions>(),
+        ),
       );
   }
 
@@ -295,6 +457,54 @@ abstract final class Injector {
         () => AddCustomerCubit(
           createCustomer: sl<CreateCustomer>(),
           updateCustomer: sl<UpdateCustomer>(),
+        ),
+      )
+      // ── the customer's artwork ───────────────────────────────────────────────
+      // Its own repository rather than four more methods on `CustomerRepository`: everything
+      // here is scoped to one customer, one call is multipart with a progress stream, and
+      // nothing here paginates.
+      ..registerLazySingleton<CustomerDesignRepository>(
+        () => CustomerDesignRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetCustomerDesigns>(
+        () => GetCustomerDesigns(sl<CustomerDesignRepository>()),
+      )
+      ..registerLazySingleton<UploadCustomerDesign>(
+        () => UploadCustomerDesign(sl<CustomerDesignRepository>()),
+      )
+      ..registerLazySingleton<RenameCustomerDesign>(
+        () => RenameCustomerDesign(sl<CustomerDesignRepository>()),
+      )
+      ..registerLazySingleton<DeleteCustomerDesign>(
+        () => DeleteCustomerDesign(sl<CustomerDesignRepository>()),
+      )
+      // Parameterised on the customer, like the detail screen's: a library is *of* somebody.
+      ..registerFactoryParam<CustomerDesignsCubit, int, void>(
+        (customerId, _) => CustomerDesignsCubit(
+          customerId: customerId,
+          getDesigns: sl<GetCustomerDesigns>(),
+          uploadDesign: sl<UploadCustomerDesign>(),
+          renameDesign: sl<RenameCustomerDesign>(),
+          deleteDesign: sl<DeleteCustomerDesign>(),
+        ),
+      );
+  }
+
+  /// This device's own preferences — no network, no account.
+  static void _registerSettings() {
+    sl
+      ..registerLazySingleton<SettingsRepository>(
+        () => SettingsRepositoryImpl(sl<SharedPreferences>()),
+      )
+      ..registerLazySingleton<GetSettings>(() => GetSettings(sl<SettingsRepository>()))
+      ..registerLazySingleton<SetNotificationsEnabled>(
+        () => SetNotificationsEnabled(sl<SettingsRepository>()),
+      )
+      // Factory: the settings screen owns its Cubit and closes it on dispose.
+      ..registerFactory<SettingsCubit>(
+        () => SettingsCubit(
+          getSettings: sl<GetSettings>(),
+          setNotificationsEnabled: sl<SetNotificationsEnabled>(),
         ),
       );
   }

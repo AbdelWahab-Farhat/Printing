@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -10,8 +12,8 @@ import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/widgets/paged_list_view.dart';
 import 'package:printing/core/widgets/search_field.dart';
-import 'package:printing/features/products/models/pricing_unit_filter.dart';
 import 'package:printing/features/products/models/product.dart';
+import 'package:printing/features/products/models/product_category.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:printing/features/products/presentation/widgets/product_card.dart';
 
@@ -68,9 +70,9 @@ class _ProductsView extends StatelessWidget {
           ),
           // Rebuilt with the list, so the selected chip and what is on screen can never disagree.
           BlocBuilder<ProductsCubit, ProductsState>(
-            builder: (context, state) => _UnitFilterBar(
-              selected: cubit.unit,
-              onSelected: cubit.filterByUnit,
+            builder: (context, state) => _CategoryFilterBar(
+              selected: cubit.category,
+              onSelected: cubit.filterByCategory,
             ),
           ),
           Expanded(
@@ -84,8 +86,13 @@ class _ProductsView extends StatelessWidget {
                 // placeholder. Left at 106 the list would visibly jump when the real rows land.
                 // 210 is the measured height of a four-size product, which is most of them.
                 skeletonHeight: 210.h,
-                itemBuilder: (context, product, index) =>
-                    ProductCard(key: ValueKey(product.id), product: product),
+                itemBuilder: (context, product, index) => ProductCard(
+                  key: ValueKey(product.id),
+                  product: product,
+                  // No refresh on the way back: that screen only reads. It gets one the day
+                  // stopping a product from it lands.
+                  onTap: () => unawaited(context.push(Routes.product(product.id))),
+                ),
               ),
             ),
           ),
@@ -95,16 +102,20 @@ class _ProductsView extends StatelessWidget {
   }
 }
 
-/// بالقطعة or بالكيلوغرام — a filter, not something to type.
+/// مطبوعة or سادة — a filter, not something to type.
 ///
-/// The search box matches names and slugs, so "كيلو" finds nothing: a bag priced by weight is
-/// not called that, the *pricing* is. Making it a tap rather than a word is the difference
-/// between an answer and an empty screen.
-class _UnitFilterBar extends StatelessWidget {
-  const _UnitFilterBar({required this.selected, required this.onSelected});
+/// The search box matches names and slugs, so "سادة" finds only the products that happen to say
+/// so in their name: the category is a field, not a word in the title. Making it a tap rather
+/// than a word is the difference between an answer and a partial one.
+///
+/// It replaced the same row filtering on بالقطعة / بالكيلوغرام. Both narrow the same list, but
+/// this is the question a customer opens with — and the pricing unit is on every card anyway,
+/// read once the bag has been found.
+class _CategoryFilterBar extends StatelessWidget {
+  const _CategoryFilterBar({required this.selected, required this.onSelected});
 
-  final PricingUnitFilter selected;
-  final ValueChanged<PricingUnitFilter> onSelected;
+  final ProductCategoryFilter selected;
+  final ValueChanged<ProductCategoryFilter> onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -115,10 +126,10 @@ class _UnitFilterBar extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount: PricingUnitFilter.values.length,
+        itemCount: ProductCategoryFilter.values.length,
         separatorBuilder: (context, index) => SizedBox(width: 8.w),
         itemBuilder: (context, index) {
-          final filter = PricingUnitFilter.values[index];
+          final filter = ProductCategoryFilter.values[index];
           final isSelected = filter == selected;
 
           return ChoiceChip(

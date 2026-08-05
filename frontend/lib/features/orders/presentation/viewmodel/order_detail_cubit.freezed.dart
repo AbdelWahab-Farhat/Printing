@@ -122,11 +122,11 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( Order order,  bool isMoving)?  loaded,TResult Function( Failure failure,  Order? order)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( Order order,  bool isWorking)?  loaded,TResult Function( Failure failure,  Order? order)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case OrderDetailLoading() when loading != null:
 return loading();case OrderDetailLoaded() when loaded != null:
-return loaded(_that.order,_that.isMoving);case OrderDetailFailure() when failure != null:
+return loaded(_that.order,_that.isWorking);case OrderDetailFailure() when failure != null:
 return failure(_that.failure,_that.order);case _:
   return orElse();
 
@@ -145,11 +145,11 @@ return failure(_that.failure,_that.order);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( Order order,  bool isMoving)  loaded,required TResult Function( Failure failure,  Order? order)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( Order order,  bool isWorking)  loaded,required TResult Function( Failure failure,  Order? order)  failure,}) {final _that = this;
 switch (_that) {
 case OrderDetailLoading():
 return loading();case OrderDetailLoaded():
-return loaded(_that.order,_that.isMoving);case OrderDetailFailure():
+return loaded(_that.order,_that.isWorking);case OrderDetailFailure():
 return failure(_that.failure,_that.order);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -164,11 +164,11 @@ return failure(_that.failure,_that.order);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( Order order,  bool isMoving)?  loaded,TResult? Function( Failure failure,  Order? order)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( Order order,  bool isWorking)?  loaded,TResult? Function( Failure failure,  Order? order)?  failure,}) {final _that = this;
 switch (_that) {
 case OrderDetailLoading() when loading != null:
 return loading();case OrderDetailLoaded() when loaded != null:
-return loaded(_that.order,_that.isMoving);case OrderDetailFailure() when failure != null:
+return loaded(_that.order,_that.isWorking);case OrderDetailFailure() when failure != null:
 return failure(_that.failure,_that.order);case _:
   return null;
 
@@ -213,11 +213,11 @@ String toString() {
 
 
 class OrderDetailLoaded extends OrderDetailState {
-  const OrderDetailLoaded({required this.order, this.isMoving = false}): super._();
+  const OrderDetailLoaded({required this.order, this.isWorking = false}): super._();
   
 
  final  Order order;
-@JsonKey() final  bool isMoving;
+@JsonKey() final  bool isWorking;
 
 /// Create a copy of OrderDetailState
 /// with the given fields replaced by the non-null parameter values.
@@ -229,16 +229,16 @@ $OrderDetailLoadedCopyWith<OrderDetailLoaded> get copyWith => _$OrderDetailLoade
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDetailLoaded&&(identical(other.order, order) || other.order == order)&&(identical(other.isMoving, isMoving) || other.isMoving == isMoving));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDetailLoaded&&(identical(other.order, order) || other.order == order)&&(identical(other.isWorking, isWorking) || other.isWorking == isWorking));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,order,isMoving);
+int get hashCode => Object.hash(runtimeType,order,isWorking);
 
 @override
 String toString() {
-  return 'OrderDetailState.loaded(order: $order, isMoving: $isMoving)';
+  return 'OrderDetailState.loaded(order: $order, isWorking: $isWorking)';
 }
 
 
@@ -249,7 +249,7 @@ abstract mixin class $OrderDetailLoadedCopyWith<$Res> implements $OrderDetailSta
   factory $OrderDetailLoadedCopyWith(OrderDetailLoaded value, $Res Function(OrderDetailLoaded) _then) = _$OrderDetailLoadedCopyWithImpl;
 @useResult
 $Res call({
- Order order, bool isMoving
+ Order order, bool isWorking
 });
 
 
@@ -266,10 +266,10 @@ class _$OrderDetailLoadedCopyWithImpl<$Res>
 
 /// Create a copy of OrderDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? order = null,Object? isMoving = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? order = null,Object? isWorking = null,}) {
   return _then(OrderDetailLoaded(
 order: null == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
-as Order,isMoving: null == isMoving ? _self.isMoving : isMoving // ignore: cast_nullable_to_non_nullable
+as Order,isWorking: null == isWorking ? _self.isWorking : isWorking // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

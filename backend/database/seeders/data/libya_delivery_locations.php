@@ -20,14 +20,15 @@ declare(strict_types=1);
  *   3. البرناوي and قرية ناصر appear once each under ضواحي الزاوية. The source holds each
  *      twice, created two seconds apart with the same branch — a double-submitted form.
  *
- * @var list<array{name: string, is_region_required: bool, delivery_price: string|null,
- *      darb_branch: string|null, regions: list<array{name: string, code: string|null,
- *      darb_branch: string|null}>}>
+ * @var list<array{name: string, fulfilment_type?: string, is_region_required: bool,
+ *      delivery_price: string|null, darb_branch: string|null,
+ *      regions: list<array{name: string, code: string|null, darb_branch: string|null}>}>
  */
 return [
     [
         // Collected in person — free, and the branch is the choice itself, so no region.
         'name' => 'إستلام مكتب(قرجي)',
+        'fulfilment_type' => 'office_pickup',
         'is_region_required' => false,
         'delivery_price' => '0.00',
         'darb_branch' => null,
@@ -35,6 +36,7 @@ return [
     ],
     [
         'name' => 'إستلام مكتب(ولي العهد)',
+        'fulfilment_type' => 'office_pickup',
         'is_region_required' => false,
         'delivery_price' => '0.00',
         'darb_branch' => null,

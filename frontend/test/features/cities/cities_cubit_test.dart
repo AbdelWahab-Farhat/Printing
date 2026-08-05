@@ -8,13 +8,14 @@ import 'package:printing/features/cities/models/city.dart';
 import 'package:printing/features/cities/presentation/viewmodel/cities_cubit.dart';
 import 'package:printing/features/cities/repositories/city_repository.dart';
 import 'package:printing/features/cities/usecases/get_cities.dart';
-import 'package:printing/features/cities/usecases/get_city_regions.dart';
 
 /// How a ViewModel is tested here: the repository is faked, nothing touches Dio, and the
 /// assertions are on the sequence of states the screen would have rendered.
 ///
 /// This is exactly what the layering buys — the Cubit depends on an abstract
 /// [CityRepository], so a fake is one line and no HTTP client is ever constructed.
+///
+/// Arrange - Act - Assert throughout.
 class _MockCityRepository extends Mock implements CityRepository {}
 
 void main() {
@@ -34,6 +35,7 @@ void main() {
     id: 1,
     name: 'إستلام مكتب(قرجي)',
     isRegionRequired: false,
+    fulfilmentType: FulfilmentType.officePickup,
     deliveryPrice: '0.00',
     regionsCount: 0,
   );
@@ -50,12 +52,22 @@ void main() {
     );
   }
 
+  /// Every page this fake is asked for, whatever the filters.
+  void answerWith(Either<Failure, Paginated<City>> result, {int? page}) {
+    when(
+      () => repository.cities(
+        search: any(named: 'search'),
+        isRegionRequired: any(named: 'isRegionRequired'),
+        hasPrice: any(named: 'hasPrice'),
+        page: page ?? any(named: 'page'),
+        perPage: any(named: 'perPage'),
+      ),
+    ).thenAnswer((_) async => result);
+  }
+
   setUp(() {
     repository = _MockCityRepository();
-    cubit = CitiesCubit(
-      getCities: GetCities(repository),
-      getCityRegions: GetCityRegions(repository),
-    );
+    cubit = CitiesCubit(getCities: GetCities(repository));
   });
 
   tearDown(() async {
@@ -65,17 +77,7 @@ void main() {
   group('load', () {
     blocTest<CitiesCubit, CitiesState>(
       'goes loading then loaded when the repository answers',
-      setUp: () {
-        when(
-          () => repository.cities(
-            search: any(named: 'search'),
-            isRegionRequired: any(named: 'isRegionRequired'),
-            hasPrice: any(named: 'hasPrice'),
-            page: any(named: 'page'),
-            perPage: any(named: 'perPage'),
-          ),
-        ).thenAnswer((_) async => Right(pageOf([office, tripoli])));
-      },
+      setUp: () => answerWith(Right(pageOf([office, tripoli]))),
       build: () => cubit,
       act: (cubit) => cubit.load(),
       expect: () => [
@@ -86,24 +88,27 @@ void main() {
 
     blocTest<CitiesCubit, CitiesState>(
       'surfaces the failure the repository returned, not a generic one',
-      setUp: () {
-        when(
-          () => repository.cities(
-            search: any(named: 'search'),
-            isRegionRequired: any(named: 'isRegionRequired'),
-            hasPrice: any(named: 'hasPrice'),
-            page: any(named: 'page'),
-            perPage: any(named: 'perPage'),
-          ),
-        ).thenAnswer(
-          (_) async => const Left(Failure.forbidden(message: FailureMessages.forbidden)),
-        );
-      },
+      setUp: () => answerWith(
+        const Left(Failure.forbidden(message: FailureMessages.forbidden)),
+      ),
       build: () => cubit,
       act: (cubit) => cubit.load(),
       expect: () => [
         const CitiesState.loading(),
         const CitiesState.failure(Failure.forbidden(message: FailureMessages.forbidden)),
+      ],
+    );
+
+    blocTest<CitiesCubit, CitiesState>(
+      'remembers the term, so an empty result can say what found nothing',
+      setUp: () => answerWith(Right(pageOf([]))),
+      build: () => cubit,
+      act: (cubit) => cubit.load(search: 'زوارة'),
+      expect: () => [
+        const CitiesState.loading(),
+        isA<CitiesLoaded>()
+            .having((s) => s.page.isEmpty, 'isEmpty', true)
+            .having((s) => s.search, 'search', 'زوارة'),
       ],
     );
   });
@@ -112,27 +117,8 @@ void main() {
     blocTest<CitiesCubit, CitiesState>(
       'appends the next page and keeps what was already on screen',
       setUp: () {
-        when(
-          () => repository.cities(
-            search: any(named: 'search'),
-            isRegionRequired: any(named: 'isRegionRequired'),
-            hasPrice: any(named: 'hasPrice'),
-            page: 1,
-            perPage: any(named: 'perPage'),
-          ),
-        ).thenAnswer((_) async => Right(pageOf([office], lastPage: 2)));
-
-        when(
-          () => repository.cities(
-            search: any(named: 'search'),
-            isRegionRequired: any(named: 'isRegionRequired'),
-            hasPrice: any(named: 'hasPrice'),
-            page: 2,
-            perPage: any(named: 'perPage'),
-          ),
-        ).thenAnswer(
-          (_) async => Right(pageOf([tripoli], currentPage: 2, lastPage: 2)),
-        );
+        answerWith(Right(pageOf([office], lastPage: 2)), page: 1);
+        answerWith(Right(pageOf([tripoli], currentPage: 2, lastPage: 2)), page: 2);
       },
       build: () => cubit,
       act: (cubit) async {
@@ -150,17 +136,7 @@ void main() {
 
     blocTest<CitiesCubit, CitiesState>(
       'does nothing on the last page',
-      setUp: () {
-        when(
-          () => repository.cities(
-            search: any(named: 'search'),
-            isRegionRequired: any(named: 'isRegionRequired'),
-            hasPrice: any(named: 'hasPrice'),
-            page: any(named: 'page'),
-            perPage: any(named: 'perPage'),
-          ),
-        ).thenAnswer((_) async => Right(pageOf([office])));
-      },
+      setUp: () => answerWith(Right(pageOf([office]))),
       build: () => cubit,
       act: (cubit) async {
         await cubit.load();
@@ -173,26 +149,10 @@ void main() {
     blocTest<CitiesCubit, CitiesState>(
       'keeps the loaded list when a further page fails',
       setUp: () {
-        when(
-          () => repository.cities(
-            search: any(named: 'search'),
-            isRegionRequired: any(named: 'isRegionRequired'),
-            hasPrice: any(named: 'hasPrice'),
-            page: 1,
-            perPage: any(named: 'perPage'),
-          ),
-        ).thenAnswer((_) async => Right(pageOf([office], lastPage: 2)));
-
-        when(
-          () => repository.cities(
-            search: any(named: 'search'),
-            isRegionRequired: any(named: 'isRegionRequired'),
-            hasPrice: any(named: 'hasPrice'),
-            page: 2,
-            perPage: any(named: 'perPage'),
-          ),
-        ).thenAnswer(
-          (_) async => const Left(Failure.network(message: FailureMessages.noConnection)),
+        answerWith(Right(pageOf([office], lastPage: 2)), page: 1);
+        answerWith(
+          const Left(Failure.network(message: FailureMessages.noConnection)),
+          page: 2,
         );
       },
       build: () => cubit,
@@ -208,45 +168,5 @@ void main() {
             .having((s) => s.isLoadingMore, 'isLoadingMore', false),
       ],
     );
-  });
-
-  group('selectCity', () {
-    test('skips the request entirely for a city that has no regions', () async {
-      await cubit.selectCity(office);
-
-      expect(cubit.regions.state, const RegionsState.loaded([]));
-      verifyNever(
-        () => repository.regions(
-          any(),
-          search: any(named: 'search'),
-          page: any(named: 'page'),
-          perPage: any(named: 'perPage'),
-        ),
-      );
-    });
-
-    test('loads the regions of a city that requires one', () async {
-      const region = Region(id: 9, cityId: 3, name: 'سوق الجمعة', code: 's18');
-
-      when(
-        () => repository.regions(
-          3,
-          search: any(named: 'search'),
-          page: any(named: 'page'),
-          perPage: any(named: 'perPage'),
-        ),
-      ).thenAnswer(
-        (_) async => const Right(
-          Paginated<Region>(
-            items: [region],
-            meta: PageMeta(currentPage: 1, perPage: 50, lastPage: 1, total: 1),
-          ),
-        ),
-      );
-
-      await cubit.selectCity(tripoli);
-
-      expect(cubit.regions.state, const RegionsState.loaded([region]));
-    });
   });
 }

@@ -1,0 +1,712 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Orders;
+
+use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Customer\Models\Customer;
+use App\Domain\Customer\Models\CustomerDesign;
+use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Identity\Models\User;
+use App\Domain\Order\Enums\DesignSource;
+use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderDesign;
+use App\Domain\Order\Models\OrderItem;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
+use Spatie\Permission\Models\Permission;
+use Tests\TestCase;
+
+/**
+ * What each move *asks for*, and what happens when it is given.
+ *
+ * **The app draws the form from `available_transitions[].fields`.** So a move that needs
+ * artwork says so in the same payload that offers it, and adding a field to a move later is a
+ * change here rather than an app release. This test is the contract: it pins what is described,
+ * that the description and the validation cannot disagree, and that the whole move — the
+ * artwork and the status — lands in one transaction or not at all.
+ *
+ * Arrange - Act - Assert throughout.
+ */
+class OrderTransitionFieldsTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        foreach (PermissionName::cases() as $permission) {
+            Permission::findOrCreate($permission->value, 'web');
+        }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function foreman(): array
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo([
+            PermissionName::ViewOrders->value,
+            PermissionName::ManageOrders->value,
+            PermissionName::ManageOrderDesigns->value,
+            PermissionName::MoveOrderToDesigning->value,
+            PermissionName::MoveOrderToPrinting->value,
+            PermissionName::MoveOrderToReady->value,
+            PermissionName::MoveOrderToShortage->value,
+            PermissionName::CancelOrders->value,
+        ]);
+
+        return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+    }
+
+    /**
+     * Somebody who agrees the money, and nothing else.
+     *
+     * @return array<string, string>
+     */
+    private function accountant(): array
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo([
+            PermissionName::ViewOrders->value,
+            PermissionName::SettleOrders->value,
+        ]);
+
+        return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+    }
+
+    private function show(array $headers, Order $order): TestResponse
+    {
+        return $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}");
+    }
+
+    private function move(array $headers, Order $order, OrderStatus $to, array $payload = []): TestResponse
+    {
+        return $this->withHeaders($headers)->postJson(
+            "/api/v1/orders/{$order->id}/status",
+            ['status' => $to->value] + $payload,
+        );
+    }
+
+    /**
+     * @return array{0: Order, 1: Customer}
+     */
+    private function orderNeedingArtwork(): array
+    {
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->forCustomer($customer)->create([
+            'design_source' => DesignSource::Customer,
+        ]);
+
+        return [$order, $customer];
+    }
+
+    /** The one transition out of the list, whatever position the map put it in. */
+    private function transition(TestResponse $response, OrderStatus $target): ?array
+    {
+        $transitions = $response->json('data.available_transitions');
+
+        foreach ($transitions as $transition) {
+            if ($transition['status'] === $target->value) {
+                return $transition;
+            }
+        }
+
+        return null;
+    }
+
+    // ───────────────────────────── what a move describes ─────────────────────────────
+
+    public function test_moving_to_designing_asks_for_artwork(): void
+    {
+        // Arrange
+        [$order] = $this->orderNeedingArtwork();
+        $headers = $this->foreman();
+
+        // Act
+        $designing = $this->transition($this->show($headers, $order), OrderStatus::Designing);
+
+        // Assert — the app renders this and nothing it wrote itself. The note is last and comes
+        // with every move; the artwork is what this particular one asks for.
+        $this->assertSame([
+            [
+                'key' => 'design_ids',
+                'type' => 'customer_designs',
+                'label' => 'التصاميم',
+                'required' => true,
+                'multiple' => true,
+                'multiline' => false,
+                'hint' => 'تُرفع إلى مكتبة العميل ثم تُربط بالطلبية',
+                'min' => null,
+                'max' => null,
+            ],
+            [
+                'key' => 'reason',
+                'type' => 'text',
+                'label' => 'ملاحظة',
+                'required' => false,
+                'multiple' => false,
+                'multiline' => true,
+                'hint' => 'تُسجَّل في سجل الطلبية',
+                'min' => null,
+                'max' => null,
+            ],
+        ], $designing['fields']);
+    }
+
+    public function test_even_a_reprint_is_asked_for_artwork_on_the_way_into_design(): void
+    {
+        // Arrange — `design_source = none` says whose work the artwork was, which is a question
+        // about money. Whether there is a file to look at is a different question.
+        $order = Order::factory()->create(['design_source' => DesignSource::None]);
+        $headers = $this->foreman();
+
+        // Act
+        $designing = $this->transition($this->show($headers, $order), OrderStatus::Designing);
+
+        // Assert — a reprint may never enter design at all; if it does, it is because somebody
+        // has something to show.
+        $this->assertSame('design_ids', $designing['fields'][0]['key']);
+        $this->assertTrue($designing['fields'][0]['required']);
+    }
+
+    public function test_a_new_order_is_offered_two_ways_out_and_no_third(): void
+    {
+        // Arrange
+        $order = Order::factory()->create();
+        $headers = $this->foreman();
+
+        // Act
+        $offered = array_column(
+            $this->show($headers, $order)->json('data.available_transitions'),
+            'status',
+        );
+
+        // Assert — cancelling is not among them: a job nobody has started is two taps from
+        // being started, and a third way out competed with the two that matter.
+        $this->assertSame(
+            [OrderStatus::Designing->value, OrderStatus::Printing->value],
+            $offered,
+        );
+    }
+
+    public function test_an_order_that_already_carries_artwork_is_not_asked_again(): void
+    {
+        // Arrange
+        [$order, $customer] = $this->orderNeedingArtwork();
+        $design = CustomerDesign::factory()->for($customer)->create();
+        OrderDesign::factory()->for($order)->create(['customer_design_id' => $design->id]);
+        $headers = $this->foreman();
+
+        // Act — the correction path: printing back to designing, where versions already exist.
+        $designing = $this->transition($this->show($headers, $order), OrderStatus::Designing);
+
+        // Assert — still offered, because another version is normal; no longer demanded.
+        $this->assertFalse($designing['fields'][0]['required']);
+    }
+
+    public function test_cancelling_asks_for_its_reason_as_a_field(): void
+    {
+        // Arrange — from printing, because «جديدة» has no cancellation to offer.
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        $headers = $this->foreman();
+
+        // Act
+        $cancelled = $this->transition($this->show($headers, $order), OrderStatus::Cancelled);
+
+        // Assert — one way to render every input, instead of a special case written in Dart.
+        $this->assertTrue($cancelled['requires_reason']);
+        $this->assertSame('reason', $cancelled['fields'][0]['key']);
+        $this->assertSame('text', $cancelled['fields'][0]['type']);
+        $this->assertTrue($cancelled['fields'][0]['required']);
+    }
+
+    public function test_printing_asks_for_nothing_but_the_note_every_move_carries(): void
+    {
+        // Arrange
+        [$order] = $this->orderNeedingArtwork();
+        $headers = $this->foreman();
+
+        // Act
+        $printing = $this->transition($this->show($headers, $order), OrderStatus::Printing);
+
+        // Assert — the second of the two paths out of «جديدة», and it is a bare move: the only
+        // thing on the form is the note, which is on every form and is never required.
+        $this->assertSame(['reason'], array_column($printing['fields'], 'key'));
+        $this->assertFalse($printing['fields'][0]['required']);
+    }
+
+    // ──────────────────────── what «تم التسوية» asks for ────────────────────────
+
+    public function test_settling_asks_for_the_money_only_if_it_came_back_different(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Delivered)->create(['grand_total' => '250.00']);
+        $headers = $this->accountant();
+
+        // Act
+        $settling = $this->transition($this->show($headers, $order), OrderStatus::Settled);
+        $money = collect($settling['fields'])->firstWhere('key', 'collected_amount');
+
+        // Assert — optional, and the invoice total is on screen beside it so the person agreeing
+        // the money is not asked to remember what it should have been.
+        $this->assertNotNull($money);
+        $this->assertFalse($money['required']);
+        $this->assertSame('المبلغ المستلم', $money['label']);
+        $this->assertStringContainsString('250.00', $money['hint']);
+    }
+
+    public function test_a_settlement_that_matches_the_invoice_records_no_amount(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Delivered)->create(['grand_total' => '250.00']);
+        $headers = $this->accountant();
+
+        // Act — the ordinary case: the money came back and it was the right money.
+        $response = $this->move($headers, $order, OrderStatus::Settled);
+
+        // Assert — the column stays null on purpose, so a number in it always means the two
+        // disagreed. Filling it with the total would make agreement and discrepancy look alike.
+        $response->assertOk()->assertJsonPath('data.status', 'settled');
+
+        $settled = $order->fresh();
+        $this->assertNull($settled->collected_amount);
+        $this->assertNotNull($settled->settled_at);
+    }
+
+    public function test_a_short_settlement_is_written_down_as_what_actually_arrived(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Delivered)->create(['grand_total' => '250.00']);
+        $headers = $this->accountant();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Settled, [
+            'fields' => ['collected_amount' => '230.50', 'reason' => 'المندوب خصم أجرة التوصيل'],
+        ]);
+
+        // Assert — the number and the sentence explaining it, kept together.
+        $response->assertOk();
+        $this->assertSame('230.50', $order->fresh()->collected_amount);
+        $this->assertDatabaseHas('order_status_transitions', [
+            'order_id' => $order->id,
+            'to_status' => OrderStatus::Settled->value,
+            'reason' => 'المندوب خصم أجرة التوصيل',
+        ]);
+    }
+
+    public function test_settling_is_its_own_grant(): void
+    {
+        // Arrange — a foreman runs the shop floor and touches no money.
+        $order = Order::factory()->status(OrderStatus::Delivered)->create();
+
+        // Act
+        $response = $this->move($this->foreman(), $order, OrderStatus::Settled);
+
+        // Assert
+        $response->assertStatus(403);
+        $this->assertSame(OrderStatus::Delivered, $order->fresh()->status);
+    }
+
+    // ─────────────────────── the note that travels with every move ───────────────────────
+
+    public function test_every_move_can_carry_a_note(): void
+    {
+        // Arrange — one order sitting where several different moves are offered at once.
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        OrderItem::factory()->for($order)->create();
+        $headers = $this->foreman();
+
+        // Act
+        $transitions = $this->show($headers, $order)->json('data.available_transitions');
+
+        // Assert — no move is without one. Staff explain what they did in the moment they do it,
+        // and a note nobody could leave is a note that ends up in a phone call instead.
+        $this->assertNotEmpty($transitions);
+
+        foreach ($transitions as $transition) {
+            $note = collect($transition['fields'])->firstWhere('key', 'reason');
+
+            $this->assertNotNull($note, "«{$transition['label']}» carries no note field");
+            $this->assertTrue($note['multiline'], 'a note is a sentence, not a word');
+        }
+    }
+
+    public function test_only_writing_an_order_off_turns_that_note_into_an_explanation(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        $headers = $this->foreman();
+
+        // Act
+        $shown = $this->show($headers, $order);
+        $cancelling = $this->transition($shown, OrderStatus::Cancelled);
+        $designing = $this->transition($shown, OrderStatus::Designing);
+
+        $cancelNote = collect($cancelling['fields'])->firstWhere('key', 'reason');
+        $designNote = collect($designing['fields'])->firstWhere('key', 'reason');
+
+        // Assert — the same field, renamed and made compulsory exactly where an explanation is
+        // owed. One input in the app, one column in the timeline.
+        $this->assertSame('السبب', $cancelNote['label']);
+        $this->assertTrue($cancelNote['required']);
+
+        $this->assertSame('ملاحظة', $designNote['label']);
+        $this->assertFalse($designNote['required']);
+    }
+
+    public function test_a_note_left_with_an_ordinary_move_is_kept_on_the_timeline(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Ready, [
+            'fields' => ['reason' => 'الكمية طلعت زيادة ٢٠ كيس'],
+        ]);
+
+        // Assert — it lands in the same column a cancellation's reason does, so the order's
+        // history has one place to read from rather than two.
+        $response->assertOk();
+        $this->assertDatabaseHas('order_status_transitions', [
+            'order_id' => $order->id,
+            'to_status' => OrderStatus::Ready->value,
+            'reason' => 'الكمية طلعت زيادة ٢٠ كيس',
+        ]);
+
+        // And it stays a note about the move, not a reason the order was written off.
+        $this->assertNull($order->fresh()->cancellation_reason);
+    }
+
+    // ───────────────────────────── what a move accepts ─────────────────────────────
+
+    public function test_designing_without_artwork_is_refused_by_the_field_that_asked_for_it(): void
+    {
+        // Arrange
+        [$order] = $this->orderNeedingArtwork();
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Designing);
+
+        // Assert — the same word the description used, so the message lands on the right field.
+        $response->assertStatus(422)->assertJsonValidationErrors('fields.design_ids');
+        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+    }
+
+    public function test_the_artwork_and_the_move_arrive_together(): void
+    {
+        // Arrange
+        [$order, $customer] = $this->orderNeedingArtwork();
+        $designs = CustomerDesign::factory()->count(2)->for($customer)->create();
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Designing, [
+            'fields' => ['design_ids' => $designs->pluck('id')->all()],
+        ]);
+
+        // Assert — one request: the versions are numbered and the order has moved.
+        $response->assertOk()->assertJsonPath('data.status', 'designing');
+        $this->assertSame([1, 2], $order->designs()->pluck('version')->sort()->values()->all());
+    }
+
+    public function test_artwork_belonging_to_somebody_else_moves_nothing(): void
+    {
+        // Arrange
+        [$order] = $this->orderNeedingArtwork();
+        $stranger = CustomerDesign::factory()->create();
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Designing, [
+            'fields' => ['design_ids' => [$stranger->id]],
+        ]);
+
+        // Assert — the whole move rolls back: no half-designed order, no orphan version.
+        $response->assertStatus(422);
+        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+        $this->assertSame(0, $order->designs()->count());
+    }
+
+    public function test_a_field_the_move_never_offered_is_refused(): void
+    {
+        // Arrange
+        $order = Order::factory()->create();
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Printing, [
+            'fields' => ['courier_name' => 'أحمد'],
+        ]);
+
+        // Assert — silently dropping it would teach a client that it worked.
+        $response->assertStatus(422)->assertJsonValidationErrors('fields');
+    }
+
+    public function test_the_reason_may_arrive_inside_the_fields(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        $headers = $this->foreman();
+
+        // Act — the app sends every input the same way, including this one.
+        $response = $this->move($headers, $order, OrderStatus::Cancelled, [
+            'fields' => ['reason' => 'العميل غيّر رأيه'],
+        ]);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.status', 'cancelled');
+        $this->assertSame('العميل غيّر رأيه', $order->fresh()->cancellation_reason);
+    }
+
+    // ───────────────────────── what «قيد الطباعة» may and may not do ─────────────────────────
+
+    public function test_the_artwork_is_settled_once_printing_starts(): void
+    {
+        // Arrange
+        [$order, $customer] = $this->orderNeedingArtwork();
+        $design = CustomerDesign::factory()->for($customer)->create();
+        $order->forceFill(['status' => OrderStatus::Printing])->save();
+        $headers = $this->foreman();
+
+        // Act — adding a version straight onto an order that is being printed.
+        $response = $this->withHeaders($headers)->postJson(
+            "/api/v1/orders/{$order->id}/designs",
+            ['customer_design_id' => $design->id],
+        );
+
+        // Assert — the press is running against the approved file. Changing the artwork means
+        // sending the order back to «قيد التصميم», which is a move somebody makes on purpose.
+        $response->assertStatus(422);
+        $this->assertSame(0, $order->designs()->count());
+    }
+
+    public function test_sending_a_printing_order_back_to_design_still_carries_artwork(): void
+    {
+        // Arrange — the correction path, and the one case where a version arrives *while* the
+        // order is still in a status that forbids adding one.
+        [$order, $customer] = $this->orderNeedingArtwork();
+        $design = CustomerDesign::factory()->for($customer)->create();
+        $order->forceFill(['status' => OrderStatus::Printing])->save();
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Designing, [
+            'fields' => ['design_ids' => [$design->id]],
+        ]);
+
+        // Assert — the move and the version land together: the order is in design by the time
+        // the artwork is attached, which is what makes the attachment legal.
+        $response->assertOk()->assertJsonPath('data.status', 'designing');
+        $this->assertSame(1, $order->designs()->count());
+    }
+
+    public function test_the_order_says_which_of_the_two_may_still_be_changed(): void
+    {
+        // Arrange
+        [$order] = $this->orderNeedingArtwork();
+        $order->forceFill(['status' => OrderStatus::Printing])->save();
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->show($headers, $order);
+
+        // Assert — the app draws each section from these rather than keeping its own copy of
+        // where the two lines fall, which are deliberately different lines.
+        $response->assertJsonPath('data.items_are_editable', true)
+            ->assertJsonPath('data.designs_are_editable', false);
+    }
+
+    // ─────────────────────────── the weight «جاهزة» asks for ───────────────────────────
+
+    /** An order priced the way most are: by the piece. */
+    private function orderBeingPrinted(PricingUnit $unit = PricingUnit::Piece): Order
+    {
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        OrderItem::factory()->for($order)->create(['pricing_unit' => $unit]);
+
+        return $order;
+    }
+
+    public function test_finishing_a_run_asks_for_its_weight(): void
+    {
+        // Arrange
+        $order = $this->orderBeingPrinted();
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+
+        // Assert — a number, and the app draws a numeric field for it because the description
+        // says `number` and not because anybody wrote «الوزن» into a screen.
+        $this->assertSame('weight_kg', $ready['fields'][0]['key']);
+        $this->assertSame('number', $ready['fields'][0]['type']);
+    }
+
+    public function test_bags_sold_by_the_piece_may_be_weighed_or_not(): void
+    {
+        // Arrange
+        $order = $this->orderBeingPrinted();
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+
+        // Assert — the weight is for the courier, and a run can be shelved before anybody has
+        // put it on the scale.
+        $this->assertFalse($ready['fields'][0]['required']);
+    }
+
+    public function test_bags_sold_by_the_kilo_cannot_be_shelved_unweighed(): void
+    {
+        // Arrange
+        $order = $this->orderBeingPrinted(PricingUnit::Kilogram);
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+
+        // Assert — the scale is the invoice for these: without a weight there is no answer to
+        // what was sold.
+        $this->assertTrue($ready['fields'][0]['required']);
+    }
+
+    public function test_a_kilo_order_is_refused_without_a_weight(): void
+    {
+        // Arrange
+        $order = $this->orderBeingPrinted(PricingUnit::Kilogram);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Ready);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('fields.weight_kg');
+        $this->assertSame(OrderStatus::Printing, $order->fresh()->status);
+    }
+
+    public function test_the_weight_lands_on_the_order_with_the_move(): void
+    {
+        // Arrange
+        $order = $this->orderBeingPrinted(PricingUnit::Kilogram);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Ready, [
+            'fields' => ['weight_kg' => 12.5],
+        ]);
+
+        // Assert — one request, and the number is on the order rather than in a note somebody
+        // has to read.
+        $response->assertOk()->assertJsonPath('data.status', 'ready');
+        $this->assertSame('12.500', $order->fresh()->weight_kg);
+    }
+
+    public function test_a_weight_that_is_not_a_number_is_refused(): void
+    {
+        // Arrange
+        $order = $this->orderBeingPrinted();
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Ready, [
+            'fields' => ['weight_kg' => 'ثقيلة'],
+        ]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('fields.weight_kg');
+    }
+
+    // ────────────────────── what «نواقص» asks for, line by line ──────────────────────
+
+    public function test_a_shortage_is_asked_for_line_by_line(): void
+    {
+        // Arrange — two sizes on one order, priced differently.
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        $pieces = OrderItem::factory()->for($order)->create([
+            'variant_label' => '30*30',
+            'pricing_unit' => PricingUnit::Piece,
+            'quantity' => '100',
+        ]);
+        $kilos = OrderItem::factory()->for($order)->create([
+            'variant_label' => 'سادة',
+            'pricing_unit' => PricingUnit::Kilogram,
+            'quantity' => '50',
+        ]);
+        $headers = $this->foreman();
+
+        // Act
+        $shortage = $this->transition($this->show($headers, $order), OrderStatus::Shortage);
+        $keys = array_column($shortage['fields'], 'key');
+
+        // Assert — «كم ناقص» is meaningless for an order; it is a question about a size. Each
+        // line asks in its own unit, and the app draws them without knowing what a line is.
+        $this->assertSame(["shortage_{$pieces->id}", "shortage_{$kilos->id}", 'reason'], $keys);
+        $this->assertStringContainsString('30*30', $shortage['fields'][0]['label']);
+        $this->assertStringContainsString('قطعة', $shortage['fields'][0]['label']);
+        $this->assertStringContainsString('كيلوغرام', $shortage['fields'][1]['label']);
+    }
+
+    public function test_a_line_cannot_be_shorter_than_it_was_ordered(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        $item = OrderItem::factory()->for($order)->create(['quantity' => '100']);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Shortage, [
+            'fields' => ["shortage_{$item->id}" => 150],
+        ]);
+
+        // Assert — «ناقص ١٥٠ من ١٠٠» is not a shortage, it is a typo.
+        $response->assertStatus(422)->assertJsonValidationErrors("fields.shortage_{$item->id}");
+    }
+
+    public function test_a_shortage_with_nothing_missing_is_refused(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        OrderItem::factory()->for($order)->create(['quantity' => '100']);
+        $headers = $this->foreman();
+
+        // Act — the status chosen, and every line left alone.
+        $response = $this->move($headers, $order, OrderStatus::Shortage);
+
+        // Assert — a «نواقص» that does not say what is missing is a status nobody can act on.
+        $response->assertStatus(422);
+        $this->assertSame(OrderStatus::Printing, $order->fresh()->status);
+    }
+
+    public function test_what_is_missing_is_recorded_against_the_size_it_is_missing_from(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        $short = OrderItem::factory()->for($order)->create([
+            'variant_label' => '30*30',
+            'quantity' => '100',
+        ]);
+        $whole = OrderItem::factory()->for($order)->create([
+            'variant_label' => '45*50',
+            'quantity' => '80',
+        ]);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Shortage, [
+            'fields' => ["shortage_{$short->id}" => 40],
+        ]);
+
+        // Assert — the number sits on the line it belongs to, so «ما الناقص ومن أي مقاس» is
+        // answered by the order itself rather than by reading a sentence somebody typed.
+        $response->assertOk()->assertJsonPath('data.status', 'shortage');
+        $this->assertSame('40.000', $short->fresh()->shortage_quantity);
+        $this->assertNull($whole->fresh()->shortage_quantity);
+    }
+}

@@ -49,12 +49,7 @@ class AddCustomerCubit extends Cubit<AddCustomerState> {
 
     final result = customerId == null
         ? await _createCustomer(name: name, phone: phone, shops: shops)
-        : await _updateCustomer(
-            customerId: customerId,
-            name: name,
-            phone: phone,
-            shops: shops,
-          );
+        : await _updateCustomer(customerId: customerId, name: name, phone: phone, shops: shops);
 
     // The screen may have been popped while the request was in flight, and emitting into a
     // closed Cubit throws.
