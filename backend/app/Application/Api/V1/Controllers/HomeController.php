@@ -37,7 +37,8 @@ class HomeController extends Controller
     /**
      * The home screen's summary
      *
-     * Four counts and one card per order status, each with the Arabic to print on it.
+     * Four counts, one card per order status, and one per payment state — each with the
+     * Arabic to print on it.
      */
     public function summary(): JsonResponse
     {
@@ -54,6 +55,10 @@ class HomeController extends Controller
             // Unfiltered: the board is about the whole shop, not about a list somebody is
             // looking at. The same query the orders screen's own chips are counted from.
             'status_counts' => $this->orders->statusCounts(new OrderFilters),
+            // The money axis, beside the workflow one. «كم طلبية لم تُدفع» is the question the
+            // shop opens the app to ask, and it is not answerable from any of the four counts
+            // above — being paid and being finished are different things.
+            'payment_counts' => $this->orders->paymentStatusCounts(new OrderFilters),
         ]));
     }
 }

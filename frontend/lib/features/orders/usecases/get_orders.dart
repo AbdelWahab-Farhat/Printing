@@ -15,6 +15,7 @@ class GetOrders {
   Future<Either<Failure, Paginated<Order>>> call({
     String? search,
     List<String> statuses = const <String>[],
+    List<String> paymentStatuses = const <String>[],
     int? customerId,
     String? from,
     String? to,
@@ -24,6 +25,7 @@ class GetOrders {
     return _repository.orders(
       search: search,
       statuses: statuses,
+      paymentStatuses: paymentStatuses,
       customerId: customerId,
       from: from,
       to: to,

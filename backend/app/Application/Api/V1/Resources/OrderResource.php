@@ -104,6 +104,25 @@ class OrderResource extends JsonResource
             'discount' => (string) $this->discount,
             'grand_total' => (string) $this->grand_total,
 
+            // **The three numbers a screen puts side by side**, all three computed here. A
+            // client subtracting `grand_total - paid_amount` itself would be a second answer to
+            // one question, and its answer is the one made of doubles.
+            //
+            // `paid_amount` is the ledger's running total — see the `order_payments` migration
+            // for why the entries are the truth and this is their sum. `remaining_amount` goes
+            // negative on an overpaid order rather than flooring, so a screen can say «زائد ٥٠»
+            // and somebody can refund it.
+            'paid_amount' => (string) $this->paid_amount,
+            'remaining_amount' => $this->remainingAmount(),
+            'payment_status' => $this->paymentStatus()->value,
+            'payment_status_label' => $this->paymentStatus()->label(),
+
+            // **An order that finished without its money accounted for.** Settling an order
+            // writes no ledger entry — nothing records a payment except the person who took it —
+            // so this is how that gap is surfaced rather than papered over with an entry nobody
+            // made. See Order::hasUnrecordedMoney().
+            'has_unrecorded_money' => $this->hasUnrecordedMoney(),
+
             // What the parcel weighs, recorded on the way into «جاهزة». Null until it has been
             // on a scale — «not weighed» and «weighs nothing» are different facts.
             'weight_kg' => $this->weight_kg === null ? null : (string) $this->weight_kg,
@@ -134,6 +153,17 @@ class OrderResource extends JsonResource
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'designs' => OrderDesignResource::collection($this->whenLoaded('designs')),
             'transitions' => OrderStatusTransitionResource::collection($this->whenLoaded('transitions')),
+
+            // **The ledger itself is deliberately not here.** It has its own endpoint behind its
+            // own permission — `GET /orders/{order}/payments`, `orders.payments.view` — and
+            // including the entries in this payload would hand them to everybody holding
+            // `orders.view`, which is the printer.
+            //
+            // The four summary fields above stay, and the line between them is meant: what an
+            // order costs and what is outstanding on it are properties of the order, at the same
+            // sensitivity as `grand_total`, which this payload has always carried. Who took the
+            // money, by what method, against which receipt, and which entries were cancelled —
+            // that is the ledger, and it is a different question with a different grant.
 
             'created_by' => $this->whenLoaded('creator', fn () => $this->creator === null ? null : [
                 'id' => $this->creator->id,

@@ -104,6 +104,25 @@ abstract final class AppIcons {
   static IconData get resend =>
       _pick(Icons.send_rounded, CupertinoIcons.paperplane);
 
+  /// Money coming in from the customer. Notes, because that is what crosses the counter —
+  /// distinct from [settled], which is the invoice being agreed rather than cash changing
+  /// hands.
+  static IconData get payment =>
+      _pick(Icons.payments_outlined, CupertinoIcons.money_dollar_circle);
+
+  /// Money going back to the customer. An arrow turning back on itself, which is the one shape
+  /// that reads as "the other direction" without a minus sign somebody could misread as a
+  /// delete.
+  static IconData get refund =>
+      _pick(Icons.undo_rounded, CupertinoIcons.arrow_uturn_left);
+
+  /// Cancelling a ledger entry that should never have been written.
+  ///
+  /// **Deliberately not [delete].** Nothing is removed — a second entry is written beside the
+  /// wrong one — and a bin would promise the opposite of what the button does.
+  static IconData get reversePayment =>
+      _pick(Icons.block_flipped, CupertinoIcons.nosign);
+
   /// A record's change log. Every model has one.
   static IconData get history =>
       _pick(Icons.history_rounded, CupertinoIcons.clock);

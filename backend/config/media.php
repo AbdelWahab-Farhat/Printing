@@ -71,6 +71,33 @@ return [
         'max_per_customer' => (int) env('MEDIA_DESIGNS_MAX_PER_CUSTOMER', 50),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Payment receipt constraints
+    |--------------------------------------------------------------------------
+    |
+    | The scanned receipt (الواصل) proving a bank transfer landed. Required on a transfer
+    | and accepted on any other method.
+    |
+    | **PDF only, unlike a customer design.** A receipt is a document a bank produces, and
+    | the one shape that arrives is a PDF. Accepting photographs too would mean accepting
+    | a blurred phone picture as proof of payment, which is the thing this file exists to
+    | prevent — so the narrower rule is the feature, not an oversight.
+    |
+    | **Private disk, like customer designs and unlike product photos.** A receipt carries
+    | somebody's bank details, and the `public` disk hands out permanent unauthenticated
+    | URLs. `local` is storage/app/private; production points this at S3 with private
+    | visibility, and the signed-URL lifetime above then applies.
+    |
+    */
+
+    'payment_receipts' => [
+        'disk' => env('MEDIA_RECEIPTS_DISK', 'local'),
+        'max_kilobytes' => (int) env('MEDIA_RECEIPT_MAX_KILOBYTES', 10240),
+        'mimes' => ['pdf'],
+        'mimetypes' => ['application/pdf'],
+    ],
+
     'product_images' => [
         'max_kilobytes' => (int) env('MEDIA_MAX_KILOBYTES', 5120),
         'mimes' => ['jpeg', 'jpg', 'png', 'webp'],

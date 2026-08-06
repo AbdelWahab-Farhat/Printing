@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:printing/features/customers/models/customer.dart';
 import 'package:printing/features/customers/models/customer_design.dart';
+import 'package:printing/features/orders/models/order_payment.dart';
 import 'package:printing/features/orders/models/order_status.dart';
 import 'package:printing/features/orders/models/transition_field.dart';
 
@@ -60,6 +61,34 @@ abstract class Order with _$Order {
     @JsonKey(name: 'delivery_price') required String deliveryPrice,
     required String discount,
     @JsonKey(name: 'grand_total') required String grandTotal,
+
+    /// **The three numbers the screen puts side by side**, all three the server's arithmetic —
+    /// including the subtraction. `remainingAmount` is not `grandTotal - paidAmount` computed
+    /// here: that would be a second answer to one question, and this one is made of doubles.
+    ///
+    /// `paidAmount` is the sum of the order's ledger. It is the *entries* that are the truth;
+    /// this is what they add up to, which is why nothing in the app ever writes it.
+    ///
+    /// Defaulted so an order fetched from a build of the API that predates payments still
+    /// parses — the honest value for it is zero.
+    @JsonKey(name: 'paid_amount') @Default('0.00') String paidAmount,
+
+    /// What is still owed. **Negative on an overpaid order**, so «زائد ٥٠» can be said rather
+    /// than floored away.
+    @JsonKey(name: 'remaining_amount') @Default('0.00') String remainingAmount,
+
+    @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)
+    @Default(PaymentStatus.unpaid)
+    PaymentStatus paymentStatus,
+
+    @JsonKey(name: 'payment_status_label') @Default('') String paymentStatusLabel,
+
+    /// An order that finished without its money accounted for.
+    ///
+    /// Settling writes no ledger entry — nothing records a payment except the person who took
+    /// it — so this is the gap being surfaced rather than papered over with an entry nobody
+    /// made. The screen warns; somebody records what was collected; the warning goes.
+    @JsonKey(name: 'has_unrecorded_money') @Default(false) bool hasUnrecordedMoney,
 
     /// What the parcel weighs, in kilograms, recorded on the way into «جاهزة».
     ///
@@ -141,6 +170,14 @@ abstract class Order with _$Order {
   /// say to them.
   bool get hasActions => availableTransitions.isNotEmpty;
 
+  /// Whether anything is still owed on this order.
+  ///
+  /// Read from [paymentStatus] rather than by comparing the two money strings: they are decimal
+  /// text on purpose, and a `double.parse` here to answer a yes/no question would be the one
+  /// place in the app that turned money into floating point.
+  bool get isOutstanding =>
+      paymentStatus == PaymentStatus.unpaid || paymentStatus == PaymentStatus.partiallyPaid;
+
   /// A discount worth showing a line for. `'0.00'` is not one.
   bool get hasDiscount => discount != '0.00';
 
@@ -151,8 +188,7 @@ abstract class Order with _$Order {
   String? get recipient => recipientName ?? customer?.name;
 
   /// Where it goes, as one line: «طرابلس — سوق الجمعة».
-  String get destination =>
-      regionName == null ? cityName : '$cityName — $regionName';
+  String get destination => regionName == null ? cityName : '$cityName — $regionName';
 
   /// How long ago the order was taken, in words.
   ///
@@ -250,8 +286,7 @@ abstract class OrderTransition with _$OrderTransition {
 
   const OrderTransition._();
 
-  factory OrderTransition.fromJson(Map<String, dynamic> json) =>
-      _$OrderTransitionFromJson(json);
+  factory OrderTransition.fromJson(Map<String, dynamic> json) => _$OrderTransitionFromJson(json);
 }
 
 /// One line of an order, priced at what it cost on the day.

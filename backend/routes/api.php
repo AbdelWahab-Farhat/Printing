@@ -9,6 +9,7 @@ use App\Application\Api\V1\Controllers\CustomerDesignController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
 use App\Application\Api\V1\Controllers\OrderController;
+use App\Application\Api\V1\Controllers\OrderPaymentController;
 use App\Application\Api\V1\Controllers\PermissionController;
 use App\Application\Api\V1\Controllers\ProductController;
 use App\Application\Api\V1\Controllers\ProductImageController;
@@ -205,6 +206,35 @@ Route::prefix('v1')->group(function (): void {
         Route::post('orders/{order}/designs/{design}/review', [OrderController::class, 'reviewDesign'])
             ->scopeBindings()
             ->middleware('can:orders.designs.manage')->name('orders.designs.review');
+
+        // ── an order's money ────────────────────────────────────────────────────────────
+        // A ledger, not a balance. There is deliberately no PUT and no DELETE: an entry is
+        // written once, and a mistake is undone by writing a second entry beside it — which is
+        // the whole answer to "financial entries must be reversible". The stock ledger below
+        // is built the same way for the same reason.
+        //
+        // Reading is its own permission rather than riding on `orders.view`: the person
+        // printing the bags sees the order and has no business with what the customer paid.
+        // And **money going out has its own permission again** — taking a deposit is a
+        // receptionist's daily work, while putting a hand back into the drawer, whether as a
+        // refund or as a cancelled entry, belongs to whoever answers for it.
+        Route::get('orders/{order}/payments', [OrderPaymentController::class, 'index'])
+            ->middleware('can:orders.payments.view')->name('orders.payments.index');
+
+        Route::post('orders/{order}/payments', [OrderPaymentController::class, 'store'])
+            ->middleware('can:orders.payments.record')->name('orders.payments.store');
+
+        // Declared *before* the `{payment}` route below: implicit binding would otherwise try to
+        // resolve the word "refunds" as a payment id and 404 — the same trap `orders/summary`
+        // sits in front of.
+        Route::post('orders/{order}/payments/refunds', [OrderPaymentController::class, 'refund'])
+            ->middleware('can:orders.payments.reverse')->name('orders.payments.refund');
+
+        // scopeBindings(): another order's payment id is a 404 by construction rather than by a
+        // check somebody has to remember — the same shape orders.designs already uses.
+        Route::post('orders/{order}/payments/{payment}/reverse', [OrderPaymentController::class, 'reverse'])
+            ->scopeBindings()
+            ->middleware('can:orders.payments.reverse')->name('orders.payments.reverse');
 
         // ── delivery map ────────────────────────────────────────────────────────────────
         // Reading is its own permission because anyone taking an order needs the city and

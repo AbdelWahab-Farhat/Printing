@@ -71,9 +71,9 @@ class OrderStatusTest extends TestCase
                 OrderStatus::ReturnedCourier,
                 [OrderStatus::ReturnedCarrier],
             ],
-            'and from the company, back to our own office' => [
+            'from the company, back to our office — or straight out for a second attempt' => [
                 OrderStatus::ReturnedCarrier,
-                [OrderStatus::ReturnedOffice],
+                [OrderStatus::ReturnedOffice, OrderStatus::Resend],
             ],
             'back on our shelf: collected here, sent out again, or written off' => [
                 OrderStatus::ReturnedOffice,
@@ -151,17 +151,31 @@ class OrderStatusTest extends TestCase
     public function test_a_parcel_comes_back_the_way_it_went_out(): void
     {
         // Act
-        $chain = [
-            OrderStatus::ReturnedCourier->allowedNext(),
-            OrderStatus::ReturnedCarrier->allowedNext(),
-        ];
+        $fromCourier = OrderStatus::ReturnedCourier->allowedNext();
+        $fromCarrier = OrderStatus::ReturnedCarrier->allowedNext();
 
-        // Assert — one way out of each link, and it is the next link. A return is a chain of
-        // custody: the courier hands the parcel back to the company that sent him, and the
-        // company hands it back to us. Letting a status skip a link would let the system record
-        // a hand-over that never happened.
-        $this->assertSame([OrderStatus::ReturnedCarrier], $chain[0]);
-        $this->assertSame([OrderStatus::ReturnedOffice], $chain[1]);
+        // Assert — a return is a chain of custody, and coming *home* is walked one link at a
+        // time: the courier hands the parcel back to the company that sent him, and the company
+        // hands it back to us. Skipping a link would record a hand-over that never happened —
+        // a parcel still in somebody's van marked as being on our shelf, or in the customer's
+        // hands without anybody having taken it there.
+        $this->assertSame([OrderStatus::ReturnedCarrier], $fromCourier);
+        $this->assertContains(OrderStatus::ReturnedOffice, $fromCarrier);
+        $this->assertNotContains(OrderStatus::Delivered, $fromCarrier);
+        $this->assertNotContains(OrderStatus::ReturnedCourier, $fromCarrier);
+    }
+
+    public function test_the_carrier_may_try_again_without_the_parcel_coming_home(): void
+    {
+        // Act
+        $allowed = OrderStatus::ReturnedCarrier->allowedNext();
+
+        // Assert — the parcel is sitting at the delivery company's depot, and the commonest
+        // thing that happens next is not a van bringing it back: it is the customer being
+        // reached and the company going out again. Forcing that through «راجع مكتب» would have
+        // staff record the parcel onto a shelf it never reached to describe a second attempt
+        // that was never interrupted.
+        $this->assertContains(OrderStatus::Resend, $allowed);
     }
 
     public function test_a_returned_order_can_be_sent_out_again(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources;
 
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,6 +22,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *     daily_orders: int,
  *     monthly_orders: int,
  *     status_counts: array<string, int>,
+ *     payment_counts: array<string, int>,
  * } $resource
  */
 class HomeSummaryResource extends JsonResource
@@ -35,6 +37,9 @@ class HomeSummaryResource extends JsonResource
 
         /** @var array<string, int> $counts */
         $counts = $summary['status_counts'];
+
+        /** @var array<string, int> $paymentCounts */
+        $paymentCounts = $summary['payment_counts'];
 
         return [
             'total_orders' => $summary['total_orders'],
@@ -55,6 +60,20 @@ class HomeSummaryResource extends JsonResource
                     'count' => $counts[$status->value] ?? 0,
                 ],
                 OrderStatus::cases(),
+            ),
+
+            // **The money axis, beside the workflow one and never folded into it.** «كم طلبية لم
+            // تُدفع» cannot be answered from any of the four counts above: an order can be
+            // finished and unpaid, or paid and not yet printed. Same list-with-its-Arabic shape
+            // as `statuses`, for the same reason — a state added to the business appears on the
+            // home screen without an app release.
+            'payments' => array_map(
+                fn (PaymentStatus $status) => [
+                    'status' => $status->value,
+                    'label' => $status->label(),
+                    'count' => $paymentCounts[$status->value] ?? 0,
+                ],
+                PaymentStatus::cases(),
             ),
         ];
     }

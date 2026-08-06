@@ -21,6 +21,15 @@ abstract class HomeSummary with _$HomeSummary {
     /// A list, not a field per status, because the set of statuses is the business's to change:
     /// adding "بانتظار الطباعة" should be a row from the server, not a release of the app.
     @Default(<OrderStatusCount>[]) List<OrderStatusCount> statuses,
+
+    /// Where the money stands, one row per payment state.
+    ///
+    /// **A second axis beside [statuses], not a slice of it.** An order can be finished and
+    /// unpaid, or paid before it is printed, so «كم طلبية لم تُدفع» is unanswerable from the
+    /// counts above — which is why it arrives as its own list rather than as another status.
+    ///
+    /// Defaulted, so a build of the API that predates payments still parses.
+    @Default(<OrderStatusCount>[]) List<OrderStatusCount> payments,
   }) = _HomeSummary;
 
   const HomeSummary._();
@@ -45,6 +54,5 @@ abstract class OrderStatusCount with _$OrderStatusCount {
     required int count,
   }) = _OrderStatusCount;
 
-  factory OrderStatusCount.fromJson(Map<String, dynamic> json) =>
-      _$OrderStatusCountFromJson(json);
+  factory OrderStatusCount.fromJson(Map<String, dynamic> json) => _$OrderStatusCountFromJson(json);
 }

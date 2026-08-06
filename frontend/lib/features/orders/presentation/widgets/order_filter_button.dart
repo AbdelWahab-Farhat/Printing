@@ -4,19 +4,21 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/features/orders/models/order_counts.dart';
+import 'package:printing/features/orders/models/order_payment.dart';
 import 'package:printing/features/orders/models/order_status.dart';
 import 'package:printing/features/orders/presentation/widgets/order_status_chip.dart';
 
-/// Picking which queue the list shows.
+/// Picking which status the list shows.
 ///
-/// **A round button beside the search box, opening a sheet — not a row on the page.** Nine
-/// queues do not fit as chips across a phone: that was tried first and did not survive contact
-/// with the real vocabulary, the ones past «عند العميل» living off the right edge of a row
-/// nothing suggested was scrollable. A dropdown that opened in place worked, but pushed the list
-/// down every time it was used. A button costs one glance to notice and nothing from the layout
-/// beneath it; the sheet it opens has room for all nine queues at once.
+/// **A round button beside the search box, opening a sheet — not a row on the page.** The
+/// statuses do not fit as chips across a phone: that was tried first and did not survive contact
+/// with the real vocabulary, the ones past the middle living off the right edge of a row nothing
+/// suggested was scrollable. A dropdown that opened in place worked, but pushed the list down
+/// every time it was used. A button costs one glance to notice and nothing from the layout
+/// beneath it; the sheet it opens is a scrolling list, so the vocabulary can grow without the
+/// screen having to be redesigned around it.
 ///
-/// **Filled when a queue is picked, neutral on «الكل»**, so whether the list is narrowed is
+/// **Filled when a status is picked, neutral on «الكل»**, so whether the list is narrowed is
 /// answered before the sheet is even opened. The sheet itself carries the same per-row counts
 /// the dropdown had — without them, learning there are no returns today cost a tap, a request
 /// and an empty screen — plus a way back to «الكل» once something narrower is picked.
@@ -27,17 +29,26 @@ import 'package:printing/features/orders/presentation/widgets/order_status_chip.
 class OrderFilterButton extends StatelessWidget {
   const OrderFilterButton({
     required this.selected,
+    required this.selectedPayments,
     required this.counts,
-    required this.onSelected,
+    required this.onApplied,
     super.key,
   });
 
-  final OrderQueue selected;
+  /// Which status the list is narrowed to, or null for «الكل».
+  final OrderStatus? selected;
+
+  /// Which payment states are ticked. Empty means every one of them.
+  final Set<PaymentStatus> selectedPayments;
+
   final ValueListenable<OrderCounts> counts;
-  final ValueChanged<OrderQueue> onSelected;
+
+  /// Both axes at once. One callback rather than two, because the sheet answers them together
+  /// and two would fetch the list twice for a single tap on «تطبيق».
+  final void Function(OrderStatus? status, Set<PaymentStatus> payments) onApplied;
 
   Future<void> _open(BuildContext context) async {
-    final picked = await showModalBottomSheet<OrderQueue>(
+    final picked = await showModalBottomSheet<_FilterChoice>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -45,17 +56,18 @@ class OrderFilterButton extends StatelessWidget {
       // tapped, and the sheet should not open frozen on the empty placeholder.
       builder: (_) => ValueListenableBuilder<OrderCounts>(
         valueListenable: counts,
-        builder: (context, value, _) => _FilterSheet(selected: selected, counts: value),
+        builder: (context, value, _) =>
+            _FilterSheet(selected: selected, selectedPayments: selectedPayments, counts: value),
       ),
     );
 
-    if (picked != null) onSelected(picked);
+    if (picked != null) onApplied(picked.status, picked.payments);
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final isActive = selected != OrderQueue.all;
+    final isActive = selected != null || selectedPayments.isNotEmpty;
 
     return Material(
       color: isActive ? scheme.primaryContainer : scheme.surfaceContainerLowest,
@@ -76,48 +88,133 @@ class OrderFilterButton extends StatelessWidget {
   }
 }
 
-class _FilterSheet extends StatelessWidget {
-  const _FilterSheet({required this.selected, required this.counts});
+/// What the sheet answers with: both axes, together.
+class _FilterChoice {
+  const _FilterChoice(this.status, this.payments);
 
-  final OrderQueue selected;
+  final OrderStatus? status;
+  final Set<PaymentStatus> payments;
+}
+
+/// Two axes on one sheet: where the work stands, and where the money stands.
+///
+/// **The payment rows are ticks, not a second single choice.** «أرِني ما لم يُدفع» means unpaid
+/// *and* part-paid in practice, and a radio list would make somebody run the list twice to see
+/// one queue.
+///
+/// **And the two are applied together.** The status rows used to answer and close the sheet on
+/// one tap, which was right while there was one question; with two, closing on the first would
+/// make the second unreachable without opening the sheet again. Hence «تطبيق» at the bottom —
+/// and it is the only reason this sheet became stateful.
+class _FilterSheet extends StatefulWidget {
+  const _FilterSheet({
+    required this.selected,
+    required this.selectedPayments,
+    required this.counts,
+  });
+
+  final OrderStatus? selected;
+  final Set<PaymentStatus> selectedPayments;
   final OrderCounts counts;
 
   @override
+  State<_FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends State<_FilterSheet> {
+  late OrderStatus? _status = widget.selected;
+  late Set<PaymentStatus> _payments = {...widget.selectedPayments};
+
+  bool get _isFiltered => _status != null || _payments.isNotEmpty;
+
+  @override
   Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
     return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 12.h),
+      child: FractionallySizedBox(
+        // The sheet grew a second section and a button; left to wrap its content it would run
+        // past the top of a short phone and clip the first row it drew.
+        heightFactor: 0.9,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'تصفية الطلبيات',
-                    style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            Padding(
+              padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'تصفية الطلبيات',
+                      style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                    ),
                   ),
-                ),
-                // Only worth offering once there is something to clear — «الكل» already selected
-                // means nothing is narrowed.
-                if (selected != OrderQueue.all)
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(OrderQueue.all),
-                    child: const Text('مسح الفلاتر'),
-                  ),
-              ],
-            ),
-            SizedBox(height: 8.h),
-            for (final queue in OrderQueue.values)
-              _Row(
-                queue: queue,
-                count: counts.forQueue(queue),
-                isSelected: queue == selected,
-                // Picking a queue answers the sheet and closes it — there is nothing else to do
-                // here, so a second confirmation tap would only be in the way.
-                onTap: () => Navigator.of(context).pop(queue),
+                  // Only worth offering once there is something to clear.
+                  if (_isFiltered)
+                    TextButton(
+                      onPressed: () => setState(() {
+                        _status = null;
+                        _payments = <PaymentStatus>{};
+                      }),
+                      child: const Text('مسح الفلاتر'),
+                    ),
+                ],
               ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 8.h),
+                children: [
+                  const _SectionTitle(title: 'حالة الطلبية'),
+                  // «الكل» first and status-less, then the statuses in the order the machine
+                  // walks them — so the sheet reads as the route an order takes rather than as
+                  // an alphabetised list of words.
+                  _Row(
+                    status: null,
+                    count: widget.counts.forStatus(null),
+                    isSelected: _status == null,
+                    onTap: () => setState(() => _status = null),
+                  ),
+                  for (final status in OrderStatus.filterable)
+                    _Row(
+                      status: status,
+                      count: widget.counts.forStatus(status),
+                      isSelected: status == _status,
+                      onTap: () => setState(() => _status = status),
+                    ),
+                  SizedBox(height: 8.h),
+                  const _SectionTitle(title: 'حالة الدفع'),
+                  // Three, not four: «مدفوعة بالزيادة» is not a queue anybody works — see
+                  // PaymentStatus.filterable.
+                  for (final status in PaymentStatus.filterable)
+                    _PaymentRow(
+                      status: status,
+                      count: widget.counts.forPaymentStatus(status),
+                      isSelected: _payments.contains(status),
+                      onTap: () => setState(() {
+                        _payments.contains(status)
+                            ? _payments.remove(status)
+                            : _payments.add(status);
+                      }),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 12.h),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(_FilterChoice(_status, _payments)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: scheme.primary,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                  ),
+                  child: const Text('تطبيق'),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -125,15 +222,96 @@ class _FilterSheet extends StatelessWidget {
   }
 }
 
-class _Row extends StatelessWidget {
-  const _Row({
-    required this.queue,
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 4.h),
+      child: Text(
+        title,
+        style: context.textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w800,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+/// One payment state, with how many orders stand in it.
+///
+/// A **checkbox**, unlike the status rows above, and the shape says so: these combine and those
+/// do not.
+class _PaymentRow extends StatelessWidget {
+  const _PaymentRow({
+    required this.status,
     required this.count,
     required this.isSelected,
     required this.onTap,
   });
 
-  final OrderQueue queue;
+  final PaymentStatus status;
+  final int count;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Material(
+      color: isSelected ? scheme.primaryContainer.withValues(alpha: 0.45) : Colors.transparent,
+      borderRadius: BorderRadius.circular(10.r),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10.r),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 12.h),
+          child: Row(
+            children: [
+              Icon(
+                isSelected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                size: 20.sp,
+                color: isSelected ? scheme.primary : scheme.outline,
+              ),
+              SizedBox(width: 9.w),
+              Expanded(
+                child: Text(
+                  // The enum's own Arabic here, not an order's `payment_status_label`: this
+                  // sheet has no order in hand to read one from.
+                  status.label,
+                  style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Text(
+                '$count',
+                style: context.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One status, with how many orders stand in it. Null is «الكل».
+class _Row extends StatelessWidget {
+  const _Row({
+    required this.status,
+    required this.count,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final OrderStatus? status;
   final int count;
   final bool isSelected;
   final VoidCallback onTap;
@@ -157,15 +335,15 @@ class _Row extends StatelessWidget {
               Container(
                 width: 9.w,
                 height: 9.w,
-                decoration: BoxDecoration(
-                  color: _dotColour(scheme),
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: _dotColour(scheme), shape: BoxShape.circle),
               ),
               SizedBox(width: 9.w),
               Expanded(
                 child: Text(
-                  queue.label,
+                  // The enum's own Arabic, like the payment rows above: a row reading zero has
+                  // no order behind it to borrow a `status_label` from, and that row is exactly
+                  // the one worth showing.
+                  status?.label ?? 'الكل',
                   style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -197,11 +375,11 @@ class _Row extends StatelessWidget {
   }
 
   /// «الكل» has no status of its own, so it takes a neutral dot rather than borrowing one
-  /// queue's colour and implying it means that queue.
+  /// status's colour and implying it means that status.
   Color _dotColour(ColorScheme scheme) {
-    final status = queue.statuses.firstOrNull;
-    if (status == null) return scheme.outline;
+    final current = status;
+    if (current == null) return scheme.outline;
 
-    return OrderStatusChip.toneColour(scheme, status.tone).$2;
+    return OrderStatusChip.toneColour(scheme, current.tone).$2;
   }
 }

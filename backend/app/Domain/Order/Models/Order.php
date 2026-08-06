@@ -18,6 +18,8 @@ use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentStatus;
+use App\Domain\Order\Support\Money;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -88,6 +90,10 @@ class Order extends Model implements HasAuditTrail
             'delivery_price' => 'decimal:2',
             'discount' => 'decimal:2',
             'grand_total' => 'decimal:2',
+            // The ledger's running total. Written only by RecalculateOrderPayments and absent
+            // from the fillable list for the same reason `grand_total` is: a request that could
+            // set it could tell us it had been paid.
+            'paid_amount' => 'decimal:2',
             // Three places, like a quantity: an order priced by the kilo is invoiced from this.
             'weight_kg' => 'decimal:3',
             // Null unless what came back differed from what was invoiced.
@@ -168,6 +174,61 @@ class Order extends Model implements HasAuditTrail
     public function transitions(): HasMany
     {
         return $this->hasMany(OrderStatusTransition::class)->orderBy('id');
+    }
+
+    /**
+     * The money ledger: what was paid, given back, or entered by mistake.
+     *
+     * **Oldest first, unlike the designs.** A ledger is read as a story — the deposit, then the
+     * balance, then the correction — and a correction printed above the entry it corrects makes
+     * a reader work backwards through an argument.
+     *
+     * Ordered by `paid_at` and then by id, because two entries can share a moment: a deposit and
+     * its immediate reversal are typed a second apart and stored with the same date. The id
+     * breaks that tie in the order they were written, which is the only tie-break that cannot
+     * put a correction above its cause.
+     *
+     * @return HasMany<OrderPayment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(OrderPayment::class)->orderBy('paid_at')->orderBy('id');
+    }
+
+    /**
+     * What is still owed on this order.
+     *
+     * **Negative when the order is overpaid, and deliberately not floored here.** A screen wants
+     * to say «زائد ٥٠» so somebody refunds it; the *payment* path floors it at zero separately,
+     * because "you may pay -50 more" is not a sentence. Two readers, two right answers, and the
+     * one that loses information is the one computed where it is needed.
+     */
+    public function remainingAmount(): string
+    {
+        return Money::round(bcsub((string) $this->grand_total, (string) $this->paid_amount, 8));
+    }
+
+    public function paymentStatus(): PaymentStatus
+    {
+        return PaymentStatus::for($this);
+    }
+
+    /**
+     * Whether this order ended without its money being accounted for.
+     *
+     * **The honest cost of a deliberate decision.** Settling an order does not write a ledger
+     * entry — no payment is recorded except by the person who took it — so an order can reach
+     * «تم التسوية» with money the ledger never saw. Rather than invent an entry nobody made,
+     * the discrepancy is surfaced: the app draws a warning, somebody records what was actually
+     * collected, and the warning goes away.
+     *
+     * A generated entry would have hidden exactly this, which is why there isn't one.
+     */
+    public function hasUnrecordedMoney(): bool
+    {
+        return $this->status->isFinal()
+            && $this->status !== OrderStatus::Cancelled
+            && bccomp($this->remainingAmount(), '0', Money::SCALE) > 0;
     }
 
     /**
@@ -368,6 +429,9 @@ class Order extends Model implements HasAuditTrail
             (new OrderItem)->getMorphClass() => $this->items()->withTrashed()->pluck('id')->all(),
             (new OrderDesign)->getMorphClass() => $this->designs()->withTrashed()->pluck('id')->all(),
             (new OrderStatusTransition)->getMorphClass() => $this->transitions()->withTrashed()->pluck('id')->all(),
+            // The ledger belongs in the order's story for the same reason the lines do — «من
+            // ألغى دفعة الـ٥٠٠؟» is asked of the order, not of a table nobody knows the name of.
+            (new OrderPayment)->getMorphClass() => $this->payments()->withTrashed()->pluck('id')->all(),
         ];
     }
 }

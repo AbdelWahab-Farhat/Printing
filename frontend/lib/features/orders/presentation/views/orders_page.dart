@@ -58,13 +58,15 @@ class _OrdersView extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: 10.w),
-                // Rebuilt with the list, so the queue named inside the sheet and what is on
+                // Rebuilt with the list, so the status ticked inside the sheet and what is on
                 // screen cannot disagree.
                 BlocBuilder<OrdersCubit, OrdersState>(
                   builder: (context, state) => OrderFilterButton(
-                    selected: cubit.queue,
+                    selected: cubit.status,
+                    selectedPayments: cubit.paymentStatuses,
                     counts: cubit.counts,
-                    onSelected: cubit.showQueue,
+                    onApplied: (status, payments) =>
+                        cubit.showFilters(status: status, paymentStatuses: payments),
                   ),
                 ),
               ],

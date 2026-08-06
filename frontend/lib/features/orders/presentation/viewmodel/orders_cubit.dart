@@ -10,6 +10,7 @@ import 'package:printing/core/pagination/paged_cubit.dart';
 import 'package:printing/core/pagination/paged_state.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/order_counts.dart';
+import 'package:printing/features/orders/models/order_payment.dart';
 import 'package:printing/features/orders/models/order_status.dart';
 import 'package:printing/features/orders/usecases/get_order_counts.dart';
 import 'package:printing/features/orders/usecases/get_orders.dart';
@@ -43,18 +44,34 @@ class OrdersCubit extends PagedCubit<Order> {
   String? _countedFor;
   bool _hasCounted = false;
 
-  /// Which queue the list is showing. Read by the chips row, which sits inside the same
-  /// `BlocBuilder` as the list — so the selected chip and what is on screen cannot disagree.
-  OrderQueue queue = OrderQueue.all;
+  /// Which status the list is showing, or null for «الكل».
+  ///
+  /// Read by the filter button, which sits inside the same `BlocBuilder` as the list — so what
+  /// the sheet says is selected and what is on screen cannot disagree.
+  ///
+  /// **One status, not a group.** The filter used to offer queues that stood for several
+  /// statuses at once, which made «أرِني ما ينتظر عند شركة التوصيل» unaskable.
+  OrderStatus? status;
+
+  /// Which payment states the list is narrowed to. Empty means every one of them.
+  ///
+  /// **A set, and a second axis beside [status].** «جاهزة وغير مدفوعة» is one question with two
+  /// answers applied at once, so this narrows the same list rather than replacing the status.
+  Set<PaymentStatus> paymentStatuses = const <PaymentStatus>{};
+
+  /// Whether the list is narrowed by anything at all — what fills the filter button.
+  bool get isFiltered => status != null || paymentStatuses.isNotEmpty;
 
   @override
-  Future<Either<Failure, Paginated<Order>>> fetchPage({
-    String? search,
-    required int page,
-  }) {
-    // The queue rides along with every page, including the ones `loadMore` asks for: page two
-    // of «رواجع» must not arrive as page two of everything.
-    return _getOrders(search: search, statuses: queue.wires, page: page);
+  Future<Either<Failure, Paginated<Order>>> fetchPage({String? search, required int page}) {
+    // The status rides along with every page, including the ones `loadMore` asks for: page two
+    // of «نواقص» must not arrive as page two of everything.
+    return _getOrders(
+      search: search,
+      statuses: [?status?.wire],
+      paymentStatuses: paymentStatuses.map((status) => status.wire).toList(growable: false),
+      page: page,
+    );
   }
 
   /// Loads the page and, when the search has moved, the numbers beside the filter.
@@ -102,14 +119,30 @@ class OrdersCubit extends PagedCubit<Order> {
     return super.close();
   }
 
-  /// Narrows the list to one queue, or widens it back to all of them.
+  /// Narrows the list to one status, or widens it back to «الكل» with null.
   ///
-  /// The search term survives: somebody who typed a customer's name and then tapped «رواجع» is
-  /// asking a narrower question, not starting a new one.
-  Future<void> showQueue(OrderQueue next) async {
-    if (next == queue) return;
+  /// The search term survives: somebody who typed a customer's name and then tapped «راجع مكتب»
+  /// is asking a narrower question, not starting a new one.
+  Future<void> showStatus(OrderStatus? next) async {
+    if (next == status) return;
 
-    queue = next;
+    status = next;
+    await load(search: currentSearch);
+  }
+
+  /// Applies both axes at once.
+  ///
+  /// One call rather than two, because the sheet answers both together — and two calls would
+  /// fetch the list twice for a single tap on «تطبيق», with the first result thrown away.
+  Future<void> showFilters({
+    required OrderStatus? status,
+    required Set<PaymentStatus> paymentStatuses,
+  }) async {
+    if (status == this.status && setEquals(paymentStatuses, this.paymentStatuses)) return;
+
+    this.status = status;
+    this.paymentStatuses = paymentStatuses;
+
     await load(search: currentSearch);
   }
 
@@ -119,14 +152,18 @@ class OrdersCubit extends PagedCubit<Order> {
   /// page instead would be correct and wasteful — and worse, it would scroll a long list back to
   /// wherever page one ends.
   ///
-  /// **A row that no longer belongs in the current queue is dropped rather than left showing.**
-  /// Marking an order delivered while «جاهزة» is selected should take it off that list; leaving
-  /// it there would make the chip a lie until the next refresh.
+  /// **A row that no longer belongs under the current status is dropped rather than left
+  /// showing.** Marking an order delivered while «جاهزة» is selected should take it off that
+  /// list; leaving it there would make the filter a lie until the next refresh.
   void replace(Order updated) {
     final current = state;
     if (current is! PagedLoaded<Order>) return;
 
-    final belongs = queue == OrderQueue.all || queue.statuses.contains(updated.status);
+    // Both axes, for the same reason: an order that has just been paid off while «غير مدفوعة»
+    // is selected should leave that list, exactly as one marked delivered leaves «جاهزة».
+    final belongs =
+        (status == null || updated.status == status) &&
+        (paymentStatuses.isEmpty || paymentStatuses.contains(updated.paymentStatus));
 
     final items = <Order>[
       for (final order in current.page.items)

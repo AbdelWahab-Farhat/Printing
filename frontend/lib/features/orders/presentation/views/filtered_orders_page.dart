@@ -14,11 +14,11 @@ import 'package:printing/features/orders/presentation/widgets/order_card.dart';
 /// The orders behind one number.
 ///
 /// **Opened by tapping a card on the home screen**, and it exists so that tap can be honest: the
-/// board's queues are groups — «رواجع» is four statuses — so sending «نواقص» to the orders tab
-/// would select a chip covering more than the card counted, and the list would disagree with the
-/// number that opened it.
+/// card carries its own title and its own filter, and this screen shows exactly what was
+/// counted. A card for a date range — «طلبات اليوم» — has no status at all to hand the orders
+/// tab, so the tab could not answer it without growing a second axis nobody asked for.
 ///
-/// No chips and no queue: the question was settled by the tap. What it keeps is the search,
+/// No filter control on it: the question was settled by the tap. What it keeps is the search,
 /// because narrowing a long answer by a customer's name is a reasonable second thought.
 class FilteredOrdersPage extends StatelessWidget {
   const FilteredOrdersPage({required this.filter, super.key});

@@ -8,18 +8,25 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\AddOrderDesign;
 use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\CreateOrder;
+use App\Domain\Order\Actions\RecordOrderPayment;
+use App\Domain\Order\Actions\RefundOrderPayment;
+use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\ReviewOrderDesign;
 use App\Domain\Order\Actions\UpdateOrder;
 use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
+use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Queries\OrderFilters;
 use App\Domain\Order\Queries\OrderListQuery;
+use App\Domain\Order\Queries\OrderPaymentStatusCountsQuery;
 use App\Domain\Order\Queries\OrderStatusCountsQuery;
 use App\Domain\Order\Queries\OrderTotalsQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * The Order module's public front door.
@@ -37,8 +44,12 @@ class OrderService
         private readonly ChangeOrderStatus $changeStatus,
         private readonly AddOrderDesign $addDesign,
         private readonly ReviewOrderDesign $reviewDesign,
+        private readonly RecordOrderPayment $recordPayment,
+        private readonly RefundOrderPayment $refundPayment,
+        private readonly ReverseOrderPayment $reversePayment,
         private readonly OrderListQuery $listQuery,
         private readonly OrderStatusCountsQuery $statusCounts,
+        private readonly OrderPaymentStatusCountsQuery $paymentStatusCounts,
         private readonly OrderTotalsQuery $totals,
     ) {}
 
@@ -58,6 +69,20 @@ class OrderService
     public function statusCounts(OrderFilters $filters): array
     {
         return ($this->statusCounts)($filters);
+    }
+
+    /**
+     * How many orders stand unpaid, part-paid, paid and overpaid, under the same filters.
+     *
+     * A second axis beside {@see statusCounts()} and never folded into it: «جاهزة» says nothing
+     * about whether an order is paid, which is the whole reason the two were never merged into
+     * one enum.
+     *
+     * @return array<string, int>
+     */
+    public function paymentStatusCounts(OrderFilters $filters): array
+    {
+        return ($this->paymentStatusCounts)($filters);
     }
 
     /**
@@ -112,7 +137,50 @@ class OrderService
         return ($this->reviewDesign)($order, $design, $verdict, $reason, $actor);
     }
 
-    /** Everything needed to render one order in full. */
+    /**
+     * An order's money ledger, oldest first.
+     *
+     * Not paginated: an order's entries are counted on one hand, and a page boundary through a
+     * ledger would hide the reversal that explains the entry above it.
+     *
+     * @return Collection<int, OrderPayment>
+     */
+    public function payments(Order $order): Collection
+    {
+        return $order->payments()->with(['recorder', 'reversal', 'reversedPayment'])->get();
+    }
+
+    public function recordPayment(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
+    {
+        return ($this->recordPayment)($order, $data, $actor);
+    }
+
+    public function refundPayment(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
+    {
+        return ($this->refundPayment)($order, $data, $actor);
+    }
+
+    /**
+     * Undoes an entry that should never have been written, by writing another beside it.
+     *
+     * The reason is required rather than optional — see {@see ReverseOrderPayment}.
+     */
+    public function reversePayment(
+        Order $order,
+        OrderPayment $payment,
+        string $reason,
+        ?User $actor = null,
+    ): OrderPayment {
+        return ($this->reversePayment)($order, $payment, $reason, $actor);
+    }
+
+    /**
+     * Everything needed to render one order in full.
+     *
+     * **The ledger is absent on purpose.** It is read through {@see payments()} behind its own
+     * permission, so loading it here would be work done for every reader and shipped to the ones
+     * not allowed to see it.
+     */
     public function loadForDisplay(Order $order): Order
     {
         return $order->load([

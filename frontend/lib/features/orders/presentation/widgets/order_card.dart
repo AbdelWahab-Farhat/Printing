@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:printing/core/theme/app_tones.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/features/orders/models/order.dart';
+import 'package:printing/features/orders/models/order_payment.dart';
 import 'package:printing/features/orders/presentation/widgets/order_status_chip.dart';
 
 /// One order in the list.
@@ -11,8 +13,12 @@ import 'package:printing/features/orders/presentation/widgets/order_status_chip.
 /// work queue is scanned for first. The six cells below answer the questions that follow in the
 /// order they get asked — «لمن» ثم «بكام» ثم «فين» — rather than four lines stacked by category.
 ///
-/// **العربون والمتبقي ليسا هنا بعد.** لا يوجد لهما عمود في الباك اند حتى الآن — أُجِّل الأمر
-/// وسُجِّل في BACKLOG.md، فبطاقة تعرض رقماً لم يُحسب بعد أسوأ من بطاقة لا تعرضه.
+/// **والمال في سطر ثالث خاص به، تحت خط فاصل.** «سعر الطلبية» كان وحده هنا لأن الباك اند لم يكن
+/// يعرف كم قُبض؛ صار يعرف، فالسؤال الذي تُفتح البطاقة لأجله — «كم بقي له علينا» — يُجاب في
+/// نظرة بدل فتح الطلبية. والثلاثة معاً لا متفرقة: رقمٌ مدفوع بلا الإجمالي بجانبه لا يعني شيئاً.
+///
+/// **وحالة الدفع شارة بجانب حالة التنفيذ**، لا مدموجة فيها: طلبية «جاهزة» قد تكون مدفوعة أو لا،
+/// وهما محوران يتقاطعان — وهو نفس سبب بقائهما enumين منفصلين في الخادم.
 class OrderCard extends StatelessWidget {
   const OrderCard({required this.order, this.onTap, super.key});
 
@@ -47,7 +53,15 @@ class OrderCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              OrderStatusChip(status: order.status, label: order.statusLabel, compact: true),
+              Row(
+                children: [
+                  OrderStatusChip(status: order.status, label: order.statusLabel, compact: true),
+                  SizedBox(width: 8.w),
+                  // The server's own Arabic, so a payment state added later reads correctly on
+                  // a phone that was never updated.
+                  _PaymentChip(status: order.paymentStatus, label: order.paymentStatusLabel),
+                ],
+              ),
               SizedBox(height: 12.h),
               Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
               SizedBox(height: 12.h),
@@ -61,7 +75,9 @@ class OrderCard extends StatelessWidget {
                       isLtr: true,
                     ),
                   ),
-                  Expanded(child: _Cell(label: 'رقم الفاتورة', value: '#${order.code}')),
+                  Expanded(
+                    child: _Cell(label: 'رقم الفاتورة', value: '#${order.code}'),
+                  ),
                   Expanded(
                     child: _Cell(
                       label: 'رقم الاستلام',
@@ -77,18 +93,40 @@ class OrderCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _Cell(
-                      label: 'سعر الطلبية',
-                      value: order.grandTotal,
-                      emphasize: true,
-                    ),
-                  ),
-                  Expanded(
-                    child: _Cell(
                       label: 'مكان الاستلام',
                       value: order.isOfficePickup ? order.cityName : order.destination,
                     ),
                   ),
-                  Expanded(child: _Cell(label: 'تاريخ الإنشاء', value: order.placedAgo)),
+                  Expanded(
+                    child: _Cell(label: 'تاريخ الإنشاء', value: order.placedAgo),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12.h),
+              Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
+              SizedBox(height: 12.h),
+              // The money, as one block. Every figure is the string the server sent — including
+              // the subtraction: a total assembled on the server and re-derived on the phone is
+              // two answers to one question, and the phone's is the one made of doubles.
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _Cell(label: 'سعر الطلبية', value: order.grandTotal, emphasize: true),
+                  ),
+                  Expanded(
+                    child: _Cell(label: 'المدفوع', value: order.paidAmount),
+                  ),
+                  Expanded(
+                    child: _Cell(
+                      label: 'المتبقي',
+                      value: order.remainingAmount,
+                      // The one thing a work queue is scanned for after the status. Coloured
+                      // only when something is still owed — a zero in alarm red would make the
+                      // settled case look like the problem.
+                      tone: order.isOutstanding ? scheme.error : null,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -106,6 +144,7 @@ class _Cell extends StatelessWidget {
     required this.value,
     this.isLtr = false,
     this.emphasize = false,
+    this.tone,
   });
 
   final String label;
@@ -116,6 +155,10 @@ class _Cell extends StatelessWidget {
 
   /// The order's price: the one number on the card worth the primary colour.
   final bool emphasize;
+
+  /// Overrides the colour outright — «المتبقي» in the error tone while anything is owed. Wins
+  /// over [emphasize], because a cell is never both.
+  final Color? tone;
 
   @override
   Widget build(BuildContext context) {
@@ -140,10 +183,54 @@ class _Cell extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: context.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w800,
-            color: emphasize ? scheme.primary : scheme.onSurface,
+            color: tone ?? (emphasize ? scheme.primary : scheme.onSurface),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Where the order stands on its money, as a chip beside the status one.
+///
+/// **Its own shape, not a second status chip.** The two sit on one line and answer different
+/// questions, so this one is deliberately quieter — an outline rather than a fill — and only
+/// takes a colour when the answer is worth acting on.
+class _PaymentChip extends StatelessWidget {
+  const _PaymentChip({required this.status, required this.label});
+
+  final PaymentStatus status;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    // Nothing sent — an order from a build of the API that predates payments. Silence beats a
+    // chip reading «غير مدفوعة» about a number nobody computed.
+    if (label.isEmpty) return const SizedBox.shrink();
+
+    final tone = switch (status) {
+      // Green, not `primary`: the teal is the price directly beneath this chip and half the app
+      // besides, and «مدفوعة بالكامل» is the one state worth reading without reading the word.
+      PaymentStatus.paid => scheme.paid,
+      PaymentStatus.overpaid => scheme.tertiary,
+      PaymentStatus.unpaid => scheme.error,
+      PaymentStatus.partiallyPaid || PaymentStatus.unknown => scheme.onSurfaceVariant,
+    };
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999.r),
+        border: Border.all(color: tone.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: context.textTheme.bodySmall?.copyWith(color: tone, fontWeight: FontWeight.w700),
+      ),
     );
   }
 }

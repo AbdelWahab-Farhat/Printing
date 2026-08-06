@@ -29,6 +29,7 @@ import 'package:printing/features/orders/models/orders_filter.dart';
 import 'package:printing/features/orders/presentation/views/filtered_orders_page.dart';
 import 'package:printing/features/orders/presentation/views/order_detail_page.dart';
 import 'package:printing/features/orders/presentation/views/order_edit_page.dart';
+import 'package:printing/features/orders/presentation/views/order_payments_page.dart';
 import 'package:printing/features/orders/presentation/views/order_status_page.dart';
 import 'package:printing/features/orders/presentation/views/orders_page.dart';
 import 'package:printing/features/products/presentation/views/add_product_page.dart';
@@ -177,6 +178,19 @@ abstract final class Routes {
   static const String orderEditPath = 'edit';
 
   static String editOrder(int id) => '/orders/$id/edit';
+
+  /// An order's money: the three numbers, the ledger, and the two ways of writing to it.
+  ///
+  /// A screen of its own rather than a block on the order, because a ledger gets long — six rows
+  /// each carrying a method, a reference, a date and a name is a screen's worth of reading, and
+  /// under everything else the order says it was being scrolled past. It pops with whether
+  /// anything was written.
+  ///
+  /// The order's number travels as `extra` so the title can say «#52» without this screen
+  /// fetching a whole order to print four characters.
+  static const String orderPaymentsPath = 'payments';
+
+  static String orderPayments(int id) => '/orders/$id/payments';
 
   /// Choosing a point on the map. Outside the shell, and returns a `LatLng` through `pop`.
   static const String pickLocation = '/pick-location';
@@ -328,6 +342,19 @@ abstract final class AppRouter {
             path: Routes.orderEditPath,
             builder: (context, state) => OrderEditPage(
               orderId: int.parse(state.pathParameters['id']!),
+            ),
+          ),
+          // Guarded here rather than only on the arm that opens it, so a deep link cannot walk
+          // past the check — the API refuses too, and this is what stops the screen 403ing in
+          // front of somebody instead of never opening.
+          GoRoute(
+            path: Routes.orderPaymentsPath,
+            redirect: (context, state) => sl<Session>().can(AppPermission.viewOrderPayments)
+                ? null
+                : Routes.order(int.parse(state.pathParameters['id']!)),
+            builder: (context, state) => OrderPaymentsPage(
+              orderId: int.parse(state.pathParameters['id']!),
+              orderCode: state.extra is String ? state.extra! as String : '',
             ),
           ),
         ],

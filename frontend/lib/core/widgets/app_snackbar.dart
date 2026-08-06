@@ -9,6 +9,13 @@
 /// once would otherwise stack three identical toasts. A repeat of the message already showing
 /// extends it instead of queueing.
 ///
+/// **Which one survives is decided by type, and it is not symmetric.** A refusal replaces
+/// whatever is up; a success or an info message yields to it. "Only one" used to mean "the first
+/// one", which quietly cost the user the message that mattered: «تم الحفظ» would still be sliding
+/// out when the server's «ليس لديك صلاحية» arrived three hundred milliseconds later, and the
+/// screen was left saying the opposite of the truth. Losing a refusal costs somebody the work
+/// they were trying to do; losing «تم الحفظ» costs nothing.
+///
 /// Colours come from the theme's `ColorScheme`, so the toast follows the palette rather than
 /// hard-coding greens and reds that clash with it.
 library;
@@ -32,9 +39,12 @@ Future<void> showCustomSnackBar({
   Duration duration = const Duration(seconds: 3),
   IconData? icon,
 
-  /// When false, a *different* message replaces the one on screen instead of being dropped.
-  /// The default protects a burst of errors from flickering past unread.
-  bool keepCurrent = true,
+  /// What happens when a **different** message arrives while one is still up.
+  ///
+  /// Left null it is decided by [type]: an error or a warning replaces what is showing, and a
+  /// success or an info message yields to it. Pass it explicitly only to overrule that — and
+  /// think about which message the user needs more before you do.
+  bool? keepCurrent,
 }) async {
   final overlay = Overlay.maybeOf(context);
   if (overlay == null) return;
@@ -49,7 +59,14 @@ Future<void> showCustomSnackBar({
       return;
     }
 
-    if (keepCurrent) return;
+    final yields =
+        keepCurrent ??
+        switch (type) {
+          SnackType.error || SnackType.warning => false,
+          SnackType.success || SnackType.info => true,
+        };
+
+    if (yields) return;
 
     await _dismissNow();
   }
@@ -135,12 +152,41 @@ Future<void> _dismissNow() async {
   _timer?.cancel();
   _timer = null;
 
+  // The screen that raised this toast may already be gone — popped while it was still up, which
+  // takes the overlay with it. Animating out of an overlay that no longer exists throws, and the
+  // throw used to land in the caller that was trying to show the *next* message.
+  if (!entry.mounted) {
+    controller.dispose();
+
+    return;
+  }
+
   try {
     await controller.reverse();
   } finally {
     controller.dispose();
-    entry.remove();
+    if (entry.mounted) entry.remove();
   }
+}
+
+/// Tears down whatever is on screen, without animating.
+///
+/// For tests only. The bookkeeping above is library-level so that "only one toast" holds across
+/// the whole app, which also means it outlives a widget test: a toast still standing at the end
+/// of one test silences the first message of the next, and the failure reads as a bug in the
+/// screen under test rather than as leakage from its neighbour.
+@visibleForTesting
+void resetSnackBars() {
+  _timer?.cancel();
+  _timer = null;
+  _signature = null;
+
+  _controller?.dispose();
+  _controller = null;
+
+  final entry = _entry;
+  _entry = null;
+  if (entry != null && entry.mounted) entry.remove();
 }
 
 class _SnackCard extends StatelessWidget {

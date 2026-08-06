@@ -53,6 +53,7 @@ void main() {
       () => repository.orders(
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
         customerId: any(named: 'customerId'),
         from: any(named: 'from'),
         to: any(named: 'to'),
@@ -92,6 +93,7 @@ void main() {
       () => repository.orders(
         search: any(named: 'search'),
         statuses: captureAny(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
         customerId: any(named: 'customerId'),
         from: any(named: 'from'),
         to: any(named: 'to'),
@@ -119,6 +121,7 @@ void main() {
       () => repository.orders(
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
         customerId: any(named: 'customerId'),
         from: captureAny(named: 'from'),
         to: captureAny(named: 'to'),
@@ -147,6 +150,7 @@ void main() {
       () => repository.orders(
         search: any(named: 'search'),
         statuses: captureAny(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
         customerId: any(named: 'customerId'),
         from: any(named: 'from'),
         to: any(named: 'to'),

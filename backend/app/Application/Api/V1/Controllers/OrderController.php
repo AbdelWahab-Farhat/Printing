@@ -54,13 +54,13 @@ class OrderController extends Controller
      * List orders
      *
      * Newest first. `search` matches the order number, the tracking number, or the customer's
-     * name, code or phone. Filter with `status` (repeatable), `customer_id`, `city_id`, `from`
-     * and `to`.
+     * name, code or phone. Filter with `status` (repeatable), `payment_status` (repeatable —
+     * `unpaid`, `partially_paid`, `paid`, `overpaid`), `customer_id`, `city_id`, `from` and `to`.
      */
     public function index(Request $request): JsonResponse
     {
         $filters = OrderFilters::fromArray(
-            $request->only(['search', 'status', 'customer_id', 'city_id', 'from', 'to']),
+            $request->only(['search', 'status', 'payment_status', 'customer_id', 'city_id', 'from', 'to']),
         );
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
@@ -73,11 +73,13 @@ class OrderController extends Controller
      * How many orders are in each status
      *
      * The number beside each row of the status filter. Accepts the same filters as the list —
-     * `search`, `customer_id`, `city_id`, `from`, `to` — so the counts describe the set the user
-     * is actually looking at.
+     * `search`, `payment_status`, `customer_id`, `city_id`, `from`, `to` — so the counts describe
+     * the set the user is actually looking at.
      *
      * `status` itself is ignored here on purpose: counts narrowed to the status already chosen
-     * would every one of them equal the list's own length.
+     * would every one of them equal the list's own length. `payment_status` is *not* ignored,
+     * because it narrows a different axis — «كم طلبية غير مدفوعة في كل حالة؟» is a real question,
+     * and it is the whole reason the two were never merged into one enum.
      *
      * Every status is present, zeros included. A missing key would leave a client choosing
      * between a blank and a zero, and those mean different things.
@@ -85,14 +87,19 @@ class OrderController extends Controller
     public function statusCounts(Request $request): JsonResponse
     {
         $filters = OrderFilters::fromArray(
-            $request->only(['search', 'customer_id', 'city_id', 'from', 'to']),
+            $request->only(['search', 'payment_status', 'customer_id', 'city_id', 'from', 'to']),
         );
 
         $counts = $this->orders->statusCounts($filters);
+        $paymentCounts = $this->orders->paymentStatusCounts($filters);
 
         return $this->success([
             'counts' => $counts,
             'total' => array_sum($counts),
+            // **A second axis, sent beside the first rather than folded into it.** «جاهزة» says
+            // nothing about whether an order is paid, so the two sets of numbers describe the
+            // same orders along lines that cross — which is exactly why the filter offers both.
+            'payment_counts' => $paymentCounts,
         ]);
     }
 

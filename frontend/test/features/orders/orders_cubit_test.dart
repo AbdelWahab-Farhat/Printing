@@ -6,6 +6,7 @@ import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/order_counts.dart';
+import 'package:printing/features/orders/models/order_payment.dart';
 import 'package:printing/features/orders/models/order_status.dart';
 import 'package:printing/features/orders/presentation/viewmodel/orders_cubit.dart';
 import 'package:printing/features/orders/repositories/order_repository.dart';
@@ -60,7 +61,11 @@ void main() {
 
   /// The list and the counts are fetched together, so a fake that only answers one of them
   /// leaves the other throwing — which would fail every test for a reason none of them is about.
-  void stubCounts({Map<String, int>? byStatus, Failure? failure}) {
+  void stubCounts({
+    Map<String, int>? byStatus,
+    Map<String, int>? byPaymentStatus,
+    Failure? failure,
+  }) {
     when(
       () => repository.statusCounts(
         search: any(named: 'search'),
@@ -72,6 +77,7 @@ void main() {
           : Right(
               OrderCounts(
                 byStatus: byStatus ?? const <String, int>{'ready': 2, 'printing': 1},
+                byPaymentStatus: byPaymentStatus ?? const <String, int>{},
                 total: 3,
               ),
             ),
@@ -85,6 +91,7 @@ void main() {
       () => repository.orders(
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -163,33 +170,150 @@ void main() {
     ],
   );
 
-  // ───────────────────────────── the queues ─────────────────────────────
+  // ───────────────────────────── the payment axis ─────────────────────────────
 
-  test('a queue sends every status it covers, not just one', () async {
-    // Arrange
+  test('a payment filter travels beside the status one, not instead of it', () async {
+    // Arrange — «جاهزة وغير مدفوعة» is one question with two answers applied at once, which is
+    // the whole reason the two axes are held separately.
     stub(orders: [orderWith()]);
 
     // Act
-    await cubit.showQueue(OrderQueue.returned);
+    await cubit.showFilters(
+      status: OrderStatus.ready,
+      paymentStatuses: {PaymentStatus.unpaid, PaymentStatus.partiallyPaid},
+    );
 
-    // Assert — «رواجع» is four statuses; asking for one of them would hide the rest. The parcel
-    // being sent out again is still a parcel that came back, and it is still on our shelf.
+    // Assert
     final captured = verify(
       () => repository.orders(
         search: any(named: 'search'),
         statuses: captureAny(named: 'statuses'),
+        paymentStatuses: captureAny(named: 'paymentStatuses'),
+        customerId: any(named: 'customerId'),
+        page: any(named: 'page'),
+        perPage: any(named: 'perPage'),
+      ),
+    ).captured;
+
+    expect(captured[captured.length - 2], ['ready']);
+    expect(captured.last, containsAll(<String>['unpaid', 'partially_paid']));
+  });
+
+  test('no payment filter sends none at all', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+
+    // Act
+    await cubit.load();
+
+    // Assert
+    final captured = verify(
+      () => repository.orders(
+        search: any(named: 'search'),
+        statuses: any(named: 'statuses'),
+        paymentStatuses: captureAny(named: 'paymentStatuses'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
       ),
     ).captured.last;
 
-    expect(captured, [
-      'returned_courier',
-      'returned_carrier',
-      'returned_office',
-      'resend',
-    ]);
+    expect(captured, isEmpty);
+  });
+
+  test('applying the same two filters again does not refetch', () async {
+    // Arrange — one tap on «تطبيق» must cost one request, and re-opening the sheet to close it
+    // unchanged must cost none.
+    stub(orders: [orderWith()]);
+    await cubit.showFilters(
+      status: OrderStatus.ready,
+      paymentStatuses: {PaymentStatus.unpaid},
+    );
+    clearInteractions(repository);
+
+    // Act
+    await cubit.showFilters(
+      status: OrderStatus.ready,
+      paymentStatuses: {PaymentStatus.unpaid},
+    );
+
+    // Assert
+    verifyNever(
+      () => repository.orders(
+        search: any(named: 'search'),
+        statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
+        customerId: any(named: 'customerId'),
+        page: any(named: 'page'),
+        perPage: any(named: 'perPage'),
+      ),
+    );
+  });
+
+  test('an order paid off while «غير مدفوعة» is showing drops off the list', () async {
+    // Arrange — the same rule the status axis follows: leaving the row would make the filter a
+    // lie until somebody pulled to refresh.
+    stub(orders: [orderWith()]);
+    await cubit.showFilters(
+      status: null,
+      paymentStatuses: {PaymentStatus.unpaid},
+    );
+
+    // Act
+    cubit.replace(
+      orderWith().copyWith(
+        paymentStatus: PaymentStatus.paid,
+        paidAmount: '450.00',
+        remainingAmount: '0.00',
+      ),
+    );
+
+    // Assert
+    final state = cubit.state as OrdersLoaded;
+    expect(state.page.items, isEmpty);
+  });
+
+  test('the counts carry the payment axis too', () async {
+    // Arrange
+    // `stub` re-stubs the counts with its own defaults, so the payment figures are set after
+    // it rather than before — otherwise this test would be asserting against the default.
+    stub(orders: [orderWith()]);
+    stubCounts(byPaymentStatus: const {'unpaid': 12, 'paid': 31});
+
+    // Act
+    await cubit.load();
+
+    // Assert
+    expect(cubit.counts.value.forPaymentStatus(PaymentStatus.unpaid), 12);
+    expect(cubit.counts.value.forPaymentStatus(PaymentStatus.paid), 31);
+    // Absent from the response is zero, not blank: the filter shows a number either way.
+    expect(cubit.counts.value.forPaymentStatus(PaymentStatus.overpaid), 0);
+  });
+
+  // ───────────────────────────── the status axis ─────────────────────────────
+
+  test('a status sends exactly itself, and nothing near it', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+
+    // Act
+    await cubit.showStatus(OrderStatus.returnedCarrier);
+
+    // Assert — the filter used to send «رواجع» as four statuses at once, so asking «what is
+    // sitting at the delivery company?» answered with the whole shelf of returns. One row, one
+    // status.
+    final captured = verify(
+      () => repository.orders(
+        search: any(named: 'search'),
+        statuses: captureAny(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
+        customerId: any(named: 'customerId'),
+        page: any(named: 'page'),
+        perPage: any(named: 'perPage'),
+      ),
+    ).captured.last;
+
+    expect(captured, ['returned_carrier']);
   });
 
   test('«الكل» sends no status filter at all', () async {
@@ -204,6 +328,7 @@ void main() {
       () => repository.orders(
         search: any(named: 'search'),
         statuses: captureAny(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -213,19 +338,20 @@ void main() {
     expect(captured, isEmpty);
   });
 
-  test('changing the queue keeps the search term', () async {
+  test('changing the status keeps the search term', () async {
     // Arrange
     stub(orders: [orderWith()]);
     await cubit.load(search: 'أحمد');
 
     // Act
-    await cubit.showQueue(OrderQueue.ready);
+    await cubit.showStatus(OrderStatus.ready);
 
     // Assert — narrowing a question is not asking a new one.
     final captured = verify(
       () => repository.orders(
         search: captureAny(named: 'search'),
         statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -235,20 +361,21 @@ void main() {
     expect(captured, 'أحمد');
   });
 
-  test('selecting the queue already showing does not refetch', () async {
+  test('selecting the status already showing does not refetch', () async {
     // Arrange
     stub(orders: [orderWith()]);
     await cubit.load();
     clearInteractions(repository);
 
     // Act
-    await cubit.showQueue(OrderQueue.all);
+    await cubit.showStatus(null);
 
     // Assert
     verifyNever(
       () => repository.orders(
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -274,10 +401,10 @@ void main() {
     expect(state.page.items.length, 2);
   });
 
-  test('an order that left the selected queue drops off the list', () async {
+  test('an order that left the selected status drops off the list', () async {
     // Arrange
     stub(orders: [orderWith(id: 1), orderWith(id: 2)]);
-    await cubit.showQueue(OrderQueue.ready);
+    await cubit.showStatus(OrderStatus.ready);
 
     // Act — marked delivered while «جاهزة» is the queue on screen.
     cubit.replace(
@@ -311,7 +438,7 @@ void main() {
     expect(cubit.counts.value.byStatus['ready'], 4);
   });
 
-  test('a queue is counted as the sum of the statuses it covers', () async {
+  test('each row carries its own status count, and «الكل» carries the total', () async {
     // Arrange
     stub(orders: [orderWith()]);
     stubCounts(
@@ -326,13 +453,19 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     // Act
-    final returned = cubit.counts.value.forQueue(OrderQueue.returned);
+    final counts = cubit.counts.value;
 
-    // Assert — «رواجع» is three statuses, and the server counts by status.
-    expect(returned, 6);
+    // Assert — the server counts by status and the sheet shows what it counted. No row is a sum
+    // of others any more, so the number beside «راجع لدى شركة التوصيل» is that status alone.
+    expect(counts.forStatus(OrderStatus.returnedCarrier), 1);
+    expect(counts.forStatus(OrderStatus.ready), 9);
+    // Absent from the response is zero, not blank — the same rule the payment rows follow.
+    expect(counts.forStatus(OrderStatus.resend), 0);
+    // «الكل» has no status of its own; it is the total the server sent.
+    expect(counts.forStatus(null), 3);
   });
 
-  test('changing the queue does not refetch the counts', () async {
+  test('changing the status does not refetch the counts', () async {
     // Arrange
     stub(orders: [orderWith()]);
     await cubit.load();
@@ -340,10 +473,10 @@ void main() {
     clearInteractions(repository);
 
     // Act
-    await cubit.showQueue(OrderQueue.ready);
+    await cubit.showStatus(OrderStatus.ready);
     await Future<void>.delayed(Duration.zero);
 
-    // Assert — the numbers describe the unfiltered set, so picking a queue cannot move them.
+    // Assert — the numbers describe the unfiltered set, so picking a status cannot move them.
     verifyNever(
       () => repository.statusCounts(
         search: any(named: 'search'),
@@ -412,6 +545,7 @@ void main() {
       () => repository.orders(
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),

@@ -28,6 +28,24 @@ abstract final class DioClient {
         // 4xx must reach the interceptors and `safeRequest` as a DioException carrying the
         // body — that body is where the API's Arabic message and field errors are.
         validateStatus: (status) => status != null && status >= 200 && status < 300,
+        /*
+         * **`status[]=a&status[]=b`, not `status=a&status=b`.** Dio's default is the second,
+         * and PHP throws all but the last value away — so a filter for four statuses reached
+         * the API as a filter for *one*, and the list came back narrowed to whichever happened
+         * to be sent last.
+         *
+         * That is not a hypothetical. It was caught while the orders filter still offered
+         * *groups*: «رواجع» stood for four statuses ending in `resend`, so the row counted four
+         * orders and showed none of them, and «قيد التنفيذ» was wrong more quietly — it showed
+         * the printing orders and silently dropped the ones being designed. The filter names
+         * single statuses now, but `payment_status` is still ticked several at a time and the
+         * API still takes a list, so the format is what keeps both honest.
+         *
+         * Set on the shared client rather than per request, because every repeatable filter
+         * this API has needs it and the next one will be written by somebody who never met
+         * this bug. `orders_query_format_test.dart` pins the shape.
+         */
+        listFormat: ListFormat.multiCompatible,
       ),
     );
 

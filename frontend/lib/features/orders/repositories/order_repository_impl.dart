@@ -25,6 +25,7 @@ class OrderRepositoryImpl implements OrderRepository {
   Future<Either<Failure, Paginated<Order>>> orders({
     String? search,
     List<String> statuses = const <String>[],
+    List<String> paymentStatuses = const <String>[],
     int? customerId,
     String? from,
     String? to,
@@ -40,8 +41,12 @@ class OrderRepositoryImpl implements OrderRepository {
           // Omitted rather than sent as null: a null in a query string becomes the literal
           // "null" and the API would filter on it.
           if (search != null && search.isNotEmpty) 'search': search,
-          // Repeated, because a queue is several statuses at once — «رواجع» is three.
+          // Repeated, because the API takes a list: the filter sends one status, but a screen
+          // opened on a fixed question may carry several.
           if (statuses.isNotEmpty) 'status': statuses,
+          // Repeated for the same reason: «أرِني ما لم يُدفع» means unpaid *and* part-paid in
+          // practice, and making somebody run the list twice is how a filter goes unused.
+          if (paymentStatuses.isNotEmpty) 'payment_status': paymentStatuses,
           // The null-aware element: same meaning as the `if` above it, and the form the
           // analyzer asks for when the condition is only a null check.
           'customer_id': ?customerId,
@@ -116,8 +121,7 @@ class OrderRepositoryImpl implements OrderRepository {
             // Omitted entirely when this edit is not about the lines: `items` is the one field
             // whose absence means "leave them alone" rather than "clear them", which is what
             // lets an address be corrected on an order whose lines are already closed.
-            if (lines != null)
-              'items': lines.map((line) => line.toJson()).toList(growable: false),
+            if (lines != null) 'items': lines.map((line) => line.toJson()).toList(growable: false),
           },
         ),
         parse: (data) => Order.fromJson(data as Map<String, dynamic>),
@@ -149,10 +153,7 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
-  Future<Either<Failure, void>> addDesign(
-    int orderId, {
-    required int customerDesignId,
-  }) {
+  Future<Either<Failure, void>> addDesign(int orderId, {required int customerDesignId}) {
     // The response is the version, not the order — and the screen wants the order, whose
     // `available_transitions` may have changed with it. So nothing is parsed here and the
     // caller re-reads.

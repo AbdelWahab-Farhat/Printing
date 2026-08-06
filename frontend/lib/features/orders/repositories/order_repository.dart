@@ -15,9 +15,13 @@ abstract interface class OrderRepository {
   /// [from] and [to] are plain `Y-m-d` days in the *shop's* timezone, and the server turns
   /// each into the instants that day begins and ends. Sending the same date for both is how a
   /// single day is asked for.
+  /// [paymentStatuses] takes the wire values of `PaymentStatus`. It is a **second axis that
+  /// crosses** [statuses] rather than narrowing it — «جاهزة وغير مدفوعة» is a real question, and
+  /// both filters apply at once.
   Future<Either<Failure, Paginated<Order>>> orders({
     String? search,
     List<String> statuses,
+    List<String> paymentStatuses,
     int? customerId,
     String? from,
     String? to,
@@ -29,6 +33,9 @@ abstract interface class OrderRepository {
   ///
   /// Deliberately takes the search but not the statuses: counts narrowed to the queue already
   /// chosen would every one of them read as that queue's own length.
+  ///
+  /// Answers with **both** axes — how many orders sit in each status, and how many stand unpaid,
+  /// part-paid, paid and overpaid. One request, because the filter sheet shows them together.
   Future<Either<Failure, OrderCounts>> statusCounts({String? search, int? customerId});
 
   Future<Either<Failure, Order>> order(int orderId);

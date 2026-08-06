@@ -63,7 +63,7 @@ enum OrderStatus: string
     /** Physically back on our shelf. */
     case ReturnedOffice = 'returned_office';
 
-    /** Off the shelf and going out a second time. */
+    /** Going out a second time — off our shelf, or from the carrier's depot without coming back. */
     case Resend = 'resend';
 
     case Cancelled = 'cancelled';
@@ -141,7 +141,15 @@ enum OrderStatus: string
 
             self::ReturnedCourier => [self::ReturnedCarrier],
 
-            self::ReturnedCarrier => [self::ReturnedOffice],
+            // **Coming home is one link at a time; going out again is not.** A parcel sitting at
+            // the delivery company's depot is most often waiting on nothing more than the
+            // customer answering their phone, and the company then goes out with it a second
+            // time — the van never comes to us. Making that trip pass through «راجع مكتب» would
+            // have staff record the parcel onto a shelf it never reached in order to describe a
+            // second attempt that was never interrupted, which is the same lie the chain exists
+            // to prevent, told in the other direction. «راجع مكتب» stays for the parcel that
+            // genuinely does come back.
+            self::ReturnedCarrier => [self::ReturnedOffice, self::Resend],
 
             // Back on our shelf, and three real endings: the customer comes in for it, it goes
             // out again, or it is written off.

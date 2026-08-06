@@ -100,6 +100,17 @@ enum AppPermission {
   resendOrders('orders.status.resend', 'إعادة إرسال طلبية راجعة'),
   cancelOrders('orders.status.cancelled', 'إلغاء الطلبية'),
 
+  // The money ledger on an order. Three, and the split that matters is the third: money going
+  // *out* — refunded to the customer, or an entry cancelled as a mistake — is a different
+  // decision from money coming in. Taking a deposit is a receptionist's daily work; putting a
+  // hand back into the drawer belongs to whoever answers for it.
+  //
+  // Viewing is separate from `orders.view`, so the person printing the bags sees the order and
+  // not what the customer has paid.
+  viewOrderPayments('orders.payments.view', 'عرض دفعات الطلبية'),
+  recordOrderPayments('orders.payments.record', 'تسجيل دفعة على الطلبية'),
+  reverseOrderPayments('orders.payments.reverse', 'إلغاء دفعة أو ردّ مبلغ'),
+
   // The audit trail. One permission, not a pair: nothing writes to it by hand.
   viewActivityLogs('logs.view', 'عرض سجل النشاطات');
 

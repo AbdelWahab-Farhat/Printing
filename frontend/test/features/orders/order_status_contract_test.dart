@@ -7,9 +7,14 @@ import 'package:printing/features/orders/models/order_status.dart';
 ///
 /// A single order always shows the server's own `status_label`, so it cannot drift. What *can*
 /// drift is this app's two hand-copies of the same vocabulary: [OrderStatus]'s wire values, and
-/// the Arabic on the queue chips above the list. Both were typed here by hand, in a different
-/// language, with no compiler watching either side — which is how «ملغاة» and «ملغاة كلياً»
-/// ended up being the same status under two names in two places.
+/// the Arabic the filter sheet prints beside each row. Both were typed here by hand, in a
+/// different language, with no compiler watching either side — which is how «ملغاة» and «ملغاة
+/// كلياً» ended up being the same status under two names in two places.
+///
+/// **Every status is checked, not just some.** The sheet used to offer *groups* — «قيد التنفيذ»
+/// for two statuses, «رواجع» for four — and a group was allowed a name of its own, so only the
+/// rows standing for exactly one status could be compared. Now that the filter names the real
+/// statuses, every word on it has a counterpart over there and every one of them is pinned.
 ///
 /// So this test reads the PHP enum. Both repositories live in one workspace, which makes it
 /// free — and when the backend is not checked out it **skips** rather than fails, so a
@@ -87,7 +92,7 @@ void main() {
     );
   });
 
-  test('a queue that names one status uses that status own word for it', () {
+  test('every status the filter offers uses the server own word for it', () {
     // Arrange
     if (!source.existsSync()) {
       markTestSkipped('backend not checked out beside this one — nothing to compare against');
@@ -104,18 +109,33 @@ void main() {
       for (final entry in label.entries) ?wire[entry.key]: entry.value,
     };
 
-    // Act — only the chips that stand for exactly one status. «قيد التنفيذ», «عند العميل» and
-    // «رواجع» name *groups*, and a group is allowed a name of its own: staff think in queues,
-    // which is the whole reason those three exist.
-    final single = OrderQueue.values.where((queue) => queue.statuses.length == 1);
+    // Act
+    final offered = OrderStatus.filterable;
 
-    // Assert — one status, one word, whether it is read on a chip or on the order itself.
-    for (final queue in single) {
+    // Assert — one status, one word, whether it is read in the filter or on the order itself.
+    expect(offered, isNotEmpty);
+    for (final status in offered) {
       expect(
-        queue.label,
-        serverWords[queue.statuses.single.wire],
-        reason: 'the «${queue.label}» chip calls one status something the server does not',
+        status.label,
+        serverWords[status.wire],
+        reason: 'the filter calls «${status.wire}» something the server does not',
       );
     }
+  });
+
+  test('the filter offers every real status and nothing else', () {
+    // Act
+    final offered = OrderStatus.filterable;
+
+    // Assert — a status missing from the sheet is a queue nobody can reach, and «unknown» is
+    // this app's own invention: sending it as a filter would ask the server for a status it has
+    // never defined.
+    expect(offered, isNot(contains(OrderStatus.unknown)));
+    expect(
+      offered.toSet(),
+      OrderStatus.values.toSet().difference({OrderStatus.unknown}),
+    );
+    // The machine's own order, so the sheet reads as the route an order takes.
+    expect(offered, OrderStatus.values.where((s) => s != OrderStatus.unknown).toList());
   });
 }

@@ -115,6 +115,20 @@ abstract final class OrderEndpoints {
 
   static String reviewDesign(int orderId, int designId) =>
       '/orders/$orderId/designs/$designId/review';
+
+  /// An order's money ledger. A GET to read it, a POST to add to it — and **nothing that
+  /// updates or deletes an entry**, because the API has no such route: a mistake is undone by
+  /// [reversePayment] below, which writes a second entry beside the wrong one.
+  static String payments(int orderId) => '/orders/$orderId/payments';
+
+  /// Money handed back to the customer. Its own path rather than a `type` on [payments],
+  /// because the API models them as two different acts — a refund is a cash event a report
+  /// should count, and a cancelled entry is not.
+  static String refundPayment(int orderId) => '/orders/$orderId/payments/refunds';
+
+  /// Cancelling an entry that should never have been written.
+  static String reversePayment(int orderId, int paymentId) =>
+      '/orders/$orderId/payments/$paymentId/reverse';
 }
 
 abstract final class CustomerEndpoints {

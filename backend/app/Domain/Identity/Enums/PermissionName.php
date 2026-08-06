@@ -73,6 +73,17 @@ enum PermissionName: string
     case ResendOrders = 'orders.status.resend';
     case CancelOrders = 'orders.status.cancelled';
 
+    // The money ledger on an order. Three, and the split that matters is the third: money going
+    // *out* — a refund to the customer, or an entry cancelled as a mistake — is a different
+    // decision from money coming in. Taking a deposit is a receptionist's daily work; putting a
+    // hand back into the drawer belongs to whoever answers for it.
+    //
+    // Viewing is separate from `orders.view` on purpose: the person printing the bags sees the
+    // order and has no business with what the customer has paid.
+    case ViewOrderPayments = 'orders.payments.view';
+    case RecordOrderPayments = 'orders.payments.record';
+    case ReverseOrderPayments = 'orders.payments.reverse';
+
     // Stock. One pair covers warehouses, balances and the ledger: whoever may move stock between
     // two warehouses is necessarily administering both, so splitting them would produce a
     // permission that cannot usefully be granted alone. Reading is separate because taking an
@@ -118,6 +129,10 @@ enum PermissionName: string
             self::ResendOrders => 'إعادة إرسال طلبية راجعة',
             self::CancelOrders => 'إلغاء الطلبية',
 
+            self::ViewOrderPayments => 'عرض دفعات الطلبية',
+            self::RecordOrderPayments => 'تسجيل دفعة على الطلبية',
+            self::ReverseOrderPayments => 'إلغاء دفعة أو ردّ مبلغ',
+
             self::ViewInventory => 'عرض المخازن والأرصدة والحركات',
             self::ManageInventory => 'إدارة المخازن وتسجيل حركات المخزون',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
@@ -143,6 +158,9 @@ enum PermissionName: string
             self::SettleOrders, self::RecordCourierReturn, self::RecordCarrierReturn,
             self::RecordOfficeReturn, self::ResendOrders,
             self::CancelOrders => 'حالات الطلبيات',
+
+            self::ViewOrderPayments, self::RecordOrderPayments,
+            self::ReverseOrderPayments => 'مدفوعات الطلبيات',
 
             self::ViewInventory, self::ManageInventory => 'المخازن والمخزون',
             self::ViewActivityLogs => 'سجل النشاطات',

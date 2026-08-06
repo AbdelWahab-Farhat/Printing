@@ -221,6 +221,8 @@ result.fold(
 
 - **رسالة الخادم العربية تُعرض كما هي.** استبدالها بـ «حدث خطأ» يرمي معلومة كان الخادم قد تعب في صياغتها.
 - **`errors` من Laravel تُعرض تحت حقولها**، لا كـ toast واحد — وهذا سبب إرسالها منفصلة أصلاً.
+- **ولا واحدة منها تُبتلع.** الشاشة التي تُخفي رسالة حقل لا مربّع لها تترك المستخدم يضغط «حفظ» على نموذج يبدو أنه لا يفعل شيئاً. القاعدة: ما له مربّع يُعلَّق تحته، وما تبقّى يذهب إلى `context.showFailure(failure)` — و`Failure.details` يحمل بقية رسائل `errors` في السطر الثاني من الـ toast تلقائياً. لذلك **اشترط غياب أخطاء الحقول التي تعرضها أنت بالاسم** (`nameError == null && …`) لا غياب `fieldErrors` كلها.
+- **التوست الواحد: الرفض يزيح، والنجاح ينتظر.** رسالة واحدة على الشاشة في كل لحظة، ومن يبقى تحدده النوع لا الأسبقية — `error`/`warning` تحلّ محلّ الموجود، و`success`/`info` تتنازل له. «تم الحفظ» ما زالت تنزلق خارجاً حين يصل رفض الخادم بعدها بثلث ثانية، وضياع الرفض يكلّف المستخدم عمله بينما ضياع «تم الحفظ» لا يكلّف شيئاً. مضبوط في [app_snackbar.dart](lib/core/widgets/app_snackbar.dart) ومثبَّت باختبارات — **لا تمرّر `keepCurrent` يدوياً** إلا لسبب تكتبه.
 
 ---
 
@@ -237,6 +239,9 @@ result.fold(
 4. **`Dio` واحد من `GetIt`.** `Dio()` جديد داخل data source يفقد التوكن والمهل والتسجيل بصمت.
 5. **معاملات فارغة تُحذف لا تُرسل null** — `null` في query string يصبح النص `"null"`.
 6. **العقد الحي هو مواصفة OpenAPI**: شغّل الباك إند وافتح `http://localhost:8000/docs/api`. إن اختلف كودنا عنها، فالمواصفة على حق.
+7. **الفلتر المتكرِّر يُرسَل `key[]=` لا `key=` مكرَّرة** — مضبوط مرة واحدة في [dio_client.dart](lib/core/network/dio_client.dart) بـ`listFormat: ListFormat.multiCompatible`، **لا تُزله**.
+
+   > صيغة Dio الافتراضية تكتب `status=a&status=b`، وPHP **يرمي كل القيم إلا الأخيرة**. النتيجة عطلٌ صامت: طابور «رواجع» يغطي أربع حالات آخرها `resend`، فكان يَعُدّ أربع طلبيات ويعرض صفراً — والطابوران قبله كانا يخطئان بهدوء أكبر، إذ يعرض «قيد التنفيذ» طلبيات الطباعة ويُسقِط التصميم بلا أن يقول شيئاً. يثبّت الشكلَ [orders_query_format_test.dart](test/features/orders/orders_query_format_test.dart)، ومنه اختبارٌ يقرأ ملف العميل نفسه.
 
 ### البيئات
 
@@ -253,6 +258,7 @@ result.fold(
 
 - **`context.colorScheme` دائماً** ([context_extensions.dart](lib/core/utils/context_extensions.dart)). **لا `Color(0xff…)` ثابت** — الثيم يتغير والألوان المكتوبة يدوياً لا.
 - **الثيم مولّد** من Material Theme Builder في [core/theme/](lib/core/theme/) — يُستبدل كاملاً عند تغيير اللوحة، ولذلك هو مستثنى من الـ linter ولا يُحرَّر يدوياً.
+- **الاستثناء الوحيد للقاعدة أعلاه: [app_tones.dart](lib/core/theme/app_tones.dart)** — ماتيريال ٣ لا يملك دور «نجاح»، فأخضر «مدفوعة بالكامل» معرَّف هناك مرة واحدة (`scheme.paid` / `paidContainer` / `onPaidContainer`) بالوضعين الفاتح والداكن. **لونٌ جديد يُضاف هناك لا في الويدجت**، وخارج `core/theme/` تبقى القاعدة: لا هكس في شاشة.
 - **الأيقونات من [AppIcons](lib/core/utils/app_icons.dart) دائماً** — `Icons.*` أو `CupertinoIcons.*` مباشرة في شاشة ممنوع. أندرويد يأخذ مجموعة Material وiOS يأخذ Cupertino، والقرار في مكان واحد: أيقونة iOS في يد مستخدم أندرويد تُقرأ قبل أن تُفهم.
 - **`.w` / `.h` / `.sp`** من ScreenUtil للأبعاد.
 - **`withValues(alpha:)` لا `withOpacity()`** (Material 3).
@@ -266,6 +272,7 @@ result.fold(
 |---|---|
 | [`AppButton`](lib/core/widgets/app_button.dart) | **كل زر في الشاشات.** `AppButton` للإجراء الرئيسي، `.tonal` للمساند، `.outlined` للخروج |
 | [`AppTextField`](lib/core/widgets/app_text_field.dart) | كل حقل إدخال — و`.password` لكلمة المرور بزر الإظهار |
+| [`AppDropdown<T>`](lib/core/widgets/app_dropdown.dart) | **كل قائمة منسدلة، ولأي مودل.** تأخذ `items` و`labelOf`، و`keyOf` لمودل بلا مساواة قيمية، و`placeholder` حين يكون «غير محدد» جواباً حقيقياً |
 | `showCustomSnackBar` / `context.showSuccess` / `context.showError` / `context.showFailure` | الرسائل |
 | `showCustomDialog` | تأكيد |
 | `showDestructiveDialog` | تأكيد حذف — زر أحمر، ولا إغلاق بالنقر خارجاً |

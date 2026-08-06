@@ -81,8 +81,11 @@ import 'package:printing/features/orders/models/orders_filter.dart';
 import 'package:printing/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
+import 'package:printing/features/orders/presentation/viewmodel/order_payments_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_status_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/orders_cubit.dart';
+import 'package:printing/features/orders/repositories/order_payment_repository.dart';
+import 'package:printing/features/orders/repositories/order_payment_repository_impl.dart';
 import 'package:printing/features/orders/repositories/order_repository.dart';
 import 'package:printing/features/orders/repositories/order_repository_impl.dart';
 import 'package:printing/features/orders/usecases/change_order_status.dart';
@@ -90,6 +93,7 @@ import 'package:printing/features/orders/usecases/get_order.dart';
 import 'package:printing/features/orders/usecases/get_order_counts.dart';
 import 'package:printing/features/orders/usecases/get_orders.dart';
 import 'package:printing/features/orders/usecases/manage_order_designs.dart';
+import 'package:printing/features/orders/usecases/manage_order_payments.dart';
 import 'package:printing/features/orders/usecases/update_order_invoice.dart';
 import 'package:printing/features/products/presentation/viewmodel/add_product_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/product_detail_cubit.dart';
@@ -404,6 +408,24 @@ abstract final class Injector {
       ..registerLazySingleton<ReviewOrderDesign>(
         () => ReviewOrderDesign(sl<OrderRepository>()),
       )
+      // An order's money. Its own repository rather than four more methods on the one above,
+      // because it is guarded by its own permissions: a screen allowed to read an order is not
+      // thereby allowed to read what the customer has paid.
+      ..registerLazySingleton<OrderPaymentRepository>(
+        () => OrderPaymentRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetOrderLedger>(
+        () => GetOrderLedger(sl<OrderPaymentRepository>()),
+      )
+      ..registerLazySingleton<RecordOrderPayment>(
+        () => RecordOrderPayment(sl<OrderPaymentRepository>()),
+      )
+      ..registerLazySingleton<RefundOrderPayment>(
+        () => RefundOrderPayment(sl<OrderPaymentRepository>()),
+      )
+      ..registerLazySingleton<ReverseOrderPayment>(
+        () => ReverseOrderPayment(sl<OrderPaymentRepository>()),
+      )
       // Factory: the list screen owns its Cubit and closes it on dispose.
       // Parameterised on the question it answers: this screen is *about* one filter, so it is
       // a construction argument rather than something the Cubit is told afterwards.
@@ -424,6 +446,18 @@ abstract final class Injector {
         (order, _) => OrderInvoiceCubit(
           order: order,
           updateInvoice: sl<UpdateOrderInvoice>(),
+        ),
+      )
+      // Parameterised on the order's id, like the detail Cubit beside it and for the same
+      // reason: this one is *about* one order's ledger, and a singleton would close on the
+      // first order and leave every one after it emitting into a dead stream.
+      ..registerFactoryParam<OrderPaymentsCubit, int, void>(
+        (orderId, _) => OrderPaymentsCubit(
+          orderId: orderId,
+          getLedger: sl<GetOrderLedger>(),
+          recordPayment: sl<RecordOrderPayment>(),
+          refundPayment: sl<RefundOrderPayment>(),
+          reversePayment: sl<ReverseOrderPayment>(),
         ),
       )
       ..registerFactoryParam<OrderDetailCubit, int, void>(

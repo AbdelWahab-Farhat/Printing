@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Domain\Order\Queries\Concerns;
 
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Queries\OrderFilters;
 use App\Domain\Order\Queries\OrderSearchKind;
 use App\Domain\Order\Queries\OrderSearchTerm;
+use App\Domain\Order\Support\PaymentStatusExpression;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -44,6 +46,10 @@ trait FiltersOrders
                     array_map(fn (OrderStatus $s) => $s->value, $filters->statuses),
                 ),
             )
+            ->when(
+                $filters->paymentStatuses !== null,
+                fn (Builder $q) => $this->applyPaymentStatuses($q, $filters->paymentStatuses),
+            )
             ->when($filters->customerId !== null, fn (Builder $q) => $q->where('customer_id', $filters->customerId))
             ->when($filters->cityId !== null, fn (Builder $q) => $q->where('city_id', $filters->cityId))
             // **`placed_at`, in the shop's own timezone, and both of those matter.**
@@ -59,6 +65,28 @@ trait FiltersOrders
             // every day. The day is turned into a pair of UTC instants instead.
             ->when($filters->from !== null, fn (Builder $q) => $q->where('placed_at', '>=', $this->dayStart($filters->from)))
             ->when($filters->to !== null, fn (Builder $q) => $q->where('placed_at', '<=', $this->dayEnd($filters->to)));
+    }
+
+    /**
+     * Narrows to orders standing in any of the given payment states.
+     *
+     * **There is no `payment_status` column to compare against** — see {@see PaymentStatus} for
+     * why storing one would rot the first time an order's total moved — so the state is computed
+     * in SQL by {@see PaymentStatusExpression}, which the counts query groups by as well. One
+     * expression, two callers, no chance of the list and the number beside it disagreeing.
+     *
+     * @param  Builder<Order>  $query
+     * @param  list<PaymentStatus>  $statuses
+     */
+    private function applyPaymentStatuses(Builder $query, array $statuses): void
+    {
+        $wires = array_map(fn (PaymentStatus $status) => $status->value, $statuses);
+        $placeholders = implode(', ', array_fill(0, count($wires), '?'));
+
+        // Bound, never interpolated: the values come from an enum here, and a raw fragment that
+        // is safe only because of where today's caller happens to get its input is a habit that
+        // outlives the caller.
+        $query->whereRaw('('.PaymentStatusExpression::sql().") IN ({$placeholders})", $wires);
     }
 
     /** The first instant of that local day, as UTC. */

@@ -28,15 +28,13 @@ class FilteredOrdersCubit extends PagedCubit<Order> {
   final OrdersFilter _filter;
 
   @override
-  Future<Either<Failure, Paginated<Order>>> fetchPage({
-    String? search,
-    required int page,
-  }) {
+  Future<Either<Failure, Paginated<Order>>> fetchPage({String? search, required int page}) {
     // The filter rides along with every page, including the ones `loadMore` asks for: page two
     // of «نواقص» must not arrive as page two of everything.
     return _getOrders(
       search: search,
       statuses: _filter.statuses,
+      paymentStatuses: _filter.paymentStatuses,
       from: _filter.from,
       to: _filter.to,
       page: page,
@@ -52,7 +50,12 @@ class FilteredOrdersCubit extends PagedCubit<Order> {
     final current = state;
     if (current is! PagedLoaded<Order>) return;
 
-    final belongs = _filter.statuses.isEmpty || _filter.statuses.contains(updated.status.wire);
+    // Both axes, for the reason above: an order paid off while this screen is showing «غير
+    // مدفوعة» should leave it, exactly as a resolved «نواقص» does.
+    final belongs =
+        (_filter.statuses.isEmpty || _filter.statuses.contains(updated.status.wire)) &&
+        (_filter.paymentStatuses.isEmpty ||
+            _filter.paymentStatuses.contains(updated.paymentStatus.wire));
 
     emit(
       current.copyWith(

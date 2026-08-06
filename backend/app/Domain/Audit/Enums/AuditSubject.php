@@ -23,6 +23,7 @@ use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
 use App\Domain\Order\Models\OrderItem;
+use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Models\OrderStatusTransition;
 use App\Providers\AppServiceProvider;
 use Illuminate\Database\Eloquent\Model;
@@ -68,6 +69,7 @@ enum AuditSubject: string
     case OrderItem = 'order_item';
     case OrderDesign = 'order_design';
     case OrderStatusTransition = 'order_status_transition';
+    case OrderPayment = 'order_payment';
 
     // Delivery map
     case City = 'city';
@@ -99,6 +101,7 @@ enum AuditSubject: string
             self::OrderItem => OrderItem::class,
             self::OrderDesign => OrderDesign::class,
             self::OrderStatusTransition => OrderStatusTransition::class,
+            self::OrderPayment => OrderPayment::class,
             self::City => City::class,
             self::Region => Region::class,
             self::ShippingCompany => ShippingCompany::class,
@@ -128,6 +131,7 @@ enum AuditSubject: string
             self::OrderItem => 'بند طلبية',
             self::OrderDesign => 'تصميم طلبية',
             self::OrderStatusTransition => 'انتقال حالة طلبية',
+            self::OrderPayment => 'دفعة طلبية',
             self::City => 'مدينة',
             self::Region => 'منطقة',
             self::ShippingCompany => 'شركة توصيل',

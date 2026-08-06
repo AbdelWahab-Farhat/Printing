@@ -58,4 +58,28 @@ extension FailureMessage on Failure {
   /// True when the request may never have reached the server. Callers creating something
   /// should offer "retry" carefully here — see the note on [Failure.network].
   bool get isNetwork => this is NetworkFailure;
+
+  /// The second line: every field message the server sent, one per line.
+  ///
+  /// Null when there is nothing to add — no `errors` map, or a map that only repeats [message],
+  /// which is what an endpoint that sends no envelope message produces once the mapper has
+  /// flattened its errors into one. Saying the same sentence twice in one toast reads as a bug.
+  ///
+  /// A screen with an input to hang these under should render them there instead — that is the
+  /// whole reason the API bothers to key them by field. This is for the screens that have
+  /// nowhere better, and for fields no form on the phone actually shows.
+  String? get details => switch (this) {
+    ServerFailure(:final fieldErrors?) => _joined(fieldErrors, except: message),
+    _ => null,
+  };
+}
+
+String? _joined(Map<String, List<String>> fieldErrors, {required String except}) {
+  final lines = <String>[
+    for (final messages in fieldErrors.values)
+      for (final line in messages)
+        if (line.trim() != except.trim()) line.trim(),
+  ];
+
+  return lines.isEmpty ? null : lines.join('\n');
 }

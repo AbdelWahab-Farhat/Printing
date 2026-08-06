@@ -10,6 +10,7 @@ import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:printing/features/home/presentation/widgets/employee_card.dart';
+import 'package:printing/features/home/presentation/widgets/payment_board.dart';
 import 'package:printing/features/home/presentation/widgets/quick_actions.dart';
 import 'package:printing/features/home/presentation/widgets/status_board.dart';
 import 'package:printing/features/home/presentation/widgets/summary_tiles.dart';
@@ -68,11 +69,25 @@ class _HomeView extends StatelessWidget {
                 ),
                 onMonth: () => _openOrders(
                   context,
-                  OrdersFilter(
-                    title: 'طلبات هذا الشهر',
-                    from: _firstOfMonth,
-                    to: _today,
-                  ),
+                  OrdersFilter(title: 'طلبات هذا الشهر', from: _firstOfMonth, to: _today),
+                ),
+              ),
+              SizedBox(height: 24.h),
+              // **The money first, above the statuses.** It sat under fourteen status cards to
+              // begin with, which meant the question the shop opens this screen to ask — «كم
+              // طلبية لم تُدفع» — was two screens of scrolling away. Three cards ahead of
+              // fourteen also reads better than the other way round.
+              //
+              // **Its own board, not three more status cards**, because the two axes cross: an
+              // order can be finished and unpaid, or paid before it is printed, so this is
+              // unanswerable from the statuses however they are arranged.
+              PaymentBoard(
+                payments: summary.payments,
+                onOpen: (payment) => _openOrders(
+                  context,
+                  // The *payment* axis, so a card reading «غير مدفوعة ١٢» opens every unpaid
+                  // order whatever stage each is at — which is what the number counted.
+                  OrdersFilter(title: payment.label, paymentStatuses: [payment.status]),
                 ),
               ),
               SizedBox(height: 24.h),
@@ -93,10 +108,10 @@ class _HomeView extends StatelessWidget {
   }
 
   void _openOrders(BuildContext context, OrdersFilter filter) {
-    // Pushed over the shell rather than switching to the orders tab: the tab's chips are
-    // *groups* — «رواجع» is four statuses — so selecting one would show a list longer than the
-    // number that was tapped, and a card that opens a screen contradicting it is worse than a
-    // card that does nothing.
+    // Pushed over the shell rather than switching to the orders tab: this screen shows exactly
+    // what the card counted and titles itself with the card's own word, and the date cards
+    // («طلبات اليوم») carry no status for the tab's filter to hold at all. A card that opens a
+    // screen contradicting it is worse than a card that does nothing.
     context.push(Routes.ordersFiltered, extra: filter);
   }
 
@@ -159,18 +174,26 @@ class _HomeSkeleton extends StatelessWidget {
         SizedBox(height: 20.h),
         Row(
           children: [
-            Expanded(child: _SkeletonBox(height: 76.h, radius: 20.r)),
+            Expanded(
+              child: _SkeletonBox(height: 76.h, radius: 20.r),
+            ),
             SizedBox(width: 12.w),
-            Expanded(child: _SkeletonBox(height: 76.h, radius: 20.r)),
+            Expanded(
+              child: _SkeletonBox(height: 76.h, radius: 20.r),
+            ),
           ],
         ),
         SizedBox(height: 20.h),
         for (var row = 0; row < 2; row++) ...[
           Row(
             children: [
-              Expanded(child: _SkeletonBox(height: 96.h, radius: 20.r)),
+              Expanded(
+                child: _SkeletonBox(height: 96.h, radius: 20.r),
+              ),
               SizedBox(width: 12.w),
-              Expanded(child: _SkeletonBox(height: 96.h, radius: 20.r)),
+              Expanded(
+                child: _SkeletonBox(height: 96.h, radius: 20.r),
+              ),
             ],
           ),
           SizedBox(height: 12.h),

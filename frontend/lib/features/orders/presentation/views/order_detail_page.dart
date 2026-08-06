@@ -12,9 +12,11 @@ import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_speed_dial.dart';
 import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/orders/models/order.dart';
+import 'package:printing/features/orders/models/order_payment.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:printing/features/orders/presentation/widgets/order_customer_card.dart';
 import 'package:printing/features/orders/presentation/widgets/order_designs_section.dart';
+import 'package:printing/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:printing/features/orders/presentation/widgets/order_status_bar.dart';
 import 'package:printing/features/orders/presentation/widgets/order_timeline.dart';
 import 'package:printing/features/orders/presentation/widgets/order_totals.dart';
@@ -41,6 +43,9 @@ class OrderDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // No ledger Cubit here: the entries live on their own screen, behind their own permission,
+    // and this one never reads them. What it shows of the money — the three numbers in the
+    // header — travels on the order's own payload.
     return BlocProvider<OrderDetailCubit>(
       create: (_) => sl<OrderDetailCubit>(param1: orderId)..load(),
       child: const _OrderDetailView(),
@@ -84,6 +89,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               order: order,
               onChangeStatus: _changeStatus,
               onEdit: _edit,
+              onOpenPayments: _openPayments,
             );
           },
         ),
@@ -147,6 +153,29 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     if (updated != null) setState(() => _moved = updated);
   }
 
+  /// Hands the money to its own screen, and re-reads whatever it changed.
+  ///
+  /// Re-read rather than trusting a result: `paid_amount`, `remaining_amount` and
+  /// `payment_status` live on the **order's** payload — they are what the three numbers at the
+  /// top of this screen draw — and the ledger's page has no way to hand those back. Kept as
+  /// `_moved` too, so backing out gives the list behind a row whose total is current.
+  Future<void> _openPayments(BuildContext context) async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final changed = await context.push<bool>(Routes.orderPayments(order.id), extra: order.code);
+
+    if (changed != true || !mounted) return;
+
+    await cubit.load();
+
+    if (!mounted) return;
+
+    final updated = cubit.state.order;
+    if (updated != null) setState(() => _moved = updated);
+  }
+
   /// Opens the customer's own screen.
   ///
   /// The order carries the id whether or not the customer object came with it, so this works on
@@ -180,7 +209,6 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     cubit.replace(moved);
     setState(() => _moved = moved);
   }
-
 }
 
 class _Body extends StatelessWidget {
@@ -227,10 +255,16 @@ class _Body extends StatelessWidget {
         _Destination(order: order),
         SizedBox(height: 16.h),
         if (order.items != null && order.items!.isNotEmpty) ...[
-          _Section(title: 'البنود', child: _Items(items: order.items!)),
+          _Section(
+            title: 'البنود',
+            child: _Items(items: order.items!),
+          ),
           SizedBox(height: 16.h),
         ],
-        _Section(title: 'الحساب', child: OrderTotals(order: order)),
+        _Section(
+          title: 'الحساب',
+          child: OrderTotals(order: order),
+        ),
         // Shown even when no version exists yet, because that is exactly the order somebody
         // opens this screen to add one to. Any order may carry artwork — `design_source` says
         // whose work it was, which is a question about money, not about whether there is a file.
@@ -274,27 +308,23 @@ class _Header extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              // Named now that it stands alone. It shared this line with the status chip, which
-              // said what the big number was by standing next to it; the status has the bar
-              // above, so the total has to introduce itself.
-              Text(
-                'الإجمالي',
-                style: context.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                order.grandTotal,
-                style: context.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: scheme.primary,
-                ),
-              ),
-            ],
+          // **Three numbers where «الإجمالي» used to stand alone.** The total on its own
+          // answered one question; what it cost, what has been paid and what is left answer
+          // the same one completely — and printing the total here *as well* would put the
+          // order's value on this screen twice.
+          //
+          // Built from the order rather than from the ledger's Cubit: these three travel with
+          // the order itself, so they are right for a reader who is not allowed to see the
+          // entries behind them.
+          OrderMoneyRow(
+            summary: PaymentSummary(
+              grandTotal: order.grandTotal,
+              paidAmount: order.paidAmount,
+              remainingAmount: order.remainingAmount,
+              paymentStatus: order.paymentStatus,
+              paymentStatusLabel: order.paymentStatusLabel,
+              hasUnrecordedMoney: order.hasUnrecordedMoney,
+            ),
           ),
           // Only ever present when it disagrees with the total above — that is the whole reason
           // the server records it — so it is drawn as a discrepancy rather than as a second
@@ -335,9 +365,7 @@ class _Header extends StatelessWidget {
               ),
               child: Text(
                 'سبب الإلغاء: $reason',
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onErrorContainer,
-                ),
+                style: context.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer),
               ),
             ),
           ],
@@ -360,11 +388,13 @@ class _Actions extends StatelessWidget {
     required this.order,
     required this.onChangeStatus,
     required this.onEdit,
+    required this.onOpenPayments,
   });
 
   final Order order;
   final Future<void> Function(BuildContext context) onChangeStatus;
   final Future<void> Function(BuildContext context) onEdit;
+  final Future<void> Function(BuildContext context) onOpenPayments;
 
   /// Whether «تعديل الطلبية» has anything at all to offer this person.
   ///
@@ -376,8 +406,7 @@ class _Actions extends StatelessWidget {
   bool get _mayEditSomething =>
       (order.itemsAreEditable && sl<Session>().can(AppPermission.manageOrders)) ||
       (order.destinationIsEditable && sl<Session>().can(AppPermission.manageOrders)) ||
-      (order.designsAreEditable &&
-          sl<Session>().can(AppPermission.manageOrderDesigns));
+      (order.designsAreEditable && sl<Session>().can(AppPermission.manageOrderDesigns));
 
   @override
   Widget build(BuildContext context) {
@@ -403,11 +432,17 @@ class _Actions extends StatelessWidget {
         // *either*: a clerk holds `orders.manage` and a designer holds `orders.designs.manage`,
         // and each has something to do there the other has not.
         if (_mayEditSomething)
-          AppAction(
-            label: 'تعديل الطلبية',
-            icon: AppIcons.edit,
-            onTap: onEdit,
-          ),
+          AppAction(label: 'تعديل الطلبية', icon: AppIcons.edit, onTap: onEdit),
+
+        // Its own screen, because a ledger gets long — see [OrderPaymentsPage]. The three
+        // numbers stay at the top of *this* screen, so somebody checking «كم بقي» never has to
+        // open it; the arm is for the people who write to the ledger and read its history.
+        AppAction(
+          label: 'الدفعات',
+          icon: AppIcons.payment,
+          permission: AppPermission.viewOrderPayments,
+          onTap: onOpenPayments,
+        ),
 
         AppAction(
           label: 'سجل التعديلات',
@@ -415,13 +450,11 @@ class _Actions extends StatelessWidget {
           // `logs.view`, not `orders.view`, and that is the server's own line: a history shows
           // what everyone has done, including prices the reader may have no other way to see.
           permission: AppPermission.viewActivityLogs,
-          onTap: (context) =>
-              context.push(Routes.activityLog(AuditSubject.order, order.id)),
+          onTap: (context) => context.push(Routes.activityLog(AuditSubject.order, order.id)),
         ),
       ],
     );
   }
-
 }
 
 class _Destination extends StatelessWidget {
@@ -486,9 +519,7 @@ class _Items extends StatelessWidget {
                     children: [
                       Text(
                         '${item.productName} — ${item.variantLabel}',
-                        style: context.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       SizedBox(height: 2.h),
                       Text(
@@ -517,9 +548,7 @@ class _Items extends StatelessWidget {
                 SizedBox(width: 8.w),
                 Text(
                   item.lineTotal,
-                  style: context.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -584,13 +613,9 @@ class _Row extends StatelessWidget {
           SizedBox(width: 10.w),
           Text(
             '$label: ',
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
           ),
-          Expanded(
-            child: Text(value, style: context.textTheme.bodyMedium),
-          ),
+          Expanded(child: Text(value, style: context.textTheme.bodyMedium)),
         ],
       ),
     );
@@ -644,9 +669,7 @@ class _FailureView extends StatelessWidget {
               // The server's own Arabic: it usually says what to do about it.
               message,
               textAlign: TextAlign.center,
-              style: context.textTheme.bodyLarge?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: context.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
             ),
             SizedBox(height: 20.h),
             AppButton.tonal(label: 'إعادة المحاولة', onPressed: onRetry),

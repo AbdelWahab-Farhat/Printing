@@ -19,7 +19,14 @@ mixin _$HomeSummary {
 ///
 /// A list, not a field per status, because the set of statuses is the business's to change:
 /// adding "بانتظار الطباعة" should be a row from the server, not a release of the app.
- List<OrderStatusCount> get statuses;
+ List<OrderStatusCount> get statuses;/// Where the money stands, one row per payment state.
+///
+/// **A second axis beside [statuses], not a slice of it.** An order can be finished and
+/// unpaid, or paid before it is printed, so «كم طلبية لم تُدفع» is unanswerable from the
+/// counts above — which is why it arrives as its own list rather than as another status.
+///
+/// Defaulted, so a build of the API that predates payments still parses.
+ List<OrderStatusCount> get payments;
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -32,16 +39,16 @@ $HomeSummaryCopyWith<HomeSummary> get copyWith => _$HomeSummaryCopyWithImpl<Home
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other.statuses, statuses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other.statuses, statuses)&&const DeepCollectionEquality().equals(other.payments, payments));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(statuses));
+int get hashCode => Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(statuses),const DeepCollectionEquality().hash(payments));
 
 @override
 String toString() {
-  return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses)';
+  return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses, payments: $payments)';
 }
 
 
@@ -52,7 +59,7 @@ abstract mixin class $HomeSummaryCopyWith<$Res>  {
   factory $HomeSummaryCopyWith(HomeSummary value, $Res Function(HomeSummary) _then) = _$HomeSummaryCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses
+@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses, List<OrderStatusCount> payments
 });
 
 
@@ -69,13 +76,14 @@ class _$HomeSummaryCopyWithImpl<$Res>
 
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,Object? payments = null,}) {
   return _then(_self.copyWith(
 totalOrders: null == totalOrders ? _self.totalOrders : totalOrders // ignore: cast_nullable_to_non_nullable
 as int,customersCount: null == customersCount ? _self.customersCount : customersCount // ignore: cast_nullable_to_non_nullable
 as int,dailyOrders: null == dailyOrders ? _self.dailyOrders : dailyOrders // ignore: cast_nullable_to_non_nullable
 as int,monthlyOrders: null == monthlyOrders ? _self.monthlyOrders : monthlyOrders // ignore: cast_nullable_to_non_nullable
 as int,statuses: null == statuses ? _self.statuses : statuses // ignore: cast_nullable_to_non_nullable
+as List<OrderStatusCount>,payments: null == payments ? _self.payments : payments // ignore: cast_nullable_to_non_nullable
 as List<OrderStatusCount>,
   ));
 }
@@ -161,10 +169,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HomeSummary() when $default != null:
-return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses);case _:
+return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments);case _:
   return orElse();
 
 }
@@ -182,10 +190,10 @@ return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.m
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments)  $default,) {final _that = this;
 switch (_that) {
 case _HomeSummary():
-return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses);case _:
+return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +210,10 @@ return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.m
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments)?  $default,) {final _that = this;
 switch (_that) {
 case _HomeSummary() when $default != null:
-return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses);case _:
+return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments);case _:
   return null;
 
 }
@@ -217,7 +225,7 @@ return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.m
 @JsonSerializable()
 
 class _HomeSummary extends HomeSummary {
-  const _HomeSummary({@JsonKey(name: 'total_orders') required this.totalOrders, @JsonKey(name: 'customers_count') required this.customersCount, @JsonKey(name: 'daily_orders') required this.dailyOrders, @JsonKey(name: 'monthly_orders') required this.monthlyOrders, final  List<OrderStatusCount> statuses = const <OrderStatusCount>[]}): _statuses = statuses,super._();
+  const _HomeSummary({@JsonKey(name: 'total_orders') required this.totalOrders, @JsonKey(name: 'customers_count') required this.customersCount, @JsonKey(name: 'daily_orders') required this.dailyOrders, @JsonKey(name: 'monthly_orders') required this.monthlyOrders, final  List<OrderStatusCount> statuses = const <OrderStatusCount>[], final  List<OrderStatusCount> payments = const <OrderStatusCount>[]}): _statuses = statuses,_payments = payments,super._();
   factory _HomeSummary.fromJson(Map<String, dynamic> json) => _$HomeSummaryFromJson(json);
 
 @override@JsonKey(name: 'total_orders') final  int totalOrders;
@@ -239,6 +247,27 @@ class _HomeSummary extends HomeSummary {
   return EqualUnmodifiableListView(_statuses);
 }
 
+/// Where the money stands, one row per payment state.
+///
+/// **A second axis beside [statuses], not a slice of it.** An order can be finished and
+/// unpaid, or paid before it is printed, so «كم طلبية لم تُدفع» is unanswerable from the
+/// counts above — which is why it arrives as its own list rather than as another status.
+///
+/// Defaulted, so a build of the API that predates payments still parses.
+ final  List<OrderStatusCount> _payments;
+/// Where the money stands, one row per payment state.
+///
+/// **A second axis beside [statuses], not a slice of it.** An order can be finished and
+/// unpaid, or paid before it is printed, so «كم طلبية لم تُدفع» is unanswerable from the
+/// counts above — which is why it arrives as its own list rather than as another status.
+///
+/// Defaulted, so a build of the API that predates payments still parses.
+@override@JsonKey() List<OrderStatusCount> get payments {
+  if (_payments is EqualUnmodifiableListView) return _payments;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_payments);
+}
+
 
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
@@ -253,16 +282,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other._statuses, _statuses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other._statuses, _statuses)&&const DeepCollectionEquality().equals(other._payments, _payments));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(_statuses));
+int get hashCode => Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(_statuses),const DeepCollectionEquality().hash(_payments));
 
 @override
 String toString() {
-  return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses)';
+  return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses, payments: $payments)';
 }
 
 
@@ -273,7 +302,7 @@ abstract mixin class _$HomeSummaryCopyWith<$Res> implements $HomeSummaryCopyWith
   factory _$HomeSummaryCopyWith(_HomeSummary value, $Res Function(_HomeSummary) _then) = __$HomeSummaryCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses
+@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses, List<OrderStatusCount> payments
 });
 
 
@@ -290,13 +319,14 @@ class __$HomeSummaryCopyWithImpl<$Res>
 
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,Object? payments = null,}) {
   return _then(_HomeSummary(
 totalOrders: null == totalOrders ? _self.totalOrders : totalOrders // ignore: cast_nullable_to_non_nullable
 as int,customersCount: null == customersCount ? _self.customersCount : customersCount // ignore: cast_nullable_to_non_nullable
 as int,dailyOrders: null == dailyOrders ? _self.dailyOrders : dailyOrders // ignore: cast_nullable_to_non_nullable
 as int,monthlyOrders: null == monthlyOrders ? _self.monthlyOrders : monthlyOrders // ignore: cast_nullable_to_non_nullable
 as int,statuses: null == statuses ? _self._statuses : statuses // ignore: cast_nullable_to_non_nullable
+as List<OrderStatusCount>,payments: null == payments ? _self._payments : payments // ignore: cast_nullable_to_non_nullable
 as List<OrderStatusCount>,
   ));
 }

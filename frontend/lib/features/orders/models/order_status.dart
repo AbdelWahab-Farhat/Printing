@@ -2,55 +2,71 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 /// Where an order is in the workshop, as the app understands it.
 ///
-/// **The app parses this for grouping and colour; it never uses it for the words on screen.**
-/// Every order carries `status_label` from the server, and that is what is rendered. The split
-/// matters: the backend can add a thirteenth status tomorrow and this app will show it with the
+/// **An order on screen always shows the server's `status_label`, never [label].** The split
+/// matters: the backend can add a fifteenth status tomorrow and this app will show it with the
 /// right Arabic and a neutral chip instead of failing to parse the whole list — see [unknown].
+///
+/// [label] exists for the one screen that has no order in hand to read a word from: the filter
+/// sheet, which must name a status that nothing in the list is currently sitting in — that is
+/// the whole point of a row reading zero. `PaymentStatus` carries its own Arabic for exactly the
+/// same reason. `order_status_contract_test.dart` reads `OrderStatus.php` and fails if any word
+/// here drifts from the word over there.
 ///
 /// Mirrors `OrderStatus.php`. The transition *rules* deliberately do not: the server sends
 /// `available_transitions` already narrowed to what the signed-in user may do, so a copy of the
 /// map here would be a second source of truth with nothing keeping it honest.
 enum OrderStatus {
   @JsonValue('new')
-  taken('new'),
+  taken('new', 'جديدة'),
   @JsonValue('designing')
-  designing('designing'),
+  designing('designing', 'قيد التصميم'),
   @JsonValue('printing')
-  printing('printing'),
+  printing('printing', 'قيد الطباعة'),
   @JsonValue('ready')
-  ready('ready'),
+  ready('ready', 'جاهزة'),
   @JsonValue('shortage')
-  shortage('shortage'),
+  shortage('shortage', 'نواقص'),
   @JsonValue('office_pickup')
-  officePickup('office_pickup'),
+  officePickup('office_pickup', 'استلام مكتب'),
   @JsonValue('out_for_delivery')
-  outForDelivery('out_for_delivery'),
+  outForDelivery('out_for_delivery', 'جاري التوصيل'),
   @JsonValue('delivered')
-  delivered('delivered'),
+  delivered('delivered', 'تم الاستلام'),
   @JsonValue('settled')
-  settled('settled'),
+  settled('settled', 'تم التسوية'),
   @JsonValue('returned_courier')
-  returnedCourier('returned_courier'),
+  returnedCourier('returned_courier', 'راجع لدى المندوب'),
   @JsonValue('returned_carrier')
-  returnedCarrier('returned_carrier'),
+  returnedCarrier('returned_carrier', 'راجع لدى شركة التوصيل'),
   @JsonValue('returned_office')
-  returnedOffice('returned_office'),
+  returnedOffice('returned_office', 'راجع مكتب'),
   @JsonValue('resend')
-  resend('resend'),
+  resend('resend', 'إعادة إرسال'),
   @JsonValue('cancelled')
-  cancelled('cancelled'),
+  cancelled('cancelled', 'ملغاة'),
 
   /// A status this build of the app has never heard of.
   ///
   /// Reached through `@JsonKey(unknownEnumValue:)`. Without it, one new status on the server
   /// turns every list containing one order into a parse failure — a whole screen lost to a row
   /// the user could otherwise have read perfectly well, since the label came with it.
-  unknown('unknown');
+  unknown('unknown', 'غير معروفة');
 
-  const OrderStatus(this.wire);
+  const OrderStatus(this.wire, this.label);
 
   /// Exactly the string the API sends.
   final String wire;
+
+  /// The Arabic the filter sheet prints. Never used for an order that is in hand — see the note
+  /// on this enum.
+  final String label;
+
+  /// The rows the filter offers, in the order the state machine walks them.
+  ///
+  /// [unknown] is left out: it is this app's own invention for a status the server added after
+  /// this build shipped, and sending it as a filter would ask for something that does not exist.
+  static List<OrderStatus> get filterable =>
+      values.where((status) => status != OrderStatus.unknown).toList(growable: false);
 
   /// Which family of colours the chip draws from.
   ///
@@ -75,38 +91,20 @@ enum OrderStatus {
 }
 
 /// The four-and-a-bit families a status chip is drawn from.
-enum OrderStatusTone { fresh, working, ready, attention, moving, done, returned, cancelled, neutral }
-
-/// The chips above the orders list.
-///
-/// Not the same list as [OrderStatus], and that is the point: staff think in *queues*, not in
-/// statuses. «قيد التنفيذ» is three statuses and «رواجع» is another three, and asking someone to
-/// tap each one separately to see the work in the workshop would be making them do the grouping
-/// the screen should have done.
-enum OrderQueue {
-  all('الكل', <OrderStatus>[]),
-  taken('جديدة', [OrderStatus.taken]),
-  inProgress('قيد التنفيذ', [OrderStatus.designing, OrderStatus.printing]),
-  ready('جاهزة', [OrderStatus.ready]),
-  shortage('نواقص', [OrderStatus.shortage]),
-  moving('عند العميل', [OrderStatus.officePickup, OrderStatus.outForDelivery]),
-  // A re-send belongs here rather than beside «جاهزة»: the parcel is one that came back, and
-  // the person working this queue is working the shelf of returns.
-  returned('رواجع', [
-    OrderStatus.returnedCourier,
-    OrderStatus.returnedCarrier,
-    OrderStatus.returnedOffice,
-    OrderStatus.resend,
-  ]),
-  delivered('تم الاستلام', [OrderStatus.delivered]),
-  settled('تم التسوية', [OrderStatus.settled]),
-  cancelled('ملغاة', [OrderStatus.cancelled]);
-
-  const OrderQueue(this.label, this.statuses);
-
-  final String label;
-  final List<OrderStatus> statuses;
-
-  /// What goes on the wire as `status[]`. Empty for «الكل», which sends nothing at all.
-  List<String> get wires => statuses.map((s) => s.wire).toList(growable: false);
+enum OrderStatusTone {
+  fresh,
+  working,
+  ready,
+  attention,
+  moving,
+  done,
+  returned,
+  cancelled,
+  neutral,
 }
+
+// The filter used to offer *queues* rather than statuses — «قيد التنفيذ» standing for two,
+// «رواجع» for four — on the reasoning that staff think in groups. It was removed: the words on
+// the sheet were words the rest of the system never uses, so «رواجع ٤» could not be reconciled
+// with any status on any card, and a queue that bundled four statuses made «ما الذي ينتظر عند
+// شركة التوصيل؟» a question the filter could not ask at all. One vocabulary, everywhere.

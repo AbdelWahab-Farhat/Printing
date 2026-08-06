@@ -45,9 +45,16 @@ extension FeedbackX on BuildContext {
 
   /// Renders a [Failure] with the right tone: a dropped connection is a warning the user can
   /// act on by retrying, while a refusal from the server is an error.
+  ///
+  /// **A 422 brings its field messages with it.** Laravel's envelope says «البيانات المدخلة غير
+  /// صحيحة» — which tells the user only that *something* is wrong — and puts the sentence they
+  /// can actually act on in `errors`. A screen with a box to hang that under should do so and
+  /// never reach for this; a screen without one used to drop it on the floor, so the only place
+  /// «اسم الدور يجب أن يكون أحرفاً إنجليزية صغيرة» was ever read was the debug console.
   void showFailure(Failure failure) => unawaitedSnack(
     context: this,
     title: failure.message,
+    subtitle: failure.details,
     type: failure.isNetwork ? SnackType.warning : SnackType.error,
   );
 }

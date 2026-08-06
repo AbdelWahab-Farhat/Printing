@@ -11,13 +11,25 @@ import 'package:flutter/foundation.dart';
 /// travels as `extra` on one route.
 @immutable
 class OrdersFilter {
-  const OrdersFilter({required this.title, this.statuses = const [], this.from, this.to});
+  const OrdersFilter({
+    required this.title,
+    this.statuses = const [],
+    this.paymentStatuses = const [],
+    this.from,
+    this.to,
+  });
 
   /// What to call the answer — «نواقص», «طلبات اليوم».
   final String title;
 
   /// Wire values. Empty means every status.
   final List<String> statuses;
+
+  /// Wire values of `PaymentStatus`. Empty means every one of them.
+  ///
+  /// A **second axis that crosses** [statuses] rather than narrowing it — a card on the home
+  /// screen reading «غير مدفوعة ١٢» opens every unpaid order, whatever stage each is at.
+  final List<String> paymentStatuses;
 
   /// Plain `Y-m-d` days in the shop's timezone; the server decides where each day begins.
   final String? from;
