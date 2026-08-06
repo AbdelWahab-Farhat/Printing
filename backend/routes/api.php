@@ -16,8 +16,10 @@ use App\Application\Api\V1\Controllers\ProductImageController;
 use App\Application\Api\V1\Controllers\RegionController;
 use App\Application\Api\V1\Controllers\RoleController;
 use App\Application\Api\V1\Controllers\ShippingCompanyController;
+use App\Application\Api\V1\Controllers\StockArrivalController;
 use App\Application\Api\V1\Controllers\StockMovementController;
 use App\Application\Api\V1\Controllers\UserController;
+use App\Application\Api\V1\Controllers\VendorController;
 use App\Application\Api\V1\Controllers\WarehouseController;
 use App\Application\Api\V1\Controllers\WarehouseStockController;
 use Illuminate\Support\Facades\Route;
@@ -273,6 +275,22 @@ Route::prefix('v1')->group(function (): void {
             ->middleware('can:cities.manage')
             ->scoped();
 
+        // ── vendors ─────────────────────────────────────────────────────────────────────
+        // Its own permission pair, split from inventory.* for the same reason customers.* is
+        // split from products.*: agreeing terms with a supplier is a different job from
+        // receiving what they sent. No destroy route — a vendor is deactivated, never deleted,
+        // so every shipment already on record keeps pointing at a real row.
+        Route::apiResource('vendors', VendorController::class)
+            ->only(['index', 'show'])
+            ->middleware('can:vendors.view');
+
+        Route::apiResource('vendors', VendorController::class)
+            ->only(['store', 'update'])
+            ->middleware('can:vendors.manage');
+
+        Route::patch('vendors/{vendor}/activation', [VendorController::class, 'setActivation'])
+            ->middleware('can:vendors.manage')->name('vendors.activation');
+
         // ── inventory ───────────────────────────────────────────────────────────────────
         // One pair of permissions covers warehouses, balances and the ledger. Splitting them
         // would produce guards that cannot usefully be granted alone: whoever may transfer
@@ -315,6 +333,19 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('adjustments', [StockMovementController::class, 'adjustments'])->name('adjustments');
             });
 
+        // Stock arrivals: a vendor-linked document with one or more lines, sitting on top of the
+        // ledger above rather than replacing it — each line still posts through
+        // `InventoryService::recordMovement()`. No update or destroy route, the same rule
+        // `stock-movements` follows: a posted arrival is never edited.
+        Route::get('stock-arrivals', [StockArrivalController::class, 'index'])
+            ->middleware('can:inventory.view')->name('stock-arrivals.index');
+
+        Route::post('stock-arrivals', [StockArrivalController::class, 'store'])
+            ->middleware('can:inventory.manage')->name('stock-arrivals.store');
+
+        Route::get('stock-arrivals/{stock_arrival}', [StockArrivalController::class, 'show'])
+            ->middleware('can:inventory.view')->name('stock-arrivals.show');
+
         // ── audit trail ─────────────────────────────────────────────────────────────────
         // Every record's history hangs off the record itself, so `{product}` resolves, 404s
         // and — where a resource is scoped — nests exactly as it does on the endpoint beside
@@ -344,6 +375,11 @@ Route::prefix('v1')->group(function (): void {
             // those are a ledger rather than a change log, and `/stock-movements?warehouse_id=`
             // is the reader built for them.
             Route::get('warehouses/{warehouse}/logs', [WarehouseController::class, 'logs'])->name('warehouses.logs');
+
+            Route::get('vendors/{vendor}/logs', [VendorController::class, 'logs'])->name('vendors.logs');
+
+            Route::get('stock-arrivals/{stock_arrival}/logs', [StockArrivalController::class, 'logs'])
+                ->name('stock-arrivals.logs');
 
             // Scoped like the rest of the nested region routes: another city's region id is a
             // 404 here too, not a history leaked from the wrong place.

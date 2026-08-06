@@ -91,6 +91,13 @@ enum PermissionName: string
     case ViewInventory = 'inventory.view';
     case ManageInventory = 'inventory.manage';
 
+    // Vendors. Its own pair rather than folded into inventory.*: agreeing terms with a supplier
+    // and receiving a shipment they sent are different jobs, the same split customers.* draws
+    // between the person and what they buy. Posting a stock arrival itself stays under
+    // inventory.* — see StockArrivalController — because it is squarely part of the ledger.
+    case ViewVendors = 'vendors.view';
+    case ManageVendors = 'vendors.manage';
+
     // The audit trail. One permission, not a pair: nothing writes to it by hand, so there is
     // nothing to manage — and reading it is its own decision, because it exposes every change
     // anyone has made to records the reader may not otherwise be allowed to see.
@@ -135,6 +142,8 @@ enum PermissionName: string
 
             self::ViewInventory => 'عرض المخازن والأرصدة والحركات',
             self::ManageInventory => 'إدارة المخازن وتسجيل حركات المخزون',
+            self::ViewVendors => 'عرض الموردين',
+            self::ManageVendors => 'إضافة وتعديل الموردين',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
         };
     }
@@ -163,6 +172,7 @@ enum PermissionName: string
             self::ReverseOrderPayments => 'مدفوعات الطلبيات',
 
             self::ViewInventory, self::ManageInventory => 'المخازن والمخزون',
+            self::ViewVendors, self::ManageVendors => 'الموردون',
             self::ViewActivityLogs => 'سجل النشاطات',
         };
     }

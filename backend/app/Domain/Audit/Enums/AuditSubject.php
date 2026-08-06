@@ -25,6 +25,9 @@ use App\Domain\Order\Models\OrderDesign;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Models\OrderStatusTransition;
+use App\Domain\Vendor\Models\StockArrival;
+use App\Domain\Vendor\Models\StockArrivalItem;
+use App\Domain\Vendor\Models\Vendor;
 use App\Providers\AppServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -81,6 +84,11 @@ enum AuditSubject: string
     case WarehouseStock = 'warehouse_stock';
     case StockMovement = 'stock_movement';
 
+    // Vendors
+    case Vendor = 'vendor';
+    case StockArrival = 'stock_arrival';
+    case StockArrivalItem = 'stock_arrival_item';
+
     /**
      * @return class-string<Model>
      */
@@ -108,6 +116,9 @@ enum AuditSubject: string
             self::Warehouse => Warehouse::class,
             self::WarehouseStock => WarehouseStock::class,
             self::StockMovement => StockMovement::class,
+            self::Vendor => Vendor::class,
+            self::StockArrival => StockArrival::class,
+            self::StockArrivalItem => StockArrivalItem::class,
         };
     }
 
@@ -138,6 +149,9 @@ enum AuditSubject: string
             self::Warehouse => 'مخزن',
             self::WarehouseStock => 'رصيد مخزني',
             self::StockMovement => 'حركة مخزنية',
+            self::Vendor => 'مورد',
+            self::StockArrival => 'توريد',
+            self::StockArrivalItem => 'بند توريد',
         };
     }
 
