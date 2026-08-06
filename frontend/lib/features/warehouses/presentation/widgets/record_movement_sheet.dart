@@ -133,10 +133,7 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                 'انقطع الاتصال ولا نعرف إن كانت الحركة قد سُجّلت. راجع سجل الحركات قبل إعادة '
                 'التسجيل.',
               );
-            } else if (state.quantityError == null &&
-                state.warehouseError == null &&
-                state.sourceError == null &&
-                state.variantError == null) {
+            } else if (!state.hasFieldErrors) {
               context.showFailure(failure);
             }
           case _:
@@ -230,9 +227,20 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                   SizedBox(height: 14.h),
                   AppTextField(
                     controller: _notes,
-                    label: 'ملاحظات (اختياري)',
+                    // Required on an adjustment and on nothing else, exactly as the API has it:
+                    // «وجدنا أقل مما في السجل» records nothing until it says why.
+                    label: _kind.isAdjustment ? 'سبب التسوية' : 'ملاحظات (اختياري)',
+                    hint: _kind.isAdjustment ? 'مثال: تلف أثناء التخزين' : null,
                     maxLines: 2,
                     textInputAction: TextInputAction.done,
+                    validator: _kind.isAdjustment
+                        ? Validators.compose([
+                            Validators.required,
+                            Validators.minLength(3),
+                          ])
+                        : null,
+                    errorText: state.notesError,
+                    onChanged: (_) => context.read<RecordMovementCubit>().clearFailure(),
                   ),
                   SizedBox(height: 20.h),
                   AppButton(

@@ -27,6 +27,20 @@ extension RecordMovementStateX on RecordMovementState {
 
   String? get variantError => _fieldError('product_variant_id');
 
+  /// «سبب التسوية مطلوب». Required on an adjustment and on nothing else — the other three
+  /// movements explain themselves, so this key only ever arrives for one kind.
+  String? get notesError => _fieldError('notes');
+
+  /// Whether anything the server complained about has a box on this form to sit under. What is
+  /// left goes to a snackbar; without this, a field the form forgot to map would vanish behind
+  /// «البيانات المدخلة غير صحيحة» and the user would have nothing to act on.
+  bool get hasFieldErrors =>
+      quantityError != null ||
+      warehouseError != null ||
+      sourceError != null ||
+      variantError != null ||
+      notesError != null;
+
   /// Whether the request may have landed. A movement has no unique key, so this is the one
   /// form in the app that must not offer «أعد المحاولة».
   bool get mayHaveLanded => switch (this) {

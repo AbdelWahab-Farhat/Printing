@@ -44,6 +44,10 @@ class WarehouseStockResource extends JsonResource
                 'id' => $this->productVariant->id,
                 'label' => $this->productVariant->label,
                 'product_id' => $this->productVariant->product_id,
+                // The code, because it is what staff say out loud — «عندك P7؟» — and the one
+                // thing on this row that is safe to read down a phone line. Free: the product
+                // is already loaded for its name.
+                'product_code' => $this->productVariant->product->code,
                 'product_name' => $this->productVariant->product->name,
             ]),
 

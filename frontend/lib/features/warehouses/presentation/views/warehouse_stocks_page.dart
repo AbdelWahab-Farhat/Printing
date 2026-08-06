@@ -111,7 +111,15 @@ class _StocksView extends StatelessWidget {
                 itemBuilder: (context, stock, index) => StockRow(
                   key: ValueKey(stock.id),
                   stock: stock,
-                  onTap: canManage ? () => _editThreshold(context, cubit, stock) : null,
+                  // Everyone who may read the shelf may read its history; only a manager sets
+                  // the level at which it starts asking to be refilled.
+                  onTap: () => context.push(
+                    Routes.warehouseMovements(warehouseId),
+                    extra: (warehouse: warehouse, stock: stock),
+                  ),
+                  onEditThreshold: canManage
+                      ? () => _editThreshold(context, cubit, stock)
+                      : null,
                 ),
               ),
             ),

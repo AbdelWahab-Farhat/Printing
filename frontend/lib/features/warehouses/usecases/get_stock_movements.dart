@@ -12,9 +12,15 @@ class GetStockMovements {
 
   Future<Either<Failure, Paginated<StockMovement>>> call({
     int? warehouseId,
+    int? productVariantId,
     int page = 1,
     int perPage = 20,
   }) {
-    return _repository.movements(warehouseId: warehouseId, page: page, perPage: perPage);
+    return _repository.movements(
+      warehouseId: warehouseId,
+      productVariantId: productVariantId,
+      page: page,
+      perPage: perPage,
+    );
   }
 }

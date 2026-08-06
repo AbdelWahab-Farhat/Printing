@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/features/warehouses/models/stock_movement.dart';
 import 'package:printing/features/warehouses/models/warehouse_stock.dart';
+import 'package:printing/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
 import 'package:printing/features/warehouses/repositories/warehouse_repository.dart';
 import 'package:printing/features/warehouses/usecases/record_stock_movement.dart';
 import 'package:printing/features/warehouses/usecases/set_low_stock_threshold.dart';
@@ -180,6 +181,64 @@ void main() {
 
     // Assert
     verify(() => repository.setThreshold(1, 5, threshold: '20')).called(1);
+  });
+
+  group('what the server complained about', () {
+    RecordMovementState failedWith(Map<String, List<String>> errors) {
+      return RecordMovementState.failure(
+        Failure.server(message: 'البيانات المدخلة غير صحيحة', fieldErrors: errors),
+      );
+    }
+
+    test('«سبب التسوية مطلوب» lands under the notes box', () {
+      // Arrange — required on an adjustment alone: the other three movements explain
+      // themselves, so this key only ever arrives for one kind.
+      final state = failedWith({'notes': ['سبب التسوية مطلوب']});
+
+      // Act & Assert
+      expect(state.notesError, 'سبب التسوية مطلوب');
+      expect(state.hasFieldErrors, isTrue);
+    });
+
+    test('every field the API validates has a box on this form', () {
+      // Arrange — a key with nowhere to go is a key nobody sees: it falls through to the
+      // envelope's generic sentence, which tells the storekeeper *that* something is wrong
+      // without telling them what. `notes` did exactly that until it was wired.
+      final keys = {
+        'product_variant_id': 'variant',
+        'warehouse_id': 'warehouse',
+        'to_warehouse_id': 'warehouse',
+        'from_warehouse_id': 'source',
+        'quantity': 'quantity',
+        'notes': 'notes',
+      };
+
+      // Act
+      final unmapped = [
+        for (final key in keys.keys)
+          if (!failedWith({key: ['خطأ']}).hasFieldErrors) key,
+      ];
+
+      // Assert
+      expect(unmapped, isEmpty);
+    });
+
+    test('a failure with no field errors is left to the snackbar', () {
+      // Arrange — a 403 or a dropped line says nothing about one box.
+      const state = RecordMovementState.failure(Failure.forbidden(message: 'لا صلاحية'));
+
+      // Act & Assert
+      expect(state.hasFieldErrors, isFalse);
+    });
+
+    test('a dropped connection is the one failure that must not offer a retry', () {
+      // Arrange — a movement carries no unique key, so a request that landed before the line
+      // dropped and is sent again moves the stock twice.
+      const state = RecordMovementState.failure(Failure.network(message: 'لا يوجد اتصال'));
+
+      // Act & Assert
+      expect(state.mayHaveLanded, isTrue);
+    });
   });
 
   test('a refusal comes back untouched', () async {

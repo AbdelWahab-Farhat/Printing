@@ -106,6 +106,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
   @override
   Future<Either<Failure, Paginated<StockMovement>>> movements({
     int? warehouseId,
+    int? productVariantId,
     int page = 1,
     int perPage = 20,
   }) {
@@ -116,6 +117,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
           'page': page,
           'per_page': perPage,
           'warehouse_id': ?warehouseId,
+          'product_variant_id': ?productVariantId,
         },
       ),
       parseItem: StockMovement.fromJson,

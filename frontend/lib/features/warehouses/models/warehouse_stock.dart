@@ -54,6 +54,11 @@ abstract class StockVariant with _$StockVariant {
     required int id,
     required String label,
     @JsonKey(name: 'product_id') required int productId,
+
+    /// `P7` — what staff say out loud, and the one thing on a shelf row safe to read down a
+    /// phone line. Nullable for a payload minted before the server started sending it.
+    @JsonKey(name: 'product_code') String? productCode,
+
     @JsonKey(name: 'product_name') required String productName,
   }) = _StockVariant;
 

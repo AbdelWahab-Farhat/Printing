@@ -87,13 +87,16 @@ class WarehouseStockTest extends TestCase
             ->assertJsonPath('data.0.quantity', '1250.000')
             ->assertJsonPath('data.0.warehouse_id', $warehouse->id)
             ->assertJsonPath('data.0.product_variant.label', '25*35')
+            // The code travels with the balance, because it is what staff say out loud and
+            // what the app puts on the row so a shelf can be read down a phone line.
+            ->assertJsonPath('data.0.product_variant.product_code', $variant->product->code)
             ->assertJsonStructure([
                 'status',
                 'message',
                 'data' => [[
                     'id', 'warehouse_id', 'product_variant_id', 'quantity',
                     'low_stock_threshold', 'is_low_stock',
-                    'product_variant' => ['id', 'label', 'product_id', 'product_name'],
+                    'product_variant' => ['id', 'label', 'product_id', 'product_code', 'product_name'],
                 ]],
                 'meta' => ['current_page', 'per_page', 'last_page', 'total'],
             ]);

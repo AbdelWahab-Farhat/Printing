@@ -53,10 +53,14 @@ abstract interface class WarehouseRepository {
     String? threshold,
   });
 
-  /// The ledger, newest first. [warehouseId] narrows it to one place, counting both ends of a
-  /// transfer.
+  /// The ledger, newest first.
+  ///
+  /// [warehouseId] narrows it to one place, counting both ends of a transfer.
+  /// [productVariantId] narrows it to one size — «كل ما حدث لهذا المقاس»: where it came from,
+  /// where it went, and every count that corrected it. The two combine.
   Future<Either<Failure, Paginated<StockMovement>>> movements({
     int? warehouseId,
+    int? productVariantId,
     int page = 1,
     int perPage = 20,
   });

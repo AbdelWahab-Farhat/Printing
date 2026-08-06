@@ -11,9 +11,13 @@ import 'package:printing/features/warehouses/models/stock_movement.dart';
 /// take stock away and are drawn alike, because to a storekeeper checking a balance they are
 /// the same event with different paperwork.
 class MovementRow extends StatelessWidget {
-  const MovementRow({required this.movement, super.key});
+  const MovementRow({required this.movement, this.showTitle = true, super.key});
 
   final StockMovement movement;
+
+  /// Whether to name the size on the row. False on a feed that is *about* one size — there the
+  /// header says it once, and repeating it per row is a column of identical words.
+  final bool showTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -37,13 +41,36 @@ class MovementRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  movement.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                SizedBox(height: 2.h),
+                if (showTitle) ...[
+                  Row(
+                    children: [
+                      // The code, in the accent it wears on the catalogue card — «P7» is what
+                      // is said out loud and searched for.
+                      if (movement.variant?.productCode case final code?) ...[
+                        Text(
+                          code,
+                          textDirection: TextDirection.ltr,
+                          style: context.textTheme.labelMedium?.copyWith(
+                            color: scheme.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        SizedBox(width: 6.w),
+                      ],
+                      Flexible(
+                        child: Text(
+                          movement.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 2.h),
+                ],
                 Text(
                   // «توريد · من المخزن الرئيسي ← صالة العرض» — what happened and where, in one
                   // line, with the halves that do not exist simply absent.

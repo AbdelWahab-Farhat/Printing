@@ -569,11 +569,14 @@ abstract final class Injector {
           setThreshold: sl<SetLowStockThreshold>(),
         ),
       )
-      // Nullable param: the ledger is either about one place or about all of them.
-      ..registerFactoryParam<StockMovementsCubit, int?, void>(
-        (warehouseId, _) => StockMovementsCubit(
+      // Two nullable params, because the ledger is read at three zoom levels: the whole
+      // workshop, one place, or one size in one place — and the last is what a shelf's own
+      // history is.
+      ..registerFactoryParam<StockMovementsCubit, int?, int?>(
+        (warehouseId, productVariantId) => StockMovementsCubit(
           getMovements: sl<GetStockMovements>(),
           warehouseId: warehouseId,
+          productVariantId: productVariantId,
         ),
       )
       ..registerFactory<SaveWarehouseCubit>(

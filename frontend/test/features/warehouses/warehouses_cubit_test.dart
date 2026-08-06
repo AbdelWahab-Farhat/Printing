@@ -4,10 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
+import 'package:printing/features/warehouses/models/stock_movement.dart';
 import 'package:printing/features/warehouses/models/warehouse.dart';
+import 'package:printing/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/warehouses_cubit.dart';
 import 'package:printing/features/warehouses/repositories/warehouse_repository.dart';
 import 'package:printing/features/warehouses/usecases/delete_warehouse.dart';
+import 'package:printing/features/warehouses/usecases/get_stock_movements.dart';
 import 'package:printing/features/warehouses/usecases/get_warehouses.dart';
 
 /// المخازن — the list screen's ViewModel, with the repository faked and no Dio anywhere.
@@ -155,6 +158,116 @@ void main() {
 
       // Act & Assert — refusing wrongly is recoverable; the opposite is a 422 nobody expected.
       expect(unknown.holdsStock, isTrue);
+    });
+  });
+
+  group('the ledger, at three zoom levels', () {
+    Paginated<StockMovement> emptyLedger() => const Paginated<StockMovement>(
+      items: [],
+      meta: PageMeta(currentPage: 1, perPage: 20, lastPage: 1, total: 0),
+    );
+
+    void answerLedger() {
+      when(
+        () => repository.movements(
+          warehouseId: any(named: 'warehouseId'),
+          productVariantId: any(named: 'productVariantId'),
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer((_) async => Right(emptyLedger()));
+    }
+
+    test('the whole workshop asks for nothing in particular', () async {
+      // Arrange
+      answerLedger();
+      final ledger = StockMovementsCubit(getMovements: GetStockMovements(repository));
+
+      // Act
+      await ledger.load();
+      await ledger.close();
+
+      // Assert
+      verify(
+        () => repository.movements(
+          warehouseId: null,
+          productVariantId: null,
+          page: 1,
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
+    });
+
+    test('one shelf asks for its size *and* its place', () async {
+      // Arrange — «هذا المقاس، في هذا المخزن»: the two filters combine, which is what makes a
+      // shelf's own history different from the size's history everywhere.
+      answerLedger();
+      final ledger = StockMovementsCubit(
+        getMovements: GetStockMovements(repository),
+        warehouseId: 2,
+        productVariantId: 7,
+      );
+
+      // Act
+      await ledger.load();
+      await ledger.close();
+
+      // Assert
+      verify(
+        () => repository.movements(
+          warehouseId: 2,
+          productVariantId: 7,
+          page: 1,
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
+    });
+
+    test('the filters ride along on the next page too', () async {
+      // Arrange
+      when(
+        () => repository.movements(
+          warehouseId: any(named: 'warehouseId'),
+          productVariantId: any(named: 'productVariantId'),
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer(
+        (_) async => const Right(
+          Paginated<StockMovement>(
+            items: [
+              StockMovement(
+                id: 1,
+                movementType: MovementType.purchaseArrival,
+                movementTypeLabel: 'توريد',
+                quantity: '10.000',
+                productVariantId: 7,
+              ),
+            ],
+            meta: PageMeta(currentPage: 1, perPage: 20, lastPage: 2, total: 21),
+          ),
+        ),
+      );
+      final ledger = StockMovementsCubit(
+        getMovements: GetStockMovements(repository),
+        warehouseId: 2,
+        productVariantId: 7,
+      );
+
+      // Act
+      await ledger.load();
+      await ledger.loadMore();
+      await ledger.close();
+
+      // Assert — page two of one shelf must not arrive as page two of everything.
+      verify(
+        () => repository.movements(
+          warehouseId: 2,
+          productVariantId: 7,
+          page: 2,
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
     });
   });
 }

@@ -10,13 +10,27 @@ import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 /// screen is opened to answer. `is_low_stock` comes from the server — a threshold nobody set
 /// means no alert, which is not the same as a threshold of zero — and turns the number, not the
 /// whole row, so a low shelf reads as *low* rather than as broken.
+///
+/// **Tapping opens this shelf's own history**, which is the second question and the one the
+/// balance cannot answer: 100 is a fact, «وصل 500 وخرج 400» is what a storekeeper does anything
+/// with. The alert level moved to a button of its own — the row leads somewhere now, and one
+/// tap cannot mean two things.
 class StockRow extends StatelessWidget {
-  const StockRow({required this.stock, this.onTap, super.key});
+  const StockRow({
+    required this.stock,
+    this.onTap,
+    this.onEditThreshold,
+    super.key,
+  });
 
   final WarehouseStock stock;
 
-  /// Opens the alert-level sheet. Null for somebody who may only read.
+  /// Opens this shelf's own history — where the number came from, and who took the rest.
   final VoidCallback? onTap;
+
+  /// Opens the alert-level sheet. Null for somebody who may only read, and then the button is
+  /// absent rather than greyed: a control that only ever refuses is a control to leave out.
+  final VoidCallback? onEditThreshold;
 
   @override
   Widget build(BuildContext context) {
@@ -42,13 +56,32 @@ class StockRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      stock.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      children: [
+                        // The code leads, in the accent it wears on the catalogue card: «P7» is
+                        // what a storekeeper is told on the phone and what they search for.
+                        if (stock.variant?.productCode case final code?) ...[
+                          Text(
+                            code,
+                            textDirection: TextDirection.ltr,
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: scheme.primary,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          SizedBox(width: 6.w),
+                        ],
+                        Flexible(
+                          child: Text(
+                            stock.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 2.h),
                     Row(
@@ -82,6 +115,15 @@ class StockRow extends StatelessWidget {
                   color: stock.isLowStock ? scheme.error : scheme.onSurface,
                 ),
               ),
+              // The alert level gets its own button, because the row itself now leads somewhere:
+              // one tap cannot both open a history and edit a number.
+              if (onEditThreshold != null)
+                IconButton(
+                  tooltip: 'حد التنبيه',
+                  onPressed: onEditThreshold,
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(AppIcons.edit, size: 18.sp, color: scheme.onSurfaceVariant),
+                ),
             ],
           ),
         ),

@@ -41,6 +41,7 @@ import 'package:printing/features/shipping_companies/presentation/views/shipping
 import 'package:printing/features/shipping_companies/presentation/views/shipping_company_form_page.dart';
 import 'package:printing/features/splash/presentation/views/splash_page.dart';
 import 'package:printing/features/warehouses/models/warehouse.dart';
+import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 import 'package:printing/features/warehouses/presentation/views/stock_movements_page.dart';
 import 'package:printing/features/warehouses/presentation/views/warehouse_stocks_page.dart';
 import 'package:printing/features/warehouses/presentation/views/warehouses_page.dart';
@@ -264,14 +265,24 @@ abstract final class AppRouter {
                     );
             },
           ),
+          // The ledger for one place — and, when a shelf hands its own row over as `extra`,
+          // for one size in that place. Both are the same list asked a narrower question, so
+          // they are one route rather than two.
           GoRoute(
             path: Routes.warehouseMovementsPath,
             builder: (context, state) {
               final id = int.tryParse(state.pathParameters['id'] ?? '');
+              if (id == null) return const _UnknownWarehouse();
 
-              return id == null
-                  ? const _UnknownWarehouse()
-                  : StockMovementsPage(warehouseId: id, warehouseName: state.extra as String?);
+              // `extra` is ours and is absent on a deep link, which is exactly why the screen
+              // has to work without it: the wider feed is still a correct answer.
+              final shelf = state.extra as ({Warehouse? warehouse, WarehouseStock stock})?;
+
+              return StockMovementsPage(
+                warehouseId: id,
+                warehouseName: shelf?.warehouse?.name,
+                stock: shelf?.stock,
+              );
             },
           ),
         ],
