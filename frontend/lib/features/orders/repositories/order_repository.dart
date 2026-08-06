@@ -3,6 +3,7 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
+import 'package:printing/features/orders/models/new_order.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/order_counts.dart';
 import 'package:printing/features/orders/models/order_status.dart';
@@ -39,6 +40,13 @@ abstract interface class OrderRepository {
   Future<Either<Failure, OrderCounts>> statusCounts({String? search, int? customerId});
 
   Future<Either<Failure, Order>> order(int orderId);
+
+  /// Takes an order, and answers with the one the server stored.
+  ///
+  /// The answer matters rather than a bare success: it carries the number the server allocated
+  /// — plain digits, `52` — and the totals it worked out from the lines and the destination.
+  /// Nothing the app added up is in it.
+  Future<Either<Failure, Order>> create(NewOrder order);
 
   /// Moves an order, and answers with it as the server left it.
   ///

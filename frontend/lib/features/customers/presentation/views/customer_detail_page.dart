@@ -139,6 +139,24 @@ class _Actions extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppSpeedDial(
       actions: [
+        // **First, and this is where taking an order begins.** The form it opens has no field
+        // for the customer: an order does not change hands — the server reads `customer_id` on
+        // create and ignores it afterwards — so the only correction for the wrong one is to
+        // cancel the order and take it again. Naming the customer by *which screen you are on*
+        // is what makes the wrong one unnameable. See NEW-ORDER-DESIGN.md §١.
+        //
+        // Absent for a deactivated customer: this is somebody the shop has stopped selling to,
+        // and turning them back on is one tap away on this same screen. `CreateOrder` refuses
+        // the request as well — a hidden button is a suggestion, a refused request is a rule.
+        if (customer.isActive)
+          AppAction(
+            label: 'طلبية جديدة',
+            icon: AppIcons.addOrder,
+            tone: AppActionTone.primary,
+            permission: AppPermission.manageOrders,
+            onTap: (context) =>
+                context.push(Routes.newCustomerOrder(customer.id), extra: customer),
+          ),
         AppAction(
           label: 'تعديل العميل',
           icon: AppIcons.edit,

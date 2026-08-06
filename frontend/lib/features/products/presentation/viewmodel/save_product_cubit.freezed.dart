@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'add_product_cubit.dart';
+part of 'save_product_cubit.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -12,7 +12,7 @@ part of 'add_product_cubit.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$AddProductState {
+mixin _$SaveProductState {
 
 
 
@@ -20,7 +20,7 @@ mixin _$AddProductState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddProductState);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveProductState);
 }
 
 
@@ -29,20 +29,20 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AddProductState()';
+  return 'SaveProductState()';
 }
 
 
 }
 
 /// @nodoc
-class $AddProductStateCopyWith<$Res>  {
-$AddProductStateCopyWith(AddProductState _, $Res Function(AddProductState) __);
+class $SaveProductStateCopyWith<$Res>  {
+$SaveProductStateCopyWith(SaveProductState _, $Res Function(SaveProductState) __);
 }
 
 
-/// Adds pattern-matching-related methods to [AddProductState].
-extension AddProductStatePatterns on AddProductState {
+/// Adds pattern-matching-related methods to [SaveProductState].
+extension SaveProductStatePatterns on SaveProductState {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -55,13 +55,13 @@ extension AddProductStatePatterns on AddProductState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( AddProductInitial value)?  initial,TResult Function( AddProductSubmitting value)?  submitting,TResult Function( AddProductSuccess value)?  success,TResult Function( AddProductFailure value)?  failure,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( SaveProductInitial value)?  initial,TResult Function( SaveProductSubmitting value)?  submitting,TResult Function( SaveProductSuccess value)?  success,TResult Function( SaveProductFailure value)?  failure,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case AddProductInitial() when initial != null:
-return initial(_that);case AddProductSubmitting() when submitting != null:
-return submitting(_that);case AddProductSuccess() when success != null:
-return success(_that);case AddProductFailure() when failure != null:
+case SaveProductInitial() when initial != null:
+return initial(_that);case SaveProductSubmitting() when submitting != null:
+return submitting(_that);case SaveProductSuccess() when success != null:
+return success(_that);case SaveProductFailure() when failure != null:
 return failure(_that);case _:
   return orElse();
 
@@ -80,13 +80,13 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( AddProductInitial value)  initial,required TResult Function( AddProductSubmitting value)  submitting,required TResult Function( AddProductSuccess value)  success,required TResult Function( AddProductFailure value)  failure,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( SaveProductInitial value)  initial,required TResult Function( SaveProductSubmitting value)  submitting,required TResult Function( SaveProductSuccess value)  success,required TResult Function( SaveProductFailure value)  failure,}){
 final _that = this;
 switch (_that) {
-case AddProductInitial():
-return initial(_that);case AddProductSubmitting():
-return submitting(_that);case AddProductSuccess():
-return success(_that);case AddProductFailure():
+case SaveProductInitial():
+return initial(_that);case SaveProductSubmitting():
+return submitting(_that);case SaveProductSuccess():
+return success(_that);case SaveProductFailure():
 return failure(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -101,13 +101,13 @@ return failure(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( AddProductInitial value)?  initial,TResult? Function( AddProductSubmitting value)?  submitting,TResult? Function( AddProductSuccess value)?  success,TResult? Function( AddProductFailure value)?  failure,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( SaveProductInitial value)?  initial,TResult? Function( SaveProductSubmitting value)?  submitting,TResult? Function( SaveProductSuccess value)?  success,TResult? Function( SaveProductFailure value)?  failure,}){
 final _that = this;
 switch (_that) {
-case AddProductInitial() when initial != null:
-return initial(_that);case AddProductSubmitting() when submitting != null:
-return submitting(_that);case AddProductSuccess() when success != null:
-return success(_that);case AddProductFailure() when failure != null:
+case SaveProductInitial() when initial != null:
+return initial(_that);case SaveProductSubmitting() when submitting != null:
+return submitting(_that);case SaveProductSuccess() when success != null:
+return success(_that);case SaveProductFailure() when failure != null:
 return failure(_that);case _:
   return null;
 
@@ -127,10 +127,10 @@ return failure(_that);case _:
 
 @optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  submitting,TResult Function( Product product)?  success,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case AddProductInitial() when initial != null:
-return initial();case AddProductSubmitting() when submitting != null:
-return submitting();case AddProductSuccess() when success != null:
-return success(_that.product);case AddProductFailure() when failure != null:
+case SaveProductInitial() when initial != null:
+return initial();case SaveProductSubmitting() when submitting != null:
+return submitting();case SaveProductSuccess() when success != null:
+return success(_that.product);case SaveProductFailure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
 
@@ -151,10 +151,10 @@ return failure(_that.failure);case _:
 
 @optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  submitting,required TResult Function( Product product)  success,required TResult Function( Failure failure)  failure,}) {final _that = this;
 switch (_that) {
-case AddProductInitial():
-return initial();case AddProductSubmitting():
-return submitting();case AddProductSuccess():
-return success(_that.product);case AddProductFailure():
+case SaveProductInitial():
+return initial();case SaveProductSubmitting():
+return submitting();case SaveProductSuccess():
+return success(_that.product);case SaveProductFailure():
 return failure(_that.failure);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -171,10 +171,10 @@ return failure(_that.failure);}
 
 @optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  submitting,TResult? Function( Product product)?  success,TResult? Function( Failure failure)?  failure,}) {final _that = this;
 switch (_that) {
-case AddProductInitial() when initial != null:
-return initial();case AddProductSubmitting() when submitting != null:
-return submitting();case AddProductSuccess() when success != null:
-return success(_that.product);case AddProductFailure() when failure != null:
+case SaveProductInitial() when initial != null:
+return initial();case SaveProductSubmitting() when submitting != null:
+return submitting();case SaveProductSuccess() when success != null:
+return success(_that.product);case SaveProductFailure() when failure != null:
 return failure(_that.failure);case _:
   return null;
 
@@ -186,8 +186,8 @@ return failure(_that.failure);case _:
 /// @nodoc
 
 
-class AddProductInitial implements AddProductState {
-  const AddProductInitial();
+class SaveProductInitial implements SaveProductState {
+  const SaveProductInitial();
   
 
 
@@ -197,7 +197,7 @@ class AddProductInitial implements AddProductState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddProductInitial);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveProductInitial);
 }
 
 
@@ -206,7 +206,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AddProductState.initial()';
+  return 'SaveProductState.initial()';
 }
 
 
@@ -218,8 +218,8 @@ String toString() {
 /// @nodoc
 
 
-class AddProductSubmitting implements AddProductState {
-  const AddProductSubmitting();
+class SaveProductSubmitting implements SaveProductState {
+  const SaveProductSubmitting();
   
 
 
@@ -229,7 +229,7 @@ class AddProductSubmitting implements AddProductState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddProductSubmitting);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveProductSubmitting);
 }
 
 
@@ -238,7 +238,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AddProductState.submitting()';
+  return 'SaveProductState.submitting()';
 }
 
 
@@ -250,23 +250,23 @@ String toString() {
 /// @nodoc
 
 
-class AddProductSuccess implements AddProductState {
-  const AddProductSuccess(this.product);
+class SaveProductSuccess implements SaveProductState {
+  const SaveProductSuccess(this.product);
   
 
  final  Product product;
 
-/// Create a copy of AddProductState
+/// Create a copy of SaveProductState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AddProductSuccessCopyWith<AddProductSuccess> get copyWith => _$AddProductSuccessCopyWithImpl<AddProductSuccess>(this, _$identity);
+$SaveProductSuccessCopyWith<SaveProductSuccess> get copyWith => _$SaveProductSuccessCopyWithImpl<SaveProductSuccess>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddProductSuccess&&(identical(other.product, product) || other.product == product));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveProductSuccess&&(identical(other.product, product) || other.product == product));
 }
 
 
@@ -275,15 +275,15 @@ int get hashCode => Object.hash(runtimeType,product);
 
 @override
 String toString() {
-  return 'AddProductState.success(product: $product)';
+  return 'SaveProductState.success(product: $product)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $AddProductSuccessCopyWith<$Res> implements $AddProductStateCopyWith<$Res> {
-  factory $AddProductSuccessCopyWith(AddProductSuccess value, $Res Function(AddProductSuccess) _then) = _$AddProductSuccessCopyWithImpl;
+abstract mixin class $SaveProductSuccessCopyWith<$Res> implements $SaveProductStateCopyWith<$Res> {
+  factory $SaveProductSuccessCopyWith(SaveProductSuccess value, $Res Function(SaveProductSuccess) _then) = _$SaveProductSuccessCopyWithImpl;
 @useResult
 $Res call({
  Product product
@@ -294,23 +294,23 @@ $ProductCopyWith<$Res> get product;
 
 }
 /// @nodoc
-class _$AddProductSuccessCopyWithImpl<$Res>
-    implements $AddProductSuccessCopyWith<$Res> {
-  _$AddProductSuccessCopyWithImpl(this._self, this._then);
+class _$SaveProductSuccessCopyWithImpl<$Res>
+    implements $SaveProductSuccessCopyWith<$Res> {
+  _$SaveProductSuccessCopyWithImpl(this._self, this._then);
 
-  final AddProductSuccess _self;
-  final $Res Function(AddProductSuccess) _then;
+  final SaveProductSuccess _self;
+  final $Res Function(SaveProductSuccess) _then;
 
-/// Create a copy of AddProductState
+/// Create a copy of SaveProductState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? product = null,}) {
-  return _then(AddProductSuccess(
+  return _then(SaveProductSuccess(
 null == product ? _self.product : product // ignore: cast_nullable_to_non_nullable
 as Product,
   ));
 }
 
-/// Create a copy of AddProductState
+/// Create a copy of SaveProductState
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -325,23 +325,23 @@ $ProductCopyWith<$Res> get product {
 /// @nodoc
 
 
-class AddProductFailure implements AddProductState {
-  const AddProductFailure(this.failure);
+class SaveProductFailure implements SaveProductState {
+  const SaveProductFailure(this.failure);
   
 
  final  Failure failure;
 
-/// Create a copy of AddProductState
+/// Create a copy of SaveProductState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AddProductFailureCopyWith<AddProductFailure> get copyWith => _$AddProductFailureCopyWithImpl<AddProductFailure>(this, _$identity);
+$SaveProductFailureCopyWith<SaveProductFailure> get copyWith => _$SaveProductFailureCopyWithImpl<SaveProductFailure>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddProductFailure&&(identical(other.failure, failure) || other.failure == failure));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveProductFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
@@ -350,15 +350,15 @@ int get hashCode => Object.hash(runtimeType,failure);
 
 @override
 String toString() {
-  return 'AddProductState.failure(failure: $failure)';
+  return 'SaveProductState.failure(failure: $failure)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $AddProductFailureCopyWith<$Res> implements $AddProductStateCopyWith<$Res> {
-  factory $AddProductFailureCopyWith(AddProductFailure value, $Res Function(AddProductFailure) _then) = _$AddProductFailureCopyWithImpl;
+abstract mixin class $SaveProductFailureCopyWith<$Res> implements $SaveProductStateCopyWith<$Res> {
+  factory $SaveProductFailureCopyWith(SaveProductFailure value, $Res Function(SaveProductFailure) _then) = _$SaveProductFailureCopyWithImpl;
 @useResult
 $Res call({
  Failure failure
@@ -369,23 +369,23 @@ $FailureCopyWith<$Res> get failure;
 
 }
 /// @nodoc
-class _$AddProductFailureCopyWithImpl<$Res>
-    implements $AddProductFailureCopyWith<$Res> {
-  _$AddProductFailureCopyWithImpl(this._self, this._then);
+class _$SaveProductFailureCopyWithImpl<$Res>
+    implements $SaveProductFailureCopyWith<$Res> {
+  _$SaveProductFailureCopyWithImpl(this._self, this._then);
 
-  final AddProductFailure _self;
-  final $Res Function(AddProductFailure) _then;
+  final SaveProductFailure _self;
+  final $Res Function(SaveProductFailure) _then;
 
-/// Create a copy of AddProductState
+/// Create a copy of SaveProductState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? failure = null,}) {
-  return _then(AddProductFailure(
+  return _then(SaveProductFailure(
 null == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
 as Failure,
   ));
 }
 
-/// Create a copy of AddProductState
+/// Create a copy of SaveProductState
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')

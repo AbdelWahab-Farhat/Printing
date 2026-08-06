@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Actions;
 
 use App\Domain\Customer\CustomerService;
+use App\Domain\Customer\Exceptions\CustomerIsInactive;
 use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
@@ -46,6 +47,14 @@ final class CreateOrder
         $this->guardDiscount($data, $actor);
 
         $customer = $this->customers->find($data->customerId);
+
+        // Before anything is priced or written: a deactivated customer is one the shop has
+        // stopped selling to, and «معطَّل» has to mean that here rather than only in the app
+        // that hides the button.
+        if (! $customer->is_active) {
+            throw CustomerIsInactive::make((string) $customer->name);
+        }
+
         $shopName = $this->resolveShop($data, (int) $customer->getKey());
 
         $destination = ($this->resolveDestination)($data->cityId, $data->regionId);

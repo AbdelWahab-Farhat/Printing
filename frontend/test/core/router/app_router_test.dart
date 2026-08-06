@@ -98,6 +98,7 @@ void main() {
       'طلب واحد': Routes.order(4),
       'إضافة منتج': Routes.addProduct,
       'منتج واحد': Routes.product(7),
+      'تعديل منتج': Routes.editProduct(7),
       'مناطق مدينة': Routes.cityRegions(3),
       'الطلبيات المفلترة': Routes.ordersFiltered,
       'شركات التوصيل': Routes.shippingCompanies,
@@ -286,5 +287,24 @@ void main() {
     // Assert
     expect(matches.whereType<GoRoute>().last.path, Routes.orderEditPath);
     expect(matches.whereType<ShellRouteBase>(), isEmpty);
+  });
+
+  test('«/products/7/edit» is the form, not the detail screen reading «edit» as a size', () {
+    // Arrange — declared as a child of `/products/:id`, which is itself declared after
+    // `/products/new`. Both orderings are load-bearing, and both fail silently: the wrong one
+    // opens the detail screen again, and only somebody tapping «تعديل المنتج» finds out.
+    final location = Routes.editProduct(7);
+
+    // Act
+    final matches = matchedRoutes(location);
+
+    // Assert
+    expect(location, '/products/7/edit');
+    expect(matches.whereType<GoRoute>().last.path, Routes.editProductPath);
+    expect(
+      matches.whereType<ShellRouteBase>(),
+      isEmpty,
+      reason: 'a form is a task the user is in, not a tab they are browsing',
+    );
   });
 }

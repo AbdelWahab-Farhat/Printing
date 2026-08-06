@@ -331,7 +331,15 @@ as List<NewProductVariant>,
 /// @nodoc
 mixin _$NewProductVariant {
 
- String get label;/// Strings, not `int`s, and deliberately.
+/// **The id of a size that already exists, and the reason editing works at all.**
+///
+/// `PUT /products/{id}` makes the list match exactly: a size carrying an id is updated in
+/// place, one without is created, and one left out is *removed*. Sending an existing size
+/// without its id would therefore delete it and create a lookalike — and the order lines
+/// pointing at the old row would be pointing at a deleted size.
+///
+/// Null when creating, and omitted from the body then.
+@JsonKey(includeIfNull: false) int? get id; String get label;/// Strings, not `int`s, and deliberately.
 ///
 /// `٢٥` is what a Libyan keyboard produces and `int.tryParse('٢٥')` is null. Parsing in the
 /// page would drop the dimension silently — the server accepts a null width, so nothing
@@ -350,16 +358,16 @@ $NewProductVariantCopyWith<NewProductVariant> get copyWith => _$NewProductVarian
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewProductVariant&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&const DeepCollectionEquality().equals(other.priceTiers, priceTiers));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&const DeepCollectionEquality().equals(other.priceTiers, priceTiers));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,label,widthCm,heightCm,const DeepCollectionEquality().hash(priceTiers));
+int get hashCode => Object.hash(runtimeType,id,label,widthCm,heightCm,const DeepCollectionEquality().hash(priceTiers));
 
 @override
 String toString() {
-  return 'NewProductVariant(label: $label, widthCm: $widthCm, heightCm: $heightCm, priceTiers: $priceTiers)';
+  return 'NewProductVariant(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, priceTiers: $priceTiers)';
 }
 
 
@@ -370,7 +378,7 @@ abstract mixin class $NewProductVariantCopyWith<$Res>  {
   factory $NewProductVariantCopyWith(NewProductVariant value, $Res Function(NewProductVariant) _then) = _$NewProductVariantCopyWithImpl;
 @useResult
 $Res call({
- String label,@JsonKey(name: 'width_cm', includeIfNull: false) int? widthCm,@JsonKey(name: 'height_cm', includeIfNull: false) int? heightCm,@JsonKey(name: 'price_tiers') List<NewPriceTier> priceTiers
+@JsonKey(includeIfNull: false) int? id, String label,@JsonKey(name: 'width_cm', includeIfNull: false) int? widthCm,@JsonKey(name: 'height_cm', includeIfNull: false) int? heightCm,@JsonKey(name: 'price_tiers') List<NewPriceTier> priceTiers
 });
 
 
@@ -387,9 +395,10 @@ class _$NewProductVariantCopyWithImpl<$Res>
 
 /// Create a copy of NewProductVariant
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? priceTiers = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? priceTiers = null,}) {
   return _then(_self.copyWith(
-label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int?,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
 as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
 as int?,priceTiers: null == priceTiers ? _self.priceTiers : priceTiers // ignore: cast_nullable_to_non_nullable
@@ -478,10 +487,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NewProductVariant() when $default != null:
-return $default(_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
+return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
   return orElse();
 
 }
@@ -499,10 +508,10 @@ return $default(_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)  $default,) {final _that = this;
 switch (_that) {
 case _NewProductVariant():
-return $default(_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
+return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -519,10 +528,10 @@ return $default(_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  int? id,  String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)?  $default,) {final _that = this;
 switch (_that) {
 case _NewProductVariant() when $default != null:
-return $default(_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
+return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
   return null;
 
 }
@@ -534,9 +543,18 @@ return $default(_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case 
 @JsonSerializable()
 
 class _NewProductVariant implements NewProductVariant {
-  const _NewProductVariant({required this.label, @JsonKey(name: 'width_cm', includeIfNull: false) this.widthCm, @JsonKey(name: 'height_cm', includeIfNull: false) this.heightCm, @JsonKey(name: 'price_tiers') final  List<NewPriceTier> priceTiers = const <NewPriceTier>[]}): _priceTiers = priceTiers;
+  const _NewProductVariant({@JsonKey(includeIfNull: false) this.id, required this.label, @JsonKey(name: 'width_cm', includeIfNull: false) this.widthCm, @JsonKey(name: 'height_cm', includeIfNull: false) this.heightCm, @JsonKey(name: 'price_tiers') final  List<NewPriceTier> priceTiers = const <NewPriceTier>[]}): _priceTiers = priceTiers;
   factory _NewProductVariant.fromJson(Map<String, dynamic> json) => _$NewProductVariantFromJson(json);
 
+/// **The id of a size that already exists, and the reason editing works at all.**
+///
+/// `PUT /products/{id}` makes the list match exactly: a size carrying an id is updated in
+/// place, one without is created, and one left out is *removed*. Sending an existing size
+/// without its id would therefore delete it and create a lookalike — and the order lines
+/// pointing at the old row would be pointing at a deleted size.
+///
+/// Null when creating, and omitted from the body then.
+@override@JsonKey(includeIfNull: false) final  int? id;
 @override final  String label;
 /// Strings, not `int`s, and deliberately.
 ///
@@ -567,16 +585,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewProductVariant&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&const DeepCollectionEquality().equals(other._priceTiers, _priceTiers));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&const DeepCollectionEquality().equals(other._priceTiers, _priceTiers));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,label,widthCm,heightCm,const DeepCollectionEquality().hash(_priceTiers));
+int get hashCode => Object.hash(runtimeType,id,label,widthCm,heightCm,const DeepCollectionEquality().hash(_priceTiers));
 
 @override
 String toString() {
-  return 'NewProductVariant(label: $label, widthCm: $widthCm, heightCm: $heightCm, priceTiers: $priceTiers)';
+  return 'NewProductVariant(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, priceTiers: $priceTiers)';
 }
 
 
@@ -587,7 +605,7 @@ abstract mixin class _$NewProductVariantCopyWith<$Res> implements $NewProductVar
   factory _$NewProductVariantCopyWith(_NewProductVariant value, $Res Function(_NewProductVariant) _then) = __$NewProductVariantCopyWithImpl;
 @override @useResult
 $Res call({
- String label,@JsonKey(name: 'width_cm', includeIfNull: false) int? widthCm,@JsonKey(name: 'height_cm', includeIfNull: false) int? heightCm,@JsonKey(name: 'price_tiers') List<NewPriceTier> priceTiers
+@JsonKey(includeIfNull: false) int? id, String label,@JsonKey(name: 'width_cm', includeIfNull: false) int? widthCm,@JsonKey(name: 'height_cm', includeIfNull: false) int? heightCm,@JsonKey(name: 'price_tiers') List<NewPriceTier> priceTiers
 });
 
 
@@ -604,9 +622,10 @@ class __$NewProductVariantCopyWithImpl<$Res>
 
 /// Create a copy of NewProductVariant
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? priceTiers = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? priceTiers = null,}) {
   return _then(_NewProductVariant(
-label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int?,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
 as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
 as int?,priceTiers: null == priceTiers ? _self._priceTiers : priceTiers // ignore: cast_nullable_to_non_nullable

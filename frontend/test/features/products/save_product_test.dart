@@ -41,6 +41,7 @@ void main() {
     repository = _MockProductRepository();
     createProduct = SaveProduct(repository);
     when(() => repository.create(any())).thenAnswer((_) async => const Right(stored));
+    when(() => repository.update(any(), any())).thenAnswer((_) async => const Right(stored));
   });
 
   /// The draft the repository was actually handed.
@@ -51,6 +52,7 @@ void main() {
       verify(() => repository.create(captureAny())).captured.single as NewProduct;
 
   Future<Either<Failure, Product>> submit({
+    int? id,
     String name = 'أكياس الشحن',
     String? description,
     List<String> features = const [],
@@ -60,6 +62,7 @@ void main() {
     List<DraftVariant> variants = const [],
   }) {
     return createProduct(
+      id: id,
       name: name,
       description: description,
       features: features,
@@ -236,6 +239,58 @@ void main() {
     expect(
       result.fold((failure) => failure.message, (_) => null),
       'المعرف مستخدم مسبقاً',
+    );
+  });
+
+  // ─────────────────────── correcting one that exists ───────────────────────
+
+  test('no id adds; an id corrects the product it names', () async {
+    // Act
+    await submit();
+    await submit(id: 7);
+
+    // Assert — one endpoint each, and the id decides which. A product cannot be created twice
+    // by a form somebody opened to fix a typo.
+    verify(() => repository.create(any())).called(1);
+
+    final corrected = verify(() => repository.update(captureAny(), any())).captured.single;
+    expect(corrected, 7);
+  });
+
+  test('a size that already exists keeps its id on the way through', () async {
+    // Arrange — the load-bearing detail of editing: the server matches sizes by id and removes
+    // any it is not sent, so a size that arrived without one would be deleted and recreated —
+    // taking every order line pointing at it with it.
+    const sizes = [
+      DraftVariant(id: 12, label: '25*35', widthCm: '25', heightCm: '35'),
+      DraftVariant(label: '45*50'),
+    ];
+
+    // Act
+    await submit(id: 7, variants: sizes);
+
+    // Assert
+    final draft =
+        verify(() => repository.update(any(), captureAny())).captured.single as NewProduct;
+
+    expect(draft.variants.first.id, 12);
+    // The new size carries none, which is how the server is told it is new.
+    expect(draft.variants.last.id, isNull);
+  });
+
+  test('a size added on the create form carries no id at all', () async {
+    // Act
+    await submit(variants: const [DraftVariant(label: '25*35')]);
+
+    // Assert — omitted rather than sent as null: the API's rule is `nullable|integer`, and a
+    // null id on a create would be a field the request did not need to mention.
+    final draft = sent();
+
+    expect(draft.variants.single.id, isNull);
+    // Omitted from the body, not sent as null — `includeIfNull: false` on the field.
+    expect(
+      (draft.toJson()['variants'] as List<dynamic>).single,
+      isNot(contains('id')),
     );
   });
 }

@@ -79,11 +79,13 @@ import 'package:printing/features/location/usecases/search_places.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/orders_filter.dart';
 import 'package:printing/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
+import 'package:printing/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_payments_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_status_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/orders_cubit.dart';
+import 'package:printing/features/orders/presentation/viewmodel/take_order_cubit.dart';
 import 'package:printing/features/orders/repositories/order_payment_repository.dart';
 import 'package:printing/features/orders/repositories/order_payment_repository_impl.dart';
 import 'package:printing/features/orders/repositories/order_repository.dart';
@@ -94,15 +96,17 @@ import 'package:printing/features/orders/usecases/get_order_counts.dart';
 import 'package:printing/features/orders/usecases/get_orders.dart';
 import 'package:printing/features/orders/usecases/manage_order_designs.dart';
 import 'package:printing/features/orders/usecases/manage_order_payments.dart';
+import 'package:printing/features/orders/usecases/take_order.dart';
 import 'package:printing/features/orders/usecases/update_order_invoice.dart';
-import 'package:printing/features/products/presentation/viewmodel/add_product_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/product_detail_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
+import 'package:printing/features/products/presentation/viewmodel/save_product_cubit.dart';
 import 'package:printing/features/products/repositories/product_repository.dart';
 import 'package:printing/features/products/repositories/product_repository_impl.dart';
-import 'package:printing/features/products/usecases/create_product.dart';
+import 'package:printing/features/products/usecases/get_price_quote.dart';
 import 'package:printing/features/products/usecases/get_product.dart';
 import 'package:printing/features/products/usecases/get_products.dart';
+import 'package:printing/features/products/usecases/save_product.dart';
 import 'package:printing/features/settings/presentation/viewmodel/settings_cubit.dart';
 import 'package:printing/features/settings/repositories/settings_repository.dart';
 import 'package:printing/features/settings/repositories/settings_repository_impl.dart';
@@ -369,7 +373,7 @@ abstract final class Injector {
       ..registerLazySingleton<ProductRepository>(() => ProductRepositoryImpl(sl<Dio>()))
       ..registerLazySingleton<GetProducts>(() => GetProducts(sl<ProductRepository>()))
       ..registerLazySingleton<GetProduct>(() => GetProduct(sl<ProductRepository>()))
-      ..registerLazySingleton<CreateProduct>(() => CreateProduct(sl<ProductRepository>()))
+      ..registerLazySingleton<SaveProduct>(() => SaveProduct(sl<ProductRepository>()))
       // Factory: the catalogue screen owns its Cubit and closes it on dispose.
       ..registerFactory<ProductsCubit>(() => ProductsCubit(getProducts: sl<GetProducts>()))
       // Parameterised, like the customer's and the order's: the detail screen is *about* one
@@ -379,8 +383,8 @@ abstract final class Injector {
         (productId, _) =>
             ProductDetailCubit(productId: productId, getProduct: sl<GetProduct>()),
       )
-      ..registerFactory<AddProductCubit>(
-        () => AddProductCubit(createProduct: sl<CreateProduct>()),
+      ..registerFactory<SaveProductCubit>(
+        () => SaveProductCubit(saveProduct: sl<SaveProduct>()),
       );
   }
 
@@ -396,6 +400,7 @@ abstract final class Injector {
       ..registerLazySingleton<GetOrders>(() => GetOrders(sl<OrderRepository>()))
       ..registerLazySingleton<GetOrderCounts>(() => GetOrderCounts(sl<OrderRepository>()))
       ..registerLazySingleton<GetOrder>(() => GetOrder(sl<OrderRepository>()))
+      ..registerLazySingleton<TakeOrder>(() => TakeOrder(sl<OrderRepository>()))
       ..registerLazySingleton<UpdateOrderInvoice>(
         () => UpdateOrderInvoice(sl<OrderRepository>()),
       )
@@ -477,6 +482,16 @@ abstract final class Injector {
           getOrder: sl<GetOrder>(),
           changeStatus: sl<ChangeOrderStatus>(),
         ),
+      )
+      // Parameterised by the *customer*, not by an order — there is no order yet, and the
+      // customer is the one thing the form must not be able to change.
+      ..registerFactoryParam<TakeOrderCubit, int, void>(
+        (customerId, _) =>
+            TakeOrderCubit(takeOrder: sl<TakeOrder>(), customerId: customerId),
+      )
+      // One per line being edited, not one per screen — hence a factory.
+      ..registerFactory<LineQuoteCubit>(
+        () => LineQuoteCubit(getPriceQuote: sl<GetPriceQuote>()),
       );
   }
 

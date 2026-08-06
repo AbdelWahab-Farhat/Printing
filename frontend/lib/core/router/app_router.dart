@@ -27,13 +27,15 @@ import 'package:printing/features/home/presentation/views/home_page.dart';
 import 'package:printing/features/location/presentation/views/pick_location_page.dart';
 import 'package:printing/features/orders/models/orders_filter.dart';
 import 'package:printing/features/orders/presentation/views/filtered_orders_page.dart';
+import 'package:printing/features/orders/presentation/views/new_order_page.dart';
 import 'package:printing/features/orders/presentation/views/order_detail_page.dart';
 import 'package:printing/features/orders/presentation/views/order_edit_page.dart';
 import 'package:printing/features/orders/presentation/views/order_payments_page.dart';
 import 'package:printing/features/orders/presentation/views/order_status_page.dart';
 import 'package:printing/features/orders/presentation/views/orders_page.dart';
-import 'package:printing/features/products/presentation/views/add_product_page.dart';
+import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/presentation/views/product_detail_page.dart';
+import 'package:printing/features/products/presentation/views/product_form_page.dart';
 import 'package:printing/features/products/presentation/views/products_page.dart';
 import 'package:printing/features/root/presentation/views/root_page.dart';
 import 'package:printing/features/settings/presentation/views/settings_page.dart';
@@ -147,12 +149,29 @@ abstract final class Routes {
 
   static String customerDesigns(int id) => '/customers/$id/designs';
 
+  /// Taking an order from this customer.
+  ///
+  /// **A child of the customer, and that is the design rather than a tidy URL.** An order does
+  /// not change hands — `customer_id` is read on create and ignored afterwards — so the only
+  /// correction for the wrong customer is to cancel the order and take it again. Naming the
+  /// customer in the path instead of in a field on the form is what makes the wrong one
+  /// unnameable. See NEW-ORDER-DESIGN.md.
+  static const String newCustomerOrderPath = 'orders/new';
+
+  static String newCustomerOrder(int customerId) => '/customers/$customerId/orders/new';
+
   /// Any record's history. One screen for every model — see [AuditSubject].
   static const String activityLogPath = '/logs/:type/:id';
 
   static String activityLog(AuditSubject subject, int id) => '/logs/${subject.path}/$id';
 
   static const String addProduct = '/products/new';
+
+  /// The same form, opened on a product that exists. A child of the detail route, because that
+  /// is what it is: correcting *this* product.
+  static const String editProductPath = 'edit';
+
+  static String editProduct(int productId) => '/products/$productId/edit';
 
   /// One product, everything about it. Declared **after** `/products/new` below, because
   /// GoRouter matches in declaration order and `:id` would otherwise swallow the word `new`.
@@ -483,6 +502,21 @@ abstract final class AppRouter {
               customerName: state.extra as String?,
             ),
           ),
+          // Guarded here rather than only on the arm that opens it, so a deep link cannot walk
+          // past the check — the API refuses too, and this is what stops the form 403ing in
+          // front of somebody instead of never opening.
+          GoRoute(
+            path: Routes.newCustomerOrderPath,
+            redirect: (context, state) => sl<Session>().can(AppPermission.manageOrders)
+                ? null
+                : Routes.customer(int.parse(state.pathParameters['id']!)),
+            builder: (context, state) => NewOrderPage(
+              customerId: int.parse(state.pathParameters['id']!),
+              // The customer the caller was looking at, so the form opens with their name in
+              // place. Null on a cold deep link, where the screen fetches them.
+              customer: state.extra as Customer?,
+            ),
+          ),
         ],
       ),
       GoRoute(
@@ -514,7 +548,7 @@ abstract final class AppRouter {
         // — a redirect cannot await.
         redirect: (context, state) =>
             sl<Session>().can(AppPermission.manageProducts) ? null : Routes.products,
-        builder: (context, state) => const AddProductPage(),
+        builder: (context, state) => const ProductFormPage(),
       ),
       // After `/products/new`, and that ordering is load-bearing: go_router matches in
       // declaration order, so `:id` declared first would capture the literal `new` and
@@ -530,6 +564,25 @@ abstract final class AppRouter {
               ? const _UnknownProduct()
               : ProductDetailPage(productId: id);
         },
+        routes: [
+          GoRoute(
+            path: Routes.editProductPath,
+            redirect: (context, state) =>
+                sl<Session>().can(AppPermission.manageProducts) ? null : Routes.products,
+            builder: (context, state) {
+              // The product travels as `extra` so the form opens filled from the screen that
+              // already had it. A deep link carries none, and rather than a blank form
+              // pretending to be an edit — which would save an empty product over a real one —
+              // it sends the reader to the product itself to open it from there.
+              final product = state.extra as Product?;
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+              if (product != null) return ProductFormPage(product: product);
+
+              return id == null ? const _UnknownProduct() : ProductDetailPage(productId: id);
+            },
+          ),
+        ],
       ),
     ],
     // A cold deep link bypasses `initialLocation`, so it can reach a gated route before the

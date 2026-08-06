@@ -68,7 +68,21 @@ class _ProductDetailView extends StatelessWidget {
           final product = state.product;
           if (product == null) return const SizedBox.shrink();
 
-          return _Actions(product: product);
+          return _Actions(
+            product: product,
+            // Re-read rather than trusting what came back: prices are the catalogue's own
+            // arithmetic and this screen is the one that has to be right about them.
+            onEdit: (context) async {
+              final saved = await context.push<bool>(
+                Routes.editProduct(product.id),
+                // Handed over so the form opens filled without a second request for a product
+                // this screen already has.
+                extra: product,
+              );
+
+              if (saved ?? false) await cubit.load();
+            },
+          );
         },
       ),
       body: BlocBuilder<ProductDetailCubit, ProductDetailState>(
@@ -90,18 +104,28 @@ class _ProductDetailView extends StatelessWidget {
 
 /// What this screen can do, as data.
 ///
-/// One entry today. [AppSpeedDial] collapses to a plain button when only one action survives the
-/// permission filter, so this is the same widget the customer screen uses and looks like a
-/// single button until there is a second thing to offer.
+/// [AppSpeedDial] collapses to a plain button when only one action survives the permission
+/// filter, so a reader who may look at the catalogue and not change it sees exactly one button
+/// rather than a dial with a single arm.
 class _Actions extends StatelessWidget {
-  const _Actions({required this.product});
+  const _Actions({required this.product, required this.onEdit});
 
   final Product product;
+  final Future<void> Function(BuildContext context) onEdit;
 
   @override
   Widget build(BuildContext context) {
     return AppSpeedDial(
       actions: [
+        AppAction(
+          label: 'تعديل المنتج',
+          icon: AppIcons.edit,
+          tone: AppActionTone.primary,
+          // The same permission the route guards and the server enforces. Hiding it here is the
+          // courtesy; the other two are the boundary.
+          permission: AppPermission.manageProducts,
+          onTap: onEdit,
+        ),
         AppAction(
           label: 'سجل التعديلات',
           icon: AppIcons.history,

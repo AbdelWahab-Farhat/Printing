@@ -5,6 +5,7 @@ import 'package:printing/core/network/api_endpoints.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/core/network/safe_request.dart';
 import 'package:printing/features/products/models/new_product.dart';
+import 'package:printing/features/products/models/price_quote.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/repositories/product_repository.dart';
 
@@ -54,12 +55,37 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
+  Future<Either<Failure, PriceQuote>> quote({
+    required int productId,
+    required int variantId,
+    required String quantity,
+  }) {
+    return safeRequest<PriceQuote>(
+      // The quantity goes as the string it is. Sending it as a number would hand it to
+      // `jsonEncode` as a double, and `300.5` is the least of what that can do to a decimal.
+      () => _dio.post(
+        ProductEndpoints.quote(productId),
+        data: <String, dynamic>{'variant_id': variantId, 'quantity': quantity},
+      ),
+      parse: (data) => PriceQuote.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, Product>> create(NewProduct product) {
     return safeRequest<Product>(
       // `toJson` and not a Map literal assembled here: the body nests variants inside a product
       // and price tiers inside those, and a forty-line literal reachable only through Dio is a
       // shape no test can reach. As a model it is a pure function.
       () => _dio.post(ProductEndpoints.index, data: product.toJson()),
+      parse: (data) => Product.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Product>> update(int productId, NewProduct product) {
+    return safeRequest<Product>(
+      () => _dio.put(ProductEndpoints.show(productId), data: product.toJson()),
       parse: (data) => Product.fromJson(data as Map<String, dynamic>),
     );
   }

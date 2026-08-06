@@ -9,7 +9,11 @@ part of 'order.dart';
 _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   id: (json['id'] as num).toInt(),
   code: json['code'] as String,
-  status: $enumDecode(_$OrderStatusEnumMap, json['status'], unknownValue: OrderStatus.unknown),
+  status: $enumDecode(
+    _$OrderStatusEnumMap,
+    json['status'],
+    unknownValue: OrderStatus.unknown,
+  ),
   statusLabel: json['status_label'] as String,
   isFinal: json['is_final'] as bool,
   isClosed: json['is_closed'] as bool? ?? false,
@@ -74,10 +78,18 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   transitions: (json['transitions'] as List<dynamic>?)
       ?.map((e) => OrderTransitionRecord.fromJson(e as Map<String, dynamic>))
       .toList(),
-  placedAt: json['placed_at'] == null ? null : DateTime.parse(json['placed_at'] as String),
-  deliveredAt: json['delivered_at'] == null ? null : DateTime.parse(json['delivered_at'] as String),
-  settledAt: json['settled_at'] == null ? null : DateTime.parse(json['settled_at'] as String),
-  createdAt: json['created_at'] == null ? null : DateTime.parse(json['created_at'] as String),
+  placedAt: json['placed_at'] == null
+      ? null
+      : DateTime.parse(json['placed_at'] as String),
+  deliveredAt: json['delivered_at'] == null
+      ? null
+      : DateTime.parse(json['delivered_at'] as String),
+  settledAt: json['settled_at'] == null
+      ? null
+      : DateTime.parse(json['settled_at'] as String),
+  createdAt: json['created_at'] == null
+      ? null
+      : DateTime.parse(json['created_at'] as String),
 );
 
 Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
@@ -87,7 +99,9 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'status_label': instance.statusLabel,
   'is_final': instance.isFinal,
   'is_closed': instance.isClosed,
-  'available_transitions': instance.availableTransitions.map((e) => e.toJson()).toList(),
+  'available_transitions': instance.availableTransitions
+      .map((e) => e.toJson())
+      .toList(),
   'customer_id': instance.customerId,
   'city_id': instance.cityId,
   'design_source': instance.designSource,
@@ -160,19 +174,21 @@ const _$PaymentStatusEnumMap = {
   PaymentStatus.unknown: 'unknown',
 };
 
-_OrderProgress _$OrderProgressFromJson(Map<String, dynamic> json) => _OrderProgress(
-  steps:
-      (json['steps'] as List<dynamic>?)
-          ?.map((e) => OrderStep.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const <OrderStep>[],
-  isDetour: json['is_detour'] as bool? ?? false,
-);
+_OrderProgress _$OrderProgressFromJson(Map<String, dynamic> json) =>
+    _OrderProgress(
+      steps:
+          (json['steps'] as List<dynamic>?)
+              ?.map((e) => OrderStep.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <OrderStep>[],
+      isDetour: json['is_detour'] as bool? ?? false,
+    );
 
-Map<String, dynamic> _$OrderProgressToJson(_OrderProgress instance) => <String, dynamic>{
-  'steps': instance.steps.map((e) => e.toJson()).toList(),
-  'is_detour': instance.isDetour,
-};
+Map<String, dynamic> _$OrderProgressToJson(_OrderProgress instance) =>
+    <String, dynamic>{
+      'steps': instance.steps.map((e) => e.toJson()).toList(),
+      'is_detour': instance.isDetour,
+    };
 
 _OrderStep _$OrderStepFromJson(Map<String, dynamic> json) => _OrderStep(
   status: json['status'] as String,
@@ -180,29 +196,36 @@ _OrderStep _$OrderStepFromJson(Map<String, dynamic> json) => _OrderStep(
   state: json['state'] as String,
 );
 
-Map<String, dynamic> _$OrderStepToJson(_OrderStep instance) => <String, dynamic>{
-  'status': instance.status,
-  'label': instance.label,
-  'state': instance.state,
-};
+Map<String, dynamic> _$OrderStepToJson(_OrderStep instance) =>
+    <String, dynamic>{
+      'status': instance.status,
+      'label': instance.label,
+      'state': instance.state,
+    };
 
-_OrderTransition _$OrderTransitionFromJson(Map<String, dynamic> json) => _OrderTransition(
-  status: $enumDecode(_$OrderStatusEnumMap, json['status'], unknownValue: OrderStatus.unknown),
-  label: json['label'] as String,
-  requiresReason: json['requires_reason'] as bool? ?? false,
-  fields:
-      (json['fields'] as List<dynamic>?)
-          ?.map((e) => TransitionField.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const <TransitionField>[],
-);
+_OrderTransition _$OrderTransitionFromJson(Map<String, dynamic> json) =>
+    _OrderTransition(
+      status: $enumDecode(
+        _$OrderStatusEnumMap,
+        json['status'],
+        unknownValue: OrderStatus.unknown,
+      ),
+      label: json['label'] as String,
+      requiresReason: json['requires_reason'] as bool? ?? false,
+      fields:
+          (json['fields'] as List<dynamic>?)
+              ?.map((e) => TransitionField.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <TransitionField>[],
+    );
 
-Map<String, dynamic> _$OrderTransitionToJson(_OrderTransition instance) => <String, dynamic>{
-  'status': _$OrderStatusEnumMap[instance.status]!,
-  'label': instance.label,
-  'requires_reason': instance.requiresReason,
-  'fields': instance.fields.map((e) => e.toJson()).toList(),
-};
+Map<String, dynamic> _$OrderTransitionToJson(_OrderTransition instance) =>
+    <String, dynamic>{
+      'status': _$OrderStatusEnumMap[instance.status]!,
+      'label': instance.label,
+      'requires_reason': instance.requiresReason,
+      'fields': instance.fields.map((e) => e.toJson()).toList(),
+    };
 
 _OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => _OrderItem(
   id: (json['id'] as num).toInt(),
@@ -218,19 +241,20 @@ _OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => _OrderItem(
   notes: json['notes'] as String?,
 );
 
-Map<String, dynamic> _$OrderItemToJson(_OrderItem instance) => <String, dynamic>{
-  'id': instance.id,
-  'product_id': instance.productId,
-  'product_variant_id': instance.productVariantId,
-  'product_name': instance.productName,
-  'variant_label': instance.variantLabel,
-  'pricing_unit_label': instance.pricingUnitLabel,
-  'quantity': instance.quantity,
-  'shortage_quantity': instance.shortageQuantity,
-  'unit_price': instance.unitPrice,
-  'line_total': instance.lineTotal,
-  'notes': instance.notes,
-};
+Map<String, dynamic> _$OrderItemToJson(_OrderItem instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'product_id': instance.productId,
+      'product_variant_id': instance.productVariantId,
+      'product_name': instance.productName,
+      'variant_label': instance.variantLabel,
+      'pricing_unit_label': instance.pricingUnitLabel,
+      'quantity': instance.quantity,
+      'shortage_quantity': instance.shortageQuantity,
+      'unit_price': instance.unitPrice,
+      'line_total': instance.lineTotal,
+      'notes': instance.notes,
+    };
 
 _OrderDesign _$OrderDesignFromJson(Map<String, dynamic> json) => _OrderDesign(
   id: (json['id'] as num).toInt(),
@@ -243,45 +267,52 @@ _OrderDesign _$OrderDesignFromJson(Map<String, dynamic> json) => _OrderDesign(
       : CustomerDesign.fromJson(json['design'] as Map<String, dynamic>),
   rejectionReason: json['rejection_reason'] as String?,
   notes: json['notes'] as String?,
-  createdAt: json['created_at'] == null ? null : DateTime.parse(json['created_at'] as String),
+  createdAt: json['created_at'] == null
+      ? null
+      : DateTime.parse(json['created_at'] as String),
 );
 
-Map<String, dynamic> _$OrderDesignToJson(_OrderDesign instance) => <String, dynamic>{
-  'id': instance.id,
-  'version': instance.version,
-  'status': instance.status,
-  'status_label': instance.statusLabel,
-  'is_reviewed': instance.isReviewed,
-  'design': instance.design?.toJson(),
-  'rejection_reason': instance.rejectionReason,
-  'notes': instance.notes,
-  'created_at': instance.createdAt?.toIso8601String(),
-};
+Map<String, dynamic> _$OrderDesignToJson(_OrderDesign instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'version': instance.version,
+      'status': instance.status,
+      'status_label': instance.statusLabel,
+      'is_reviewed': instance.isReviewed,
+      'design': instance.design?.toJson(),
+      'rejection_reason': instance.rejectionReason,
+      'notes': instance.notes,
+      'created_at': instance.createdAt?.toIso8601String(),
+    };
 
 _OrderActor _$OrderActorFromJson(Map<String, dynamic> json) =>
     _OrderActor(id: (json['id'] as num).toInt(), name: json['name'] as String);
 
-Map<String, dynamic> _$OrderActorToJson(_OrderActor instance) => <String, dynamic>{
+Map<String, dynamic> _$OrderActorToJson(_OrderActor instance) =>
+    <String, dynamic>{'id': instance.id, 'name': instance.name};
+
+_OrderTransitionRecord _$OrderTransitionRecordFromJson(
+  Map<String, dynamic> json,
+) => _OrderTransitionRecord(
+  id: (json['id'] as num).toInt(),
+  fromStatusLabel: json['from_status_label'] as String?,
+  toStatusLabel: json['to_status_label'] as String,
+  reason: json['reason'] as String?,
+  user: json['user'] == null
+      ? null
+      : OrderActor.fromJson(json['user'] as Map<String, dynamic>),
+  createdAt: json['created_at'] == null
+      ? null
+      : DateTime.parse(json['created_at'] as String),
+);
+
+Map<String, dynamic> _$OrderTransitionRecordToJson(
+  _OrderTransitionRecord instance,
+) => <String, dynamic>{
   'id': instance.id,
-  'name': instance.name,
+  'from_status_label': instance.fromStatusLabel,
+  'to_status_label': instance.toStatusLabel,
+  'reason': instance.reason,
+  'user': instance.user?.toJson(),
+  'created_at': instance.createdAt?.toIso8601String(),
 };
-
-_OrderTransitionRecord _$OrderTransitionRecordFromJson(Map<String, dynamic> json) =>
-    _OrderTransitionRecord(
-      id: (json['id'] as num).toInt(),
-      fromStatusLabel: json['from_status_label'] as String?,
-      toStatusLabel: json['to_status_label'] as String,
-      reason: json['reason'] as String?,
-      user: json['user'] == null ? null : OrderActor.fromJson(json['user'] as Map<String, dynamic>),
-      createdAt: json['created_at'] == null ? null : DateTime.parse(json['created_at'] as String),
-    );
-
-Map<String, dynamic> _$OrderTransitionRecordToJson(_OrderTransitionRecord instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'from_status_label': instance.fromStatusLabel,
-      'to_status_label': instance.toStatusLabel,
-      'reason': instance.reason,
-      'user': instance.user?.toJson(),
-      'created_at': instance.createdAt?.toIso8601String(),
-    };

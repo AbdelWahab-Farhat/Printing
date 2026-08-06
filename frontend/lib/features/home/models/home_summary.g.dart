@@ -23,23 +23,26 @@ _HomeSummary _$HomeSummaryFromJson(Map<String, dynamic> json) => _HomeSummary(
       const <OrderStatusCount>[],
 );
 
-Map<String, dynamic> _$HomeSummaryToJson(_HomeSummary instance) => <String, dynamic>{
-  'total_orders': instance.totalOrders,
-  'customers_count': instance.customersCount,
-  'daily_orders': instance.dailyOrders,
-  'monthly_orders': instance.monthlyOrders,
-  'statuses': instance.statuses.map((e) => e.toJson()).toList(),
-  'payments': instance.payments.map((e) => e.toJson()).toList(),
-};
+Map<String, dynamic> _$HomeSummaryToJson(_HomeSummary instance) =>
+    <String, dynamic>{
+      'total_orders': instance.totalOrders,
+      'customers_count': instance.customersCount,
+      'daily_orders': instance.dailyOrders,
+      'monthly_orders': instance.monthlyOrders,
+      'statuses': instance.statuses.map((e) => e.toJson()).toList(),
+      'payments': instance.payments.map((e) => e.toJson()).toList(),
+    };
 
-_OrderStatusCount _$OrderStatusCountFromJson(Map<String, dynamic> json) => _OrderStatusCount(
-  status: json['status'] as String,
-  label: json['label'] as String,
-  count: (json['count'] as num).toInt(),
-);
+_OrderStatusCount _$OrderStatusCountFromJson(Map<String, dynamic> json) =>
+    _OrderStatusCount(
+      status: json['status'] as String,
+      label: json['label'] as String,
+      count: (json['count'] as num).toInt(),
+    );
 
-Map<String, dynamic> _$OrderStatusCountToJson(_OrderStatusCount instance) => <String, dynamic>{
-  'status': instance.status,
-  'label': instance.label,
-  'count': instance.count,
-};
+Map<String, dynamic> _$OrderStatusCountToJson(_OrderStatusCount instance) =>
+    <String, dynamic>{
+      'status': instance.status,
+      'label': instance.label,
+      'count': instance.count,
+    };

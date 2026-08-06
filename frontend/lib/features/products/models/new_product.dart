@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'new_product.freezed.dart';
 part 'new_product.g.dart';
 
-/// A product about to be created — what the form collected, in the shape the API accepts.
+/// A product about to be saved — what the form collected, in the shape the API accepts.
 ///
 /// Separate from [Product] because the two are genuinely different things: a `Product` has an
 /// id, a code, timestamps and server-computed labels, none of which exist yet. Making the form
@@ -54,6 +54,16 @@ abstract class NewProduct with _$NewProduct {
 @freezed
 abstract class NewProductVariant with _$NewProductVariant {
   const factory NewProductVariant({
+    /// **The id of a size that already exists, and the reason editing works at all.**
+    ///
+    /// `PUT /products/{id}` makes the list match exactly: a size carrying an id is updated in
+    /// place, one without is created, and one left out is *removed*. Sending an existing size
+    /// without its id would therefore delete it and create a lookalike — and the order lines
+    /// pointing at the old row would be pointing at a deleted size.
+    ///
+    /// Null when creating, and omitted from the body then.
+    @JsonKey(includeIfNull: false) int? id,
+
     required String label,
 
     /// Strings, not `int`s, and deliberately.

@@ -6,6 +6,7 @@ import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/api_endpoints.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/core/network/safe_request.dart';
+import 'package:printing/features/orders/models/new_order.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/order_counts.dart';
 import 'package:printing/features/orders/models/order_status.dart';
@@ -79,6 +80,17 @@ class OrderRepositoryImpl implements OrderRepository {
   Future<Either<Failure, Order>> order(int orderId) {
     return safeRequest<Order>(
       () => _dio.get(OrderEndpoints.show(orderId)),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Order>> create(NewOrder order) {
+    return safeRequest<Order>(
+      // `toJson` rather than a Map literal assembled here: the body nests the lines, and a
+      // twenty-line literal reachable only through Dio is a shape no test can reach. As a model
+      // it is a pure function — see `take_order_wire_test.dart`.
+      () => _dio.post(OrderEndpoints.index, data: order.toJson()),
       parse: (data) => Order.fromJson(data as Map<String, dynamic>),
     );
   }

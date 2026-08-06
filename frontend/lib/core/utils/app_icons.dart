@@ -69,6 +69,11 @@ abstract final class AppIcons {
   static IconData get addProduct =>
       _pick(Icons.add_box_outlined, CupertinoIcons.plus_app);
 
+  /// Taking an order. The bag of [orders] with a plus on it, so the action reads as «one more
+  /// of those» rather than as a new thing of its own kind.
+  static IconData get addOrder =>
+      _pick(Icons.add_shopping_cart_rounded, CupertinoIcons.bag_badge_plus);
+
   /// A plain "one more of these" — a size, a price break. Not [addProduct], which names a
   /// specific thing to create.
   static IconData get add => _pick(Icons.add_rounded, CupertinoIcons.add);

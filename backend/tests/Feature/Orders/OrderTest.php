@@ -275,6 +275,44 @@ class OrderTest extends TestCase
         $this->assertDatabaseCount('orders', 0);
     }
 
+    public function test_a_deactivated_customer_cannot_be_sold_to(): void
+    {
+        // Arrange — somebody the shop has stopped selling to. The app hides «طلبية جديدة» on
+        // their screen; this is the half that is a rule rather than a suggestion, and it is the
+        // half a deep link, a seeder or an import has to walk into as well.
+        $retired = Customer::factory()->inactive()->create(['name' => 'محل النور']);
+        $headers = $this->clerk();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'customer_id' => $retired->getKey(),
+        ]));
+
+        // Assert
+        $response->assertStatus(422)
+            ->assertJsonPath('status', false)
+            ->assertJsonPath('message', 'العميل «محل النور» معطَّل، ولا تُؤخذ منه طلبيات');
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_an_active_customer_is_still_sold_to(): void
+    {
+        // Arrange — the other side of the guard above, so a refusal that fires on everybody
+        // cannot pass as a working rule.
+        $customer = Customer::factory()->create();
+        $headers = $this->clerk();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'customer_id' => $customer->getKey(),
+        ]));
+
+        // Assert
+        $response->assertCreated();
+        $this->assertDatabaseCount('orders', 1);
+    }
+
     public function test_the_fulfilment_type_comes_from_the_city(): void
     {
         // Arrange

@@ -86,6 +86,15 @@ class _SectionTitle extends StatelessWidget {
 }
 
 /// A white block with the same corners, border and shadow as every card in the app.
+///
+/// **A `Material` carries the colour, not the `Container`.** Two of the cards below hold a
+/// `ListTile` — the notifications switch and «تسجيل الخروج» — and those paint their ink splash
+/// on the nearest `Material` *ancestor*. A `Container` holding the card's own colour sits in
+/// front of that splash and swallows it: the switch still flips and the logout still fires, and
+/// both look like the tap did nothing. Flutter reports the shape itself («ListTile background
+/// color or ink splashes may be invisible»), which is how it was found.
+///
+/// The same arrangement `PermissionSection` uses, for the same reason.
 class _Card extends StatelessWidget {
   const _Card({required this.child});
 
@@ -95,11 +104,13 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
+    final radius = BorderRadius.circular(20.r);
+
     return Container(
+      // Shadow only — a shadow needs a decoration of its own, and the colour it would otherwise
+      // carry is the Material's below.
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+        borderRadius: radius,
         boxShadow: [
           BoxShadow(
             color: scheme.shadow.withValues(alpha: 0.05),
@@ -108,7 +119,18 @@ class _Card extends StatelessWidget {
           ),
         ],
       ),
-      child: child,
+      // Drawn in front, so a splash reaching the edge does not paint over the border.
+      foregroundDecoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Material(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: radius,
+        // So the first and last rows' ink does not paint over the rounded corners.
+        clipBehavior: Clip.antiAlias,
+        child: child,
+      ),
     );
   }
 }

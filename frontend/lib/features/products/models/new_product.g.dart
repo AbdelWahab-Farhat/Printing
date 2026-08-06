@@ -39,6 +39,7 @@ Map<String, dynamic> _$NewProductToJson(_NewProduct instance) =>
 
 _NewProductVariant _$NewProductVariantFromJson(Map<String, dynamic> json) =>
     _NewProductVariant(
+      id: (json['id'] as num?)?.toInt(),
       label: json['label'] as String,
       widthCm: (json['width_cm'] as num?)?.toInt(),
       heightCm: (json['height_cm'] as num?)?.toInt(),
@@ -51,6 +52,7 @@ _NewProductVariant _$NewProductVariantFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$NewProductVariantToJson(_NewProductVariant instance) =>
     <String, dynamic>{
+      'id': ?instance.id,
       'label': instance.label,
       'width_cm': ?instance.widthCm,
       'height_cm': ?instance.heightCm,
