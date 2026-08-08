@@ -42,7 +42,7 @@ class SaveShippingCompanyCubit extends Cubit<SaveShippingCompanyState> {
     // The screen may have been popped while the request was in flight.
     if (isClosed) return;
 
-    emit(result.fold(SaveShippingCompanyState.failure, SaveShippingCompanyState.success));
+    emit(result.fold((f) => SaveShippingCompanyState.failure(f), (c) => SaveShippingCompanyState.success(c)));
   }
 
   /// Clears a previous failure so the error under a field disappears as the user corrects it.

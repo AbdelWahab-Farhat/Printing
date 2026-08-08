@@ -66,7 +66,7 @@ class SaveProductCubit extends Cubit<SaveProductState> {
     // closed Cubit throws.
     if (isClosed) return;
 
-    emit(result.fold(SaveProductState.failure, SaveProductState.success));
+    emit(result.fold((f) => SaveProductState.failure(f), (p) => SaveProductState.success(p)));
   }
 
   /// Clears a previous failure so an error under a field disappears as the user corrects it,

@@ -56,7 +56,7 @@ class LineQuoteCubit extends Cubit<LineQuoteState> {
 
     if (isClosed || request != _latest) return;
 
-    emit(result.fold(LineQuoteState.failure, LineQuoteState.priced));
+    emit(result.fold((f) => LineQuoteState.failure(f), (q) => LineQuoteState.priced(q)));
   }
 
   /// The line is for a product the catalogue prices «حسب الطلب».

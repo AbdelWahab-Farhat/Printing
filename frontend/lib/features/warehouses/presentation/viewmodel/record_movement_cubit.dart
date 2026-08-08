@@ -43,7 +43,7 @@ class RecordMovementCubit extends Cubit<RecordMovementState> {
 
     if (isClosed) return;
 
-    emit(result.fold(RecordMovementState.failure, RecordMovementState.success));
+    emit(result.fold((f) => RecordMovementState.failure(f), (m) => RecordMovementState.success(m)));
   }
 
   void clearFailure() {

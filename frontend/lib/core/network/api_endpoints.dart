@@ -91,6 +91,28 @@ abstract final class StockMovementEndpoints {
   static const String adjustments = '/stock-movements/adjustments';
 }
 
+/// الموردون — who the business buys its stock from. Deactivated, never deleted, so there is no
+/// destroy path here: past shipments must keep naming the vendor that sent them.
+abstract final class VendorEndpoints {
+  static const String index = '/vendors';
+
+  static String show(int vendorId) => '/vendors/$vendorId';
+
+  static String activation(int vendorId) => '/vendors/$vendorId/activation';
+}
+
+/// شحنات التوريد — a document from a vendor: one warehouse, one or more lines.
+///
+/// **Read and create only.** Posting one writes a ledger row per line onto the same
+/// `stock_movements` feed [StockMovementEndpoints] reads, so it is never edited afterwards —
+/// a mistake is corrected by an adjustment against the warehouse, exactly as it is for any
+/// other movement. Hence no `show`-with-PUT and no delete.
+abstract final class StockArrivalEndpoints {
+  static const String index = '/stock-arrivals';
+
+  static String show(int stockArrivalId) => '/stock-arrivals/$stockArrivalId';
+}
+
 abstract final class ProductEndpoints {
   static const String index = '/products';
 

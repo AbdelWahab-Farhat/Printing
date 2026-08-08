@@ -36,7 +36,7 @@ class SaveWarehouseCubit extends Cubit<SaveWarehouseState> {
 
     if (isClosed) return;
 
-    emit(result.fold(SaveWarehouseState.failure, SaveWarehouseState.success));
+    emit(result.fold((f) => SaveWarehouseState.failure(f), (w) => SaveWarehouseState.success(w)));
   }
 
   void clearFailure() {

@@ -119,6 +119,8 @@ import 'package:printing/features/shipping_companies/repositories/shipping_compa
 import 'package:printing/features/shipping_companies/usecases/get_shipping_companies.dart';
 import 'package:printing/features/shipping_companies/usecases/save_shipping_company.dart';
 import 'package:printing/features/splash/presentation/viewmodel/splash_cubit.dart';
+import 'package:printing/features/vendors/repositories/vendor_repository.dart';
+import 'package:printing/features/vendors/repositories/vendor_repository_impl.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/save_warehouse_cubit.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
@@ -215,6 +217,7 @@ abstract final class Injector {
     _registerCities();
     _registerBusinessFields();
     _registerWarehouses();
+    _registerVendors();
     _registerShippingCompanies();
     _registerCustomers();
     _registerSettings();
@@ -502,6 +505,16 @@ abstract final class Injector {
   /// Two Cubits from one list: the management screen shows every company, and the dispatch
   /// picker shows only the ones a parcel may still be handed to — so `onlyActive` is a
   /// construction argument rather than a filter the screen has to remember to apply.
+  /// الموردون وشحنات التوريد.
+  ///
+  /// The repository alone for now — the use cases and cubits arrive with the screens that need
+  /// them, and registering a `GetVendors` nothing calls would be a factory for dead code. What
+  /// this does buy is that the day a screen is written, it reaches the API through the same
+  /// front door every other feature does rather than building its own `Dio` call.
+  static void _registerVendors() {
+    sl.registerLazySingleton<VendorRepository>(() => VendorRepositoryImpl(sl<Dio>()));
+  }
+
   static void _registerShippingCompanies() {
     sl
       ..registerLazySingleton<ShippingCompanyRepository>(

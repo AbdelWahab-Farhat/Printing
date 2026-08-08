@@ -36,6 +36,6 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
     // closed Cubit throws.
     if (isClosed) return;
 
-    emit(result.fold(ProductDetailState.failure, ProductDetailState.loaded));
+    emit(result.fold((f) => ProductDetailState.failure(f), (p) => ProductDetailState.loaded(p)));
   }
 }

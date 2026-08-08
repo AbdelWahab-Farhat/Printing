@@ -178,6 +178,27 @@ BlocBuilder<CitiesCubit, CitiesState>(
 4. **حماية من الردود المتأخرة**: عدّاد `_requestId` — رد بطيء لبحث «طر» يجب ألا يمسح نتائج «طرابلس» الأحدث. انظر [cities_cubit.dart](lib/features/cities/presentation/viewmodel/cities_cubit.dart).
 5. **البحث بـ debounce** (350ms) — لا طلب لكل حرف.
 6. **فشل صفحة إضافية لا يمسح ما هو معروض.** خسارة قائمة تعمل لأن الصفحة الرابعة فشلت هي الإجابة الأسوأ.
+7. **لا تُمرَّر مُنشئات الـ State كدوال (tear-off).** اكتب `fold` بإغلاقات صريحة:
+
+   ```dart
+   // ✅
+   emit(result.fold((f) => XState.failure(f), (v) => XState.success(v)));
+
+   // ❌ يبني، ويكسر بناء الإصدار
+   emit(result.fold(XState.failure, XState.success));
+   ```
+
+   **السبب ليس أسلوباً.** مُنشئ اتحاد Freezed هو `redirecting factory`، وتمريره كدالة يولّد
+   `RedirectingFactoryTearOffConstant` — و`const_finder` (الذي يقلّم خطوط الأيقونات في
+   `flutter build --release`) ينهار عليه:
+
+   ```text
+   IconTreeShakerException: ConstFinder failure: Null check operator used on a null value
+   ```
+
+   الرسالة لا تذكر لا Freezed ولا الملف، والانهيار يقع في مرحلة الأصول بعد دقيقة من البناء —
+   فالطريق من العرض إلى السبب طويل جداً. الإغلاق الصريح يكلّف ستة أحرف ويُبقي التقليم يعمل
+   (يوفّر ~١٫٩ ميجابايت من الخطوط).
 
 ### التسجيل في GetIt
 

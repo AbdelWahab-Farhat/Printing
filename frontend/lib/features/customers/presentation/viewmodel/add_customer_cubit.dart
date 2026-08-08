@@ -55,7 +55,7 @@ class AddCustomerCubit extends Cubit<AddCustomerState> {
     // closed Cubit throws.
     if (isClosed) return;
 
-    emit(result.fold(AddCustomerState.failure, AddCustomerState.success));
+    emit(result.fold((f) => AddCustomerState.failure(f), (c) => AddCustomerState.success(c)));
   }
 
   /// Clears a previous failure so the error under a field disappears as soon as the user

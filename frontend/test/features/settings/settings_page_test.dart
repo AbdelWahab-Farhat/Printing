@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printing/core/di/injector.dart';
+import 'package:printing/core/session/session.dart';
 import 'package:printing/features/auth/presentation/viewmodel/logout_cubit.dart';
 import 'package:printing/features/auth/repositories/auth_repository.dart';
 import 'package:printing/features/auth/usecases/logout.dart';
@@ -41,13 +42,17 @@ void main() {
         .thenAnswer((_) async {});
     when(() => auth.logout()).thenAnswer((_) async => const Right(unit));
 
-    sl.registerFactory<SettingsCubit>(
-      () => SettingsCubit(
-        getSettings: GetSettings(settings),
-        setNotificationsEnabled: SetNotificationsEnabled(settings),
-      ),
-    );
-    sl.registerFactory<LogoutCubit>(() => LogoutCubit(logout: Logout(auth)));
+    sl
+      ..registerFactory<SettingsCubit>(
+        () => SettingsCubit(
+          getSettings: GetSettings(settings),
+          setNotificationsEnabled: SetNotificationsEnabled(settings),
+        ),
+      )
+      ..registerFactory<LogoutCubit>(() => LogoutCubit(logout: Logout(auth)))
+      // «حول التطبيق» reads the signed-in user straight off the session — a real one, empty,
+      // because this file is about how the cards are painted and not about who is looking.
+      ..registerSingleton<Session>(Session());
   });
 
   tearDown(() => sl.reset());

@@ -29,7 +29,7 @@ class LoginCubit extends Cubit<LoginState> {
     // closed Cubit throws.
     if (isClosed) return;
 
-    emit(result.fold(LoginState.failure, LoginState.success));
+    emit(result.fold((f) => LoginState.failure(f), (u) => LoginState.success(u)));
   }
 
   /// Clears a previous failure so the error under a field disappears as soon as the user

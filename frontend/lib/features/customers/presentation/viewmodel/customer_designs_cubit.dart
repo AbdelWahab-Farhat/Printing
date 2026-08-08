@@ -57,7 +57,7 @@ class CustomerDesignsCubit extends Cubit<CustomerDesignsState> {
     if (isClosed) return;
 
     emit(
-      result.fold(CustomerDesignsState.failure, (designs) {
+      result.fold((failure) => CustomerDesignsState.failure(failure), (designs) {
         final current = state;
 
         return current is CustomerDesignsLoaded

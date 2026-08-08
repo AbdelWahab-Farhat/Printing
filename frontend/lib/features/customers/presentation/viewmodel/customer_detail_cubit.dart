@@ -33,7 +33,7 @@ class CustomerDetailCubit extends Cubit<CustomerDetailState> {
     final result = await _getCustomer(_customerId);
     if (isClosed) return;
 
-    emit(result.fold(CustomerDetailState.failure, CustomerDetailState.loaded));
+    emit(result.fold((f) => CustomerDetailState.failure(f), (c) => CustomerDetailState.loaded(c)));
   }
 
   /// Turns the customer on or off.

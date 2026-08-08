@@ -78,7 +78,7 @@ class TakeOrderCubit extends Cubit<TakeOrderState> {
     // closed Cubit throws.
     if (isClosed) return;
 
-    emit(result.fold(TakeOrderState.failure, TakeOrderState.success));
+    emit(result.fold((f) => TakeOrderState.failure(f), (o) => TakeOrderState.success(o)));
   }
 
   /// Clears a previous refusal so an error under a field disappears as the user corrects it,

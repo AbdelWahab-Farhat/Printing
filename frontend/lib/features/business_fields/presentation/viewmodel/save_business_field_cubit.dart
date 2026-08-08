@@ -48,7 +48,7 @@ class SaveBusinessFieldCubit extends Cubit<SaveBusinessFieldState> {
     // closed Cubit throws.
     if (isClosed) return;
 
-    emit(result.fold(SaveBusinessFieldState.failure, SaveBusinessFieldState.success));
+    emit(result.fold((f) => SaveBusinessFieldState.failure(f), (b) => SaveBusinessFieldState.success(b)));
   }
 
   /// Clears a previous failure so the error under the field disappears as soon as the user

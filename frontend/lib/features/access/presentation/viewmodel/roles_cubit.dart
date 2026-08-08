@@ -31,7 +31,7 @@ class RolesCubit extends Cubit<RolesState> {
     final result = await _getRoles();
     if (isClosed) return;
 
-    emit(result.fold(RolesState.failure, (roles) => RolesState.loaded(roles: roles)));
+    emit(result.fold((f) => RolesState.failure(f), (roles) => RolesState.loaded(roles: roles)));
   }
 
   Future<void> refresh() => load();

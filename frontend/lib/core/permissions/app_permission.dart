@@ -64,6 +64,13 @@ enum AppPermission {
   viewInventory('inventory.view', 'عرض المخازن والأرصدة والحركات'),
   manageInventory('inventory.manage', 'إدارة المخازن وتسجيل حركات المخزون'),
 
+  // Who we buy from. Its own pair rather than folded into inventory.*, the same split
+  // `customers.*` draws from `products.*`: agreeing terms with a supplier and receiving what
+  // they sent are different jobs. **Recording the shipment itself is still `inventory.manage`** —
+  // it writes to the ledger, and that is squarely the storekeeper's work.
+  viewVendors('vendors.view', 'عرض الموردين'),
+  manageVendors('vendors.manage', 'إضافة وتعديل الموردين'),
+
   // Orders. One permission per status the workflow can move *into*, so the business composes
   // a designer, a printer and a delivery coordinator out of this list without any of those
   // jobs being named in code. The two dispatch statuses share one permission on purpose; the

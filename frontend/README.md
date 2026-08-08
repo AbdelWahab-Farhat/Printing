@@ -14,6 +14,19 @@ dart run build_runner build          # يولّد ملفات Freezed / JSON
 flutter run --dart-define=FLAVOR=dev # تطوير
 ```
 
+## البناء
+
+```bash
+flutter build apk --release --dart-define=FLAVOR=dev  # نسخة تجريبية على خادم التطوير
+flutter build apk --release                           # إنتاج (prod افتراضياً)
+```
+
+⚠️ **لا تستعمل `--flavor`.** البيئة هنا `--dart-define` لا product flavor في Gradle —
+[AppConfig](lib/core/config/app_config.dart) يقرؤها وقت الترجمة ليختار ملف `.env`، فلا يمكن
+إقناع نسخة إنتاج بالتحدث إلى خادم التطوير. و`--flavor dev` يفشل بـ
+«Task 'assembleDevRelease' not found»، لأن `android/app/build.gradle.kts` لا يعرّف أي flavor
+ولا حاجة له بذلك.
+
 قبل أي دمج:
 
 ```bash
