@@ -27,6 +27,12 @@ class StockArrivalResource extends JsonResource
                 'name' => $this->vendor->name,
             ]),
 
+            // Which purchase order this shipment was fulfilling, if any — most arrivals are
+            // unplanned and this is null. A plain scalar, not a nested object: the order itself
+            // is read through GET /purchase-orders/{purchase_order}, the same way order_id
+            // works everywhere else in this API.
+            'purchase_order_id' => $this->purchase_order_id,
+
             'warehouse_id' => $this->warehouse_id,
             'warehouse' => $this->whenLoaded(
                 'warehouse',

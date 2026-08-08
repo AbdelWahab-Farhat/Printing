@@ -33,12 +33,15 @@ final class RecordStockArrival
                 'notes' => $data->notes,
             ]);
 
-            // Assigned rather than mass-assigned, deliberately: none of these three may ever be
+            // Assigned rather than mass-assigned, deliberately: none of these four may ever be
             // settable from a payload. Same rule RecordStockMovement::__invoke() applies to a
-            // ledger row's identity.
+            // ledger row's identity. purchase_order_id is null for a plain arrival — only
+            // PurchaseOrder\Actions\ReceivePurchaseOrder ever fills it in, and this class does
+            // nothing else with it; see the note on StockArrivalData::$purchaseOrderId.
             $arrival->vendor_id = $data->vendorId;
             $arrival->warehouse_id = $data->warehouseId;
             $arrival->received_by = $data->receivedBy;
+            $arrival->purchase_order_id = $data->purchaseOrderId;
             $arrival->save();
 
             foreach ($data->items as $item) {

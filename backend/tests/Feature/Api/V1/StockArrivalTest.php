@@ -116,7 +116,9 @@ class StockArrivalTest extends TestCase
             ->assertJsonPath('data.vendor_id', $vendor->id)
             ->assertJsonPath('data.warehouse_id', $warehouse->id)
             ->assertJsonPath('data.invoice_number', 'INV-1001')
-            ->assertJsonPath('data.items.0.quantity', '200.000');
+            ->assertJsonPath('data.items.0.quantity', '200.000')
+            // Most arrivals are unplanned — no purchase order behind this one.
+            ->assertJsonPath('data.purchase_order_id', null);
 
         // … the ledger row it produced …
         $arrivalId = $response->json('data.id');
@@ -131,6 +133,29 @@ class StockArrivalTest extends TestCase
 
         // … and the balance it left behind
         $this->assertSame('200.000', (string) $this->stockOf($warehouse, $variant)?->quantity);
+    }
+
+    public function test_the_generic_endpoint_ignores_a_purchase_order_id_sent_in_the_payload(): void
+    {
+        // Arrange — only PurchaseOrder\Actions\ReceivePurchaseOrder may ever set this column;
+        // StoreStockArrivalRequest does not declare the field, so Laravel's own validated()
+        // already strips it before it reaches the domain.
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/stock-arrivals', [
+            'vendor_id' => $vendor->id,
+            'warehouse_id' => $warehouse->id,
+            'purchase_order_id' => 999999,
+            'items' => [['product_variant_id' => $variant->id, 'quantity' => 10]],
+        ]);
+
+        // Assert
+        $response->assertCreated()->assertJsonPath('data.purchase_order_id', null);
+        $this->assertDatabaseHas('stock_arrivals', ['vendor_id' => $vendor->id, 'purchase_order_id' => null]);
     }
 
     public function test_a_stock_arrival_with_several_lines_posts_one_movement_per_line(): void
