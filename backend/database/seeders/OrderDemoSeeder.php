@@ -10,6 +10,7 @@ use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Delivery\Models\City;
+use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
@@ -57,6 +58,15 @@ class OrderDemoSeeder extends Seeder
     private City $regionCity;
 
     private City $pickupCity;
+
+    /**
+     * Who carries the parcels these orders go out with.
+     *
+     * A fixture like the city and the customer, because «جاري التوصيل» stopped being a status a
+     * clerk can simply select: the transition asks which company took it, and an order out for
+     * delivery with nobody named is one nobody can chase.
+     */
+    private ShippingCompany $carrier;
 
     private OrderService $orders;
 
@@ -169,9 +179,30 @@ class OrderDemoSeeder extends Seeder
             [OrderStatus::ReturnedOffice, 'وصلت المكتب'],
         ]);
 
-        // ملغاة كلياً — cancelled early, which is where most cancellations happen.
-        $this->walk(-3, 'ملغاة: قبل بدء أي عمل', [
+        // إعادة إرسال — home from the carrier and going out again.
+        $this->walk(-4, 'إعادة إرسال: عادت من الشركة وتُرسَل ثانية', [
+            [OrderStatus::Printing, null],
+            [OrderStatus::Ready, null],
+            [OrderStatus::OutForDelivery, null],
+            [OrderStatus::ReturnedCourier, 'العميل أجّل الاستلام'],
+            [OrderStatus::ReturnedCarrier, null],
+            [OrderStatus::Resend, 'العميل طلب إعادة المحاولة'],
+        ]);
+
+        // إلغاء تام — never from «جديدة», which is the one open status that cannot be cancelled:
+        // a job nobody has started is two taps from being started.
+        $this->walk(-3, 'ملغاة: بعد أن دخلت التصميم', [
+            [OrderStatus::Designing, null],
             [OrderStatus::Cancelled, 'العميل تراجع عن الطلب'],
+        ], DesignSource::Customer);
+
+        // محاسبة — delivered and the money counted.
+        $this->walk(-2, 'محاسبة: سُلّمت وحوسبت', [
+            [OrderStatus::Printing, null],
+            [OrderStatus::Ready, null],
+            [OrderStatus::OutForDelivery, null],
+            [OrderStatus::Delivered, null],
+            [OrderStatus::Settled, null],
         ]);
     }
 
@@ -181,13 +212,21 @@ class OrderDemoSeeder extends Seeder
     {
         // A design conversation: the customer turns one down, the next is approved, and only
         // then may it print. The whole point of versions being rows rather than statuses.
-        $order = $this->walk(-20, 'محادثة تصميم: نسخة مرفوضة ثم معتمدة', [], DesignSource::Customer);
+        // Moved into «قيد التصميم» first, and not as scene-setting: artwork may only be attached
+        // to an order that is in design, and the move itself will not happen without a version
+        // to look at. The first version therefore arrives *with* the move, and the conversation
+        // below is what happens to it.
+        $order = $this->walk(-20, 'محادثة تصميم: نسخة مرفوضة ثم معتمدة', [
+            [OrderStatus::Designing, null],
+        ], DesignSource::Customer);
         $this->designConversation($order, rejectFirst: true);
         $this->move($order, OrderStatus::Printing, at: -19);
         $this->move($order, OrderStatus::Ready, at: -18);
 
         // Our own design, which is the one case that adds a fee to the total.
-        $inHouse = $this->walk(-17, 'تصميم من عندنا: يُضاف سعره للإجمالي', [], DesignSource::InHouse, designFee: '150.00');
+        $inHouse = $this->walk(-17, 'تصميم من عندنا: يُضاف سعره للإجمالي', [
+            [OrderStatus::Designing, null],
+        ], DesignSource::InHouse, designFee: '150.00');
         $this->designConversation($inHouse, rejectFirst: false);
         $this->move($inHouse, OrderStatus::Printing, at: -16);
 
@@ -196,9 +235,13 @@ class OrderDemoSeeder extends Seeder
         $this->walk(-17, 'تصميم العميل: نفس الرسم مُرسَل ولا يُحتسب', [], DesignSource::Customer, designFee: '150.00');
 
         // A discount, which needs its own permission.
-        $this->walk(-15, 'خصم: ٥٠ ديناراً على الإجمالي', [
+        //
+        // Deliberately small: the demo line is one product at its minimum quantity, and the
+        // domain refuses a discount larger than the order it is taken off — so a round ٥٠ here
+        // would only ever demonstrate that rule firing.
+        $this->walk(-15, 'خصم: ٥ دنانير على الإجمالي', [
             [OrderStatus::Printing, null],
-        ], discount: '50.00');
+        ], discount: '5.00');
 
         // A product the catalogue prices «حسب الطلب» — the clerk names the price.
         $this->manuallyPriced();
@@ -229,14 +272,19 @@ class OrderDemoSeeder extends Seeder
             [OrderStatus::Designing, 'اكتُشف خطأ في التصميم بعد بدء الطباعة'],
         ], DesignSource::None);
 
-        // A full round trip: out, refused, back to us, out again, delivered.
+        // A full round trip: out, refused, home one link at a time, out again, delivered.
+        //
+        // The chain is walked rather than jumped on purpose — the parcel is with the courier,
+        // who hands it to the company that sent him, who hands it back to us — and «إعادة إرسال»
+        // is the one step that *is* a jump, because a parcel on our shelf goes straight back out.
         $this->walk(-10, 'دورة كاملة: راجعة ثم أُعيد إرسالها ووصلت', [
             [OrderStatus::Printing, null],
             [OrderStatus::Ready, null],
             [OrderStatus::OutForDelivery, null],
             [OrderStatus::ReturnedCourier, 'العميل غير متواجد'],
-            [OrderStatus::ReturnedOffice, 'أعادها المندوب مباشرة للمكتب'],
-            [OrderStatus::Ready, null],
+            [OrderStatus::ReturnedCarrier, 'سُلّمت لمخزن الشركة'],
+            [OrderStatus::ReturnedOffice, 'وصلت المكتب'],
+            [OrderStatus::Resend, 'اتُّفق مع العميل على موعد جديد'],
             [OrderStatus::OutForDelivery, null],
             [OrderStatus::Delivered, null],
         ]);
@@ -304,9 +352,10 @@ class OrderDemoSeeder extends Seeder
             notes: $note,
             designFee: $designFee,
             discount: $discount,
-            shippingCompany: $shipping ? 'شركة درب' : null,
+            // The carrier and the man holding the parcel are no longer taken here: they are
+            // asked for at «جاري التوصيل», which is the moment anybody knows them. What is left
+            // on the order itself is the number a clerk is given to type in.
             trackingNumber: $shipping ? 'DRB-'.Str::upper(Str::random(8)) : null,
-            courierName: $shipping ? 'عبدالسلام' : null,
             items: [$this->anItem()],
         ), $this->actor);
 
@@ -323,7 +372,66 @@ class OrderDemoSeeder extends Seeder
     {
         Carbon::setTestNow($this->anchor->copy()->addDays($at)->setTime(9, 0)->addHours($hoursIn));
 
-        $this->orders->changeStatus($order->refresh(), $to, $reason, $this->actor);
+        $order = $order->refresh();
+
+        $this->orders->changeStatus($order, $to, $reason, $this->actor, $this->fieldsFor($order, $to));
+    }
+
+    /**
+     * What the form would have been filled in with, for the moves that ask a question.
+     *
+     * The seeder walks orders through the real action rather than stamping statuses on them, so
+     * it has to answer the same questions a clerk does. Three statuses ask one:
+     *
+     *   * «قيد التصميم» is refused without artwork to look at, so a version is uploaded to the
+     *     customer's library and carried in — but only on the way *in*. An order sent back to
+     *     design from printing already has versions on it, and attaching another would be a
+     *     second copy of the same logo,
+     *   * «جاري التوصيل» wants the carrier — required, because the return chain is answered from
+     *     it — and takes the courier's phone if anybody has it,
+     *   * «نواقص» is refused outright unless some line says how much is missing, which is the
+     *     whole point of that status.
+     *
+     * «جاهزة» asks for a weight only when the run is priced by the kilo, and the demo lines are
+     * all priced by the piece, so nothing is sent for it: a seeded number would be inventing a
+     * measurement nobody took.
+     *
+     * @return array<string, mixed>
+     */
+    private function fieldsFor(Order $order, OrderStatus $to): array
+    {
+        if ($to === OrderStatus::Designing) {
+            if ($order->designs()->exists()) {
+                return [];
+            }
+
+            $design = $this->designFor($this->customer, 'الشعار الأزرق');
+
+            return ['design_ids' => [(int) $design->getKey()]];
+        }
+
+        if ($to === OrderStatus::OutForDelivery) {
+            return [
+                'shipping_company_id' => (int) $this->carrier->getKey(),
+                'courier_phone' => '0913334444',
+            ];
+        }
+
+        if ($to === OrderStatus::Shortage) {
+            $item = $order->items->first();
+
+            if ($item === null) {
+                return [];
+            }
+
+            // A tenth of the line, floored at one, so the number reads like a real shortfall
+            // rather than the whole order failing to print.
+            $missing = max(1, (int) floor((float) $item->quantity / 10));
+
+            return ["shortage_{$item->getKey()}" => (string) $missing];
+        }
+
+        return [];
     }
 
     /**
@@ -331,7 +439,10 @@ class OrderDemoSeeder extends Seeder
      */
     private function designConversation(Order $order, bool $rejectFirst): void
     {
-        $first = $this->orders->addDesign($order, (int) $this->designFor($this->customer, 'الشعار الأزرق')->getKey());
+        // Whatever the move into «قيد التصميم» carried in, rather than a fresh upload beside it:
+        // two identical logos on one order would read as a version history nobody had.
+        $first = $order->designs()->orderBy('version')->first()
+            ?? $this->orders->addDesign($order, (int) $this->designFor($this->customer, 'الشعار الأزرق')->getKey());
 
         if (! $rejectFirst) {
             $this->orders->reviewDesign($order, $first, OrderDesignStatus::Approved, null, $this->actor);
@@ -431,6 +542,14 @@ class OrderDemoSeeder extends Seeder
         $this->pickupCity = City::query()
             ->where('fulfilment_type', FulfilmentType::OfficePickup)
             ->firstOrFail();
+
+        // Whichever carrier the shop already works with, or one to work with. Unlike the fixtures
+        // above this may genuinely not exist yet — nothing seeds shipping companies, and a demo
+        // run should not fail for want of a row it can write itself.
+        $this->carrier = ShippingCompany::query()->firstOrCreate(
+            ['name' => 'شركة درب'],
+            ['phone' => '0912223344', 'is_active' => true],
+        );
     }
 
     /** One priceable line: the cheapest tier of the first product that has one. */
