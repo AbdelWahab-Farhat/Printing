@@ -14,6 +14,22 @@ dart run build_runner build          # يولّد ملفات Freezed / JSON
 flutter run --dart-define=FLAVOR=dev # تطوير
 ```
 
+## الشعار
+
+شعار واحد — [assets/images/logo.png](assets/images/logo.png) — خلف ثلاثة أشياء: أيقونة التطبيق،
+والشاشة التي يرسمها النظام أثناء الإقلاع، والعلامة على [SplashPage](lib/features/splash/presentation/views/splash_page.dart).
+بعد تغييره:
+
+```bash
+python3 tool/make_branding_assets.py   # النسخ المبطّنة في assets/branding/
+dart run flutter_launcher_icons        # أيقونات android/ و ios/
+dart run flutter_native_splash:create  # شاشة الإقلاع
+```
+
+الإعدادات وأسبابها في آخر [pubspec.yaml](pubspec.yaml)، والمقاسات وأسبابها في
+[tool/make_branding_assets.py](tool/make_branding_assets.py). و`assets/branding/` **ليست** ضمن
+`assets:` — مدخلات بناء لا يحمّلها التطبيق.
+
 ## البناء
 
 ```bash

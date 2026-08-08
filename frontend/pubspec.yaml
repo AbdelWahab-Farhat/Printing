@@ -101,6 +101,13 @@ dependencies:
   # declared because our own code names it, which is what `depend_on_referenced_packages` is for.
   path_provider: ^2.1.6
 
+  # ── the screen before the app ────────────────────────────────────────────────
+  # A real dependency rather than a dev one, and `main.dart` is why: it holds the system's
+  # splash over start-up and takes it down when the first Flutter frame is ready. The generator
+  # half of the package writes into android/ and ios/ and is run by hand — see the
+  # `flutter_native_splash:` block at the bottom of this file.
+  flutter_native_splash: ^2.4.8
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -114,6 +121,10 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   bloc_test: ^10.0.0
   mocktail: ^1.0.4
+  # A generator, not a library: run by hand after the logo changes, and it writes into android/
+  # and ios/. Nothing in lib/ imports it — unlike `flutter_native_splash`, which is a real
+  # dependency because `main.dart` calls its `preserve`/`remove`.
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -123,3 +134,55 @@ flutter:
     - .env.dev
     - assets/images/
     - assets/icons/
+
+# ── the app's face ────────────────────────────────────────────────────────────────────────────
+#
+# One logo — `assets/images/logo.png` — behind three things: the launcher icon, the screen
+# Android and iOS draw while the app is starting, and the brand mark on [SplashPage]. The first
+# two are generated from the padded copies in `assets/branding/`, which `tool/make_branding_assets.py`
+# derives; the file that ships and is drawn at runtime is the logo itself.
+#
+# After changing the logo:
+#   python3 tool/make_branding_assets.py
+#   dart run flutter_launcher_icons
+#   dart run flutter_native_splash:create
+flutter_launcher_icons:
+  # 1024, because that is the size iOS requires. See the note in the script about the master.
+  image_path: assets/branding/icon_1024.png
+
+  android: true
+  # The masked layer gets the padded copy: a launcher may crop this to a circle, and the
+  # unpadded logo loses its corners when it does.
+  adaptive_icon_foreground: assets/branding/adaptive_foreground.png
+  # The same surface the app opens on, so the icon does not flash a different white.
+  adaptive_icon_background: "#f4fbfa"
+  min_sdk_android: 21
+
+  ios: true
+  # iOS refuses an icon with transparency — it renders as black. The logo's transparent
+  # background is flattened onto the app's own surface colour instead of white, so the icon
+  # matches the splash it opens into.
+  remove_alpha_ios: true
+  background_color_ios: "#f4fbfa"
+
+flutter_native_splash:
+  # The same two colours [SplashPage] uses for its background — `colorScheme.surface` in each
+  # theme. The native screen and the Flutter one that replaces it are then the same picture on
+  # the same background, so the handover is invisible instead of a flash.
+  color: "#f4fbfa"
+  color_dark: "#0e1514"
+  image: assets/images/logo.png
+  image_dark: assets/images/logo.png
+
+  # Android 12 and up ignore the above and draw their own: a 768px circle on a 1152px canvas,
+  # clipping anything outside it. That is what the padded copy is for.
+  android_12:
+    image: assets/branding/splash_android_12.png
+    image_dark: assets/branding/splash_android_12.png
+    color: "#f4fbfa"
+    color_dark: "#0e1514"
+
+  android: true
+  ios: true
+  # No web build of this app, and generating for it writes files nobody uses.
+  web: false

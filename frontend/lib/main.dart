@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:printing/app.dart';
 import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/router/app_router.dart';
@@ -9,7 +10,15 @@ import 'package:printing/core/router/app_router.dart';
 /// Cubit that loads after the UI is up, because work done here is time the user spends looking
 /// at a splash screen.
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final binding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Hold the system's splash screen over the work below.
+  //
+  // Without this it is dismissed the moment Flutter can draw *anything*, which is before
+  // `Injector.init` has read the `.env` and built Dio — so the logo would blink out, a bare
+  // surface would sit there for a beat, and the same logo would fade back in on [SplashPage].
+  // Held, the two screens are one picture: same mark, same background, no seam.
+  FlutterNativeSplash.preserve(widgetsBinding: binding);
 
   await Injector.init(
     // The interceptor has just cleared a rejected token; all that is left is to get the user
@@ -25,4 +34,9 @@ Future<void> main() async {
   );
 
   runApp(const PrintingApp());
+
+  // Taken down only now, with the app built and its first frame on the way. Removing it any
+  // earlier — before `runApp` — would uncover a blank window; leaving it to the package's own
+  // default would have uncovered one mid-`Injector.init`.
+  FlutterNativeSplash.remove();
 }
