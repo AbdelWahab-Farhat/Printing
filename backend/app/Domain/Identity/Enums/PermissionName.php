@@ -98,6 +98,15 @@ enum PermissionName: string
     case ViewVendors = 'vendors.view';
     case ManageVendors = 'vendors.manage';
 
+    // Purchase orders. Drafting, editing, sending and cancelling the paperwork is its own pair,
+    // the same reasoning vendors.* carries — but *receiving* against one stays under
+    // inventory.manage, not this pair: see PurchaseOrderController::receiveArrival(). Posting a
+    // shipment is squarely part of the ledger regardless of which door it came in through, and
+    // splitting it out here would let someone who may only draft orders also post stock, or the
+    // reverse, neither of which this pair is meant to grant.
+    case ViewPurchaseOrders = 'purchase_orders.view';
+    case ManagePurchaseOrders = 'purchase_orders.manage';
+
     // The audit trail. One permission, not a pair: nothing writes to it by hand, so there is
     // nothing to manage — and reading it is its own decision, because it exposes every change
     // anyone has made to records the reader may not otherwise be allowed to see.
@@ -144,6 +153,8 @@ enum PermissionName: string
             self::ManageInventory => 'إدارة المخازن وتسجيل حركات المخزون',
             self::ViewVendors => 'عرض الموردين',
             self::ManageVendors => 'إضافة وتعديل الموردين',
+            self::ViewPurchaseOrders => 'عرض أوامر الشراء',
+            self::ManagePurchaseOrders => 'إنشاء وتعديل أوامر الشراء وإرسالها وإلغاؤها',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
         };
     }
@@ -173,6 +184,7 @@ enum PermissionName: string
 
             self::ViewInventory, self::ManageInventory => 'المخازن والمخزون',
             self::ViewVendors, self::ManageVendors => 'الموردون',
+            self::ViewPurchaseOrders, self::ManagePurchaseOrders => 'أوامر الشراء',
             self::ViewActivityLogs => 'سجل النشاطات',
         };
     }

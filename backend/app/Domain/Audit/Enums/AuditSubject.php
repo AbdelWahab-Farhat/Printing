@@ -25,6 +25,8 @@ use App\Domain\Order\Models\OrderDesign;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Models\OrderStatusTransition;
+use App\Domain\PurchaseOrder\Models\PurchaseOrder;
+use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\Models\StockArrivalItem;
 use App\Domain\Vendor\Models\Vendor;
@@ -89,6 +91,10 @@ enum AuditSubject: string
     case StockArrival = 'stock_arrival';
     case StockArrivalItem = 'stock_arrival_item';
 
+    // Purchase orders
+    case PurchaseOrder = 'purchase_order';
+    case PurchaseOrderItem = 'purchase_order_item';
+
     /**
      * @return class-string<Model>
      */
@@ -119,6 +125,8 @@ enum AuditSubject: string
             self::Vendor => Vendor::class,
             self::StockArrival => StockArrival::class,
             self::StockArrivalItem => StockArrivalItem::class,
+            self::PurchaseOrder => PurchaseOrder::class,
+            self::PurchaseOrderItem => PurchaseOrderItem::class,
         };
     }
 
@@ -152,6 +160,8 @@ enum AuditSubject: string
             self::Vendor => 'مورد',
             self::StockArrival => 'توريد',
             self::StockArrivalItem => 'بند توريد',
+            self::PurchaseOrder => 'أمر شراء',
+            self::PurchaseOrderItem => 'بند أمر شراء',
         };
     }
 

@@ -1,0 +1,87 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Application\Api\V1\Requests\PurchaseOrder;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+/**
+ * Receiving a shipment against a purchase order.
+ *
+ * Deliberately the same shape as `StoreStockArrivalRequest`'s items, minus `vendor_id` and
+ * `warehouse_id` — both are already fixed by the order itself, so re-sending them would only
+ * invite a payload that disagrees with the order it names.
+ *
+ * Whether *this* order may currently receive anything, and whether any one line's quantity is
+ * more than what remains on order, are domain questions — see `PurchaseOrderNotReceivable` and
+ * `ReceivedQuantityExceedsOrdered` — because both depend on state this request cannot see
+ * without reading the database twice.
+ */
+class ReceivePurchaseOrderArrivalRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        return [
+            // The vendor's own document number. Optional: some shipments arrive without one.
+            'invoice_number' => ['nullable', 'string', 'max:100'],
+
+            'notes' => ['nullable', 'string', 'max:1000'],
+
+            'items' => ['required', 'array', 'min:1'],
+
+            'items.*.product_variant_id' => [
+                'required', 'integer', 'distinct',
+                Rule::exists('product_variants', 'id')->whereNull('deleted_at'),
+            ],
+
+            // `gt:0`, not `min:0` — a line of nothing is not a delivery, the same rule
+            // StoreStockArrivalRequest holds. Whole numbers are enforced separately, per
+            // product, when the line is posted to the ledger.
+            'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:999999999.999'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'invoice_number.max' => 'رقم الفاتورة طويل جداً',
+            'notes.max' => 'الملاحظات طويلة جداً',
+            'items.required' => 'يجب إضافة بند واحد على الأقل',
+            'items.min' => 'يجب إضافة بند واحد على الأقل',
+            'items.*.product_variant_id.required' => 'المنتج والمقاس مطلوبان',
+            'items.*.product_variant_id.exists' => 'المقاس المحدد غير موجود',
+            'items.*.product_variant_id.distinct' => 'لا يمكن تكرار نفس المقاس أكثر من مرة في الشحنة',
+            'items.*.quantity.required' => 'الكمية مطلوبة',
+            'items.*.quantity.numeric' => 'الكمية يجب أن تكون رقماً',
+            'items.*.quantity.gt' => 'الكمية يجب أن تكون أكبر من صفر',
+            'items.*.quantity.max' => 'الكمية أكبر من الحد المسموح',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'invoice_number' => 'رقم الفاتورة',
+            'notes' => 'الملاحظات',
+            'items' => 'البنود',
+            'items.*.product_variant_id' => 'المقاس',
+            'items.*.quantity' => 'الكمية',
+        ];
+    }
+}

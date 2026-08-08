@@ -13,6 +13,7 @@ use App\Application\Api\V1\Controllers\OrderPaymentController;
 use App\Application\Api\V1\Controllers\PermissionController;
 use App\Application\Api\V1\Controllers\ProductController;
 use App\Application\Api\V1\Controllers\ProductImageController;
+use App\Application\Api\V1\Controllers\PurchaseOrderController;
 use App\Application\Api\V1\Controllers\RegionController;
 use App\Application\Api\V1\Controllers\RoleController;
 use App\Application\Api\V1\Controllers\ShippingCompanyController;
@@ -291,6 +292,28 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('vendors/{vendor}/activation', [VendorController::class, 'setActivation'])
             ->middleware('can:vendors.manage')->name('vendors.activation');
 
+        // ── purchase orders ─────────────────────────────────────────────────────────────
+        // Stock ordered ahead of it arriving: new → arrived → completed, with cancelled
+        // reachable from either open status. Drafting, editing, sending and cancelling sit
+        // behind their own pair, the same split vendors.* draws from inventory.* above — but
+        // receiving a shipment against one is guarded by inventory.manage instead, declared
+        // beside the resource routes below rather than here, because posting a shipment is
+        // squarely part of that area regardless of which door it came in through. See
+        // PurchaseOrderController's own docblock.
+        Route::apiResource('purchase-orders', PurchaseOrderController::class)
+            ->only(['index', 'show'])
+            ->middleware('can:purchase_orders.view');
+
+        Route::apiResource('purchase-orders', PurchaseOrderController::class)
+            ->only(['store', 'update'])
+            ->middleware('can:purchase_orders.manage');
+
+        Route::patch('purchase-orders/{purchase_order}/status', [PurchaseOrderController::class, 'changeStatus'])
+            ->middleware('can:purchase_orders.manage')->name('purchase-orders.status');
+
+        Route::post('purchase-orders/{purchase_order}/arrivals', [PurchaseOrderController::class, 'receiveArrival'])
+            ->middleware('can:inventory.manage')->name('purchase-orders.arrivals');
+
         // ── inventory ───────────────────────────────────────────────────────────────────
         // One pair of permissions covers warehouses, balances and the ledger. Splitting them
         // would produce guards that cannot usefully be granted alone: whoever may transfer
@@ -380,6 +403,9 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('stock-arrivals/{stock_arrival}/logs', [StockArrivalController::class, 'logs'])
                 ->name('stock-arrivals.logs');
+
+            Route::get('purchase-orders/{purchase_order}/logs', [PurchaseOrderController::class, 'logs'])
+                ->name('purchase-orders.logs');
 
             // Scoped like the rest of the nested region routes: another city's region id is a
             // 404 here too, not a history leaked from the wrong place.

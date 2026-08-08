@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Vendor\DTOs;
 
+use App\Domain\Vendor\Actions\RecordStockArrival;
+
 final readonly class StockArrivalData
 {
     /**
@@ -17,6 +19,16 @@ final readonly class StockArrivalData
         public array $items,
         public ?string $invoiceNumber = null,
         public ?string $notes = null,
+        /**
+         * The purchase order this shipment fulfils, if any. Always null through
+         * {@see fromArray()} — the generic `POST /stock-arrivals` endpoint never accepts this
+         * field. Only `PurchaseOrder\Actions\ReceivePurchaseOrder` sets it, by constructing this
+         * DTO directly, after which {@see RecordStockArrival} does
+         * nothing with it beyond writing the column — every effect it has on the order itself
+         * is applied by that action, one layer up, so Vendor stays ignorant of PurchaseOrder's
+         * rules.
+         */
+        public ?int $purchaseOrderId = null,
     ) {}
 
     /**
