@@ -71,6 +71,16 @@ enum AppPermission {
   viewVendors('vendors.view', 'عرض الموردين'),
   manageVendors('vendors.manage', 'إضافة وتعديل الموردين'),
 
+  // Purchase orders. Its own pair rather than folded into vendors.*: agreeing terms with a
+  // supplier and raising the paperwork against them are different jobs. **Receiving a shipment
+  // is neither** — it posts stock, so it is guarded by `inventory.manage` even when it happens
+  // on a purchase order's own screen.
+  viewPurchaseOrders('purchase_orders.view', 'عرض أوامر الشراء'),
+  managePurchaseOrders(
+    'purchase_orders.manage',
+    'إنشاء وتعديل أوامر الشراء وإرسالها وإلغاؤها',
+  ),
+
   // Orders. One permission per status the workflow can move *into*, so the business composes
   // a designer, a printer and a delivery coordinator out of this list without any of those
   // jobs being named in code. The two dispatch statuses share one permission on purpose; the

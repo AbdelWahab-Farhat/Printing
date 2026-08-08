@@ -30,10 +30,6 @@ enum OrderStatus {
   officePickup('office_pickup', 'استلام مكتب'),
   @JsonValue('out_for_delivery')
   outForDelivery('out_for_delivery', 'جاري التوصيل'),
-  @JsonValue('delivered')
-  delivered('delivered', 'تم الاستلام'),
-  @JsonValue('settled')
-  settled('settled', 'تم التسوية'),
   @JsonValue('returned_courier')
   returnedCourier('returned_courier', 'راجع لدى المندوب'),
   @JsonValue('returned_carrier')
@@ -43,7 +39,14 @@ enum OrderStatus {
   @JsonValue('resend')
   resend('resend', 'إعادة إرسال'),
   @JsonValue('cancelled')
-  cancelled('cancelled', 'ملغاة'),
+  cancelled('cancelled', 'إلغاء تام'),
+
+  // The two that are over, last — the same order `OrderStatus.php` declares, so the filter
+  // sheet reads down in the order the home board does. What still needs doing comes first.
+  @JsonValue('delivered')
+  delivered('delivered', 'تم الاستلام'),
+  @JsonValue('settled')
+  settled('settled', 'تم التسوية'),
 
   /// A status this build of the app has never heard of.
   ///

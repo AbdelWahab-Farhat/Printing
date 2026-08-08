@@ -140,11 +140,28 @@ class _HomeView extends StatelessWidget {
   /// the tap. The tab is still there for browsing customers, which is a different errand.
   List<QuickAction> _actionsFor(BuildContext context) {
     return [
+      // Two doors where there was one. They are different records with different screens —
+      // a customer buys, a vendor supplies — and the shortcut that used to say «إضافة عميل»
+      // was the only way into either from here.
       QuickAction(
-        label: 'إضافة عميل',
+        label: 'عميل جديد',
         icon: AppIcons.addCustomer,
         onTap: () => context.push(Routes.addCustomer),
       ),
+      // The «مورد جديد» shortcut belongs here, gated on `viewVendors` exactly like «المخزن»
+      // below. It is parked rather than written because the screen it opens does not exist yet:
+      // vendors have their models, repository and Cubit, but no view and therefore no route, so
+      // `Routes.addVendor` and `AppIcons.addVendor` are both undefined and the app will not
+      // compile with the shortcut in place.
+      //
+      // Restore this — unchanged — the moment the vendor form page lands:
+      //
+      //   if (sl<Session>().can(AppPermission.viewVendors))
+      //     QuickAction(
+      //       label: 'مورد جديد',
+      //       icon: AppIcons.addVendor,
+      //       onTap: () => context.push(Routes.addVendor),
+      //     ),
       // Left out entirely without `inventory.view`: the route redirects home, and a shortcut
       // that bounces the user back where they were reads as a broken button rather than as a
       // permission they do not hold.

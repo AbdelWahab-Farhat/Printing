@@ -25,12 +25,30 @@ class OrderCard extends StatelessWidget {
   final Order order;
   final VoidCallback? onTap;
 
+  /// Whether the whole card should read as settled.
+  ///
+  /// The empty label is the guard, not decoration: `paymentStatus` falls back to a value even
+  /// for an order from a build of the API that predates payments, and washing such a card green
+  /// would be this app claiming something nobody computed.
+  bool get _isSettled =>
+      order.paymentStatus == PaymentStatus.paid && order.paymentStatusLabel.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
     return Material(
-      color: scheme.surfaceContainerLowest,
+      // **A wash, not the fill.** `paidContainer` is the pale green the chips use, and a whole
+      // card in it would shout down the status chip and the money below. Held back to about a
+      // third over the ordinary surface, «مدفوعة بالكامل» is a row you can pick out of a queue
+      // at arm's length without any word on it being read — which is the thing this colour was
+      // introduced for — and the card is still a white card with the numbers on it.
+      color: _isSettled
+          ? Color.alphaBlend(
+              scheme.paidContainer.withValues(alpha: 0.35),
+              scheme.surfaceContainerLowest,
+            )
+          : scheme.surfaceContainerLowest,
       borderRadius: BorderRadius.circular(18.r),
       child: InkWell(
         onTap: onTap,
@@ -41,7 +59,13 @@ class OrderCard extends StatelessWidget {
           // background reads as its own surface only once it has an edge, not just a colour.
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18.r),
-            border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+            border: Border.all(
+              // The edge follows the fill, so a settled card is one decision rather than a green
+              // panel inside a grey outline.
+              color: _isSettled
+                  ? scheme.paid.withValues(alpha: 0.35)
+                  : scheme.outlineVariant.withValues(alpha: 0.6),
+            ),
             boxShadow: [
               BoxShadow(
                 color: scheme.shadow.withValues(alpha: 0.05),

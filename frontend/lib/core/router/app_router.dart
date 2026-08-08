@@ -37,12 +37,20 @@ import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/presentation/views/product_detail_page.dart';
 import 'package:printing/features/products/presentation/views/product_form_page.dart';
 import 'package:printing/features/products/presentation/views/products_page.dart';
+import 'package:printing/features/purchase_orders/models/purchase_order.dart';
+import 'package:printing/features/purchase_orders/presentation/views/purchase_order_detail_page.dart';
+import 'package:printing/features/purchase_orders/presentation/views/purchase_order_form_page.dart';
+import 'package:printing/features/purchase_orders/presentation/views/purchase_orders_page.dart';
 import 'package:printing/features/root/presentation/views/root_page.dart';
 import 'package:printing/features/settings/presentation/views/settings_page.dart';
 import 'package:printing/features/shipping_companies/models/shipping_company.dart';
 import 'package:printing/features/shipping_companies/presentation/views/shipping_companies_page.dart';
 import 'package:printing/features/shipping_companies/presentation/views/shipping_company_form_page.dart';
 import 'package:printing/features/splash/presentation/views/splash_page.dart';
+import 'package:printing/features/vendors/models/vendor.dart';
+import 'package:printing/features/vendors/presentation/views/vendor_detail_page.dart';
+import 'package:printing/features/vendors/presentation/views/vendor_form_page.dart';
+import 'package:printing/features/vendors/presentation/views/vendors_page.dart';
 import 'package:printing/features/warehouses/models/warehouse.dart';
 import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 import 'package:printing/features/warehouses/presentation/views/stock_movements_page.dart';
@@ -93,6 +101,35 @@ abstract final class Routes {
   /// somebody wants is not on it yet.
   static const String shippingCompanies = '/shipping-companies';
   static const String shippingCompanyForm = '/shipping-companies/form';
+
+  /// Who we buy from. The form takes the vendor as `extra`, so it opens filled without a second
+  /// request for a record the list already has.
+  static const String vendors = '/vendors';
+  static const String vendorForm = '/vendors/form';
+
+  /// One supplier. Takes the row as `extra` so the screen opens filled.
+  static const String vendorDetailPath = '/vendors/:id';
+
+  static String vendor(int vendorId) => '/vendors/$vendorId';
+
+  // ── أوامر الشراء ──────────────────────────────────────────────────────────
+  static const String purchaseOrders = '/purchase-orders';
+  static const String purchaseOrderForm = '/purchase-orders/form';
+  static const String purchaseOrderDetailPath = '/purchase-orders/:id';
+
+  static String purchaseOrder(int id) => '/purchase-orders/$id';
+
+  /// The form, opened from a supplier's own screen.
+  ///
+  /// The vendor rides in `extra` so the picker opens already answered; the id is in the query
+  /// as well, so a link that lost its `extra` — a deep link, a restored back stack — still
+  /// knows which supplier it is about.
+  static String newVendorPurchaseOrder(int vendorId) =>
+      '$purchaseOrderForm?vendor=$vendorId';
+
+  /// The same door, named for what it does — the home screen's «مورد جديد» shortcut points at
+  /// it, and «open the form on nothing» reads better as its own name than as a bare path.
+  static const String addVendor = vendorForm;
 
   /// The neighbourhoods inside one city. Declared as a child of `/cities`, because that is what
   /// they are: a region has no life outside its city, and the path saying so matches the API,
@@ -378,6 +415,69 @@ abstract final class AppRouter {
           ),
         ],
       ),
+      // Declared **before** the list, so the literal word is not captured by a sibling and,
+      // as with `/products/new`, guarded on the permission its every request would need.
+      GoRoute(
+        path: Routes.vendorForm,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.manageVendors) ? null : Routes.vendors,
+        builder: (context, state) => VendorFormPage(vendor: state.extra as Vendor?),
+      ),
+      GoRoute(
+        path: Routes.vendors,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewVendors) ? null : Routes.home,
+        builder: (context, state) => const VendorsPage(),
+      ),
+      // Declared **before** the list and before `:id`, so the literal word «form» is not read
+      // as an id — the same trap `/products/new` sits beside.
+      GoRoute(
+        path: Routes.purchaseOrderForm,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.managePurchaseOrders)
+            ? null
+            : Routes.purchaseOrders,
+        builder: (context, state) => PurchaseOrderFormPage(
+          // Both arrive as `extra` and only one is ever present: an order when the form is
+          // opened to correct it, a vendor when it is opened from that supplier's screen.
+          order: state.extra is PurchaseOrder ? state.extra! as PurchaseOrder : null,
+          vendor: state.extra is Vendor ? state.extra! as Vendor : null,
+        ),
+      ),
+      GoRoute(
+        path: Routes.purchaseOrders,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewPurchaseOrders) ? null : Routes.home,
+        builder: (context, state) => const PurchaseOrdersPage(),
+      ),
+      GoRoute(
+        path: Routes.purchaseOrderDetailPath,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewPurchaseOrders) ? null : Routes.home,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          return id == null
+              ? const _UnknownPurchaseOrder()
+              : PurchaseOrderDetailPage(purchaseOrderId: id);
+        },
+      ),
+      // After `/vendors/form`, and that ordering is load-bearing: declared first, `:id` would
+      // capture the literal word and `int.parse('form')` would throw on the way in.
+      GoRoute(
+        path: Routes.vendorDetailPath,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewVendors) ? null : Routes.home,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          // A deep link is somebody else's text; `extra` is ours and is absent on one. The
+          // screen copes with a missing vendor — it cannot cope with a missing id.
+          return id == null
+              ? const _UnknownVendor()
+              : VendorDetailPage(vendorId: id, vendor: state.extra as Vendor?);
+        },
+      ),
       // Declared **before** the list, so the literal word is not captured by a sibling and, as
       // with `/products/new`, guarded on the permission its every request would need.
       GoRoute(
@@ -638,6 +738,32 @@ class _UnknownRole extends StatelessWidget {
 }
 
 /// A `/cities/<something that is not a number>/regions` link.
+/// A `/purchase-orders/<something that is not a number>` link.
+class _UnknownPurchaseOrder extends StatelessWidget {
+  const _UnknownPurchaseOrder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('أمر الشراء')),
+      body: const Center(child: Text('رقم أمر الشراء غير صحيح')),
+    );
+  }
+}
+
+/// A `/vendors/<something that is not a number>` link.
+class _UnknownVendor extends StatelessWidget {
+  const _UnknownVendor();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('المورد')),
+      body: const Center(child: Text('رقم المورد غير صحيح')),
+    );
+  }
+}
+
 class _UnknownCity extends StatelessWidget {
   const _UnknownCity();
 

@@ -113,6 +113,22 @@ abstract final class StockArrivalEndpoints {
   static String show(int stockArrivalId) => '/stock-arrivals/$stockArrivalId';
 }
 
+/// The paperwork raised against a supplier.
+abstract final class PurchaseOrderEndpoints {
+  static const String index = '/purchase-orders';
+
+  static String show(int purchaseOrderId) => '/purchase-orders/$purchaseOrderId';
+
+  /// Sending or cancelling. `PATCH` — «مكتمل» is not reachable through it.
+  static String status(int purchaseOrderId) =>
+      '/purchase-orders/$purchaseOrderId/status';
+
+  /// Booking a shipment in against the order. Guarded by `inventory.manage`, not by
+  /// `purchase_orders.manage` — it writes to the stock ledger.
+  static String arrivals(int purchaseOrderId) =>
+      '/purchase-orders/$purchaseOrderId/arrivals';
+}
+
 abstract final class ProductEndpoints {
   static const String index = '/products';
 

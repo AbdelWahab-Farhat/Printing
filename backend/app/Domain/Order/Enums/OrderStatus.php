@@ -47,15 +47,6 @@ enum OrderStatus: string
 
     case OutForDelivery = 'out_for_delivery';
 
-    /**
-     * The customer has it. Closed to editing, but not finished: the money it was sent out to
-     * collect still has to come back — see {@see Settled}.
-     */
-    case Delivered = 'delivered';
-
-    /** The money is agreed. The end of the road. */
-    case Settled = 'settled';
-
     case ReturnedCourier = 'returned_courier';
 
     case ReturnedCarrier = 'returned_carrier';
@@ -67,6 +58,23 @@ enum OrderStatus: string
     case Resend = 'resend';
 
     case Cancelled = 'cancelled';
+
+    // ── the two that are over ────────────────────────────────────────────────────────────────
+    // **Last, and last on purpose.** This order is what the home screen draws: the app maps
+    // `cases()` straight to its board, so the sequence here is the sequence a person reads down
+    // the phone. The statuses that still need somebody to *do* something come first, and the
+    // two that are already finished sit at the bottom where a full board can be skimmed past
+    // them. It is no longer the order the state machine walks — {@see allowedNext()} is, and it
+    // says so in one place.
+
+    /**
+     * The customer has it. Closed to editing, but not finished: the money it was sent out to
+     * collect still has to come back — see {@see Settled}.
+     */
+    case Delivered = 'delivered';
+
+    /** The money is agreed. The end of the road. */
+    case Settled = 'settled';
 
     public function label(): string
     {
@@ -84,10 +92,12 @@ enum OrderStatus: string
             self::ReturnedCarrier => 'راجع لدى شركة التوصيل',
             self::ReturnedOffice => 'راجع مكتب',
             self::Resend => 'إعادة إرسال',
-            // «ملغاة», not «ملغاة كلياً»: this label is what the app prints on a chip, in a
-            // filter and on a timeline, and the queue filter has always called it «ملغاة». One
-            // status, one word, wherever it is drawn.
-            self::Cancelled => 'ملغاة',
+            // «إلغاء تام», not «ملغاة»: the workshop calls off an order in more than one way —
+            // a return comes back and can go out again, a resend is a second attempt — and the
+            // one word for the ending that is not coming back has to say so. This label is what
+            // the app prints on a chip, in a filter and on a timeline. One status, one word,
+            // wherever it is drawn.
+            self::Cancelled => 'إلغاء تام',
         };
     }
 

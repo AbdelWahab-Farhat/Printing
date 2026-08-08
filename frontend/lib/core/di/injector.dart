@@ -107,6 +107,12 @@ import 'package:printing/features/products/usecases/get_price_quote.dart';
 import 'package:printing/features/products/usecases/get_product.dart';
 import 'package:printing/features/products/usecases/get_products.dart';
 import 'package:printing/features/products/usecases/save_product.dart';
+import 'package:printing/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
+import 'package:printing/features/purchase_orders/presentation/viewmodel/purchase_orders_cubit.dart';
+import 'package:printing/features/purchase_orders/presentation/viewmodel/save_purchase_order_cubit.dart';
+import 'package:printing/features/purchase_orders/repositories/purchase_order_repository.dart';
+import 'package:printing/features/purchase_orders/repositories/purchase_order_repository_impl.dart';
+import 'package:printing/features/purchase_orders/usecases/purchase_order_usecases.dart';
 import 'package:printing/features/settings/presentation/viewmodel/settings_cubit.dart';
 import 'package:printing/features/settings/repositories/settings_repository.dart';
 import 'package:printing/features/settings/repositories/settings_repository_impl.dart';
@@ -119,8 +125,14 @@ import 'package:printing/features/shipping_companies/repositories/shipping_compa
 import 'package:printing/features/shipping_companies/usecases/get_shipping_companies.dart';
 import 'package:printing/features/shipping_companies/usecases/save_shipping_company.dart';
 import 'package:printing/features/splash/presentation/viewmodel/splash_cubit.dart';
+import 'package:printing/features/vendors/models/vendor.dart';
+import 'package:printing/features/vendors/presentation/viewmodel/save_vendor_cubit.dart';
+import 'package:printing/features/vendors/presentation/viewmodel/vendor_detail_cubit.dart';
+import 'package:printing/features/vendors/presentation/viewmodel/vendors_cubit.dart';
 import 'package:printing/features/vendors/repositories/vendor_repository.dart';
 import 'package:printing/features/vendors/repositories/vendor_repository_impl.dart';
+import 'package:printing/features/vendors/usecases/get_vendors.dart';
+import 'package:printing/features/vendors/usecases/save_vendor.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/save_warehouse_cubit.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
@@ -218,6 +230,7 @@ abstract final class Injector {
     _registerBusinessFields();
     _registerWarehouses();
     _registerVendors();
+    _registerPurchaseOrders();
     _registerShippingCompanies();
     _registerCustomers();
     _registerSettings();
@@ -516,7 +529,76 @@ abstract final class Injector {
   /// this does buy is that the day a screen is written, it reaches the API through the same
   /// front door every other feature does rather than building its own `Dio` call.
   static void _registerVendors() {
-    sl.registerLazySingleton<VendorRepository>(() => VendorRepositoryImpl(sl<Dio>()));
+    sl
+      ..registerLazySingleton<VendorRepository>(() => VendorRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetVendors>(() => GetVendors(sl<VendorRepository>()))
+      ..registerLazySingleton<SaveVendor>(() => SaveVendor(sl<VendorRepository>()))
+      ..registerLazySingleton<SetVendorActive>(() => SetVendorActive(sl<VendorRepository>()))
+      // Screen-scoped: the list owns its Cubit and closes it on dispose.
+      ..registerFactory<VendorsCubit>(() => VendorsCubit(getVendors: sl<GetVendors>()))
+      // The picker's own instance, narrowed to the suppliers an order may still be raised
+      // against. A named registration rather than a parameter, because a picker asking the
+      // same question as the management screen is what it must never do.
+      ..registerFactory<VendorsCubit>(
+        () => VendorsCubit(getVendors: sl<GetVendors>(), onlyActive: true),
+        instanceName: activeVendorsCubit,
+      )
+      // Parameterised twice: the id it is about, and the row the list already had — which is
+      // what lets the screen open filled instead of on a spinner.
+      ..registerFactoryParam<VendorDetailCubit, int, Vendor?>(
+        (vendorId, initial) => VendorDetailCubit(
+          vendorId: vendorId,
+          repository: sl<VendorRepository>(),
+          setActive: sl<SetVendorActive>(),
+          initial: initial,
+        ),
+      )
+      ..registerFactory<SaveVendorCubit>(
+        () => SaveVendorCubit(
+          saveVendor: sl<SaveVendor>(),
+          setActive: sl<SetVendorActive>(),
+        ),
+      );
+  }
+
+  /// The picker's [VendorsCubit], as opposed to the management screen's.
+  static const String activeVendorsCubit = 'vendors:active';
+
+  static void _registerPurchaseOrders() {
+    sl
+      ..registerLazySingleton<PurchaseOrderRepository>(
+        () => PurchaseOrderRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetPurchaseOrders>(
+        () => GetPurchaseOrders(sl<PurchaseOrderRepository>()),
+      )
+      ..registerLazySingleton<GetPurchaseOrder>(
+        () => GetPurchaseOrder(sl<PurchaseOrderRepository>()),
+      )
+      ..registerLazySingleton<SavePurchaseOrder>(
+        () => SavePurchaseOrder(sl<PurchaseOrderRepository>()),
+      )
+      ..registerLazySingleton<ChangePurchaseOrderStatus>(
+        () => ChangePurchaseOrderStatus(sl<PurchaseOrderRepository>()),
+      )
+      ..registerLazySingleton<ReceivePurchaseOrderArrival>(
+        () => ReceivePurchaseOrderArrival(sl<PurchaseOrderRepository>()),
+      )
+      ..registerFactory<PurchaseOrdersCubit>(
+        () => PurchaseOrdersCubit(getOrders: sl<GetPurchaseOrders>()),
+      )
+      // Parameterised on the id: this screen is *about* one order.
+      ..registerFactoryParam<PurchaseOrderDetailCubit, int, void>(
+        (purchaseOrderId, _) => PurchaseOrderDetailCubit(
+          purchaseOrderId: purchaseOrderId,
+          getOrder: sl<GetPurchaseOrder>(),
+          changeStatus: sl<ChangePurchaseOrderStatus>(),
+          receiveArrival: sl<ReceivePurchaseOrderArrival>(),
+        ),
+      )
+      ..registerFactory<SavePurchaseOrderCubit>(
+        () => SavePurchaseOrderCubit(saveOrder: sl<SavePurchaseOrder>()),
+      );
   }
 
   static void _registerShippingCompanies() {

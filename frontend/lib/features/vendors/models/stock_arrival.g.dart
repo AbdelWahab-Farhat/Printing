@@ -13,6 +13,7 @@ _StockArrival _$StockArrivalFromJson(Map<String, dynamic> json) =>
       vendor: json['vendor'] == null
           ? null
           : ArrivalRef.fromJson(json['vendor'] as Map<String, dynamic>),
+      purchaseOrderId: (json['purchase_order_id'] as num?)?.toInt(),
       warehouseId: (json['warehouse_id'] as num?)?.toInt(),
       warehouse: json['warehouse'] == null
           ? null
@@ -40,6 +41,7 @@ Map<String, dynamic> _$StockArrivalToJson(_StockArrival instance) =>
       'id': instance.id,
       'vendor_id': instance.vendorId,
       'vendor': instance.vendor?.toJson(),
+      'purchase_order_id': instance.purchaseOrderId,
       'warehouse_id': instance.warehouseId,
       'warehouse': instance.warehouse?.toJson(),
       'invoice_number': instance.invoiceNumber,

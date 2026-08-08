@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/presentation/widgets/product_category_badge.dart';
+import 'package:printing/features/products/presentation/widgets/product_gallery.dart';
 
 /// One product in the catalogue, priced in full.
 ///
@@ -107,7 +108,7 @@ class _Identity extends StatelessWidget {
         // product had no image — which is every product — so the eye met the same glyph on every
         // row and learned to skip the whole column. An empty slot says as much and costs nothing.
         if (image != null) ...[
-          _Thumbnail(image: image),
+          ProductThumbnail(image: image, side: 48.w),
           SizedBox(width: 10.w),
         ],
         Expanded(
@@ -179,35 +180,6 @@ class _Identity extends StatelessWidget {
           label: product.categoryLabel,
         ),
       ],
-    );
-  }
-}
-
-class _Thumbnail extends StatelessWidget {
-  const _Thumbnail({required this.image});
-
-  final ProductImage image;
-
-  @override
-  Widget build(BuildContext context) {
-    final side = 48.w;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12.r),
-      child: SizedBox(
-        height: side,
-        width: side,
-        child: Image.network(
-          image.url,
-          fit: BoxFit.cover,
-          // A photo that fails, or one still arriving, leaves the row exactly as a product with
-          // no photo looks — rather than a broken-image glyph or a grey hole that reads as an
-          // error the user cannot do anything about.
-          errorBuilder: (context, error, stack) => const SizedBox.shrink(),
-          loadingBuilder: (context, child, progress) =>
-              progress == null ? child : const SizedBox.shrink(),
-        ),
-      ),
     );
   }
 }

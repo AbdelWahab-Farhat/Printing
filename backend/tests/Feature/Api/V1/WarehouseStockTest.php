@@ -542,8 +542,9 @@ class WarehouseStockTest extends TestCase
             'quantity' => '500.000',
         ]);
 
-        // Assert
-        $response->assertNotFound();
+        // Assert — 405 and not 404: the path exists and is readable, it is *creating* through it
+        // that is not offered. The same answer, for the same reason, as deleting a product.
+        $response->assertStatus(405);
         $this->assertDatabaseCount('warehouse_stocks', 0);
     }
 }

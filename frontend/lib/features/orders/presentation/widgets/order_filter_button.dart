@@ -125,7 +125,7 @@ class _FilterChoice {
 /// over a list with no visible end.
 ///
 /// Wrapped chips answer the same two questions in a little over half the height, and the shape
-/// change is what buys it: a chip is as wide as its word, so «ملغاة» stops reserving the width of
+/// change is what buys it: a chip is as wide as its word, so «جاهزة» stops reserving the width of
 /// «راجع لدى شركة التوصيل». Two or three land per line and the whole vocabulary is in one glance.
 /// Nothing lives off the edge — this is a `Wrap`, not the scrolling row of chips that was tried
 /// on the page itself and failed; that one ran off the right side with nothing to suggest it

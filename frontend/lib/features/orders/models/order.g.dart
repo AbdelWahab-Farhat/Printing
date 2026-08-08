@@ -156,13 +156,13 @@ const _$OrderStatusEnumMap = {
   OrderStatus.shortage: 'shortage',
   OrderStatus.officePickup: 'office_pickup',
   OrderStatus.outForDelivery: 'out_for_delivery',
-  OrderStatus.delivered: 'delivered',
-  OrderStatus.settled: 'settled',
   OrderStatus.returnedCourier: 'returned_courier',
   OrderStatus.returnedCarrier: 'returned_carrier',
   OrderStatus.returnedOffice: 'returned_office',
   OrderStatus.resend: 'resend',
   OrderStatus.cancelled: 'cancelled',
+  OrderStatus.delivered: 'delivered',
+  OrderStatus.settled: 'settled',
   OrderStatus.unknown: 'unknown',
 };
 

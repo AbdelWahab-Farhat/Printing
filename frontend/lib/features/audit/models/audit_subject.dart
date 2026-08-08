@@ -13,7 +13,16 @@ enum AuditSubject {
   city('cities', 'المدينة'),
   user('users', 'المستخدم'),
   role('roles', 'الدور'),
-  order('orders', 'الطلبية');
+  order('orders', 'الطلبية'),
+
+  /// A supplier. The path segment matches the API's, so the history screen's own URL is the
+  /// record's — see the note on [path].
+  vendor('vendors', 'المورد'),
+
+  /// The paperwork raised against one. Its lines share this history: the server returns the
+  /// document's entries and its items' together, because a quantity changing is a change to
+  /// the order.
+  purchaseOrder('purchase-orders', 'أمر الشراء');
 
   const AuditSubject(this.path, this.noun);
 

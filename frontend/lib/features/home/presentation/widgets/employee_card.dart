@@ -22,16 +22,12 @@ class EmployeeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final corner = BorderRadius.circular(24.r);
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+    return DecoratedBox(
+      // The shadow is on the outside of the clip, because a shadow inside one is not drawn.
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24.r),
-        gradient: LinearGradient(
-          begin: AlignmentDirectional.topStart,
-          end: AlignmentDirectional.bottomEnd,
-          colors: [scheme.primary, scheme.tertiary],
-        ),
+        borderRadius: corner,
         boxShadow: [
           BoxShadow(
             color: scheme.primary.withValues(alpha: 0.28),
@@ -40,31 +36,84 @@ class EmployeeCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          _Avatar(name: user.name),
-          SizedBox(width: 14.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  user.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.titleLarge?.copyWith(
-                    color: scheme.onPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: 8.h),
-                _EmployeeCode(code: user.employeeCode),
-              ],
+      child: ClipRRect(
+        borderRadius: corner,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [scheme.primary, scheme.tertiary],
             ),
           ),
-          if (user.roles.isNotEmpty) _RoleChip(label: user.roles.first.label),
-        ],
+          // The mark is *behind* the row, not a cell in it: it bleeds off the corner and the
+          // card's height stays whatever the name and the code need.
+          child: Stack(
+            children: [
+              const PositionedDirectional(bottom: -34, end: -22, child: _BrandMark()),
+              Row(
+                children: [
+                  _Avatar(name: user.name),
+                  SizedBox(width: 14.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          user.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textTheme.titleLarge?.copyWith(
+                            color: scheme.onPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        _EmployeeCode(code: user.employeeCode),
+                      ],
+                    ),
+                  ),
+                  if (user.roles.isNotEmpty) _RoleChip(label: user.roles.first.label),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The company's mark, watermarked into the corner of the card.
+///
+/// **Flattened to one colour, not printed as the logo file is.** The mark is three shapes in
+/// purple, green and yellow — over a teal gradient at any opacity that reads as a sticker
+/// somebody put there. Tinted to the card's own foreground it becomes what a logo on an employee
+/// badge is: an emboss, seen without being looked at.
+///
+/// **Behind the text and off the edge**, so it is never something the eye has to get past on the
+/// way to whose account this is — which is the question the card exists to answer.
+///
+/// Excluded from semantics: a screen reader has nothing to gain from «شعار» on every visit to the
+/// home screen, and the same mark is already on the splash, the login screen and the drawer.
+class _BrandMark extends StatelessWidget {
+  const _BrandMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: IgnorePointer(
+        child: Image.asset(
+          'assets/images/logo.png',
+          height: 132.w,
+          width: 132.w,
+          color: context.colorScheme.onPrimary.withValues(alpha: 0.16),
+          // Every non-transparent pixel takes the tint above, so the three colours collapse into
+          // one silhouette rather than being washed towards it.
+          colorBlendMode: BlendMode.srcIn,
+        ),
       ),
     );
   }

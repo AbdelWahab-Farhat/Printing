@@ -33,6 +33,22 @@ abstract final class AppIcons {
   static IconData get warehouse =>
       _pick(Icons.inventory_2_rounded, CupertinoIcons.cube_box_fill);
 
+  /// Who we buy *from*. A storefront rather than a person: a supplier is a business we deal
+  /// with, and the same glyph as [customers] would make the two lists look like one.
+  static IconData get vendors =>
+      _pick(Icons.storefront_rounded, CupertinoIcons.building_2_fill);
+
+  static IconData get addVendor =>
+      _pick(Icons.add_business_rounded, CupertinoIcons.building_2_fill);
+
+  /// The paperwork raised against a supplier — a document with a list on it.
+  static IconData get purchaseOrders =>
+      _pick(Icons.assignment_rounded, CupertinoIcons.doc_text_fill);
+
+  /// Booking a shipment in against that paperwork.
+  static IconData get receiveShipment =>
+      _pick(Icons.move_to_inbox_rounded, CupertinoIcons.tray_arrow_down_fill);
+
   static IconData get products =>
       _pick(Icons.shopping_bag_rounded, CupertinoIcons.bag_fill);
 

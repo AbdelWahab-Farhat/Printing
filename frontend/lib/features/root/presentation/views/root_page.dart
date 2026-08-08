@@ -175,6 +175,27 @@ class _RootDrawer extends StatelessWidget {
               label: 'مدن التوصيل',
               onTap: () => context.push(Routes.cities),
             ),
+            // Who we buy from. Gated for the same reason the carriers below are: a supplier is
+            // chosen from the purchase-order screen's own picker, so no other form needs the
+            // list to be readable.
+            PermissionGate(
+              permission: AppPermission.viewVendors,
+              child: _DrawerLink(
+                icon: AppIcons.vendors,
+                label: 'الموردون',
+                onTap: () => context.push(Routes.vendors),
+              ),
+            ),
+            // The paperwork raised against those suppliers. Its own grant, not vendors.*:
+            // agreeing terms with a supplier and raising an order against them are two jobs.
+            PermissionGate(
+              permission: AppPermission.viewPurchaseOrders,
+              child: _DrawerLink(
+                icon: AppIcons.purchaseOrders,
+                label: 'أوامر الشراء',
+                onTap: () => context.push(Routes.purchaseOrders),
+              ),
+            ),
             // Gated: unlike the map above, this list is not needed to fill any form in — a
             // carrier is chosen from the dispatch screen's own picker.
             PermissionGate(

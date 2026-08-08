@@ -15,7 +15,13 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$StockArrival {
 
- int get id;@JsonKey(name: 'vendor_id') int get vendorId; ArrivalRef? get vendor;/// Nullable, and not an oversight: a warehouse can be deleted once it is empty, and the
+ int get id;@JsonKey(name: 'vendor_id') int get vendorId; ArrivalRef? get vendor;/// Which purchase order this shipment was fulfilling, null when it was unplanned — which
+/// most arrivals are.
+///
+/// A plain id and not a nested object, because that is what the server publishes: the order
+/// is read through `GET /purchase-orders/{id}`, the same way every other `*_id` in this API
+/// works.
+@JsonKey(name: 'purchase_order_id') int? get purchaseOrderId;/// Nullable, and not an oversight: a warehouse can be deleted once it is empty, and the
 /// purchase history that passed through it has to survive that. The document keeps its
 /// lines and its ledger rows; only the pointer goes.
 @JsonKey(name: 'warehouse_id') int? get warehouseId; ArrivalRef? get warehouse;@JsonKey(name: 'invoice_number') String? get invoiceNumber; String? get notes;/// Stamped by the server from the authenticated user — never sent by this app.
@@ -32,16 +38,16 @@ $StockArrivalCopyWith<StockArrival> get copyWith => _$StockArrivalCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockArrival&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.invoiceNumber, invoiceNumber) || other.invoiceNumber == invoiceNumber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.receivedBy, receivedBy) || other.receivedBy == receivedBy)&&(identical(other.receivedByUser, receivedByUser) || other.receivedByUser == receivedByUser)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockArrival&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.invoiceNumber, invoiceNumber) || other.invoiceNumber == invoiceNumber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.receivedBy, receivedBy) || other.receivedBy == receivedBy)&&(identical(other.receivedByUser, receivedByUser) || other.receivedByUser == receivedByUser)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,warehouseId,warehouse,invoiceNumber,notes,receivedBy,receivedByUser,const DeepCollectionEquality().hash(items),createdAt);
+int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,purchaseOrderId,warehouseId,warehouse,invoiceNumber,notes,receivedBy,receivedByUser,const DeepCollectionEquality().hash(items),createdAt);
 
 @override
 String toString() {
-  return 'StockArrival(id: $id, vendorId: $vendorId, vendor: $vendor, warehouseId: $warehouseId, warehouse: $warehouse, invoiceNumber: $invoiceNumber, notes: $notes, receivedBy: $receivedBy, receivedByUser: $receivedByUser, items: $items, createdAt: $createdAt)';
+  return 'StockArrival(id: $id, vendorId: $vendorId, vendor: $vendor, purchaseOrderId: $purchaseOrderId, warehouseId: $warehouseId, warehouse: $warehouse, invoiceNumber: $invoiceNumber, notes: $notes, receivedBy: $receivedBy, receivedByUser: $receivedByUser, items: $items, createdAt: $createdAt)';
 }
 
 
@@ -52,7 +58,7 @@ abstract mixin class $StockArrivalCopyWith<$Res>  {
   factory $StockArrivalCopyWith(StockArrival value, $Res Function(StockArrival) _then) = _$StockArrivalCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(name: 'invoice_number') String? invoiceNumber, String? notes,@JsonKey(name: 'received_by') int receivedBy,@JsonKey(name: 'received_by_user') ArrivalRef? receivedByUser, List<StockArrivalItem> items,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'purchase_order_id') int? purchaseOrderId,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(name: 'invoice_number') String? invoiceNumber, String? notes,@JsonKey(name: 'received_by') int receivedBy,@JsonKey(name: 'received_by_user') ArrivalRef? receivedByUser, List<StockArrivalItem> items,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -69,12 +75,13 @@ class _$StockArrivalCopyWithImpl<$Res>
 
 /// Create a copy of StockArrival
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? invoiceNumber = freezed,Object? notes = freezed,Object? receivedBy = null,Object? receivedByUser = freezed,Object? items = null,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? purchaseOrderId = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? invoiceNumber = freezed,Object? notes = freezed,Object? receivedBy = null,Object? receivedByUser = freezed,Object? items = null,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
 as int,vendor: freezed == vendor ? _self.vendor : vendor // ignore: cast_nullable_to_non_nullable
-as ArrivalRef?,warehouseId: freezed == warehouseId ? _self.warehouseId : warehouseId // ignore: cast_nullable_to_non_nullable
+as ArrivalRef?,purchaseOrderId: freezed == purchaseOrderId ? _self.purchaseOrderId : purchaseOrderId // ignore: cast_nullable_to_non_nullable
+as int?,warehouseId: freezed == warehouseId ? _self.warehouseId : warehouseId // ignore: cast_nullable_to_non_nullable
 as int?,warehouse: freezed == warehouse ? _self.warehouse : warehouse // ignore: cast_nullable_to_non_nullable
 as ArrivalRef?,invoiceNumber: freezed == invoiceNumber ? _self.invoiceNumber : invoiceNumber // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
@@ -203,10 +210,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StockArrival() when $default != null:
-return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.items,_that.createdAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.items,_that.createdAt);case _:
   return orElse();
 
 }
@@ -224,10 +231,10 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.war
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _StockArrival():
-return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.items,_that.createdAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.items,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -244,10 +251,10 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.war
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _StockArrival() when $default != null:
-return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.items,_that.createdAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.items,_that.createdAt);case _:
   return null;
 
 }
@@ -259,12 +266,19 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.war
 @JsonSerializable()
 
 class _StockArrival extends StockArrival {
-  const _StockArrival({required this.id, @JsonKey(name: 'vendor_id') required this.vendorId, this.vendor, @JsonKey(name: 'warehouse_id') this.warehouseId, this.warehouse, @JsonKey(name: 'invoice_number') this.invoiceNumber, this.notes, @JsonKey(name: 'received_by') required this.receivedBy, @JsonKey(name: 'received_by_user') this.receivedByUser, final  List<StockArrivalItem> items = const <StockArrivalItem>[], @JsonKey(name: 'created_at') this.createdAt}): _items = items,super._();
+  const _StockArrival({required this.id, @JsonKey(name: 'vendor_id') required this.vendorId, this.vendor, @JsonKey(name: 'purchase_order_id') this.purchaseOrderId, @JsonKey(name: 'warehouse_id') this.warehouseId, this.warehouse, @JsonKey(name: 'invoice_number') this.invoiceNumber, this.notes, @JsonKey(name: 'received_by') required this.receivedBy, @JsonKey(name: 'received_by_user') this.receivedByUser, final  List<StockArrivalItem> items = const <StockArrivalItem>[], @JsonKey(name: 'created_at') this.createdAt}): _items = items,super._();
   factory _StockArrival.fromJson(Map<String, dynamic> json) => _$StockArrivalFromJson(json);
 
 @override final  int id;
 @override@JsonKey(name: 'vendor_id') final  int vendorId;
 @override final  ArrivalRef? vendor;
+/// Which purchase order this shipment was fulfilling, null when it was unplanned — which
+/// most arrivals are.
+///
+/// A plain id and not a nested object, because that is what the server publishes: the order
+/// is read through `GET /purchase-orders/{id}`, the same way every other `*_id` in this API
+/// works.
+@override@JsonKey(name: 'purchase_order_id') final  int? purchaseOrderId;
 /// Nullable, and not an oversight: a warehouse can be deleted once it is empty, and the
 /// purchase history that passed through it has to survive that. The document keeps its
 /// lines and its ledger rows; only the pointer goes.
@@ -297,16 +311,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockArrival&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.invoiceNumber, invoiceNumber) || other.invoiceNumber == invoiceNumber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.receivedBy, receivedBy) || other.receivedBy == receivedBy)&&(identical(other.receivedByUser, receivedByUser) || other.receivedByUser == receivedByUser)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockArrival&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.invoiceNumber, invoiceNumber) || other.invoiceNumber == invoiceNumber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.receivedBy, receivedBy) || other.receivedBy == receivedBy)&&(identical(other.receivedByUser, receivedByUser) || other.receivedByUser == receivedByUser)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,warehouseId,warehouse,invoiceNumber,notes,receivedBy,receivedByUser,const DeepCollectionEquality().hash(_items),createdAt);
+int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,purchaseOrderId,warehouseId,warehouse,invoiceNumber,notes,receivedBy,receivedByUser,const DeepCollectionEquality().hash(_items),createdAt);
 
 @override
 String toString() {
-  return 'StockArrival(id: $id, vendorId: $vendorId, vendor: $vendor, warehouseId: $warehouseId, warehouse: $warehouse, invoiceNumber: $invoiceNumber, notes: $notes, receivedBy: $receivedBy, receivedByUser: $receivedByUser, items: $items, createdAt: $createdAt)';
+  return 'StockArrival(id: $id, vendorId: $vendorId, vendor: $vendor, purchaseOrderId: $purchaseOrderId, warehouseId: $warehouseId, warehouse: $warehouse, invoiceNumber: $invoiceNumber, notes: $notes, receivedBy: $receivedBy, receivedByUser: $receivedByUser, items: $items, createdAt: $createdAt)';
 }
 
 
@@ -317,7 +331,7 @@ abstract mixin class _$StockArrivalCopyWith<$Res> implements $StockArrivalCopyWi
   factory _$StockArrivalCopyWith(_StockArrival value, $Res Function(_StockArrival) _then) = __$StockArrivalCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(name: 'invoice_number') String? invoiceNumber, String? notes,@JsonKey(name: 'received_by') int receivedBy,@JsonKey(name: 'received_by_user') ArrivalRef? receivedByUser, List<StockArrivalItem> items,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'purchase_order_id') int? purchaseOrderId,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(name: 'invoice_number') String? invoiceNumber, String? notes,@JsonKey(name: 'received_by') int receivedBy,@JsonKey(name: 'received_by_user') ArrivalRef? receivedByUser, List<StockArrivalItem> items,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -334,12 +348,13 @@ class __$StockArrivalCopyWithImpl<$Res>
 
 /// Create a copy of StockArrival
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? invoiceNumber = freezed,Object? notes = freezed,Object? receivedBy = null,Object? receivedByUser = freezed,Object? items = null,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? purchaseOrderId = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? invoiceNumber = freezed,Object? notes = freezed,Object? receivedBy = null,Object? receivedByUser = freezed,Object? items = null,Object? createdAt = freezed,}) {
   return _then(_StockArrival(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
 as int,vendor: freezed == vendor ? _self.vendor : vendor // ignore: cast_nullable_to_non_nullable
-as ArrivalRef?,warehouseId: freezed == warehouseId ? _self.warehouseId : warehouseId // ignore: cast_nullable_to_non_nullable
+as ArrivalRef?,purchaseOrderId: freezed == purchaseOrderId ? _self.purchaseOrderId : purchaseOrderId // ignore: cast_nullable_to_non_nullable
+as int?,warehouseId: freezed == warehouseId ? _self.warehouseId : warehouseId // ignore: cast_nullable_to_non_nullable
 as int?,warehouse: freezed == warehouse ? _self.warehouse : warehouse // ignore: cast_nullable_to_non_nullable
 as ArrivalRef?,invoiceNumber: freezed == invoiceNumber ? _self.invoiceNumber : invoiceNumber // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable

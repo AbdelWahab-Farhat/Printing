@@ -96,6 +96,56 @@ void main() {
       expect(find.text('لا يوجد كود موظف'), findsOneWidget);
       expect(find.textContaining('null'), findsNothing);
     });
+
+    testWidgets('carries the brand mark', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(const EmployeeCard(user: user)));
+
+      // Act
+      final mark = tester.widget<Image>(find.byType(Image));
+
+      // Assert — the app's one logo file, the same one the splash and the login screen draw.
+      expect((mark.image as AssetImage).assetName, 'assets/images/logo.png');
+    });
+
+    testWidgets('the mark is decoration — it neither speaks nor takes a tap', (tester) async {
+      // Arrange — a watermark announced to a screen reader is a word read out on every visit to
+      // the home screen that tells nobody anything.
+      await tester.pumpWidget(host(const EmployeeCard(user: user)));
+
+      // Act
+      final semantics = tester.getSemantics(find.byType(EmployeeCard));
+
+      // Assert — the card still says who is signed in, and says nothing about a logo.
+      expect(semantics, isNot(matchesSemantics(label: 'logo')));
+      expect(find.descendant(of: find.byType(Image), matching: find.byType(InkWell)), findsNothing);
+      expect(find.text('عبدالوهاب فرحات'), findsOneWidget);
+    });
+
+    testWidgets('the mark never pushes the card out of shape', (tester) async {
+      // Arrange — the watermark bleeds off the corner, so it is laid out *behind* the row
+      // rather than beside it. A card that grew to fit it would be a different card.
+      await tester.pumpWidget(host(const EmployeeCard(user: user)));
+      final withMark = tester.getSize(find.byType(EmployeeCard));
+
+      // Act — the longest name and role the card is likely to meet.
+      await tester.pumpWidget(
+        host(
+          const EmployeeCard(
+            user: AuthUser(
+              id: 4,
+              name: 'عبدالوهاب فرحات',
+              phone: '0911000003',
+              employeeCode: '1002',
+              roles: [UserRole(name: 'staff', label: 'موظف')],
+            ),
+          ),
+        ),
+      );
+
+      // Assert
+      expect(tester.getSize(find.byType(EmployeeCard)), withMark);
+    });
   });
 
   group('summary tiles', () {

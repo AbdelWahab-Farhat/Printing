@@ -19,6 +19,14 @@ abstract class StockArrival with _$StockArrival {
     @JsonKey(name: 'vendor_id') required int vendorId,
     ArrivalRef? vendor,
 
+    /// Which purchase order this shipment was fulfilling, null when it was unplanned — which
+    /// most arrivals are.
+    ///
+    /// A plain id and not a nested object, because that is what the server publishes: the order
+    /// is read through `GET /purchase-orders/{id}`, the same way every other `*_id` in this API
+    /// works.
+    @JsonKey(name: 'purchase_order_id') int? purchaseOrderId,
+
     /// Nullable, and not an oversight: a warehouse can be deleted once it is empty, and the
     /// purchase history that passed through it has to survive that. The document keeps its
     /// lines and its ledger rows; only the pointer goes.

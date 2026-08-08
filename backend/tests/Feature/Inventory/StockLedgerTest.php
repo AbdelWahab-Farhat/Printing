@@ -233,10 +233,18 @@ class StockLedgerTest extends TestCase
         // the day some future caller writes the column without going through ApplyStockChange
         $stock = WarehouseStock::factory()->quantity('5.000')->create();
 
-        // Act
-        $write = fn () => DB::table('warehouse_stocks')
-            ->where('id', $stock->id)
-            ->update(['quantity' => '-1.000']);
+        // Act — wrapped in a nested transaction, which on an open one is a SAVEPOINT.
+        //
+        // PostgreSQL aborts the *whole* transaction when a statement fails: every query after it
+        // is refused with 25P02 until a rollback. RefreshDatabase runs each test inside one
+        // transaction, so without the savepoint the violation below would poison it and the
+        // assertion underneath — the half that proves the shelf survived — could not run at all.
+        // The savepoint rolls back only the failed write, and the exception is rethrown intact.
+        $write = fn () => DB::transaction(
+            fn () => DB::table('warehouse_stocks')
+                ->where('id', $stock->id)
+                ->update(['quantity' => '-1.000']),
+        );
 
         // Assert — a loud constraint violation, not a silently negative shelf
         $this->assertThrows($write, QueryException::class);

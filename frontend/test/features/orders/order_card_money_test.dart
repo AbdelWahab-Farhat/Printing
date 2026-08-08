@@ -159,6 +159,76 @@ void main() {
     expect(chip.style?.color, isNot(scheme.primary));
   });
 
+  group('the card that is paid for', () {
+    /// The surface the card actually draws — the `Material` the whole row sits on.
+    Color surfaceOf(WidgetTester tester) {
+      return tester
+          .widget<Material>(
+            find.descendant(of: find.byType(OrderCard), matching: find.byType(Material)).first,
+          )
+          .color!;
+    }
+
+    testWidgets('«مدفوعة بالكامل» tints the whole card, not just its chip', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        host(
+          OrderCard(
+            order: orderWith(
+              paid: '450.00',
+              remaining: '0.00',
+              paymentStatus: PaymentStatus.paid,
+              paymentLabel: 'مدفوعة بالكامل',
+            ),
+          ),
+        ),
+      );
+
+      // Act
+      final scheme = Theme.of(tester.element(find.byType(OrderCard))).colorScheme;
+
+      // Assert — green enough to be seen down a list without reading a word, and still a long
+      // way from the flat `paidContainer` fill, which would make the row shout.
+      expect(surfaceOf(tester), isNot(scheme.surfaceContainerLowest));
+      expect(surfaceOf(tester), isNot(scheme.paidContainer));
+      expect(surfaceOf(tester).g, greaterThan(surfaceOf(tester).b));
+    });
+
+    testWidgets('every other payment state keeps the plain card', (tester) async {
+      // Arrange — part-paid is the common case, and a queue where most rows are tinted has
+      // told nobody anything.
+      await tester.pumpWidget(host(OrderCard(order: orderWith())));
+
+      // Act
+      final scheme = Theme.of(tester.element(find.byType(OrderCard))).colorScheme;
+
+      // Assert
+      expect(surfaceOf(tester), scheme.surfaceContainerLowest);
+    });
+
+    testWidgets('an order the API said nothing about stays plain', (tester) async {
+      // Arrange — an empty label is a build of the API that predates payments, and
+      // `PaymentStatus.unpaid` is only its default. Tinting on that would be a claim.
+      await tester.pumpWidget(
+        host(
+          OrderCard(
+            order: orderWith(
+              paid: '0.00',
+              remaining: '450.00',
+              paymentLabel: '',
+            ),
+          ),
+        ),
+      );
+
+      // Act
+      final scheme = Theme.of(tester.element(find.byType(OrderCard))).colorScheme;
+
+      // Assert
+      expect(surfaceOf(tester), scheme.surfaceContainerLowest);
+    });
+  });
+
   testWidgets('an order from an API that predates payments wears no chip', (tester) async {
     // Arrange — silence beats a chip reading «غير مدفوعة» about a number nobody computed.
     await tester.pumpWidget(

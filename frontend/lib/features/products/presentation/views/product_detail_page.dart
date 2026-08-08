@@ -14,6 +14,7 @@ import 'package:printing/core/widgets/app_speed_dial.dart';
 import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/presentation/viewmodel/product_detail_cubit.dart';
+import 'package:printing/features/products/presentation/widgets/product_gallery.dart';
 
 /// Everything about one bag.
 ///
@@ -156,7 +157,7 @@ class _Body extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
       children: [
         if (product.images.isNotEmpty) ...[
-          _Gallery(images: product.images),
+          ProductGallery(images: product.images),
           SizedBox(height: 16.h),
         ],
 
@@ -191,103 +192,6 @@ class _Body extends StatelessWidget {
         SizedBox(height: 14.h),
 
         _Meta(product: product),
-      ],
-    );
-  }
-}
-
-/// The photographs, if there are any.
-///
-/// One horizontal strip rather than a grid: photographs of a bag differ by angle, not by
-/// content, so they are a thing to swipe through and not a thing to scan.
-class _Gallery extends StatelessWidget {
-  const _Gallery({required this.images});
-
-  final List<ProductImage> images;
-
-  @override
-  Widget build(BuildContext context) {
-    // Primary first, then the shop's own order: the picture the shop chose to lead with is the
-    // one that should be on screen before anybody scrolls.
-    final ordered = [...images]
-      ..sort((a, b) {
-        if (a.isPrimary != b.isPrimary) return a.isPrimary ? -1 : 1;
-
-        return a.sortOrder.compareTo(b.sortOrder);
-      });
-
-    return SizedBox(
-      height: 200.h,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: ordered.length,
-        separatorBuilder: (context, index) => SizedBox(width: 10.w),
-        itemBuilder: (context, index) => _GalleryItem(image: ordered[index]),
-      ),
-    );
-  }
-}
-
-class _GalleryItem extends StatelessWidget {
-  const _GalleryItem({required this.image});
-
-  final ProductImage image;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final facts = [
-      if (image.dimensionsLabel != null) image.dimensionsLabel!,
-      if (image.sizeLabel != null) image.sizeLabel!,
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16.r),
-            child: Stack(
-              children: [
-                SizedBox(
-                  width: 240.w,
-                  height: double.infinity,
-                  child: Image.network(
-                    image.url,
-                    fit: BoxFit.cover,
-                    // A photo that fails, or one still arriving, leaves a plain tinted panel
-                    // rather than a broken-image glyph the user can do nothing about.
-                    errorBuilder: (context, error, stack) => ColoredBox(
-                      color: scheme.surfaceContainerHigh,
-                      child: Center(
-                        child: Icon(AppIcons.error, size: 24.sp, color: scheme.outline),
-                      ),
-                    ),
-                    loadingBuilder: (context, child, progress) => progress == null
-                        ? child
-                        : ColoredBox(color: scheme.surfaceContainerHigh),
-                  ),
-                ),
-                if (image.isPrimary)
-                  PositionedDirectional(
-                    top: 8.h,
-                    start: 8.w,
-                    child: const _Pill(label: 'الصورة الرئيسية', tone: _PillTone.primary),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        if (facts.isNotEmpty) ...[
-          SizedBox(height: 6.h),
-          Text(
-            facts.join(' · '),
-            // Dimensions and a file size are Latin runs; left to inherit, `1200 × 800` reflows
-            // into a different pair of numbers.
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-        ],
       ],
     );
   }
@@ -436,7 +340,7 @@ class _Pricing extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-        Divider(height: 20.h),
+        const _Rule(height: 20),
         _FactRow(
           label: 'طريقة التسعير',
           value: product.pricingModeLabel,
@@ -473,7 +377,10 @@ class _Variants extends StatelessWidget {
     return Column(
       children: [
         for (var index = 0; index < variants.length; index++) ...[
-          if (index > 0) Divider(height: 22.h),
+          // The one rule on this screen that has real work to do: a size is a heading and three
+          // or four price rows, and without a visible line between them the card reads as one
+          // long list of numbers whose headings happen to be bold.
+          if (index > 0) const _Rule(height: 26),
           _VariantBlock(variant: variants[index], product: product),
         ],
       ],
@@ -643,14 +550,14 @@ class _Identifiers extends StatelessWidget {
           value: product.code,
           copiedMessage: 'تم نسخ رمز المنتج',
         ),
-        Divider(height: 18.h),
+        const _Rule(height: 18),
         _CopyRow(
           icon: AppIcons.tag,
           label: 'المعرّف (slug)',
           value: product.slug,
           copiedMessage: 'تم نسخ المعرّف',
         ),
-        Divider(height: 18.h),
+        const _Rule(height: 18),
         _FactRow(label: 'التصنيف', value: product.categoryLabel),
         SizedBox(height: 8.h),
         _FactRow(label: 'وحدة التسعير', value: product.pricingUnitLabel),
@@ -793,37 +700,25 @@ class _Meta extends StatelessWidget {
   String _date(DateTime value) => '${value.year}/${value.month}/${value.day}';
 }
 
-enum _PillTone { primary }
+/// The line between two blocks inside a card.
+///
+/// The stock `Divider` draws `outlineVariant` at one logical pixel, which on a phone against
+/// this card's white is a rumour of a line — legible in a design tool and not on a desk in a
+/// print shop. `outline` is the next step up the same ramp: still furniture, but a line somebody
+/// can actually see doing its job.
+class _Rule extends StatelessWidget {
+  const _Rule({required this.height});
 
-class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.tone});
-
-  final String label;
-  final _PillTone tone;
+  /// The space the rule occupies, line included — design pixels, scaled here so callers read as
+  /// the spacing they are asking for.
+  final double height;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final background = switch (tone) {
-      _PillTone.primary => scheme.primaryContainer,
-    };
-    final foreground = switch (tone) {
-      _PillTone.primary => scheme.onPrimaryContainer,
-    };
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(100.r),
-      ),
-      child: Text(
-        label,
-        style: context.textTheme.labelSmall?.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+    return Divider(
+      height: height.h,
+      thickness: 1,
+      color: context.colorScheme.outline.withValues(alpha: 0.5),
     );
   }
 }

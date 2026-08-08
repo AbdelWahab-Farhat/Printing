@@ -7,6 +7,7 @@ import 'package:printing/core/widgets/paged_list_view.dart';
 import 'package:printing/core/widgets/search_field.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
+import 'package:printing/features/products/presentation/widgets/product_gallery.dart';
 import 'package:printing/features/products/usecases/get_products.dart';
 
 /// What was picked: a bag, and which of its sizes.
@@ -90,7 +91,9 @@ class _ProductPickerState extends State<_ProductPicker> {
           emptyMessage: 'لا توجد منتجات',
           onLoadMore: cubit.loadMore,
           onRefresh: cubit.refresh,
-          skeletonHeight: 68.h,
+          // The picture's square plus the padding around it — the placeholder rows are the
+          // same height as the real ones, so nothing shifts when the page lands.
+          skeletonHeight: 72.h,
           itemBuilder: (context, product, index) => _ProductRow(
             product: product,
             onTap: () => _choose(product),
@@ -105,6 +108,10 @@ class _ProductPickerState extends State<_ProductPicker> {
 
     return _Sheet(
       title: product.name,
+      // The same picture that was tapped, at the size a title is tall. Which bag is being sized
+      // is the one thing this step assumes is still known, and after the catalogue slides away
+      // the name is all that was left saying it.
+      leading: ProductThumbnail(image: product.primaryImage, side: 36.w, radius: 8.r),
       // No search: a product has a handful of sizes, and a box that filters four rows is
       // furniture. The back arrow returns to the catalogue, which does have one.
       onBack: () => setState(() => _product = null),
@@ -154,6 +161,25 @@ String _priceLine(Product product, ProductVariant variant) {
   return 'من ${tiers.first.unitPrice} د.ل';
 }
 
+/// One bag on offer: what it looks like, what it is called, and how many sizes it comes in.
+///
+/// **The picture is the row's first element and always the same square.** Staff know these bags
+/// by sight — «الشفافة بسحاب» and «الشفافة عادية» are one word apart in a list and nothing alike
+/// on a shelf — so a picker read only as two lines of Arabic makes somebody who could have
+/// pointed at the answer read for it instead.
+///
+/// **A product without a photograph gets the placeholder square rather than no square.** This is
+/// the opposite of what the catalogue card does, and deliberately: a card is read one at a time,
+/// where this is a column scanned top to bottom, and a row that starts its text 58 pixels further
+/// out breaks the line the eye is running down. Photographs are mandatory now, so the empty
+/// square is the legacy row and the not-yet-loaded one — the exceptions, which is exactly what a
+/// placeholder should mark.
+///
+/// **A `Row` rather than the `ListTile` this used to be**, and for one reason: `ListTile` caps
+/// whatever it is given as `leading` at 56 logical pixels tall while letting it keep its width,
+/// so on any screen wider than a phone — where ScreenUtil scales 48 past that ceiling — the
+/// photograph is squashed into a rectangle. A picture that changes shape with the device is
+/// worse than none.
 class _ProductRow extends StatelessWidget {
   const _ProductRow({required this.product, required this.onTap});
 
@@ -162,17 +188,52 @@ class _ProductRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
     final sizes = product.activeVariants.length;
 
-    return ListTile(
-      title: Text(product.name),
-      subtitle: Text(
-        product.hasListedPrices
-            ? '${product.categoryLabel} · $sizes مقاس'
-            : '${product.categoryLabel} · السعر حسب الطلب',
-      ),
-      trailing: Icon(Icons.chevron_left_rounded, size: 22.r),
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12.r),
+      child: Padding(
+        // No horizontal inset: the list already carries the sheet's 16, so the picture's edge
+        // sits under the search box's edge — the line everything else here starts from.
+        padding: EdgeInsets.symmetric(vertical: 8.h),
+        child: Row(
+          children: [
+            ProductThumbnail(image: product.primaryImage, side: 48.w),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    product.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    product.hasListedPrices
+                        ? '${product.categoryLabel} · $sizes مقاس'
+                        : '${product.categoryLabel} · السعر حسب الطلب',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Icon(Icons.chevron_left_rounded, size: 22.r, color: scheme.onSurfaceVariant),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -189,6 +250,7 @@ class _Sheet extends StatelessWidget {
     this.searchHint,
     this.onSearch,
     this.onBack,
+    this.leading,
   });
 
   final String title;
@@ -196,6 +258,10 @@ class _Sheet extends StatelessWidget {
   final String? searchHint;
   final ValueChanged<String>? onSearch;
   final VoidCallback? onBack;
+
+  /// Something small to put before the title — the chosen product's picture, on the step that
+  /// has one. Null on the step that is still choosing.
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -225,9 +291,12 @@ class _Sheet extends StatelessWidget {
                     icon: const Icon(Icons.arrow_forward_rounded),
                     tooltip: 'رجوع إلى المنتجات',
                   ),
+                if (leading != null) ...[leading!, SizedBox(width: 10.w)],
                 Expanded(
                   child: Text(
                     title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: context.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
