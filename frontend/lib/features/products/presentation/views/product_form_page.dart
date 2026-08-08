@@ -1,15 +1,21 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:printing/core/di/injector.dart';
+import 'package:printing/core/files/attachment_picker.dart';
+import 'package:printing/core/files/picked_file.dart';
 import 'package:printing/core/router/app_router.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/utils/validators.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
+import 'package:printing/core/widgets/attachment_sheet.dart';
 import 'package:printing/features/products/models/product.dart';
+import 'package:printing/features/products/models/product_category.dart';
 import 'package:printing/features/products/presentation/viewmodel/save_product_cubit.dart';
 import 'package:printing/features/products/usecases/save_product.dart';
 
@@ -70,8 +76,8 @@ class _ProductFormViewState extends State<_ProductFormView> {
 
   final List<_SizeRow> _sizes = [];
 
-  late _Category _category = _Category.fromWire(_editing?.category);
-  late _Unit _unit = _Unit.fromWire(_editing?.pricingUnit);
+  late ProductCategory _category = ProductCategory.fromWire(_editing?.category);
+  late PricingUnit _unit = PricingUnit.fromWire(_editing?.pricingUnit);
 
   /// Priced by the piece with a published list, which is nine bags in ten.
   late bool _isQuoteOnly = _editing?.pricingMode == 'quote_on_request';
@@ -82,6 +88,20 @@ class _ProductFormViewState extends State<_ProductFormView> {
   /// A complaint about the grid as a whole — thresholds out of order, say. It has no single
   /// field to sit under, so it sits above the grid.
   String? _gridError;
+
+  /// The photo, required when adding.
+  ///
+  /// Null while correcting an existing product and never filled then: the photo is not editable
+  /// from this screen. Swapping one is two operations on the images endpoint — upload the
+  /// replacement, delete the old — and doing that from a form whose Save button might never be
+  /// pressed would change the product before the user committed to anything.
+  PickedFile? _image;
+
+  /// Shown under the picker after a submit with nothing chosen. Cleared as soon as one is.
+  String? _imageError;
+
+  /// Adding, so a photo has to be collected. Correcting, so it must not be.
+  bool get _needsImage => _editing == null;
 
   bool get _hasPrices => !_isQuoteOnly;
 
@@ -128,7 +148,8 @@ class _ProductFormViewState extends State<_ProductFormView> {
 
     final widest = variants.fold<List<ProductPriceTier>>(
       const [],
-      (best, variant) => variant.priceTiers.length > best.length ? variant.priceTiers : best,
+      (best, variant) =>
+          variant.priceTiers.length > best.length ? variant.priceTiers : best,
     );
 
     if (widest.isEmpty) {
@@ -140,7 +161,8 @@ class _ProductFormViewState extends State<_ProductFormView> {
     }
 
     return [
-      for (final tier in widest) TextEditingController(text: tier.minQuantityLabel),
+      for (final tier in widest)
+        TextEditingController(text: tier.minQuantityLabel),
     ];
   }
 
@@ -161,7 +183,8 @@ class _ProductFormViewState extends State<_ProductFormView> {
 
   // ── the grid ────────────────────────────────────────────────────────────────
 
-  void _addSize() => setState(() => _sizes.add(_SizeRow(columns: _breaks.length)));
+  void _addSize() =>
+      setState(() => _sizes.add(_SizeRow(columns: _breaks.length)));
 
   void _removeSize(int index) {
     final removed = _sizes.removeAt(index);
@@ -212,12 +235,39 @@ class _ProductFormViewState extends State<_ProductFormView> {
       );
 
       if (value == null) return 'كل حد كمية يجب أن يكون رقماً';
-      if (value <= previous) return 'حدود الكمية يجب أن تتصاعد: 100 ثم 300 ثم 1000';
+      if (value <= previous) {
+        return 'حدود الكمية يجب أن تتصاعد: 100 ثم 300 ثم 1000';
+      }
 
       previous = value;
     }
 
     return null;
+  }
+
+  /// Chooses the product's photo.
+  ///
+  /// The document browser is not offered. Every other picker in this app accepts a PDF because
+  /// a customer's design usually is one; a product photo is a photograph, and the two places it
+  /// comes from are the library and the camera.
+  Future<void> _pickImage() async {
+    FocusScope.of(context).unfocus();
+
+    final source = await showAttachmentSheet(
+      context: context,
+      title: 'صورة المنتج',
+      sources: const [AttachmentSource.photos, AttachmentSource.camera],
+    );
+    if (source == null || !mounted) return;
+
+    final files = await sl<AttachmentPicker>().pick(source);
+    // Cancelling a picker is not a failure and nothing is said about it.
+    if (files.isEmpty || !mounted) return;
+
+    setState(() {
+      _image = files.first;
+      _imageError = null;
+    });
   }
 
   void _submit() {
@@ -226,12 +276,27 @@ class _ProductFormViewState extends State<_ProductFormView> {
     FocusScope.of(context).unfocus();
 
     final gridError = _validateThresholds();
-    setState(() => _gridError = gridError);
+    // Checked here rather than by a FormField validator: the picker is not a text input, and
+    // wrapping it in one to borrow `validate()` would be more machinery than the single rule
+    // needs.
+    final imageError = _needsImage && _image == null
+        ? 'صورة المنتج مطلوبة'
+        : null;
 
-    if (!_formKey.currentState!.validate() || gridError != null) return;
+    setState(() {
+      _gridError = gridError;
+      _imageError = imageError;
+    });
+
+    if (!_formKey.currentState!.validate() ||
+        gridError != null ||
+        imageError != null) {
+      return;
+    }
 
     context.read<SaveProductCubit>().submit(
       id: _editing?.id,
+      image: _image,
       name: _name.text,
       category: _category.wire,
       pricingUnit: _unit.wire,
@@ -272,7 +337,9 @@ class _ProductFormViewState extends State<_ProductFormView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_editing == null ? 'منتج جديد' : 'تعديل المنتج')),
+      appBar: AppBar(
+        title: Text(_editing == null ? 'منتج جديد' : 'تعديل المنتج'),
+      ),
       body: SafeArea(
         child: BlocConsumer<SaveProductCubit, SaveProductState>(
           listener: (context, state) {
@@ -333,18 +400,32 @@ class _ProductFormViewState extends State<_ProductFormView> {
                       ),
                       SizedBox(height: 16.h),
 
-                      _ChoiceRow<_Category>(
+                      // Only while adding. A product being corrected already has its photo, and
+                      // this screen is not where one is swapped — see [_image].
+                      if (_needsImage) ...[
+                        _ImageField(
+                          image: _image,
+                          // The server's complaint about the file wins over the form's about
+                          // there being none: if it came back, one was sent.
+                          errorText: state.imageError ?? _imageError,
+                          onTap: _pickImage,
+                        ),
+                        SizedBox(height: 16.h),
+                      ],
+
+                      _ChoiceRow<ProductCategory>(
                         label: 'التصنيف',
-                        values: _Category.values,
+                        values: ProductCategory.choices,
                         selected: _category,
                         labelOf: (value) => value.label,
-                        onSelected: (value) => setState(() => _category = value),
+                        onSelected: (value) =>
+                            setState(() => _category = value),
                       ),
                       SizedBox(height: 12.h),
 
-                      _ChoiceRow<_Unit>(
+                      _ChoiceRow<PricingUnit>(
                         label: 'وحدة التسعير',
-                        values: _Unit.values,
+                        values: PricingUnit.choices,
                         selected: _unit,
                         labelOf: (value) => value.label,
                         onSelected: (value) => setState(() => _unit = value),
@@ -355,11 +436,13 @@ class _ProductFormViewState extends State<_ProductFormView> {
                         controller: _minimum,
                         label: 'أقل كمية للطلب',
                         prefixIcon: AppIcons.orders,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textDirection: TextDirection.ltr,
                         // Whole pieces, but a weight can be fractional — the API draws the same
                         // line and this asks earlier so the user is not told by a round trip.
-                        validator: _unit == _Unit.piece
+                        validator: _unit == PricingUnit.piece
                             ? Validators.integer(allowZero: false)
                             : Validators.decimal(allowZero: false),
                         errorText: state.minimumError,
@@ -369,9 +452,12 @@ class _ProductFormViewState extends State<_ProductFormView> {
 
                       SwitchListTile.adaptive(
                         value: _isQuoteOnly,
-                        onChanged: (value) => setState(() => _isQuoteOnly = value),
+                        onChanged: (value) =>
+                            setState(() => _isQuoteOnly = value),
                         title: const Text('السعر حسب الطلب'),
-                        subtitle: const Text('بدون قائمة أسعار — يُتفق على السعر مع الزبون'),
+                        subtitle: const Text(
+                          'بدون قائمة أسعار — يُتفق على السعر مع الزبون',
+                        ),
                         contentPadding: EdgeInsets.zero,
                       ),
                       SizedBox(height: 12.h),
@@ -418,8 +504,11 @@ class _ProductFormViewState extends State<_ProductFormView> {
                           ordinal: index + 1,
                           showPrices: _hasPrices,
                           labelError: state.variantLabelError(index),
-                          priceErrorOf: (column) => state.priceError(index, column),
-                          onRemove: _sizes.length <= 1 ? null : () => _removeSize(index),
+                          priceErrorOf: (column) =>
+                              state.priceError(index, column),
+                          onRemove: _sizes.length <= 1
+                              ? null
+                              : () => _removeSize(index),
                           onChanged: cubit.clearFailure,
                         ),
                         SizedBox(height: 12.h),
@@ -433,7 +522,9 @@ class _ProductFormViewState extends State<_ProductFormView> {
                       SizedBox(height: 28.h),
 
                       AppButton(
-                        label: _editing == null ? 'إضافة المنتج' : 'حفظ التعديلات',
+                        label: _editing == null
+                            ? 'إضافة المنتج'
+                            : 'حفظ التعديلات',
                         isLoading: state.isSubmitting,
                         onPressed: _submit,
                       ),
@@ -480,7 +571,9 @@ class _BreakHeader extends StatelessWidget {
             children: [
               Text(
                 'حدود الكمية',
-                style: context.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                style: context.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const Spacer(),
               IconButton(
@@ -516,7 +609,10 @@ class _BreakHeader extends StatelessWidget {
                               tooltip: 'حذف الحد',
                               visualDensity: VisualDensity.compact,
                             ),
-                      suffixIconConstraints: BoxConstraints(minWidth: 28.w, minHeight: 28.w),
+                      suffixIconConstraints: BoxConstraints(
+                        minWidth: 28.w,
+                        minHeight: 28.w,
+                      ),
                     ),
                   ),
                 ),
@@ -566,7 +662,9 @@ class _SizeCard extends StatelessWidget {
             children: [
               Text(
                 'مقاس $ordinal',
-                style: context.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                style: context.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const Spacer(),
               IconButton(
@@ -592,9 +690,16 @@ class _SizeCard extends StatelessWidget {
           SizedBox(height: 10.h),
           Row(
             children: [
-              Expanded(child: _Dimension(controller: row.width, label: 'العرض (سم)')),
+              Expanded(
+                child: _Dimension(controller: row.width, label: 'العرض (سم)'),
+              ),
               SizedBox(width: 10.w),
-              Expanded(child: _Dimension(controller: row.height, label: 'الارتفاع (سم)')),
+              Expanded(
+                child: _Dimension(
+                  controller: row.height,
+                  label: 'الارتفاع (سم)',
+                ),
+              ),
             ],
           ),
           if (showPrices) ...[
@@ -610,7 +715,9 @@ class _SizeCard extends StatelessWidget {
                       controller: row.prices[column],
                       textDirection: TextDirection.ltr,
                       textAlign: TextAlign.center,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       onChanged: (_) => onChanged(),
                       validator: Validators.decimal(),
                       decoration: InputDecoration(
@@ -656,7 +763,11 @@ class _SizeRow {
       label = TextEditingController(),
       width = TextEditingController(),
       height = TextEditingController(),
-      prices = List.generate(columns, (_) => TextEditingController(), growable: true);
+      prices = List.generate(
+        columns,
+        (_) => TextEditingController(),
+        growable: true,
+      );
 
   /// A size that already exists, opened for correction.
   ///
@@ -665,9 +776,7 @@ class _SizeRow {
   /// would be deleted and recreated — taking the order lines that point at it with it.
   _SizeRow.from({required ProductVariant variant, required List<String> prices})
     : id = variant.id,
-      prices = [
-        for (final price in prices) TextEditingController(text: price),
-      ],
+      prices = [for (final price in prices) TextEditingController(text: price)],
       label = TextEditingController(text: variant.label),
       width = TextEditingController(text: variant.widthCm?.toString() ?? ''),
       height = TextEditingController(text: variant.heightCm?.toString() ?? '');
@@ -736,6 +845,129 @@ class _ChoiceRow<T> extends StatelessWidget {
   }
 }
 
+/// The product's photo: a prompt to choose one, then the one that was chosen.
+///
+/// Full width like every other field on this form rather than a centred square — the row it
+/// sits in is a form row, and a picker that centres itself in a column of stretched inputs
+/// reads as belonging to a different screen.
+class _ImageField extends StatelessWidget {
+  const _ImageField({required this.image, required this.onTap, this.errorText});
+
+  final PickedFile? image;
+  final VoidCallback onTap;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final invalid = errorText != null;
+    final corner = BorderRadius.circular(12.r);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: corner,
+          child: Container(
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              borderRadius: corner,
+              border: Border.all(
+                color: invalid ? scheme.error : scheme.outlineVariant,
+                width: invalid ? 1.4 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                _preview(scheme, corner),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        image == null ? 'صورة المنتج' : image!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        image == null
+                            ? 'مطلوبة — اضغط للاختيار'
+                            : 'اضغط لاختيار صورة أخرى',
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(AppIcons.photos, color: scheme.primary, size: 22.sp),
+              ],
+            ),
+          ),
+        ),
+        if (invalid) ...[
+          SizedBox(height: 6.h),
+          Padding(
+            // Lines up with the text inside the box above rather than with its border, so the
+            // complaint sits under the thing it is about.
+            padding: EdgeInsetsDirectional.only(start: 12.w),
+            child: Text(
+              errorText!,
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// The chosen photo, or a placeholder tile before there is one.
+  ///
+  /// `Image.file` and not a network image: this file has not been uploaded yet and exists only
+  /// on the device.
+  Widget _preview(ColorScheme scheme, BorderRadius corner) {
+    final side = 52.w;
+
+    return ClipRRect(
+      borderRadius: corner,
+      child: SizedBox(
+        width: side,
+        height: side,
+        child: image == null
+            ? ColoredBox(
+                color: scheme.surfaceContainerHigh,
+                child: Icon(
+                  AppIcons.products,
+                  color: scheme.onSurfaceVariant,
+                  size: 22.sp,
+                ),
+              )
+            : Image.file(
+                File(image!.path),
+                fit: BoxFit.cover,
+                // The path can go stale — iOS copies a library pick into a cache the system may
+                // sweep — and a broken image with no fallback is a red crash box in a form.
+                errorBuilder: (_, _, _) => ColoredBox(
+                  color: scheme.surfaceContainerHigh,
+                  child: Icon(
+                    AppIcons.photos,
+                    color: scheme.onSurfaceVariant,
+                    size: 22.sp,
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.text);
 
@@ -751,38 +983,4 @@ class _SectionTitle extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The two values `ProductCategory` accepts, with the Arabic the catalogue uses.
-///
-/// Spelled out here rather than fetched: they are an enum on the server, not a list the
-/// business edits, so a round trip would buy nothing and a failed one would leave the form
-/// unable to open.
-enum _Category {
-  printed('printed', 'مطبوعة'),
-  general('general', 'سادة');
-
-  const _Category(this.wire, this.label);
-
-  final String wire;
-  final String label;
-
-  /// Falls back to the commonest rather than throwing: a category this build has never heard
-  /// of would otherwise make an existing product impossible to open, and the form is not the
-  /// place to discover that the server grew a case.
-  static _Category fromWire(String? wire) =>
-      values.firstWhere((value) => value.wire == wire, orElse: () => printed);
-}
-
-enum _Unit {
-  piece('piece', 'بالقطعة'),
-  kilogram('kilogram', 'بالكيلوغرام');
-
-  const _Unit(this.wire, this.label);
-
-  final String wire;
-  final String label;
-
-  static _Unit fromWire(String? wire) =>
-      values.firstWhere((value) => value.wire == wire, orElse: () => piece);
 }

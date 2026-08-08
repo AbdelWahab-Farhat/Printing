@@ -61,11 +61,20 @@ class ProductController extends Controller
     /**
      * Create a product
      *
-     * Variants and their price tiers may be supplied inline.
+     * Send as `multipart/form-data`. A photo is **required** — a catalogue entry with no picture
+     * is a gap in the grid, so the product is refused rather than created and left to be
+     * photographed later. It becomes the product's primary image.
+     *
+     * Variants and their price tiers may be supplied inline, as `variants[0][label]` and
+     * `variants[0][price_tiers][0][unit_price]`.
      */
     public function store(StoreProductRequest $request): JsonResponse
     {
-        $product = $this->catalog->create(ProductData::fromArray($request->validated()));
+        $product = $this->catalog->create(
+            ProductData::fromArray($request->validated()),
+            $request->file('image'),
+            $request->string('image_alt_text')->toString() ?: null,
+        );
 
         return $this->created(new ProductResource($product), 'تم إضافة المنتج بنجاح');
     }

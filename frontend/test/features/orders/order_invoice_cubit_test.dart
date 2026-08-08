@@ -72,6 +72,7 @@ void main() {
         discount: any(named: 'discount'),
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
       ),
     ).thenAnswer(
       (_) async => failure != null ? Left(failure) : Right(orderWith()),
@@ -209,6 +210,7 @@ void main() {
         discount: any(named: 'discount'),
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
       ),
     ).captured.last as List<InvoiceLineUpdate>;
 
@@ -233,6 +235,7 @@ void main() {
         discount: any(named: 'discount'),
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
       ),
     ).captured.last as List<InvoiceLineUpdate>;
 
@@ -256,6 +259,7 @@ void main() {
         discount: any(named: 'discount'),
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
       ),
     );
   });
@@ -303,6 +307,114 @@ void main() {
     expect(cubit.state.isSaving, isFalse);
   });
 
+  // ────────────────────── the number the courier rings ───────────────────────
+
+  test('it opens with the number already on the order', () {
+    // Arrange
+    // Act
+    final cubit = cubitFor(orderWith().copyWith(recipientPhone: '0913334444'));
+
+    // Assert
+    expect(cubit.state.recipientPhone, '0913334444');
+  });
+
+  test('correcting the number marks the form dirty and sends it', () async {
+    // Arrange
+    stubSave();
+    final cubit = cubitFor(orderWith().copyWith(recipientPhone: '0913334444'));
+
+    // Act
+    cubit.setRecipientPhone('0925556666');
+    await cubit.save();
+
+    // Assert
+    expect(cubit.state.isDirty, isTrue);
+    final sent = verify(
+      () => repository.updateInvoice(
+        any(),
+        lines: any(named: 'lines'),
+        discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+        recipientPhone: captureAny(named: 'recipientPhone'),
+      ),
+    ).captured.last as ({String? number})?;
+
+    expect(sent?.number, '0925556666');
+  });
+
+  test('emptying the box clears the number rather than storing a blank', () async {
+    // Arrange — «there is no second number» is a real edit, and the server stores it as null.
+    stubSave();
+    final cubit = cubitFor(orderWith().copyWith(recipientPhone: '0913334444'));
+
+    // Act
+    cubit.setRecipientPhone('   ');
+    await cubit.save();
+
+    // Assert — the record is *present* carrying null: absent would mean "leave it alone".
+    final sent = verify(
+      () => repository.updateInvoice(
+        any(),
+        lines: any(named: 'lines'),
+        discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+        recipientPhone: captureAny(named: 'recipientPhone'),
+      ),
+    ).captured.last as ({String? number})?;
+
+    expect(sent, isNotNull);
+    expect(sent?.number, isNull);
+  });
+
+  test('an order on the road says nothing about the phone at all', () async {
+    // Arrange — «جاري التوصيل»: the courier has both the address and the number, and the
+    // server refuses a change to either. Saying nothing is how an edit avoids asking.
+    stubSave();
+    final cubit = cubitFor(
+      orderWith().copyWith(destinationIsEditable: false, recipientPhone: '0913334444'),
+    );
+
+    // Act
+    cubit.setQuantity(1, '500');
+    await cubit.save();
+
+    // Assert
+    final sent = verify(
+      () => repository.updateInvoice(
+        any(),
+        lines: any(named: 'lines'),
+        discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+        recipientPhone: captureAny(named: 'recipientPhone'),
+      ),
+    ).captured.last;
+
+    expect(sent, isNull);
+  });
+
+  test('the server’s refusal lands under the phone box, not in a snackbar', () async {
+    // Arrange
+    const refusal = Failure.server(
+      message: 'لا يمكن تغيير هاتف الاستلام وحالة الطلبية «جاري التوصيل»',
+      statusCode: 422,
+      fieldErrors: {
+        'recipient_phone': ['لا يمكن تغيير هاتف الاستلام وحالة الطلبية «جاري التوصيل»'],
+      },
+    );
+    stubSave(failure: refusal);
+    final cubit = cubitFor(orderWith());
+
+    // Act
+    cubit.setRecipientPhone('0925556666');
+    await cubit.save();
+
+    // Assert
+    expect(cubit.state.recipientPhoneError, refusal.message);
+  });
+
   // ─────────────────────── moving where the order goes ───────────────────────
 
   test('an order past «جاهزة» saves its address without touching its lines', () async {
@@ -326,6 +438,7 @@ void main() {
         discount: any(named: 'discount'),
         cityId: captureAny(named: 'cityId'),
         regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
       ),
     ).captured;
 

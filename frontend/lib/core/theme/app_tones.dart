@@ -27,12 +27,20 @@ import 'package:flutter/material.dart';
 ///
 /// Desaturated towards the teal it sits beside: a pure `Colors.green` next to `#006a69` reads as
 /// a colour borrowed from another app.
+///
+/// **All three sit at 140° — green, not the 148° they started on.** That first draft was pulled
+/// so far towards the teal that the chip and the price beneath it read as one decision printed
+/// twice, which is the entire thing this file exists to prevent. The move is eight degrees of hue
+/// and nothing else: same lightness, same saturation, so «مدفوعة بالكامل» is recognisably the
+/// colour it has always been and merely stops arguing with `primary`. `app_tones_test.dart` pins
+/// the band and the distance from the teal rather than these six values, so the intent survives a
+/// re-export of the palette.
 extension PaymentTone on ColorScheme {
   bool get _isDark => brightness == Brightness.dark;
 
-  Color get paid => _isDark ? const Color(0xff8fd4ac) : const Color(0xff3a6b51);
+  Color get paid => _isDark ? const Color(0xff8fd4a6) : const Color(0xff38714b);
 
-  Color get paidContainer => _isDark ? const Color(0xff23503a) : const Color(0xffc4ecd4);
+  Color get paidContainer => _isDark ? const Color(0xff235032) : const Color(0xffc4ecd1);
 
-  Color get onPaidContainer => _isDark ? const Color(0xffc4ecd4) : const Color(0xff23503a);
+  Color get onPaidContainer => _isDark ? const Color(0xffc4ecd1) : const Color(0xff235032);
 }

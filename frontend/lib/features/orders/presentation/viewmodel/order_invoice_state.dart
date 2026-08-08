@@ -64,7 +64,15 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
     /// is open for the address alone.
     @Default(false) bool linesAreEditable,
 
-    /// Whether the address may be touched. Open in every status but «جاري التوصيل».
+    /// The number the courier rings. Null on an order taken without one.
+    ///
+    /// Beside the address rather than in a section of its own, because it is governed by the
+    /// same rule and for the same reason — see [destinationIsEditable].
+    String? recipientPhone,
+
+    /// Whether the address **and the recipient's phone** may be touched. Open in every status
+    /// but «جاري التوصيل»: past that point the courier is carrying both, and our copy changing
+    /// while his does not is worse than a wrong number we can telephone him about.
     @Default(false) bool destinationIsEditable,
     @Default(false) bool isSaving,
     @Default(false) bool isSaved,
@@ -85,6 +93,14 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
 
   /// Where it goes, as one line: «طرابلس — سوق الجمعة».
   String get destination => regionName == null ? cityName : '$cityName — $regionName';
+
+  /// The server's complaint about the phone, to be painted under that box rather than shouted
+  /// in a snackbar — «لا يمكن تغيير هاتف الاستلام وحالة الطلبية ‹جاري التوصيل›» belongs beside
+  /// the number it is about.
+  String? get recipientPhoneError => switch (failure) {
+    ServerFailure(:final fieldErrors) => fieldErrors?['recipient_phone']?.firstOrNull,
+    _ => null,
+  };
 
   /// What the total will *probably* be. The server's arithmetic is the invoice; this exists so
   /// the number moves while somebody is typing.

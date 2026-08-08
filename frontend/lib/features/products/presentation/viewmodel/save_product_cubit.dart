@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:printing/core/error/failure.dart';
+import 'package:printing/core/files/picked_file.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/usecases/save_product.dart';
 
@@ -43,6 +44,10 @@ class SaveProductCubit extends Cubit<SaveProductState> {
     required String pricingMode,
     required String minOrderQuantity,
     List<DraftVariant> variants = const [],
+
+    /// The photo. Required when adding — the server refuses a product without one — and ignored
+    /// when correcting, because that product already has its picture.
+    PickedFile? image,
   }) async {
     // Ignored rather than queued: a second tap while the first is in flight is a second POST,
     // and with the slug generated server-side that is now a second *product* rather than a 422.
@@ -60,13 +65,19 @@ class SaveProductCubit extends Cubit<SaveProductState> {
       pricingMode: pricingMode,
       minOrderQuantity: minOrderQuantity,
       variants: variants,
+      image: image,
     );
 
     // The screen may have been popped while the request was in flight, and emitting into a
     // closed Cubit throws.
     if (isClosed) return;
 
-    emit(result.fold((f) => SaveProductState.failure(f), (p) => SaveProductState.success(p)));
+    emit(
+      result.fold(
+        (f) => SaveProductState.failure(f),
+        (p) => SaveProductState.success(p),
+      ),
+    );
   }
 
   /// Clears a previous failure so an error under a field disappears as the user corrects it,

@@ -101,9 +101,25 @@ static String newCustomerOrder(int customerId) => '/customers/$customerId/orders
 | الوجهة | مدينة + منطقة | مطلوبة. سعر التوصيل يأتي من المدينة ولا يُكتب |
 | البنود | سطر لكل منتج: منتج ← مقاس ← كمية، بسعر حيّ | سطر واحد على الأقل، وإلا رفض الخادم |
 | التصميم | `design_source` من ثلاث + `design_fee` | الأجرة تظهر مع «تصميم من عندنا» وحدها |
-| المستلِم | اسم · هاتف · تفاصيل العنوان | كلها اختيارية |
+| الاستلام | **هاتف واحد**، يُفتح معبَّأً برقم العميل | الاسم والعنوان لا يُسألان — §٤.١ |
 | المال | الخصم + الإجمالي التقديري | الخصم خلف `orders.discount`، والإجمالي **تقديري ويقول ذلك** |
 | ملاحظات | نص حرّ | |
+
+### ٤.١ لماذا حقل واحد تحت «الاستلام»
+
+الاسم اسم العميل، والعنوان عنوان محلّه — وكلاهما على الطلبية أصلاً من لحظة أخذها، عبر
+`customer_id` و`customer_shop_id`. فسؤالهما ثانيةً كان طلباً من الموظف أن ينسخ ما تعرضه الشاشة
+التي خلفه، وكل نسخة فرصة لخطأ مطبعي.
+
+**والهاتف وحده الاستثناء**، لأنه الرقم الذي يرنّه المندوب وهو *أحياناً* شخص آخر — أخٌ في المحل،
+أو سائق. فيُعرض معبَّأً برقم العميل ويبقى مفتوحاً للتغيير. والتعبئة تحدث **مرة واحدة** لا في كل
+إعادة بناء: الشاشة تُعاد بناؤها مع كل ضغطة مفتاح في أي حقل آخر، وتعبئةٌ تتكرر كانت ستكتب فوق ما
+يكتبه الموظف.
+
+**وهو قابل للتصحيح بعد الإنشاء في كل حالة عدا «جاري التوصيل»** — نفس قاعدة الوجهة وبنفس سببها:
+الطرد عند المندوب ومعه العنوان والرقم على شاشته، ونسختنا تتغيّر ونسخته لا. يرفضه الخادم
+(`RecipientPhoneCannotChange`) والشاشة تخفي الحقل، والرفض يُقارَن على **تغيّر** الرقم لا على
+إرساله: كل تعديل يعيد إرسال الطلبية كاملة، ورقمٌ يعود كما هو ليس تغييراً.
 
 **ولا سعرٌ يُكتب بيد** — إلا للمنتج الذي يسعّره الكتالوج «حسب الطلب»، وهو الاستثناء الذي
 يشرحه [OrderItemData](backend/app/Domain/Order/DTOs/OrderItemData.php) ووحده.
@@ -139,7 +155,9 @@ static String newCustomerOrder(int customerId) => '/customers/$customerId/orders
 | [take_order_cubit_test.dart](frontend/test/features/orders/take_order_cubit_test.dart) | العميل يأتي من الشاشة لا من المُنادي · الضغطة الثانية أثناء الإرسال تُهمَل · طلبية بلا بنود لا تُرسل |
 | [line_quote_cubit_test.dart](frontend/test/features/orders/line_quote_cubit_test.dart) | الكمية تُطبَّع قبل السؤال · الفارغة لا تسأل · جوابان في الطريق ويظهر الأخير وحده · «حسب الطلب» لا تُسأل أصلاً |
 | [product_quote_test.dart](frontend/test/features/products/product_quote_test.dart) | كل رقم يعود كما أرسله الخادم نصاً · الرفض يُعرض بجملته |
-| [new_order_page_test.dart](frontend/test/features/orders/new_order_page_test.dart) | العميل يُعرض ولا يُختار · الخصم يغيب بلا `orders.discount` · الأجرة تغيب إلا مع «من عندنا» · طلبية بلا بند لا تُرسَل |
+| [new_order_page_test.dart](frontend/test/features/orders/new_order_page_test.dart) | العميل يُعرض ولا يُختار · الخصم يغيب بلا `orders.discount` · الأجرة تغيب إلا مع «من عندنا» · طلبية بلا بند لا تُرسَل · **هاتف الاستلام يُفتح برقم العميل ولا يُكتب فوق ما يُطبَع** |
+| `OrderTest::test_the_recipient_phone_freezes_with_the_destination` | الرقم يُقفل في «جاري التوصيل» ويُصحَّح قبلها — ومعه اختبارٌ أن إعادة إرساله كما هو ليست تغييراً، وإلا لتعذّر تعديل الملاحظات على طرد في الطريق |
+| [order_invoice_cubit_test.dart](frontend/test/features/orders/order_invoice_cubit_test.dart) | الرقم يُفتح من الطلبية · تفريغه يمسحه ولا يخزّن فراغاً · طلبية على الطريق لا تذكره أصلاً · الرفض يقع تحت الحقل |
 | [customer_detail_actions_test.dart](frontend/test/features/customers/customer_detail_actions_test.dart) | الإجراء يظهر بـ`orders.manage`، ويغيب بدونها **وعلى العميل المعطَّل** |
 
 **وما لم يُختبر بعد:** منتقي المنتج ([product_picker_sheet.dart](frontend/lib/features/orders/presentation/widgets/product_picker_sheet.dart)) وصفّ البند

@@ -39,9 +39,7 @@ class TakeOrder {
     String designSource = 'none',
     String? designFee,
     String? discount,
-    String? recipientName,
     String? recipientPhone,
-    String? addressDetails,
     String? notes,
   }) {
     final fee = _number(designFee);
@@ -57,9 +55,7 @@ class TakeOrder {
         // so the request states what the clerk meant rather than relying on it being ignored.
         designFee: designSource == inHouseDesign ? fee : null,
         discount: _number(discount),
-        recipientName: _text(recipientName),
         recipientPhone: _text(recipientPhone),
-        addressDetails: _text(addressDetails),
         notes: _text(notes),
         items: [
           for (final (index, line) in lines.indexed)

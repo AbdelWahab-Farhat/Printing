@@ -12,6 +12,8 @@ import 'package:printing/core/widgets/app_button.dart';
 /// exception: nothing runs there at all.
 ///
 /// Arrange - Act - Assert throughout.
+void _noop() {}
+
 void main() {
   // Fixed rather than taken from ScreenUtil: the geometry assertions below compare against real
   // numbers, and a value that changes with the test surface would make them meaningless.
@@ -421,6 +423,58 @@ void main() {
       // Assert
       expect(surface.color, Colors.transparent);
       expect((surface.shape! as RoundedRectangleBorder).side.width, greaterThan(0));
+    });
+  });
+
+  group('the width', () {
+    testWidgets('it takes everything it is offered, without being told to', (tester) async {
+      // Arrange — a centred Column is what a form's footer actually is: it hands its children
+      // *loose* constraints, so a button that did not ask for the width used to shrink to fit
+      // its label and float in the middle of the phone.
+      await tester.pumpWidget(
+        host(
+          const AppButton(label: label, onPressed: _noop),
+          imposeWidth: false,
+        ),
+      );
+
+      // Act
+      final size = tester.getSize(find.byKey(AppButton.surfaceKey));
+
+      // Assert — the whole width it was allowed. The margins around it are the screen's to
+      // decide, not the button's.
+      expect(size.width, tester.view.physicalSize.width / tester.view.devicePixelRatio);
+    });
+
+    testWidgets('a width it was given still wins', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(const AppButton(label: label, onPressed: _noop)));
+
+      // Act
+      final size = tester.getSize(find.byKey(AppButton.surfaceKey));
+
+      // Assert — `double.infinity` resolves to whatever the parent allows, so an `Expanded` in
+      // a Row or a fixed box still decides.
+      expect(size.width, width);
+    });
+
+    testWidgets('a button asked to measure itself still can', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        host(
+          const AppButton(label: label, onPressed: _noop, expands: false),
+          imposeWidth: false,
+        ),
+      );
+
+      // Act
+      final size = tester.getSize(find.byKey(AppButton.surfaceKey));
+
+      // Assert — narrower than the screen, because it is back to measuring its own legend.
+      expect(
+        size.width,
+        lessThan(tester.view.physicalSize.width / tester.view.devicePixelRatio),
+      );
     });
   });
 }

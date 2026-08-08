@@ -63,12 +63,18 @@ abstract interface class OrderRepository {
   ///
   /// [cityId] null keeps the address as it is; anything else re-addresses the order, and the
   /// server re-snapshots the city's name and re-prices the delivery from it.
+  ///
+  /// [recipientPhone] is a record rather than a bare `String?` because two different intentions
+  /// have to be expressible and `null` can only carry one of them: **absent** leaves the number
+  /// alone, while `(number: null)` *clears* it — a wrong number deleted is a real edit, and
+  /// omitting the field on a `PUT` is how the API is told so.
   Future<Either<Failure, Order>> updateInvoice(
     int orderId, {
     List<InvoiceLineUpdate>? lines,
     String? discount,
     int? cityId,
     int? regionId,
+    ({String? number})? recipientPhone,
   });
 
   /// [fields] is whatever the chosen transition asked for, keyed as the server described it —

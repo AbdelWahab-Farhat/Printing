@@ -82,10 +82,14 @@ class _NewOrderViewState extends State<_NewOrderView> {
 
   final TextEditingController _designFee = TextEditingController();
   final TextEditingController _discount = TextEditingController();
-  final TextEditingController _recipientName = TextEditingController();
   final TextEditingController _recipientPhone = TextEditingController();
-  final TextEditingController _address = TextEditingController();
   final TextEditingController _notes = TextEditingController();
+
+  /// Whether the phone box has been filled from the customer yet.
+  ///
+  /// The customer arrives asynchronously, and this screen rebuilds on every keystroke — without
+  /// this the prefill would run again on each rebuild and overwrite the number being typed.
+  bool _phoneSeeded = false;
 
   City? _city;
   Region? _region;
@@ -104,9 +108,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
     }
     _designFee.dispose();
     _discount.dispose();
-    _recipientName.dispose();
     _recipientPhone.dispose();
-    _address.dispose();
     _notes.dispose();
     super.dispose();
   }
@@ -188,9 +190,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
       // Not merely hidden: a clerk without the grant sends no discount at all, so the server
       // has nothing to refuse.
       discount: _mayDiscount ? _discount.text : null,
-      recipientName: _recipientName.text,
       recipientPhone: _recipientPhone.text,
-      addressDetails: _address.text,
       notes: _notes.text,
       lines: [
         for (final line in _lines)
@@ -252,8 +252,22 @@ class _NewOrderViewState extends State<_NewOrderView> {
     );
   }
 
+  /// Fills the phone box with the customer's number, once.
+  ///
+  /// Guarded by [_phoneSeeded] rather than by «is the box empty»: a clerk who deliberately
+  /// clears the field would otherwise have it filled back in under them on the next rebuild —
+  /// and this screen rebuilds on every keystroke elsewhere on the form.
+  void _seedPhone(Customer customer) {
+    if (_phoneSeeded) return;
+
+    _phoneSeeded = true;
+    _recipientPhone.text = customer.phone;
+  }
+
   Widget _body(Customer customer, TakeOrderState submission) {
     final shops = customer.shops ?? const <CustomerShop>[];
+
+    _seedPhone(customer);
 
     return Column(
       children: [
@@ -278,7 +292,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
               _Section(title: 'التصميم', child: _design(submission)),
 
               SizedBox(height: 14.h),
-              _Section(title: 'المستلِم', child: _recipient(submission)),
+              _Section(title: 'الاستلام', child: _recipient(submission)),
 
               if (_mayDiscount) ...[
                 SizedBox(height: 14.h),
@@ -473,31 +487,24 @@ class _NewOrderViewState extends State<_NewOrderView> {
     );
   }
 
+  /// **One field, and it is the only thing here the customer's record does not already say.**
+  ///
+  /// The name is the customer's and the address is their shop's — both are on the order from
+  /// the moment it is taken, through `customer_id` and `customer_shop_id`. Asking for them
+  /// again was asking the clerk to copy out what the screen behind them was already showing,
+  /// and every copy is a chance to mistype.
+  ///
+  /// The number is the exception: it is the one the courier rings, and it is *sometimes*
+  /// somebody else — a brother at the shop, a driver. So it is offered already filled with the
+  /// customer's own number and left open to be changed.
   Widget _recipient(TakeOrderState submission) {
-    return Column(
-      children: [
-        AppTextField(
-          controller: _recipientName,
-          label: 'اسم المستلِم',
-          hint: 'اختياري — إن كان غير العميل',
-        ),
-        SizedBox(height: 10.h),
-        AppTextField(
-          controller: _recipientPhone,
-          label: 'هاتف المستلِم',
-          hint: 'اختياري',
-          keyboardType: TextInputType.phone,
-          textDirection: TextDirection.ltr,
-          errorText: submission.recipientPhoneError,
-        ),
-        SizedBox(height: 10.h),
-        AppTextField(
-          controller: _address,
-          label: 'تفاصيل العنوان',
-          hint: 'اختياري — علامة مميزة، شارع، رقم',
-          maxLines: 2,
-        ),
-      ],
+    return AppTextField(
+      controller: _recipientPhone,
+      label: 'هاتف الاستلام',
+      helperText: 'رقم العميل — غيّره إن كان الاستلام على رقم آخر',
+      keyboardType: TextInputType.phone,
+      textDirection: TextDirection.ltr,
+      errorText: submission.recipientPhoneError,
     );
   }
 }

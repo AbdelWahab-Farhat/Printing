@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:printing/core/error/failure.dart';
+import 'package:printing/core/files/picked_file.dart';
 import 'package:printing/core/network/api_endpoints.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/core/network/safe_request.dart';
@@ -38,7 +39,8 @@ class ProductRepositoryImpl implements ProductRepository {
           // "null" and the API would filter on it.
           if (search != null && search.isNotEmpty) 'search': search,
           if (category != null && category.isNotEmpty) 'category': category,
-          if (pricingUnit != null && pricingUnit.isNotEmpty) 'pricing_unit': pricingUnit,
+          if (pricingUnit != null && pricingUnit.isNotEmpty)
+            'pricing_unit': pricingUnit,
           if (isActive != null) 'is_active': isActive ? 1 : 0,
         },
       ),
@@ -72,12 +74,28 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
-  Future<Either<Failure, Product>> create(NewProduct product) {
+  Future<Either<Failure, Product>> create(
+    NewProduct product, {
+    required PickedFile image,
+  }) {
     return safeRequest<Product>(
-      // `toJson` and not a Map literal assembled here: the body nests variants inside a product
-      // and price tiers inside those, and a forty-line literal reachable only through Dio is a
-      // shape no test can reach. As a model it is a pure function.
-      () => _dio.post(ProductEndpoints.index, data: product.toJson()),
+      // **`multipart/form-data`, unlike every other write in this class.** The server requires a
+      // photo to create a product, so the picture and the fields have to arrive together.
+      //
+      // `FormData.fromMap` flattens the nesting for us — `variants[0][price_tiers][0][unit_price]`
+      // — which is why the body is still built by `toJson` rather than assembled by hand here.
+      //
+      // `fromFile` streams from disk rather than reading the picture into memory first.
+      () async => _dio.post(
+        ProductEndpoints.index,
+        data: FormData.fromMap(<String, dynamic>{
+          ...product.toJson(),
+          'image': await MultipartFile.fromFile(
+            image.path,
+            filename: image.name,
+          ),
+        }),
+      ),
       parse: (data) => Product.fromJson(data as Map<String, dynamic>),
     );
   }

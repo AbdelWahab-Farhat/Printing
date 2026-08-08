@@ -215,6 +215,38 @@ void main() {
     expect(find.text('المحل'), findsNothing);
   });
 
+  testWidgets('the phone box opens filled with the customer’s own number', (tester) async {
+    // Arrange — everything else under «الاستلام» is already on the order through the customer
+    // and their shop; the number is the one thing that is sometimes somebody else's.
+    session.adopt(userWith(['orders.manage']));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.widgetWithText(TextField, '0913334444'), findsOneWidget);
+    // And the two the customer's record already answers are not asked again.
+    expect(find.text('اسم المستلِم'), findsNothing);
+    expect(find.text('تفاصيل العنوان'), findsNothing);
+  });
+
+  testWidgets('a number typed over the prefill is not overwritten', (tester) async {
+    // Arrange — the screen rebuilds on every keystroke elsewhere on the form, and a prefill
+    // that ran on each rebuild would fight whoever is typing.
+    session.adopt(userWith(['orders.manage']));
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.enterText(find.widgetWithText(TextField, '0913334444'), '0925556666');
+    await tester.tap(find.text('من عندنا'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.widgetWithText(TextField, '0925556666'), findsOneWidget);
+  });
+
   testWidgets('the delivery price is described, never added up here', (tester) async {
     // Arrange
     session.adopt(userWith(['orders.manage']));

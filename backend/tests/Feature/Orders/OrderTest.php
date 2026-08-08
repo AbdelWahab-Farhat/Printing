@@ -825,6 +825,68 @@ class OrderTest extends TestCase
         $response->assertStatus(422)->assertJsonValidationErrors('city_id');
     }
 
+    public function test_the_recipient_phone_freezes_with_the_destination(): void
+    {
+        // Arrange — the number the courier is calling is as much «where this is going» as the
+        // city is, and it is already on their screen.
+        $order = Order::factory()->status(OrderStatus::OutForDelivery)->create([
+            'recipient_phone' => '0913334444',
+        ]);
+        $headers = $this->clerk();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/orders/{$order->id}", [
+            'city_id' => $order->city_id,
+            'recipient_phone' => '0925556666',
+        ]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('recipient_phone');
+        $this->assertSame('0913334444', $order->refresh()->recipient_phone);
+    }
+
+    public function test_an_order_on_the_road_can_still_be_edited_without_touching_the_phone(): void
+    {
+        // Arrange — every edit re-sends the whole order, so the guard has to fire on a *change*
+        // and not on the number coming back unchanged. Without this the notes on a parcel in
+        // delivery could never be corrected.
+        $order = Order::factory()->status(OrderStatus::OutForDelivery)->create([
+            'recipient_phone' => '0913334444',
+        ]);
+        $headers = $this->clerk();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/orders/{$order->id}", [
+            'city_id' => $order->city_id,
+            'recipient_phone' => '0913334444',
+            'notes' => 'يتصل قبل الوصول بساعة',
+        ]);
+
+        // Assert
+        $response->assertOk();
+        $this->assertSame('يتصل قبل الوصول بساعة', $order->refresh()->notes);
+    }
+
+    public function test_the_recipient_phone_can_be_corrected_before_the_parcel_leaves(): void
+    {
+        // Arrange — the other side of the guard: a wrong number is worth fixing right up until
+        // somebody is driving to it.
+        $order = Order::factory()->status(OrderStatus::Ready)->create([
+            'recipient_phone' => '0913334444',
+        ]);
+        $headers = $this->clerk();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/orders/{$order->id}", [
+            'city_id' => $order->city_id,
+            'recipient_phone' => '0925556666',
+        ]);
+
+        // Assert
+        $response->assertOk();
+        $this->assertSame('0925556666', $order->refresh()->recipient_phone);
+    }
+
     public function test_a_parcel_on_its_way_back_can_still_be_readdressed(): void
     {
         // Arrange — with the courier, coming home.

@@ -5,23 +5,40 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
  * The product catalogue endpoints.
  *
+ * Creating a product is `multipart/form-data`, not JSON, because a photo is required and arrives
+ * with it — see PRODUCT-IMAGE-REQUIRED-DESIGN.md. Updating is still JSON, which is why the two
+ * halves of this suite call different helpers.
+ *
  * Arrange - Act - Assert throughout.
  */
 class ProductTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Every create writes a photo, so the media disk is faked for the whole suite rather
+        // than in each test that happens to reach storage.
+        Storage::fake((string) config('media.disk'));
+    }
 
     /**
      * @return array<string, string>
@@ -55,13 +72,122 @@ class ProductTest extends TestCase
         ], $overrides);
     }
 
+    /**
+     * Posts a create as a browser would: `multipart/form-data`, photo included.
+     *
+     * @param  array<string, string>  $headers
+     * @param  array<string, mixed>  $overrides  merged into the body; pass `image` to override or
+     *                                           `null` to leave the photo out entirely.
+     */
+    private function create(array $headers, array $overrides = []): TestResponse
+    {
+        $body = $this->payload($overrides);
+
+        if (! array_key_exists('image', $body)) {
+            $body['image'] = UploadedFile::fake()->image('bag.jpg', 800, 600);
+        }
+
+        return $this->withHeaders($headers)->post(
+            '/api/v1/products',
+            array_filter($body, static fn (mixed $value): bool => $value !== null),
+        );
+    }
+
     // ─────────────────────────── create ───────────────────────────
+
+    public function test_create_requires_a_photo(): void
+    {
+        // Arrange — a catalogue entry with no picture is a gap in the grid, so the product is
+        // refused rather than created and left to be photographed later.
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->create($headers, ['image' => null]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('image');
+        $this->assertDatabaseCount('products', 0);
+    }
+
+    public function test_create_stores_the_photo_as_the_products_primary_image(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->create($headers);
+
+        // Assert
+        $response->assertCreated()->assertJsonCount(1, 'data.images');
+
+        $image = ProductImage::query()->firstOrFail();
+        $this->assertTrue($image->is_primary);
+        $this->assertSame(Product::query()->firstOrFail()->id, $image->product_id);
+        Storage::disk((string) config('media.disk'))->assertExists($image->path);
+    }
+
+    public function test_create_accepts_an_alt_text_for_the_photo(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->create($headers, ['image_alt_text' => 'كيس شحن أبيض']);
+
+        // Assert
+        $response->assertCreated()->assertJsonPath('data.images.0.alt_text', 'كيس شحن أبيض');
+    }
+
+    public function test_create_rejects_a_file_that_is_not_an_image(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->create($headers, [
+            'image' => UploadedFile::fake()->create('contract.pdf', 100, 'application/pdf'),
+        ]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('image');
+        $this->assertDatabaseCount('products', 0);
+    }
+
+    public function test_create_leaves_nothing_behind_when_the_body_is_rejected(): void
+    {
+        // Arrange — the product, its sizes and its photo are one transaction. A 422 on the sizes
+        // must not leave a product and an orphaned image row behind.
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->create($headers, ['variants' => [['width_cm' => 25]]]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('variants.0.label');
+        $this->assertDatabaseCount('products', 0);
+        $this->assertDatabaseCount('product_images', 0);
+    }
+
+    public function test_create_reads_a_multipart_false_as_false(): void
+    {
+        // Arrange — form encoding sends every value as text, and `(bool) "false"` is *true* in
+        // PHP. Without normalisation this product would come back active.
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->create($headers, ['is_active' => 'false']);
+
+        // Assert
+        $response->assertCreated()->assertJsonPath('data.is_active', false);
+    }
 
     public function test_create_stores_the_product_with_its_sizes_and_price_list(): void
     {
         // Arrange
         $headers = $this->auth();
-        $payload = $this->payload([
+
+        // Act
+        $response = $this->create($headers, [
             'features' => ['مقاومة للماء والتمزق', 'لاصق قوي واحترافي'],
             'variants' => [
                 [
@@ -76,9 +202,6 @@ class ProductTest extends TestCase
                 ],
             ],
         ]);
-
-        // Act
-        $response = $this->withHeaders($headers)->postJson('/api/v1/products', $payload);
 
         // Assert
         $response->assertCreated()
@@ -108,7 +231,9 @@ class ProductTest extends TestCase
     {
         // Arrange
         $headers = $this->auth();
-        $payload = $this->payload([
+
+        // Act
+        $response = $this->create($headers, [
             'slug' => 'general-shipping-bag',
             'name' => 'أكياس الشحن السادة',
             'category' => 'general',
@@ -118,9 +243,6 @@ class ProductTest extends TestCase
                 ['label' => 'سادة', 'price_tiers' => [['min_quantity' => 1, 'unit_price' => '32']]],
             ],
         ]);
-
-        // Act
-        $response = $this->withHeaders($headers)->postJson('/api/v1/products', $payload);
 
         // Assert
         $response->assertCreated()
@@ -134,10 +256,9 @@ class ProductTest extends TestCase
     {
         // Arrange — you cannot require a minimum of two and a half bags.
         $headers = $this->auth();
-        $payload = $this->payload(['pricing_unit' => 'piece', 'min_order_quantity' => '2.5']);
 
         // Act
-        $response = $this->withHeaders($headers)->postJson('/api/v1/products', $payload);
+        $response = $this->create($headers, ['pricing_unit' => 'piece', 'min_order_quantity' => '2.5']);
 
         // Assert
         $response->assertStatus(422)->assertJsonValidationErrors('min_order_quantity');
@@ -147,7 +268,9 @@ class ProductTest extends TestCase
     {
         // Arrange — a listed price would contradict "price on request".
         $headers = $this->auth();
-        $payload = $this->payload([
+
+        // Act
+        $response = $this->create($headers, [
             'slug' => 'paper-bag-3d',
             'pricing_mode' => 'quote_on_request',
             'min_order_quantity' => 200,
@@ -155,9 +278,6 @@ class ProductTest extends TestCase
                 ['label' => 'حسب الطلب', 'price_tiers' => [['min_quantity' => 1, 'unit_price' => '5.00']]],
             ],
         ]);
-
-        // Act
-        $response = $this->withHeaders($headers)->postJson('/api/v1/products', $payload);
 
         // Assert
         $response->assertStatus(422)->assertJsonValidationErrors('variants.0.price_tiers');
@@ -167,16 +287,15 @@ class ProductTest extends TestCase
     {
         // Arrange
         $headers = $this->auth();
-        $payload = $this->payload([
+
+        // Act
+        $response = $this->create($headers, [
             'slug' => 'paper-bag-3d',
             'name' => 'أكياس ورقية 3D',
             'pricing_mode' => 'quote_on_request',
             'min_order_quantity' => 200,
             'variants' => [['label' => 'حسب الطلب']],
         ]);
-
-        // Act
-        $response = $this->withHeaders($headers)->postJson('/api/v1/products', $payload);
 
         // Assert
         $response->assertCreated()
@@ -194,10 +313,9 @@ class ProductTest extends TestCase
     {
         // Arrange
         $headers = $this->auth();
-        $payload = $this->payload($overrides);
 
         // Act
-        $response = $this->withHeaders($headers)->postJson('/api/v1/products', $payload);
+        $response = $this->create($headers, $overrides);
 
         // Assert
         $response->assertStatus(422)
@@ -242,7 +360,7 @@ class ProductTest extends TestCase
         $headers = $this->auth();
 
         // Act
-        $response = $this->withHeaders($headers)->postJson('/api/v1/products', $this->payload());
+        $response = $this->create($headers);
 
         // Assert
         $response->assertStatus(422)->assertJsonValidationErrors('slug');
@@ -251,7 +369,7 @@ class ProductTest extends TestCase
     public function test_create_requires_authentication(): void
     {
         // Act
-        $response = $this->postJson('/api/v1/products', $this->payload());
+        $response = $this->create([]);
 
         // Assert
         $response->assertStatus(401);

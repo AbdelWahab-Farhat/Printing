@@ -84,7 +84,9 @@ void main() {
     ],
   );
 
-  testWidgets('the form opens on what the product already says', (tester) async {
+  testWidgets('the form opens on what the product already says', (
+    tester,
+  ) async {
     // Arrange & Act
     await tester.pumpWidget(host(const ProductFormPage(product: product)));
     await tester.pump();
@@ -101,7 +103,9 @@ void main() {
     expect(find.text('إضافة المنتج'), findsNothing);
   });
 
-  testWidgets('a price lands under its own threshold, not under its position', (tester) async {
+  testWidgets('a price lands under its own threshold, not under its position', (
+    tester,
+  ) async {
     // Arrange & Act
     await tester.pumpWidget(host(const ProductFormPage(product: product)));
     await tester.pump();
@@ -123,5 +127,50 @@ void main() {
     expect(find.text('منتج جديد'), findsOneWidget);
     expect(find.text('إضافة المنتج'), findsOneWidget);
     expect(find.text('أكياس الشحن'), findsNothing);
+  });
+
+  // ─────────────────────────── the photo ───────────────────────────
+
+  testWidgets('adding asks for a photo', (tester) async {
+    // Arrange & Act
+    await tester.pumpWidget(host(const ProductFormPage()));
+    await tester.pump();
+
+    // Assert
+    expect(find.text('صورة المنتج'), findsOneWidget);
+    expect(find.text('مطلوبة — اضغط للاختيار'), findsOneWidget);
+  });
+
+  testWidgets('correcting a product does not, because it already has one', (
+    tester,
+  ) async {
+    // Arrange — swapping a photo is two operations on the images endpoint, and doing them from
+    // a form whose Save might never be pressed would change the product before the user
+    // committed to anything.
+    // Act
+    await tester.pumpWidget(host(const ProductFormPage(product: product)));
+    await tester.pump();
+
+    // Assert
+    expect(find.text('صورة المنتج'), findsNothing);
+  });
+
+  testWidgets('submitting with no photo says so and sends nothing', (
+    tester,
+  ) async {
+    // Arrange
+    await tester.pumpWidget(host(const ProductFormPage()));
+    await tester.pump();
+    expect(find.text('صورة المنتج مطلوبة'), findsNothing);
+
+    // Act — the button sits below the fold of the test viewport, so it is scrolled to first.
+    await tester.ensureVisible(find.text('إضافة المنتج'));
+    await tester.pump();
+    await tester.tap(find.text('إضافة المنتج'));
+    await tester.pump();
+
+    // Assert — the complaint is on screen. Nothing was sent either: _StubRepository answers any
+    // call by throwing, so a request would have failed this test rather than passed it quietly.
+    expect(find.text('صورة المنتج مطلوبة'), findsOneWidget);
   });
 }

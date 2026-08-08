@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printing/core/error/failure.dart';
+import 'package:printing/core/files/picked_file.dart';
 import 'package:printing/features/products/models/new_product.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/presentation/viewmodel/save_product_cubit.dart';
@@ -20,7 +21,16 @@ void main() {
   late _MockProductRepository repository;
   late SaveProductCubit cubit;
 
-  setUpAll(() => registerFallbackValue(_FakeNewProduct()));
+  setUpAll(() {
+    registerFallbackValue(_FakeNewProduct());
+    registerFallbackValue(
+      const PickedFile(
+        path: '/tmp/fallback.jpg',
+        name: 'fallback.jpg',
+        sizeBytes: 1,
+      ),
+    );
+  });
 
   const stored = Product(
     id: 7,
@@ -49,13 +59,21 @@ void main() {
     pricingUnit: 'piece',
     pricingMode: 'tiered',
     minOrderQuantity: '100',
+    // Adding, so the server requires one and the form has collected it.
+    image: const PickedFile(
+      path: '/tmp/bag.jpg',
+      name: 'bag.jpg',
+      sizeBytes: 2048,
+    ),
   );
 
   blocTest<SaveProductCubit, SaveProductState>(
     'goes submitting then success, carrying the product the server stored',
     setUp: () {
       // Arrange
-      when(() => repository.create(any())).thenAnswer((_) async => const Right(stored));
+      when(
+        () => repository.create(any(), image: any(named: 'image')),
+      ).thenAnswer((_) async => const Right(stored));
     },
     build: () => cubit,
     // Act
@@ -63,7 +81,11 @@ void main() {
     // Assert — the code is the server's, and it is what the screen reads back to the user.
     expect: () => [
       const SaveProductState.submitting(),
-      isA<SaveProductSuccess>().having((state) => state.product.code, 'the code', 'P7'),
+      isA<SaveProductSuccess>().having(
+        (state) => state.product.code,
+        'the code',
+        'P7',
+      ),
     ],
   );
 
@@ -71,8 +93,11 @@ void main() {
     "shows the server's own complaint rather than a generic one",
     setUp: () {
       // Arrange
-      when(() => repository.create(any())).thenAnswer(
-        (_) async => const Left(Failure.server(message: 'المعرف مستخدم مسبقاً')),
+      when(
+        () => repository.create(any(), image: any(named: 'image')),
+      ).thenAnswer(
+        (_) async =>
+            const Left(Failure.server(message: 'المعرف مستخدم مسبقاً')),
       );
     },
     build: () => cubit,
@@ -90,7 +115,9 @@ void main() {
     setUp: () {
       // Arrange — the slug is unique in the database, so a duplicate POST is a confusing 422
       // rather than a duplicate row. Either way the user asked once.
-      when(() => repository.create(any())).thenAnswer((_) async => const Right(stored));
+      when(
+        () => repository.create(any(), image: any(named: 'image')),
+      ).thenAnswer((_) async => const Right(stored));
     },
     build: () => cubit,
     // Act
@@ -100,34 +127,41 @@ void main() {
       await first;
     },
     // Assert
-    verify: (_) => verify(() => repository.create(any())).called(1),
+    verify: (_) => verify(
+      () => repository.create(any(), image: any(named: 'image')),
+    ).called(1),
   );
 
   group('field errors', () {
-    test('a complaint about the slug reaches the snackbar, having no box to sit in', () {
-      // Arrange — the form stopped asking for a slug once the server started generating them,
-      // so an error about one has nowhere to be painted. It must not be swallowed for that.
-      const failure = Failure.server(
-        message: 'البيانات غير صحيحة',
-        fieldErrors: {
-          'slug': ['المعرف مستخدم مسبقاً'],
-        },
-      );
+    test(
+      'a complaint about the slug reaches the snackbar, having no box to sit in',
+      () {
+        // Arrange — the form stopped asking for a slug once the server started generating them,
+        // so an error about one has nowhere to be painted. It must not be swallowed for that.
+        const failure = Failure.server(
+          message: 'البيانات غير صحيحة',
+          fieldErrors: {
+            'slug': ['المعرف مستخدم مسبقاً'],
+          },
+        );
 
-      // Act
-      const state = SaveProductState.failure(failure);
+        // Act
+        const state = SaveProductState.failure(failure);
 
-      // Assert
-      expect(state.nameError, isNull);
-      expect(state.hasUnrenderedErrors, isTrue);
-    });
+        // Assert
+        expect(state.nameError, isNull);
+        expect(state.hasUnrenderedErrors, isTrue);
+      },
+    );
 
     test("a size's price complaint finds its own cell", () {
       // Arrange — Laravel addresses it by index, and the grid is built in the same order.
       const failure = Failure.server(
         message: 'البيانات غير صحيحة',
         fieldErrors: {
-          'variants.1.price_tiers.2.unit_price': ['سعر الوحدة لا يمكن أن يكون سالباً'],
+          'variants.1.price_tiers.2.unit_price': [
+            'سعر الوحدة لا يمكن أن يكون سالباً',
+          ],
         },
       );
 
@@ -146,7 +180,9 @@ void main() {
       const failure = Failure.server(
         message: 'البيانات غير صحيحة',
         fieldErrors: {
-          'variants.0.price_tiers': ['لا يمكن إضافة أسعار لمنتج سعره حسب الطلب'],
+          'variants.0.price_tiers': [
+            'لا يمكن إضافة أسعار لمنتج سعره حسب الطلب',
+          ],
         },
       );
 
@@ -160,7 +196,9 @@ void main() {
     test('a failure with no field errors at all is always spoken aloud', () {
       // Arrange — a 403, a 500, a dropped connection. Nothing is inline.
       // Act
-      const state = SaveProductState.failure(Failure.network(message: 'تعذر الاتصال'));
+      const state = SaveProductState.failure(
+        Failure.network(message: 'تعذر الاتصال'),
+      );
 
       // Assert
       expect(state.hasUnrenderedErrors, isTrue);
@@ -171,8 +209,11 @@ void main() {
     'typing again clears the error under the field',
     setUp: () {
       // Arrange
-      when(() => repository.create(any())).thenAnswer(
-        (_) async => const Left(Failure.server(message: 'المعرف مستخدم مسبقاً')),
+      when(
+        () => repository.create(any(), image: any(named: 'image')),
+      ).thenAnswer(
+        (_) async =>
+            const Left(Failure.server(message: 'المعرف مستخدم مسبقاً')),
       );
     },
     build: () => cubit,
@@ -184,7 +225,9 @@ void main() {
     // Assert — it goes as soon as the user starts correcting, not at the next submit.
     expect: () => [
       const SaveProductState.submitting(),
-      const SaveProductState.failure(Failure.server(message: 'المعرف مستخدم مسبقاً')),
+      const SaveProductState.failure(
+        Failure.server(message: 'المعرف مستخدم مسبقاً'),
+      ),
       const SaveProductState.initial(),
     ],
   );

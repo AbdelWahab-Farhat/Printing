@@ -11,6 +11,12 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
+/**
+ * Creating a product. **`multipart/form-data`, not JSON** — a photo is required and arrives with
+ * the rest of the body, so the two cannot be separate requests.
+ *
+ * See PRODUCT-IMAGE-REQUIRED-DESIGN.md for why the photo is not uploaded afterwards instead.
+ */
 class StoreProductRequest extends FormRequest
 {
     public function authorize(): bool
@@ -19,11 +25,56 @@ class StoreProductRequest extends FormRequest
     }
 
     /**
+     * Form encoding has no types: every value arrives as a string, and `(bool) "false"` is
+     * `true` in PHP. Without this a product created with `is_active=false` would come back
+     * active, and nothing downstream would look wrong enough to investigate.
+     *
+     * Only the booleans need it. The numeric rules accept numeric strings, and every other
+     * field is a string already.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_active')) {
+            $this->merge(['is_active' => $this->boolean('is_active')]);
+        }
+
+        $variants = $this->input('variants');
+
+        if (! is_array($variants)) {
+            return;
+        }
+
+        foreach ($variants as $index => $variant) {
+            if (is_array($variant) && array_key_exists('is_active', $variant)) {
+                $variants[$index]['is_active'] = filter_var(
+                    $variant['is_active'],
+                    FILTER_VALIDATE_BOOLEAN,
+                    FILTER_NULL_ON_FAILURE,
+                );
+            }
+        }
+
+        $this->merge(['variants' => $variants]);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
+            // The one field that makes this endpoint multipart. `image` on top of the mime list
+            // verifies the file really is an image rather than trusting a renamed extension or a
+            // client-supplied content type — the same pair UploadProductImageRequest uses.
+            'image' => [
+                'required',
+                'file',
+                'image',
+                'mimes:'.implode(',', (array) config('media.product_images.mimes')),
+                'max:'.config('media.product_images.max_kilobytes'),
+            ],
+            'image_alt_text' => ['nullable', 'string', 'max:255'],
+
             // Optional, and generated from the name when it is left out — see
             // {@see GenerateProductSlug}. Asking a shop to invent a unique lowercase Latin string
             // for a product called أكياس الشحن is asking them to do the server's arithmetic.
@@ -108,6 +159,10 @@ class StoreProductRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'image.required' => 'صورة المنتج مطلوبة',
+            'image.image' => 'الملف المرفوع ليس صورة صالحة',
+            'image.mimes' => 'الصيغ المسموحة: jpeg، jpg، png، webp',
+            'image.max' => 'حجم الصورة أكبر من الحد المسموح',
             'slug.required' => 'المعرف مطلوب',
             'slug.regex' => 'المعرف يجب أن يحتوي على أحرف إنجليزية صغيرة وأرقام وشرطات فقط',
             'slug.unique' => 'المعرف مستخدم مسبقاً',
@@ -130,6 +185,8 @@ class StoreProductRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'image' => 'صورة المنتج',
+            'image_alt_text' => 'النص البديل للصورة',
             'slug' => 'المعرف',
             'name' => 'اسم المنتج',
             'description' => 'الوصف',

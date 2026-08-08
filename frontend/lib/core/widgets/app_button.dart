@@ -76,6 +76,7 @@ class AppButton extends StatefulWidget {
     this.isLoading = false,
     this.icon,
     this.height,
+    this.expands = true,
     this.variant = AppButtonVariant.primary,
   });
 
@@ -87,6 +88,7 @@ class AppButton extends StatefulWidget {
     this.isLoading = false,
     this.icon,
     this.height,
+    this.expands = true,
   }) : variant = AppButtonVariant.tonal;
 
   /// The way out of a screen. A border and nothing behind it.
@@ -97,6 +99,7 @@ class AppButton extends StatefulWidget {
     this.isLoading = false,
     this.icon,
     this.height,
+    this.expands = true,
   }) : variant = AppButtonVariant.outlined;
 
   final String label;
@@ -111,6 +114,19 @@ class AppButton extends StatefulWidget {
 
   /// Defaults to 54 logical pixels at the reference design size.
   final double? height;
+
+  /// Whether the button takes the whole width it is given.
+  ///
+  /// **True by default, and that is the rule rather than a convenience.** A button that
+  /// shrink-wraps its label is a target the size of the words in it — «إنشاء الطلبية» came out
+  /// as a small pill floating in the middle of a phone, with the whole width beneath the form
+  /// doing nothing. The action a screen exists for should be as wide as the screen allows, and
+  /// the margins around it belong to the screen, not to the button.
+  ///
+  /// Set it false only where the button genuinely must measure itself against its own label —
+  /// and note that a button inside a `Row` should be wrapped in `Expanded` instead, which is
+  /// what every one of them in this app already does.
+  final bool expands;
 
   final AppButtonVariant variant;
 
@@ -267,8 +283,10 @@ class _AppButtonState extends State<AppButton> with TickerProviderStateMixin {
       label: widget.isLoading ? '${widget.label} — جارٍ التنفيذ' : null,
       child: SizedBox(
         key: AppButton.surfaceKey,
-        // Height only. The width comes from whoever placed the button, and is passed straight
-        // through — which is what lets it stretch in a Column and shrink-wrap in a Row.
+        // As wide as it is allowed to be, unless the caller says otherwise. A `Column` hands
+        // its children *loose* constraints, so a button that did not ask for the width shrank
+        // to fit its label — which is why this is `double.infinity` and not simply nothing.
+        width: widget.expands ? double.infinity : null,
         height: height,
         child: DecoratedBox(
           // Static. A shadow is painted *outside* the shape, so animating it is animating the

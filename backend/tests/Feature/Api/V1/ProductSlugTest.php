@@ -8,6 +8,8 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -24,6 +26,14 @@ use Tests\TestCase;
 class ProductSlugTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Creating a product now carries a photo, so the disk is faked rather than written to.
+        Storage::fake((string) config('media.disk'));
+    }
 
     /**
      * @return array<string, string>
@@ -52,6 +62,9 @@ class ProductSlugTest extends TestCase
             'pricing_unit' => 'piece',
             'pricing_mode' => 'tiered',
             'min_order_quantity' => '100',
+            // Required on create, so every body here carries one. The photo is incidental to the
+            // slug — it is here to make the request valid, not because the slug depends on it.
+            'image' => UploadedFile::fake()->image('bag.jpg'),
         ], $overrides);
     }
 
@@ -61,7 +74,7 @@ class ProductSlugTest extends TestCase
         $payload = $this->payload();
 
         // Act
-        $response = $this->postJson('/api/v1/products', $payload, $this->bearerForManager());
+        $response = $this->post('/api/v1/products', $payload, $this->bearerForManager());
 
         // Assert
         $response->assertCreated();
@@ -78,7 +91,7 @@ class ProductSlugTest extends TestCase
         $payload = $this->payload(['name' => 'أكياس الشحن']);
 
         // Act
-        $response = $this->postJson('/api/v1/products', $payload, $this->bearerForManager());
+        $response = $this->post('/api/v1/products', $payload, $this->bearerForManager());
 
         // Assert
         $response->assertCreated()->assertJsonPath('data.slug', 'akyas-alshhn');
@@ -92,7 +105,7 @@ class ProductSlugTest extends TestCase
         $payload = $this->payload(['name' => '★★']);
 
         // Act
-        $response = $this->postJson('/api/v1/products', $payload, $this->bearerForManager());
+        $response = $this->post('/api/v1/products', $payload, $this->bearerForManager());
 
         // Assert
         $response->assertCreated();
@@ -108,7 +121,7 @@ class ProductSlugTest extends TestCase
         $payload = $this->payload(['name' => 'Shipping Bag']);
 
         // Act
-        $response = $this->postJson('/api/v1/products', $payload, $this->bearerForManager());
+        $response = $this->post('/api/v1/products', $payload, $this->bearerForManager());
 
         // Assert
         $response->assertCreated()->assertJsonPath('data.slug', 'shipping-bag');
@@ -120,7 +133,7 @@ class ProductSlugTest extends TestCase
         Product::factory()->create(['slug' => 'shipping-bag']);
 
         // Act
-        $response = $this->postJson(
+        $response = $this->post(
             '/api/v1/products',
             $this->payload(['name' => 'Shipping Bag']),
             $this->bearerForManager(),
@@ -142,7 +155,7 @@ class ProductSlugTest extends TestCase
         $payload = $this->payload(['slug' => 'deliberate-slug']);
 
         // Act
-        $response = $this->postJson('/api/v1/products', $payload, $this->bearerForManager());
+        $response = $this->post('/api/v1/products', $payload, $this->bearerForManager());
 
         // Assert
         $response->assertCreated()->assertJsonPath('data.slug', 'deliberate-slug');
@@ -154,7 +167,7 @@ class ProductSlugTest extends TestCase
         $payload = $this->payload(['slug' => 'Not A Slug']);
 
         // Act
-        $response = $this->postJson('/api/v1/products', $payload, $this->bearerForManager());
+        $response = $this->post('/api/v1/products', $payload, $this->bearerForManager());
 
         // Assert
         $response->assertStatus(422)->assertJsonValidationErrors('slug');
@@ -166,8 +179,8 @@ class ProductSlugTest extends TestCase
         $headers = $this->bearerForManager();
 
         // Act
-        $first = $this->postJson('/api/v1/products', $this->payload(), $headers);
-        $second = $this->postJson(
+        $first = $this->post('/api/v1/products', $this->payload(), $headers);
+        $second = $this->post(
             '/api/v1/products',
             $this->payload(['name' => 'أكياس الشحن']),
             $headers,

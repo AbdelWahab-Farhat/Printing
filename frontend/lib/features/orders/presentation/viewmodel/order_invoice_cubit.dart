@@ -42,6 +42,7 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
           cityName: order.cityName,
           regionId: order.regionId,
           regionName: order.regionName,
+          recipientPhone: order.recipientPhone,
           linesAreEditable: order.itemsAreEditable,
           destinationIsEditable: order.destinationIsEditable,
         ),
@@ -109,6 +110,22 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
     );
   }
 
+  /// Corrects the number the courier rings.
+  ///
+  /// Emptied to nothing rather than to `''`: «there is no second number» is what the server
+  /// stores as null, and an empty string would be a phone number of no digits.
+  void setRecipientPhone(String phone) {
+    final trimmed = phone.trim();
+
+    emit(
+      state.copyWith(
+        recipientPhone: trimmed.isEmpty ? null : trimmed,
+        isDirty: true,
+        failure: null,
+      ),
+    );
+  }
+
   Future<void> save() async {
     if (!state.isValid || state.isSaving) return;
 
@@ -131,6 +148,9 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
       discount: state.linesAreEditable ? _ascii(state.discount) : null,
       cityId: state.cityId,
       regionId: state.regionId,
+      // Sent only when it may be changed. On an order out for delivery the server refuses a
+      // *different* number, and this screen has no business offering one it would refuse.
+      recipientPhone: state.destinationIsEditable ? (number: state.recipientPhone) : null,
     );
 
     if (isClosed) return;

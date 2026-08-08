@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:printing/core/error/failure.dart';
+import 'package:printing/core/files/picked_file.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/features/products/models/new_product.dart';
 import 'package:printing/features/products/models/price_quote.dart';
@@ -52,7 +53,15 @@ abstract interface class ProductRepository {
   ///
   /// The answer matters: it carries the `code` the server allocated, which is the name staff
   /// will use for this bag from now on. Nothing the app made up is returned here.
-  Future<Either<Failure, Product>> create(NewProduct product);
+  ///
+  /// **[image] is required, and that is the server's rule rather than this app's.** A product
+  /// cannot be created without a photo, so the two travel together in one `multipart` request:
+  /// there is no moment where a product exists and its picture has still to be uploaded, and
+  /// therefore no half-created product to clean up when the second request fails.
+  Future<Either<Failure, Product>> create(
+    NewProduct product, {
+    required PickedFile image,
+  });
 
   /// Rewrites a product, and answers with the one the server stored.
   ///

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Catalog\Actions;
 
 use App\Domain\Catalog\Exceptions\ImageDoesNotBelongToProduct;
+use App\Domain\Catalog\Exceptions\ProductMustKeepOneImage;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductImage;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,9 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * Removes an image, and promotes a replacement if it was the primary one.
+ *
+ * Refuses to remove the last one: a product always has a photo, and this is the only route that
+ * could take the last one away.
  */
 final class DeleteProductImage
 {
@@ -21,6 +25,13 @@ final class DeleteProductImage
     {
         if ((int) $image->product_id !== (int) $product->getKey()) {
             throw ImageDoesNotBelongToProduct::make((int) $image->getKey(), (int) $product->getKey());
+        }
+
+        // Counted rather than read off a loaded relation: the caller may have loaded `images`
+        // before another request uploaded one, and a stale count here refuses a delete that is
+        // actually fine.
+        if ($product->images()->whereKeyNot($image->getKey())->doesntExist()) {
+            throw ProductMustKeepOneImage::make();
         }
 
         $wasPrimary = $image->is_primary;

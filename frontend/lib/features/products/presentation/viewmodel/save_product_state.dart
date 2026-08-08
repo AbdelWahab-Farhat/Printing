@@ -26,6 +26,12 @@ extension SaveProductStateX on SaveProductState {
 
   String? get minimumError => _fieldError('min_order_quantity');
 
+  /// The server's complaint about the photo — too large, or not an image after all.
+  ///
+  /// The form checks that one was *chosen* before submitting, so anything arriving here is
+  /// about the file itself and could not have been caught on the phone.
+  String? get imageError => _fieldError('image');
+
   /// The server's complaint about one size's name — `variants.2.label`.
   String? variantLabelError(int index) => _fieldError('variants.$index.label');
 
@@ -41,7 +47,8 @@ extension SaveProductStateX on SaveProductState {
   /// without this the screen would appear to do nothing at all.
   bool get hasUnrenderedErrors => switch (this) {
     SaveProductFailure(:final failure) => switch (failure) {
-      ServerFailure(:final fieldErrors) when fieldErrors != null && fieldErrors.isNotEmpty =>
+      ServerFailure(:final fieldErrors)
+          when fieldErrors != null && fieldErrors.isNotEmpty =>
         fieldErrors.keys.any((key) => !_isRenderedKey(key)),
       // No field errors at all — a 403, a 500, a dropped connection. Nothing is inline, so it
       // all has to be said out loud.
@@ -63,7 +70,7 @@ extension SaveProductStateX on SaveProductState {
 final RegExp _renderedKey = RegExp(
   // `slug` is deliberately absent: the server generates it and the form has no box for it, so
   // a complaint about one has nowhere to be painted and belongs in the snackbar instead.
-  r'^(name|min_order_quantity'
+  r'^(name|min_order_quantity|image'
   r'|variants\.\d+\.label'
   r'|variants\.\d+\.price_tiers\.\d+\.unit_price)$',
 );

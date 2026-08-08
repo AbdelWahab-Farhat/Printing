@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:printing/core/error/failure.dart';
+import 'package:printing/core/files/picked_file.dart';
 import 'package:printing/core/utils/validators.dart';
 import 'package:printing/features/products/models/new_product.dart';
 import 'package:printing/features/products/models/product.dart';
@@ -30,6 +31,11 @@ class SaveProduct {
   /// **One use case for both, because it is one form.** The thirteen numeric places below are
   /// converted in exactly one place, and splitting create from update would have made it two —
   /// with one of them the copy that eventually gets fixed.
+  ///
+  /// [image] is required when adding and ignored when correcting: the server refuses a product
+  /// with no photo, and a product being corrected already has one. Dart cannot express "required
+  /// only when `id` is null" in a single signature, so the pairing is checked here rather than
+  /// left to fail as a 422 the user has to read.
   Future<Either<Failure, Product>> call({
     int? id,
     required String name,
@@ -40,7 +46,17 @@ class SaveProduct {
     required String pricingMode,
     required String minOrderQuantity,
     List<DraftVariant> variants = const [],
+    PickedFile? image,
   }) {
+    if (id == null && image == null) {
+      // The form validates this before submitting, so reaching here is a bug rather than a user
+      // mistake. Reported as a failure anyway: a crash in a Cubit takes the screen down, and the
+      // sentence is the same one the server would have sent.
+      return Future.value(
+        const Left(Failure.server(message: 'صورة المنتج مطلوبة')),
+      );
+    }
+
     // Blank rows are what an "add a feature" button leaves behind when somebody changes their
     // mind, and `features.*` is `required|string` — an empty one is a 422 pointing at a field
     // the user believes they deleted.
@@ -83,7 +99,7 @@ class SaveProduct {
     );
 
     return id == null
-        ? _repository.create(product)
+        ? _repository.create(product, image: image!)
         : _repository.update(id, product);
   }
 

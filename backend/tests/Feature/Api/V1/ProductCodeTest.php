@@ -9,6 +9,8 @@ use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -26,6 +28,14 @@ use Tests\TestCase;
 class ProductCodeTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Creating a product now carries a photo, so the disk is faked rather than written to.
+        Storage::fake((string) config('media.disk'));
+    }
 
     /**
      * @return array<string, string>
@@ -53,7 +63,27 @@ class ProductCodeTest extends TestCase
             'pricing_unit' => 'piece',
             'pricing_mode' => 'tiered',
             'min_order_quantity' => 100,
+            // Required on create. Incidental to the code, but the request is refused without it.
+            'image' => UploadedFile::fake()->image('bag.jpg'),
         ], $overrides);
+    }
+
+    /**
+     * The same body without the photo, for the one test here that updates.
+     *
+     * Updating is still JSON, and an UploadedFile cannot be encoded into a JSON body — it would
+     * arrive as `{}` and be silently ignored, which is exactly the kind of quiet nonsense that
+     * makes a passing test worthless.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function payloadWithoutImage(array $overrides = []): array
+    {
+        $payload = $this->payload($overrides);
+        unset($payload['image']);
+
+        return $payload;
     }
 
     public function test_a_new_product_is_given_a_code_that_matches_its_id(): void
@@ -62,7 +92,7 @@ class ProductCodeTest extends TestCase
         $headers = $this->auth();
 
         // Act
-        $response = $this->postJson('/api/v1/products', $this->payload(), $headers);
+        $response = $this->post('/api/v1/products', $this->payload(), $headers);
 
         // Assert
         $response->assertCreated();
@@ -78,7 +108,7 @@ class ProductCodeTest extends TestCase
         $headers = $this->auth();
 
         // Act
-        $response = $this->postJson(
+        $response = $this->post(
             '/api/v1/products',
             $this->payload(['code' => 'P999']),
             $headers,
@@ -94,13 +124,13 @@ class ProductCodeTest extends TestCase
     {
         // Arrange — a code that moved would break every quote that already went out under it.
         $headers = $this->auth();
-        $created = $this->postJson('/api/v1/products', $this->payload(), $headers);
+        $created = $this->post('/api/v1/products', $this->payload(), $headers);
         $code = $created->json('data.code');
 
         // Act
         $response = $this->putJson(
             '/api/v1/products/'.$created->json('data.id'),
-            $this->payload(['name' => 'أكياس الشحن الكبيرة', 'code' => 'P999']),
+            $this->payloadWithoutImage(['name' => 'أكياس الشحن الكبيرة', 'code' => 'P999']),
             $headers,
         );
 
@@ -115,8 +145,8 @@ class ProductCodeTest extends TestCase
         $headers = $this->auth();
 
         // Act
-        $first = $this->postJson('/api/v1/products', $this->payload(), $headers);
-        $second = $this->postJson(
+        $first = $this->post('/api/v1/products', $this->payload(), $headers);
+        $second = $this->post(
             '/api/v1/products',
             $this->payload(['slug' => 'paper-bag', 'name' => 'أكياس ورقية']),
             $headers,

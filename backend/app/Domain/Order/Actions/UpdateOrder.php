@@ -12,6 +12,7 @@ use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\Exceptions\DestinationCannotChange;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\OrderIsClosed;
+use App\Domain\Order\Exceptions\RecipientPhoneCannotChange;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Support\Money;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,8 @@ use Illuminate\Support\Facades\DB;
  *   would rewrite two histories to fix a typo. Cancel it and take it again.
  * - **The destination freezes once the parcel is outside the business** — past that point the
  *   address on our screen and the address on the label have already parted company, and only
- *   the label is real.
+ *   the label is real. **The recipient's phone freezes with it**, being the other half of the
+ *   same fact: the courier is already carrying both.
  * - **The lines close when printing starts**, enforced by {@see SyncOrderItems}.
  *
  * Changing the city re-snapshots its name and its rate, and re-derives the fulfilment type. An
@@ -63,6 +65,14 @@ final class UpdateOrder
 
         if ($destinationMoved && ! $order->destinationIsEditable()) {
             throw DestinationCannotChange::make($order->status);
+        }
+
+        // The number the courier is calling freezes when the address does — see
+        // RecipientPhoneCannotChange. Compared rather than blanket-refused, because every edit
+        // re-sends the whole order: a phone that comes back unchanged is not somebody changing
+        // it, and refusing that would make the notes on a parcel in delivery uncorrectable.
+        if ($data->recipientPhone !== $order->recipient_phone && ! $order->destinationIsEditable()) {
+            throw RecipientPhoneCannotChange::make($order->status);
         }
 
         $destination = ($this->resolveDestination)($data->cityId, $data->regionId);

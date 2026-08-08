@@ -102,6 +102,7 @@ class OrderRepositoryImpl implements OrderRepository {
     String? discount,
     int? cityId,
     int? regionId,
+    ({String? number})? recipientPhone,
   }) async {
     // `PUT` replaces the whole order, so the fields this screen does not touch have to be sent
     // back as they are — omitting `city_id` would be an instruction to clear the destination.
@@ -124,7 +125,11 @@ class OrderRepositoryImpl implements OrderRepository {
             'customer_shop_id': ?order.customerShopId,
             'design_source': order.designSource,
             'recipient_name': ?order.recipientName,
-            'recipient_phone': ?order.recipientPhone,
+            // Absent means "leave it alone", so the order's own number goes back unchanged;
+            // a record carrying null clears it, which the API reads from the key being missing.
+            'recipient_phone': ?(recipientPhone == null
+                ? order.recipientPhone
+                : recipientPhone.number),
             'address_details': ?order.addressDetails,
             'notes': ?order.notes,
             'design_fee': order.designFee,

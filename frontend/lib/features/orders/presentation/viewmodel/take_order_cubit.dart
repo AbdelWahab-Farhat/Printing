@@ -43,9 +43,7 @@ class TakeOrderCubit extends Cubit<TakeOrderState> {
     String designSource = 'none',
     String? designFee,
     String? discount,
-    String? recipientName,
     String? recipientPhone,
-    String? addressDetails,
     String? notes,
   }) async {
     // Ignored rather than queued, for the reason above: a second tap while the first is in
@@ -68,9 +66,7 @@ class TakeOrderCubit extends Cubit<TakeOrderState> {
       designSource: designSource,
       designFee: designFee,
       discount: discount,
-      recipientName: recipientName,
       recipientPhone: recipientPhone,
-      addressDetails: addressDetails,
       notes: notes,
     );
 

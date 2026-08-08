@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printing/core/error/failure.dart';
+import 'package:printing/core/files/picked_file.dart';
 import 'package:printing/features/products/models/new_product.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/repositories/product_repository.dart';
@@ -21,7 +22,18 @@ void main() {
   late _MockProductRepository repository;
   late SaveProduct createProduct;
 
-  setUpAll(() => registerFallbackValue(_FakeNewProduct()));
+  setUpAll(() {
+    registerFallbackValue(_FakeNewProduct());
+    // A real one rather than a Fake: PickedFile is three final fields and a const constructor,
+    // so there is nothing to stub and nothing that could be interacted with.
+    registerFallbackValue(
+      const PickedFile(
+        path: '/tmp/fallback.jpg',
+        name: 'fallback.jpg',
+        sizeBytes: 1,
+      ),
+    );
+  });
 
   const stored = Product(
     id: 1,
@@ -37,11 +49,22 @@ void main() {
     minOrderQuantity: '100.000',
   );
 
+  /// A photo, as the picker would hand one over. Required on create.
+  const photo = PickedFile(
+    path: '/tmp/bag.jpg',
+    name: 'bag.jpg',
+    sizeBytes: 2048,
+  );
+
   setUp(() {
     repository = _MockProductRepository();
     createProduct = SaveProduct(repository);
-    when(() => repository.create(any())).thenAnswer((_) async => const Right(stored));
-    when(() => repository.update(any(), any())).thenAnswer((_) async => const Right(stored));
+    when(
+      () => repository.create(any(), image: any(named: 'image')),
+    ).thenAnswer((_) async => const Right(stored));
+    when(
+      () => repository.update(any(), any()),
+    ).thenAnswer((_) async => const Right(stored));
   });
 
   /// The draft the repository was actually handed.
@@ -49,7 +72,10 @@ void main() {
   /// Called once per test and held in a local: `verify` marks the call verified, so a second
   /// `sent()` in the same test finds nothing.
   NewProduct sent() =>
-      verify(() => repository.create(captureAny())).captured.single as NewProduct;
+      verify(
+            () => repository.create(captureAny(), image: any(named: 'image')),
+          ).captured.single
+          as NewProduct;
 
   Future<Either<Failure, Product>> submit({
     int? id,
@@ -60,6 +86,7 @@ void main() {
     String pricingMode = 'tiered',
     String minOrderQuantity = '100',
     List<DraftVariant> variants = const [],
+    PickedFile? image = photo,
   }) {
     return createProduct(
       id: id,
@@ -71,26 +98,32 @@ void main() {
       pricingMode: pricingMode,
       minOrderQuantity: minOrderQuantity,
       variants: variants,
+      image: image,
     );
   }
 
   group('Arabic-Indic digits', () {
-    test('a minimum typed on a Libyan keyboard reaches the API as ASCII', () async {
-      // Arrange — the server's `numeric` rule is ASCII-only, so ١٠٠ is a 422 the user cannot
-      // diagnose from the field in front of them.
-      // Act
-      await submit(minOrderQuantity: '١٠٠');
+    test(
+      'a minimum typed on a Libyan keyboard reaches the API as ASCII',
+      () async {
+        // Arrange — the server's `numeric` rule is ASCII-only, so ١٠٠ is a 422 the user cannot
+        // diagnose from the field in front of them.
+        // Act
+        await submit(minOrderQuantity: '١٠٠');
 
-      // Assert
-      expect(sent().minOrderQuantity, '100');
-    });
+        // Assert
+        expect(sent().minOrderQuantity, '100');
+      },
+    );
 
     test('a width typed as ٢٥ arrives as 25, not as nothing', () async {
       // Arrange — the sharp one. `width_cm` is nullable server-side, so an unparsed dimension
       // is accepted as absent: no error, no size saved, nobody told.
       // Act
       await submit(
-        variants: const [DraftVariant(label: '25*35', widthCm: '٢٥', heightCm: '٣٥')],
+        variants: const [
+          DraftVariant(label: '25*35', widthCm: '٢٥', heightCm: '٣٥'),
+        ],
       );
 
       // Assert
@@ -123,16 +156,19 @@ void main() {
   });
 
   group('what is sent, and what is not', () {
-    test('a size with no dimensions sends none, rather than sending zero', () async {
-      // Arrange — the catalogue's per-kilo bags genuinely have no dimensions.
-      // Act
-      await submit(variants: const [DraftVariant(label: 'سادة')]);
+    test(
+      'a size with no dimensions sends none, rather than sending zero',
+      () async {
+        // Arrange — the catalogue's per-kilo bags genuinely have no dimensions.
+        // Act
+        await submit(variants: const [DraftVariant(label: 'سادة')]);
 
-      // Assert
-      final variant = sent().variants.single;
-      expect(variant.widthCm, isNull);
-      expect(variant.heightCm, isNull);
-    });
+        // Assert
+        final variant = sent().variants.single;
+        expect(variant.widthCm, isNull);
+        expect(variant.heightCm, isNull);
+      },
+    );
 
     test('a blank feature left behind by an add button is dropped', () async {
       // Arrange — `features.*` is `required|string`, so an empty row is a 422 pointing at a
@@ -155,61 +191,72 @@ void main() {
       expect(draft.toJson().containsKey('features'), isFalse);
     });
 
-    test('whitespace around what was typed never reaches the catalogue', () async {
-      // Arrange — a name pasted out of a message carries it, and the product it creates is one
-      // nobody finds again by searching.
-      // Act
-      await submit(name: '  أكياس الشحن  ');
+    test(
+      'whitespace around what was typed never reaches the catalogue',
+      () async {
+        // Arrange — a name pasted out of a message carries it, and the product it creates is one
+        // nobody finds again by searching.
+        // Act
+        await submit(name: '  أكياس الشحن  ');
 
-      // Assert
-      expect(sent().name, 'أكياس الشحن');
-    });
+        // Assert
+        expect(sent().name, 'أكياس الشحن');
+      },
+    );
 
-    test('a blank description is absent from the body, not null in it', () async {
-      // Arrange
-      // Act
-      await submit(description: '   ');
+    test(
+      'a blank description is absent from the body, not null in it',
+      () async {
+        // Arrange
+        // Act
+        await submit(description: '   ');
 
-      // Assert
-      expect(sent().toJson().containsKey('description'), isFalse);
-    });
+        // Assert
+        expect(sent().toJson().containsKey('description'), isFalse);
+      },
+    );
   });
 
   group('the body itself', () {
-    test('nests sizes and their price breaks the way the API reads them', () async {
-      // Arrange
-      // Act
-      await submit(
-        variants: const [
-          DraftVariant(
-            label: '25*35',
-            widthCm: '25',
-            heightCm: '35',
-            priceTiers: [DraftPriceTier(minQuantity: '100', unitPrice: '1.100')],
-          ),
-        ],
-      );
+    test(
+      'nests sizes and their price breaks the way the API reads them',
+      () async {
+        // Arrange
+        // Act
+        await submit(
+          variants: const [
+            DraftVariant(
+              label: '25*35',
+              widthCm: '25',
+              heightCm: '35',
+              priceTiers: [
+                DraftPriceTier(minQuantity: '100', unitPrice: '1.100'),
+              ],
+            ),
+          ],
+        );
 
-      // Assert — snake_case all the way down, and nothing the app invented.
-      // No `slug` key at all: the server derives it from the name and the code it allocates.
-      expect(sent().toJson(), {
-        'name': 'أكياس الشحن',
-        'category': 'printed',
-        'pricing_unit': 'piece',
-        'pricing_mode': 'tiered',
-        'min_order_quantity': '100',
-        'variants': [
-          {
-            'label': '25*35',
-            'width_cm': 25,
-            'height_cm': 35,
-            'price_tiers': [
-              {'min_quantity': '100', 'unit_price': '1.100'},
-            ],
-          },
-        ],
-      });
-    });
+        // Assert — snake_case all the way down, and nothing the app invented.
+        // No `slug` key at all: the server derives it from the name and the code it allocates.
+        expect(sent().toJson(), {
+          'name': 'أكياس الشحن',
+          'category': 'printed',
+          'pricing_unit': 'piece',
+          'pricing_mode': 'tiered',
+          'min_order_quantity': '100',
+          'variants': [
+            {
+              'label': '25*35',
+              'width_cm': 25,
+              'height_cm': 35,
+              'price_tiers': [
+                {'min_quantity': '100', 'unit_price': '1.100'},
+              ],
+            },
+          ],
+        });
+      },
+    );
 
     test('a quote-only product carries no prices at all', () async {
       // Arrange — the server refuses the whole list if it does, and that refusal has no field
@@ -227,7 +274,7 @@ void main() {
 
   test('a failure comes back untouched, with the server own message', () async {
     // Arrange
-    when(() => repository.create(any())).thenAnswer(
+    when(() => repository.create(any(), image: any(named: 'image'))).thenAnswer(
       (_) async => const Left(Failure.server(message: 'المعرف مستخدم مسبقاً')),
     );
 
@@ -251,11 +298,66 @@ void main() {
 
     // Assert — one endpoint each, and the id decides which. A product cannot be created twice
     // by a form somebody opened to fix a typo.
-    verify(() => repository.create(any())).called(1);
+    verify(
+      () => repository.create(any(), image: any(named: 'image')),
+    ).called(1);
 
-    final corrected = verify(() => repository.update(captureAny(), any())).captured.single;
+    final corrected = verify(
+      () => repository.update(captureAny(), any()),
+    ).captured.single;
     expect(corrected, 7);
   });
+
+  // ─────────────────────── the photo ───────────────────────
+
+  test(
+    'the photo chosen on the form is the one handed to the repository',
+    () async {
+      // Arrange
+      const chosen = PickedFile(
+        path: '/tmp/chosen.png',
+        name: 'chosen.png',
+        sizeBytes: 900,
+      );
+
+      // Act
+      await submit(image: chosen);
+
+      // Assert
+      final captured = verify(
+        () => repository.create(any(), image: captureAny(named: 'image')),
+      ).captured.single;
+      expect(captured, chosen);
+    },
+  );
+
+  test('adding without a photo is refused before a request is made', () async {
+    // Arrange — the form checks this first, so getting here is a bug. It still has to fail as a
+    // failure rather than throw: an exception out of a Cubit takes the screen down with it.
+    // Act
+    final result = await submit(image: null);
+
+    // Assert
+    expect(result.isLeft(), isTrue);
+    expect(
+      result.fold((failure) => failure.message, (_) => null),
+      'صورة المنتج مطلوبة',
+    );
+    verifyNever(() => repository.create(any(), image: any(named: 'image')));
+  });
+
+  test(
+    'correcting a product needs no photo, because it already has one',
+    () async {
+      // Arrange — the form hides the picker when editing, so nothing would supply one.
+      // Act
+      final result = await submit(id: 7, image: null);
+
+      // Assert
+      expect(result.isRight(), isTrue);
+      verify(() => repository.update(7, any())).called(1);
+    },
+  );
 
   test('a size that already exists keeps its id on the way through', () async {
     // Arrange — the load-bearing detail of editing: the server matches sizes by id and removes
@@ -271,7 +373,8 @@ void main() {
 
     // Assert
     final draft =
-        verify(() => repository.update(any(), captureAny())).captured.single as NewProduct;
+        verify(() => repository.update(any(), captureAny())).captured.single
+            as NewProduct;
 
     expect(draft.variants.first.id, 12);
     // The new size carries none, which is how the server is told it is new.

@@ -377,6 +377,10 @@ abstract final class Injector {
       ..registerLazySingleton<GetProducts>(() => GetProducts(sl<ProductRepository>()))
       ..registerLazySingleton<GetProduct>(() => GetProduct(sl<ProductRepository>()))
       ..registerLazySingleton<SaveProduct>(() => SaveProduct(sl<ProductRepository>()))
+      // Registered with the catalogue rather than with orders, where its only caller lives: it
+      // asks the *product* what a quantity costs, and an order is simply the first screen to
+      // need the answer.
+      ..registerLazySingleton<GetPriceQuote>(() => GetPriceQuote(sl<ProductRepository>()))
       // Factory: the catalogue screen owns its Cubit and closes it on dispose.
       ..registerFactory<ProductsCubit>(() => ProductsCubit(getProducts: sl<GetProducts>()))
       // Parameterised, like the customer's and the order's: the detail screen is *about* one

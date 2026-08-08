@@ -19,8 +19,11 @@ use Illuminate\Http\JsonResponse;
 /**
  * Product images
  *
- * Photos for a catalogue entry. The first one uploaded becomes the product's primary image
- * automatically, and a product can only ever have one.
+ * Extra photos for a catalogue entry. The first one arrives with the product itself — a product
+ * cannot be created without a picture — and this is where the rest are added.
+ *
+ * The first one uploaded becomes the product's primary image automatically, and a product can
+ * only ever have one. It can never be left with none: deleting the last photo is refused.
  *
  * Files are written to the disk named by `MEDIA_DISK` — the `public` disk locally, S3 in
  * production. Each image remembers the disk it was written to, so switching over affects only
@@ -85,6 +88,9 @@ class ProductImageController extends Controller
      *
      * Removes the record and the stored file. If it was the primary image, the next one takes
      * its place so the product is never left without a thumbnail.
+     *
+     * Refuses with 422 when it is the product's only photo. To replace it, upload the new one
+     * first and then delete this — at no point does the product have nothing.
      */
     public function destroy(Product $product, ProductImage $image): JsonResponse
     {

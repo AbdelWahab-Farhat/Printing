@@ -71,9 +71,7 @@ void main() {
     String designSource = 'none',
     String? designFee,
     String? discount,
-    String? recipientName,
     String? recipientPhone,
-    String? addressDetails,
     String? notes,
     List<DraftOrderLine> lines = const [
       DraftOrderLine(productId: 7, productVariantId: 12, quantity: '300'),
@@ -87,9 +85,7 @@ void main() {
       designSource: designSource,
       designFee: designFee,
       discount: discount,
-      recipientName: recipientName,
       recipientPhone: recipientPhone,
-      addressDetails: addressDetails,
       notes: notes,
       lines: lines,
     );
@@ -183,27 +179,30 @@ void main() {
 
   group('what the clerk left blank', () {
     test('empty text fields are left out rather than sent as empty strings', () async {
-      // Arrange
+      // Arrange — a clerk who clears the phone box means «no second number», which is a
+      // different request from an empty string.
       // Act
-      await submit(recipientName: '  ', recipientPhone: '', addressDetails: null, notes: '');
+      await submit(recipientPhone: '  ', notes: '');
 
       // Assert
       final order = sent();
-      expect(order.recipientName, isNull);
       expect(order.recipientPhone, isNull);
-      expect(order.addressDetails, isNull);
       expect(order.notes, isNull);
+      // Neither is asked for by the form: the name is the customer's and the address is their
+      // shop's, both already on the order through their ids.
+      expect(order.recipientName, isNull);
+      expect(order.addressDetails, isNull);
     });
 
     test('text that was typed is trimmed and kept', () async {
       // Arrange
       // Act
-      await submit(recipientName: '  أحمد  ', addressDetails: 'خلف مسجد النور ');
+      await submit(recipientPhone: ' 0925556666 ', notes: ' يتصل قبل الوصول ');
 
       // Assert
       final order = sent();
-      expect(order.recipientName, 'أحمد');
-      expect(order.addressDetails, 'خلف مسجد النور');
+      expect(order.recipientPhone, '0925556666');
+      expect(order.notes, 'يتصل قبل الوصول');
     });
 
     test('a line note that is blank does not become an empty note', () async {

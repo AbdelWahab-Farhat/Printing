@@ -242,6 +242,7 @@ class _Form extends StatelessWidget {
                       onCity: (city) => cubit.setCity(id: city.id, name: city.name),
                       onRegion: (region) =>
                           cubit.setRegion(id: region.id, name: region.name),
+                      onPhone: cubit.setRecipientPhone,
                     ),
                   ),
                   SizedBox(height: 16.h),
@@ -337,12 +338,41 @@ class _Form extends StatelessWidget {
 /// **The office branches are in the same list as the delivery cities**, so choosing
 /// «إستلام مكتب(قرجي)» is how an order becomes a collection — the server reads the fulfilment
 /// type off whichever city is chosen, and there is no second switch here to disagree with it.
-class _Destination extends StatelessWidget {
-  const _Destination({required this.state, required this.onCity, required this.onRegion});
+class _Destination extends StatefulWidget {
+  const _Destination({
+    required this.state,
+    required this.onCity,
+    required this.onRegion,
+    required this.onPhone,
+  });
 
   final OrderInvoiceState state;
   final ValueChanged<City> onCity;
   final ValueChanged<Region> onRegion;
+  final ValueChanged<String> onPhone;
+
+  @override
+  State<_Destination> createState() => _DestinationState();
+}
+
+/// Stateful for the phone's [TextEditingController] alone — a widget-lifecycle resource that
+/// has to be disposed, which is not something a Cubit can do for it.
+class _DestinationState extends State<_Destination> {
+  late final TextEditingController _phone = TextEditingController(
+    text: widget.state.recipientPhone ?? '',
+  );
+
+  @override
+  void dispose() {
+    _phone.dispose();
+    super.dispose();
+  }
+
+  OrderInvoiceState get state => widget.state;
+
+  ValueChanged<City> get onCity => widget.onCity;
+
+  ValueChanged<Region> get onRegion => widget.onRegion;
 
   Future<void> _pickCity(BuildContext context) async {
     final city = await showCityPicker(context: context, selectedId: state.cityId);
@@ -400,6 +430,18 @@ class _Destination extends StatelessWidget {
           // address, and the total on the invoice moves with it.
           'تغيير المدينة يعيد حساب سعر التوصيل والإجمالي',
           style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+        SizedBox(height: 10.h),
+        // **Here rather than in a section of its own**, because it closes when the address does
+        // and for the same reason: past «جاري التوصيل» the courier is carrying both, and the
+        // server refuses a change to either. This whole block is already hidden then.
+        AppTextField(
+          controller: _phone,
+          label: 'هاتف الاستلام',
+          keyboardType: TextInputType.phone,
+          textDirection: TextDirection.ltr,
+          errorText: state.recipientPhoneError,
+          onChanged: widget.onPhone,
         ),
       ],
     );

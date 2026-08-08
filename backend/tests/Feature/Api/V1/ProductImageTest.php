@@ -365,9 +365,11 @@ class ProductImageTest extends TestCase
 
     public function test_delete_removes_the_record_and_the_stored_file(): void
     {
-        // Arrange
+        // Arrange — two photos, because deleting the only one is refused. This test is about
+        // what deletion does to the row and the file, not about the last-photo rule.
         $product = Product::factory()->create();
         $headers = $this->auth();
+        ProductImage::factory()->primary()->create(['product_id' => $product->id]);
         $uploaded = $this->withHeaders($headers)
             ->post("/api/v1/products/{$product->id}/images", ['image' => $this->jpeg()])
             ->json('data.id');
@@ -384,7 +386,7 @@ class ProductImageTest extends TestCase
         // bound.
         $response->assertOk()->assertJson(['status' => true, 'data' => null]);
         $this->assertSoftDeleted('product_images', ['id' => $uploaded]);
-        $this->assertSame(0, ProductImage::query()->count());
+        $this->assertSame(1, ProductImage::query()->count());
         Storage::disk($this->disk)->assertMissing($path);
     }
 
@@ -405,9 +407,11 @@ class ProductImageTest extends TestCase
         $this->assertDatabaseHas('product_images', ['id' => $other->id, 'is_primary' => true]);
     }
 
-    public function test_deleting_the_last_image_leaves_the_product_with_none(): void
+    public function test_deleting_the_last_image_is_refused(): void
     {
-        // Arrange
+        // Arrange — every product carries at least one photo, and that is a standing invariant
+        // rather than a rule that only applies while the product is being created. Without this
+        // the route from "every product has a photo" back to "this one doesn't" is one tap long.
         $product = Product::factory()->create();
         $only = ProductImage::factory()->primary()->create(['product_id' => $product->id]);
         $headers = $this->auth();
@@ -417,8 +421,30 @@ class ProductImageTest extends TestCase
             ->deleteJson("/api/v1/products/{$product->id}/images/{$only->id}");
 
         // Assert
+        $response->assertStatus(422)->assertJson(['status' => false]);
+        $this->assertDatabaseHas('product_images', ['id' => $only->id, 'deleted_at' => null]);
+        $this->assertSame(1, ProductImage::query()->count());
+    }
+
+    public function test_the_last_image_can_be_replaced_by_uploading_first(): void
+    {
+        // Arrange — the way out of the rule above. Upload the replacement, then remove the old
+        // one; at no point does the product have nothing.
+        $product = Product::factory()->create();
+        $original = ProductImage::factory()->primary()->create(['product_id' => $product->id]);
+        $headers = $this->auth();
+
+        // Act
+        $this->withHeaders($headers)
+            ->post("/api/v1/products/{$product->id}/images", ['image' => $this->jpeg('new.jpg')])
+            ->assertCreated();
+        $response = $this->withHeaders($headers)
+            ->deleteJson("/api/v1/products/{$product->id}/images/{$original->id}");
+
+        // Assert
         $response->assertOk();
-        $this->assertSame(0, ProductImage::query()->count());
+        $this->assertSame(1, ProductImage::query()->count());
+        $this->assertSame(1, ProductImage::query()->where('is_primary', true)->count());
     }
 
     public function test_delete_requires_authentication(): void

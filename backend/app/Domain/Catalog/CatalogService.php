@@ -16,6 +16,7 @@ use App\Domain\Catalog\Queries\FindProductVariant;
 use App\Domain\Catalog\Queries\ProductFilters;
 use App\Domain\Catalog\Queries\ProductListQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 
 /**
  * The Catalog module's public front door.
@@ -59,9 +60,12 @@ class CatalogService
         return Product::query()->with('variants.priceTiers')->findOrFail($id);
     }
 
-    public function create(ProductData $data): Product
+    /**
+     * A product and its first photo, which is required — see PRODUCT-IMAGE-REQUIRED-DESIGN.md.
+     */
+    public function create(ProductData $data, UploadedFile $image, ?string $altText = null): Product
     {
-        return ($this->createProduct)($data);
+        return ($this->createProduct)($data, $image, $altText);
     }
 
     public function update(Product $product, ProductData $data): Product
