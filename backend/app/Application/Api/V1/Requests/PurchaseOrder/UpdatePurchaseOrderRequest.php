@@ -1,0 +1,77 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Application\Api\V1\Requests\PurchaseOrder;
+
+use App\Domain\PurchaseOrder\Actions\UpdatePurchaseOrder;
+use Illuminate\Validation\Rule;
+
+/**
+ * Same shape as creating, plus an optional `id` on each line so existing lines can be told from
+ * new ones — see {@see UpdatePurchaseOrder}.
+ *
+ * Written out in full rather than merged onto the parent's rules — Scramble reads this method
+ * statically to build the OpenAPI request body and cannot follow an
+ * `array_merge(parent::rules(), …)` call, the same trap `UpdateVendorRequest` and
+ * `UpdateWarehouseRequest` avoid. The domain itself is what actually refuses this request once
+ * the order has left `new` — see `PurchaseOrderNotEditable` — so there is nothing state-specific
+ * to validate here.
+ */
+class UpdatePurchaseOrderRequest extends StorePurchaseOrderRequest
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        return [
+            'vendor_id' => [
+                'required', 'integer',
+                Rule::exists('vendors', 'id')->whereNull('deleted_at'),
+            ],
+
+            'warehouse_id' => [
+                'required', 'integer',
+                Rule::exists('warehouses', 'id')->whereNull('deleted_at'),
+            ],
+
+            'order_date' => ['required', 'date'],
+
+            'expected_date' => ['nullable', 'date', 'after_or_equal:order_date'],
+
+            'notes' => ['nullable', 'string', 'max:1000'],
+
+            'items' => ['required', 'array', 'min:1'],
+
+            // Present on a line that already exists; absent on one being added. Any existing
+            // line whose id is missing from this set is removed — see UpdatePurchaseOrder.
+            'items.*.id' => ['nullable', 'integer'],
+
+            'items.*.product_variant_id' => [
+                'required', 'integer', 'distinct',
+                Rule::exists('product_variants', 'id')->whereNull('deleted_at'),
+            ],
+
+            'items.*.quantity_ordered' => ['required', 'numeric', 'gt:0', 'max:999999999.999'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'vendor_id' => 'المورد',
+            'warehouse_id' => 'مخزن الوجهة',
+            'order_date' => 'تاريخ الطلب',
+            'expected_date' => 'التاريخ المتوقع',
+            'notes' => 'الملاحظات',
+            'items' => 'البنود',
+            'items.*.id' => 'معرف البند',
+            'items.*.product_variant_id' => 'المقاس',
+            'items.*.quantity_ordered' => 'الكمية المطلوبة',
+        ];
+    }
+}

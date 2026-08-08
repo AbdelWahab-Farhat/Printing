@@ -28,6 +28,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * `vendor_id`, `warehouse_id` and `received_by` are deliberately absent from the fillable list.
  * They come from the route and the authenticated user, never from the payload, the same rule
  * `StockMovement::employee_id` follows — see {@see RecordStockArrival}.
+ *
+ * `purchase_order_id` is nullable — most arrivals are unplanned — and deliberately has **no**
+ * Eloquent relation here, unlike `vendor()`/`warehouse()` above. `App\Domain\PurchaseOrder`
+ * already depends on this module (`ReceivePurchaseOrder` calls `VendorService`); a relation on
+ * this side pointing back at it would import that namespace into this one and close the loop
+ * RULES.md §3 forbids. `PurchaseOrder::stockArrivals()` holds the relation instead — the same
+ * column, read from the side that is already allowed to know about the other.
  */
 #[UseFactory(StockArrivalFactory::class)]
 #[Fillable(['invoice_number', 'notes'])]
