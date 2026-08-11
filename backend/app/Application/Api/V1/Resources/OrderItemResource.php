@@ -45,6 +45,10 @@ class OrderItemResource extends JsonResource
 
             'notes' => $this->notes,
             'sort_order' => $this->sort_order,
+
+            // Null unless the employee said the sales unit and the warehouse unit differ — see
+            // the class docblock on OrderItem.
+            'warehouse_quantity' => $this->warehouse_quantity === null ? null : (string) $this->warehouse_quantity,
         ];
     }
 }

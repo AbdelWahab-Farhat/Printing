@@ -7,6 +7,7 @@ namespace App\Domain\Vendor\Models;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Inventory\Models\StockMovement;
+use App\Domain\PurchaseOrder\Actions\ReceivePurchaseOrder;
 use App\Domain\Vendor\Actions\RecordStockArrival;
 use Database\Factories\StockArrivalItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -26,6 +27,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * points at already did that, under `InventoryService`'s own lock. It is written once, by
  * {@see RecordStockArrival}, as a forward pointer to the ledger row
  * this line produced.
+ *
+ * `unit_cost`/`total_cost` are not fillable either: both stay null for a plain, unplanned arrival
+ * and are force-filled only when this line fulfils a purchase order — see
+ * {@see ReceivePurchaseOrder}, which copies the ordering line's
+ * `unit_cost` and prices `total_cost` against what actually arrived in this shipment.
  */
 #[UseFactory(StockArrivalItemFactory::class)]
 #[Fillable(['quantity'])]
@@ -44,6 +50,8 @@ class StockArrivalItem extends Model
             // `StockMovement::quantity` carry: this number is compared and summed against a
             // ledger, and binary drift here is a discrepancy nobody could ever explain.
             'quantity' => 'decimal:3',
+            'unit_cost' => 'decimal:3',
+            'total_cost' => 'decimal:2',
         ];
     }
 

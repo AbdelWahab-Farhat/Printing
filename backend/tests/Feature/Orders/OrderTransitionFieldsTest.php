@@ -242,7 +242,7 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertTrue($cancelled['fields'][0]['required']);
     }
 
-    public function test_printing_asks_for_nothing_but_the_note_every_move_carries(): void
+    public function test_printing_asks_for_a_warehouse_and_the_note_every_move_carries(): void
     {
         // Arrange
         [$order] = $this->orderNeedingArtwork();
@@ -251,9 +251,30 @@ class OrderTransitionFieldsTest extends TestCase
         // Act
         $printing = $this->transition($this->show($headers, $order), OrderStatus::Printing);
 
-        // Assert — the second of the two paths out of «جديدة», and it is a bare move: the only
-        // thing on the form is the note, which is on every form and is never required.
-        $this->assertSame(['reason'], array_column($printing['fields'], 'key'));
+        // Assert — the second of the two paths out of «جديدة». Stock has never left a warehouse
+        // for this order yet, so the warehouse picker is required; the note is on every form and
+        // is never required.
+        $this->assertSame(['warehouse_id', 'reason'], array_column($printing['fields'], 'key'));
+        $this->assertSame('warehouse', $printing['fields'][0]['type']);
+        $this->assertTrue($printing['fields'][0]['required']);
+        $this->assertFalse($printing['fields'][1]['required']);
+    }
+
+    public function test_a_reprint_entering_printing_again_is_not_asked_for_a_warehouse(): void
+    {
+        // Arrange — stock already left a warehouse for this order once; it is on the shelf now,
+        // the one status a reprint moves back to printing from.
+        $order = Order::factory()->status(OrderStatus::Ready)->create([
+            'stock_deducted_at' => now(),
+        ]);
+        $headers = $this->foreman();
+
+        // Act — the correction path: ready back to printing for a reprint
+        $printing = $this->transition($this->show($headers, $order), OrderStatus::Printing);
+
+        // Assert — nothing here would do anything with a second warehouse, so it is offered but
+        // not demanded.
+        $this->assertSame('warehouse_id', $printing['fields'][0]['key']);
         $this->assertFalse($printing['fields'][0]['required']);
     }
 

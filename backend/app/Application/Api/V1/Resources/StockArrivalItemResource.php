@@ -24,6 +24,10 @@ class StockArrivalItemResource extends JsonResource
             // Always positive — see StockMovementResource for the same shape.
             'quantity' => (string) $this->quantity,
 
+            // Null for a plain arrival — only set when this line fulfilled a purchase order.
+            'unit_cost' => $this->unit_cost !== null ? (string) $this->unit_cost : null,
+            'total_cost' => $this->total_cost !== null ? (string) $this->total_cost : null,
+
             'product_variant_id' => $this->product_variant_id,
             'product_variant' => $this->whenLoaded('productVariant', fn (): array => [
                 'id' => $this->productVariant->id,

@@ -37,6 +37,22 @@ final class TransitionFields
 
         $fields = [];
 
+        // Where the stock this order consumes comes out of, asked exactly once per order — see
+        // {@see \App\Domain\Order\Actions\DeductOrderStock}. `printing` is re-enterable (a
+        // reprint goes `ready`/`shortage` back to `printing`), and a reprint that has already
+        // taken stock out of a warehouse is not asked to name one again — nothing here would do
+        // anything with a second answer.
+        if ($target === OrderStatus::Printing) {
+            $fields[] = TransitionField::warehouse(
+                key: 'warehouse_id',
+                label: 'المخزن',
+                required: $order->stock_deducted_at === null,
+                hint: $order->stock_deducted_at === null
+                    ? 'يُخصم منه ما تستهلكه هذه الطلبية من المخزون'
+                    : 'خُصم المخزون بالفعل من هذه الطلبية',
+            );
+        }
+
         // Every order, whatever its `design_source`. That column answers *whose work the
         // artwork was* — the only one of the two questions that may move money — and not
         // whether there is a file. A reprint that goes back into design because the customer

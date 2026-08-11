@@ -43,6 +43,9 @@ class PurchaseOrderResource extends JsonResource
             'expected_date' => $this->expected_date?->toDateString(),
             'notes' => $this->notes,
 
+            // Null on an order raised before cost tracking existed — see RecalculatePurchaseOrderTotal.
+            'total_amount' => $this->total_amount !== null ? (string) $this->total_amount : null,
+
             'items' => PurchaseOrderItemResource::collection($this->whenLoaded('items')),
 
             'created_at' => $this->created_at?->toIso8601String(),

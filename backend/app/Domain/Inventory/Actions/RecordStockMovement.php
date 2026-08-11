@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Inventory\Actions;
 
 use App\Domain\Catalog\CatalogService;
+use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\Enums\MovementType;
 use App\Domain\Inventory\Exceptions\FractionalQuantityNotAllowed;
@@ -34,15 +36,17 @@ final class RecordStockMovement
     public function __invoke(StockMovementData $data): StockMovement
     {
         // Outside the transaction: it reads the catalogue and can 404, and holding a lock open
-        // while doing so buys nothing.
-        $this->guardWholeQuantity($data);
+        // while doing so buys nothing. Resolved once and reused for both the whole-quantity guard
+        // and the unit every balance touched by this movement is checked/stamped against.
+        $variant = $this->catalog->findVariant($data->productVariantId);
+        $this->guardWholeQuantity($data, $variant);
 
         if ($data->fromWarehouseId !== null && $data->fromWarehouseId === $data->toWarehouseId) {
             throw TransferRequiresTwoDifferentWarehouses::make();
         }
 
-        return DB::transaction(function () use ($data): StockMovement {
-            $this->moveBalances($data);
+        return DB::transaction(function () use ($data, $variant): StockMovement {
+            $this->moveBalances($data, $variant->product->pricing_unit);
 
             $movement = new StockMovement([
                 'quantity' => $data->quantity,
@@ -74,38 +78,38 @@ final class RecordStockMovement
      * no reason they could ever act on. Locking in ascending warehouse id instead gives every
      * transaction the same order, so one simply waits.
      */
-    private function moveBalances(StockMovementData $data): void
+    private function moveBalances(StockMovementData $data, PricingUnit $unit): void
     {
         $decreaseFirst = $data->toWarehouseId === null
             || ($data->fromWarehouseId !== null && $data->fromWarehouseId < $data->toWarehouseId);
 
         if ($decreaseFirst) {
-            $this->decrease($data);
-            $this->increase($data);
+            $this->decrease($data, $unit);
+            $this->increase($data, $unit);
 
             return;
         }
 
-        $this->increase($data);
-        $this->decrease($data);
+        $this->increase($data, $unit);
+        $this->decrease($data, $unit);
     }
 
-    private function decrease(StockMovementData $data): void
+    private function decrease(StockMovementData $data, PricingUnit $unit): void
     {
         if ($data->fromWarehouseId === null) {
             return;
         }
 
-        $this->applyStockChange->decrease($data->fromWarehouseId, $data->productVariantId, $data->quantity);
+        $this->applyStockChange->decrease($data->fromWarehouseId, $data->productVariantId, $data->quantity, $unit);
     }
 
-    private function increase(StockMovementData $data): void
+    private function increase(StockMovementData $data, PricingUnit $unit): void
     {
         if ($data->toWarehouseId === null) {
             return;
         }
 
-        $this->applyStockChange->increase($data->toWarehouseId, $data->productVariantId, $data->quantity);
+        $this->applyStockChange->increase($data->toWarehouseId, $data->productVariantId, $data->quantity, $unit);
     }
 
     /**
@@ -115,10 +119,8 @@ final class RecordStockMovement
      * bags, and two copies of it would eventually disagree about a product whose pricing unit
      * changed.
      */
-    private function guardWholeQuantity(StockMovementData $data): void
+    private function guardWholeQuantity(StockMovementData $data, ProductVariant $variant): void
     {
-        $variant = $this->catalog->findVariant($data->productVariantId);
-
         if (! $this->catalog->requiresWholeQuantities($variant)) {
             return;
         }

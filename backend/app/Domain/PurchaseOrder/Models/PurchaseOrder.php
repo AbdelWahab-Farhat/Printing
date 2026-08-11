@@ -45,6 +45,8 @@ class PurchaseOrder extends Model implements HasAuditTrail
             'status' => PurchaseOrderStatus::class,
             'order_date' => 'date',
             'expected_date' => 'date',
+            // Not fillable — see RecalculatePurchaseOrderTotal, the only writer.
+            'total_amount' => 'decimal:2',
         ];
     }
 

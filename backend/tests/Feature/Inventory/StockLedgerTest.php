@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Inventory;
 
+use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
@@ -317,5 +319,57 @@ class StockLedgerTest extends TestCase
             'causer_type' => 'user',
             'causer_id' => $user->id,
         ]);
+    }
+
+    public function test_a_balance_snapshots_its_unit_on_first_arrival(): void
+    {
+        // Arrange
+        $warehouse = Warehouse::factory()->create();
+        $variant = ProductVariant::factory()
+            ->for(Product::factory()->perKilogram(), 'product')
+            ->create();
+        $headers = $this->manager();
+
+        // Act
+        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
+            'product_variant_id' => $variant->id,
+            'to_warehouse_id' => $warehouse->id,
+            'quantity' => 12.5,
+        ])->assertCreated();
+
+        // Assert
+        $this->assertDatabaseHas('warehouse_stocks', [
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $variant->id,
+            'unit' => 'kilogram',
+        ]);
+    }
+
+    public function test_a_movement_is_refused_once_the_products_unit_no_longer_matches_the_balance(): void
+    {
+        // Arrange — a balance already exists in pieces
+        $warehouse = Warehouse::factory()->create();
+        $variant = ProductVariant::factory()->create();
+        $headers = $this->manager();
+
+        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
+            'product_variant_id' => $variant->id,
+            'to_warehouse_id' => $warehouse->id,
+            'quantity' => 10,
+        ])->assertCreated();
+
+        // The product is switched to kilograms after the fact — the balance still says "piece"
+        $variant->product()->update(['pricing_unit' => PricingUnit::Kilogram]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
+            'product_variant_id' => $variant->id,
+            'to_warehouse_id' => $warehouse->id,
+            'quantity' => 5,
+        ]);
+
+        // Assert — refused rather than silently mixing units, and the balance is untouched
+        $response->assertStatus(422)->assertJsonPath('status', false);
+        $this->assertSame('10.000', $this->balanceOf($warehouse, $variant));
     }
 }

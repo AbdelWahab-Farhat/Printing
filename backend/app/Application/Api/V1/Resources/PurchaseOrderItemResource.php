@@ -41,6 +41,13 @@ class PurchaseOrderItemResource extends JsonResource
                 (string) $this->quantity_received,
                 3,
             ),
+
+            // Null only on a line written before cost tracking existed.
+            'unit_cost' => $this->unit_cost !== null ? (string) $this->unit_cost : null,
+            'total_cost' => $this->total_cost !== null ? (string) $this->total_cost : null,
+
+            'unit' => $this->unit?->value,
+            'unit_label' => $this->unit?->label(),
         ];
     }
 }

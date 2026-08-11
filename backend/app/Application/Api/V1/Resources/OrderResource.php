@@ -138,6 +138,11 @@ class OrderResource extends JsonResource
             'courier_phone' => $this->courier_phone,
             'tracking_number' => $this->tracking_number,
 
+            // Where this order's stock came out of, and when — both null until the order first
+            // enters `printing`. See DeductOrderStock.
+            'fulfillment_warehouse_id' => $this->fulfillment_warehouse_id,
+            'stock_deducted_at' => $this->stock_deducted_at?->toIso8601String(),
+
             'placed_at' => $this->placed_at?->toIso8601String(),
             'design_started_at' => $this->design_started_at?->toIso8601String(),
             'printing_started_at' => $this->printing_started_at?->toIso8601String(),

@@ -12,6 +12,12 @@ final readonly class PurchaseOrderItemData
         public int $productVariantId,
         /** Always positive, normalised to three decimal places — see {@see quantityOrdered()}. */
         public string $quantityOrdered,
+        /**
+         * The negotiated vendor cost, per unit. There is no catalogue price for what *we* pay a
+         * vendor, so this always comes from the request — never derived, unlike
+         * `OrderItemData::unitPrice`, which the catalogue overrides whenever one exists.
+         */
+        public string $unitCost,
         /** Present when updating an existing line; null when creating a new one. */
         public ?int $id = null,
     ) {}
@@ -24,6 +30,7 @@ final readonly class PurchaseOrderItemData
         return new self(
             productVariantId: (int) $validated['product_variant_id'],
             quantityOrdered: self::quantityOrdered($validated['quantity_ordered']),
+            unitCost: self::quantityOrdered($validated['unit_cost']),
             id: isset($validated['id']) ? (int) $validated['id'] : null,
         );
     }

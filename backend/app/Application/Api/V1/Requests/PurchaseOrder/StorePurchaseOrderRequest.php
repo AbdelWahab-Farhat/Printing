@@ -48,6 +48,11 @@ class StorePurchaseOrderRequest extends FormRequest
             // actually posted against this line, by ReceivePurchaseOrder — an order is paperwork,
             // not a movement, and may plan for a quantity that later arrives in whole pieces.
             'items.*.quantity_ordered' => ['required', 'numeric', 'gt:0', 'max:999999999.999'],
+
+            // `gte:0`, not `gt:0` — a free replacement from the vendor is a real cost of zero,
+            // not an omission. There is no catalogue price to fall back on for what *we* pay a
+            // vendor, so this is always required.
+            'items.*.unit_cost' => ['required', 'numeric', 'gte:0', 'max:999999999.999'],
         ];
     }
 
@@ -75,6 +80,10 @@ class StorePurchaseOrderRequest extends FormRequest
             'items.*.quantity_ordered.numeric' => 'الكمية المطلوبة يجب أن تكون رقماً',
             'items.*.quantity_ordered.gt' => 'الكمية المطلوبة يجب أن تكون أكبر من صفر',
             'items.*.quantity_ordered.max' => 'الكمية المطلوبة أكبر من الحد المسموح',
+            'items.*.unit_cost.required' => 'تكلفة الوحدة مطلوبة',
+            'items.*.unit_cost.numeric' => 'تكلفة الوحدة يجب أن تكون رقماً',
+            'items.*.unit_cost.gte' => 'تكلفة الوحدة لا يمكن أن تكون سالبة',
+            'items.*.unit_cost.max' => 'تكلفة الوحدة أكبر من الحد المسموح',
         ];
     }
 
@@ -92,6 +101,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'items' => 'البنود',
             'items.*.product_variant_id' => 'المقاس',
             'items.*.quantity_ordered' => 'الكمية المطلوبة',
+            'items.*.unit_cost' => 'تكلفة الوحدة',
         ];
     }
 }

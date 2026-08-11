@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Inventory\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
+use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Inventory\Actions\ApplyStockChange;
 use Database\Factories\WarehouseStockFactory;
@@ -26,6 +27,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * `low_stock_threshold` *is* fillable, because it is the opposite kind of thing: a preference
  * someone sets, not a fact the business observed.
+ *
+ * `unit` is not fillable: a snapshot of `productVariant->product->pricing_unit`, written once by
+ * {@see ApplyStockChange::increase()} the first time this (warehouse, variant) pair gets a
+ * balance, and never touched again — the same treatment `purchase_order_items.unit` gets.
  */
 #[UseFactory(WarehouseStockFactory::class)]
 #[Fillable(['low_stock_threshold'])]
@@ -44,6 +49,7 @@ class WarehouseStock extends Model
             // and binary drift in a shelf count is a discrepancy nobody can ever explain.
             'quantity' => 'decimal:3',
             'low_stock_threshold' => 'decimal:3',
+            'unit' => PricingUnit::class,
         ];
     }
 

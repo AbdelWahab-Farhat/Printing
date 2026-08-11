@@ -58,6 +58,7 @@ final class AddOrderItem
             'quantity' => $data->quantity,
             'notes' => $data->notes,
             'sort_order' => $data->sortOrder,
+            'warehouse_quantity' => $data->warehouseQuantity,
         ]);
 
         // Never fillable: these come from the catalogue, and a request that could post them

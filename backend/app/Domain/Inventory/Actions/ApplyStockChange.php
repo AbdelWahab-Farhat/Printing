@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domain\Inventory\Actions;
 
+use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Delivery\Actions\DeleteRegion;
 use App\Domain\Inventory\Exceptions\InsufficientStock;
+use App\Domain\Inventory\Exceptions\UnitOfMeasurementMismatch;
 use App\Domain\Inventory\Models\WarehouseStock;
 
 /**
@@ -30,8 +32,11 @@ final class ApplyStockChange
 {
     /**
      * Takes `$quantity` out of the warehouse's balance for this size, or refuses.
+     *
+     * @throws InsufficientStock
+     * @throws UnitOfMeasurementMismatch
      */
-    public function decrease(int $warehouseId, int $productVariantId, string $quantity): WarehouseStock
+    public function decrease(int $warehouseId, int $productVariantId, string $quantity, PricingUnit $unit): WarehouseStock
     {
         $stock = $this->lockedRow($warehouseId, $productVariantId);
 
@@ -42,6 +47,8 @@ final class ApplyStockChange
         if ($stock === null) {
             throw InsufficientStock::make('0.000', $quantity);
         }
+
+        $this->guardUnit($stock, $unit);
 
         $available = (string) $stock->quantity;
 
@@ -58,8 +65,13 @@ final class ApplyStockChange
     /**
      * Adds `$quantity` to the warehouse's balance, creating the line the first time a size
      * arrives somewhere.
+     *
+     * `$unit` is only ever written on that first arrival — see {@see WarehouseStock}'s docblock —
+     * and checked against, never rewritten, on every arrival after.
+     *
+     * @throws UnitOfMeasurementMismatch
      */
-    public function increase(int $warehouseId, int $productVariantId, string $quantity): WarehouseStock
+    public function increase(int $warehouseId, int $productVariantId, string $quantity, PricingUnit $unit): WarehouseStock
     {
         $stock = $this->lockedRow($warehouseId, $productVariantId);
 
@@ -69,22 +81,39 @@ final class ApplyStockChange
             // cannot both insert. The loser fails on the index rather than silently producing a
             // second balance nobody would ever reconcile.
             //
-            // Assigned rather than mass-assigned: none of these three is fillable, precisely so
+            // Assigned rather than mass-assigned: none of these four is fillable, precisely so
             // that no payload can reach them. `create()` here would be discarded under strict
             // mode — and, worse, would still write a row, with a quantity of zero.
             $stock = new WarehouseStock;
             $stock->warehouse_id = $warehouseId;
             $stock->product_variant_id = $productVariantId;
             $stock->quantity = $quantity;
+            $stock->unit = $unit;
             $stock->save();
 
             return $stock;
         }
 
+        $this->guardUnit($stock, $unit);
+
         $stock->quantity = bcadd((string) $stock->quantity, $quantity, 3);
         $stock->save();
 
         return $stock;
+    }
+
+    /**
+     * A product's `pricing_unit` is not expected to change once stock exists in it, but if it
+     * ever does, this is what stops the balance from silently mixing two units instead of
+     * reporting a number nobody could reconcile.
+     *
+     * @throws UnitOfMeasurementMismatch
+     */
+    private function guardUnit(WarehouseStock $stock, PricingUnit $unit): void
+    {
+        if ($stock->unit !== $unit) {
+            throw UnitOfMeasurementMismatch::make($stock->unit, $unit);
+        }
     }
 
     /**

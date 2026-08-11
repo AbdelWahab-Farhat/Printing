@@ -51,6 +51,8 @@ class UpdateOrderRequest extends StoreOrderRequest
             'items.*.unit_price' => ['nullable', 'numeric', 'min:0', 'max:9999999.999'],
             'items.*.notes' => ['nullable', 'string', 'max:500'],
             'items.*.sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
+
+            'items.*.warehouse_quantity' => ['nullable', 'numeric', 'gt:0', 'max:999999999'],
         ];
     }
 }

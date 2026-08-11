@@ -43,4 +43,13 @@ enum TransitionFieldType: string
      * is `shipping_companies.id`, exactly as {@see CustomerDesigns} travels design ids.
      */
     case ShippingCompany = 'shipping_company';
+
+    /**
+     * One of the warehouses, chosen from the list the business maintains.
+     *
+     * Same shape as {@see ShippingCompany}: options are not inlined, and what travels is
+     * `warehouses.id`. Asked only once per order — see `TransitionFields::for()` on `printing` —
+     * because stock leaves a warehouse exactly once for a given order.
+     */
+    case Warehouse = 'warehouse';
 }

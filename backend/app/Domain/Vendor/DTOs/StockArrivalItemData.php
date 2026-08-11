@@ -12,6 +12,14 @@ final readonly class StockArrivalItemData
         public int $productVariantId,
         /** Always positive, normalised to three decimal places — see {@see quantity()}. */
         public string $quantity,
+        /**
+         * What this line cost, carried over from the purchase order it fulfils. Always null
+         * through {@see fromArray()} — the generic `POST /stock-arrivals` endpoint never accepts
+         * cost — only `PurchaseOrder\Actions\ReceivePurchaseOrder` sets these, by constructing
+         * this DTO directly, the same treatment {@see StockArrivalData::$purchaseOrderId} gets.
+         */
+        public ?string $unitCost = null,
+        public ?string $totalCost = null,
     ) {}
 
     /**

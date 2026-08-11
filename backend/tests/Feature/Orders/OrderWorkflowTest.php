@@ -10,6 +10,8 @@ use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\Warehouse;
+use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
@@ -83,12 +85,15 @@ class OrderWorkflowTest extends TestCase
             array_filter([
                 'status' => $to->value,
                 'reason' => $reason,
-                // Sending a parcel out names the carrier, and every test that dispatches would
-                // otherwise be a test about that rather than about what it is checking. The
-                // rule itself is pinned by its own test in OrderTransitionFieldsTest.
-                'fields' => $to->isDispatch() && ! $order->fulfilment_type->isOfficePickup()
-                    ? ['shipping_company_id' => $this->carrier()->id]
-                    : null,
+                // Sending a parcel out names the carrier, and entering `printing` names the
+                // warehouse stock leaves — every test that does either would otherwise be a test
+                // about that rather than about what it is checking. Both rules are pinned by
+                // their own tests, in OrderTransitionFieldsTest and below.
+                'fields' => match (true) {
+                    $to->isDispatch() && ! $order->fulfilment_type->isOfficePickup() => ['shipping_company_id' => $this->carrier()->id],
+                    $to === OrderStatus::Printing => ['warehouse_id' => $this->warehouse()->id],
+                    default => null,
+                },
             ]),
         );
     }
@@ -97,6 +102,12 @@ class OrderWorkflowTest extends TestCase
     private function carrier(): ShippingCompany
     {
         return ShippingCompany::query()->firstOr(fn () => ShippingCompany::factory()->create());
+    }
+
+    /** One warehouse, made once and reused, so a fixture is never the subject of the test. */
+    private function warehouse(): Warehouse
+    {
+        return Warehouse::query()->firstOr(fn () => Warehouse::factory()->create());
     }
 
     // ───────────────────────────── moving an order ─────────────────────────────
@@ -521,6 +532,12 @@ class OrderWorkflowTest extends TestCase
         // Arrange — a shortage says what is short, so the move carries a line's own field.
         $order = Order::factory()->create();
         $item = OrderItem::factory()->for($order)->create(['quantity' => '100']);
+        // Enough stock for entering `printing` to actually deduct it — the same warehouse
+        // move() will name.
+        WarehouseStock::factory()->quantity('1000')->create([
+            'warehouse_id' => $this->warehouse()->id,
+            'product_variant_id' => $item->product_variant_id,
+        ]);
         $headers = $this->foreman();
         $this->move($headers, $order, OrderStatus::Printing)->assertOk();
 
@@ -866,5 +883,156 @@ class OrderWorkflowTest extends TestCase
         // Assert — scoped bindings make this a 404 by construction, not by a check somebody
         // has to remember to write.
         $response->assertNotFound();
+    }
+
+    // ───────────────────────── stock leaves the warehouse, once ─────────────────────────
+
+    private function stockOf(Warehouse $warehouse, int $productVariantId): string
+    {
+        $stock = WarehouseStock::query()
+            ->where('warehouse_id', $warehouse->id)
+            ->where('product_variant_id', $productVariantId)
+            ->first();
+
+        return (string) ($stock?->quantity ?? '0.000');
+    }
+
+    public function test_entering_printing_deducts_every_lines_quantity_with_no_warehouse_quantity_entered(): void
+    {
+        // Arrange
+        $order = Order::factory()->create();
+        $item = OrderItem::factory()->for($order)->create(['quantity' => '40']);
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('100')->create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $item->product_variant_id,
+        ]);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ]);
+
+        // Assert — sales unit and warehouse unit agree, so the ordered quantity is deducted as-is
+        $response->assertOk();
+        $this->assertSame('60.000', $this->stockOf($warehouse, $item->product_variant_id));
+        $this->assertDatabaseHas('stock_movements', [
+            'product_variant_id' => $item->product_variant_id,
+            'from_warehouse_id' => $warehouse->id,
+            'movement_type' => 'order_fulfillment',
+            'reference_id' => $order->id,
+            'quantity' => '40.000',
+        ]);
+        $this->assertSame($warehouse->id, $order->fresh()->fulfillment_warehouse_id);
+        $this->assertNotNull($order->fresh()->stock_deducted_at);
+    }
+
+    public function test_entering_printing_uses_the_employees_entered_warehouse_quantity(): void
+    {
+        // Arrange — 40 bags sold, but they're weighed together on a scale, not counted piece by
+        // piece: the employee read 10 kg off the scale and typed that, not a per-piece factor.
+        $order = Order::factory()->create();
+        $item = OrderItem::factory()->for($order)->create([
+            'quantity' => '40',
+            'warehouse_quantity' => '10',
+        ]);
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('100')->create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $item->product_variant_id,
+        ]);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ]);
+
+        // Assert — the entered 10 kg is deducted directly, not derived from the quantity of 40
+        $response->assertOk();
+        $this->assertSame('90.000', $this->stockOf($warehouse, $item->product_variant_id));
+        $this->assertDatabaseHas('stock_movements', [
+            'product_variant_id' => $item->product_variant_id,
+            'from_warehouse_id' => $warehouse->id,
+            'quantity' => '10.000',
+        ]);
+    }
+
+    public function test_a_reprint_does_not_deduct_stock_a_second_time(): void
+    {
+        // Arrange — already printed once
+        $order = Order::factory()->create();
+        $item = OrderItem::factory()->for($order)->create(['quantity' => '40']);
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('100')->create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $item->product_variant_id,
+        ]);
+        $headers = $this->foreman();
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ])->assertOk();
+
+        // A shortage sends it back, then forward into printing again for a reprint
+        $order->refresh();
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Shortage->value,
+            'fields' => ["shortage_{$item->id}" => 5],
+        ])->assertOk();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+        ]);
+
+        // Assert — still only the first deduction
+        $response->assertOk();
+        $this->assertSame('60.000', $this->stockOf($warehouse, $item->product_variant_id));
+        $this->assertDatabaseCount('stock_movements', 1);
+    }
+
+    public function test_insufficient_stock_refuses_the_whole_transition(): void
+    {
+        // Arrange — only 5 on the shelf, the order wants 40
+        $order = Order::factory()->create();
+        $item = OrderItem::factory()->for($order)->create(['quantity' => '40']);
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('5')->create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $item->product_variant_id,
+        ]);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ]);
+
+        // Assert — nothing here landed: not the movement, not the balance, not the status
+        $response->assertStatus(422);
+        $this->assertSame('5.000', $this->stockOf($warehouse, $item->product_variant_id));
+        $this->assertDatabaseCount('stock_movements', 0);
+        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+        $this->assertNull($order->fresh()->stock_deducted_at);
+    }
+
+    public function test_entering_printing_without_a_warehouse_is_refused(): void
+    {
+        // Arrange
+        $order = Order::factory()->create();
+        $headers = $this->foreman();
+
+        // Act — the first entry into printing, with no warehouse named
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+        ]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('fields.warehouse_id');
     }
 }

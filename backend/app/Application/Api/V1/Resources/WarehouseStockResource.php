@@ -36,6 +36,10 @@ class WarehouseStockResource extends JsonResource
             // clients would each get subtly wrong.
             'is_low_stock' => $this->isLowStock(),
 
+            // A snapshot taken when this balance was first created — see ApplyStockChange::increase().
+            'unit' => $this->unit->value,
+            'unit_label' => $this->unit->label(),
+
             // Which size this is, and what it belongs to — a storekeeper reads "كيس شحن · 25*35",
             // not an id. Flattened rather than nested because the variant is only ever met
             // through a balance line here, and a client should not have to walk two levels for
