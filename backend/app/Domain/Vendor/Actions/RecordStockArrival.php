@@ -52,6 +52,11 @@ final class RecordStockArrival
                     // Ties the ledger entry back to the document that caused it — the slot the
                     // stock_movements migration set aside for exactly this.
                     'reference_id' => $arrival->id,
+                    // Null for a plain, unplanned arrival — the same nullability
+                    // StockArrivalItemData::$unitCost already has, and for the same reason the
+                    // cost layer this opens falls back to "unknown" rather than the arrival being
+                    // refused; see ApplyStockChange::increase().
+                    'unit_cost' => $item->unitCost,
                 ], $data->receivedBy));
 
                 $arrivalItem = new StockArrivalItem(['quantity' => $item->quantity]);

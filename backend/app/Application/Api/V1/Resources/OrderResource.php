@@ -104,6 +104,12 @@ class OrderResource extends JsonResource
             'discount' => (string) $this->discount,
             'grand_total' => (string) $this->grand_total,
 
+            // The cost side, null until the order has reached printing — see the order_items
+            // migration and DeductOrderStock/ApplyManufacturingRates. `gross_profit` is computed
+            // here from the two cached figures beside it, never stored itself.
+            'total_cogs' => $this->total_cogs === null ? null : (string) $this->total_cogs,
+            'gross_profit' => $this->grossProfit(),
+
             // **The three numbers a screen puts side by side**, all three computed here. A
             // client subtracting `grand_total - paid_amount` itself would be a second answer to
             // one question, and its answer is the one made of doubles.

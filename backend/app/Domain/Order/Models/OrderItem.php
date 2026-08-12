@@ -8,6 +8,7 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Order\Actions\DeductOrderStock;
 use Database\Factories\OrderItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -85,5 +86,34 @@ class OrderItem extends Model
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+
+    /**
+     * The ledger row this line's own stock deduction produced. Null until the line reaches
+     * printing; read back by `ReverseOrderStockDeduction` to credit the exact cost layers it
+     * drew from if the order is later cancelled.
+     *
+     * @return BelongsTo<StockMovement, $this>
+     */
+    public function fulfillmentStockMovement(): BelongsTo
+    {
+        return $this->belongsTo(StockMovement::class);
+    }
+
+    /**
+     * What this line actually produced, physically — the same number {@see DeductOrderStock}
+     * takes out of the warehouse.
+     *
+     * **The one basis every production-side cost is computed against.** Material cost is a FIFO
+     * draw of exactly this quantity; manufacturing rates (see `ApplyManufacturingRates`) are
+     * applied against it too — never against `quantity` directly when `warehouse_quantity` is
+     * set, or a line's `cogs` would sum two costs computed on different physical amounts for the
+     * same line.
+     */
+    public function producedQuantity(): string
+    {
+        return $this->warehouse_quantity === null
+            ? (string) $this->quantity
+            : (string) $this->warehouse_quantity;
     }
 }

@@ -44,6 +44,14 @@ class RecordAdjustmentRequest extends FormRequest
 
             'quantity' => ['required', 'numeric', 'gt:0', 'max:999999999.999'],
 
+            // Required exactly when the count found *more* than the book said — that is stock
+            // opening a brand-new cost layer, and unlike an arrival (which may genuinely have no
+            // recorded price yet) an adjustment has no natural cost signal of its own to fall back
+            // on. A silent zero here would understate the cost of goods sold the first time this
+            // stock is drawn down, with nothing in the record to explain why. Absent and ignored
+            // on a Decrease, which only ever consumes layers that already exist.
+            'unit_cost' => ['required_if:direction,increase', 'numeric', 'gte:0', 'max:999999999.999'],
+
             // **Required here alone.** The other three movements explain themselves — stock
             // arrived, moved, or went out on an order. An adjustment says the records were
             // wrong and offers no reason of its own, so the reason is the operation: breakage,
@@ -69,6 +77,10 @@ class RecordAdjustmentRequest extends FormRequest
             'quantity.numeric' => 'الكمية يجب أن تكون رقماً',
             'quantity.gt' => 'الكمية يجب أن تكون أكبر من صفر',
             'quantity.max' => 'الكمية أكبر من الحد المسموح',
+            'unit_cost.required_if' => 'تكلفة الوحدة مطلوبة عند تسجيل زيادة',
+            'unit_cost.numeric' => 'تكلفة الوحدة يجب أن تكون رقماً',
+            'unit_cost.gte' => 'تكلفة الوحدة يجب ألا تكون سالبة',
+            'unit_cost.max' => 'تكلفة الوحدة أكبر من الحد المسموح',
             'notes.required' => 'سبب التسوية مطلوب',
             'notes.min' => 'سبب التسوية قصير جداً',
             'notes.max' => 'سبب التسوية طويل جداً',
@@ -85,6 +97,7 @@ class RecordAdjustmentRequest extends FormRequest
             'warehouse_id' => 'المخزن',
             'direction' => 'اتجاه التسوية',
             'quantity' => 'الكمية',
+            'unit_cost' => 'تكلفة الوحدة',
             'notes' => 'سبب التسوية',
         ];
     }

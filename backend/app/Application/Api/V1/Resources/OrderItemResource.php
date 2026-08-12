@@ -49,6 +49,14 @@ class OrderItemResource extends JsonResource
             // Null unless the employee said the sales unit and the warehouse unit differ — see
             // the class docblock on OrderItem.
             'warehouse_quantity' => $this->warehouse_quantity === null ? null : (string) $this->warehouse_quantity,
+
+            // What this line cost to produce, on the accrual side that mirrors `line_total` on
+            // the revenue side — every one of the four null until the line has actually reached
+            // printing. See DeductOrderStock and ApplyManufacturingRates.
+            'material_cost' => $this->material_cost === null ? null : (string) $this->material_cost,
+            'labor_cost' => $this->labor_cost === null ? null : (string) $this->labor_cost,
+            'overhead_cost' => $this->overhead_cost === null ? null : (string) $this->overhead_cost,
+            'cogs' => $this->cogs === null ? null : (string) $this->cogs,
         ];
     }
 }

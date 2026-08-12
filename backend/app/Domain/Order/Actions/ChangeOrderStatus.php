@@ -39,6 +39,13 @@ final class ChangeOrderStatus
         // The first real link to Inventory — see DeductOrderStock's own docblock for why it is
         // its own class rather than inlined here.
         private readonly DeductOrderStock $deductStock,
+        // Costs labour, machine runtime and overhead the same moment stock leaves the warehouse
+        // — see its own docblock for why it shares DeductOrderStock's guard.
+        private readonly ApplyManufacturingRates $applyManufacturingRates,
+        private readonly RecalculateOrderCogs $recalculateCogs,
+        // Undoes both of the above when a cancellation follows a deduction — see its own
+        // docblock.
+        private readonly ReverseOrderStockDeduction $reverseStockDeduction,
     ) {}
 
     /**
@@ -80,6 +87,11 @@ final class ChangeOrderStatus
             // reprint goes `ready`/`shortage` back to `printing`), and stock may leave the
             // warehouse exactly once per order — see DeductOrderStock.
             $deductStock = $target === OrderStatus::Printing && $order->stock_deducted_at === null;
+
+            // The mirror image: a cancellation only has anything to undo if stock genuinely left
+            // — `stock_deducted_at` is never cleared by a reversal, so this reads the same fact
+            // `deductStock` above already relies on, not a second copy of it.
+            $reverseStock = $target === OrderStatus::Cancelled && $order->stock_deducted_at !== null;
 
             $attributes = ['status' => $target];
 
@@ -146,6 +158,11 @@ final class ChangeOrderStatus
 
             if ($deductStock && isset($fields['warehouse_id'])) {
                 $this->deductStockForOrder($order, (int) $fields['warehouse_id'], $actor);
+                $this->costProductionForOrder($order, $actor);
+            }
+
+            if ($reverseStock) {
+                $this->reverseStockForOrder($order, $actor);
             }
 
             ($this->record)($order, $from, $target, $reason, $actor);
@@ -245,6 +262,35 @@ final class ChangeOrderStatus
         }
 
         ($this->deductStock)($order->loadMissing('items'), $warehouseId, (int) $actor->getKey());
+    }
+
+    /**
+     * Standard-costs the labour, machine runtime and overhead behind whatever
+     * {@see deductStockForOrder} just took off the shelf, then rolls both into the order's own
+     * `total_cogs`.
+     *
+     * `$actor` is never null here: this only ever runs immediately after `deductStockForOrder`,
+     * which already refused a null one.
+     */
+    private function costProductionForOrder(Order $order, User $actor): void
+    {
+        ($this->applyManufacturingRates)($order->loadMissing('items'), (int) $actor->getKey());
+        ($this->recalculateCogs)($order);
+    }
+
+    /**
+     * Hands off to {@see ReverseOrderStockDeduction} with the order's lines loaded — the same
+     * eager-loading reasoning `deductStockForOrder()` already carries.
+     *
+     * @throws FulfillmentRequiresAnActor
+     */
+    private function reverseStockForOrder(Order $order, ?User $actor): void
+    {
+        if ($actor === null) {
+            throw FulfillmentRequiresAnActor::make();
+        }
+
+        ($this->reverseStockDeduction)($order->loadMissing('items'), (int) $actor->getKey());
     }
 
     /**
