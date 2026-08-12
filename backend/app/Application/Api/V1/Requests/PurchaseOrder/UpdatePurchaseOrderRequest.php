@@ -54,6 +54,8 @@ class UpdatePurchaseOrderRequest extends StorePurchaseOrderRequest
             ],
 
             'items.*.quantity_ordered' => ['required', 'numeric', 'gt:0', 'max:999999999.999'],
+
+            'items.*.unit_cost' => ['required', 'numeric', 'gte:0', 'max:999999999.999'],
         ];
     }
 
@@ -72,6 +74,7 @@ class UpdatePurchaseOrderRequest extends StorePurchaseOrderRequest
             'items.*.id' => 'معرف البند',
             'items.*.product_variant_id' => 'المقاس',
             'items.*.quantity_ordered' => 'الكمية المطلوبة',
+            'items.*.unit_cost' => 'تكلفة الوحدة',
         ];
     }
 }

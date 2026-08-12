@@ -58,6 +58,12 @@ final class RecordStockArrival
                 $arrivalItem->stock_arrival_id = $arrival->id;
                 $arrivalItem->product_variant_id = $item->productVariantId;
                 $arrivalItem->stock_movement_id = $movement->id;
+                // Not fillable: null for a plain arrival, and set only when this DTO was built by
+                // ReceivePurchaseOrder — see the note on StockArrivalItemData::$unitCost.
+                $arrivalItem->forceFill([
+                    'unit_cost' => $item->unitCost,
+                    'total_cost' => $item->totalCost,
+                ]);
                 $arrivalItem->save();
             }
 

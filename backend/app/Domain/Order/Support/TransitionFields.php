@@ -38,6 +38,22 @@ final class TransitionFields
 
         $fields = [];
 
+        // Where the stock this order consumes comes out of, asked exactly once per order — see
+        // {@see \App\Domain\Order\Actions\DeductOrderStock}. `printing` is re-enterable (a
+        // reprint goes `ready`/`shortage` back to `printing`), and a reprint that has already
+        // taken stock out of a warehouse is not asked to name one again — nothing here would do
+        // anything with a second answer.
+        if ($target === OrderStatus::Printing) {
+            $fields[] = TransitionField::warehouse(
+                key: 'warehouse_id',
+                label: 'المخزن',
+                required: $order->stock_deducted_at === null,
+                hint: $order->stock_deducted_at === null
+                    ? 'يُخصم منه ما تستهلكه هذه الطلبية من المخزون'
+                    : 'خُصم المخزون بالفعل من هذه الطلبية',
+            );
+        }
+
         // **A move carries artwork when the order stands in a status that accepts it, on one
         // side of the move or the other.** Two statuses do — «جديدة» and «قيد التصميم», see
         // {@see Order::designsAreEditable()} — and {@see ChangeOrderStatus} attaches while the

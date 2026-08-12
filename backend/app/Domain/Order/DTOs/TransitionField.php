@@ -121,6 +121,26 @@ final class TransitionField
     }
 
     /**
+     * A warehouse, chosen from the ones the business maintains.
+     *
+     * No options travel with it — see {@see TransitionFieldType::Warehouse}.
+     */
+    public static function warehouse(
+        string $key,
+        string $label,
+        bool $required = false,
+        ?string $hint = null,
+    ): self {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::Warehouse,
+            label: $label,
+            required: $required,
+            hint: $hint,
+        );
+    }
+
+    /**
      * What the app renders.
      *
      * Every key is always present, `null` included: a client that has to distinguish "absent"
@@ -184,6 +204,16 @@ final class TransitionField
                     Rule::exists('shipping_companies', 'id')->withoutTrashed(),
                 ],
             ],
+
+            // whereNull('deleted_at'), the same exists-rule purchase orders already use for a
+            // warehouse: a deleted one may not be chosen for a new deduction.
+            TransitionFieldType::Warehouse => [
+                "fields.{$this->key}" => [
+                    $presence,
+                    'integer',
+                    Rule::exists('warehouses', 'id')->whereNull('deleted_at'),
+                ],
+            ],
         };
     }
 
@@ -208,6 +238,10 @@ final class TransitionField
             TransitionFieldType::ShippingCompany => [
                 "fields.{$this->key}.required" => "{$this->label} مطلوبة",
                 "fields.{$this->key}.exists" => 'شركة التوصيل المختارة غير موجودة',
+            ],
+            TransitionFieldType::Warehouse => [
+                "fields.{$this->key}.required" => "{$this->label} مطلوب",
+                "fields.{$this->key}.exists" => 'المخزن المختار غير موجود',
             ],
         };
     }

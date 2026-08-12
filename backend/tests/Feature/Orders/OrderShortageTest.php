@@ -6,6 +6,8 @@ namespace Tests\Feature\Orders;
 
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\Warehouse;
+use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
@@ -87,6 +89,25 @@ class OrderShortageTest extends TestCase
         app(RecalculateOrderTotals::class)($order->refresh());
 
         return [$order->refresh(), $item];
+    }
+
+    /**
+     * A warehouse holding enough of the line's variant to start the run.
+     *
+     * Leaving «نواقص» for the press is a *first* entry into printing — the shortage was found
+     * before any work began — so the move asks where the stock comes out of, and these tests
+     * have to answer it to reach the arithmetic they are actually about.
+     */
+    private function stockedWarehouse(OrderItem $item): Warehouse
+    {
+        $warehouse = Warehouse::factory()->create();
+
+        WarehouseStock::factory()->quantity('1000')->create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $item->product_variant_id,
+        ]);
+
+        return $warehouse;
     }
 
     private function setShortages(array $headers, Order $order, array $shortages): TestResponse
@@ -273,7 +294,10 @@ class OrderShortageTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Printing->value,
-            'fields' => ["received_{$item->id}" => '100'],
+            'fields' => [
+                "received_{$item->id}" => '100',
+                'warehouse_id' => $this->stockedWarehouse($item)->id,
+            ],
         ]);
 
         // Assert — the move and the money in one transaction.
@@ -293,7 +317,10 @@ class OrderShortageTest extends TestCase
         // Act — sixty of the hundred came in.
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Printing->value,
-            'fields' => ["received_{$item->id}" => '60'],
+            'fields' => [
+                "received_{$item->id}" => '60',
+                'warehouse_id' => $this->stockedWarehouse($item)->id,
+            ],
         ])->assertOk();
 
         // Assert — forty still missing, and the invoice sits between the two: 260 × 1.550.
@@ -313,7 +340,10 @@ class OrderShortageTest extends TestCase
         // is not coming.
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Printing->value,
-            'fields' => ["received_{$item->id}" => '0'],
+            'fields' => [
+                "received_{$item->id}" => '0',
+                'warehouse_id' => $this->stockedWarehouse($item)->id,
+            ],
         ])->assertOk();
 
         // Assert

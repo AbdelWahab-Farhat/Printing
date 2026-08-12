@@ -7,6 +7,7 @@ namespace App\Domain\Order\Actions;
 use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\ShortageNeedsAQuantity;
 use App\Domain\Order\Exceptions\TransitionNotAllowed;
@@ -36,6 +37,9 @@ final class ChangeOrderStatus
         // Through the module's front door, never `ShippingCompany::query()` — the same seam
         // every other cross-context read here goes through.
         private readonly DeliveryService $delivery,
+        // The first real link to Inventory — see DeductOrderStock's own docblock for why it is
+        // its own class rather than inlined here.
+        private readonly DeductOrderStock $deductStock,
     ) {}
 
     /**
@@ -44,6 +48,7 @@ final class ChangeOrderStatus
      * @throws OrderIsClosed
      * @throws TransitionNotAllowed
      * @throws TransitionRequiresReason
+     * @throws FulfillmentRequiresAnActor
      */
     public function __invoke(
         Order $order,
@@ -71,6 +76,11 @@ final class ChangeOrderStatus
         }
 
         return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields): Order {
+            // Decided before anything below touches the row: `printing` is re-enterable (a
+            // reprint goes `ready`/`shortage` back to `printing`), and stock may leave the
+            // warehouse exactly once per order — see DeductOrderStock.
+            $deductStock = $target === OrderStatus::Printing && $order->stock_deducted_at === null;
+
             $attributes = ['status' => $target];
 
             if ($column = $target->timestampColumn()) {
@@ -109,6 +119,16 @@ final class ChangeOrderStatus
                     : $collected;
             }
 
+            // Stamped here so it lands in the same save as the status change — trusted the same
+            // way `shipping_company_id` is trusted on `OutForDelivery`: TransitionFields already
+            // required this field for exactly this case, so a caller that skipped that layer
+            // (a console command, an importer) simply does not get a deduction, rather than the
+            // domain re-deriving what the request already settled.
+            if ($deductStock && isset($fields['warehouse_id'])) {
+                $attributes['stock_deducted_at'] = now();
+                $attributes['fulfillment_warehouse_id'] = (int) $fields['warehouse_id'];
+            }
+
             // **The artwork is attached while the order stands in the status that accepts it.**
             // Only «قيد التصميم» does — see `designsAreEditable()` — and a move carrying artwork
             // is either arriving there or leaving it, so which side of the status write the
@@ -138,6 +158,10 @@ final class ChangeOrderStatus
             $this->recordShortages($order, $from, $target, $fields);
 
             $this->guardShortage($order, $target);
+
+            if ($deductStock && isset($fields['warehouse_id'])) {
+                $this->deductStockForOrder($order, (int) $fields['warehouse_id'], $actor);
+            }
 
             ($this->record)($order, $from, $target, $reason, $actor);
 
@@ -267,5 +291,22 @@ final class ChangeOrderStatus
         if (! $recorded) {
             throw ShortageNeedsAQuantity::make();
         }
+    }
+
+    /**
+     * Hands off to {@see DeductOrderStock} with the order's lines loaded — strict-mode lazy
+     * loading is on outside production, so `items` has to be fetched explicitly here rather than
+     * left for `DeductOrderStock` to touch cold, the same reason {@see recordShortages()} never
+     * runs for a target that does not need the relation.
+     *
+     * @throws FulfillmentRequiresAnActor
+     */
+    private function deductStockForOrder(Order $order, int $warehouseId, ?User $actor): void
+    {
+        if ($actor === null) {
+            throw FulfillmentRequiresAnActor::make();
+        }
+
+        ($this->deductStock)($order->loadMissing('items'), $warehouseId, (int) $actor->getKey());
     }
 }

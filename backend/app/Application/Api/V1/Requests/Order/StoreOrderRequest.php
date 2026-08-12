@@ -67,6 +67,11 @@ class StoreOrderRequest extends FormRequest
             'items.*.unit_price' => ['nullable', 'numeric', 'min:0', 'max:9999999.999'],
             'items.*.notes' => ['nullable', 'string', 'max:500'],
             'items.*.sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
+
+            // Only when the sales unit and the warehouse unit genuinely differ — see the
+            // docblock on OrderItem::warehouse_quantity. Left null, DeductOrderStock deducts
+            // `quantity` unchanged.
+            'items.*.warehouse_quantity' => ['nullable', 'numeric', 'gt:0', 'max:999999999'],
         ];
     }
 
@@ -111,6 +116,7 @@ class StoreOrderRequest extends FormRequest
             'design_fee' => 'سعر التصميم',
             'discount' => 'الخصم',
             'items' => 'بنود الطلبية',
+            'items.*.warehouse_quantity' => 'الكمية المخصومة من المخزن',
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
@@ -25,6 +26,9 @@ class PurchaseOrderItemFactory extends Factory
             'product_variant_id' => ProductVariant::factory(),
             'quantity_ordered' => '10.000',
             'quantity_received' => '0.000',
+            'unit_cost' => '5.000',
+            'total_cost' => '50.00',
+            'unit' => PricingUnit::Piece,
         ];
     }
 

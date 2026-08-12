@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
@@ -32,12 +33,18 @@ class WarehouseStockFactory extends Factory
             'product_variant_id' => ProductVariant::factory(),
             'quantity' => '100.000',
             'low_stock_threshold' => null,
+            'unit' => PricingUnit::Piece,
         ];
     }
 
     public function quantity(string $quantity): static
     {
         return $this->state(fn () => ['quantity' => $quantity]);
+    }
+
+    public function unit(PricingUnit $unit): static
+    {
+        return $this->state(fn () => ['unit' => $unit]);
     }
 
     /** A size that was here and has all been used up — the line stays, at zero. */

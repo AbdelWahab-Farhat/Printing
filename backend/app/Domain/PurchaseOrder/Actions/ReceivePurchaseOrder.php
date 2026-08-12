@@ -13,6 +13,7 @@ use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderNotReceivable;
 use App\Domain\PurchaseOrder\Exceptions\ReceivedQuantityExceedsOrdered;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
+use App\Domain\PurchaseOrder\Support\Money;
 use App\Domain\Vendor\DTOs\StockArrivalData;
 use App\Domain\Vendor\DTOs\StockArrivalItemData;
 use App\Domain\Vendor\Models\StockArrival;
@@ -31,6 +32,11 @@ use Illuminate\Support\Facades\DB;
  * happens here is layered strictly on top, in the same transaction: a line's
  * `quantity_received` climbs by what this shipment carried, and the order's status is
  * recomputed from the result.
+ *
+ * Each line's `unit_cost` also travels into the {@see StockArrivalItemData} built here — priced
+ * against what *this* shipment delivered, which can be less than the order line's own
+ * `total_cost` on a partial receipt — so the vendor module still never decides a cost, only
+ * records the one this module already agreed to.
  *
  * @throws PurchaseOrderNotReceivable
  * @throws PurchaseOrderHasNoWarehouse
@@ -67,10 +73,22 @@ final class ReceivePurchaseOrder
                 warehouseId: $order->warehouse_id,
                 receivedBy: $data->receivedBy,
                 items: array_map(
-                    fn (ReceivePurchaseOrderItemData $line) => new StockArrivalItemData(
-                        productVariantId: $line->productVariantId,
-                        quantity: $line->quantity,
-                    ),
+                    function (ReceivePurchaseOrderItemData $line) use ($items): StockArrivalItemData {
+                        /** @var PurchaseOrderItem $orderedLine */
+                        $orderedLine = $items->get($line->productVariantId);
+                        $unitCost = $orderedLine->unit_cost === null ? null : (string) $orderedLine->unit_cost;
+
+                        return new StockArrivalItemData(
+                            productVariantId: $line->productVariantId,
+                            quantity: $line->quantity,
+                            unitCost: $unitCost,
+                            // Priced against what *this* shipment delivered, not the order line's
+                            // own total — a partial receipt costs less than the whole line does.
+                            totalCost: $unitCost === null
+                                ? null
+                                : Money::round(bcmul($unitCost, $line->quantity, 6)),
+                        );
+                    },
                     $data->items,
                 ),
                 invoiceNumber: $data->invoiceNumber,

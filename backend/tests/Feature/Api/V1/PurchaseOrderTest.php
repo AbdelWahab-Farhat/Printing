@@ -127,7 +127,7 @@ class PurchaseOrderTest extends TestCase
             'expected_date' => now()->addWeek()->toDateString(),
             'notes' => 'دفعة أولى',
             'items' => [
-                ['product_variant_id' => $variant->id, 'quantity_ordered' => 10],
+                ['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'unit_cost' => 5],
             ],
         ], $overrides);
     }
@@ -370,7 +370,7 @@ class PurchaseOrderTest extends TestCase
             'vendor_id' => 999999,
             'warehouse_id' => $warehouse->id,
             'order_date' => now()->toDateString(),
-            'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10]],
+            'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'unit_cost' => 5]],
         ]);
 
         // Assert
@@ -391,8 +391,8 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $variant,
             ['items' => [
-                ['product_variant_id' => $variant->id, 'quantity_ordered' => 5],
-                ['product_variant_id' => $variant->id, 'quantity_ordered' => 3],
+                ['product_variant_id' => $variant->id, 'quantity_ordered' => 5, 'unit_cost' => 5],
+                ['product_variant_id' => $variant->id, 'quantity_ordered' => 3, 'unit_cost' => 5],
             ]],
         ));
 
@@ -440,8 +440,8 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $kept,
             ['items' => [
-                ['product_variant_id' => $kept->id, 'quantity_ordered' => 10],
-                ['product_variant_id' => $removed->id, 'quantity_ordered' => 4],
+                ['product_variant_id' => $kept->id, 'quantity_ordered' => 10, 'unit_cost' => 5],
+                ['product_variant_id' => $removed->id, 'quantity_ordered' => 4, 'unit_cost' => 5],
             ]],
         ))->json('data');
 
@@ -451,8 +451,8 @@ class PurchaseOrderTest extends TestCase
         $response = $this->withHeaders($headers)->putJson(
             "/api/v1/purchase-orders/{$order['id']}",
             $this->payload($vendor, $warehouse, $kept, ['items' => [
-                ['id' => $keptItemId, 'product_variant_id' => $kept->id, 'quantity_ordered' => 20],
-                ['product_variant_id' => $added->id, 'quantity_ordered' => 7],
+                ['id' => $keptItemId, 'product_variant_id' => $kept->id, 'quantity_ordered' => 20, 'unit_cost' => 5],
+                ['product_variant_id' => $added->id, 'quantity_ordered' => 7, 'unit_cost' => 5],
             ]]),
         );
 
@@ -923,5 +923,139 @@ class PurchaseOrderTest extends TestCase
 
         // Assert — never accepted from the body, always the caller
         $response->assertCreated()->assertJsonPath('data.received_by', $user->id);
+    }
+
+    // ──────────────────────────────── cost & unit tracking ────────────────────────────────
+
+    public function test_creating_a_purchase_order_computes_line_and_order_totals(): void
+    {
+        // Arrange
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variantA = $this->variant();
+        $variantB = $this->variant();
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variantA,
+            ['items' => [
+                ['product_variant_id' => $variantA->id, 'quantity_ordered' => 10, 'unit_cost' => 2.5],
+                ['product_variant_id' => $variantB->id, 'quantity_ordered' => 4, 'unit_cost' => 3],
+            ]],
+        ));
+
+        // Assert — 10 * 2.5 = 25.00, 4 * 3 = 12.00, order total = 37.00
+        $response->assertCreated()
+            ->assertJsonPath('data.items.0.unit_cost', '2.500')
+            ->assertJsonPath('data.items.0.total_cost', '25.00')
+            ->assertJsonPath('data.items.0.unit', 'piece')
+            ->assertJsonPath('data.items.1.total_cost', '12.00')
+            ->assertJsonPath('data.total_amount', '37.00');
+
+        $this->assertDatabaseHas('purchase_order_items', [
+            'product_variant_id' => $variantA->id, 'unit_cost' => '2.500', 'total_cost' => '25.00', 'unit' => 'piece',
+        ]);
+    }
+
+    public function test_updating_a_purchase_order_recomputes_totals_after_syncing_items(): void
+    {
+        // Arrange
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $headers = $this->manager();
+        $order = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variant,
+            ['items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'unit_cost' => 2]]],
+        ))->json('data');
+
+        // Act — same line, different cost: 10 * 8 = 80.00
+        $response = $this->withHeaders($headers)->putJson(
+            "/api/v1/purchase-orders/{$order['id']}",
+            $this->payload($vendor, $warehouse, $variant, ['items' => [
+                ['id' => $order['items'][0]['id'], 'product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'unit_cost' => 8],
+            ]]),
+        );
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.total_amount', '80.00');
+        $this->assertDatabaseHas('purchase_orders', ['id' => $order['id'], 'total_amount' => '80.00']);
+    }
+
+    public function test_unit_cost_is_required_to_create_a_purchase_order(): void
+    {
+        // Arrange
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $headers = $this->manager();
+
+        // Act — items entry deliberately omits unit_cost
+        $response = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variant,
+            ['items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10]]],
+        ));
+
+        // Assert
+        $response->assertStatus(422)->assertJsonStructure(['errors' => ['items.0.unit_cost']]);
+    }
+
+    public function test_receiving_a_shipment_carries_cost_onto_the_stock_arrival_item(): void
+    {
+        // Arrange — order 10 at 4.00 each; only 6 arrive in this shipment
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $order = $this->withHeaders($this->manager())->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variant,
+            ['items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'unit_cost' => 4]]],
+        ))->json('data');
+        $headers = $this->inventoryManager();
+        $this->forgetAuth();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson(
+            "/api/v1/purchase-orders/{$order['id']}/arrivals",
+            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 6]]],
+        );
+
+        // Assert — priced against what actually arrived (6 * 4.00 = 24.00), not the order line's
+        // own total_cost (10 * 4.00 = 40.00)
+        $response->assertCreated()
+            ->assertJsonPath('data.items.0.unit_cost', '4.000')
+            ->assertJsonPath('data.items.0.total_cost', '24.00');
+
+        $this->assertDatabaseHas('stock_arrival_items', [
+            'product_variant_id' => $variant->id, 'unit_cost' => '4.000', 'total_cost' => '24.00',
+        ]);
+    }
+
+    public function test_a_plain_stock_arrival_never_carries_cost(): void
+    {
+        // Arrange
+        $warehouse = Warehouse::factory()->create();
+        $vendor = Vendor::factory()->create();
+        $variant = $this->variant();
+
+        // Act — the generic endpoint, not raised against a purchase order
+        $response = $this->withHeaders($this->inventoryManager())->postJson('/api/v1/stock-arrivals', [
+            'vendor_id' => $vendor->id,
+            'warehouse_id' => $warehouse->id,
+            'items' => [['product_variant_id' => $variant->id, 'quantity' => 10]],
+        ]);
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonPath('data.items.0.unit_cost', null)
+            ->assertJsonPath('data.items.0.total_cost', null);
     }
 }

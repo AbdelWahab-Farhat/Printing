@@ -253,7 +253,7 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertTrue($cancelled['fields'][0]['required']);
     }
 
-    public function test_printing_straight_from_new_still_carries_the_artwork(): void
+    public function test_printing_straight_from_new_carries_the_artwork_and_asks_for_a_warehouse(): void
     {
         // Arrange — still «جديدة»: the order never entered the design conversation, and does not
         // need to. The customer brought the file with them.
@@ -265,9 +265,14 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert — «جديدة» accepts a version, so the move that leaves it may carry one. This is
         // the whole short path: an agreed file goes on the order and the press starts, without
-        // a detour through a status naming work nobody did.
-        $this->assertSame(['design_ids', 'reason'], array_column($printing['fields'], 'key'));
-        $this->assertFalse($printing['fields'][0]['required']);
+        // a detour through a status naming work nobody did. And the same move is the one that
+        // empties a warehouse, so it names the warehouse too — required, because stock has never
+        // left one for this order yet.
+        $this->assertSame(['warehouse_id', 'design_ids', 'reason'], array_column($printing['fields'], 'key'));
+        $this->assertSame('warehouse', $printing['fields'][0]['type']);
+        $this->assertTrue($printing['fields'][0]['required']);
+        $this->assertFalse($printing['fields'][1]['required']);
+        $this->assertFalse($printing['fields'][2]['required']);
     }
 
     public function test_leaving_design_for_the_press_offers_the_artwork_one_last_time(): void
@@ -282,7 +287,25 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert — this is the move the finished artwork arrives with: «قيد التصميم» is the one
         // status that accepts a version, and this is the last moment the order stands in it.
-        $this->assertSame(['design_ids', 'reason'], array_column($printing['fields'], 'key'));
+        $this->assertSame(['warehouse_id', 'design_ids', 'reason'], array_column($printing['fields'], 'key'));
+        $this->assertFalse($printing['fields'][1]['required']);
+    }
+
+    public function test_a_reprint_entering_printing_again_is_not_asked_for_a_warehouse(): void
+    {
+        // Arrange — stock already left a warehouse for this order once; the run went back to the
+        // designer for a correction, which is the surviving way an order re-enters printing.
+        $order = Order::factory()->status(OrderStatus::Designing)->create([
+            'stock_deducted_at' => now(),
+        ]);
+        $headers = $this->foreman();
+
+        // Act — the correction path: designing back to printing for a reprint
+        $printing = $this->transition($this->show($headers, $order), OrderStatus::Printing);
+
+        // Assert — nothing here would do anything with a second warehouse, so it is offered but
+        // not demanded.
+        $this->assertSame(['warehouse_id', 'design_ids', 'reason'], array_column($printing['fields'], 'key'));
         $this->assertFalse($printing['fields'][0]['required']);
     }
 
@@ -699,10 +722,14 @@ class OrderTransitionFieldsTest extends TestCase
     public function test_the_artwork_is_attached_while_the_order_is_still_in_design(): void
     {
         // Arrange — the whole point of the waiting: the designer finished, and sends the order
-        // to the press with the file in the same hand.
+        // to the press with the file in the same hand. Stock already left a warehouse for this
+        // run, so the move is not asked for one and this test stays about the artwork.
         [$order, $customer] = $this->orderNeedingArtwork();
         $design = CustomerDesign::factory()->for($customer)->create();
-        $order->forceFill(['status' => OrderStatus::Designing])->save();
+        $order->forceFill([
+            'status' => OrderStatus::Designing,
+            'stock_deducted_at' => now(),
+        ])->save();
         $headers = $this->foreman();
 
         // Act
