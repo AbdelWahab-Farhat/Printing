@@ -15,13 +15,18 @@ final class ManufacturingCostRateListQuery
     public function __invoke(ManufacturingCostRateFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return ManufacturingCostRate::query()
-            ->with('product')
+            ->with(['product', 'productVariant'])
             ->when($filters->productId !== null, fn ($query) => $query->where('product_id', $filters->productId))
+            ->when(
+                $filters->productVariantId !== null,
+                fn ($query) => $query->where('product_variant_id', $filters->productVariantId),
+            )
             ->when($filters->costType !== null, fn ($query) => $query->where('cost_type', $filters->costType))
             ->when($filters->isActive !== null, fn ($query) => $query->where('is_active', $filters->isActive))
-            // The default rate for each type first — it is what applies to everything without
-            // its own row, so it is the one a reader most needs to find quickly.
-            ->orderByRaw('product_id IS NOT NULL')
+            // Most specific first — a size's own rate, then a product's, then the default — the
+            // same order ApplyManufacturingRates looks them up in, so the list reads as a
+            // priority list rather than an arbitrary one.
+            ->orderByRaw('CASE WHEN product_variant_id IS NOT NULL THEN 0 WHEN product_id IS NOT NULL THEN 1 ELSE 2 END')
             ->orderBy('cost_type')
             ->paginate($perPage);
     }

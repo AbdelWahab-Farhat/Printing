@@ -13,6 +13,7 @@ final class CreateManufacturingCostRate
     {
         return ManufacturingCostRate::create([
             'product_id' => $data->productId,
+            'product_variant_id' => $data->productVariantId,
             'cost_type' => $data->costType,
             'rate_per_unit' => $data->ratePerUnit,
             'is_active' => $data->isActive,

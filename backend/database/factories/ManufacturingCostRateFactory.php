@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Order\Enums\ManufacturingCostType;
 use App\Domain\Order\Models\ManufacturingCostRate;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -26,6 +27,7 @@ class ManufacturingCostRateFactory extends Factory
     {
         return [
             'product_id' => Product::factory(),
+            'product_variant_id' => null,
             'cost_type' => ManufacturingCostType::Labor,
             'rate_per_unit' => '5.000',
             'is_active' => true,
@@ -35,13 +37,19 @@ class ManufacturingCostRateFactory extends Factory
 
     public function forProduct(Product $product): static
     {
-        return $this->state(fn () => ['product_id' => $product->getKey()]);
+        return $this->state(fn () => ['product_id' => $product->getKey(), 'product_variant_id' => null]);
     }
 
-    /** The fallback rate for a cost type — applies when no product-specific row exists. */
+    /** Specific to one size — outranks a product-wide or default rate for the same cost type. */
+    public function forVariant(ProductVariant $variant): static
+    {
+        return $this->state(fn () => ['product_id' => null, 'product_variant_id' => $variant->getKey()]);
+    }
+
+    /** The fallback rate for a cost type — applies when neither tier above has a row. */
     public function default(): static
     {
-        return $this->state(fn () => ['product_id' => null]);
+        return $this->state(fn () => ['product_id' => null, 'product_variant_id' => null]);
     }
 
     public function type(ManufacturingCostType $type): static

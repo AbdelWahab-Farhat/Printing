@@ -20,6 +20,10 @@ use App\Domain\Order\Support\Money;
  * does not re-cost, exactly as it does not re-deduct material. See the plan's "known limitation"
  * note: extra labour or press time from a reprint is not captured automatically.
  *
+ * **Three tiers, tried in order: the line's own size, then its product, then the default.** A
+ * large reinforced bag and a small one of the same product can take genuinely different press
+ * time; a rate scoped only to the product could not tell them apart.
+ *
  * **A cost type with no applicable rate is skipped, never assumed to be zero.** A rate that was
  * simply never set up is a gap in the setup, not a business fact that this line cost nothing to
  * produce — inventing a zero would make that gap invisible in every report built on `cogs`.
@@ -47,7 +51,7 @@ final class ApplyManufacturingRates
 
     private function applyRate(Order $order, OrderItem $item, ManufacturingCostType $type, int $actorId): void
     {
-        $rate = $this->findRate($item->product_id, $type);
+        $rate = $this->findRate($item->product_variant_id, $item->product_id, $type);
 
         if ($rate === null) {
             return;
@@ -72,16 +76,19 @@ final class ApplyManufacturingRates
     }
 
     /**
-     * The product-specific rate if one exists; the default (no `product_id`) otherwise. Never a
-     * third answer — see the class docblock.
+     * The three-tier lookup: this exact size's own rate, then its product's, then the default
+     * with neither. Never a fourth answer — see the class docblock.
      */
-    private function findRate(int $productId, ManufacturingCostType $type): ?ManufacturingCostRate
+    private function findRate(int $productVariantId, int $productId, ManufacturingCostType $type): ?ManufacturingCostRate
     {
         return ManufacturingCostRate::query()
             ->where('cost_type', $type)
             ->where('is_active', true)
-            ->where(fn ($query) => $query->where('product_id', $productId)->orWhereNull('product_id'))
-            ->orderByRaw('product_id IS NULL')
+            ->where(fn ($query) => $query
+                ->where('product_variant_id', $productVariantId)
+                ->orWhere('product_id', $productId)
+                ->orWhere(fn ($default) => $default->whereNull('product_variant_id')->whereNull('product_id')))
+            ->orderByRaw('CASE WHEN product_variant_id IS NOT NULL THEN 0 WHEN product_id IS NOT NULL THEN 1 ELSE 2 END')
             ->first();
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\ManufacturingCostType;
@@ -175,6 +176,83 @@ class ManufacturingCostRateTest extends TestCase
 
         // Assert
         $response->assertCreated();
+    }
+
+    public function test_a_variant_specific_rate_can_be_created(): void
+    {
+        // Arrange
+        $variant = ProductVariant::factory()->create();
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/manufacturing-cost-rates', [
+            'product_variant_id' => $variant->id,
+            'cost_type' => 'labor',
+            'rate_per_unit' => 6,
+        ]);
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonPath('data.product', null)
+            ->assertJsonPath('data.product_variant.id', $variant->id);
+    }
+
+    public function test_only_one_rate_per_variant_and_cost_type_is_allowed(): void
+    {
+        // Arrange
+        $variant = ProductVariant::factory()->create();
+        ManufacturingCostRate::factory()->forVariant($variant)->type(ManufacturingCostType::Labor)->create();
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/manufacturing-cost-rates', [
+            'product_variant_id' => $variant->id,
+            'cost_type' => 'labor',
+            'rate_per_unit' => 9,
+        ]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('cost_type');
+    }
+
+    public function test_a_variant_specific_rate_coexists_with_its_products_own_rate(): void
+    {
+        // Arrange — the same product also carries a product-wide rate for the same cost type;
+        // the two are different tiers and do not collide.
+        $product = Product::factory()->create();
+        $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+        ManufacturingCostRate::factory()->forProduct($product)->type(ManufacturingCostType::Labor)->create();
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/manufacturing-cost-rates', [
+            'product_variant_id' => $variant->id,
+            'cost_type' => 'labor',
+            'rate_per_unit' => 9,
+        ]);
+
+        // Assert
+        $response->assertCreated();
+    }
+
+    public function test_naming_both_a_product_and_a_variant_is_refused(): void
+    {
+        // Arrange — ambiguous about which of the three tiers the row belongs to
+        $product = Product::factory()->create();
+        $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/manufacturing-cost-rates', [
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'cost_type' => 'labor',
+            'rate_per_unit' => 9,
+        ]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('product_variant_id');
+        $this->assertDatabaseCount('manufacturing_cost_rates', 0);
     }
 
     public function test_a_rate_can_be_updated(): void

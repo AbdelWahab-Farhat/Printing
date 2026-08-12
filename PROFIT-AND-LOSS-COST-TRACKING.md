@@ -103,18 +103,26 @@ real costed layer.
 ### Database
 
 **`manufacturing_cost_rates`** — admin-curated rate table, the same shape `business_fields`
-already is.
+already is. **Three tiers**, ranked by specificity: a rate for one exact size, a rate for a whole
+product, or the default with neither.
 
 | Column | Notes |
 |---|---|
-| `product_id` | Nullable — null is the **default/fallback** rate for a cost type |
+| `product_variant_id` | Nullable — set alone, this is a rate for **one exact size** |
+| `product_id` | Nullable — set alone, this is a rate for **every size of one product** |
 | `cost_type` | `string(20)` → `ManufacturingCostType` (`labor` \| `machine_runtime` \| `overhead` \| `scrap_loss`) |
 | `rate_per_unit` | `decimal(12,3)` |
 | `is_active` | |
 
-One rate per `(product_id, cost_type)`, and one default per `cost_type` — two partial unique
-indexes. No effective-date history: a changed rate only affects orders costed after the change;
-historical accuracy comes from the rate being **snapshotted** onto each entry it produces.
+**A row sets at most one of `product_variant_id`/`product_id`** — enforced by a `CHECK
+(product_variant_id IS NULL OR product_id IS NULL)`, not only by validation. Both null is the
+default. Three partial unique indexes — one per tier — each keyed on `cost_type`. (The
+product-tier and default-tier indexes predate `product_variant_id`; the default-tier one had to
+be **rebuilt** in the same migration that added the column, because its original `WHERE product_id
+IS NULL` was also — wrongly — true of every variant-specific row, which has no `product_id` of its
+own either. Caught by a failing test before it shipped, not after.) No effective-date history: a
+changed rate only affects orders costed after the change; historical accuracy comes from the rate
+being **snapshotted** onto each entry it produces.
 
 **`production_cost_entries`** — append-only cost ledger against an order/line, shaped exactly like
 `order_payments`.
@@ -143,8 +151,10 @@ row a line's own deduction produced, needed by order-cancellation reversal (§5)
 - **`ApplyManufacturingRates`** — runs inside `ChangeOrderStatus`'s transaction alongside
   `DeductOrderStock`, guarded by the same first-entry-into-`printing` condition (a reprint does
   not re-cost, exactly like it does not re-deduct material — see §6 for the manual path). For each
-  line, for each rate-driven cost type: looks up the product-specific rate, falling back to the
-  default, **skipping** (never inventing a zero) if neither exists.
+  line, for each rate-driven cost type: tries the line's own **size**, then its **product**, then
+  the **default** — one query, ordered by specificity — **skipping** (never inventing a zero) if
+  none of the three exists. A large reinforced bag and a small one of the same product can
+  genuinely take different press time; a rate scoped only to the product couldn't tell them apart.
 - **Quantity consistency**: `OrderItem::producedQuantity()` (`warehouse_quantity ?? quantity`) is
   the one basis both `DeductOrderStock`'s material draw and `ApplyManufacturingRates`' labour/
   overhead compute against — they were at risk of using two different physical quantities for the
@@ -162,12 +172,18 @@ New CRUD for the rate table, the same shape `BusinessFieldController` already is
 update/activate/delete/history, behind `manufacturing_cost_rates.view`/`.manage`:
 
 ```
-GET/POST     /manufacturing-cost-rates
+GET/POST     /manufacturing-cost-rates                     — filter: product_id, product_variant_id, cost_type, is_active
 GET/PUT      /manufacturing-cost-rates/{id}
 PATCH        /manufacturing-cost-rates/{id}/activation
 DELETE       /manufacturing-cost-rates/{id}   — no in-use guard; nothing references a rate by FK
 GET          /manufacturing-cost-rates/{id}/logs
 ```
+
+`POST`/`PUT` refuse (422) a payload naming both `product_id` and `product_variant_id` — the same
+rule the database's `CHECK` enforces underneath, caught earlier as a readable validation error via
+a `withValidator()` hook rather than a nullable field's own rule (which Laravel skips entirely
+once the field is empty — the same trap the uniqueness check next to it already had to work
+around).
 
 `OrderItemResource` gained `material_cost`, `labor_cost`, `overhead_cost`, `cogs`. `OrderResource`
 gained `total_cogs`, `gross_profit`.
@@ -333,7 +349,7 @@ backend/app/Application/Api/V1/
 ├── Resources/{ManufacturingCostRateResource,ProductionCostEntryResource}.php  ← new
 └── Resources/{OrderItemResource,OrderResource}.php          ← touched, +cost fields
 
-backend/database/migrations/2026_08_12_*.php  (8 files)
+backend/database/migrations/2026_08_12_*.php  (9 files)
 backend/database/factories/{StockBatch,StockBatchConsumption,ManufacturingCostRate,ProductionCostEntry}Factory.php  ← new
 backend/database/factories/WarehouseStockFactory.php         ← touched, auto-opens a zero-cost batch on creation
 backend/routes/api.php                                        ← touched, +manufacturing-cost-rates, +reports/profit-loss, +orders/{order}/items/{item}/scrap
@@ -346,11 +362,13 @@ backend/routes/api.php                                        ← touched, +manu
 - `tests/Feature/Inventory/StockBatchLedgerTest.php` — FIFO ordering across layers, zero-cost
   fallback on an uncosted arrival, the adjustment cost requirement, transfers spanning multiple
   layers, insufficient-stock rollback leaving batches untouched.
-- `tests/Feature/Api/V1/ManufacturingCostRateTest.php` — rate CRUD, the default-vs-product-specific
-  uniqueness pair, permission checks.
+- `tests/Feature/Api/V1/ManufacturingCostRateTest.php` — rate CRUD across all three tiers, the
+  three uniqueness pairs, naming both `product_id` and `product_variant_id` being refused,
+  permission checks.
 - `tests/Feature/Orders/ProductionCostTest.php` — material + labor + overhead landing on a line and
   the order together, a cost type with no rate being skipped not zeroed, product-specific rate
-  beating the default, a reprint not re-applying rates.
+  beating the default, **a variant-specific rate beating both its product and the default**, a
+  reprint not re-applying rates.
 - `tests/Feature/Orders/OrderCancellationReversalTest.php` — exact-batch credit-back (not
   averaged), production-cost entries reversed, the line's own cost columns left untouched.
 - `tests/Feature/Orders/ScrapLossTest.php` — stock drawn and FIFO-costed, the line's material cost
@@ -364,7 +382,7 @@ Existing fixtures updated: `StockLedgerTest.php` and `StockMovementTest.php` gai
 their increasing-adjustment cases; `WarehouseStockFactory` now opens a matching zero-cost batch
 whenever it creates a balance directly, which is what kept ~15 pre-existing tests (`OrderWorkflowTest`,
 `StockMovementTest`) passing once real batch consumption started running underneath them. Full
-suite (1042 tests) passes; Pint and `scramble:analyze` are both clean.
+suite (1047 tests) passes; Pint and `scramble:analyze` are both clean.
 
 ---
 

@@ -212,6 +212,40 @@ class ProductionCostTest extends TestCase
         $this->assertSame('20.00', (string) $item->refresh()->labor_cost);
     }
 
+    public function test_a_variant_specific_rate_wins_over_both_its_product_and_the_default(): void
+    {
+        // Arrange — all three tiers configured for the same cost type; the size's own rate
+        // must win over both.
+        $product = Product::factory()->create();
+        $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+        $warehouse = Warehouse::factory()->create();
+        $headers = $this->foreman();
+
+        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
+            'product_variant_id' => $variant->id,
+            'to_warehouse_id' => $warehouse->id,
+            'quantity' => 10,
+            'unit_cost' => 1,
+        ])->assertCreated();
+
+        ManufacturingCostRate::factory()->default()->type(ManufacturingCostType::Labor)->rate('9.000')->create();
+        ManufacturingCostRate::factory()->forProduct($product)->type(ManufacturingCostType::Labor)->rate('5.000')->create();
+        ManufacturingCostRate::factory()->forVariant($variant)->type(ManufacturingCostType::Labor)->rate('3.000')->create();
+
+        $order = Order::factory()->create();
+        $item = OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'quantity' => '10',
+        ]);
+
+        // Act
+        $this->enterPrinting($headers, $order, $warehouse);
+
+        // Assert — 10 @ 3, not 10 @ 5 and not 10 @ 9
+        $this->assertSame('30.00', (string) $item->refresh()->labor_cost);
+    }
+
     public function test_a_reprint_does_not_reapply_manufacturing_rates(): void
     {
         // Arrange — already printed once, with a labor rate in place

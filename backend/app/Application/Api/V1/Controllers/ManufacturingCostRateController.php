@@ -40,13 +40,13 @@ class ManufacturingCostRateController extends Controller
     /**
      * List manufacturing cost rates
      *
-     * The default rate for each cost type first, then by type. Filter with `product_id`,
-     * `cost_type` and `is_active`.
+     * The most specific rate first — a size's own, then a product's, then the default — then by
+     * cost type. Filter with `product_id`, `product_variant_id`, `cost_type` and `is_active`.
      */
     public function index(Request $request): JsonResponse
     {
         $filters = ManufacturingCostRateFilters::fromArray(
-            $request->only(['product_id', 'cost_type', 'is_active']),
+            $request->only(['product_id', 'product_variant_id', 'cost_type', 'is_active']),
         );
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
@@ -64,7 +64,7 @@ class ManufacturingCostRateController extends Controller
             ManufacturingCostRateData::fromArray($request->validated()),
         );
 
-        return $this->created(new ManufacturingCostRateResource($rate->load('product')), 'تم إضافة المعدل بنجاح');
+        return $this->created(new ManufacturingCostRateResource($rate->load(['product', 'productVariant'])), 'تم إضافة المعدل بنجاح');
     }
 
     /**
@@ -72,7 +72,7 @@ class ManufacturingCostRateController extends Controller
      */
     public function show(ManufacturingCostRate $manufacturingCostRate): JsonResponse
     {
-        return $this->success(new ManufacturingCostRateResource($manufacturingCostRate->load('product')));
+        return $this->success(new ManufacturingCostRateResource($manufacturingCostRate->load(['product', 'productVariant'])));
     }
 
     /**
@@ -90,7 +90,7 @@ class ManufacturingCostRateController extends Controller
             ManufacturingCostRateData::fromArray($request->validated()),
         );
 
-        return $this->success(new ManufacturingCostRateResource($updated->load('product')), 'تم تحديث المعدل بنجاح');
+        return $this->success(new ManufacturingCostRateResource($updated->load(['product', 'productVariant'])), 'تم تحديث المعدل بنجاح');
     }
 
     /**
@@ -102,7 +102,7 @@ class ManufacturingCostRateController extends Controller
         $updated = $this->orders->setManufacturingCostRateActive($manufacturingCostRate, $isActive);
 
         return $this->success(
-            new ManufacturingCostRateResource($updated->load('product')),
+            new ManufacturingCostRateResource($updated->load(['product', 'productVariant'])),
             $isActive ? 'تم تفعيل المعدل' : 'تم إيقاف المعدل',
         );
     }
