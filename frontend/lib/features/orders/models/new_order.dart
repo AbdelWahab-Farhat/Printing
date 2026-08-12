@@ -46,6 +46,13 @@ abstract class NewOrder with _$NewOrder {
     /// Only counted when [designSource] is `in_house`. Sent as a decimal string, never a number.
     @JsonKey(name: 'design_fee', includeIfNull: false) String? designFee,
 
+    /// The artwork, chosen from the customer's library — ids, never files. Attached inside the
+    /// same transaction that takes the order, so a design belonging to somebody else refuses
+    /// the order rather than leaving one behind without the file it was taken for.
+    ///
+    /// Omitted when empty: «بدون تصميم» sends no key at all.
+    @JsonKey(name: 'design_ids', includeIfNull: false) List<int>? designIds,
+
     /// Guarded by `orders.discount` on the server. The field is hidden in the app for staff
     /// without the grant; that is the suggestion, and the refusal is the rule.
     @JsonKey(includeIfNull: false) String? discount,

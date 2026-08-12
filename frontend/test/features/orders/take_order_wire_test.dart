@@ -126,6 +126,27 @@ void main() {
     expect(sent.containsKey('recipient_name'), isFalse);
     expect(sent.containsKey('discount'), isFalse);
     expect(sent.containsKey('design_fee'), isFalse);
+    expect(sent.containsKey('design_ids'), isFalse);
+  });
+
+  test('the artwork travels as a list of plain ids', () async {
+    // Arrange — the ids the clerk picked from the customer's library. They must survive
+    // `jsonEncode` as numbers in an array; the server attaches them inside the same transaction
+    // that takes the order, and numbers the versions in this order.
+    const withArtwork = NewOrder(
+      customerId: 3,
+      cityId: 1,
+      designSource: 'customer',
+      designIds: [12, 13],
+      items: [NewOrderItem(productId: 7, productVariantId: 12, quantity: '300', sortOrder: 0)],
+    );
+
+    // Act
+    await repository.create(withArtwork);
+
+    // Assert
+    final sent = jsonDecode(adapter.body!) as Map<String, dynamic>;
+    expect(sent['design_ids'], [12, 13]);
   });
 
   test('money and quantities travel as strings', () async {

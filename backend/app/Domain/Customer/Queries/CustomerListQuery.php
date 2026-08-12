@@ -23,7 +23,7 @@ final class CustomerListQuery
         return Customer::query()
             // Eager-loaded: the resource renders shops for every row, and each shop names its
             // trade — one query per customer otherwise, and one per shop after that.
-            ->with('shops.businessField')
+            ->with(Customer::SHOP_RELATIONS)
             ->when($filters->search !== null, function ($query) use ($filters) {
                 $term = '%'.$filters->search.'%';
 

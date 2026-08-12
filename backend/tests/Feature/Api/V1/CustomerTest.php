@@ -7,6 +7,8 @@ namespace Tests\Feature\Api\V1;
 use App\Domain\Customer\Models\BusinessField;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerShop;
+use App\Domain\Delivery\Models\City;
+use App\Domain\Delivery\Models\Region;
 use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
@@ -59,6 +61,18 @@ class CustomerTest extends TestCase
             'name' => 'مخبز النخيل',
             'phone' => '0912345678',
         ], $overrides);
+    }
+
+    /**
+     * A place on the delivery map, which every shop payload needs: a shop is recorded by where
+     * it is, and «where» is a row in that map rather than a pair of numbers.
+     *
+     * Created here rather than in a factory state so each test can name the city it is talking
+     * about — «طرابلس» reads better in an assertion than «مدينة 7».
+     */
+    private function city(string $name = 'طرابلس'): City
+    {
+        return City::factory()->create(['name' => $name]);
     }
 
     // ─────────────────────────── customer code ───────────────────────────
@@ -180,11 +194,13 @@ class CustomerTest extends TestCase
     public function test_create_accepts_shops_inline(): void
     {
         // Arrange
+        $tripoli = $this->city('طرابلس');
+        $benghazi = $this->city('بنغازي');
         $headers = $this->auth();
         $payload = $this->payload([
             'shops' => [
-                ['name' => 'فرع طرابلس', 'latitude' => 32.8872, 'longitude' => 13.1913, 'page_url' => 'https://facebook.com/branch1'],
-                ['name' => 'فرع بنغازي', 'latitude' => 32.1167, 'longitude' => 20.0686],
+                ['name' => 'فرع طرابلس', 'city_id' => $tripoli->id, 'page_url' => 'https://facebook.com/branch1'],
+                ['name' => 'فرع بنغازي', 'city_id' => $benghazi->id],
             ],
         ]);
 
@@ -195,8 +211,7 @@ class CustomerTest extends TestCase
         $response->assertCreated()
             ->assertJsonCount(2, 'data.shops')
             ->assertJsonPath('data.shops.0.name', 'فرع طرابلس')
-            ->assertJsonPath('data.shops.0.latitude', 32.8872)
-            ->assertJsonPath('data.shops.0.longitude', 13.1913)
+            ->assertJsonPath('data.shops.0.city.name', 'طرابلس')
             ->assertJsonPath('data.shops.0.page_url', 'https://facebook.com/branch1')
             // A shop without a page link stores null rather than an empty string.
             ->assertJsonPath('data.shops.1.page_url', null);
@@ -212,10 +227,11 @@ class CustomerTest extends TestCase
     public function test_coordinates_are_returned_as_numbers_not_strings(): void
     {
         // Arrange — a decimal column reads back as a string unless it is cast, and a map SDK
-        // needs numbers.
+        // needs numbers. The app no longer sends a pin, but the endpoint still takes one, so
+        // this stays: it is the contract the pin comes back through the day the map returns.
         $headers = $this->auth();
         $payload = $this->payload([
-            'shops' => [['name' => 'فرع', 'latitude' => 32.8872, 'longitude' => 13.1913]],
+            'shops' => [['name' => 'فرع', 'city_id' => $this->city()->id, 'latitude' => 32.8872, 'longitude' => 13.1913]],
         ]);
 
         // Act
@@ -233,7 +249,7 @@ class CustomerTest extends TestCase
         // Arrange — decimal(10,7) must not round a 7-place coordinate away.
         $headers = $this->auth();
         $payload = $this->payload([
-            'shops' => [['name' => 'فرع', 'latitude' => 32.8872123, 'longitude' => -13.1913456]],
+            'shops' => [['name' => 'فرع', 'city_id' => $this->city()->id, 'latitude' => 32.8872123, 'longitude' => -13.1913456]],
         ]);
 
         // Act
@@ -243,6 +259,160 @@ class CustomerTest extends TestCase
         $response->assertCreated()
             ->assertJsonPath('data.shops.0.latitude', 32.8872123)
             ->assertJsonPath('data.shops.0.longitude', -13.1913456);
+    }
+
+    // ─────────────────── مدينة المحل ومنطقته ───────────────────
+
+    public function test_a_shop_records_the_city_and_the_region_it_is_in(): void
+    {
+        // Arrange — the same delivery map an order is addressed from, so a shop and the order
+        // going to it speak about place in one vocabulary.
+        $tripoli = $this->city('طرابلس');
+        $soukAlJumaa = Region::factory()->create(['city_id' => $tripoli->id, 'name' => 'سوق الجمعة']);
+        $headers = $this->auth();
+        $payload = $this->payload([
+            'shops' => [[
+                'name' => 'محل الأناقة',
+                'city_id' => $tripoli->id,
+                'region_id' => $soukAlJumaa->id,
+            ]],
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $payload);
+
+        // Assert — the ids for a form to preselect, and the names so a screen never fetches the
+        // map to translate two numbers. The same bargain `business_field` already makes.
+        $response->assertCreated()
+            ->assertJsonPath('data.shops.0.city_id', $tripoli->id)
+            ->assertJsonPath('data.shops.0.city.name', 'طرابلس')
+            ->assertJsonPath('data.shops.0.region_id', $soukAlJumaa->id)
+            ->assertJsonPath('data.shops.0.region.name', 'سوق الجمعة');
+
+        $this->assertDatabaseHas('customer_shops', [
+            'name' => 'محل الأناقة',
+            'city_id' => $tripoli->id,
+            'region_id' => $soukAlJumaa->id,
+        ]);
+    }
+
+    public function test_a_shop_may_have_a_city_without_a_region(): void
+    {
+        // Arrange — most cities on the map have no neighbourhoods at all, and the clerk taking
+        // a customer over the phone often does not know the district yet. Neither may block a
+        // customer from being saved: `is_region_required` is a delivery rule, and it is the
+        // order that has to answer it.
+        $city = City::factory()->requiringRegion()->create(['name' => 'مصراتة']);
+        $headers = $this->auth();
+        $payload = $this->payload([
+            'shops' => [['name' => 'فرع مصراتة', 'city_id' => $city->id]],
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $payload);
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonPath('data.shops.0.city_id', $city->id)
+            ->assertJsonPath('data.shops.0.region_id', null)
+            ->assertJsonPath('data.shops.0.region', null);
+    }
+
+    public function test_a_shop_is_refused_without_a_city(): void
+    {
+        // Arrange — the one thing that replaced the pin, so it is the one thing required.
+        $headers = $this->auth();
+        $payload = $this->payload([
+            'shops' => [['name' => 'فرع بلا عنوان']],
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $payload);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('shops.0.city_id');
+    }
+
+    public function test_a_region_from_another_city_is_refused(): void
+    {
+        // Arrange — «طرابلس / سوق الخميس الزاوية» is a row with no meaning, and `exists` alone
+        // would happily store it: the region is real, it is simply not in that city.
+        $tripoli = $this->city('طرابلس');
+        $zawiya = $this->city('الزاوية');
+        $foreignRegion = Region::factory()->create(['city_id' => $zawiya->id, 'name' => 'سوق الخميس']);
+        $headers = $this->auth();
+        $payload = $this->payload([
+            'shops' => [[
+                'name' => 'محل الأناقة',
+                'city_id' => $tripoli->id,
+                'region_id' => $foreignRegion->id,
+            ]],
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $payload);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('shops.0.region_id');
+    }
+
+    public function test_changing_the_city_of_a_shop_clears_a_region_left_behind(): void
+    {
+        // Arrange — the shop moves to a city where its old neighbourhood does not exist.
+        $tripoli = $this->city('طرابلس');
+        $region = Region::factory()->create(['city_id' => $tripoli->id, 'name' => 'سوق الجمعة']);
+        $zawiya = $this->city('الزاوية');
+        $customer = Customer::factory()->create();
+        $shop = CustomerShop::factory()->create([
+            'customer_id' => $customer->id,
+            'city_id' => $tripoli->id,
+            'region_id' => $region->id,
+        ]);
+        $headers = $this->auth();
+
+        // Act — the whole shop is sent back, this time with a different city and no region.
+        $response = $this->withHeaders($headers)->putJson("/api/v1/customers/{$customer->id}", [
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+            'shops' => [['id' => $shop->id, 'name' => $shop->name, 'city_id' => $zawiya->id]],
+        ]);
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.shops.0.city_id', $zawiya->id)
+            ->assertJsonPath('data.shops.0.region_id', null);
+        $this->assertNull($shop->fresh()->region_id);
+    }
+
+    public function test_saving_a_shop_without_coordinates_keeps_the_pin_it_already_had(): void
+    {
+        // Arrange — the pin was dropped from the form, not from the database. An edit made
+        // through a screen that no longer asks for coordinates must not erase the ones a shop
+        // was recorded with, or the columns kept for the map's return come back empty.
+        $customer = Customer::factory()->create();
+        $shop = CustomerShop::factory()->create([
+            'customer_id' => $customer->id,
+            'latitude' => 32.8872123,
+            'longitude' => 13.1913456,
+        ]);
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/customers/{$customer->id}", [
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+            'shops' => [[
+                'id' => $shop->id,
+                'name' => 'الاسم بعد التعديل',
+                'city_id' => $shop->city_id,
+            ]],
+        ]);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.shops.0.name', 'الاسم بعد التعديل');
+        $fresh = $shop->fresh();
+        $this->assertSame(32.8872123, $fresh->latitude);
+        $this->assertSame(13.1913456, $fresh->longitude);
     }
 
     public function test_create_can_set_the_customer_inactive(): void
@@ -292,8 +462,12 @@ class CustomerTest extends TestCase
             'is_active not boolean' => [['is_active' => 'maybe'], 'is_active'],
             'shops not a list' => [['shops' => 'nope'], 'shops'],
             'shop without a name' => [['shops' => [['latitude' => 32.1, 'longitude' => 13.1]]], 'shops.0.name'],
-            'shop without a latitude' => [['shops' => [['name' => 'x', 'longitude' => 13.1]]], 'shops.0.latitude'],
-            'shop without a longitude' => [['shops' => [['name' => 'x', 'latitude' => 32.1]]], 'shops.0.longitude'],
+            // A city that does not exist — a stale id from a client's cached map. The «no city
+            // at all» case has its own test, where a real city can be created to contrast with.
+            'shop with a city that does not exist' => [['shops' => [['name' => 'x', 'city_id' => 999999]]], 'shops.0.city_id'],
+            'shop with a region that does not exist' => [['shops' => [['name' => 'x', 'region_id' => 999999]]], 'shops.0.region_id'],
+            // Coordinates are optional now that the form no longer asks for them — but a value
+            // that *is* sent still has to be a real one, so the bounds stay.
             'latitude above 90' => [['shops' => [['name' => 'x', 'latitude' => 90.1, 'longitude' => 13.1]]], 'shops.0.latitude'],
             'latitude below -90' => [['shops' => [['name' => 'x', 'latitude' => -90.1, 'longitude' => 13.1]]], 'shops.0.latitude'],
             'longitude above 180' => [['shops' => [['name' => 'x', 'latitude' => 32.1, 'longitude' => 180.1]]], 'shops.0.longitude'],
@@ -522,8 +696,7 @@ class CustomerTest extends TestCase
             'shops' => [
                 [
                     'name' => 'محل الأناقة',
-                    'latitude' => 32.8872,
-                    'longitude' => 13.1913,
+                    'city_id' => $this->city()->id,
                     'business_field_id' => $field->id,
                 ],
             ],
@@ -545,7 +718,7 @@ class CustomerTest extends TestCase
         // still has to save.
         $headers = $this->auth();
         $payload = $this->payload([
-            'shops' => [['name' => 'فرع طرابلس', 'latitude' => 32.8872, 'longitude' => 13.1913]],
+            'shops' => [['name' => 'فرع طرابلس', 'city_id' => $this->city()->id]],
         ]);
 
         // Act
@@ -574,8 +747,7 @@ class CustomerTest extends TestCase
             'shops' => [[
                 'id' => $shop->id,
                 'name' => $shop->name,
-                'latitude' => $shop->latitude,
-                'longitude' => $shop->longitude,
+                'city_id' => $shop->city_id,
             ]],
         ]);
 
@@ -591,8 +763,7 @@ class CustomerTest extends TestCase
         $payload = $this->payload([
             'shops' => [[
                 'name' => 'فرع طرابلس',
-                'latitude' => 32.8872,
-                'longitude' => 13.1913,
+                'city_id' => $this->city()->id,
                 'business_field_id' => 999999,
             ]],
         ]);
@@ -733,11 +904,12 @@ class CustomerTest extends TestCase
         $customer = Customer::factory()->create();
         $kept = CustomerShop::factory()->create(['customer_id' => $customer->id, 'name' => 'الأصلي']);
         $removed = CustomerShop::factory()->create(['customer_id' => $customer->id]);
+        $city = $this->city();
         $headers = $this->auth();
         $payload = $this->payload([
             'shops' => [
-                ['id' => $kept->id, 'name' => 'الأصلي المعدل', 'latitude' => 32.5000000, 'longitude' => 13.5000000],
-                ['name' => 'محل مضاف', 'latitude' => 31.2000000, 'longitude' => 16.5900000],
+                ['id' => $kept->id, 'name' => 'الأصلي المعدل', 'city_id' => $city->id],
+                ['name' => 'محل مضاف', 'city_id' => $city->id],
             ],
         ]);
 
@@ -751,8 +923,7 @@ class CustomerTest extends TestCase
         $this->assertDatabaseHas('customer_shops', [
             'id' => $kept->id,
             'name' => 'الأصلي المعدل',
-            'latitude' => 32.5,
-            'longitude' => 13.5,
+            'city_id' => $city->id,
         ]);
         // Soft deleted, not erased — the row stays for the audit trail, but it is out of the set.
         $this->assertSoftDeleted('customer_shops', ['id' => $removed->id]);
@@ -767,7 +938,7 @@ class CustomerTest extends TestCase
         $otherShop = CustomerShop::factory()->create();
         $headers = $this->auth();
         $payload = $this->payload([
-            'shops' => [['id' => $otherShop->id, 'name' => 'اختراق', 'latitude' => 32.1, 'longitude' => 13.1]],
+            'shops' => [['id' => $otherShop->id, 'name' => 'اختراق', 'city_id' => $otherShop->city_id]],
         ]);
 
         // Act

@@ -24,6 +24,9 @@ class _MockProductRepository extends Mock implements ProductRepository {}
 void main() {
   late _MockProductRepository products;
 
+  /// What the sheet handed back, or null while nothing has been picked.
+  PickedProduct? picked;
+
   ProductImage image({int id = 1, bool isPrimary = true}) => ProductImage(
     id: id,
     url: 'https://example.test/bag-$id.png',
@@ -89,6 +92,7 @@ void main() {
   setUp(() async {
     await Injector.reset();
 
+    picked = null;
     products = _MockProductRepository();
     sl.registerSingleton<GetProducts>(GetProducts(products));
   });
@@ -97,7 +101,7 @@ void main() {
 
   /// The app's own frame — ScreenUtil at the reference size, Arabic, right to left — with a
   /// button that opens the sheet the way the order form does.
-  Widget host() => ScreenUtilInit(
+  Widget host({Set<int> addedVariantIds = const {}}) => ScreenUtilInit(
     designSize: const Size(430, 932),
     builder: (context, _) => MaterialApp(
       locale: const Locale('ar'),
@@ -110,7 +114,12 @@ void main() {
       home: Scaffold(
         body: Builder(
           builder: (context) => TextButton(
-            onPressed: () => showProductPicker(context: context),
+            onPressed: () async {
+              picked = await showProductPicker(
+                context: context,
+                addedVariantIds: addedVariantIds,
+              );
+            },
             child: const Text('افتح'),
           ),
         ),
@@ -118,7 +127,10 @@ void main() {
     ),
   );
 
-  Future<void> openThePicker(WidgetTester tester) async {
+  Future<void> openThePicker(
+    WidgetTester tester, {
+    Set<int> addedVariantIds = const {},
+  }) async {
     // A real phone, not the 800×600 the binding defaults to: every size below is a claim about
     // the widget, and at 800 wide against a 430 design ScreenUtil scales everything by 1.86.
     tester.view
@@ -126,7 +138,7 @@ void main() {
       ..devicePixelRatio = 3;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(host());
+    await tester.pumpWidget(host(addedVariantIds: addedVariantIds));
     await tester.tap(find.text('افتح'));
     await tester.pumpAndSettle();
   }
@@ -222,6 +234,72 @@ void main() {
       // is the one thing this step assumes you still know.
       expect(find.text('25*35'), findsOneWidget);
       expect(find.byType(ProductThumbnail), findsOneWidget);
+    });
+  });
+
+  /// **A size already on the order is shown and refused, not hidden.**
+  ///
+  /// Two lines of the same size are two lines the price ladder is climbed twice for: 100 and 200
+  /// of one size are priced as 100 and as 200, never as the 300 the customer is actually buying.
+  /// So the second one is stopped where it is chosen. Shown rather than dropped from the list,
+  /// because a size that vanishes reads as «نفد» — and the answer the clerk needs is «it is
+  /// already here, raise its quantity».
+  group('a size that is already on the order', () {
+    testWidgets('is offered greyed out and refuses the tap', (tester) async {
+      // Arrange — 25*35 is on the order already; 30*40 is not.
+      answerWith([product(id: 1, name: 'أكياس الشحن', images: [image(id: 1)])]);
+      await openThePicker(tester, addedVariantIds: {11});
+      await tester.tap(find.text('أكياس الشحن'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('25*35'));
+      await tester.pumpAndSettle();
+
+      // Assert — the sheet is still open, nothing was handed back, and the row says why.
+      expect(picked, isNull);
+      expect(find.text('مضاف — عدّل كميته من البنود'), findsOneWidget);
+      expect(find.text('30*40'), findsOneWidget);
+    });
+
+    testWidgets('still lets the other sizes through', (tester) async {
+      // Arrange
+      answerWith([product(id: 1, name: 'أكياس الشحن', images: [image(id: 1)])]);
+      await openThePicker(tester, addedVariantIds: {11});
+      await tester.tap(find.text('أكياس الشحن'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('30*40'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(picked?.variant.id, 12);
+    });
+
+    testWidgets('a one-size product is not waved through on the tap that picks it', (
+      tester,
+    ) async {
+      // Arrange — the shortcut that skips the size step is exactly where a duplicate would slip
+      // past: one size, and it is the one already on the order.
+      answerWith([
+        product(
+          id: 1,
+          name: 'أكياس الشحن',
+          images: [image(id: 1)],
+          variants: const [ProductVariant(id: 11, label: '25*35')],
+        ),
+      ]);
+      await openThePicker(tester, addedVariantIds: {11});
+
+      // Act
+      await tester.tap(find.text('أكياس الشحن'));
+      await tester.pumpAndSettle();
+
+      // Assert — the size step opens instead, and says what is wrong rather than closing on
+      // nothing.
+      expect(picked, isNull);
+      expect(find.text('مضاف — عدّل كميته من البنود'), findsOneWidget);
     });
   });
 }

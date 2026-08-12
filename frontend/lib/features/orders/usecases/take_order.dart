@@ -20,6 +20,10 @@ import 'package:printing/features/orders/repositories/order_repository.dart';
 /// * A discount nobody typed is *absent*, never `'0'`. `orders.discount` is enforced on the
 ///   value being above zero, so an empty box has to produce no key at all.
 ///
+/// **And the same rule again for the files:** artwork picked under «تصميم العميل» and then
+/// abandoned by switching to «بدون تصميم» is dropped here rather than sent. The picker is
+/// hidden at that point, which is a suggestion; this is the part that decides what is posted.
+///
 /// Nothing here adds anything up. `items_total`, `delivery_price` and `grand_total` are the
 /// server's, and the only totals shown before saving say they are estimates.
 class TakeOrder {
@@ -41,8 +45,10 @@ class TakeOrder {
     String? discount,
     String? recipientPhone,
     String? notes,
+    List<int> designIds = const [],
   }) {
     final fee = _number(designFee);
+    final artwork = designSource == noDesign ? const <int>[] : designIds;
 
     return _repository.create(
       NewOrder(
@@ -54,6 +60,9 @@ class TakeOrder {
         // Only our own work may be charged for — the same rule the server applies, applied here
         // so the request states what the clerk meant rather than relying on it being ignored.
         designFee: designSource == inHouseDesign ? fee : null,
+        // Absent rather than empty: «بدون تصميم» has nothing to say about files, and an empty
+        // list would be the app claiming it does.
+        designIds: artwork.isEmpty ? null : artwork,
         discount: _number(discount),
         recipientPhone: _text(recipientPhone),
         notes: _text(notes),
@@ -75,6 +84,10 @@ class TakeOrder {
 
   /// The `design_source` that may carry a fee. The other two are `none` and `customer`.
   static const String inHouseDesign = 'in_house';
+
+  /// The `design_source` that carries no files — a repeat print of something already agreed,
+  /// or plain bags with nothing on them.
+  static const String noDesign = 'none';
 
   /// Arabic-Indic digits to ASCII, and a comma to a decimal point — and a blank box to nothing.
   ///

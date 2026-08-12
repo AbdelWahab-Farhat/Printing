@@ -28,11 +28,21 @@ final class SyncCustomerShops
         foreach ($shops as $shop) {
             $attributes = [
                 'name' => $shop->name,
-                'latitude' => $shop->latitude,
-                'longitude' => $shop->longitude,
+                'city_id' => $shop->cityId,
+                'region_id' => $shop->regionId,
                 'page_url' => $shop->pageUrl,
                 'business_field_id' => $shop->businessFieldId,
             ];
+
+            // The one field this action does *not* replace. Everything else here is overwritten
+            // by what was sent — that is what syncing a whole shop means — but the form stopped
+            // asking for a pin, so an omitted coordinate means «لم يُرسَل» and not «امسحه».
+            // Treating it like the rest would empty, on the first edit, the very columns kept
+            // for the day the map comes back.
+            if ($shop->latitude !== null && $shop->longitude !== null) {
+                $attributes['latitude'] = $shop->latitude;
+                $attributes['longitude'] = $shop->longitude;
+            }
 
             if ($shop->id !== null) {
                 // Scoped through the relation, so another customer's shop is never found here.

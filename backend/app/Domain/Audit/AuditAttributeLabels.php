@@ -82,6 +82,8 @@ final class AuditAttributeLabels
         'customer_shop' => [
             'customer_id' => 'العميل',
             'name' => 'اسم المحل',
+            'city_id' => 'المدينة',
+            'region_id' => 'المنطقة',
             'page_url' => 'رابط الصفحة',
         ],
         'customer_design' => [

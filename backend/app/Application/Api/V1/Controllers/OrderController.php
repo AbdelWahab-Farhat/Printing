@@ -112,6 +112,11 @@ class OrderController extends Controller
      *
      * A non-zero `discount` needs the `orders.discount` permission and is refused with 403
      * without it.
+     *
+     * `design_ids` attaches artwork from the customer's library as the order is taken — for the
+     * customer who arrives with the file already agreed, so the order never has to visit
+     * «قيد التصميم» to hold it. Versions are numbered in the order sent. All of it is one
+     * transaction: a design belonging to another customer is a 422 and no order is created.
      */
     public function store(StoreOrderRequest $request): JsonResponse
     {
@@ -195,7 +200,12 @@ class OrderController extends Controller
      * Chosen from the customer's own library rather than uploaded here — upload it against the
      * customer first. Another customer's design is refused with 422.
      *
-     * Each call adds the next version; the order stays «قيد التصميم» while versions come and go.
+     * Each call adds the next version. Accepted while the order is «جديدة» or «قيد التصميم»,
+     * and refused with 422 from «قيد الطباعة» onwards — the press is running against a settled
+     * file, and changing it starts by sending the order back to design.
+     *
+     * The first version may also arrive with the order itself, through `design_ids` on
+     * `POST /orders`.
      */
     public function storeDesign(StoreOrderDesignRequest $request, Order $order): JsonResponse
     {

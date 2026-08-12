@@ -316,10 +316,14 @@ mixin _$NewCustomerShop {
 ///
 /// `includeIfNull: false`, which is what makes one model serve both verbs: a create body is
 /// byte-identical to what it was before this field existed.
-@JsonKey(includeIfNull: false) int? get id; String get name;/// Real numbers, not the text that was typed. `'٣٢٫٨'` from an Arabic keyboard is turned
-/// into `32.8` in [CreateCustomer] — the one place in this feature that converts anything —
-/// so the JSON carries `32.8` and not a string the API would have to coerce.
- double get latitude; double get longitude;/// A Facebook page, usually. Absent rather than null when the user left it blank: the API's
+@JsonKey(includeIfNull: false) int? get id; String get name;/// المدينة, from the delivery map. Required: it is what replaced the pin, and the whole
+/// point of the change is that a shop always says where it is.
+@JsonKey(name: 'city_id') int get cityId;/// المنطقة, when the city has any and somebody knows which.
+///
+/// **Sent even when null**, like [businessFieldId] and unlike [pageUrl]: both endpoints
+/// replace the shop whole, so an omitted key would mean «اتركها كما هي» and a region the
+/// user cleared by moving the shop to another city would quietly come back on the next save.
+@JsonKey(name: 'region_id') int? get regionId;/// A Facebook page, usually. Absent rather than null when the user left it blank: the API's
 /// rule is `nullable|url`, and an empty string is neither.
 @JsonKey(name: 'page_url', includeIfNull: false) String? get pageUrl;/// مجال العمل, or null for a shop nobody classified.
 ///
@@ -339,16 +343,16 @@ $NewCustomerShopCopyWith<NewCustomerShop> get copyWith => _$NewCustomerShopCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewCustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewCustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,latitude,longitude,pageUrl,businessFieldId);
+int get hashCode => Object.hash(runtimeType,id,name,cityId,regionId,pageUrl,businessFieldId);
 
 @override
 String toString() {
-  return 'NewCustomerShop(id: $id, name: $name, latitude: $latitude, longitude: $longitude, pageUrl: $pageUrl, businessFieldId: $businessFieldId)';
+  return 'NewCustomerShop(id: $id, name: $name, cityId: $cityId, regionId: $regionId, pageUrl: $pageUrl, businessFieldId: $businessFieldId)';
 }
 
 
@@ -359,7 +363,7 @@ abstract mixin class $NewCustomerShopCopyWith<$Res>  {
   factory $NewCustomerShopCopyWith(NewCustomerShop value, $Res Function(NewCustomerShop) _then) = _$NewCustomerShopCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(includeIfNull: false) int? id, String name, double latitude, double longitude,@JsonKey(name: 'page_url', includeIfNull: false) String? pageUrl,@JsonKey(name: 'business_field_id') int? businessFieldId
+@JsonKey(includeIfNull: false) int? id, String name,@JsonKey(name: 'city_id') int cityId,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'page_url', includeIfNull: false) String? pageUrl,@JsonKey(name: 'business_field_id') int? businessFieldId
 });
 
 
@@ -376,13 +380,13 @@ class _$NewCustomerShopCopyWithImpl<$Res>
 
 /// Create a copy of NewCustomerShop
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? name = null,Object? latitude = null,Object? longitude = null,Object? pageUrl = freezed,Object? businessFieldId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? name = null,Object? cityId = null,Object? regionId = freezed,Object? pageUrl = freezed,Object? businessFieldId = freezed,}) {
   return _then(_self.copyWith(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,latitude: null == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
-as double,longitude: null == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
-as double,pageUrl: freezed == pageUrl ? _self.pageUrl : pageUrl // ignore: cast_nullable_to_non_nullable
+as String,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as int,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
+as int?,pageUrl: freezed == pageUrl ? _self.pageUrl : pageUrl // ignore: cast_nullable_to_non_nullable
 as String?,businessFieldId: freezed == businessFieldId ? _self.businessFieldId : businessFieldId // ignore: cast_nullable_to_non_nullable
 as int?,
   ));
@@ -469,10 +473,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String name,  double latitude,  double longitude, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String name, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NewCustomerShop() when $default != null:
-return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId);case _:
+return $default(_that.id,_that.name,_that.cityId,_that.regionId,_that.pageUrl,_that.businessFieldId);case _:
   return orElse();
 
 }
@@ -490,10 +494,10 @@ return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String name,  double latitude,  double longitude, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String name, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId)  $default,) {final _that = this;
 switch (_that) {
 case _NewCustomerShop():
-return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId);case _:
+return $default(_that.id,_that.name,_that.cityId,_that.regionId,_that.pageUrl,_that.businessFieldId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -510,10 +514,10 @@ return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  int? id,  String name,  double latitude,  double longitude, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  int? id,  String name, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'page_url', includeIfNull: false)  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId)?  $default,) {final _that = this;
 switch (_that) {
 case _NewCustomerShop() when $default != null:
-return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId);case _:
+return $default(_that.id,_that.name,_that.cityId,_that.regionId,_that.pageUrl,_that.businessFieldId);case _:
   return null;
 
 }
@@ -525,7 +529,7 @@ return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl
 @JsonSerializable(createFactory: false)
 
 class _NewCustomerShop implements NewCustomerShop {
-  const _NewCustomerShop({@JsonKey(includeIfNull: false) this.id, required this.name, required this.latitude, required this.longitude, @JsonKey(name: 'page_url', includeIfNull: false) this.pageUrl, @JsonKey(name: 'business_field_id') this.businessFieldId});
+  const _NewCustomerShop({@JsonKey(includeIfNull: false) this.id, required this.name, @JsonKey(name: 'city_id') required this.cityId, @JsonKey(name: 'region_id') this.regionId, @JsonKey(name: 'page_url', includeIfNull: false) this.pageUrl, @JsonKey(name: 'business_field_id') this.businessFieldId});
   
 
 /// The row this is, when it already exists.
@@ -538,11 +542,15 @@ class _NewCustomerShop implements NewCustomerShop {
 /// byte-identical to what it was before this field existed.
 @override@JsonKey(includeIfNull: false) final  int? id;
 @override final  String name;
-/// Real numbers, not the text that was typed. `'٣٢٫٨'` from an Arabic keyboard is turned
-/// into `32.8` in [CreateCustomer] — the one place in this feature that converts anything —
-/// so the JSON carries `32.8` and not a string the API would have to coerce.
-@override final  double latitude;
-@override final  double longitude;
+/// المدينة, from the delivery map. Required: it is what replaced the pin, and the whole
+/// point of the change is that a shop always says where it is.
+@override@JsonKey(name: 'city_id') final  int cityId;
+/// المنطقة, when the city has any and somebody knows which.
+///
+/// **Sent even when null**, like [businessFieldId] and unlike [pageUrl]: both endpoints
+/// replace the shop whole, so an omitted key would mean «اتركها كما هي» and a region the
+/// user cleared by moving the shop to another city would quietly come back on the next save.
+@override@JsonKey(name: 'region_id') final  int? regionId;
 /// A Facebook page, usually. Absent rather than null when the user left it blank: the API's
 /// rule is `nullable|url`, and an empty string is neither.
 @override@JsonKey(name: 'page_url', includeIfNull: false) final  String? pageUrl;
@@ -566,16 +574,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewCustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewCustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,latitude,longitude,pageUrl,businessFieldId);
+int get hashCode => Object.hash(runtimeType,id,name,cityId,regionId,pageUrl,businessFieldId);
 
 @override
 String toString() {
-  return 'NewCustomerShop(id: $id, name: $name, latitude: $latitude, longitude: $longitude, pageUrl: $pageUrl, businessFieldId: $businessFieldId)';
+  return 'NewCustomerShop(id: $id, name: $name, cityId: $cityId, regionId: $regionId, pageUrl: $pageUrl, businessFieldId: $businessFieldId)';
 }
 
 
@@ -586,7 +594,7 @@ abstract mixin class _$NewCustomerShopCopyWith<$Res> implements $NewCustomerShop
   factory _$NewCustomerShopCopyWith(_NewCustomerShop value, $Res Function(_NewCustomerShop) _then) = __$NewCustomerShopCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(includeIfNull: false) int? id, String name, double latitude, double longitude,@JsonKey(name: 'page_url', includeIfNull: false) String? pageUrl,@JsonKey(name: 'business_field_id') int? businessFieldId
+@JsonKey(includeIfNull: false) int? id, String name,@JsonKey(name: 'city_id') int cityId,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'page_url', includeIfNull: false) String? pageUrl,@JsonKey(name: 'business_field_id') int? businessFieldId
 });
 
 
@@ -603,13 +611,13 @@ class __$NewCustomerShopCopyWithImpl<$Res>
 
 /// Create a copy of NewCustomerShop
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? name = null,Object? latitude = null,Object? longitude = null,Object? pageUrl = freezed,Object? businessFieldId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? name = null,Object? cityId = null,Object? regionId = freezed,Object? pageUrl = freezed,Object? businessFieldId = freezed,}) {
   return _then(_NewCustomerShop(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,latitude: null == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
-as double,longitude: null == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
-as double,pageUrl: freezed == pageUrl ? _self.pageUrl : pageUrl // ignore: cast_nullable_to_non_nullable
+as String,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as int,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
+as int?,pageUrl: freezed == pageUrl ? _self.pageUrl : pageUrl // ignore: cast_nullable_to_non_nullable
 as String?,businessFieldId: freezed == businessFieldId ? _self.businessFieldId : businessFieldId // ignore: cast_nullable_to_non_nullable
 as int?,
   ));

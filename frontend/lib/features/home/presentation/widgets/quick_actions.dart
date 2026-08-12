@@ -9,11 +9,11 @@ import 'package:printing/core/utils/context_extensions.dart';
 /// Still a short list, not a wall of shortcuts: a shortcut row stops being a shortcut once it
 /// needs reading. Anything else lives in the tabs and the drawer, where it can be found by name.
 ///
-/// **Two per row, and that is what changed when «إضافة عميل» became «عميل» and «مورد».** They
-/// were laid out as one `Row` of `Expanded` tiles, which cannot overflow — it simply divides.
-/// At three tiles each label was left about forty pixels, so «المخزن» would have arrived as
-/// «الم…»: a shortcut nobody can read, failing silently. Wrapping keeps every tile the width two
-/// tiles have always had, and puts the third on a line of its own.
+/// **Two per row, however many there are.** They were laid out as one `Row` of `Expanded` tiles,
+/// which cannot overflow — it simply divides. A third shortcut left each label about forty
+/// pixels, so «طلبية جديدة» would arrive as «طلبي…»: a shortcut nobody can read, failing
+/// silently. Wrapping keeps every tile the width two tiles have always had, and puts the third
+/// on a line of its own.
 class QuickActions extends StatelessWidget {
   const QuickActions({required this.actions, super.key});
 

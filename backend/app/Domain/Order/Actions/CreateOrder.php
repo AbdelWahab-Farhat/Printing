@@ -31,6 +31,7 @@ final class CreateOrder
         private readonly RecalculateOrderTotals $recalculate,
         private readonly RecordStatusTransition $record,
         private readonly CustomerService $customers,
+        private readonly AddOrderDesign $addDesign,
     ) {}
 
     /**
@@ -98,6 +99,24 @@ final class CreateOrder
 
             foreach ($data->items as $item) {
                 ($this->addItem)($order, $item);
+            }
+
+            // **The artwork the customer walked in with.** Through {@see AddOrderDesign} like
+            // every other version, so the rule that a design belongs to this customer is
+            // enforced by the one place that knows it, and the version numbers are allocated the
+            // same way — in the order the clerk picked them.
+            //
+            // Inside the transaction, which is the whole reason it happens here rather than in
+            // a second request from the app: a design belonging to somebody else takes the order
+            // down with it, instead of leaving one behind with a number, a customer, and none of
+            // the files it was taken for.
+            //
+            // The order is «جديدة» at this point and that status accepts versions — see
+            // {@see Order::designsAreEditable()}. Before this it did not, and the file could
+            // only be recorded by walking the order through the designer's queue for work
+            // nobody was doing.
+            foreach ($data->designIds as $designId) {
+                ($this->addDesign)($order, $designId);
             }
 
             ($this->recalculate)($order->load('items'));

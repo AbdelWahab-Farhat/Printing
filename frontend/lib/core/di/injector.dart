@@ -96,6 +96,7 @@ import 'package:printing/features/orders/usecases/get_order_counts.dart';
 import 'package:printing/features/orders/usecases/get_orders.dart';
 import 'package:printing/features/orders/usecases/manage_order_designs.dart';
 import 'package:printing/features/orders/usecases/manage_order_payments.dart';
+import 'package:printing/features/orders/usecases/save_order_invoice_pdf.dart';
 import 'package:printing/features/orders/usecases/take_order.dart';
 import 'package:printing/features/orders/usecases/update_order_invoice.dart';
 import 'package:printing/features/products/presentation/viewmodel/product_detail_cubit.dart';
@@ -420,6 +421,10 @@ abstract final class Injector {
       ..registerLazySingleton<GetOrders>(() => GetOrders(sl<OrderRepository>()))
       ..registerLazySingleton<GetOrderCounts>(() => GetOrderCounts(sl<OrderRepository>()))
       ..registerLazySingleton<GetOrder>(() => GetOrder(sl<OrderRepository>()))
+      // No repository: the invoice is the order the screen already has, drawn. Registered all
+      // the same so it is one object per app — it caches the two parsed TrueType faces the PDF
+      // embeds, and parsing those per invoice is what makes a share sheet feel slow.
+      ..registerLazySingleton<SaveOrderInvoicePdf>(SaveOrderInvoicePdf.new)
       ..registerLazySingleton<TakeOrder>(() => TakeOrder(sl<OrderRepository>()))
       ..registerLazySingleton<UpdateOrderInvoice>(
         () => UpdateOrderInvoice(sl<OrderRepository>()),
@@ -763,6 +768,13 @@ abstract final class Injector {
       ..registerFactory<CustomersCubit>(
         () => CustomersCubit(getCustomers: sl<GetCustomers>()),
       )
+      // The same Cubit asking the narrower question, for the picker behind «طلبية جديدة» — the
+      // العملاء tab is the record and shows everyone, an order is only ever taken for a customer
+      // the shop still sells to. Named rather than a second class, exactly like the vendors pair.
+      ..registerFactory<CustomersCubit>(
+        () => CustomersCubit(getCustomers: sl<GetCustomers>(), onlyActive: true),
+        instanceName: activeCustomersCubit,
+      )
       ..registerLazySingleton<CreateCustomer>(() => CreateCustomer(sl<CustomerRepository>()))
       ..registerLazySingleton<UpdateCustomer>(() => UpdateCustomer(sl<CustomerRepository>()))
       ..registerLazySingleton<GetCustomer>(() => GetCustomer(sl<CustomerRepository>()))
@@ -822,6 +834,9 @@ abstract final class Injector {
         ),
       );
   }
+
+  /// The customers list narrowed to the ones still being sold to. See `showCustomerPicker`.
+  static const String activeCustomersCubit = 'customers:active';
 
   /// This device's own preferences — no network, no account.
   static void _registerSettings() {

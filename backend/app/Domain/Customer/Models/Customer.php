@@ -34,6 +34,17 @@ class Customer extends Model implements HasAuditTrail
     use Auditable, HasFactory, SoftDeletes;
 
     /**
+     * Everything {@see CustomerShopResource} renders about a shop.
+     *
+     * Named once because five call sites load it — create, update, show, activation and the
+     * list — and a relation added to the resource but forgotten at one of them is not a broken
+     * response, it is a silent query per row that nobody notices until the list is slow.
+     *
+     * @var list<string>
+     */
+    public const SHOP_RELATIONS = ['shops.businessField', 'shops.city', 'shops.region'];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

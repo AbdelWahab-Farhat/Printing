@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:printing/features/business_fields/models/business_field.dart';
+import 'package:printing/features/cities/models/city.dart';
 
 part 'customer.freezed.dart';
 part 'customer.g.dart';
@@ -42,15 +43,27 @@ abstract class Customer with _$Customer {
   bool get hasShops => (shops ?? const []).isNotEmpty;
 }
 
-/// A place a customer sells from, pinned on the map.
+/// A place a customer sells from, on the delivery map.
 @freezed
 abstract class CustomerShop with _$CustomerShop {
   const factory CustomerShop({
     required int id,
     required String name,
 
-    /// Numbers, not strings: these go straight into a map SDK. Null only for shops recorded
-    /// before coordinates existed — a new one cannot be created without them.
+    /// المدينة — required by the API, so a shop that came from it has one. Nullable here all
+    /// the same: `city` is the *object*, and the server omits it when the relation was not
+    /// loaded or the city has since been deleted.
+    @JsonKey(name: 'city_id') int? cityId,
+    City? city,
+
+    /// المنطقة — genuinely optional. Most cities have no neighbourhoods, and a shop taken over
+    /// the phone often has none recorded.
+    @JsonKey(name: 'region_id') int? regionId,
+    Region? region,
+
+    /// Numbers, not strings: these go straight into a map SDK. Null for every shop recorded
+    /// since the form stopped asking for a pin — which is why nothing reads them today. The
+    /// field stays so the pin survives a round trip through this app untouched.
     double? latitude,
     double? longitude,
 
@@ -70,4 +83,18 @@ abstract class CustomerShop with _$CustomerShop {
   factory CustomerShop.fromJson(Map<String, dynamic> json) => _$CustomerShopFromJson(json);
 
   bool get hasPin => latitude != null && longitude != null;
+
+  /// Where this shop is, in one line: «طرابلس · سوق الجمعة».
+  ///
+  /// `null` rather than `''` when there is nothing to say, so a card draws one line instead of
+  /// a second, empty one — the same contract [City.subtitle] keeps. Empty only for a shop whose
+  /// city was not loaded or has been deleted; the API requires one on the way in.
+  String? get placeLabel {
+    final parts = [
+      if (city != null) city!.name,
+      if (region != null) region!.name,
+    ];
+
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
 }

@@ -39,7 +39,10 @@ enum OrderStatus: string
     /** Finished and on the shelf, waiting to leave. */
     case Ready = 'ready';
 
-    /** Some of it is missing. Reachable from printing *and* from ready. */
+    /**
+     * The stock to start the job is not there. Reachable from «جديدة» and nowhere else — it
+     * describes an order that could not be begun, not a run that came out short.
+     */
     case Shortage = 'shortage';
 
     /** Waiting at one of our branches for the customer to collect. */
@@ -105,9 +108,12 @@ enum OrderStatus: string
      * Every move this status may make. The map, and the reason this file exists.
      *
      * Going *backwards* is legal and listed explicitly rather than allowed wholesale: printing
-     * returns to designing because staff mistype things, ready returns to printing for a
-     * reprint, and a shortage returns to either. What is not listed cannot happen — an
-     * unrestricted "you may go anywhere" would make the machine decorative.
+     * returns to designing because staff mistype things and because artwork gets corrected. What
+     * is not listed cannot happen — an unrestricted "you may go anywhere" would make the machine
+     * decorative.
+     *
+     * **The line it stops at is «جاهزة».** Once the bags exist there is nothing to rewind to:
+     * every move after that describes where a physical parcel is.
      *
      * @return list<self>
      */
@@ -115,24 +121,36 @@ enum OrderStatus: string
     {
         return match ($this) {
             // The one open status that cannot be cancelled, and it is deliberate: a job nobody
-            // has started is two taps from being started, and «جديدة» offering three ways out
-            // made the two that matter compete with the one that ends it. Cancelling is still
-            // available from every status after this one — the order has cost something by
-            // then, which is when writing it off is a decision rather than a stray tap.
-            self::New => [self::Designing, self::Printing],
+            // has started is two taps from being started, and cancelling would compete with the
+            // moves that matter. Cancelling is still available from every status after this one
+            // — the order has cost something by then, which is when writing it off is a decision
+            // rather than a stray tap. «نواقص» is here for the opposite reason: it is not an
+            // ending, it is the job failing to start.
+            self::New => [self::Designing, self::Printing, self::Shortage],
 
             // Never straight to ready: artwork that has been agreed still has to be printed.
             self::Designing => [self::Printing, self::Cancelled],
 
-            self::Printing => [self::Ready, self::Shortage, self::Designing, self::Cancelled],
+            self::Printing => [self::Ready, self::Designing, self::Cancelled],
 
-            // Both ways out, and the server picks which — see dispatchFor().
-            self::Ready => [
-                self::OfficePickup, self::OutForDelivery,
-                self::Shortage, self::Printing, self::Cancelled,
-            ],
+            // **Out, or written off. Nothing goes back from here.** «جاهزة» means the bags are
+            // made, counted and on the shelf; the two ways out are the dispatch pair, and the
+            // server picks which — see dispatchFor(). Returning to «قيد الطباعة» was offered for
+            // a reprint and described the wrong event: bags that have to be printed again are a
+            // *new* run, not this one rewinding, and the order's status would have gone on
+            // saying the finished bags do not exist while they sat on the shelf.
+            self::Ready => [self::OfficePickup, self::OutForDelivery, self::Cancelled],
 
-            self::Shortage => [self::Printing, self::Ready, self::Cancelled],
+            // **Only «جديدة» leads here, and that is the whole meaning of the status.** «نواقص»
+            // is what the shop finds when it goes to start a job it has taken: the stock for one
+            // of the sizes is not on the floor, so the order is parked before any work is done
+            // on it. Offering the same status from «قيد الطباعة» and «جاهزة» made it a second
+            // name for «the run came up short» — a different event, at a different desk, which
+            // the press already answers by going back a step to print the rest.
+            //
+            // Out of it are the two ways in to the work it never started, plus the ending: a
+            // shortage that is never resolved is written off rather than left parked forever.
+            self::Shortage => [self::Designing, self::Printing, self::Cancelled],
 
             // No returns: it never left the building, so there is no courier and no carrier.
             // A customer who has not come yet is simply still waiting.
@@ -273,9 +291,8 @@ enum OrderStatus: string
      * The column on `orders` stamped when this status is entered, if any.
      *
      * Denormalised on purpose: `order_status_transitions` holds the full history, but "orders
-     * printed this week" should not have to walk it. Null where a stamp would lie — a shortage
-     * is bounced in and out of, so a single column would keep only the last visit and quietly
-     * lose the first.
+     * printed this week" should not have to walk it. Null where a column would be a lie or a
+     * cost with nothing asking for it.
      */
     public function timestampColumn(): ?string
     {
@@ -289,9 +306,13 @@ enum OrderStatus: string
             self::Settled => 'settled_at',
             self::ReturnedCourier, self::ReturnedCarrier, self::ReturnedOffice => 'returned_at',
             self::Cancelled => 'cancelled_at',
-            // Both are visited more than once by the orders that visit them at all — a run goes
-            // short twice, a parcel goes out, comes back and goes out again — so a single column
-            // would keep the last visit and quietly lose the first.
+            // A re-send is visited more than once by the orders that visit it at all — a parcel
+            // goes out, comes back and goes out again — so a single column would keep the last
+            // visit and quietly lose the first. A shortage is entered at most once now that
+            // «جديدة» is its only way in, so a column *could* hold it honestly; it stays null
+            // because nothing asks the question yet, and the transitions table already has the
+            // answer. The day a report wants "orders parked short this week", this is a `case`
+            // and a migration.
             self::Shortage, self::Resend => null,
         };
     }

@@ -15,9 +15,10 @@ use App\Domain\Order\Models\Order;
  * turns it into the rules it accepts — so what is asked for and what is allowed cannot drift
  * apart, and adding a field to a move is a single change here.
  *
- * **It answers for the order, not for the status.** A reprint with `design_source = none` is
- * asked for no artwork at all, and an order that already carries a version is offered another
- * rather than made to supply one. A table of fields per status could express neither.
+ * **It answers for the order, not for the status.** A run priced by the kilo cannot be shelved
+ * without a weight while one sold by the piece can, «نواقص» asks a question per line in that
+ * line's own unit, and an office pickup is never asked who is carrying the parcel. A table of
+ * fields per status could express none of it.
  */
 final class TransitionFields
 {
@@ -37,18 +38,39 @@ final class TransitionFields
 
         $fields = [];
 
-        // Every order, whatever its `design_source`. That column answers *whose work the
-        // artwork was* — the only one of the two questions that may move money — and not
-        // whether there is a file. A reprint that goes back into design because the customer
-        // wants the logo moved has artwork to look at like any other.
-        if ($target === OrderStatus::Designing) {
+        // **A move carries artwork when the order stands in a status that accepts it, on one
+        // side of the move or the other.** Two statuses do — «جديدة» and «قيد التصميم», see
+        // {@see Order::designsAreEditable()} — and {@see ChangeOrderStatus} attaches while the
+        // order is standing in whichever end allows it.
+        //
+        // Which gives three real moves. Into design, where the queue fills, usually with
+        // nothing. Out of design to the press, where it empties with the finished file. And
+        // «جديدة» straight to «قيد الطباعة» — the short path, and the commonest one: the customer
+        // brought an agreed file, so the order carries it and the press starts, with no detour
+        // through a status naming work nobody did. That last case was refused until «جديدة»
+        // started accepting versions, and refusing it was the reason staff walked orders into
+        // the designer's queue and straight back out.
+        //
+        // Anywhere else the field could not be honoured, and a field certain to be refused is
+        // worse than no field.
+        //
+        // Every order, whatever its `design_source`. That column answers *whose work the artwork
+        // was* — the only one of the two questions that may move money — and not whether there
+        // is a file. A reprint that goes back into design because the customer wants the logo
+        // moved has artwork to look at like any other.
+        $artworkTravels = $target === OrderStatus::Designing
+            || ($target === OrderStatus::Printing && $order->designsAreEditable());
+
+        if ($artworkTravels) {
             $fields[] = TransitionField::customerDesigns(
                 key: 'design_ids',
                 label: 'التصاميم',
-                // Demanded on the way *in*, offered afterwards: «قيد التصميم» with nothing to
-                // look at is the state this rule exists to prevent, but the correction path —
-                // printing back to designing — arrives with versions already on the order.
-                required: ! self::hasDesigns($order),
+                // **Never required, and that is the point of the status.** «قيد التصميم» is the
+                // designer's queue: an order is put there *because* the artwork does not exist
+                // yet, and it waits there until it does. Demanding a file on the way in made the
+                // status unreachable in exactly the case it was built for — and demanding one on
+                // the way out would strand every order whose artwork was settled off-screen.
+                required: false,
                 hint: 'تُرفع إلى مكتبة العميل ثم تُربط بالطلبية',
             );
         }
@@ -145,26 +167,5 @@ final class TransitionFields
         );
 
         return $fields;
-    }
-
-    /**
-     * Whether any version of the artwork is already on the order.
-     *
-     * Reads what has been loaded before it asks the database: this runs once per offered move,
-     * for every order in a list, and a query per row is how a list page becomes slow.
-     */
-    private static function hasDesigns(Order $order): bool
-    {
-        if ($order->relationLoaded('designs')) {
-            return $order->designs->isNotEmpty();
-        }
-
-        // Asked of the attribute bag rather than of the model: strict mode throws for a column
-        // that was never selected, so `?? null` is not available here.
-        if (array_key_exists('designs_count', $order->getAttributes())) {
-            return (int) $order->getAttributes()['designs_count'] > 0;
-        }
-
-        return $order->designs()->exists();
     }
 }

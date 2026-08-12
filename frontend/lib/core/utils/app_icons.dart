@@ -185,6 +185,14 @@ abstract final class AppIcons {
   static IconData get download =>
       _pick(Icons.download_rounded, CupertinoIcons.share);
 
+  /// Sends something out of the app through the phone's own sheet — a message, a file.
+  ///
+  /// It lands on the same iOS glyph as [download], and that is honest rather than a duplicate:
+  /// on an iPhone both genuinely *are* the share sheet. Android draws the two apart, because
+  /// there saving to Files and sending to WhatsApp are different controls.
+  static IconData get share =>
+      _pick(Icons.share_rounded, CupertinoIcons.share);
+
   /// Opens a speed dial. Not [menu], which opens the app's drawer.
   static IconData get more =>
       _pick(Icons.more_horiz_rounded, CupertinoIcons.ellipsis);

@@ -40,6 +40,18 @@ extension TakeOrderStateX on TakeOrderState {
 
   String? get designFeeError => _fieldError('design_fee');
 
+  /// Why the artwork was refused, under the picker rather than in a snackbar.
+  ///
+  /// **Three keys, one place to read them.** The validator complains about the list
+  /// (`design_ids`) or about one entry in it (`design_ids.0`), and the domain complains about
+  /// `customer_design_id` — its own field name, because that refusal is written once and shared
+  /// with the endpoint that attaches a single design to an existing order. All three are the
+  /// same sentence to the clerk: this file cannot go on this order.
+  String? get designsError =>
+      _fieldError('customer_design_id') ??
+      _fieldError('design_ids') ??
+      _firstErrorMatching(_designEntryKey);
+
   String? get recipientPhoneError => _fieldError('recipient_phone');
 
   /// True when the server complained about something this form has nowhere to put.
@@ -66,13 +78,35 @@ extension TakeOrderStateX on TakeOrderState {
     },
     _ => null,
   };
+
+  /// The first complaint whose key matches, for the fields the server addresses by index.
+  ///
+  /// The picker shows one message for the whole list: which of five files the validator objected
+  /// to is not a distinction the clerk can act on differently, and «التصميم غير موجود» said five
+  /// times is not five pieces of information.
+  String? _firstErrorMatching(RegExp pattern) => switch (this) {
+    TakeOrderFailure(:final failure) => switch (failure) {
+      ServerFailure(:final fieldErrors) => fieldErrors?.entries
+          .where((entry) => pattern.hasMatch(entry.key))
+          .map((entry) => entry.value.firstOrNull)
+          .nonNulls
+          .firstOrNull,
+      _ => null,
+    },
+    _ => null,
+  };
 }
+
+/// One entry in the list the artwork was sent as — `design_ids.0`, `design_ids.1`, …
+final RegExp _designEntryKey = RegExp(r'^design_ids\.\d+$');
 
 /// The exact keys the form paints under an input. Everything else goes to a snackbar.
 final RegExp _renderedKey = RegExp(
   r'^(items|city_id|region_id|discount|design_fee|recipient_phone'
+  r'|customer_design_id|design_ids'
   r'|items\.\d+\.quantity'
-  r'|items\.\d+\.unit_price)$',
+  r'|items\.\d+\.unit_price'
+  r'|design_ids\.\d+)$',
 );
 
 bool _isRenderedKey(String key) => _renderedKey.hasMatch(key);

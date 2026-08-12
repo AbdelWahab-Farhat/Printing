@@ -107,6 +107,7 @@ dependencies:
   # half of the package writes into android/ and ios/ and is run by hand — see the
   # `flutter_native_splash:` block at the bottom of this file.
   flutter_native_splash: ^2.4.8
+  pdf: ^3.13.0
 
 dev_dependencies:
   flutter_test:
@@ -134,6 +135,11 @@ flutter:
     - .env.dev
     - assets/images/
     - assets/icons/
+    # Not registered under `fonts:` — the app's own text is drawn by the system font. These are
+    # bytes the PDF invoice embeds, because a generated PDF carries no fonts from the phone and
+    # an invoice built without an Arabic face comes out a page of empty boxes. Almarai, OFL,
+    # licence beside the files.
+    - assets/fonts/
 
 # ── the app's face ────────────────────────────────────────────────────────────────────────────
 #

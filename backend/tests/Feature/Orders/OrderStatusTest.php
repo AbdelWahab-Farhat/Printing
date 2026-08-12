@@ -36,27 +36,27 @@ class OrderStatusTest extends TestCase
     public static function transitions(): array
     {
         return [
-            'a new order is designed, or goes straight to print — and nothing else' => [
+            'a new order is designed, printed, or found short at intake — and nothing else' => [
                 OrderStatus::New,
-                [OrderStatus::Designing, OrderStatus::Printing],
+                [OrderStatus::Designing, OrderStatus::Printing, OrderStatus::Shortage],
             ],
             'a design must pass through printing — never straight to ready' => [
                 OrderStatus::Designing,
                 [OrderStatus::Printing, OrderStatus::Cancelled],
             ],
-            'printing ends ready or short, and may go back to the drawing board' => [
+            'printing ends ready, and may go back to the drawing board' => [
                 OrderStatus::Printing,
-                [OrderStatus::Ready, OrderStatus::Shortage, OrderStatus::Designing, OrderStatus::Cancelled],
+                [OrderStatus::Ready, OrderStatus::Designing, OrderStatus::Cancelled],
             ],
-            'a shortage is printed again, or resolved into ready' => [
+            'a shortage rejoins the route it was taken off' => [
                 OrderStatus::Shortage,
-                [OrderStatus::Printing, OrderStatus::Ready, OrderStatus::Cancelled],
+                [OrderStatus::Designing, OrderStatus::Printing, OrderStatus::Cancelled],
             ],
-            'ready leaves for the customer, or falls back' => [
+            'ready leaves for the customer or is written off — the bags exist, so it never goes back' => [
                 OrderStatus::Ready,
                 [
                     OrderStatus::OfficePickup, OrderStatus::OutForDelivery,
-                    OrderStatus::Shortage, OrderStatus::Printing, OrderStatus::Cancelled,
+                    OrderStatus::Cancelled,
                 ],
             ],
             'an order waiting at the counter is collected or cancelled — never returned' => [
@@ -120,6 +120,25 @@ class OrderStatusTest extends TestCase
         $this->assertNotContains(OrderStatus::Delivered, $allowed);
     }
 
+    public function test_a_finished_run_only_leaves_or_is_written_off(): void
+    {
+        // Act
+        $allowed = OrderStatus::Ready->allowedNext();
+
+        // Assert — «جاهزة» means the bags are made, counted and on the shelf. Two things can
+        // happen to them: they go to the customer, or the order is written off. Sending the
+        // order back to «قيد الطباعة» used to be offered for a reprint, and it described the
+        // wrong event — a run that has to be printed again is a new run, not the finished one
+        // rewinding, and the status the parcel is in would have said the bags do not exist.
+        $this->assertEqualsCanonicalizing([
+            OrderStatus::OfficePickup,
+            OrderStatus::OutForDelivery,
+            OrderStatus::Cancelled,
+        ], $allowed);
+
+        $this->assertNotContains(OrderStatus::Printing, $allowed);
+    }
+
     public function test_an_office_pickup_order_has_no_return_route(): void
     {
         // Arrange
@@ -146,6 +165,21 @@ class OrderStatusTest extends TestCase
 
         // Assert — the gap in the flow as first described: a way in and no way out.
         $this->assertNotEmpty(array_filter($allowed, fn (OrderStatus $s) => ! $s->isFinal()));
+    }
+
+    public function test_a_shortage_is_declared_at_intake_and_nowhere_else(): void
+    {
+        // Act
+        $waysIn = array_values(array_filter(
+            OrderStatus::cases(),
+            fn (OrderStatus $s) => in_array(OrderStatus::Shortage, $s->allowedNext(), true),
+        ));
+
+        // Assert — «نواقص» is what the shop finds when it goes to start the job: the stock is not
+        // there, and the order is parked before any work is done on it. Offering it from «قيد
+        // الطباعة» and «جاهزة» too made it a second name for «the run came up short», which is a
+        // different event and one the press already answers by going back a step.
+        $this->assertSame([OrderStatus::New], $waysIn);
     }
 
     public function test_a_parcel_comes_back_the_way_it_went_out(): void

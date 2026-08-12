@@ -17,8 +17,8 @@ Map<String, dynamic> _$NewCustomerShopToJson(_NewCustomerShop instance) =>
     <String, dynamic>{
       'id': ?instance.id,
       'name': instance.name,
-      'latitude': instance.latitude,
-      'longitude': instance.longitude,
+      'city_id': instance.cityId,
+      'region_id': instance.regionId,
       'page_url': ?instance.pageUrl,
       'business_field_id': instance.businessFieldId,
     };

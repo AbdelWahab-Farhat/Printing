@@ -8,6 +8,7 @@ import 'package:printing/core/router/app_router.dart';
 import 'package:printing/core/session/session.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/features/customers/presentation/widgets/customer_picker_sheet.dart';
 import 'package:printing/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:printing/features/home/presentation/widgets/employee_card.dart';
 import 'package:printing/features/home/presentation/widgets/payment_board.dart';
@@ -135,43 +136,47 @@ class _HomeView extends StatelessWidget {
 
   /// Both shortcuts push over the shell rather than switching tabs.
   ///
-  /// إضافة عميل opens the form itself, not the العملاء tab: a shortcut that lands on a list the
-  /// user then has to find an "add" button on has not saved them anything — it has just moved
-  /// the tap. The tab is still there for browsing customers, which is a different errand.
+  /// **The two things staff start most often, and nothing else.** Each opens the form itself,
+  /// not the tab it lives on: a shortcut that lands on a list the user then has to find an "add"
+  /// button on has not saved them anything — it has just moved the tap. The المخزن shortcut that
+  /// used to sit here was neither of those things (it opened a screen for reading, which the
+  /// drawer already offers by name), and taking an order is the errand this shop opens the app
+  /// for.
   List<QuickAction> _actionsFor(BuildContext context) {
     return [
-      // Two doors where there was one. They are different records with different screens —
-      // a customer buys, a vendor supplies — and the shortcut that used to say «إضافة عميل»
-      // was the only way into either from here.
       QuickAction(
         label: 'عميل جديد',
         icon: AppIcons.addCustomer,
         onTap: () => context.push(Routes.addCustomer),
       ),
-      // The «مورد جديد» shortcut belongs here, gated on `viewVendors` exactly like «المخزن»
-      // below. It is parked rather than written because the screen it opens does not exist yet:
-      // vendors have their models, repository and Cubit, but no view and therefore no route, so
-      // `Routes.addVendor` and `AppIcons.addVendor` are both undefined and the app will not
-      // compile with the shortcut in place.
-      //
-      // Restore this — unchanged — the moment the vendor form page lands:
-      //
-      //   if (sl<Session>().can(AppPermission.viewVendors))
-      //     QuickAction(
-      //       label: 'مورد جديد',
-      //       icon: AppIcons.addVendor,
-      //       onTap: () => context.push(Routes.addVendor),
-      //     ),
-      // Left out entirely without `inventory.view`: the route redirects home, and a shortcut
-      // that bounces the user back where they were reads as a broken button rather than as a
-      // permission they do not hold.
-      if (sl<Session>().can(AppPermission.viewInventory))
+      // Left out entirely without `orders.manage`: the route redirects back to the customer, and
+      // a shortcut that bounces the user where they came from reads as a broken button rather
+      // than as a permission they do not hold.
+      if (sl<Session>().can(AppPermission.manageOrders))
         QuickAction(
-          label: 'المخزن',
-          icon: AppIcons.warehouse,
-          onTap: () => context.push(Routes.warehouse),
+          label: 'طلبية جديدة',
+          icon: AppIcons.addOrder,
+          onTap: () => _takeOrder(context),
         ),
     ];
+  }
+
+  /// «طلبية جديدة» from a screen that is about nobody in particular.
+  ///
+  /// **So it asks who first.** The form itself has no customer field — `customer_id` is read on
+  /// create and ignored afterwards, so an order cannot change hands, and naming the customer by
+  /// *which screen you are on* is what makes the wrong one unnameable (NEW-ORDER-DESIGN.md §١).
+  /// The home screen is about nobody, so the naming happens in the sheet before the form opens,
+  /// and the same route does the rest.
+  Future<void> _takeOrder(BuildContext context) async {
+    final customer = await showCustomerPicker(context: context);
+
+    // Backing out of the sheet is an ordinary ending: no form, no message.
+    if (customer == null || !context.mounted) return;
+
+    // The whole customer travels, so the form opens with their name in place instead of a
+    // spinner — exactly what their own screen hands it.
+    await context.push(Routes.newCustomerOrder(customer.id), extra: customer);
   }
 }
 

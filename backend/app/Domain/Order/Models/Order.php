@@ -269,19 +269,33 @@ class Order extends Model implements HasAuditTrail
     /**
      * Whether another version of the artwork may be put on the order.
      *
-     * **One status, and it is the one named after the work.** «قيد التصميم» *is* the artwork
-     * conversation; a version belongs to it and nowhere else. An order still «جديدة» has not
-     * begun that conversation — the artwork it starts with arrives *with* the move into design,
-     * which is why {@see ChangeOrderStatus} writes the status before
-     * it attaches what the move carried — and an order being printed is running against a file
-     * that was approved, so changing it means going back to design on purpose.
+     * **Open before the work starts and while it is being done; closed once the press is
+     * running against it.** «قيد التصميم» *is* the artwork conversation, so it was once the only
+     * status here — and that was wrong about the commonest order in the shop. A customer very
+     * often arrives with the finished file, agreed long before the order was taken; there is
+     * nothing to design, and the file still has to go on the order. The old rule left one way to
+     * record it: send the order to the designer's queue and pull it straight back out, which
+     * puts a status on the screen saying work is being done that nobody is doing and two moves
+     * on the timeline standing for nothing that happened.
+     *
+     * So «جديدة» accepts a version too — including at the moment the order is taken, see
+     * {@see CreateOrder} — and «قيد التصميم» remains what it always was: the queue for the
+     * orders whose artwork does not exist yet.
+     *
+     * The line stops at «قيد الطباعة» because that is where it means something: the bags are
+     * being printed from a settled file, and changing it is going back to design on purpose —
+     * a move somebody makes and the timeline records.
+     *
+     * Every move that touches the artwork carries it while the order stands on the permitting
+     * side of the move, which is why {@see ChangeOrderStatus} writes the status before the
+     * attachment in one direction and after it in the other.
      *
      * **A different line from {@see itemsAreEditable()}, deliberately.** A quantity is a number
      * the shop floor can still act on; a design is a decision that has already been acted on.
      */
     public function designsAreEditable(): bool
     {
-        return $this->status === OrderStatus::Designing;
+        return in_array($this->status, [OrderStatus::New, OrderStatus::Designing], true);
     }
 
     /**

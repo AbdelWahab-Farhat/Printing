@@ -161,6 +161,56 @@ void main() {
     expect(find.text('أجرة التصميم'), findsOneWidget);
   });
 
+  testWidgets('artwork is chosen while the order is being taken', (tester) async {
+    // Arrange — this is the reversal of NEW-ORDER-DESIGN.md §٧ س٣. The customer very often walks
+    // in with the finished file; recording it used to mean creating the order, opening it, and
+    // walking it through «قيد التصميم» for work nobody was doing.
+    session.adopt(userWith(['orders.manage']));
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('تصميم العميل'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('اختيار التصميم'), findsOneWidget);
+  });
+
+  testWidgets('our own work is offered the picker too', (tester) async {
+    // Arrange — `design_source` answers whose work the artwork was, which is the question that
+    // moves money. Whether a file exists yet is a different one, and our designer often
+    // finishes before the order is taken.
+    session.adopt(userWith(['orders.manage']));
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('من عندنا'));
+    await tester.pumpAndSettle();
+
+    // Assert — the fee and the files, side by side.
+    expect(find.text('أجرة التصميم'), findsOneWidget);
+    expect(find.text('اختيار التصميم'), findsOneWidget);
+  });
+
+  testWidgets('«بدون تصميم» is not offered a file to pick', (tester) async {
+    // Arrange — that source means a repeat print of something already agreed, or plain bags.
+    // There is no file, and the use case drops any that were picked before the switch.
+    session.adopt(userWith(['orders.manage']));
+
+    // Act — the default, untouched.
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('اختيار التصميم'), findsNothing);
+    expect(
+      find.text('طلبية بلا تصميم — إعادة طباعة لما اتُّفق عليه، أو أكياس سادة'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('an order with no line cannot be sent', (tester) async {
     // Arrange
     session.adopt(userWith(['orders.manage']));

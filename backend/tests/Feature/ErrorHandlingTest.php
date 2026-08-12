@@ -136,7 +136,7 @@ class ErrorHandlingTest extends TestCase
         $customer = Customer::factory()->create();
         $foreignShop = CustomerShop::factory()->create();
         $sync = app(SyncCustomerShops::class);
-        $payload = [new CustomerShopData(name: 'x', latitude: 32.1, longitude: 13.1, id: $foreignShop->id)];
+        $payload = [new CustomerShopData(name: 'x', cityId: $foreignShop->city_id, id: $foreignShop->id)];
 
         // Assert
         $this->expectException(ShopDoesNotBelongToCustomer::class);

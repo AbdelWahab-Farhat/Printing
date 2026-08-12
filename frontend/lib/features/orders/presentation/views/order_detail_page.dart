@@ -16,6 +16,7 @@ import 'package:printing/features/orders/models/order_payment.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:printing/features/orders/presentation/widgets/order_customer_card.dart';
 import 'package:printing/features/orders/presentation/widgets/order_designs_section.dart';
+import 'package:printing/features/orders/presentation/widgets/order_invoice_actions.dart';
 import 'package:printing/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:printing/features/orders/presentation/widgets/order_status_bar.dart';
 import 'package:printing/features/orders/presentation/widgets/order_timeline.dart';
@@ -232,6 +233,11 @@ class _Body extends StatelessWidget {
         // opened to answer, and it used to be a chip the size of a list row's sharing a line
         // with the total.
         OrderStatusBar(status: order.status, label: order.statusLabel),
+        // Directly under it, and that is the sequence rather than a spare slot: somebody who has
+        // just read what state the order is in is one step from telling the customer so. Buried
+        // on the dial it was a feature people forgot the app had.
+        SizedBox(height: 12.h),
+        CopyInvoiceButton(order: order),
         SizedBox(height: 16.h),
         _Header(order: order),
         SizedBox(height: 16.h),
@@ -433,6 +439,19 @@ class _Actions extends StatelessWidget {
         // and each has something to do there the other has not.
         if (_mayEditSomething)
           AppAction(label: 'تعديل الطلبية', icon: AppIcons.edit, onTap: onEdit),
+
+        // The other half of «نسخ الفاتورة» — the same message, handed to the phone's own sheet
+        // instead of to the clipboard. On the dial rather than beside the button, because the
+        // clipboard is the one people reach for a dozen times a day and this is the one for
+        // sending it straight on.
+        //
+        // No `permission`: it says nothing the reader is not already looking at, so a grant of
+        // its own could only refuse somebody the screen has already shown everything to.
+        AppAction(
+          label: 'مشاركة الفاتورة',
+          icon: AppIcons.share,
+          onTap: (context) => shareOrderInvoice(context, order),
+        ),
 
         // Its own screen, because a ledger gets long — see [OrderPaymentsPage]. The three
         // numbers stay at the top of *this* screen, so somebody checking «كم بقي» never has to

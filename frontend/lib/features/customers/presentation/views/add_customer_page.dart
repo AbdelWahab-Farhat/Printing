@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/router/app_router.dart';
 import 'package:printing/core/utils/app_icons.dart';
@@ -14,9 +13,12 @@ import 'package:printing/core/widgets/app_text_field.dart';
 import 'package:printing/features/business_fields/models/business_field.dart';
 import 'package:printing/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
 import 'package:printing/features/business_fields/presentation/widgets/business_field_picker.dart';
+import 'package:printing/features/cities/models/city.dart';
 import 'package:printing/features/customers/models/customer.dart';
 import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
 import 'package:printing/features/customers/usecases/create_customer.dart';
+import 'package:printing/features/orders/presentation/widgets/destination_picker_sheet.dart';
+import 'package:printing/features/orders/presentation/widgets/place_picker_tile.dart';
 
 /// Register a customer: who they are, how to reach them, and where they sell from.
 ///
@@ -25,20 +27,20 @@ import 'package:printing/features/customers/usecases/create_customer.dart';
 /// you have just started working with, the server defaults them to active, and a toggle that is
 /// always left alone is a question the user has to read and answer for no reason.
 ///
-/// **Shops are optional as a group and all-or-nothing as a row.** The API requires a name and
-/// both coordinates for every shop it is given — a place the driver cannot find is not worth
-/// recording — so a row that has been started must be finished or removed. That is what the
-/// validators on each row enforce, before a round trip.
+/// **Shops are optional as a group and all-or-nothing as a row.** The API requires a name and a
+/// city for every shop it is given — a place nobody can put on the map is not worth recording —
+/// so a row that has been started must be finished or removed. That is what the validators on
+/// each row enforce, before a round trip.
 class AddCustomerPage extends StatelessWidget {
   const AddCustomerPage({this.customer, super.key});
 
   /// The customer being edited, or null to register a new one.
   ///
   /// **One screen for both verbs, and that is not laziness.** The expensive parts of this file
-  /// are not the two text boxes — they are the shop rows: a `FormField` wrapper so a map pin can
-  /// be validated, the picker round trip, the controller lifecycle, and the 422 mapping that
-  /// turns `shops.1.latitude` into an error on the second card. A separate edit screen means
-  /// writing all of that twice and then keeping two copies of the map wiring in step.
+  /// are not the two text boxes — they are the shop rows: a `FormField` wrapper so a chosen
+  /// place can be validated, the picker round trip, the controller lifecycle, and the 422
+  /// mapping that turns `shops.1.city_id` into an error on the second card. A separate edit
+  /// screen means writing all of that twice and then keeping two copies of it in step.
   ///
   /// It also comes out right for free: the server *syncs* shops — a row with an id is updated,
   /// one without is created, one left out is deleted — so this editor's existing add-and-remove
@@ -121,7 +123,18 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
     super.dispose();
   }
 
-  void _addShop() => setState(() => _shops.add(_ShopFields()));
+  /// A new row, starting in the city of the row above it.
+  ///
+  /// Not an invented default: a customer with three shops nearly always has them in one city,
+  /// and the value being copied is one the user chose seconds ago on this same screen — it is
+  /// still on the card above, and one tap changes it. The neighbourhood is *not* inherited: two
+  /// branches in Tripoli are two different districts far more often than not, and a wrong
+  /// district that looks answered is worse than an empty one that asks.
+  void _addShop() => setState(() {
+    final fields = _ShopFields();
+    fields.city = _shops.isEmpty ? null : _shops.last.city;
+    _shops.add(fields);
+  });
 
   void _removeShop(int index) {
     // Disposed on the way out rather than left to `dispose()`: the row is gone from the tree
@@ -317,7 +330,7 @@ class _ShopsSection extends StatelessWidget {
         ),
         SizedBox(height: 4.h),
         Text(
-          'المكان الذي يبيع منه العميل، وموقعه على الخريطة.',
+          'المكان الذي يبيع منه العميل، ومدينته والمنطقة التي يقع فيها.',
           style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.onSurfaceVariant,
           ),
@@ -423,9 +436,10 @@ class _ShopCard extends StatelessWidget {
           ),
           SizedBox(height: 14.h),
 
-          // Two number fields and an instruction to copy them out of Google Maps used to live
-          // here. Nobody does that, so what it really produced was shops with no pin at all.
-          _ShopLocationField(fields: fields, onChanged: onChanged),
+          // A map pin used to live here — first as two number boxes to copy out of Google Maps,
+          // then as a picker on a real map. Both asked the clerk to *find* a place they can
+          // already name, so this asks for the name: the city, and the neighbourhood inside it.
+          _ShopPlaceField(fields: fields, index: index, state: state, onChanged: onChanged),
           SizedBox(height: 14.h),
 
           AppTextField(
@@ -448,190 +462,124 @@ class _ShopCard extends StatelessWidget {
 }
 
 /// The controllers behind one shop row, kept together so they are created and disposed as a
-/// unit — a row is added and removed as one thing, and four loose controllers would be four
+/// unit — a row is added and removed as one thing, and loose controllers would be as many
 /// chances to forget one.
-/// The shop's pin: a row that opens the map, and a way out if the map will not load.
+/// Where the shop is: the city, and the neighbourhood inside it.
 ///
 /// Wrapped in a [FormField] so `_formKey.currentState!.validate()` still governs it and
-/// `_submit()` changes by not one line. A plain `Container` cannot be validated, and this is the
+/// `_submit()` changes by not one line. A plain `Row` cannot be validated, and this is the
 /// entire reason for the wrapper.
 ///
-/// **The two controllers are unchanged.** The picker writes `32.887200` into the same
-/// `TextEditingController`s the number fields wrote into, so `_ShopFields.toInput()`,
-/// `CreateCustomer`, `NewCustomerShop`, the request body and every existing customer test are
-/// untouched by this screen changing completely.
-class _ShopLocationField extends StatefulWidget {
-  const _ShopLocationField({required this.fields, required this.onChanged});
+/// **Both sheets are the order screen's own.** `showCityPicker` and `showRegionPicker` are
+/// searchable, paginated lists of the same delivery map an order is addressed from — writing a
+/// second pair here would be two lists to keep in step with one API. The only difference this
+/// caller asks for is `deliveryOnly`: our own branches are places to collect *from*, not places
+/// a customer sells.
+class _ShopPlaceField extends StatefulWidget {
+  const _ShopPlaceField({
+    required this.fields,
+    required this.index,
+    required this.state,
+    required this.onChanged,
+  });
 
   final _ShopFields fields;
+  final int index;
+  final AddCustomerState state;
   final VoidCallback onChanged;
 
   @override
-  State<_ShopLocationField> createState() => _ShopLocationFieldState();
+  State<_ShopPlaceField> createState() => _ShopPlaceFieldState();
 }
 
-class _ShopLocationFieldState extends State<_ShopLocationField> {
-  /// Reveals the two number fields again.
-  ///
-  /// Not a leftover: with no connection the map is a blank grid that still pans and still
-  /// answers, so typing two numbers read off somebody else's phone is the honest fallback.
-  bool _isManual = false;
+class _ShopPlaceFieldState extends State<_ShopPlaceField> {
+  Future<void> _pickCity(FormFieldState<void> field) async {
+    final city = await showCityPicker(
+      context: context,
+      selectedId: widget.fields.city?.id,
+      deliveryOnly: true,
+    );
 
-  String get _latitude => widget.fields.latitude.text.trim();
-
-  String get _longitude => widget.fields.longitude.text.trim();
-
-  bool get _hasPin => _latitude.isNotEmpty && _longitude.isNotEmpty;
-
-  LatLng? get _point {
-    final latitude = double.tryParse(Validators.toWesternDigits(_latitude));
-    final longitude = double.tryParse(Validators.toWesternDigits(_longitude));
-
-    if (latitude == null || longitude == null) return null;
-
-    return LatLng(latitude, longitude);
-  }
-
-  Future<void> _pick(FormFieldState<void> field) async {
-    final picked = await context.push<LatLng>(Routes.pickLocation, extra: _point);
-    if (picked == null || !mounted) return;
+    if (city == null || !mounted) return;
 
     setState(() {
-      // Six decimals — the column is decimal(10,7), and six is about a tenth of a metre.
-      widget.fields.latitude.text = picked.latitude.toStringAsFixed(6);
-      widget.fields.longitude.text = picked.longitude.toStringAsFixed(6);
+      widget.fields.city = city;
+      // The neighbourhood belonged to the previous city. Keeping it would send the server a
+      // pair it refuses — and rightly: «طرابلس / سوق الخميس الزاوية» is not a place.
+      widget.fields.region = null;
     });
 
     field.didChange(null);
     widget.onChanged();
   }
 
+  Future<void> _pickRegion() async {
+    final city = widget.fields.city;
+
+    if (city == null) {
+      context.showInfo('اختر المدينة أولاً');
+
+      return;
+    }
+
+    final region = await showRegionPicker(
+      context: context,
+      cityId: city.id,
+      selectedId: widget.fields.region?.id,
+    );
+
+    if (region == null || !mounted) return;
+
+    setState(() => widget.fields.region = region);
+    widget.onChanged();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
+    final city = widget.fields.city;
 
     return FormField<void>(
-      validator: (_) {
-        if (!_hasPin) return 'حدّد موقع المحل على الخريطة';
-
-        return Validators.decimal(min: -90, max: 90)(_latitude) ??
-            Validators.decimal(min: -180, max: 180)(_longitude);
-      },
+      validator: (_) => widget.fields.city == null ? 'اختر مدينة المحل' : null,
       builder: (field) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Material(
-            color: scheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(14.r),
-            child: InkWell(
-              onTap: () => _pick(field),
-              borderRadius: BorderRadius.circular(14.r),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18.r,
-                      backgroundColor: scheme.primaryContainer,
-                      child: Icon(
-                        AppIcons.mapPin,
-                        size: 20.sp,
-                        color: scheme.onPrimaryContainer,
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'الموقع على الخريطة',
-                            style: context.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          SizedBox(height: 2.h),
-                          Text(
-                            _hasPin ? '$_latitude, $_longitude' : 'لم يُحدَّد',
-                            textDirection: _hasPin ? TextDirection.ltr : null,
-                            style: context.textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      _hasPin ? 'تعديل' : 'تحديد',
-                      style: context.textTheme.labelLarge?.copyWith(
-                        color: scheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+          Row(
+            children: [
+              Expanded(
+                child: PlacePickerTile(
+                  caption: 'المدينة',
+                  value: city?.name ?? 'مطلوبة',
+                  isChosen: city != null,
+                  onTap: () => _pickCity(field),
                 ),
               ),
-            ),
+              SizedBox(width: 10.w),
+              Expanded(
+                // Shown only when there is something to choose. A city with no neighbourhoods
+                // opens an empty sheet, and a tile that leads to nothing is worse than no tile:
+                // `regionsCount` comes from the list endpoint, so this costs no request.
+                child: city == null || city.hasRegions
+                    ? PlacePickerTile(
+                        caption: 'المنطقة',
+                        value: widget.fields.region?.name ?? 'اختياري',
+                        isChosen: widget.fields.region != null,
+                        onTap: _pickRegion,
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
           ),
 
-          if (field.hasError) ...[
+          // The form's own complaint and the server's, in that order — they cannot both be
+          // wrong about the same field at the same time, and `city_id` is the one the API
+          // names when a stale id from a cached map is sent.
+          if (field.hasError || widget.state.shopError(widget.index, 'city_id') != null) ...[
             SizedBox(height: 6.h),
             Text(
-              field.errorText!,
-              style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
+              field.errorText ?? widget.state.shopError(widget.index, 'city_id')!,
+              style: context.textTheme.bodySmall?.copyWith(color: context.colorScheme.error),
             ),
           ],
-
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: TextButton(
-              onPressed: () => setState(() => _isManual = !_isManual),
-              child: Text(_isManual ? 'إخفاء الإدخال اليدوي' : 'إدخال الإحداثيات يدوياً'),
-            ),
-          ),
-
-          if (_isManual)
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: widget.fields.latitude,
-                    label: 'خط العرض',
-                    hint: '32.8872',
-                    textDirection: TextDirection.ltr,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                      signed: true,
-                    ),
-                    // The existing validator, unchanged — it already accepts Arabic-Indic
-                    // digits and the Arabic decimal mark. No second coordinate parser.
-                    validator: Validators.decimal(min: -90, max: 90),
-                    onChanged: (_) {
-                      field.didChange(null);
-                      widget.onChanged();
-                    },
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: AppTextField(
-                    controller: widget.fields.longitude,
-                    label: 'خط الطول',
-                    hint: '13.1913',
-                    textDirection: TextDirection.ltr,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                      signed: true,
-                    ),
-                    validator: Validators.decimal(min: -180, max: 180),
-                    onChanged: (_) {
-                      field.didChange(null);
-                      widget.onChanged();
-                    },
-                  ),
-                ),
-              ],
-            ),
         ],
       ),
     );
@@ -648,24 +596,20 @@ class _ShopFields {
       ..businessFieldId = shop.businessFieldId
       // Kept whole, not just its id: it is what keeps a trade that is no longer offered
       // selectable on the shop that is already recorded under it.
-      ..businessField = shop.businessField;
+      ..businessField = shop.businessField
+      // Whole for the same reason the trade is: the tile shows a name, and holding only the id
+      // would mean fetching the map to render a row the server already described.
+      ..city = shop.city
+      ..region = shop.region;
     fields.name.text = shop.name;
-    // Six decimals, matching what the picker writes, so opening the form and saving without
-    // touching anything sends back exactly what was there.
-    fields.latitude.text = shop.latitude?.toStringAsFixed(6) ?? '';
-    fields.longitude.text = shop.longitude?.toStringAsFixed(6) ?? '';
     fields.pageUrl.text = shop.pageUrl ?? '';
 
     return fields;
   }
 
   final name = TextEditingController();
-  final latitude = TextEditingController();
-  final longitude = TextEditingController();
   final pageUrl = TextEditingController();
 
-  /// What the use case takes: text, exactly as typed. Nothing is parsed here — see
-  /// [CreateCustomer], which is the one place in this feature that converts anything.
   /// Null id for a row the user just added. An existing shop keeps its id so the server updates
   /// it instead of deleting it and creating a new one.
   int? id;
@@ -678,19 +622,25 @@ class _ShopFields {
   /// stops offering it to everybody else.
   BusinessField? businessField;
 
+  /// المدينة والمنطقة as picked. Not controllers either, and for a stronger reason than the
+  /// trade: these are only ever *chosen*, never typed, so there is no text state for the two of
+  /// them to disagree about.
+  City? city;
+  Region? region;
+
+  /// What the use case takes. The city is non-null by the time this is called: `_submit()` runs
+  /// the form's validators first, and the place field refuses a row without one.
   ShopInput toInput() => (
     id: id,
     name: name.text,
-    latitude: latitude.text,
-    longitude: longitude.text,
+    cityId: city!.id,
+    regionId: region?.id,
     pageUrl: pageUrl.text,
     businessFieldId: businessFieldId,
   );
 
   void dispose() {
     name.dispose();
-    latitude.dispose();
-    longitude.dispose();
     pageUrl.dispose();
   }
 }

@@ -38,6 +38,14 @@ _CustomerShop _$CustomerShopFromJson(Map<String, dynamic> json) =>
     _CustomerShop(
       id: (json['id'] as num).toInt(),
       name: json['name'] as String,
+      cityId: (json['city_id'] as num?)?.toInt(),
+      city: json['city'] == null
+          ? null
+          : City.fromJson(json['city'] as Map<String, dynamic>),
+      regionId: (json['region_id'] as num?)?.toInt(),
+      region: json['region'] == null
+          ? null
+          : Region.fromJson(json['region'] as Map<String, dynamic>),
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       pageUrl: json['page_url'] as String?,
@@ -53,6 +61,10 @@ Map<String, dynamic> _$CustomerShopToJson(_CustomerShop instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
+      'city_id': instance.cityId,
+      'city': instance.city?.toJson(),
+      'region_id': instance.regionId,
+      'region': instance.region?.toJson(),
       'latitude': instance.latitude,
       'longitude': instance.longitude,
       'page_url': instance.pageUrl,

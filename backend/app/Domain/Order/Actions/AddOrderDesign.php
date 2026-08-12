@@ -38,9 +38,10 @@ final class AddOrderDesign
             throw OrderIsClosed::make($order->status);
         }
 
-        // Read from the order's *current* status, which is why {@see ChangeOrderStatus} moves
-        // the order before it attaches what the move carried: sending a printing order back to
-        // «قيد التصميم» arrives here with the order already in design, and is allowed.
+        // Read from the order's *current* status, which is why {@see ChangeOrderStatus} decides
+        // per move whether to attach before or after writing it: a move *into* design arrives
+        // here with the order already in design, and a move out of it arrives here before the
+        // order has left. Either way the answer to this question is yes at the moment it is put.
         if (! $order->designsAreEditable()) {
             throw OrderDesignsAreLocked::make($order->status);
         }

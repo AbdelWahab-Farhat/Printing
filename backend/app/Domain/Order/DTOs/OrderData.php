@@ -23,6 +23,11 @@ final readonly class OrderData
     /**
      * @param  list<OrderItemData>|null  $items  null means "not supplied" — on update the
      *                                           existing lines are left untouched.
+     * @param  list<int>  $designIds  Read on create only, and in the order they were sent: the
+     *                                version numbers follow the clerk's picking order, so
+     *                                «التصميم الأول» means the one they chose first. On update it
+     *                                is ignored — a version is added and reviewed through its own
+     *                                endpoint, where the conversation with the customer lives.
      */
     public function __construct(
         public int $customerId,
@@ -38,6 +43,7 @@ final readonly class OrderData
         public string $discount = '0.00',
         public ?string $trackingNumber = null,
         public ?array $items = null,
+        public array $designIds = [],
     ) {}
 
     /**
@@ -63,6 +69,9 @@ final readonly class OrderData
             designFee: self::money($validated['design_fee'] ?? null),
             discount: self::money($validated['discount'] ?? null),
             trackingNumber: self::textOrNull($validated['tracking_number'] ?? null),
+            designIds: is_array($validated['design_ids'] ?? null)
+                ? array_values(array_map(intval(...), $validated['design_ids']))
+                : [],
             items: array_key_exists('items', $validated) && is_array($validated['items'])
                 ? array_values(array_map(
                     fn (array $item, int $index) => OrderItemData::fromArray($item, $index),

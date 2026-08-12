@@ -424,16 +424,15 @@ class _ShopRow extends StatelessWidget {
             ],
           ],
         ),
-        if (shop.hasPin) ...[
+        // «طرابلس · سوق الجمعة» — the address as somebody would say it out loud, which is the
+        // whole reason it replaced a pair of coordinates nobody could read back.
+        if (shop.placeLabel case final place?) ...[
           SizedBox(height: 6.h),
           _CopyRow(
             icon: AppIcons.mapPin,
             label: 'الموقع',
-            value:
-                '${shop.latitude!.toStringAsFixed(6)}, ${shop.longitude!.toStringAsFixed(6)}',
-            copiedMessage: 'تم نسخ الإحداثيات',
-            // No mini-map per row, deliberately: one FlutterMap per shop is one tile download
-            // per shop, in the one place on this screen that repeats.
+            value: place,
+            copiedMessage: 'تم نسخ الموقع',
           ),
         ],
         if (shop.pageUrl case final url? when url.isNotEmpty) ...[
@@ -445,11 +444,13 @@ class _ShopRow extends StatelessWidget {
             copiedMessage: 'تم نسخ الرابط',
           ),
         ],
-        if (!shop.hasPin) ...[
+        if (shop.placeLabel == null) ...[
           SizedBox(height: 6.h),
           Text(
-            // Shops recorded before the map picker existed. Saying so is what gets it fixed.
-            'لا يوجد موقع على الخريطة',
+            // A shop whose city was deleted off the map, or one recorded before the form asked
+            // for one. Saying so is what gets it fixed — opening the customer and saving is all
+            // it takes.
+            'لا توجد مدينة مسجّلة لهذا المحل',
             style: context.textTheme.bodySmall?.copyWith(color: scheme.tertiary),
           ),
         ],

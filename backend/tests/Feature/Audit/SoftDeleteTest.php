@@ -155,7 +155,7 @@ class SoftDeleteTest extends TestCase
 
         // Act
         app(SyncCustomerShops::class)($customer, [
-            new CustomerShopData(name: 'محل جديد', latitude: 32.1, longitude: 13.1),
+            new CustomerShopData(name: 'محل جديد', cityId: $shop->city_id),
         ]);
 
         // Assert

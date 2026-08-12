@@ -37,10 +37,7 @@ final class OrderListQuery
             // any line is sold by the kilo. Left to fetch themselves that is a query per order,
             // which is what a work queue can least afford.
             ->with('items')
-            // `designs` is counted rather than loaded: the list draws none of them, and the only
-            // question asked of them is whether a «قيد التصميم» move still owes artwork — which
-            // a count answers.
-            ->withCount(['items', 'designs']);
+            ->withCount('items');
 
         return $this->applyFilters($query, $filters)
             ->orderByDesc('id')

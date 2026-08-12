@@ -21,8 +21,20 @@ class CustomerShopResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            // Numbers, not strings — a map SDK can use these directly. Null only for shops
-            // recorded before coordinates were introduced.
+
+            // الموقع. The ids for a form to preselect, and the names so a screen never has to
+            // fetch the delivery map to translate two numbers — the same bargain
+            // `business_field` below makes.
+            //
+            // `city` can be null while `city_id` is not: a soft-deleted city is out of scope, so
+            // a shop left pointing at one shows no city until somebody picks another.
+            'city_id' => $this->city_id,
+            'city' => $this->whenLoaded('city', fn () => $this->city ? new CityResource($this->city) : null),
+            'region_id' => $this->region_id,
+            'region' => $this->whenLoaded('region', fn () => $this->region ? new RegionResource($this->region) : null),
+
+            // Numbers, not strings — a map SDK can use these directly. Null for every shop
+            // recorded since the form stopped asking for a pin, which is most of them.
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'page_url' => $this->page_url,

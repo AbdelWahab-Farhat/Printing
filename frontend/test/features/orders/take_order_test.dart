@@ -73,6 +73,7 @@ void main() {
     String? discount,
     String? recipientPhone,
     String? notes,
+    List<int> designIds = const [],
     List<DraftOrderLine> lines = const [
       DraftOrderLine(productId: 7, productVariantId: 12, quantity: '300'),
     ],
@@ -87,6 +88,7 @@ void main() {
       discount: discount,
       recipientPhone: recipientPhone,
       notes: notes,
+      designIds: designIds,
       lines: lines,
     );
   }
@@ -174,6 +176,53 @@ void main() {
 
       // Assert
       expect(sent().discount, isNull);
+    });
+  });
+
+  group('the artwork that comes with the order', () {
+    test('abandoned by switching to «بدون تصميم», and not sent', () async {
+      // Arrange — the picker is hidden the moment that source is chosen, but a clerk who picked
+      // two files and then changed their mind would otherwise still be posting the ids. Same
+      // rule as the design fee, for the same reason: the request should say what was meant.
+
+      // Act
+      await submit(designSource: 'none', designIds: const [12, 13]);
+
+      // Assert
+      expect(sent().designIds, isNull);
+    });
+
+    test('the files ride along when the artwork is somebody’s work', () async {
+      // Arrange — «تصميم العميل»: the customer walked in with the finished file, and the whole
+      // point of sending the ids with the order is that it never has to visit «قيد التصميم».
+
+      // Act
+      await submit(designSource: 'customer', designIds: const [12, 13]);
+
+      // Assert — in the order they were picked; the server numbers the versions from it.
+      expect(sent().designIds, [12, 13]);
+    });
+
+    test('our own work may carry its files too', () async {
+      // Arrange — `design_source` answers whose work it was, not whether a file exists. Our
+      // designer often finishes before the order is taken.
+
+      // Act
+      await submit(designSource: 'in_house', designFee: '40', designIds: const [12]);
+
+      // Assert
+      expect(sent().designIds, [12]);
+    });
+
+    test('nothing picked is absent, not an empty list', () async {
+      // Arrange — an empty array is the app claiming something about the artwork. It has
+      // nothing to claim.
+
+      // Act
+      await submit(designSource: 'customer');
+
+      // Assert
+      expect(sent().designIds, isNull);
     });
   });
 

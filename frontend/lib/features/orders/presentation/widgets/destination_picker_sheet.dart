@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/di/injector.dart';
+import 'package:printing/core/network/paginated.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/widgets/paged_list_view.dart';
 import 'package:printing/core/widgets/search_field.dart';
@@ -18,14 +19,29 @@ import 'package:printing/features/cities/presentation/viewmodel/city_regions_cub
 /// The office branches are in the same list as the delivery cities, and deliberately so: the
 /// server reads `fulfilment_type` off whichever city is chosen, so picking «إستلام مكتب(قرجي)»
 /// *is* how an order becomes a collection — there is no second switch to keep in step with it.
-Future<City?> showCityPicker({required BuildContext context, int? selectedId}) {
+///
+/// [deliveryOnly] is the one caller that disagrees, and only about the branches: a customer's
+/// shop is somewhere *they* sell, and «هذا المحل يقع في: إستلام مكتب طرابلس» is a sentence with
+/// no meaning. See [showCityPicker]'s parameter for why the filter is here and not on the API.
+Future<City?> showCityPicker({
+  required BuildContext context,
+  int? selectedId,
+
+  /// Hide our own branches, leaving only real places.
+  ///
+  /// Filtered here rather than through a `fulfilment_type` parameter on `GET /cities`, which
+  /// the endpoint does not have: there are exactly two such rows on the whole map and they sort
+  /// first, so a client-side `where` costs one line and no round trip. If the map ever grows
+  /// enough branches to push a real city off the first page, this becomes a server filter.
+  bool deliveryOnly = false,
+}) {
   return showModalBottomSheet<City>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     builder: (_) => BlocProvider<CitiesCubit>(
       create: (_) => sl<CitiesCubit>()..load(),
-      child: _CityPicker(selectedId: selectedId),
+      child: _CityPicker(selectedId: selectedId, deliveryOnly: deliveryOnly),
     ),
   );
 }
@@ -51,21 +67,43 @@ Future<Region?> showRegionPicker({
 }
 
 class _CityPicker extends StatelessWidget {
-  const _CityPicker({this.selectedId});
+  const _CityPicker({this.selectedId, this.deliveryOnly = false});
 
   final int? selectedId;
+  final bool deliveryOnly;
+
+  /// The same state with our branches taken out of the loaded page.
+  ///
+  /// The page's `meta` is left alone: it describes what the server sent, and rewriting `total`
+  /// to match what is on screen would make "load more" ask the wrong question.
+  CitiesState _visible(CitiesState state) {
+    if (!deliveryOnly) return state;
+
+    return switch (state) {
+      CitiesLoaded(:final page, :final isLoadingMore, :final search) => CitiesLoaded(
+        page: Paginated<City>(
+          items: page.items.where((city) => !city.isOfficePickup).toList(),
+          meta: page.meta,
+          extraMeta: page.extraMeta,
+        ),
+        isLoadingMore: isLoadingMore,
+        search: search,
+      ),
+      _ => state,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<CitiesCubit>();
 
     return _Sheet(
-      title: 'اختيار المدينة أو المكتب',
-      searchHint: 'ابحث عن مدينة أو فرع',
+      title: deliveryOnly ? 'اختيار المدينة' : 'اختيار المدينة أو المكتب',
+      searchHint: deliveryOnly ? 'ابحث عن مدينة' : 'ابحث عن مدينة أو فرع',
       onSearch: cubit.search,
       child: BlocBuilder<CitiesCubit, CitiesState>(
         builder: (context, state) => PagedListView<City>(
-          state: state,
+          state: _visible(state),
           emptyMessage: 'لا توجد مدن على الخريطة',
           onLoadMore: cubit.loadMore,
           onRefresh: cubit.refresh,
@@ -73,8 +111,9 @@ class _CityPicker extends StatelessWidget {
           itemBuilder: (context, city, index) => _Row(
             title: city.name,
             // The rate is what the choice costs, and it lands on the order the moment it is
-            // made — so it is on screen before the tap, not after it.
-            subtitle: city.priceLabel,
+            // made — so it is on screen before the tap, not after it. Recording where a shop
+            // *is* costs nothing, so that caller gets the map's own description instead.
+            subtitle: deliveryOnly ? (city.subtitle ?? '') : city.priceLabel,
             isSelected: city.id == selectedId,
             onTap: () => Navigator.of(context).pop(city),
           ),

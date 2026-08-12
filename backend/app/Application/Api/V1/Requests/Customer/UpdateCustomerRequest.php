@@ -40,9 +40,14 @@ class UpdateCustomerRequest extends StoreCustomerRequest
             'shops' => ['sometimes', 'array'],
             'shops.*.id' => ['sometimes', 'integer', $this->shopBelongsToThisCustomer()],
             'shops.*.name' => ['required', 'string', 'max:255'],
-            // الموقع as coordinates, bounded to the real ranges — see StoreCustomerRequest.
-            'shops.*.latitude' => ['required', 'numeric', 'between:-90,90'],
-            'shops.*.longitude' => ['required', 'numeric', 'between:-180,180'],
+            // الموقع: a place on the delivery map. The region must also be *inside* the chosen
+            // city, which `withValidator()` on the parent checks and this endpoint inherits.
+            'shops.*.city_id' => ['required', 'integer', Rule::exists('cities', 'id')->withoutTrashed()],
+            'shops.*.region_id' => ['nullable', 'integer', Rule::exists('regions', 'id')->withoutTrashed()],
+            // الإحداثيات, no longer asked for by any screen — see StoreCustomerRequest. Leaving
+            // them out keeps whatever the shop already had rather than clearing it.
+            'shops.*.latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'shops.*.longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'shops.*.page_url' => ['nullable', 'url', 'max:2048'],
             // مجال العمل. Optional — most shops on record have none — and `exists` keeps a
             // stale id from a client's cached list out of the database. Deactivated fields are

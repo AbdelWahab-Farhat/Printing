@@ -8,10 +8,21 @@ final readonly class CustomerShopData
 {
     public function __construct(
         public string $name,
-        /** Degrees, -90 to 90. */
-        public float $latitude,
-        /** Degrees, -180 to 180. */
-        public float $longitude,
+        /** Where the shop is, on the delivery map. Required — it is what identifies the place. */
+        public int $cityId,
+        /** Which neighbourhood inside that city, or null when the city has none or nobody knows yet. */
+        public ?int $regionId = null,
+        /**
+         * Degrees, -90 to 90, or null.
+         *
+         * **Null means «لم يُرسَل», not «امسحه».** The form no longer asks for a pin, so every
+         * request the app makes leaves both coordinates out — and a shop that was recorded with
+         * one must keep it. {@see SyncCustomerShops} is where that is enforced; clearing a pin
+         * is not something any caller can ask for today.
+         */
+        public ?float $latitude = null,
+        /** Degrees, -180 to 180, or null. Same «not sent» meaning as {@see $latitude}. */
+        public ?float $longitude = null,
         public ?string $pageUrl = null,
         /**
          * مجال العمل — which trade this shop is in, or null for one recorded without it.
@@ -32,8 +43,10 @@ final readonly class CustomerShopData
     {
         return new self(
             name: (string) $shop['name'],
-            latitude: (float) $shop['latitude'],
-            longitude: (float) $shop['longitude'],
+            cityId: (int) $shop['city_id'],
+            regionId: isset($shop['region_id']) && $shop['region_id'] !== '' ? (int) $shop['region_id'] : null,
+            latitude: isset($shop['latitude']) ? (float) $shop['latitude'] : null,
+            longitude: isset($shop['longitude']) ? (float) $shop['longitude'] : null,
             pageUrl: isset($shop['page_url']) && $shop['page_url'] !== '' ? (string) $shop['page_url'] : null,
             businessFieldId: isset($shop['business_field_id']) && $shop['business_field_id'] !== ''
                 ? (int) $shop['business_field_id']

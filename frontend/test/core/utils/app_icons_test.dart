@@ -88,6 +88,7 @@ void main() {
       AppIcons.pdf,
       AppIcons.openExternal,
       AppIcons.statusChange,
+      AppIcons.share,
       AppIcons.empty,
     ].last;
 

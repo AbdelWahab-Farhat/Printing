@@ -214,7 +214,7 @@ void main() {
     expect(sent.toJson().containsKey('shops'), isFalse);
   });
 
-  test('a shop is sent with its name and its coordinates as numbers', () async {
+  test('a shop is sent with its name, its city and its region', () async {
     // Arrange
     arrangeCreate(const Right(created));
 
@@ -226,8 +226,8 @@ void main() {
         (
           id: null,
           name: '  فرع سوق الجمعة  ',
-          latitude: '32.8872',
-          longitude: '13.1913',
+          cityId: 3,
+          regionId: 11,
           pageUrl: 'https://facebook.com/alnoor',
           businessFieldId: null,
         ),
@@ -237,15 +237,17 @@ void main() {
     // Assert
     final shop = sentCustomer().shops!.single;
     expect(shop.name, 'فرع سوق الجمعة');
-    expect(shop.latitude, 32.8872);
-    expect(shop.longitude, 13.1913);
+    expect(shop.cityId, 3);
+    expect(shop.regionId, 11);
     expect(shop.pageUrl, 'https://facebook.com/alnoor');
   });
 
-  test('Arabic-Indic coordinates and a decimal comma both reach the API as numbers', () async {
-    // Arrange — ٣٢٫٨٨ is what a Libyan keyboard produces, and 32,88 is what the same keyboard
-    // offers as a decimal mark. Sent through untouched, either is a 422 about a field the user
-    // filled in correctly as far as they can tell.
+  test('a shop with no region still sends the key, and sends no coordinates at all', () async {
+    // Arrange — two rules in one body because they are the same rule seen twice: what the shop
+    // *replaces* has to be sent even when empty, and what it must *not* touch has to be absent.
+    // An omitted `region_id` would mean «اتركها كما هي» and a region cleared by moving the shop
+    // would come back on the next save; a sent `latitude` would erase a pin this form never
+    // asked about.
     arrangeCreate(const Right(created));
 
     // Act
@@ -253,14 +255,17 @@ void main() {
       name: 'مطبعة النور',
       phone: '0913334444',
       shops: const [
-        (id: null, name: 'الفرع', latitude: '٣٢٫٨٨', longitude: '13,19', pageUrl: null, businessFieldId: null),
+        (id: null, name: 'الفرع', cityId: 3, regionId: null, pageUrl: null, businessFieldId: null),
       ],
     );
 
     // Assert
-    final shop = sentCustomer().shops!.single;
-    expect(shop.latitude, 32.88);
-    expect(shop.longitude, 13.19);
+    final json = (sentCustomer().toJson()['shops'] as List<dynamic>).single as Map<String, dynamic>;
+    expect(json['city_id'], 3);
+    expect(json.containsKey('region_id'), isTrue);
+    expect(json['region_id'], isNull);
+    expect(json.containsKey('latitude'), isFalse);
+    expect(json.containsKey('longitude'), isFalse);
   });
 
   test('the shop\'s trade travels as an id, and «غير محدد» travels as null', () async {
@@ -273,8 +278,8 @@ void main() {
       name: 'مطبعة النور',
       phone: '0913334444',
       shops: const [
-        (id: null, name: 'محل الأناقة', latitude: '32.1', longitude: '13.1', pageUrl: null, businessFieldId: 3),
-        (id: null, name: 'فرع بلا تصنيف', latitude: '32.2', longitude: '13.2', pageUrl: null, businessFieldId: null),
+        (id: null, name: 'محل الأناقة', cityId: 3, regionId: null, pageUrl: null, businessFieldId: 3),
+        (id: null, name: 'فرع بلا تصنيف', cityId: 3, regionId: null, pageUrl: null, businessFieldId: null),
       ],
     );
 
@@ -295,7 +300,7 @@ void main() {
       name: 'مطبعة النور',
       phone: '0913334444',
       shops: const [
-        (id: null, name: 'الفرع', latitude: '32.8', longitude: '13.1', pageUrl: '   ', businessFieldId: null),
+        (id: null, name: 'الفرع', cityId: 3, regionId: null, pageUrl: '   ', businessFieldId: null),
       ],
     );
 
@@ -305,7 +310,7 @@ void main() {
   });
 
   test('several shops keep the order they were entered in', () async {
-    // Arrange — the server keys its complaints by index (`shops.1.latitude`), so the order the
+    // Arrange — the server keys its complaints by index (`shops.1.city_id`), so the order the
     // screen shows and the order it sends have to be the same one.
     arrangeCreate(const Right(created));
 
@@ -314,9 +319,9 @@ void main() {
       name: 'مطبعة النور',
       phone: '0913334444',
       shops: const [
-        (id: null, name: 'الأول', latitude: '32.1', longitude: '13.1', pageUrl: null, businessFieldId: null),
-        (id: null, name: 'الثاني', latitude: '32.2', longitude: '13.2', pageUrl: null, businessFieldId: null),
-        (id: null, name: 'الثالث', latitude: '32.3', longitude: '13.3', pageUrl: null, businessFieldId: null),
+        (id: null, name: 'الأول', cityId: 3, regionId: null, pageUrl: null, businessFieldId: null),
+        (id: null, name: 'الثاني', cityId: 3, regionId: null, pageUrl: null, businessFieldId: null),
+        (id: null, name: 'الثالث', cityId: 3, regionId: null, pageUrl: null, businessFieldId: null),
       ],
     );
 
@@ -332,7 +337,7 @@ void main() {
           message: 'البيانات غير صحيحة',
           statusCode: 422,
           fieldErrors: {
-            'shops.1.latitude': ['خط العرض يجب أن يكون بين -90 و 90'],
+            'shops.1.city_id': ['المدينة المختارة غير موجودة'],
           },
         ),
       ),
@@ -341,9 +346,9 @@ void main() {
     // Act
     await cubit.submit(name: 'مطبعة النور', phone: '0913334444');
 
-    // Assert — under the second shop's latitude box, and nowhere else.
-    expect(cubit.state.shopError(1, 'latitude'), 'خط العرض يجب أن يكون بين -90 و 90');
-    expect(cubit.state.shopError(0, 'latitude'), isNull);
+    // Assert — under the second shop's city tile, and nowhere else.
+    expect(cubit.state.shopError(1, 'city_id'), 'المدينة المختارة غير موجودة');
+    expect(cubit.state.shopError(0, 'city_id'), isNull);
     expect(cubit.state.nameError, isNull);
   });
 }

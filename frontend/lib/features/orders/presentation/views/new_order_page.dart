@@ -13,9 +13,12 @@ import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
 import 'package:printing/features/cities/models/city.dart';
 import 'package:printing/features/customers/models/customer.dart';
+import 'package:printing/features/customers/models/customer_design.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
+import 'package:printing/features/customers/presentation/widgets/design_thumbnail.dart';
 import 'package:printing/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/take_order_cubit.dart';
+import 'package:printing/features/orders/presentation/widgets/design_picker_sheet.dart';
 import 'package:printing/features/orders/presentation/widgets/destination_picker_sheet.dart';
 import 'package:printing/features/orders/presentation/widgets/order_line_row.dart';
 import 'package:printing/features/orders/presentation/widgets/place_picker_tile.dart';
@@ -35,9 +38,14 @@ import 'package:printing/features/orders/usecases/take_order.dart';
 /// is an estimate and says so, because the numbers that count are the ones that come back with
 /// the order.
 ///
-/// **The artwork is not attached here.** `POST /orders` takes no designs — they are a second
-/// request against an order that already exists — so the source is recorded (it may move money)
-/// and the files are added from the order's own screen. NEW-ORDER-DESIGN.md §٧ س٣.
+/// **The artwork is attached here, and that reverses an earlier decision.** It used to be a
+/// second request against an order that already existed — see NEW-ORDER-DESIGN.md §٧ س٣, and the
+/// revision under it. The reason was that `POST /orders` took no designs; the reason that
+/// mattered was that an order still «جديدة» could not hold one at all, so the customer who
+/// walked in with their finished file had it recorded by sending the order to the designer's
+/// queue and pulling it straight back out. Both halves are gone: «جديدة» accepts artwork, and
+/// the ids ride along with the order in one transaction — a file belonging to somebody else
+/// refuses the order rather than leaving one behind without it.
 class NewOrderPage extends StatelessWidget {
   const NewOrderPage({required this.customerId, this.customer, super.key});
 
@@ -97,6 +105,13 @@ class _NewOrderViewState extends State<_NewOrderView> {
 
   _DesignSource _designSource = _DesignSource.none;
 
+  /// The files chosen from the customer's library, in the order they were picked — which is the
+  /// order the server numbers the versions in, so «التصميم الأول» means the first one here.
+  ///
+  /// Held as models rather than ids so the chips can show the thumbnail and the label without a
+  /// second read of the library.
+  List<CustomerDesign> _designs = const [];
+
   /// Hidden without the grant — and refused by the server either way, which is the half that
   /// is a rule.
   bool get _mayDiscount => sl<Session>().can(AppPermission.discountOrders);
@@ -116,7 +131,14 @@ class _NewOrderViewState extends State<_NewOrderView> {
   // ── the draft ──────────────────────────────────────────────────────────────────────────
 
   Future<void> _addLine() async {
-    final picked = await showProductPicker(context: context);
+    // **One line per size, and the picker is where that is enforced.** Two lines of the same
+    // size are quoted separately — 100 and 200 are priced as 100 and as 200, never as the 300
+    // the customer is buying — so the size already on the form is greyed out where it is chosen
+    // rather than refused after the fact.
+    final picked = await showProductPicker(
+      context: context,
+      addedVariantIds: {for (final line in _lines) line.variant.id},
+    );
     if (picked == null || !mounted) return;
 
     setState(() {
@@ -133,6 +155,26 @@ class _NewOrderViewState extends State<_NewOrderView> {
   void _removeLine(OrderLineDraft line) {
     setState(() => _lines.remove(line));
     line.dispose();
+  }
+
+  /// Opens the customer's library, where a file may also be uploaded into it.
+  ///
+  /// The same sheet the order screen uses, so uploading during the order is uploading into the
+  /// customer's library — the file is their property and the next order points at the same one.
+  Future<void> _pickDesigns() async {
+    final picked = await showDesignPicker(
+      context: context,
+      // From the Cubit, which is the one place this form cannot change the customer.
+      customerId: context.read<TakeOrderCubit>().customerId,
+      selected: _designs,
+    );
+
+    if (picked == null || !mounted) return;
+
+    setState(() => _designs = picked);
+    // A refusal about the artwork disappears as the selection changes, rather than lingering
+    // under a picker that no longer holds what was refused.
+    context.read<TakeOrderCubit>().clearFailure();
   }
 
   Future<void> _pickCity() async {
@@ -187,6 +229,9 @@ class _NewOrderViewState extends State<_NewOrderView> {
       customerShopId: _shopId,
       designSource: _designSource.value,
       designFee: _designFee.text,
+      // Dropped by the use case when the source is «بدون تصميم», the same way the fee is —
+      // the picker being hidden is the suggestion, and that is the rule.
+      designIds: [for (final design in _designs) design.id],
       // Not merely hidden: a clerk without the grant sends no discount at all, so the server
       // has nothing to refuse.
       discount: _mayDiscount ? _discount.text : null,
@@ -451,8 +496,20 @@ class _NewOrderViewState extends State<_NewOrderView> {
     );
   }
 
-  /// Whose work the artwork was — and the fee, which only our own work may carry.
+  /// Whose work the artwork was, the fee that only our own work may carry — and the files.
+  ///
+  /// **The picker is hidden under «بدون تصميم» and shown under the other two.** That source
+  /// means a repeat print of something already agreed, or plain bags with nothing on them:
+  /// there is no file, and offering to pick one would invite a selection the use case then
+  /// drops on the way out.
+  ///
+  /// It is shown under «من عندنا» as well as «تصميم العميل», and deliberately. The two answer
+  /// *whose work it was* — the question that moves money — not whether a file exists yet. Our
+  /// own designer often finishes before the order is taken, and an order whose fee we charge is
+  /// no less able to carry the file it was charged for.
   Widget _design(TakeOrderState submission) {
+    final designsError = submission.designsError;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -476,13 +533,45 @@ class _NewOrderViewState extends State<_NewOrderView> {
             errorText: submission.designFeeError,
           ),
         ],
-        SizedBox(height: 6.h),
-        Text(
-          'الملفات تُضاف من شاشة الطلبية بعد إنشائها',
-          style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.onSurfaceVariant,
+        if (_designSource == _DesignSource.none) ...[
+          SizedBox(height: 6.h),
+          Text(
+            'طلبية بلا تصميم — إعادة طباعة لما اتُّفق عليه، أو أكياس سادة',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
+        ] else ...[
+          SizedBox(height: 10.h),
+          if (_designs.isNotEmpty) ...[
+            for (final design in _designs)
+              _ChosenDesign(
+                design: design,
+                onRemove: () => setState(
+                  () => _designs = [
+                    for (final kept in _designs)
+                      if (kept.id != design.id) kept,
+                  ],
+                ),
+              ),
+            SizedBox(height: 4.h),
+          ],
+          AppButton.tonal(
+            label: _designs.isEmpty ? 'اختيار التصميم' : 'تعديل الاختيار (${_designs.length})',
+            icon: AppIcons.add,
+            onPressed: _pickDesigns,
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            designsError ??
+                'من مكتبة العميل، أو ارفع ملفاً جديداً — ويمكن تركها وإضافتها لاحقاً',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: designsError != null
+                  ? context.colorScheme.error
+                  : context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -505,6 +594,57 @@ class _NewOrderViewState extends State<_NewOrderView> {
       keyboardType: TextInputType.phone,
       textDirection: TextDirection.ltr,
       errorText: submission.recipientPhoneError,
+    );
+  }
+}
+
+/// One file the order is about to carry, and the way to take it back off.
+///
+/// **The thumbnail, not a glyph standing for it.** Two versions of one logo are «الشعار الأزرق»
+/// and «الشعار الأزرق — نسخة معدّلة»; told apart by their names alone they are two identical
+/// rows of text, and the wrong one goes to the press. The picker shows them the same way.
+///
+/// Removing here unpicks the file from this order. Nothing leaves the customer's library — it
+/// is their property, and this screen never had the right to delete it.
+class _ChosenDesign extends StatelessWidget {
+  const _ChosenDesign({required this.design, required this.onRemove});
+
+  final CustomerDesign design;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(12.w, 8.h, 4.w, 8.h),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(14.r),
+        ),
+        child: Row(
+          children: [
+            DesignThumbnail(design: design, size: 40),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Text(
+                design.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            IconButton(
+              onPressed: onRemove,
+              icon: Icon(AppIcons.close, size: 20.sp),
+              color: scheme.onSurfaceVariant,
+              tooltip: 'إزالة من الطلبية',
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

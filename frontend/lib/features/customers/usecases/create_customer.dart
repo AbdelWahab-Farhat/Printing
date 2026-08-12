@@ -5,7 +5,7 @@ import 'package:printing/features/customers/models/customer.dart';
 import 'package:printing/features/customers/models/new_customer.dart';
 import 'package:printing/features/customers/repositories/customer_repository.dart';
 
-/// One shop exactly as it was typed — four boxes of text, nothing converted yet.
+/// One shop exactly as it was typed — the boxes of text, nothing converted yet.
 ///
 /// A record rather than a model: it never leaves this feature, it is never serialised, and it
 /// exists only to carry a form row from the screen to the line below that normalises it.
@@ -13,8 +13,13 @@ typedef ShopInput = ({
   /// Null for a row the user just added; the existing row's id when it came from the server.
   int? id,
   String name,
-  String latitude,
-  String longitude,
+
+  /// المدينة والمنطقة, already ids: they come from pickers reading the delivery map, so unlike
+  /// the boxes above there is no text here to normalise. The city is required by the form; the
+  /// region is null whenever the city has no neighbourhoods or none was chosen.
+  int cityId,
+  int? regionId,
+
   String? pageUrl,
 
   /// مجال العمل as picked from the list, or null for a shop left unclassified. Already an id
@@ -53,29 +58,25 @@ class CreateCustomer {
     );
   }
 
-  /// Text → the numbers the API wants.
+  /// A form row → what the API accepts.
   ///
-  /// The same digit normalisation as the phone, plus the decimal comma an Arabic keyboard
-  /// offers first: `'٣٢٫٨٨'` and `'32,88'` both have to reach the server as `32.88`, or the
-  /// shop lands in the Gulf of Guinea — or, worse, is rejected with a message about a field the
-  /// user filled in correctly as far as they can tell.
+  /// Less work than it used to be, and that is the point of the change: the place is two ids
+  /// picked off the delivery map rather than two numbers somebody read off a map and typed, so
+  /// there is nothing left here to parse — no Arabic-Indic digits, no decimal comma, no shop
+  /// quietly saved at latitude zero because a comma was a full stop.
   ///
-  /// `double.parse` and not `tryParse`: the form's validators have already refused anything
-  /// unparseable, so a failure here is a bug in this app, and it should be loud rather than a
-  /// shop quietly saved at latitude zero.
+  /// Coordinates are not sent at all. Omitting them is what tells the server to keep the pin a
+  /// shop already had; see `SyncCustomerShops`.
   static NewCustomerShop toShop(ShopInput shop) {
     final pageUrl = shop.pageUrl?.trim();
 
     return NewCustomerShop(
       id: shop.id,
       name: shop.name.trim(),
-      latitude: double.parse(_toDecimal(shop.latitude)),
-      longitude: double.parse(_toDecimal(shop.longitude)),
+      cityId: shop.cityId,
+      regionId: shop.regionId,
       pageUrl: pageUrl == null || pageUrl.isEmpty ? null : pageUrl,
       businessFieldId: shop.businessFieldId,
     );
   }
-
-  static String _toDecimal(String input) =>
-      Validators.toWesternDigits(input.trim()).replaceAll(',', '.');
 }

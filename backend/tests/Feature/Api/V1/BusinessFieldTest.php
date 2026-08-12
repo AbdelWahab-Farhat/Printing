@@ -6,6 +6,7 @@ namespace Tests\Feature\Api\V1;
 
 use App\Domain\Customer\Models\BusinessField;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Delivery\Models\City;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -103,9 +104,10 @@ class BusinessFieldTest extends TestCase
         // Arrange
         $field = BusinessField::factory()->named('شحن وتوصيل')->create();
         $customer = Customer::factory()->create();
+        $city = City::factory()->create();
         $customer->shops()->createMany([
-            ['name' => 'محل ١', 'latitude' => 32.8, 'longitude' => 13.1, 'business_field_id' => $field->id],
-            ['name' => 'محل ٢', 'latitude' => 32.9, 'longitude' => 13.2, 'business_field_id' => $field->id],
+            ['name' => 'محل ١', 'city_id' => $city->id, 'business_field_id' => $field->id],
+            ['name' => 'محل ٢', 'city_id' => $city->id, 'business_field_id' => $field->id],
         ]);
 
         // Act
@@ -188,8 +190,7 @@ class BusinessFieldTest extends TestCase
         $customer = Customer::factory()->create();
         $shop = $customer->shops()->create([
             'name' => 'محل الأناقة',
-            'latitude' => 32.8,
-            'longitude' => 13.1,
+            'city_id' => City::factory()->create()->id,
             'business_field_id' => $field->id,
         ]);
 
@@ -209,8 +210,7 @@ class BusinessFieldTest extends TestCase
         $customer = Customer::factory()->create();
         $shop = $customer->shops()->create([
             'name' => 'محل الشحن',
-            'latitude' => 32.8,
-            'longitude' => 13.1,
+            'city_id' => City::factory()->create()->id,
             'business_field_id' => $field->id,
         ]);
 
@@ -262,8 +262,7 @@ class BusinessFieldTest extends TestCase
         $customer = Customer::factory()->create();
         $customer->shops()->create([
             'name' => 'محل الشحن',
-            'latitude' => 32.8,
-            'longitude' => 13.1,
+            'city_id' => City::factory()->create()->id,
             'business_field_id' => $field->id,
         ]);
 

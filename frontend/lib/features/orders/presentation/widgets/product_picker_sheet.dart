@@ -29,8 +29,17 @@ typedef PickedProduct = ({Product product, ProductVariant variant});
 /// is re-priced as it is typed and stays visible beside the others. A sheet that collected them
 /// would be a second place to edit the same numbers.
 ///
+/// **A size already on the form cannot be picked twice**, and `addedVariantIds` is how the form
+/// says which. Two lines of one size climb the price ladder twice — 100 and 200 are quoted as
+/// 100 and as 200, never as the 300 the customer is buying — so the duplicate is stopped at the
+/// tap that would create it rather than explained afterwards. Left empty by a caller for which
+/// repeating a size is ordinary.
+///
 /// Returns null when the user backs out — an ordinary ending, reported nowhere.
-Future<PickedProduct?> showProductPicker({required BuildContext context}) {
+Future<PickedProduct?> showProductPicker({
+  required BuildContext context,
+  Set<int> addedVariantIds = const {},
+}) {
   return showModalBottomSheet<PickedProduct>(
     context: context,
     isScrollControlled: true,
@@ -42,13 +51,15 @@ Future<PickedProduct?> showProductPicker({required BuildContext context}) {
       // Constructed here rather than resolved from the injector: this list asks a narrower
       // question than the catalogue tab does — only what is still made.
       create: (_) => ProductsCubit(getProducts: sl<GetProducts>(), onlyOrderable: true)..load(),
-      child: const _ProductPicker(),
+      child: _ProductPicker(addedVariantIds: addedVariantIds),
     ),
   );
 }
 
 class _ProductPicker extends StatefulWidget {
-  const _ProductPicker();
+  const _ProductPicker({required this.addedVariantIds});
+
+  final Set<int> addedVariantIds;
 
   @override
   State<_ProductPicker> createState() => _ProductPickerState();
@@ -58,11 +69,17 @@ class _ProductPickerState extends State<_ProductPicker> {
   /// Null while the bag is being chosen; the bag itself while its size is.
   Product? _product;
 
+  bool _isAdded(ProductVariant variant) => widget.addedVariantIds.contains(variant.id);
+
   void _choose(Product product) {
     final sizes = product.activeVariants;
 
     // A product whose only size is the obvious one: asking would be a tap with one answer.
-    if (sizes.length == 1) {
+    //
+    // **Unless that one answer is already on the form.** The shortcut is exactly where a
+    // duplicate would slip past every other guard, so the size step is opened instead — a sheet
+    // that closed on nothing would leave the clerk tapping the same bag again.
+    if (sizes.length == 1 && !_isAdded(sizes.single)) {
       Navigator.of(context).pop((product: product, variant: sizes.single));
 
       return;
@@ -134,13 +151,24 @@ class _ProductPickerState extends State<_ProductPicker> {
               separatorBuilder: (_, _) => Divider(height: 1.h),
               itemBuilder: (context, index) {
                 final size = sizes[index];
+                final added = _isAdded(size);
 
+                // Shown and refused rather than dropped from the list: a size that vanishes
+                // reads as «نفد», and the answer the clerk needs is the opposite of that.
                 return ListTile(
+                  enabled: !added,
                   title: Text(size.label),
-                  subtitle: Text(size.dimensionsLabel ?? _priceLine(product, size)),
-                  trailing: Icon(Icons.chevron_left_rounded, size: 22.r),
-                  onTap: () =>
-                      Navigator.of(context).pop((product: product, variant: size)),
+                  subtitle: Text(
+                    added
+                        ? 'مضاف — عدّل كميته من البنود'
+                        : size.dimensionsLabel ?? _priceLine(product, size),
+                  ),
+                  trailing: added
+                      ? Icon(Icons.check_rounded, size: 22.r)
+                      : Icon(Icons.chevron_left_rounded, size: 22.r),
+                  onTap: added
+                      ? null
+                      : () => Navigator.of(context).pop((product: product, variant: size)),
                 );
               },
             ),

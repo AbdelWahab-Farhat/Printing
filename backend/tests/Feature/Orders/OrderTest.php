@@ -9,12 +9,14 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\DesignSource;
+use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
@@ -539,6 +541,106 @@ class OrderTest extends TestCase
             ->assertJsonPath('data.grand_total', '430.00');
     }
 
+    /**
+     * The customer walked in with the finished file.
+     *
+     * **The commonest order in the shop, and the one the old rule had no room for.** Artwork
+     * could only be attached in «قيد التصميم», so recording a file that was agreed before the
+     * order existed meant sending the order to the designer's queue and pulling it straight back
+     * out — a status saying work was being done that nobody was doing, and two moves on the
+     * timeline standing for nothing that happened.
+     */
+    public function test_an_order_may_be_taken_with_its_artwork_already_chosen(): void
+    {
+        // Arrange — the design is already in the customer's library, from a previous job.
+        $headers = $this->clerk();
+        $customer = Customer::factory()->create();
+        $design = CustomerDesign::factory()->create(['customer_id' => $customer->getKey()]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'customer_id' => $customer->getKey(),
+            'design_source' => DesignSource::Customer->value,
+            'design_ids' => [$design->getKey()],
+        ]));
+
+        // Assert — attached, and the order is still «جديدة»: nothing was designed, so nothing
+        // pretends to have been.
+        $response->assertCreated()->assertJsonPath('data.status', 'new');
+
+        $this->assertDatabaseHas('order_designs', [
+            'order_id' => $response->json('data.id'),
+            'customer_design_id' => $design->getKey(),
+            'version' => 1,
+            'status' => OrderDesignStatus::Proposed->value,
+        ]);
+    }
+
+    public function test_the_versions_are_numbered_in_the_order_they_were_sent(): void
+    {
+        // Arrange — two files for one job: the logo and the back of the bag.
+        $headers = $this->clerk();
+        $customer = Customer::factory()->create();
+        $first = CustomerDesign::factory()->create(['customer_id' => $customer->getKey()]);
+        $second = CustomerDesign::factory()->create(['customer_id' => $customer->getKey()]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'customer_id' => $customer->getKey(),
+            'design_source' => DesignSource::Customer->value,
+            'design_ids' => [$first->getKey(), $second->getKey()],
+        ]));
+
+        // Assert — «التصميم الأول» means the one the clerk picked first.
+        $response->assertCreated();
+
+        // `reorder`, because the relation lists the newest version first — see `Order::designs()`.
+        $versions = Order::query()
+            ->findOrFail($response->json('data.id'))
+            ->designs()
+            ->reorder('version')
+            ->pluck('customer_design_id')
+            ->all();
+
+        $this->assertSame([$first->getKey(), $second->getKey()], $versions);
+    }
+
+    public function test_another_customers_artwork_refuses_the_whole_order(): void
+    {
+        // Arrange
+        $headers = $this->clerk();
+        $customer = Customer::factory()->create();
+        $strangers = CustomerDesign::factory()->create([
+            'customer_id' => Customer::factory()->create()->getKey(),
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'customer_id' => $customer->getKey(),
+            'design_ids' => [$strangers->getKey()],
+        ]));
+
+        // Assert — one transaction. The alternative is an order that exists, has a number, and
+        // is missing the only file it was taken for.
+        $response->assertStatus(422)->assertJsonValidationErrors('customer_design_id');
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_a_design_that_does_not_exist_is_refused_before_anything_is_written(): void
+    {
+        // Arrange
+        $headers = $this->clerk();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'design_ids' => [999_999],
+        ]));
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('design_ids.0');
+        $this->assertDatabaseCount('orders', 0);
+    }
+
     // ─────────────────────────────── invariants ───────────────────────────────
 
     public function test_a_client_cannot_dictate_the_total(): void
@@ -606,9 +708,9 @@ class OrderTest extends TestCase
         // Eloquent arms its lazy-loading guard only for a query that returned several rows,
         // which is exactly the shape a page has and a single-row fixture does not — so a list
         // test with one order proves nothing about the list.
-        $printing = Order::factory()->status(OrderStatus::Printing)->create();
-        OrderItem::factory()->for($printing)->create(['variant_label' => '30*30']);
-        Order::factory()->status(OrderStatus::Printing)->create();
+        $withLines = Order::factory()->create();
+        OrderItem::factory()->for($withLines)->create(['variant_label' => '30*30']);
+        Order::factory()->create();
         // Someone who may actually record a shortage: the fields of a move are only described
         // for the moves this user is offered.
         $headers = $this->auth(PermissionName::ViewOrders, PermissionName::MoveOrderToShortage);
@@ -616,7 +718,7 @@ class OrderTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->getJson('/api/v1/orders');
 
-        // Assert — every printing order is offered «نواقص», and that offer is a field per line,
+        // Assert — every new order is offered «نواقص», and that offer is a field per line,
         // so the list cannot render without the lines. Loaded with the page rather than fetched
         // per row: a query per order is what turns a work queue into a slow screen.
         $shortage = collect($response->assertOk()->json('data.1.available_transitions'))
@@ -624,7 +726,7 @@ class OrderTest extends TestCase
 
         $this->assertNotNull($shortage);
         $this->assertSame(
-            ['shortage_'.$printing->items()->value('id'), 'reason'],
+            ['shortage_'.$withLines->items()->value('id'), 'reason'],
             array_column($shortage['fields'], 'key'),
         );
     }

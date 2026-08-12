@@ -124,9 +124,8 @@ class OrderDemoSeeder extends Seeder
             [OrderStatus::Ready, null],
         ]);
 
-        // نواقص — straight from printing.
-        $this->walk(-10, 'نواقص: نقص في الكمية أثناء الطباعة', [
-            [OrderStatus::Printing, null],
+        // نواقص — declared at intake, which is its only way in.
+        $this->walk(-10, 'نواقص: الكمية غير متوفرة عند استلام الطلبية', [
             [OrderStatus::Shortage, null],
         ]);
 
@@ -254,14 +253,12 @@ class OrderDemoSeeder extends Seeder
             [OrderStatus::Printing, null],
         ], city: $this->regionCity, region: $this->regionCity->regions()->first()?->getKey());
 
-        // Bounced in and out of shortage twice: this is why `shortage` stamps no column of its
-        // own — a single timestamp would keep only the last visit and lose the first.
-        $this->walk(-12, 'نواقص مرتين: ذهاب وإياب مع الطباعة', [
-            [OrderStatus::Printing, null],
+        // A shortage that was resolved: the stock came in, and the order rejoined the route it
+        // was parked off. This is the shape that matters for the timeline — «نواقص» is a detour
+        // an order leaves, not a place it ends.
+        $this->walk(-12, 'نواقص ثم توفّرت الكمية', [
             [OrderStatus::Shortage, null],
-            [OrderStatus::Printing, null],
-            [OrderStatus::Shortage, null],
-            [OrderStatus::Printing, null],
+            [OrderStatus::Printing, 'وصلت الكمية الناقصة من المورد'],
             [OrderStatus::Ready, null],
         ]);
 

@@ -41,6 +41,16 @@ class StoreOrderRequest extends FormRequest
             // is kept rather than blanked, so flipping the source back does not lose the number.
             'design_fee' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
 
+            // The artwork, chosen from the customer's library as it is everywhere else — never
+            // uploaded here. Whether each design is *this customer's* is a domain refusal with a
+            // sentence worth reading, and it takes the whole order down with it rather than
+            // leaving one behind that is missing the file it was taken for.
+            //
+            // Capped at the library's own size: a longer list could only be repetition, and
+            // `AddOrderDesign` is one insert per entry.
+            'design_ids' => ['sometimes', 'array', 'max:50'],
+            'design_ids.*' => ['integer', Rule::exists('customer_designs', 'id')->withoutTrashed()],
+
             // Guarded by `orders.discount` inside the domain, so a console command or a future
             // import cannot get past it either.
             'discount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
@@ -79,6 +89,7 @@ class StoreOrderRequest extends FormRequest
             'items.*.quantity.min' => 'الكمية يجب أن تكون أكبر من صفر',
             'discount.min' => 'الخصم لا يمكن أن يكون سالباً',
             'design_fee.min' => 'سعر التصميم لا يمكن أن يكون سالباً',
+            'design_ids.*.exists' => 'التصميم غير موجود',
         ];
     }
 
@@ -93,6 +104,7 @@ class StoreOrderRequest extends FormRequest
             'city_id' => 'المدينة',
             'region_id' => 'المنطقة',
             'design_source' => 'مصدر التصميم',
+            'design_ids' => 'التصاميم',
             'recipient_name' => 'اسم المستلم',
             'recipient_phone' => 'هاتف المستلم',
             'address_details' => 'تفاصيل العنوان',

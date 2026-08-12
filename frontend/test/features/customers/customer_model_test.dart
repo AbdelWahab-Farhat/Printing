@@ -95,4 +95,61 @@ void main() {
     expect(customer.isActive, isFalse);
     expect(customer.createdAt, isNull);
   });
+
+  test('a shop reads back the city and the region the API named it by', () {
+    // Arrange — the server sends both the ids a form preselects and the names a screen renders,
+    // so nothing here has to fetch the delivery map to translate two numbers.
+    final json = <String, dynamic>{
+      'id': 4,
+      'name': 'محل الأناقة',
+      'city_id': 3,
+      'city': {'id': 3, 'name': 'طرابلس', 'is_region_required': true},
+      'region_id': 11,
+      'region': {'id': 11, 'city_id': 3, 'name': 'سوق الجمعة'},
+      'page_url': null,
+    };
+
+    // Act
+    final shop = CustomerShop.fromJson(json);
+
+    // Assert
+    expect(shop.cityId, 3);
+    expect(shop.city!.name, 'طرابلس');
+    expect(shop.regionId, 11);
+    expect(shop.region!.name, 'سوق الجمعة');
+    expect(shop.placeLabel, 'طرابلس · سوق الجمعة');
+  });
+
+  test('a shop with no region says only its city', () {
+    // Arrange — most cities on the map have no neighbourhoods at all.
+    final json = <String, dynamic>{
+      'id': 5,
+      'name': 'فرع مصراتة',
+      'city_id': 9,
+      'city': {'id': 9, 'name': 'مصراتة', 'is_region_required': false},
+      'region_id': null,
+      'region': null,
+    };
+
+    // Act
+    final shop = CustomerShop.fromJson(json);
+
+    // Assert — «مصراتة ·» with a trailing separator would be the bug this asserts against.
+    expect(shop.placeLabel, 'مصراتة');
+  });
+
+  test('a shop whose city was not loaded has nothing to say about where it is', () {
+    // Arrange — the relation is omitted when it was not requested, and resolves to null for a
+    // city that has since been deleted off the map. Both are «we cannot name the place», which
+    // a screen has to be able to tell from an empty string it would render as a blank line.
+    final json = <String, dynamic>{'id': 6, 'name': 'محل', 'city_id': 3};
+
+    // Act
+    final shop = CustomerShop.fromJson(json);
+
+    // Assert
+    expect(shop.cityId, 3);
+    expect(shop.city, isNull);
+    expect(shop.placeLabel, isNull);
+  });
 }

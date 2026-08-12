@@ -7,7 +7,6 @@ namespace App\Domain\Order\Actions;
 use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderStatus;
-use App\Domain\Order\Exceptions\DesignRequiredBeforeDesigning;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\ShortageNeedsAQuantity;
 use App\Domain\Order\Exceptions\TransitionNotAllowed;
@@ -43,7 +42,6 @@ final class ChangeOrderStatus
      * @throws OrderIsClosed
      * @throws TransitionNotAllowed
      * @throws TransitionRequiresReason
-     * @throws DesignRequiredBeforeDesigning
      */
     public function __invoke(
         Order $order,
@@ -109,19 +107,34 @@ final class ChangeOrderStatus
                     : $collected;
             }
 
+            // **The artwork is attached while the order stands in the status that accepts it.**
+            // Only «قيد التصميم» does — see `designsAreEditable()` — and a move carrying artwork
+            // is either arriving there or leaving it, so which side of the status write the
+            // attachment falls on is decided by the order, not fixed in the code:
+            //
+            // - Leaving design for the press: the *old* status is the permitting one, so the
+            //   versions go on before the move is written. This is the designer finishing.
+            // - Arriving in design — «جديدة» forward, or the correction path back from «قيد
+            //   الطباعة» — the *new* status is the permitting one, so the move is written first.
+            //
+            // Everything here is one transaction either way, so a design that turns out to
+            // belong to somebody else takes the status change back with it: there is no order
+            // left holding a version it should never have had, and none left in a status it was
+            // only moved to in order to carry one.
+            $artworkGoesFirst = $order->designsAreEditable();
+
+            if ($artworkGoesFirst) {
+                $this->attachDesigns($order, $fields);
+            }
+
             $order->forceFill($attributes)->save();
 
-            // **The status is written first, and the order matters.** Artwork may only be
-            // attached to an order in a status that allows it — see `designsAreEditable()` —
-            // and the commonest case of a move carrying artwork is the correction path, «قيد
-            // الطباعة» back to «قيد التصميم», where the *old* status forbids it and the new one
-            // is the whole point. Everything here is one transaction, so a design that turns
-            // out to belong to somebody else takes the status change back with it: there is no
-            // order left holding a version it should never have had.
-            $this->attachDesigns($order, $fields);
+            if (! $artworkGoesFirst) {
+                $this->attachDesigns($order, $fields);
+            }
+
             $this->recordShortages($order, $target, $fields);
 
-            $this->guardDesigning($order, $target);
             $this->guardShortage($order, $target);
 
             ($this->record)($order, $from, $target, $reason, $actor);
@@ -204,32 +217,5 @@ final class ChangeOrderStatus
         if (! $recorded) {
             throw ShortageNeedsAQuantity::make();
         }
-    }
-
-    /**
-     * «قيد التصميم» means there is artwork to look at.
-     *
-     * The field that asks for it refuses the empty payload with a friendlier message; this is
-     * the same rule for every other caller — a queue worker, an importer, a future endpoint.
-     *
-     * **This is a rule about entering the step, not about reaching the press.** Nothing forces
-     * an order through design at all: plain (سادة) bags and jobs whose artwork was settled
-     * beforehand go «جديدة» straight to «قيد الطباعة». But an order that *is* sent to design is
-     * being sent there to have something looked at, and a design queue full of orders carrying
-     * nothing is a queue nobody can work.
-     *
-     * @throws DesignRequiredBeforeDesigning
-     */
-    private function guardDesigning(Order $order, OrderStatus $target): void
-    {
-        if ($target !== OrderStatus::Designing) {
-            return;
-        }
-
-        if ($order->designs()->exists()) {
-            return;
-        }
-
-        throw DesignRequiredBeforeDesigning::make();
     }
 }

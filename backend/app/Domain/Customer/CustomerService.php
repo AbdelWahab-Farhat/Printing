@@ -95,7 +95,7 @@ class CustomerService
     {
         $customer->update(['is_active' => $isActive]);
 
-        return $customer->load('shops.businessField');
+        return $customer->load(Customer::SHOP_RELATIONS);
     }
 
     // ─────────────────────────── مجالات العمل ───────────────────────────

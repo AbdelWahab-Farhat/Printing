@@ -324,8 +324,14 @@ as DateTime?,
 /// @nodoc
 mixin _$CustomerShop {
 
- int get id; String get name;/// Numbers, not strings: these go straight into a map SDK. Null only for shops recorded
-/// before coordinates existed — a new one cannot be created without them.
+ int get id; String get name;/// المدينة — required by the API, so a shop that came from it has one. Nullable here all
+/// the same: `city` is the *object*, and the server omits it when the relation was not
+/// loaded or the city has since been deleted.
+@JsonKey(name: 'city_id') int? get cityId; City? get city;/// المنطقة — genuinely optional. Most cities have no neighbourhoods, and a shop taken over
+/// the phone often has none recorded.
+@JsonKey(name: 'region_id') int? get regionId; Region? get region;/// Numbers, not strings: these go straight into a map SDK. Null for every shop recorded
+/// since the form stopped asking for a pin — which is why nothing reads them today. The
+/// field stays so the pin survives a round trip through this app untouched.
  double? get latitude; double? get longitude;@JsonKey(name: 'page_url') String? get pageUrl;/// مجال العمل — what this shop sells. Null for the shops recorded before the list existed,
 /// and for one entered in a hurry; «لم يُحدَّد» is a real answer here, not a missing one.
 @JsonKey(name: 'business_field_id') int? get businessFieldId;/// The trade itself, so a screen renders its name without fetching the list to translate
@@ -343,16 +349,16 @@ $CustomerShopCopyWith<CustomerShop> get copyWith => _$CustomerShopCopyWithImpl<C
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId)&&(identical(other.businessField, businessField) || other.businessField == businessField));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.city, city) || other.city == city)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.region, region) || other.region == region)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId)&&(identical(other.businessField, businessField) || other.businessField == businessField));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,latitude,longitude,pageUrl,businessFieldId,businessField);
+int get hashCode => Object.hash(runtimeType,id,name,cityId,city,regionId,region,latitude,longitude,pageUrl,businessFieldId,businessField);
 
 @override
 String toString() {
-  return 'CustomerShop(id: $id, name: $name, latitude: $latitude, longitude: $longitude, pageUrl: $pageUrl, businessFieldId: $businessFieldId, businessField: $businessField)';
+  return 'CustomerShop(id: $id, name: $name, cityId: $cityId, city: $city, regionId: $regionId, region: $region, latitude: $latitude, longitude: $longitude, pageUrl: $pageUrl, businessFieldId: $businessFieldId, businessField: $businessField)';
 }
 
 
@@ -363,11 +369,11 @@ abstract mixin class $CustomerShopCopyWith<$Res>  {
   factory $CustomerShopCopyWith(CustomerShop value, $Res Function(CustomerShop) _then) = _$CustomerShopCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, double? latitude, double? longitude,@JsonKey(name: 'page_url') String? pageUrl,@JsonKey(name: 'business_field_id') int? businessFieldId,@JsonKey(name: 'business_field') BusinessField? businessField
+ int id, String name,@JsonKey(name: 'city_id') int? cityId, City? city,@JsonKey(name: 'region_id') int? regionId, Region? region, double? latitude, double? longitude,@JsonKey(name: 'page_url') String? pageUrl,@JsonKey(name: 'business_field_id') int? businessFieldId,@JsonKey(name: 'business_field') BusinessField? businessField
 });
 
 
-$BusinessFieldCopyWith<$Res>? get businessField;
+$CityCopyWith<$Res>? get city;$RegionCopyWith<$Res>? get region;$BusinessFieldCopyWith<$Res>? get businessField;
 
 }
 /// @nodoc
@@ -380,11 +386,15 @@ class _$CustomerShopCopyWithImpl<$Res>
 
 /// Create a copy of CustomerShop
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? latitude = freezed,Object? longitude = freezed,Object? pageUrl = freezed,Object? businessFieldId = freezed,Object? businessField = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? cityId = freezed,Object? city = freezed,Object? regionId = freezed,Object? region = freezed,Object? latitude = freezed,Object? longitude = freezed,Object? pageUrl = freezed,Object? businessFieldId = freezed,Object? businessField = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,latitude: freezed == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
+as String,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as int?,city: freezed == city ? _self.city : city // ignore: cast_nullable_to_non_nullable
+as City?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
+as int?,region: freezed == region ? _self.region : region // ignore: cast_nullable_to_non_nullable
+as Region?,latitude: freezed == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
 as double?,longitude: freezed == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
 as double?,pageUrl: freezed == pageUrl ? _self.pageUrl : pageUrl // ignore: cast_nullable_to_non_nullable
 as String?,businessFieldId: freezed == businessFieldId ? _self.businessFieldId : businessFieldId // ignore: cast_nullable_to_non_nullable
@@ -393,6 +403,30 @@ as BusinessField?,
   ));
 }
 /// Create a copy of CustomerShop
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CityCopyWith<$Res>? get city {
+    if (_self.city == null) {
+    return null;
+  }
+
+  return $CityCopyWith<$Res>(_self.city!, (value) {
+    return _then(_self.copyWith(city: value));
+  });
+}/// Create a copy of CustomerShop
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$RegionCopyWith<$Res>? get region {
+    if (_self.region == null) {
+    return null;
+  }
+
+  return $RegionCopyWith<$Res>(_self.region!, (value) {
+    return _then(_self.copyWith(region: value));
+  });
+}/// Create a copy of CustomerShop
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -486,10 +520,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  double? latitude,  double? longitude, @JsonKey(name: 'page_url')  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId, @JsonKey(name: 'business_field')  BusinessField? businessField)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name, @JsonKey(name: 'city_id')  int? cityId,  City? city, @JsonKey(name: 'region_id')  int? regionId,  Region? region,  double? latitude,  double? longitude, @JsonKey(name: 'page_url')  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId, @JsonKey(name: 'business_field')  BusinessField? businessField)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CustomerShop() when $default != null:
-return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId,_that.businessField);case _:
+return $default(_that.id,_that.name,_that.cityId,_that.city,_that.regionId,_that.region,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId,_that.businessField);case _:
   return orElse();
 
 }
@@ -507,10 +541,10 @@ return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  double? latitude,  double? longitude, @JsonKey(name: 'page_url')  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId, @JsonKey(name: 'business_field')  BusinessField? businessField)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name, @JsonKey(name: 'city_id')  int? cityId,  City? city, @JsonKey(name: 'region_id')  int? regionId,  Region? region,  double? latitude,  double? longitude, @JsonKey(name: 'page_url')  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId, @JsonKey(name: 'business_field')  BusinessField? businessField)  $default,) {final _that = this;
 switch (_that) {
 case _CustomerShop():
-return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId,_that.businessField);case _:
+return $default(_that.id,_that.name,_that.cityId,_that.city,_that.regionId,_that.region,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId,_that.businessField);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -527,10 +561,10 @@ return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  double? latitude,  double? longitude, @JsonKey(name: 'page_url')  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId, @JsonKey(name: 'business_field')  BusinessField? businessField)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name, @JsonKey(name: 'city_id')  int? cityId,  City? city, @JsonKey(name: 'region_id')  int? regionId,  Region? region,  double? latitude,  double? longitude, @JsonKey(name: 'page_url')  String? pageUrl, @JsonKey(name: 'business_field_id')  int? businessFieldId, @JsonKey(name: 'business_field')  BusinessField? businessField)?  $default,) {final _that = this;
 switch (_that) {
 case _CustomerShop() when $default != null:
-return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId,_that.businessField);case _:
+return $default(_that.id,_that.name,_that.cityId,_that.city,_that.regionId,_that.region,_that.latitude,_that.longitude,_that.pageUrl,_that.businessFieldId,_that.businessField);case _:
   return null;
 
 }
@@ -542,13 +576,23 @@ return $default(_that.id,_that.name,_that.latitude,_that.longitude,_that.pageUrl
 @JsonSerializable()
 
 class _CustomerShop extends CustomerShop {
-  const _CustomerShop({required this.id, required this.name, this.latitude, this.longitude, @JsonKey(name: 'page_url') this.pageUrl, @JsonKey(name: 'business_field_id') this.businessFieldId, @JsonKey(name: 'business_field') this.businessField}): super._();
+  const _CustomerShop({required this.id, required this.name, @JsonKey(name: 'city_id') this.cityId, this.city, @JsonKey(name: 'region_id') this.regionId, this.region, this.latitude, this.longitude, @JsonKey(name: 'page_url') this.pageUrl, @JsonKey(name: 'business_field_id') this.businessFieldId, @JsonKey(name: 'business_field') this.businessField}): super._();
   factory _CustomerShop.fromJson(Map<String, dynamic> json) => _$CustomerShopFromJson(json);
 
 @override final  int id;
 @override final  String name;
-/// Numbers, not strings: these go straight into a map SDK. Null only for shops recorded
-/// before coordinates existed — a new one cannot be created without them.
+/// المدينة — required by the API, so a shop that came from it has one. Nullable here all
+/// the same: `city` is the *object*, and the server omits it when the relation was not
+/// loaded or the city has since been deleted.
+@override@JsonKey(name: 'city_id') final  int? cityId;
+@override final  City? city;
+/// المنطقة — genuinely optional. Most cities have no neighbourhoods, and a shop taken over
+/// the phone often has none recorded.
+@override@JsonKey(name: 'region_id') final  int? regionId;
+@override final  Region? region;
+/// Numbers, not strings: these go straight into a map SDK. Null for every shop recorded
+/// since the form stopped asking for a pin — which is why nothing reads them today. The
+/// field stays so the pin survives a round trip through this app untouched.
 @override final  double? latitude;
 @override final  double? longitude;
 @override@JsonKey(name: 'page_url') final  String? pageUrl;
@@ -572,16 +616,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId)&&(identical(other.businessField, businessField) || other.businessField == businessField));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerShop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.city, city) || other.city == city)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.region, region) || other.region == region)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId)&&(identical(other.businessField, businessField) || other.businessField == businessField));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,latitude,longitude,pageUrl,businessFieldId,businessField);
+int get hashCode => Object.hash(runtimeType,id,name,cityId,city,regionId,region,latitude,longitude,pageUrl,businessFieldId,businessField);
 
 @override
 String toString() {
-  return 'CustomerShop(id: $id, name: $name, latitude: $latitude, longitude: $longitude, pageUrl: $pageUrl, businessFieldId: $businessFieldId, businessField: $businessField)';
+  return 'CustomerShop(id: $id, name: $name, cityId: $cityId, city: $city, regionId: $regionId, region: $region, latitude: $latitude, longitude: $longitude, pageUrl: $pageUrl, businessFieldId: $businessFieldId, businessField: $businessField)';
 }
 
 
@@ -592,11 +636,11 @@ abstract mixin class _$CustomerShopCopyWith<$Res> implements $CustomerShopCopyWi
   factory _$CustomerShopCopyWith(_CustomerShop value, $Res Function(_CustomerShop) _then) = __$CustomerShopCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, double? latitude, double? longitude,@JsonKey(name: 'page_url') String? pageUrl,@JsonKey(name: 'business_field_id') int? businessFieldId,@JsonKey(name: 'business_field') BusinessField? businessField
+ int id, String name,@JsonKey(name: 'city_id') int? cityId, City? city,@JsonKey(name: 'region_id') int? regionId, Region? region, double? latitude, double? longitude,@JsonKey(name: 'page_url') String? pageUrl,@JsonKey(name: 'business_field_id') int? businessFieldId,@JsonKey(name: 'business_field') BusinessField? businessField
 });
 
 
-@override $BusinessFieldCopyWith<$Res>? get businessField;
+@override $CityCopyWith<$Res>? get city;@override $RegionCopyWith<$Res>? get region;@override $BusinessFieldCopyWith<$Res>? get businessField;
 
 }
 /// @nodoc
@@ -609,11 +653,15 @@ class __$CustomerShopCopyWithImpl<$Res>
 
 /// Create a copy of CustomerShop
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? latitude = freezed,Object? longitude = freezed,Object? pageUrl = freezed,Object? businessFieldId = freezed,Object? businessField = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? cityId = freezed,Object? city = freezed,Object? regionId = freezed,Object? region = freezed,Object? latitude = freezed,Object? longitude = freezed,Object? pageUrl = freezed,Object? businessFieldId = freezed,Object? businessField = freezed,}) {
   return _then(_CustomerShop(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,latitude: freezed == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
+as String,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as int?,city: freezed == city ? _self.city : city // ignore: cast_nullable_to_non_nullable
+as City?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
+as int?,region: freezed == region ? _self.region : region // ignore: cast_nullable_to_non_nullable
+as Region?,latitude: freezed == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
 as double?,longitude: freezed == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
 as double?,pageUrl: freezed == pageUrl ? _self.pageUrl : pageUrl // ignore: cast_nullable_to_non_nullable
 as String?,businessFieldId: freezed == businessFieldId ? _self.businessFieldId : businessFieldId // ignore: cast_nullable_to_non_nullable
@@ -623,6 +671,30 @@ as BusinessField?,
 }
 
 /// Create a copy of CustomerShop
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CityCopyWith<$Res>? get city {
+    if (_self.city == null) {
+    return null;
+  }
+
+  return $CityCopyWith<$Res>(_self.city!, (value) {
+    return _then(_self.copyWith(city: value));
+  });
+}/// Create a copy of CustomerShop
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$RegionCopyWith<$Res>? get region {
+    if (_self.region == null) {
+    return null;
+  }
+
+  return $RegionCopyWith<$Res>(_self.region!, (value) {
+    return _then(_self.copyWith(region: value));
+  });
+}/// Create a copy of CustomerShop
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')

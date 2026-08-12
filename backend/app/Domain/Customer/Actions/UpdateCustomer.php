@@ -35,7 +35,7 @@ final class UpdateCustomer
             }
 
             // The code is derived from the id and therefore never changes on update.
-            return $customer->load('shops.businessField');
+            return $customer->load(Customer::SHOP_RELATIONS);
         });
     }
 }

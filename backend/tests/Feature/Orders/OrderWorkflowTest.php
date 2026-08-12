@@ -144,20 +144,25 @@ class OrderWorkflowTest extends TestCase
         $this->assertSame(OrderStatus::Designing, $order->fresh()->status);
     }
 
-    public function test_a_shortage_can_go_back_to_printing_or_forward_to_ready(): void
+    public function test_a_shortage_rejoins_the_work_it_was_parked_off(): void
     {
         // Arrange
         $short = Order::factory()->status(OrderStatus::Shortage)->create();
         $alsoShort = Order::factory()->status(OrderStatus::Shortage)->create();
+        $stillShort = Order::factory()->status(OrderStatus::Shortage)->create();
         $headers = $this->foreman();
 
         // Act
-        $back = $this->move($headers, $short, OrderStatus::Printing);
-        $forward = $this->move($headers, $alsoShort, OrderStatus::Ready);
+        $toPress = $this->move($headers, $short, OrderStatus::Printing);
+        $toDesign = $this->move($headers, $alsoShort, OrderStatus::Designing);
+        $tooFar = $this->move($headers, $stillShort, OrderStatus::Ready);
 
-        // Assert — the gap in the flow as first described: a way in and no way out.
-        $back->assertOk()->assertJsonPath('data.status', 'printing');
-        $forward->assertOk()->assertJsonPath('data.status', 'ready');
+        // Assert — the stock arrives and the job starts, at whichever of the two ends it would
+        // have started at had the stock been there. «جاهزة» is not among them: nothing was
+        // printed, so there is nothing on the shelf.
+        $toPress->assertOk()->assertJsonPath('data.status', 'printing');
+        $toDesign->assertOk()->assertJsonPath('data.status', 'designing');
+        $tooFar->assertStatus(422);
     }
 
     public function test_a_returned_order_can_be_sent_out_again(): void
@@ -422,13 +427,11 @@ class OrderWorkflowTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}");
 
-        // Assert — ready has five legal targets; the two dispatch ones become one, so four.
+        // Assert — ready has three legal targets; the two dispatch ones become one, so two.
         $offered = array_column($response->json('data.available_transitions'), 'status');
 
         $this->assertEqualsCanonicalizing([
             OrderStatus::OutForDelivery->value,
-            OrderStatus::Shortage->value,
-            OrderStatus::Printing->value,
             OrderStatus::Cancelled->value,
         ], $offered);
     }
@@ -518,11 +521,11 @@ class OrderWorkflowTest extends TestCase
      */
     public function test_a_shortage_is_a_detour_not_a_step(): void
     {
-        // Arrange — a shortage says what is short, so the move carries a line's own field.
+        // Arrange — a shortage says what is short, so the move carries a line's own field. It is
+        // declared off «جديدة»: the stock was not there when the job was picked up.
         $order = Order::factory()->create();
         $item = OrderItem::factory()->for($order)->create(['quantity' => '100']);
         $headers = $this->foreman();
-        $this->move($headers, $order, OrderStatus::Printing)->assertOk();
 
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Shortage->value,
@@ -716,6 +719,60 @@ class OrderWorkflowTest extends TestCase
 
         // Assert
         $response->assertCreated()->assertJsonPath('data.version', 2);
+    }
+
+    /**
+     * **A file may be attached to an order nobody has started, and that is the point.**
+     *
+     * The library is the customer's; the file was often agreed before the order was taken. The
+     * old rule made «قيد التصميم» the only door, so recording an existing file meant walking the
+     * order through a status naming work that was never done.
+     */
+    public function test_artwork_may_be_attached_to_an_order_still_new(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->forCustomer($customer)->create([
+            'design_source' => DesignSource::Customer,
+            'city_id' => City::factory(),
+        ]);
+        $design = CustomerDesign::factory()->create(['customer_id' => $customer->getKey()]);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/designs", [
+            'customer_design_id' => $design->getKey(),
+        ]);
+
+        // Assert — attached without the order moving.
+        $response->assertCreated()->assertJsonPath('data.version', 1);
+        $this->assertSame(OrderStatus::New, $order->refresh()->status);
+    }
+
+    /**
+     * The other end of the line, unmoved: the press is running against a settled file.
+     *
+     * Changing it means sending the order back to «قيد التصميم» on purpose — a move somebody
+     * makes and the timeline records.
+     */
+    public function test_artwork_is_still_refused_once_the_press_is_running(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->forCustomer($customer)->status(OrderStatus::Printing)->create([
+            'design_source' => DesignSource::Customer,
+            'city_id' => City::factory(),
+        ]);
+        $design = CustomerDesign::factory()->create(['customer_id' => $customer->getKey()]);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/designs", [
+            'customer_design_id' => $design->getKey(),
+        ]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('customer_design_id');
     }
 
     public function test_rejecting_a_design_demands_a_reason(): void

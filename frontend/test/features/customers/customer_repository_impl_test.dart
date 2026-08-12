@@ -74,8 +74,8 @@ void main() {
       shops: [
         NewCustomerShop(
           name: 'فرع سوق الجمعة',
-          latitude: 32.8872,
-          longitude: 13.1913,
+          cityId: 3,
+          regionId: 11,
           pageUrl: 'https://facebook.com/alnoor',
         ),
       ],
@@ -84,7 +84,7 @@ void main() {
     // Act
     final result = await repository.create(customer);
 
-    // Assert — the shop is a JSON object with numeric coordinates, and the whole thing survived
+    // Assert — the shop is a JSON object carrying the two map ids, and the whole thing survived
     // `jsonEncode`. Decoding it back is what proves it: an unencodable body never gets here.
     expect(result.isRight(), isTrue);
 
@@ -95,8 +95,8 @@ void main() {
     final shops = sent['shops'] as List<dynamic>;
     final shop = shops.single as Map<String, dynamic>;
     expect(shop['name'], 'فرع سوق الجمعة');
-    expect(shop['latitude'], 32.8872);
-    expect(shop['longitude'], 13.1913);
+    expect(shop['city_id'], 3);
+    expect(shop['region_id'], 11);
     expect(shop['page_url'], 'https://facebook.com/alnoor');
   });
 
@@ -118,7 +118,7 @@ void main() {
     const customer = NewCustomer(
       name: 'مطبعة النور',
       phone: '0913334444',
-      shops: [NewCustomerShop(name: 'الفرع', latitude: 32.0, longitude: 13.0)],
+      shops: [NewCustomerShop(name: 'الفرع', cityId: 3)],
     );
 
     // Act

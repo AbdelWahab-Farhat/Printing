@@ -8,10 +8,10 @@ import 'package:printing/features/customers/usecases/create_customer.dart';
 
 /// Save changes to a customer.
 ///
-/// It shares [CreateCustomer]'s mapper, because what the user typed has to be turned into what
-/// the API accepts in exactly the same way on both verbs — Arabic-Indic digits, the Arabic
-/// decimal mark, trimmed whitespace. Two copies of that would drift, and the drift would show
-/// up as a shop saved at latitude zero on one screen and not the other.
+/// It shares [CreateCustomer]'s mapper, because a form row has to be turned into what the API
+/// accepts in exactly the same way on both verbs — trimmed whitespace, an empty page link as
+/// null rather than `''`, and no coordinates so an existing pin is kept. Two copies of that
+/// would drift, and the drift would show up on one screen and not the other.
 ///
 /// **One rule differs, and getting it wrong loses data.** Creating with no shops sends no
 /// `shops` key at all, because silence honestly means "the user added none". On an update the
