@@ -8,6 +8,7 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Order\Support\Money;
 use Database\Factories\OrderItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -51,6 +52,38 @@ class OrderItem extends Model
             'unit_price' => 'decimal:3',
             'line_total' => 'decimal:2',
         ];
+    }
+
+    /**
+     * What this line is actually charged for: everything ordered, less whatever is missing.
+     *
+     * **The one place the shortage becomes money.** `quantity` is what the customer asked for
+     * and never moves — an order that overwrote it would lose the question a shortage is the
+     * answer to — so the number the invoice is built on is derived here instead, and every
+     * caller that prices a line goes through it. That is also what makes the money reversible
+     * without a reversing entry: put `shortage_quantity` back and this returns the number it
+     * was, because it was never a written balance.
+     *
+     * Floored at zero. The bound belongs to validation, but a negative line total is bad enough
+     * that the arithmetic refuses it too.
+     */
+    public function billableQuantity(): string
+    {
+        $billable = bcsub((string) $this->quantity, (string) ($this->shortage_quantity ?? '0'), 3);
+
+        return bccomp($billable, '0', 3) < 0 ? '0.000' : $billable;
+    }
+
+    /**
+     * What the line costs at the price it was agreed at.
+     *
+     * **`unit_price` is never re-quoted for the smaller quantity.** A run of 300 earned the
+     * 300-tier rate; delivering 200 of it is our failure, and looking the price up again would
+     * charge the customer *more* per bag because we came up short.
+     */
+    public function deriveLineTotal(): string
+    {
+        return Money::round(bcmul((string) $this->unit_price, $this->billableQuantity(), 6));
     }
 
     /**

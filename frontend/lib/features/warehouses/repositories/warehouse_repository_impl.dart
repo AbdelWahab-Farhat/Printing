@@ -7,6 +7,7 @@ import 'package:printing/core/network/safe_request.dart';
 import 'package:printing/features/warehouses/models/stock_movement.dart';
 import 'package:printing/features/warehouses/models/warehouse.dart';
 import 'package:printing/features/warehouses/models/warehouse_stock.dart';
+import 'package:printing/features/warehouses/models/warehouse_stock_summary.dart';
 import 'package:printing/features/warehouses/repositories/warehouse_repository.dart';
 
 /// Fulfils [WarehouseRepository] over HTTP.
@@ -70,6 +71,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
   Future<Either<Failure, Paginated<WarehouseStock>>> stocks(
     int warehouseId, {
     bool? lowStock,
+    bool? inStock,
     int page = 1,
     int perPage = 20,
   }) {
@@ -80,9 +82,18 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
           'page': page,
           'per_page': perPage,
           if (lowStock != null) 'low_stock': lowStock ? 1 : 0,
+          if (inStock != null) 'in_stock': inStock ? 1 : 0,
         },
       ),
       parseItem: WarehouseStock.fromJson,
+    );
+  }
+
+  @override
+  Future<Either<Failure, WarehouseStockSummary>> stockSummary(int warehouseId) {
+    return safeRequest<WarehouseStockSummary>(
+      () => _dio.get(WarehouseEndpoints.stocksSummary(warehouseId)),
+      parse: (data) => WarehouseStockSummary.fromJson(data as Map<String, dynamic>),
     );
   }
 

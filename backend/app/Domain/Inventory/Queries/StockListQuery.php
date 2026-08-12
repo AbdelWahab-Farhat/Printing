@@ -23,10 +23,11 @@ final class StockListQuery
     public function __invoke(Warehouse $warehouse, StockFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return $warehouse->stocks()
-            // The resource renders the size's label and its product's name. Strict mode turns a
-            // forgotten eager load into an exception rather than one query per row — which is
-            // the behaviour we want, but only once, here.
-            ->with('productVariant.product')
+            // The resource renders the size's label, its product's name and its picture. Strict
+            // mode turns a forgotten eager load into an exception rather than one query per row —
+            // which is the behaviour we want, but only once, here. The images come in one extra
+            // query for the whole page, and the relation already sorts the primary one first.
+            ->with('productVariant.product.images')
             ->when(
                 $filters->productVariantId !== null,
                 fn ($q) => $q->where('product_variant_id', $filters->productVariantId),

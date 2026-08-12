@@ -11,7 +11,6 @@ use App\Domain\Order\DTOs\OrderItemData;
 use App\Domain\Order\Exceptions\ManualPriceRequired;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
-use App\Domain\Order\Support\Money;
 
 /**
  * Prices one line and writes it.
@@ -62,10 +61,13 @@ final class AddOrderItem
 
         // Never fillable: these come from the catalogue, and a request that could post them
         // could name its own price.
-        $item->forceFill([
-            'unit_price' => $unitPrice,
-            'line_total' => Money::round(bcmul($unitPrice, $data->quantity, 6)),
-        ])->save();
+        //
+        // The total is derived rather than multiplied out here, so the one rule about *which*
+        // quantity an invoice is built on — see {@see OrderItem::billableQuantity()} — has a
+        // single home. A line is born with nothing missing, so this is `quantity` today; it
+        // stops being that the moment a shortage is recorded against it.
+        $item->forceFill(['unit_price' => $unitPrice]);
+        $item->forceFill(['line_total' => $item->deriveLineTotal()])->save();
 
         return $item;
     }

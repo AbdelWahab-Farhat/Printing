@@ -170,6 +170,15 @@ abstract class Order with _$Order {
   /// say to them.
   bool get hasActions => availableTransitions.isNotEmpty;
 
+  /// Whether «تعديل النواقص» has anything to do on this order right now.
+  ///
+  /// **Only while the order is standing in «نواقص»**, which is the status the sheet exists for:
+  /// the job is parked because the stock is not there, and the number is argued about until it
+  /// is. Every other status has its own way of asking — leaving «نواقص» asks what arrived, and
+  /// entering it asks what is short — so an arm on the dial elsewhere would be a third door to
+  /// a room with two.
+  bool get shortagesAreEditable => status == OrderStatus.shortage;
+
   /// Whether anything is still owed on this order.
   ///
   /// Read from [paymentStatus] rather than by comparing the two money strings: they are decimal
@@ -308,6 +317,13 @@ abstract class OrderItem with _$OrderItem {
     /// — which is not the same as nothing being missing.
     @JsonKey(name: 'shortage_quantity') String? shortageQuantity,
 
+    /// What the line is actually charged for: [quantity] less [shortageQuantity].
+    ///
+    /// Sent by the server rather than subtracted here, because which quantity an invoice is
+    /// built on is a rule and rules live in one place. Null only from a server too old to send
+    /// it — see [pricedQuantity].
+    @JsonKey(name: 'billable_quantity') String? billableQuantity,
+
     @JsonKey(name: 'unit_price') required String unitPrice,
     @JsonKey(name: 'line_total') required String lineTotal,
     String? notes,
@@ -316,6 +332,24 @@ abstract class OrderItem with _$OrderItem {
   const OrderItem._();
 
   factory OrderItem.fromJson(Map<String, dynamic> json) => _$OrderItemFromJson(json);
+
+  /// Whether part of this line failed to turn up.
+  ///
+  /// A recorded zero is not a shortage. The server clears one to null, but a zero typed into the
+  /// sheet is on screen before the round trip is — and a red «ناقص ٠» is a warning about nothing,
+  /// which teaches people to stop reading warnings.
+  bool get hasShortage {
+    final missing = double.tryParse(shortageQuantity ?? '') ?? 0;
+
+    return missing > 0;
+  }
+
+  /// The number the line is priced on, which is what an invoice is read for.
+  ///
+  /// Falls back to [quantity] rather than to zero when the server did not send a billable
+  /// figure: that is a server that was charging for the whole line, and guessing otherwise would
+  /// draw a free order.
+  String get pricedQuantity => billableQuantity ?? quantity;
 }
 
 /// One version of the artwork, and what the customer said about it.

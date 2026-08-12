@@ -44,3 +44,40 @@ extension PaymentTone on ColorScheme {
 
   Color get onPaidContainer => _isDark ? const Color(0xffc4ecd1) : const Color(0xff235032);
 }
+
+/// The second thing Material 3 has no role for: **«تحت الحد» — أصفر التنبيه.**
+///
+/// The balances screen has three states and Material supplies two of them. «سليم» is `primary`
+/// and «نافد» is `error`; «تحت الحد» was left to borrow one of the other accents, and every
+/// candidate said the wrong thing — `tertiary` is a blue that reads as information, and a second
+/// red would leave nothing louder for the shelf that has actually run out. A shelf that is
+/// running low is neither fine nor broken, which is precisely what amber means everywhere else
+/// in the world.
+///
+/// Added here rather than in a widget for the same reason [PaymentTone] is: `theme.dart` is
+/// generated and gets replaced wholesale, and a hex written into a screen survives that
+/// replacement and quietly stops matching everything around it.
+///
+/// Three values in the scheme's own tonal shape, so the trio reads in either brightness:
+///
+/// * [warn] — the bar segment, the outline, the number on a plain surface.
+/// * [warnContainer] — the pale fill behind a chip.
+/// * [onWarnContainer] — what stays readable on top of that fill.
+///
+/// Pulled towards the orange end of amber rather than towards yellow: a pure yellow at 55° has
+/// no dark step that stays yellow, and the light theme needs one that carries text.
+/// `app_tones_test.dart` pins the band and the distance from both `primary` and `error`, so the
+/// intent survives a re-export of the palette.
+extension StockTone on ColorScheme {
+  Color get warn => brightness == Brightness.dark
+      ? const Color(0xfff0c176)
+      : const Color(0xff8a5a00);
+
+  Color get warnContainer => brightness == Brightness.dark
+      ? const Color(0xff5c3f00)
+      : const Color(0xffffdea8);
+
+  Color get onWarnContainer => brightness == Brightness.dark
+      ? const Color(0xffffdea8)
+      : const Color(0xff4a3000);
+}

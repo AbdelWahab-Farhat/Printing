@@ -75,6 +75,10 @@ abstract final class WarehouseEndpoints {
 
   static String stocks(int warehouseId) => '/warehouses/$warehouseId/stocks';
 
+  /// The whole warehouse in five numbers. Never filtered — «٤ من ٢٤» is the sentence, and the
+  /// ٢٤ has to survive the filter that produced the ٤.
+  static String stocksSummary(int warehouseId) => '/warehouses/$warehouseId/stocks/summary';
+
   /// The one thing a balance line accepts a write for. The quantity never is: it moves because
   /// a movement below explains it.
   static String stockThreshold(int warehouseId, int stockId) =>
@@ -148,6 +152,11 @@ abstract final class OrderEndpoints {
   /// Moving an order. A POST, not a PATCH: the server records a row on the order's timeline as
   /// well as changing the field, so it is an event rather than an edit to a value.
   static String status(int orderId) => '/orders/$orderId/status';
+
+  /// What is missing from each line — and so what the customer is charged, since a line is
+  /// billed for what is left of it. A PATCH rather than a POST: nothing is recorded on the
+  /// timeline, a number on the order is corrected.
+  static String shortages(int orderId) => '/orders/$orderId/shortages';
 
   static String designs(int orderId) => '/orders/$orderId/designs';
 

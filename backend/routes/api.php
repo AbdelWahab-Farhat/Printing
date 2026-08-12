@@ -200,6 +200,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('orders/{order}/status', [OrderController::class, 'changeStatus'])
             ->middleware('can:orders.view')->name('orders.status');
 
+        // What is missing from each line — and therefore what the customer is charged, since a
+        // line is billed for what is left of it. `can:` sits here rather than in the request
+        // because unlike a status change this endpoint costs the same grant whatever it says:
+        // the person who declares a shortage is the person who corrects one.
+        Route::patch('orders/{order}/shortages', [OrderController::class, 'setShortages'])
+            ->middleware('can:orders.status.shortage')->name('orders.shortages');
+
         // Designs are chosen from the customer's library, never uploaded here. scoped() makes
         // {design} resolve *within* {order}, so another order's design id is a 404 by
         // construction rather than by a check somebody has to remember.
@@ -335,6 +342,11 @@ Route::prefix('v1')->group(function (): void {
         // it, in the same transaction. There is deliberately no PUT on a stock line.
         Route::get('warehouses/{warehouse}/stocks', [WarehouseStockController::class, 'index'])
             ->middleware('can:inventory.view')->name('warehouses.stocks.index');
+
+        // Declared before the `{stock}` route below so that «summary» is read as the word it is
+        // rather than as an id somebody could have called a shelf.
+        Route::get('warehouses/{warehouse}/stocks/summary', [WarehouseStockController::class, 'summary'])
+            ->middleware('can:inventory.view')->name('warehouses.stocks.summary');
 
         Route::patch('warehouses/{warehouse}/stocks/{stock}/threshold', [WarehouseStockController::class, 'setThreshold'])
             ->scopeBindings()

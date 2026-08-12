@@ -52,7 +52,11 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
               ? order.availableTransitions.single
               : null;
 
-          return OrderStatusState.ready(order: order, selected: only);
+          return OrderStatusState.ready(
+            order: order,
+            selected: only,
+            values: only == null ? const {} : _prefilled(only),
+          );
         },
       ),
     );
@@ -61,12 +65,35 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
   /// Picks a destination, and empties whatever was typed for the last one.
   ///
   /// Deliberately not merged: two paths may both have a `notes`, and carrying an answer across
-  /// would submit a sentence written about a different move.
+  /// would submit a sentence written about a different move. What replaces it is not nothing,
+  /// though — see [_prefilled].
   void select(OrderTransition transition) {
     final order = state.order;
     if (order == null) return;
 
-    emit(OrderStatusState.ready(order: order, selected: transition));
+    emit(
+      OrderStatusState.ready(
+        order: order,
+        selected: transition,
+        values: _prefilled(transition),
+      ),
+    );
+  }
+
+  /// The answers the server already knows, for the fields that arrive holding one.
+  ///
+  /// **The prefill is part of the form, not a first draft of it**, so it is re-applied every
+  /// time the destination is chosen. Leaving «نواقص» is the case it exists for: the box asking
+  /// what arrived of the shortage opens holding the whole of it, and a clerk who agrees submits
+  /// without typing.
+  Map<String, Object?> _prefilled(OrderTransition transition) {
+    final seeded = <String, Object?>{};
+
+    for (final field in transition.fields) {
+      if (field.value != null) seeded[field.key] = field.value;
+    }
+
+    return seeded;
   }
 
   void setValue(String key, Object? value) {

@@ -12,6 +12,7 @@ use App\Domain\Order\Actions\RecordOrderPayment;
 use App\Domain\Order\Actions\RefundOrderPayment;
 use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\ReviewOrderDesign;
+use App\Domain\Order\Actions\SetOrderShortages;
 use App\Domain\Order\Actions\UpdateOrder;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderPaymentData;
@@ -42,6 +43,7 @@ class OrderService
         private readonly CreateOrder $createOrder,
         private readonly UpdateOrder $updateOrder,
         private readonly ChangeOrderStatus $changeStatus,
+        private readonly SetOrderShortages $setShortages,
         private readonly AddOrderDesign $addDesign,
         private readonly ReviewOrderDesign $reviewDesign,
         private readonly RecordOrderPayment $recordPayment,
@@ -120,6 +122,16 @@ class OrderService
         array $fields = [],
     ): Order {
         return ($this->changeStatus)($order, $target, $reason, $actor, $fields);
+    }
+
+    /**
+     * Correct what is missing from an order, and the invoice with it.
+     *
+     * @param  array<int|string, mixed>  $shortages  line id → what is missing from it.
+     */
+    public function setShortages(Order $order, array $shortages): Order
+    {
+        return ($this->setShortages)($order, $shortages);
     }
 
     public function addDesign(Order $order, int $customerDesignId, ?string $notes = null): OrderDesign

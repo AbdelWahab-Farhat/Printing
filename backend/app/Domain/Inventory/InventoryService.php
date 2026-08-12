@@ -10,6 +10,7 @@ use App\Domain\Inventory\Actions\RecordStockMovement;
 use App\Domain\Inventory\Actions\SetLowStockThreshold;
 use App\Domain\Inventory\Actions\UpdateWarehouse;
 use App\Domain\Inventory\DTOs\StockMovementData;
+use App\Domain\Inventory\DTOs\StockSummary;
 use App\Domain\Inventory\DTOs\WarehouseData;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
@@ -18,6 +19,7 @@ use App\Domain\Inventory\Queries\MovementFilters;
 use App\Domain\Inventory\Queries\MovementListQuery;
 use App\Domain\Inventory\Queries\StockFilters;
 use App\Domain\Inventory\Queries\StockListQuery;
+use App\Domain\Inventory\Queries\StockSummaryQuery;
 use App\Domain\Inventory\Queries\WarehouseFilters;
 use App\Domain\Inventory\Queries\WarehouseListQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -48,6 +50,7 @@ class InventoryService
         private readonly SetLowStockThreshold $setLowStockThreshold,
         private readonly WarehouseListQuery $warehouseListQuery,
         private readonly StockListQuery $stockListQuery,
+        private readonly StockSummaryQuery $stockSummaryQuery,
         private readonly MovementListQuery $movementListQuery,
     ) {}
 
@@ -93,6 +96,16 @@ class InventoryService
     public function paginateStocks(Warehouse $warehouse, StockFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return ($this->stockListQuery)($warehouse, $filters, $perPage);
+    }
+
+    /**
+     * The same shelves in five numbers — how many sizes, how much in total, and how many of them
+     * are asking for attention. Counted by the database over the whole warehouse, never over the
+     * page somebody happens to be looking at.
+     */
+    public function summariseStocks(Warehouse $warehouse): StockSummary
+    {
+        return ($this->stockSummaryQuery)($warehouse);
     }
 
     /**

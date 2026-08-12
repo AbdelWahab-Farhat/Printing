@@ -261,7 +261,15 @@ class Order extends Model implements HasAuditTrail
     {
         return in_array(
             $this->status,
-            [OrderStatus::New, OrderStatus::Designing, OrderStatus::Printing],
+            [
+                OrderStatus::New,
+                OrderStatus::Designing,
+                // The status named after the problem, and for a while the one status that could
+                // not fix it: an order parked on a shortage is exactly where somebody argues the
+                // number — and the number now moves the invoice.
+                OrderStatus::Shortage,
+                OrderStatus::Printing,
+            ],
             true,
         );
     }

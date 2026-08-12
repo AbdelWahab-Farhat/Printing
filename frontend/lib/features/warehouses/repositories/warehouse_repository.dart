@@ -4,6 +4,7 @@ import 'package:printing/core/network/paginated.dart';
 import 'package:printing/features/warehouses/models/stock_movement.dart';
 import 'package:printing/features/warehouses/models/warehouse.dart';
 import 'package:printing/features/warehouses/models/warehouse_stock.dart';
+import 'package:printing/features/warehouses/models/warehouse_stock_summary.dart';
 
 /// المخزن, stated without saying how.
 ///
@@ -37,13 +38,23 @@ abstract interface class WarehouseRepository {
   /// What sits on the shelves of one warehouse.
   ///
   /// [lowStock] narrows to the lines asking to be refilled, which is the question this screen
-  /// is opened for on a busy morning.
+  /// is opened for on a busy morning. [inStock] `false` narrows to the ones that have run out —
+  /// **a different question**, because a size nobody set an alert level for is empty all the
+  /// same, and the server leaves it out of the low-stock answer entirely.
   Future<Either<Failure, Paginated<WarehouseStock>>> stocks(
     int warehouseId, {
     bool? lowStock,
+    bool? inStock,
     int page = 1,
     int perPage = 20,
   });
+
+  /// The same shelves counted rather than listed: how many sizes, how much altogether, and how
+  /// many lines are low, empty, or fine.
+  ///
+  /// Always the whole warehouse. A summary that narrowed along with the list could not tell
+  /// anyone what they had narrowed from.
+  Future<Either<Failure, WarehouseStockSummary>> stockSummary(int warehouseId);
 
   /// Sets — or clears, with null — the level at which a shelf starts asking to be refilled.
   /// **The only write a balance line accepts.**

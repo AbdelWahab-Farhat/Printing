@@ -70,4 +70,71 @@ void main() {
       expect(gap, greaterThan(0.4));
     }
   });
+
+  /// Amber, and deliberately at the orange end of it: a shelf running low is neither fine nor
+  /// broken, and pure yellow has no dark step that stays yellow for the light theme to use.
+  const amber = (low: 30.0, high: 50.0);
+
+  test('the low-stock tones sit in the amber band, in light', () {
+    // Arrange
+    final scheme = MaterialTheme.lightScheme();
+
+    // Act
+    final hues = [hueOf(scheme.warn), hueOf(scheme.warnContainer), hueOf(scheme.onWarnContainer)];
+
+    // Assert
+    for (final hue in hues) {
+      expect(hue, inInclusiveRange(amber.low, amber.high));
+    }
+  });
+
+  test('the low-stock tones sit in the amber band, in dark', () {
+    // Arrange
+    final scheme = MaterialTheme.darkScheme();
+
+    // Act
+    final hues = [hueOf(scheme.warn), hueOf(scheme.warnContainer), hueOf(scheme.onWarnContainer)];
+
+    // Assert
+    for (final hue in hues) {
+      expect(hue, inInclusiveRange(amber.low, amber.high));
+    }
+  });
+
+  test('«تحت الحد» is far enough from «نافد» to be a different state, not a paler one', () {
+    // Arrange — the two sit side by side in one bar, and one of them has to stop somebody
+    final schemes = [MaterialTheme.lightScheme(), MaterialTheme.darkScheme()];
+
+    // Act - Assert
+    for (final scheme in schemes) {
+      final gap = (hueOf(scheme.warn) - hueOf(scheme.error)).abs();
+
+      expect(gap, greaterThan(20));
+    }
+  });
+
+  test('«تحت الحد» is nowhere near the teal «سليم» is drawn in', () {
+    // Arrange
+    final scheme = MaterialTheme.lightScheme();
+
+    // Act
+    final gap = (hueOf(scheme.primary) - hueOf(scheme.warn)).abs();
+
+    // Assert
+    expect(gap, greaterThan(60));
+  });
+
+  test('the amber fill still carries its text', () {
+    // Arrange
+    final schemes = [MaterialTheme.lightScheme(), MaterialTheme.darkScheme()];
+
+    // Act - Assert
+    for (final scheme in schemes) {
+      final gap =
+          (scheme.warnContainer.computeLuminance() - scheme.onWarnContainer.computeLuminance())
+              .abs();
+
+      expect(gap, greaterThan(0.4));
+    }
+  });
 }

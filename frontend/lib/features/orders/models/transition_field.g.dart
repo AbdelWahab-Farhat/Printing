@@ -21,6 +21,7 @@ _TransitionField _$TransitionFieldFromJson(Map<String, dynamic> json) =>
       hint: json['hint'] as String?,
       min: json['min'] as num?,
       max: json['max'] as num?,
+      value: json['value'] as String?,
     );
 
 Map<String, dynamic> _$TransitionFieldToJson(_TransitionField instance) =>
@@ -34,6 +35,7 @@ Map<String, dynamic> _$TransitionFieldToJson(_TransitionField instance) =>
       'hint': instance.hint,
       'min': instance.min,
       'max': instance.max,
+      'value': instance.value,
     };
 
 const _$TransitionFieldTypeEnumMap = {

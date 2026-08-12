@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
+use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
@@ -527,6 +528,288 @@ class WarehouseStockTest extends TestCase
         // Assert — the threshold moves, the shelf does not
         $response->assertOk()->assertJsonPath('data.quantity', '100.000');
         $this->assertDatabaseHas('warehouse_stocks', ['id' => $stock->id, 'quantity' => '100.000']);
+    }
+
+    // ──────────────────────────────── the picture ────────────────────────────────
+
+    public function test_a_balance_line_carries_its_products_primary_picture(): void
+    {
+        // Arrange — a storekeeper finds a bag by looking at it, and the picture belongs to the
+        // product, so every size of it shares one
+        $warehouse = Warehouse::factory()->create();
+        $variant = ProductVariant::factory()->create();
+        ProductImage::factory()->create(['product_id' => $variant->product_id, 'sort_order' => 5]);
+        ProductImage::factory()->primary()->create([
+            'product_id' => $variant->product_id,
+            'path' => 'products/the-primary-one.jpg',
+        ]);
+        WarehouseStock::factory()->create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $variant->id,
+        ]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/warehouses/{$warehouse->id}/stocks");
+
+        // Assert
+        $response->assertOk();
+        $this->assertStringContainsString(
+            'the-primary-one.jpg',
+            (string) $response->json('data.0.product_variant.image_url'),
+        );
+    }
+
+    public function test_a_product_with_no_picture_sends_a_null_rather_than_omitting_the_field(): void
+    {
+        // Arrange
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->create(['warehouse_id' => $warehouse->id]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/warehouses/{$warehouse->id}/stocks");
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.0.product_variant.image_url', null)
+            ->assertJsonStructure(['data' => [['product_variant' => ['image_url']]]]);
+    }
+
+    public function test_listing_a_shelf_of_pictured_products_stays_one_query_for_the_pictures(): void
+    {
+        // Arrange — strict mode turns a forgotten eager load into an exception, and this is the
+        // test that would raise it
+        $warehouse = Warehouse::factory()->create();
+        foreach (range(1, 3) as $ignored) {
+            $variant = ProductVariant::factory()->create();
+            ProductImage::factory()->primary()->create(['product_id' => $variant->product_id]);
+            WarehouseStock::factory()->create([
+                'warehouse_id' => $warehouse->id,
+                'product_variant_id' => $variant->id,
+            ]);
+        }
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/warehouses/{$warehouse->id}/stocks");
+
+        // Assert
+        $response->assertOk()->assertJsonCount(3, 'data');
+        foreach (range(0, 2) as $index) {
+            $this->assertNotNull($response->json("data.{$index}.product_variant.image_url"));
+        }
+    }
+
+    public function test_the_threshold_reply_carries_the_same_picture_the_list_does(): void
+    {
+        // Arrange — the app patches its row from this reply, so a field the list has and this
+        // does not is a picture that vanishes the moment somebody edits an alert level
+        $warehouse = Warehouse::factory()->create();
+        $variant = ProductVariant::factory()->create();
+        ProductImage::factory()->primary()->create([
+            'product_id' => $variant->product_id,
+            'path' => 'products/still-here.jpg',
+        ]);
+        $stock = WarehouseStock::factory()->quantity('100.000')->create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $variant->id,
+        ]);
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->patchJson(
+            "/api/v1/warehouses/{$warehouse->id}/stocks/{$stock->id}/threshold",
+            ['low_stock_threshold' => 10],
+        );
+
+        // Assert
+        $response->assertOk();
+        $this->assertStringContainsString(
+            'still-here.jpg',
+            (string) $response->json('data.product_variant.image_url'),
+        );
+    }
+
+    // ──────────────────────────────── the summary ────────────────────────────────
+
+    public function test_a_viewer_can_read_a_warehouses_summary(): void
+    {
+        // Arrange — one healthy shelf, one below its threshold, one used up entirely
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('1000.000')->create(['warehouse_id' => $warehouse->id]);
+        WarehouseStock::factory()->quantity('10.000')->warnAt('20.000')
+            ->create(['warehouse_id' => $warehouse->id]);
+        WarehouseStock::factory()->empty()->create(['warehouse_id' => $warehouse->id]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/warehouses/{$warehouse->id}/stocks/summary");
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('data.total_lines', 3)
+            ->assertJsonPath('data.total_quantity', '1010.000')
+            ->assertJsonPath('data.low_stock_count', 1)
+            ->assertJsonPath('data.out_of_stock_count', 1)
+            ->assertJsonPath('data.healthy_count', 1)
+            ->assertJsonStructure([
+                'data' => [
+                    'total_lines', 'total_quantity',
+                    'low_stock_count', 'out_of_stock_count', 'healthy_count',
+                ],
+            ]);
+    }
+
+    public function test_the_summarys_total_quantity_is_a_string_like_every_other_quantity(): void
+    {
+        // Arrange
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('12.500')->create(['warehouse_id' => $warehouse->id]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/warehouses/{$warehouse->id}/stocks/summary");
+
+        // Assert
+        $total = $response->json('data.total_quantity');
+        $this->assertIsString($total);
+        $this->assertSame('12.500', $total);
+    }
+
+    public function test_an_empty_shelf_with_a_threshold_is_counted_in_both_low_and_out(): void
+    {
+        // Arrange — the two counts each match the filter its button opens, so a button never
+        // promises a number the list then contradicts
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('0.000')->warnAt('20.000')
+            ->create(['warehouse_id' => $warehouse->id]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/warehouses/{$warehouse->id}/stocks/summary");
+
+        // Assert — and it is healthy in neither: the three bar segments stay exclusive because
+        // `healthy` is what is left over, not `total - low - out`
+        $response->assertOk()
+            ->assertJsonPath('data.total_lines', 1)
+            ->assertJsonPath('data.low_stock_count', 1)
+            ->assertJsonPath('data.out_of_stock_count', 1)
+            ->assertJsonPath('data.healthy_count', 0);
+    }
+
+    public function test_a_shelf_with_no_threshold_is_healthy_while_it_has_something_on_it(): void
+    {
+        // Arrange — nobody asked to be warned about it, so it is not low; it is not empty either
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('50.000')->create(['warehouse_id' => $warehouse->id]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/warehouses/{$warehouse->id}/stocks/summary");
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.low_stock_count', 0)
+            ->assertJsonPath('data.healthy_count', 1);
+    }
+
+    public function test_an_empty_warehouse_summarises_to_zeros_rather_than_nulls(): void
+    {
+        // Arrange — a warehouse nothing has ever arrived at still opens a screen
+        $warehouse = Warehouse::factory()->create();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/warehouses/{$warehouse->id}/stocks/summary");
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.total_lines', 0)
+            ->assertJsonPath('data.total_quantity', '0.000')
+            ->assertJsonPath('data.low_stock_count', 0)
+            ->assertJsonPath('data.out_of_stock_count', 0)
+            ->assertJsonPath('data.healthy_count', 0);
+    }
+
+    public function test_the_summary_counts_only_this_warehouses_lines(): void
+    {
+        // Arrange
+        $mine = Warehouse::factory()->create();
+        $theirs = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('10.000')->create(['warehouse_id' => $mine->id]);
+        WarehouseStock::factory()->quantity('99.000')->create(['warehouse_id' => $theirs->id]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/warehouses/{$mine->id}/stocks/summary");
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.total_lines', 1)
+            ->assertJsonPath('data.total_quantity', '10.000');
+    }
+
+    public function test_the_summary_ignores_the_lists_filters(): void
+    {
+        // Arrange — it is the whole warehouse by definition; a summary that narrowed with the
+        // list could not tell anyone what they had narrowed *from*
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('1000.000')->create(['warehouse_id' => $warehouse->id]);
+        WarehouseStock::factory()->empty()->create(['warehouse_id' => $warehouse->id]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/warehouses/{$warehouse->id}/stocks/summary?in_stock=0&low_stock=1");
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.total_lines', 2);
+    }
+
+    public function test_reading_a_summary_needs_authentication(): void
+    {
+        // Arrange
+        $warehouse = Warehouse::factory()->create();
+
+        // Act
+        $response = $this->getJson("/api/v1/warehouses/{$warehouse->id}/stocks/summary");
+
+        // Assert
+        $response->assertUnauthorized();
+    }
+
+    public function test_a_user_granted_nothing_may_not_read_a_summary(): void
+    {
+        // Arrange
+        $warehouse = Warehouse::factory()->create();
+        $headers = $this->outsider();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/warehouses/{$warehouse->id}/stocks/summary");
+
+        // Assert
+        $response->assertForbidden()->assertJsonPath('status', false);
+    }
+
+    public function test_summarising_a_warehouse_that_does_not_exist_is_a_404(): void
+    {
+        // Arrange
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/warehouses/999999/stocks/summary');
+
+        // Assert
+        $response->assertNotFound();
     }
 
     public function test_there_is_no_endpoint_that_creates_a_stock_line_directly(): void

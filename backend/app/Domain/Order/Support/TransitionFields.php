@@ -130,7 +130,34 @@ final class TransitionFields
                     // most shortages are one size out of several, and marking the whole form
                     // required would have staff typing zeros to get past it.
                     max: (float) $item->quantity,
-                    hint: "من أصل {$item->quantity}",
+                    hint: "من أصل {$item->quantity} — يُخصم من الفاتورة",
+                );
+            }
+        }
+
+        // **Leaving «نواقص» is the same question from the other end.** The stock arrived, and
+        // what arrived of it is the number the person holding the delivery note has — so that is
+        // what is asked, rather than making them subtract to reach what is left.
+        //
+        // **Pre-filled with the whole shortage**, because leaving this status nearly always
+        // means all of it came: the common answer is a tap, and typing is for the exception. And
+        // only the lines that are actually short are asked about — a form listing every size of
+        // a five-line order to ask about the one that was missing is a form to be scrolled past.
+        //
+        // Not offered on the way to «إلغاء تام»: an order written off while short keeps the
+        // record of what it was short of.
+        if ($order->status === OrderStatus::Shortage && ! $target->isFinal()) {
+            foreach ($order->items as $item) {
+                if ($item->shortage_quantity === null || bccomp((string) $item->shortage_quantity, '0', 3) <= 0) {
+                    continue;
+                }
+
+                $fields[] = TransitionField::number(
+                    key: "received_{$item->getKey()}",
+                    label: "الواصل من نواقص {$item->variant_label} ({$item->pricing_unit->label()})",
+                    max: (float) $item->shortage_quantity,
+                    hint: "الناقص {$item->shortage_quantity} — ما يبقى منه يُخصم من الفاتورة",
+                    value: (string) $item->shortage_quantity,
                 );
             }
         }

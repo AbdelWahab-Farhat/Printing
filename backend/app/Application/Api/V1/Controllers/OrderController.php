@@ -8,6 +8,7 @@ use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
 use App\Application\Api\V1\Requests\Order\ReviewOrderDesignRequest;
+use App\Application\Api\V1\Requests\Order\SetOrderShortagesRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderDesignRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderRequest;
 use App\Application\Api\V1\Requests\Order\UpdateOrderRequest;
@@ -191,6 +192,36 @@ class OrderController extends Controller
         return $this->success(
             new OrderResource($this->orders->loadForDisplay($updated)),
             "تم نقل الطلبية إلى «{$updated->status->label()}»",
+        );
+    }
+
+    /**
+     * Correct an order's shortages
+     *
+     * What is missing from each line, and therefore what the customer is charged: a line is
+     * billed for the quantity ordered less the quantity missing, at the price it was agreed at.
+     * The price is never re-quoted for the smaller quantity — the shortage is the shop's, not
+     * the customer's.
+     *
+     * **The set is replaced.** Send every line that is short; a line left out of the payload is
+     * recorded as having nothing missing. That is how a shortage is un-recorded, and doing so
+     * puts the invoice back to the number it was, exactly.
+     *
+     * Accepted while the order's lines are still open — «جديدة», «قيد التصميم», «نواقص» and
+     * «قيد الطباعة» — and refused with 422 from «جاهزة» onwards, when the run has been made and
+     * counted. If the invoice drops below what has already been collected, the order simply
+     * reads as overpaid and the difference is refunded through the ledger.
+     */
+    public function setShortages(SetOrderShortagesRequest $request, Order $order): JsonResponse
+    {
+        $updated = $this->orders->setShortages(
+            $order,
+            (array) $request->validated('shortages', []),
+        );
+
+        return $this->success(
+            new OrderResource($this->orders->loadForDisplay($updated)),
+            'تم تحديث نواقص الطلبية',
         );
     }
 

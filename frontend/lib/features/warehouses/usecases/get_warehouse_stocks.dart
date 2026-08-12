@@ -13,9 +13,16 @@ class GetWarehouseStocks {
   Future<Either<Failure, Paginated<WarehouseStock>>> call(
     int warehouseId, {
     bool? lowStock,
+    bool? inStock,
     int page = 1,
     int perPage = 20,
   }) {
-    return _repository.stocks(warehouseId, lowStock: lowStock, page: page, perPage: perPage);
+    return _repository.stocks(
+      warehouseId,
+      lowStock: lowStock,
+      inStock: inStock,
+      page: page,
+      perPage: perPage,
+    );
   }
 }

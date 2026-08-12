@@ -22,7 +22,12 @@ mixin _$TransitionField {
  bool get multiline;/// A sentence under the field, when the server has something to say about it.
  String? get hint;/// Bounds for [TransitionFieldType.number]. [max] is typically what was ordered of one
 /// line — «الناقص من 30*30» can never exceed it — so it travels with the field.
- num? get min; num? get max;
+ num? get min; num? get max;/// What the box opens holding — **an answer, not a placeholder.**
+///
+/// Leaving «نواقص» asks how much of the shortage arrived, and nearly always the answer is
+/// all of it: the server fills that in, and agreeing costs a tap. Null on almost every
+/// field, because a box that suggests a wrong number is worse than an empty one.
+ String? get value;
 /// Create a copy of TransitionField
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -35,16 +40,16 @@ $TransitionFieldCopyWith<TransitionField> get copyWith => _$TransitionFieldCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionField&&(identical(other.key, key) || other.key == key)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.multiline, multiline) || other.multiline == multiline)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionField&&(identical(other.key, key) || other.key == key)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.multiline, multiline) || other.multiline == multiline)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&(identical(other.value, value) || other.value == value));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,key,type,label,isRequired,multiple,multiline,hint,min,max);
+int get hashCode => Object.hash(runtimeType,key,type,label,isRequired,multiple,multiline,hint,min,max,value);
 
 @override
 String toString() {
-  return 'TransitionField(key: $key, type: $type, label: $label, isRequired: $isRequired, multiple: $multiple, multiline: $multiline, hint: $hint, min: $min, max: $max)';
+  return 'TransitionField(key: $key, type: $type, label: $label, isRequired: $isRequired, multiple: $multiple, multiline: $multiline, hint: $hint, min: $min, max: $max, value: $value)';
 }
 
 
@@ -55,7 +60,7 @@ abstract mixin class $TransitionFieldCopyWith<$Res>  {
   factory $TransitionFieldCopyWith(TransitionField value, $Res Function(TransitionField) _then) = _$TransitionFieldCopyWithImpl;
 @useResult
 $Res call({
- String key,@JsonKey(unknownEnumValue: TransitionFieldType.unknown) TransitionFieldType type, String label,@JsonKey(name: 'required') bool isRequired, bool multiple, bool multiline, String? hint, num? min, num? max
+ String key,@JsonKey(unknownEnumValue: TransitionFieldType.unknown) TransitionFieldType type, String label,@JsonKey(name: 'required') bool isRequired, bool multiple, bool multiline, String? hint, num? min, num? max, String? value
 });
 
 
@@ -72,7 +77,7 @@ class _$TransitionFieldCopyWithImpl<$Res>
 
 /// Create a copy of TransitionField
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? key = null,Object? type = null,Object? label = null,Object? isRequired = null,Object? multiple = null,Object? multiline = null,Object? hint = freezed,Object? min = freezed,Object? max = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? key = null,Object? type = null,Object? label = null,Object? isRequired = null,Object? multiple = null,Object? multiline = null,Object? hint = freezed,Object? min = freezed,Object? max = freezed,Object? value = freezed,}) {
   return _then(_self.copyWith(
 key: null == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
@@ -83,7 +88,8 @@ as bool,multiline: null == multiline ? _self.multiline : multiline // ignore: ca
 as bool,hint: freezed == hint ? _self.hint : hint // ignore: cast_nullable_to_non_nullable
 as String?,min: freezed == min ? _self.min : min // ignore: cast_nullable_to_non_nullable
 as num?,max: freezed == max ? _self.max : max // ignore: cast_nullable_to_non_nullable
-as num?,
+as num?,value: freezed == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -168,10 +174,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max,  String? value)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TransitionField() when $default != null:
-return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max);case _:
+return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max,_that.value);case _:
   return orElse();
 
 }
@@ -189,10 +195,10 @@ return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max,  String? value)  $default,) {final _that = this;
 switch (_that) {
 case _TransitionField():
-return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max);case _:
+return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max,_that.value);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +215,10 @@ return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max,  String? value)?  $default,) {final _that = this;
 switch (_that) {
 case _TransitionField() when $default != null:
-return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max);case _:
+return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max,_that.value);case _:
   return null;
 
 }
@@ -224,7 +230,7 @@ return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple
 @JsonSerializable()
 
 class _TransitionField extends TransitionField {
-  const _TransitionField({required this.key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown) required this.type, required this.label, @JsonKey(name: 'required') this.isRequired = false, this.multiple = false, this.multiline = false, this.hint, this.min, this.max}): super._();
+  const _TransitionField({required this.key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown) required this.type, required this.label, @JsonKey(name: 'required') this.isRequired = false, this.multiple = false, this.multiline = false, this.hint, this.min, this.max, this.value}): super._();
   factory _TransitionField.fromJson(Map<String, dynamic> json) => _$TransitionFieldFromJson(json);
 
 /// What the value is sent back as, inside `fields`.
@@ -243,6 +249,12 @@ class _TransitionField extends TransitionField {
 /// line — «الناقص من 30*30» can never exceed it — so it travels with the field.
 @override final  num? min;
 @override final  num? max;
+/// What the box opens holding — **an answer, not a placeholder.**
+///
+/// Leaving «نواقص» asks how much of the shortage arrived, and nearly always the answer is
+/// all of it: the server fills that in, and agreeing costs a tap. Null on almost every
+/// field, because a box that suggests a wrong number is worse than an empty one.
+@override final  String? value;
 
 /// Create a copy of TransitionField
 /// with the given fields replaced by the non-null parameter values.
@@ -257,16 +269,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionField&&(identical(other.key, key) || other.key == key)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.multiline, multiline) || other.multiline == multiline)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionField&&(identical(other.key, key) || other.key == key)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.multiline, multiline) || other.multiline == multiline)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&(identical(other.value, value) || other.value == value));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,key,type,label,isRequired,multiple,multiline,hint,min,max);
+int get hashCode => Object.hash(runtimeType,key,type,label,isRequired,multiple,multiline,hint,min,max,value);
 
 @override
 String toString() {
-  return 'TransitionField(key: $key, type: $type, label: $label, isRequired: $isRequired, multiple: $multiple, multiline: $multiline, hint: $hint, min: $min, max: $max)';
+  return 'TransitionField(key: $key, type: $type, label: $label, isRequired: $isRequired, multiple: $multiple, multiline: $multiline, hint: $hint, min: $min, max: $max, value: $value)';
 }
 
 
@@ -277,7 +289,7 @@ abstract mixin class _$TransitionFieldCopyWith<$Res> implements $TransitionField
   factory _$TransitionFieldCopyWith(_TransitionField value, $Res Function(_TransitionField) _then) = __$TransitionFieldCopyWithImpl;
 @override @useResult
 $Res call({
- String key,@JsonKey(unknownEnumValue: TransitionFieldType.unknown) TransitionFieldType type, String label,@JsonKey(name: 'required') bool isRequired, bool multiple, bool multiline, String? hint, num? min, num? max
+ String key,@JsonKey(unknownEnumValue: TransitionFieldType.unknown) TransitionFieldType type, String label,@JsonKey(name: 'required') bool isRequired, bool multiple, bool multiline, String? hint, num? min, num? max, String? value
 });
 
 
@@ -294,7 +306,7 @@ class __$TransitionFieldCopyWithImpl<$Res>
 
 /// Create a copy of TransitionField
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? key = null,Object? type = null,Object? label = null,Object? isRequired = null,Object? multiple = null,Object? multiline = null,Object? hint = freezed,Object? min = freezed,Object? max = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? key = null,Object? type = null,Object? label = null,Object? isRequired = null,Object? multiple = null,Object? multiline = null,Object? hint = freezed,Object? min = freezed,Object? max = freezed,Object? value = freezed,}) {
   return _then(_TransitionField(
 key: null == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
@@ -305,7 +317,8 @@ as bool,multiline: null == multiline ? _self.multiline : multiline // ignore: ca
 as bool,hint: freezed == hint ? _self.hint : hint // ignore: cast_nullable_to_non_nullable
 as String?,min: freezed == min ? _self.min : min // ignore: cast_nullable_to_non_nullable
 as num?,max: freezed == max ? _self.max : max // ignore: cast_nullable_to_non_nullable
-as num?,
+as num?,value: freezed == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

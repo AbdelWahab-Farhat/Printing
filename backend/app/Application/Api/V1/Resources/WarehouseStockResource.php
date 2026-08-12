@@ -49,6 +49,12 @@ class WarehouseStockResource extends JsonResource
                 // is already loaded for its name.
                 'product_code' => $this->productVariant->product->code,
                 'product_name' => $this->productVariant->product->name,
+                // The picture, because a storekeeper standing in front of a shelf recognises a
+                // bag before they read its name. It belongs to the *product*, so every size of
+                // «أكياس الشحن» shares one — there are no pictures at size level and inventing
+                // per-size ones would be a catalogue change, not a rendering one. Null for a
+                // product that has none, rather than an absent key a client has to guess about.
+                'image_url' => $this->productVariant->product->images->first()?->url(),
             ]),
 
             'created_at' => $this->created_at?->toIso8601String(),

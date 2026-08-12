@@ -47,6 +47,7 @@ _StockVariant _$StockVariantFromJson(Map<String, dynamic> json) =>
       productId: (json['product_id'] as num).toInt(),
       productCode: json['product_code'] as String?,
       productName: json['product_name'] as String,
+      imageUrl: json['image_url'] as String?,
     );
 
 Map<String, dynamic> _$StockVariantToJson(_StockVariant instance) =>
@@ -56,4 +57,5 @@ Map<String, dynamic> _$StockVariantToJson(_StockVariant instance) =>
       'product_id': instance.productId,
       'product_code': instance.productCode,
       'product_name': instance.productName,
+      'image_url': instance.imageUrl,
     };

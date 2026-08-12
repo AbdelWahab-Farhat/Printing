@@ -40,6 +40,12 @@ class OrderItemResource extends JsonResource
             // Strings, never numbers: "1.100" survives a client's JSON parser as the price the
             // catalogue printed, where 1.1 has already stopped being it.
             'quantity' => (string) $this->quantity,
+
+            // What the line is actually priced on: everything ordered, less whatever is missing.
+            // Sent rather than left to the client to subtract, because the rule about which
+            // quantity an invoice is built on has one home — see OrderItem::billableQuantity().
+            'billable_quantity' => $this->billableQuantity(),
+
             'unit_price' => (string) $this->unit_price,
             'line_total' => (string) $this->line_total,
 

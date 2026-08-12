@@ -97,6 +97,7 @@ import 'package:printing/features/orders/usecases/get_orders.dart';
 import 'package:printing/features/orders/usecases/manage_order_designs.dart';
 import 'package:printing/features/orders/usecases/manage_order_payments.dart';
 import 'package:printing/features/orders/usecases/save_order_invoice_pdf.dart';
+import 'package:printing/features/orders/usecases/set_order_shortages.dart';
 import 'package:printing/features/orders/usecases/take_order.dart';
 import 'package:printing/features/orders/usecases/update_order_invoice.dart';
 import 'package:printing/features/products/presentation/viewmodel/product_detail_cubit.dart';
@@ -137,12 +138,14 @@ import 'package:printing/features/vendors/usecases/save_vendor.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/save_warehouse_cubit.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
+import 'package:printing/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
 import 'package:printing/features/warehouses/presentation/viewmodel/warehouses_cubit.dart';
 import 'package:printing/features/warehouses/repositories/warehouse_repository.dart';
 import 'package:printing/features/warehouses/repositories/warehouse_repository_impl.dart';
 import 'package:printing/features/warehouses/usecases/delete_warehouse.dart';
 import 'package:printing/features/warehouses/usecases/get_stock_movements.dart';
+import 'package:printing/features/warehouses/usecases/get_stock_summary.dart';
 import 'package:printing/features/warehouses/usecases/get_warehouse_stocks.dart';
 import 'package:printing/features/warehouses/usecases/get_warehouses.dart';
 import 'package:printing/features/warehouses/usecases/record_stock_movement.dart';
@@ -432,6 +435,9 @@ abstract final class Injector {
       ..registerLazySingleton<ChangeOrderStatus>(
         () => ChangeOrderStatus(sl<OrderRepository>()),
       )
+      ..registerLazySingleton<SetOrderShortages>(
+        () => SetOrderShortages(sl<OrderRepository>()),
+      )
       ..registerLazySingleton<AddOrderDesign>(
         () => AddOrderDesign(sl<OrderRepository>()),
       )
@@ -697,6 +703,9 @@ abstract final class Injector {
       ..registerLazySingleton<GetWarehouseStocks>(
         () => GetWarehouseStocks(sl<WarehouseRepository>()),
       )
+      ..registerLazySingleton<GetStockSummary>(
+        () => GetStockSummary(sl<WarehouseRepository>()),
+      )
       ..registerLazySingleton<SetLowStockThreshold>(
         () => SetLowStockThreshold(sl<WarehouseRepository>()),
       )
@@ -720,6 +729,14 @@ abstract final class Injector {
           warehouseId: warehouseId,
           getStocks: sl<GetWarehouseStocks>(),
           setThreshold: sl<SetLowStockThreshold>(),
+        ),
+      )
+      // Beside the list rather than inside it: the list narrows with the filter and the header
+      // above it must not, so they are two Cubits over the same warehouse id.
+      ..registerFactoryParam<StockSummaryCubit, int, void>(
+        (warehouseId, _) => StockSummaryCubit(
+          warehouseId: warehouseId,
+          getSummary: sl<GetStockSummary>(),
         ),
       )
       // Two nullable params, because the ledger is read at three zoom levels: the whole

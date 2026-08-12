@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Controllers;
 
 use App\Application\Api\V1\Requests\Inventory\SetLowStockThresholdRequest;
 use App\Application\Api\V1\Resources\WarehouseStockResource;
+use App\Application\Api\V1\Resources\WarehouseStockSummaryResource;
 use App\Application\Controller;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Models\Warehouse;
@@ -57,6 +58,25 @@ class WarehouseStockController extends Controller
         return $this->successWithPagination(
             WarehouseStockResource::collection($this->inventory->paginateStocks($warehouse, $filters, $perPage)),
         );
+    }
+
+    /**
+     * Summarise a warehouse's stock
+     *
+     * The whole warehouse in five numbers: how many sizes are on its shelves, how much there is
+     * altogether, and how many lines are low, empty, or fine.
+     *
+     * **It takes no filters.** A summary that narrowed along with the list could not tell anyone
+     * what they had narrowed from — «٤ من ٢٤» is the sentence, and the ٢٤ has to survive the
+     * filter that produced the ٤.
+     *
+     * `low_stock_count` and `out_of_stock_count` overlap: a shelf at zero that somebody asked to
+     * be warned about is in both. Each is defined to match exactly the list filter of the same
+     * name, so a count shown on a button cannot disagree with the list that button opens.
+     */
+    public function summary(Warehouse $warehouse): JsonResponse
+    {
+        return $this->success(new WarehouseStockSummaryResource($this->inventory->summariseStocks($warehouse)));
     }
 
     /**

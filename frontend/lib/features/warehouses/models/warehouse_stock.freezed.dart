@@ -334,7 +334,10 @@ mixin _$StockVariant {
 
  int get id; String get label;@JsonKey(name: 'product_id') int get productId;/// `P7` — what staff say out loud, and the one thing on a shelf row safe to read down a
 /// phone line. Nullable for a payload minted before the server started sending it.
-@JsonKey(name: 'product_code') String? get productCode;@JsonKey(name: 'product_name') String get productName;
+@JsonKey(name: 'product_code') String? get productCode;@JsonKey(name: 'product_name') String get productName;/// The product's own photograph — there are none at size level, so every size of «أكياس
+/// الشحن» shares one. Null for a product nobody has photographed, and for a payload minted
+/// before the server started sending it.
+@JsonKey(name: 'image_url') String? get imageUrl;
 /// Create a copy of StockVariant
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -347,16 +350,16 @@ $StockVariantCopyWith<StockVariant> get copyWith => _$StockVariantCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productCode, productCode) || other.productCode == productCode)&&(identical(other.productName, productName) || other.productName == productName));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productCode, productCode) || other.productCode == productCode)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,productId,productCode,productName);
+int get hashCode => Object.hash(runtimeType,id,label,productId,productCode,productName,imageUrl);
 
 @override
 String toString() {
-  return 'StockVariant(id: $id, label: $label, productId: $productId, productCode: $productCode, productName: $productName)';
+  return 'StockVariant(id: $id, label: $label, productId: $productId, productCode: $productCode, productName: $productName, imageUrl: $imageUrl)';
 }
 
 
@@ -367,7 +370,7 @@ abstract mixin class $StockVariantCopyWith<$Res>  {
   factory $StockVariantCopyWith(StockVariant value, $Res Function(StockVariant) _then) = _$StockVariantCopyWithImpl;
 @useResult
 $Res call({
- int id, String label,@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_code') String? productCode,@JsonKey(name: 'product_name') String productName
+ int id, String label,@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_code') String? productCode,@JsonKey(name: 'product_name') String productName,@JsonKey(name: 'image_url') String? imageUrl
 });
 
 
@@ -384,14 +387,15 @@ class _$StockVariantCopyWithImpl<$Res>
 
 /// Create a copy of StockVariant
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? productId = null,Object? productCode = freezed,Object? productName = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? productId = null,Object? productCode = freezed,Object? productName = null,Object? imageUrl = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
 as int,productCode: freezed == productCode ? _self.productCode : productCode // ignore: cast_nullable_to_non_nullable
 as String?,productName: null == productName ? _self.productName : productName // ignore: cast_nullable_to_non_nullable
-as String,
+as String,imageUrl: freezed == imageUrl ? _self.imageUrl : imageUrl // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -476,10 +480,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_code')  String? productCode, @JsonKey(name: 'product_name')  String productName)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_code')  String? productCode, @JsonKey(name: 'product_name')  String productName, @JsonKey(name: 'image_url')  String? imageUrl)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StockVariant() when $default != null:
-return $default(_that.id,_that.label,_that.productId,_that.productCode,_that.productName);case _:
+return $default(_that.id,_that.label,_that.productId,_that.productCode,_that.productName,_that.imageUrl);case _:
   return orElse();
 
 }
@@ -497,10 +501,10 @@ return $default(_that.id,_that.label,_that.productId,_that.productCode,_that.pro
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_code')  String? productCode, @JsonKey(name: 'product_name')  String productName)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_code')  String? productCode, @JsonKey(name: 'product_name')  String productName, @JsonKey(name: 'image_url')  String? imageUrl)  $default,) {final _that = this;
 switch (_that) {
 case _StockVariant():
-return $default(_that.id,_that.label,_that.productId,_that.productCode,_that.productName);case _:
+return $default(_that.id,_that.label,_that.productId,_that.productCode,_that.productName,_that.imageUrl);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -517,10 +521,10 @@ return $default(_that.id,_that.label,_that.productId,_that.productCode,_that.pro
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String label, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_code')  String? productCode, @JsonKey(name: 'product_name')  String productName)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String label, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_code')  String? productCode, @JsonKey(name: 'product_name')  String productName, @JsonKey(name: 'image_url')  String? imageUrl)?  $default,) {final _that = this;
 switch (_that) {
 case _StockVariant() when $default != null:
-return $default(_that.id,_that.label,_that.productId,_that.productCode,_that.productName);case _:
+return $default(_that.id,_that.label,_that.productId,_that.productCode,_that.productName,_that.imageUrl);case _:
   return null;
 
 }
@@ -532,7 +536,7 @@ return $default(_that.id,_that.label,_that.productId,_that.productCode,_that.pro
 @JsonSerializable()
 
 class _StockVariant implements StockVariant {
-  const _StockVariant({required this.id, required this.label, @JsonKey(name: 'product_id') required this.productId, @JsonKey(name: 'product_code') this.productCode, @JsonKey(name: 'product_name') required this.productName});
+  const _StockVariant({required this.id, required this.label, @JsonKey(name: 'product_id') required this.productId, @JsonKey(name: 'product_code') this.productCode, @JsonKey(name: 'product_name') required this.productName, @JsonKey(name: 'image_url') this.imageUrl});
   factory _StockVariant.fromJson(Map<String, dynamic> json) => _$StockVariantFromJson(json);
 
 @override final  int id;
@@ -542,6 +546,10 @@ class _StockVariant implements StockVariant {
 /// phone line. Nullable for a payload minted before the server started sending it.
 @override@JsonKey(name: 'product_code') final  String? productCode;
 @override@JsonKey(name: 'product_name') final  String productName;
+/// The product's own photograph — there are none at size level, so every size of «أكياس
+/// الشحن» shares one. Null for a product nobody has photographed, and for a payload minted
+/// before the server started sending it.
+@override@JsonKey(name: 'image_url') final  String? imageUrl;
 
 /// Create a copy of StockVariant
 /// with the given fields replaced by the non-null parameter values.
@@ -556,16 +564,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productCode, productCode) || other.productCode == productCode)&&(identical(other.productName, productName) || other.productName == productName));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productCode, productCode) || other.productCode == productCode)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,productId,productCode,productName);
+int get hashCode => Object.hash(runtimeType,id,label,productId,productCode,productName,imageUrl);
 
 @override
 String toString() {
-  return 'StockVariant(id: $id, label: $label, productId: $productId, productCode: $productCode, productName: $productName)';
+  return 'StockVariant(id: $id, label: $label, productId: $productId, productCode: $productCode, productName: $productName, imageUrl: $imageUrl)';
 }
 
 
@@ -576,7 +584,7 @@ abstract mixin class _$StockVariantCopyWith<$Res> implements $StockVariantCopyWi
   factory _$StockVariantCopyWith(_StockVariant value, $Res Function(_StockVariant) _then) = __$StockVariantCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String label,@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_code') String? productCode,@JsonKey(name: 'product_name') String productName
+ int id, String label,@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_code') String? productCode,@JsonKey(name: 'product_name') String productName,@JsonKey(name: 'image_url') String? imageUrl
 });
 
 
@@ -593,14 +601,15 @@ class __$StockVariantCopyWithImpl<$Res>
 
 /// Create a copy of StockVariant
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? label = null,Object? productId = null,Object? productCode = freezed,Object? productName = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? label = null,Object? productId = null,Object? productCode = freezed,Object? productName = null,Object? imageUrl = freezed,}) {
   return _then(_StockVariant(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
 as int,productCode: freezed == productCode ? _self.productCode : productCode // ignore: cast_nullable_to_non_nullable
 as String?,productName: null == productName ? _self.productName : productName // ignore: cast_nullable_to_non_nullable
-as String,
+as String,imageUrl: freezed == imageUrl ? _self.imageUrl : imageUrl // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

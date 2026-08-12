@@ -68,6 +68,13 @@ abstract class TransitionField with _$TransitionField {
     /// line — «الناقص من 30*30» can never exceed it — so it travels with the field.
     num? min,
     num? max,
+
+    /// What the box opens holding — **an answer, not a placeholder.**
+    ///
+    /// Leaving «نواقص» asks how much of the shortage arrived, and nearly always the answer is
+    /// all of it: the server fills that in, and agreeing costs a tap. Null on almost every
+    /// field, because a box that suggests a wrong number is worse than an empty one.
+    String? value,
   }) = _TransitionField;
 
   const TransitionField._();

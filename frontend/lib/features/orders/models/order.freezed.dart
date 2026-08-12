@@ -1469,7 +1469,12 @@ mixin _$OrderItem {
  int get id;@JsonKey(name: 'product_id') int get productId;@JsonKey(name: 'product_variant_id') int get productVariantId;/// The snapshot, not the catalogue. A product renamed since must not rewrite this invoice.
 @JsonKey(name: 'product_name') String get productName;@JsonKey(name: 'variant_label') String get variantLabel;@JsonKey(name: 'pricing_unit_label') String get pricingUnitLabel; String get quantity;/// What is missing from this line, in this line's own unit. Null until somebody has counted
 /// — which is not the same as nothing being missing.
-@JsonKey(name: 'shortage_quantity') String? get shortageQuantity;@JsonKey(name: 'unit_price') String get unitPrice;@JsonKey(name: 'line_total') String get lineTotal; String? get notes;
+@JsonKey(name: 'shortage_quantity') String? get shortageQuantity;/// What the line is actually charged for: [quantity] less [shortageQuantity].
+///
+/// Sent by the server rather than subtracted here, because which quantity an invoice is
+/// built on is a rule and rules live in one place. Null only from a server too old to send
+/// it — see [pricedQuantity].
+@JsonKey(name: 'billable_quantity') String? get billableQuantity;@JsonKey(name: 'unit_price') String get unitPrice;@JsonKey(name: 'line_total') String get lineTotal; String? get notes;
 /// Create a copy of OrderItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1482,16 +1487,16 @@ $OrderItemCopyWith<OrderItem> get copyWith => _$OrderItemCopyWithImpl<OrderItem>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderItem&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.shortageQuantity, shortageQuantity) || other.shortageQuantity == shortageQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderItem&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.shortageQuantity, shortageQuantity) || other.shortageQuantity == shortageQuantity)&&(identical(other.billableQuantity, billableQuantity) || other.billableQuantity == billableQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal)&&(identical(other.notes, notes) || other.notes == notes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,productId,productVariantId,productName,variantLabel,pricingUnitLabel,quantity,shortageQuantity,unitPrice,lineTotal,notes);
+int get hashCode => Object.hash(runtimeType,id,productId,productVariantId,productName,variantLabel,pricingUnitLabel,quantity,shortageQuantity,billableQuantity,unitPrice,lineTotal,notes);
 
 @override
 String toString() {
-  return 'OrderItem(id: $id, productId: $productId, productVariantId: $productVariantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, quantity: $quantity, shortageQuantity: $shortageQuantity, unitPrice: $unitPrice, lineTotal: $lineTotal, notes: $notes)';
+  return 'OrderItem(id: $id, productId: $productId, productVariantId: $productVariantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, quantity: $quantity, shortageQuantity: $shortageQuantity, billableQuantity: $billableQuantity, unitPrice: $unitPrice, lineTotal: $lineTotal, notes: $notes)';
 }
 
 
@@ -1502,7 +1507,7 @@ abstract mixin class $OrderItemCopyWith<$Res>  {
   factory $OrderItemCopyWith(OrderItem value, $Res Function(OrderItem) _then) = _$OrderItemCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_name') String productName,@JsonKey(name: 'variant_label') String variantLabel,@JsonKey(name: 'pricing_unit_label') String pricingUnitLabel, String quantity,@JsonKey(name: 'shortage_quantity') String? shortageQuantity,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'line_total') String lineTotal, String? notes
+ int id,@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_name') String productName,@JsonKey(name: 'variant_label') String variantLabel,@JsonKey(name: 'pricing_unit_label') String pricingUnitLabel, String quantity,@JsonKey(name: 'shortage_quantity') String? shortageQuantity,@JsonKey(name: 'billable_quantity') String? billableQuantity,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'line_total') String lineTotal, String? notes
 });
 
 
@@ -1519,7 +1524,7 @@ class _$OrderItemCopyWithImpl<$Res>
 
 /// Create a copy of OrderItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? productId = null,Object? productVariantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? quantity = null,Object? shortageQuantity = freezed,Object? unitPrice = null,Object? lineTotal = null,Object? notes = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? productId = null,Object? productVariantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? quantity = null,Object? shortageQuantity = freezed,Object? billableQuantity = freezed,Object? unitPrice = null,Object? lineTotal = null,Object? notes = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
@@ -1529,6 +1534,7 @@ as String,variantLabel: null == variantLabel ? _self.variantLabel : variantLabel
 as String,pricingUnitLabel: null == pricingUnitLabel ? _self.pricingUnitLabel : pricingUnitLabel // ignore: cast_nullable_to_non_nullable
 as String,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,shortageQuantity: freezed == shortageQuantity ? _self.shortageQuantity : shortageQuantity // ignore: cast_nullable_to_non_nullable
+as String?,billableQuantity: freezed == billableQuantity ? _self.billableQuantity : billableQuantity // ignore: cast_nullable_to_non_nullable
 as String?,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,lineTotal: null == lineTotal ? _self.lineTotal : lineTotal // ignore: cast_nullable_to_non_nullable
 as String,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
@@ -1617,10 +1623,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_name')  String productName, @JsonKey(name: 'variant_label')  String variantLabel, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel,  String quantity, @JsonKey(name: 'shortage_quantity')  String? shortageQuantity, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'line_total')  String lineTotal,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_name')  String productName, @JsonKey(name: 'variant_label')  String variantLabel, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel,  String quantity, @JsonKey(name: 'shortage_quantity')  String? shortageQuantity, @JsonKey(name: 'billable_quantity')  String? billableQuantity, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'line_total')  String lineTotal,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OrderItem() when $default != null:
-return $default(_that.id,_that.productId,_that.productVariantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.quantity,_that.shortageQuantity,_that.unitPrice,_that.lineTotal,_that.notes);case _:
+return $default(_that.id,_that.productId,_that.productVariantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.quantity,_that.shortageQuantity,_that.billableQuantity,_that.unitPrice,_that.lineTotal,_that.notes);case _:
   return orElse();
 
 }
@@ -1638,10 +1644,10 @@ return $default(_that.id,_that.productId,_that.productVariantId,_that.productNam
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_name')  String productName, @JsonKey(name: 'variant_label')  String variantLabel, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel,  String quantity, @JsonKey(name: 'shortage_quantity')  String? shortageQuantity, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'line_total')  String lineTotal,  String? notes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_name')  String productName, @JsonKey(name: 'variant_label')  String variantLabel, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel,  String quantity, @JsonKey(name: 'shortage_quantity')  String? shortageQuantity, @JsonKey(name: 'billable_quantity')  String? billableQuantity, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'line_total')  String lineTotal,  String? notes)  $default,) {final _that = this;
 switch (_that) {
 case _OrderItem():
-return $default(_that.id,_that.productId,_that.productVariantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.quantity,_that.shortageQuantity,_that.unitPrice,_that.lineTotal,_that.notes);case _:
+return $default(_that.id,_that.productId,_that.productVariantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.quantity,_that.shortageQuantity,_that.billableQuantity,_that.unitPrice,_that.lineTotal,_that.notes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1658,10 +1664,10 @@ return $default(_that.id,_that.productId,_that.productVariantId,_that.productNam
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_name')  String productName, @JsonKey(name: 'variant_label')  String variantLabel, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel,  String quantity, @JsonKey(name: 'shortage_quantity')  String? shortageQuantity, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'line_total')  String lineTotal,  String? notes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_name')  String productName, @JsonKey(name: 'variant_label')  String variantLabel, @JsonKey(name: 'pricing_unit_label')  String pricingUnitLabel,  String quantity, @JsonKey(name: 'shortage_quantity')  String? shortageQuantity, @JsonKey(name: 'billable_quantity')  String? billableQuantity, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'line_total')  String lineTotal,  String? notes)?  $default,) {final _that = this;
 switch (_that) {
 case _OrderItem() when $default != null:
-return $default(_that.id,_that.productId,_that.productVariantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.quantity,_that.shortageQuantity,_that.unitPrice,_that.lineTotal,_that.notes);case _:
+return $default(_that.id,_that.productId,_that.productVariantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.quantity,_that.shortageQuantity,_that.billableQuantity,_that.unitPrice,_that.lineTotal,_that.notes);case _:
   return null;
 
 }
@@ -1673,7 +1679,7 @@ return $default(_that.id,_that.productId,_that.productVariantId,_that.productNam
 @JsonSerializable()
 
 class _OrderItem extends OrderItem {
-  const _OrderItem({required this.id, @JsonKey(name: 'product_id') required this.productId, @JsonKey(name: 'product_variant_id') required this.productVariantId, @JsonKey(name: 'product_name') required this.productName, @JsonKey(name: 'variant_label') required this.variantLabel, @JsonKey(name: 'pricing_unit_label') required this.pricingUnitLabel, required this.quantity, @JsonKey(name: 'shortage_quantity') this.shortageQuantity, @JsonKey(name: 'unit_price') required this.unitPrice, @JsonKey(name: 'line_total') required this.lineTotal, this.notes}): super._();
+  const _OrderItem({required this.id, @JsonKey(name: 'product_id') required this.productId, @JsonKey(name: 'product_variant_id') required this.productVariantId, @JsonKey(name: 'product_name') required this.productName, @JsonKey(name: 'variant_label') required this.variantLabel, @JsonKey(name: 'pricing_unit_label') required this.pricingUnitLabel, required this.quantity, @JsonKey(name: 'shortage_quantity') this.shortageQuantity, @JsonKey(name: 'billable_quantity') this.billableQuantity, @JsonKey(name: 'unit_price') required this.unitPrice, @JsonKey(name: 'line_total') required this.lineTotal, this.notes}): super._();
   factory _OrderItem.fromJson(Map<String, dynamic> json) => _$OrderItemFromJson(json);
 
 @override final  int id;
@@ -1687,6 +1693,12 @@ class _OrderItem extends OrderItem {
 /// What is missing from this line, in this line's own unit. Null until somebody has counted
 /// — which is not the same as nothing being missing.
 @override@JsonKey(name: 'shortage_quantity') final  String? shortageQuantity;
+/// What the line is actually charged for: [quantity] less [shortageQuantity].
+///
+/// Sent by the server rather than subtracted here, because which quantity an invoice is
+/// built on is a rule and rules live in one place. Null only from a server too old to send
+/// it — see [pricedQuantity].
+@override@JsonKey(name: 'billable_quantity') final  String? billableQuantity;
 @override@JsonKey(name: 'unit_price') final  String unitPrice;
 @override@JsonKey(name: 'line_total') final  String lineTotal;
 @override final  String? notes;
@@ -1704,16 +1716,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderItem&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.shortageQuantity, shortageQuantity) || other.shortageQuantity == shortageQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderItem&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.shortageQuantity, shortageQuantity) || other.shortageQuantity == shortageQuantity)&&(identical(other.billableQuantity, billableQuantity) || other.billableQuantity == billableQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal)&&(identical(other.notes, notes) || other.notes == notes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,productId,productVariantId,productName,variantLabel,pricingUnitLabel,quantity,shortageQuantity,unitPrice,lineTotal,notes);
+int get hashCode => Object.hash(runtimeType,id,productId,productVariantId,productName,variantLabel,pricingUnitLabel,quantity,shortageQuantity,billableQuantity,unitPrice,lineTotal,notes);
 
 @override
 String toString() {
-  return 'OrderItem(id: $id, productId: $productId, productVariantId: $productVariantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, quantity: $quantity, shortageQuantity: $shortageQuantity, unitPrice: $unitPrice, lineTotal: $lineTotal, notes: $notes)';
+  return 'OrderItem(id: $id, productId: $productId, productVariantId: $productVariantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, quantity: $quantity, shortageQuantity: $shortageQuantity, billableQuantity: $billableQuantity, unitPrice: $unitPrice, lineTotal: $lineTotal, notes: $notes)';
 }
 
 
@@ -1724,7 +1736,7 @@ abstract mixin class _$OrderItemCopyWith<$Res> implements $OrderItemCopyWith<$Re
   factory _$OrderItemCopyWith(_OrderItem value, $Res Function(_OrderItem) _then) = __$OrderItemCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_name') String productName,@JsonKey(name: 'variant_label') String variantLabel,@JsonKey(name: 'pricing_unit_label') String pricingUnitLabel, String quantity,@JsonKey(name: 'shortage_quantity') String? shortageQuantity,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'line_total') String lineTotal, String? notes
+ int id,@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_name') String productName,@JsonKey(name: 'variant_label') String variantLabel,@JsonKey(name: 'pricing_unit_label') String pricingUnitLabel, String quantity,@JsonKey(name: 'shortage_quantity') String? shortageQuantity,@JsonKey(name: 'billable_quantity') String? billableQuantity,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'line_total') String lineTotal, String? notes
 });
 
 
@@ -1741,7 +1753,7 @@ class __$OrderItemCopyWithImpl<$Res>
 
 /// Create a copy of OrderItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? productId = null,Object? productVariantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? quantity = null,Object? shortageQuantity = freezed,Object? unitPrice = null,Object? lineTotal = null,Object? notes = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? productId = null,Object? productVariantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? quantity = null,Object? shortageQuantity = freezed,Object? billableQuantity = freezed,Object? unitPrice = null,Object? lineTotal = null,Object? notes = freezed,}) {
   return _then(_OrderItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
@@ -1751,6 +1763,7 @@ as String,variantLabel: null == variantLabel ? _self.variantLabel : variantLabel
 as String,pricingUnitLabel: null == pricingUnitLabel ? _self.pricingUnitLabel : pricingUnitLabel // ignore: cast_nullable_to_non_nullable
 as String,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,shortageQuantity: freezed == shortageQuantity ? _self.shortageQuantity : shortageQuantity // ignore: cast_nullable_to_non_nullable
+as String?,billableQuantity: freezed == billableQuantity ? _self.billableQuantity : billableQuantity // ignore: cast_nullable_to_non_nullable
 as String?,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,lineTotal: null == lineTotal ? _self.lineTotal : lineTotal // ignore: cast_nullable_to_non_nullable
 as String,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable

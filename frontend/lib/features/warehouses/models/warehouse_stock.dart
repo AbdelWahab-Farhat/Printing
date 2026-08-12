@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:printing/core/utils/digits.dart';
 
 part 'warehouse_stock.freezed.dart';
 part 'warehouse_stock.g.dart';
@@ -38,6 +39,23 @@ abstract class WarehouseStock with _$WarehouseStock {
   /// `'250.000'` reads as a quantity to a database and as noise to a storekeeper: `'250'`.
   String get quantityLabel => trimDecimals(quantity);
 
+  /// The same number where it is the loudest thing on the screen: `'12450.000'` → `'12,450'`.
+  ///
+  /// Separate from [quantityLabel] rather than replacing it, because that one also prefills the
+  /// sheets — and a text field with a comma in it is a number the server will refuse.
+  String get quantityGrouped => groupedDecimal(quantity);
+
+  /// Nothing on the shelf.
+  ///
+  /// **Not the same question as [isLowStock]**, which the server answers and which is silent
+  /// about a size nobody set an alert level for. Such a line at zero used to render exactly like
+  /// a healthy one, so the emptiest row on the screen was also the calmest.
+  ///
+  /// `num.tryParse` only ever compares here — the string is what gets displayed — and a value it
+  /// cannot read is treated as "not empty", because inventing «نافد» for a shelf that has
+  /// something on it is the worse mistake.
+  bool get isOutOfStock => (num.tryParse(quantity) ?? 1) <= 0;
+
   String? get thresholdLabel =>
       lowStockThreshold == null ? null : trimDecimals(lowStockThreshold!);
 
@@ -60,6 +78,11 @@ abstract class StockVariant with _$StockVariant {
     @JsonKey(name: 'product_code') String? productCode,
 
     @JsonKey(name: 'product_name') required String productName,
+
+    /// The product's own photograph — there are none at size level, so every size of «أكياس
+    /// الشحن» shares one. Null for a product nobody has photographed, and for a payload minted
+    /// before the server started sending it.
+    @JsonKey(name: 'image_url') String? imageUrl,
   }) = _StockVariant;
 
   factory StockVariant.fromJson(Map<String, dynamic> json) => _$StockVariantFromJson(json);

@@ -7,6 +7,24 @@ import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 import 'package:printing/features/warehouses/usecases/get_warehouse_stocks.dart';
 import 'package:printing/features/warehouses/usecases/set_low_stock_threshold.dart';
 
+/// The three questions this screen is opened with.
+///
+/// **[low] and [out] are not degrees of the same thing.** A shelf nobody set an alert level for
+/// is outside the low-stock question entirely — the server says so — but it is empty all the
+/// same, and «ماذا نفد؟» is the question somebody asks before ordering. Each value maps to the
+/// filter the summary counted with, so a button cannot promise a number the list contradicts.
+enum StockShelfFilter {
+  all,
+  low,
+  out;
+
+  /// What the server should be asked for `low_stock`. Null means "do not narrow on it".
+  bool? get lowStock => this == StockShelfFilter.low ? true : null;
+
+  /// What the server should be asked for `in_stock`.
+  bool? get inStock => this == StockShelfFilter.out ? false : null;
+}
+
 /// The shelves of one warehouse.
 ///
 /// **About one warehouse, so the id is a construction argument** rather than something the
@@ -23,9 +41,8 @@ class WarehouseStocksCubit extends PagedCubit<WarehouseStock> {
   final GetWarehouseStocks _getStocks;
   final SetLowStockThreshold _setThreshold;
 
-  /// `true` narrows the list to the shelves asking to be refilled — the question this screen is
-  /// opened for on a busy morning. `null` shows everything.
-  bool? lowStockOnly;
+  /// Which of the three the list is showing. Everything, by default.
+  StockShelfFilter filter = StockShelfFilter.all;
 
   @override
   Future<Either<Failure, Paginated<WarehouseStock>>> fetchPage({
@@ -34,13 +51,18 @@ class WarehouseStocksCubit extends PagedCubit<WarehouseStock> {
   }) {
     // The endpoint has no text search: a shelf is found by scrolling a list of sizes, not by
     // typing one. `search` is accepted by the base class and deliberately unused here.
-    return _getStocks(warehouseId, lowStock: lowStockOnly, page: page);
+    return _getStocks(
+      warehouseId,
+      lowStock: filter.lowStock,
+      inStock: filter.inStock,
+      page: page,
+    );
   }
 
-  Future<void> filterByLowStock(bool? next) async {
-    if (next == lowStockOnly) return;
+  Future<void> filterBy(StockShelfFilter next) async {
+    if (next == filter) return;
 
-    lowStockOnly = next;
+    filter = next;
     await load();
   }
 

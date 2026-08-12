@@ -14,6 +14,7 @@ import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/order_payment.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:printing/features/orders/presentation/widgets/edit_shortages_sheet.dart';
 import 'package:printing/features/orders/presentation/widgets/order_customer_card.dart';
 import 'package:printing/features/orders/presentation/widgets/order_designs_section.dart';
 import 'package:printing/features/orders/presentation/widgets/order_invoice_actions.dart';
@@ -21,6 +22,7 @@ import 'package:printing/features/orders/presentation/widgets/order_money_row.da
 import 'package:printing/features/orders/presentation/widgets/order_status_bar.dart';
 import 'package:printing/features/orders/presentation/widgets/order_timeline.dart';
 import 'package:printing/features/orders/presentation/widgets/order_totals.dart';
+import 'package:printing/features/orders/usecases/set_order_shortages.dart';
 
 /// One order, everything about it, and the moves staff make on it.
 ///
@@ -90,6 +92,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               order: order,
               onChangeStatus: _changeStatus,
               onEdit: _edit,
+              onEditShortages: _editShortages,
               onOpenPayments: _openPayments,
             );
           },
@@ -152,6 +155,40 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
 
     final updated = cubit.state.order;
     if (updated != null) setState(() => _moved = updated);
+  }
+
+  /// Corrects what is missing, which corrects what the order costs.
+  ///
+  /// **A sheet rather than a screen**, because it is one number per line and no navigation: the
+  /// store is standing over the delivery with the phone in one hand. The send happens here and
+  /// not in the sheet, for the same reason every other form on this screen works that way — a
+  /// form's answer is what was typed, and what to do about a refusal belongs to the screen that
+  /// has somewhere to show it.
+  ///
+  /// Re-read afterwards rather than trusting what came back: the totals are the server's
+  /// arithmetic, and this screen is the one that has to be right about them.
+  Future<void> _editShortages(BuildContext context) async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    final lines = order?.items ?? const <OrderItem>[];
+    if (order == null || lines.isEmpty) return;
+
+    final shortages = await showEditShortagesSheet(context: context, items: lines);
+    if (shortages == null || !mounted) return;
+
+    final result = await sl<SetOrderShortages>()(order.id, shortages: shortages);
+    if (!mounted) return;
+
+    await result.fold(
+      (failure) async => context.showFailure(failure),
+      (_) async {
+        await cubit.load();
+        if (!mounted) return;
+
+        final updated = cubit.state.order;
+        if (updated != null) setState(() => _moved = updated);
+      },
+    );
   }
 
   /// Hands the money to its own screen, and re-reads whatever it changed.
@@ -394,12 +431,14 @@ class _Actions extends StatelessWidget {
     required this.order,
     required this.onChangeStatus,
     required this.onEdit,
+    required this.onEditShortages,
     required this.onOpenPayments,
   });
 
   final Order order;
   final Future<void> Function(BuildContext context) onChangeStatus;
   final Future<void> Function(BuildContext context) onEdit;
+  final Future<void> Function(BuildContext context) onEditShortages;
   final Future<void> Function(BuildContext context) onOpenPayments;
 
   /// Whether «تعديل الطلبية» has anything at all to offer this person.
@@ -439,6 +478,22 @@ class _Actions extends StatelessWidget {
         // and each has something to do there the other has not.
         if (_mayEditSomething)
           AppAction(label: 'تعديل الطلبية', icon: AppIcons.edit, onTap: onEdit),
+
+        // **Its own arm rather than a section of «تعديل الطلبية»**, because it is a different
+        // act by a different person: the store counts what turned up, and the number they write
+        // comes off the invoice. It costs the grant that declares a shortage in the first place.
+        //
+        // **Offered in «نواقص» and nowhere else.** That is the status the sheet is for — the job
+        // is parked because the stock is not there — and the two moves either side of it already
+        // ask the same question in the place it belongs: entering asks what is short, leaving
+        // asks what arrived.
+        if (order.shortagesAreEditable)
+          AppAction(
+            label: 'تعديل النواقص',
+            icon: AppIcons.error,
+            permission: AppPermission.moveOrderToShortage,
+            onTap: onEditShortages,
+          ),
 
         // The other half of «نسخ الفاتورة» — the same message, handed to the phone's own sheet
         // instead of to the clipboard. On the dial rather than beside the button, because the
@@ -544,17 +599,25 @@ class _Items extends StatelessWidget {
                       Text(
                         // The quantity, its unit and the rate it was priced at — the three
                         // numbers somebody checking an invoice reads together.
-                        '${item.quantity} ${item.pricingUnitLabel} × ${item.unitPrice}',
+                        //
+                        // **The quantity here is the one being charged for**, so the line's own
+                        // arithmetic comes out right on screen: «٢٠٠ قطعة × ١٫٥٥٠» beside
+                        // «٣١٠٫٠٠». Printing the ordered 300 against a total built on 200 would
+                        // make every short line look like a pricing error.
+                        '${item.pricedQuantity} ${item.pricingUnitLabel} × ${item.unitPrice}',
                         style: context.textTheme.bodySmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
                       ),
                       // On the line it is missing from, because that is the only place the
-                      // number means anything: «ناقص ٤٠» of *which* size.
-                      if (item.shortageQuantity case final missing?) ...[
+                      // number means anything: «ناقص ٤٠» of *which* size. What was ordered is
+                      // said here too — it is no longer on the line above, and «ناقص من كم»
+                      // is the question that follows «ناقص».
+                      if (item.hasShortage) ...[
                         SizedBox(height: 2.h),
                         Text(
-                          'ناقص: $missing ${item.pricingUnitLabel}',
+                          'ناقص: ${item.shortageQuantity} من ${item.quantity} '
+                          '${item.pricingUnitLabel} — غير محتسب',
                           style: context.textTheme.bodySmall?.copyWith(
                             color: scheme.error,
                             fontWeight: FontWeight.w700,

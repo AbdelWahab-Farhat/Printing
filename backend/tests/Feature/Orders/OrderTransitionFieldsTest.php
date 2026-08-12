@@ -164,6 +164,7 @@ class OrderTransitionFieldsTest extends TestCase
                 'hint' => 'تُرفع إلى مكتبة العميل ثم تُربط بالطلبية',
                 'min' => null,
                 'max' => null,
+                'value' => null,
             ],
             [
                 'key' => 'reason',
@@ -175,6 +176,7 @@ class OrderTransitionFieldsTest extends TestCase
                 'hint' => 'تُسجَّل في سجل الطلبية',
                 'min' => null,
                 'max' => null,
+                'value' => null,
             ],
         ], $designing['fields']);
     }

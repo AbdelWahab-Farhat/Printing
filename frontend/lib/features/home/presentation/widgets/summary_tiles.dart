@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/appear.dart';
 import 'package:printing/features/home/models/home_summary.dart';
 
@@ -147,21 +148,5 @@ class _Tile extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-extension GroupedDigits on int {
-  /// `9651` → `9,651`. Written here rather than pulled from `intl`, which would arrive with a
-  /// locale that renders these in Arabic-Indic digits — the shop reads Latin ones.
-  String get grouped {
-    final digits = abs().toString();
-    final buffer = StringBuffer(isNegative ? '-' : '');
-
-    for (var index = 0; index < digits.length; index++) {
-      if (index > 0 && (digits.length - index) % 3 == 0) buffer.write(',');
-      buffer.write(digits[index]);
-    }
-
-    return buffer.toString();
   }
 }

@@ -31,6 +31,8 @@ final class ChangeOrderStatus
     public function __construct(
         private readonly RecordStatusTransition $record,
         private readonly AddOrderDesign $addDesign,
+        // The only writer of `shortage_quantity`, and the one that re-prices what it wrote.
+        private readonly SetOrderShortages $setShortages,
         // Through the module's front door, never `ShippingCompany::query()` — the same seam
         // every other cross-context read here goes through.
         private readonly DeliveryService $delivery,
@@ -133,7 +135,7 @@ final class ChangeOrderStatus
                 $this->attachDesigns($order, $fields);
             }
 
-            $this->recordShortages($order, $target, $fields);
+            $this->recordShortages($order, $from, $target, $fields);
 
             $this->guardShortage($order, $target);
 
@@ -170,28 +172,76 @@ final class ChangeOrderStatus
     }
 
     /**
-     * What is missing, written against the line it is missing from.
+     * What is missing, written against the line it is missing from — on the way in and on the
+     * way out.
      *
-     * Each line's own field, because «كم الناقص» asked of an order has no answer — it is a
-     * question about a size. A line left alone is cleared rather than left holding what a
-     * previous visit to «نواقص» recorded: an order bounces in and out of this status, and a
-     * stale number is worse than none.
+     * **Two questions, one write.** Arriving asks «كم الناقص» per line, because asked of a whole
+     * order it has no answer — it is a question about a size. Leaving asks «كم وصل منه», which
+     * is the same fact from the other end: the stock turned up, and the invoice the shortage cut
+     * has to come back with it. Both land in {@see SetOrderShortages}, so the money is re-derived
+     * once however the number moved.
+     *
+     * Cancelling is deliberately neither. An order written off while short keeps the record of
+     * what was short when it was written off; asking a clerk what arrived, of a job nobody is
+     * going to do, would be a form standing between them and the decision.
      *
      * @param  array<string, mixed>  $fields
      */
-    private function recordShortages(Order $order, OrderStatus $target, array $fields): void
+    private function recordShortages(Order $order, OrderStatus $from, OrderStatus $target, array $fields): void
     {
-        if ($target !== OrderStatus::Shortage) {
+        if ($target === OrderStatus::Shortage) {
+            ($this->setShortages)($order, $this->declared($order, $fields));
+
             return;
         }
 
-        foreach ($order->items as $item) {
-            $missing = $fields["shortage_{$item->getKey()}"] ?? null;
-
-            $item->forceFill([
-                'shortage_quantity' => $missing === null || $missing === '' ? null : $missing,
-            ])->save();
+        if ($from === OrderStatus::Shortage && ! $target->isFinal()) {
+            ($this->setShortages)($order, $this->remaining($order, $fields));
         }
+    }
+
+    /**
+     * The shortages as the clerk typed them: absolute, one per line.
+     *
+     * @param  array<string, mixed>  $fields
+     * @return array<int, mixed>
+     */
+    private function declared(Order $order, array $fields): array
+    {
+        $shortages = [];
+
+        foreach ($order->items as $item) {
+            $shortages[(int) $item->getKey()] = $fields["shortage_{$item->getKey()}"] ?? null;
+        }
+
+        return $shortages;
+    }
+
+    /**
+     * What is *still* missing once the delivery has been counted in.
+     *
+     * The field asks what arrived rather than what is left, because that is the number the
+     * person holding the delivery note has. An untouched field means the whole shortage arrived
+     * — it is pre-filled with exactly that, so leaving it alone is an answer rather than a
+     * silence — and the subtraction is done here so nobody does it in their head.
+     *
+     * @param  array<string, mixed>  $fields
+     * @return array<int, mixed>
+     */
+    private function remaining(Order $order, array $fields): array
+    {
+        $shortages = [];
+
+        foreach ($order->items as $item) {
+            $short = (string) ($item->shortage_quantity ?? '0');
+            $received = $fields["received_{$item->getKey()}"] ?? $short;
+            $received = $received === null || $received === '' ? $short : (string) $received;
+
+            $left = bcsub($short, $received, 3);
+            $shortages[(int) $item->getKey()] = bccomp($left, '0', 3) > 0 ? $left : null;
+        }
+
+        return $shortages;
     }
 
     /**

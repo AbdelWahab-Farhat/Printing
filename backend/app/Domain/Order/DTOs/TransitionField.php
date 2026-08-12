@@ -31,6 +31,7 @@ final class TransitionField
         public readonly ?string $hint = null,
         public readonly ?float $min = null,
         public readonly ?float $max = null,
+        public readonly ?string $value = null,
     ) {}
 
     public static function text(
@@ -55,6 +56,12 @@ final class TransitionField
      *
      * [$max] is a fact about the order rather than a rule — what was ordered of one size — so
      * it travels with the field and is enforced from the same place it is drawn.
+     *
+     * [$value] is what the box opens holding. **An answer, not a placeholder:** the field that
+     * asks what arrived of a shortage opens filled with the whole of it, because that is what
+     * leaving «نواقص» nearly always means, and a clerk who agrees taps once. Left null by every
+     * field with no obvious answer — an empty box that suggests nothing is honest, one that
+     * suggests a wrong number is not.
      */
     public static function number(
         string $key,
@@ -63,6 +70,7 @@ final class TransitionField
         ?float $min = 0,
         ?float $max = null,
         ?string $hint = null,
+        ?string $value = null,
     ): self {
         return new self(
             key: $key,
@@ -72,6 +80,7 @@ final class TransitionField
             hint: $hint,
             min: $min,
             max: $max,
+            value: $value,
         );
     }
 
@@ -131,6 +140,9 @@ final class TransitionField
             'hint' => $this->hint,
             'min' => $this->min,
             'max' => $this->max,
+            // What the box opens holding, and null for almost every field. An app too old to
+            // know the key simply opens empty, which is what it did before the key existed.
+            'value' => $this->value,
         ];
     }
 

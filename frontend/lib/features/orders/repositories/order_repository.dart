@@ -86,6 +86,16 @@ abstract interface class OrderRepository {
     Map<String, Object?> fields,
   });
 
+  /// Records what is missing from each line, and therefore what the order costs.
+  ///
+  /// **The set is replaced.** [shortages] is line id → what is missing, and a null clears one —
+  /// which is how a shortage is un-recorded and the invoice put back. A line left out of the map
+  /// is cleared too, so callers send every line they showed.
+  Future<Either<Failure, Order>> setShortages(
+    int orderId, {
+    required Map<int, String?> shortages,
+  });
+
   /// Puts the next version of the artwork in front of the customer.
   ///
   /// The design is *pointed at*, never uploaded here: it lives in the customer's library, which

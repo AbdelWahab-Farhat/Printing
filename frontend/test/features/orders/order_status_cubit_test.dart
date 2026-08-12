@@ -48,6 +48,21 @@ void main() {
 
   const toPrinting = OrderTransition(status: OrderStatus.printing, label: 'قيد الطباعة');
 
+  /// «كم وصل من الناقص» — the field that arrives already holding its answer.
+  const received = TransitionField(
+    key: 'received_11',
+    type: TransitionFieldType.number,
+    label: 'الواصل من نواقص 25*35',
+    max: 100,
+    value: '100.000',
+  );
+
+  const outOfShortage = OrderTransition(
+    status: OrderStatus.printing,
+    label: 'قيد الطباعة',
+    fields: [received],
+  );
+
   const toCancelled = OrderTransition(
     status: OrderStatus.cancelled,
     label: 'ملغاة',
@@ -180,6 +195,57 @@ void main() {
     // Assert — two paths may both have a `reason`, and carrying one across would send a
     // sentence written about a different move.
     expect(cubit.state.values, isEmpty);
+  });
+
+  /// **A field can arrive with its own answer in it.**
+  ///
+  /// Leaving «نواقص» asks what arrived of the shortage, and the answer is nearly always «all of
+  /// it» — so the server sends the number and the box opens holding it. Anything the clerk does
+  /// is a correction to a filled form rather than a form to fill.
+  group('a field that arrives filled in', () {
+    test('opens holding what the server put in it', () async {
+      // Arrange
+      when(() => repository.order(7)).thenAnswer(
+        (_) async => Right(orderWith(transitions: [outOfShortage, toCancelled])),
+      );
+      await cubit.load();
+
+      // Act
+      cubit.select(outOfShortage);
+
+      // Assert
+      expect(cubit.state.values['received_11'], '100.000');
+    });
+
+    test('is filled in even when it is the only way out and nobody tapped', () async {
+      // Arrange — one transition is chosen for the user, so nothing would ever seed it.
+      when(() => repository.order(7))
+          .thenAnswer((_) async => Right(orderWith(transitions: [outOfShortage])));
+
+      // Act
+      await cubit.load();
+
+      // Assert
+      expect(cubit.state.values['received_11'], '100.000');
+    });
+
+    test('goes back to the server’s answer when the destination is chosen again', () async {
+      // Arrange
+      when(() => repository.order(7)).thenAnswer(
+        (_) async => Right(orderWith(transitions: [outOfShortage, toCancelled])),
+      );
+      await cubit.load();
+      cubit.select(outOfShortage);
+      cubit.setValue('received_11', '40');
+
+      // Act — off to another move and back.
+      cubit.select(toCancelled);
+      cubit.select(outOfShortage);
+
+      // Assert — the prefill is part of the form, so it returns with it rather than leaving an
+      // empty box where a number used to be.
+      expect(cubit.state.values['received_11'], '100.000');
+    });
   });
 
   // ───────────────────────────── sending it ─────────────────────────────

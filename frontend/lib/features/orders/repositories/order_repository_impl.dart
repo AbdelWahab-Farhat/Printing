@@ -170,6 +170,27 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
+  Future<Either<Failure, Order>> setShortages(
+    int orderId, {
+    required Map<int, String?> shortages,
+  }) {
+    return safeRequest<Order>(
+      () => _dio.patch(
+        OrderEndpoints.shortages(orderId),
+        // Keys as strings, because that is what a JSON object has — and the nulls are sent
+        // rather than stripped: an empty box is the gesture for «وصلت الكمية», and a payload
+        // that dropped it would be able to record a shortage and never to clear one.
+        data: <String, dynamic>{
+          'shortages': {
+            for (final entry in shortages.entries) '${entry.key}': entry.value,
+          },
+        },
+      ),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, void>> addDesign(int orderId, {required int customerDesignId}) {
     // The response is the version, not the order — and the screen wants the order, whose
     // `available_transitions` may have changed with it. So nothing is parsed here and the
