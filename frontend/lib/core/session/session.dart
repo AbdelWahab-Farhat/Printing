@@ -49,6 +49,16 @@ class Session {
 
   bool canAny(Iterable<AppPermission> permissions) => permissions.any(can);
 
+  /// Whether that account is the one signed in on this phone.
+  ///
+  /// For the handful of actions that are refused *on yourself* rather than by permission —
+  /// stopping an account is the first: doing it to your own would revoke the token making the
+  /// request and lock you out of the screen that undoes it. The server refuses it too; this
+  /// only spares somebody the tap.
+  ///
+  /// Fail-closed like the rest: with no session loaded, nothing is you.
+  bool isSelf(int userId) => _user?.id == userId;
+
   /// Whether this account is an administrator.
   ///
   /// **The one gate in this app that is not a permission, and it is deliberate.** Creating a

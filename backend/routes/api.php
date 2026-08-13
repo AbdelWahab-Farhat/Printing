@@ -4,6 +4,7 @@ use App\Application\Api\V1\Controllers\ActivityLogController;
 use App\Application\Api\V1\Controllers\AuthController;
 use App\Application\Api\V1\Controllers\BusinessFieldController;
 use App\Application\Api\V1\Controllers\CityController;
+use App\Application\Api\V1\Controllers\CustomerCommentController;
 use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\CustomerDesignController;
 use App\Application\Api\V1\Controllers\HealthController;
@@ -12,6 +13,7 @@ use App\Application\Api\V1\Controllers\ManufacturingCostRateController;
 use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\OrderPaymentController;
 use App\Application\Api\V1\Controllers\PermissionController;
+use App\Application\Api\V1\Controllers\ProductCategoryController;
 use App\Application\Api\V1\Controllers\ProductController;
 use App\Application\Api\V1\Controllers\ProductImageController;
 use App\Application\Api\V1\Controllers\ProfitAndLossController;
@@ -91,8 +93,30 @@ Route::prefix('v1')->group(function (): void {
         Route::post('users', [UserController::class, 'store'])
             ->middleware('can:users.create')->name('users.store');
 
+        Route::get('users/{user}', [UserController::class, 'show'])
+            ->middleware('can:users.view')->name('users.show');
+
+        Route::put('users/{user}', [UserController::class, 'update'])
+            ->middleware('can:users.manage')->name('users.update');
+
         Route::patch('users/{user}/roles', [UserController::class, 'syncRoles'])
             ->middleware('can:users.manage')->name('users.roles');
+
+        // Resetting somebody else's password. `users.password` is a gate ability like
+        // `users.create` above and for a sharper reason: whoever sets a colleague's password
+        // can sign in as them and act under their name in the audit trail.
+        Route::patch('users/{user}/password', [UserController::class, 'setPassword'])
+            ->middleware('can:users.password')->name('users.password');
+
+        // A wage is guarded apart from the rest of an employee's record: assigning somebody a
+        // role and knowing what everyone is paid are different jobs.
+        Route::patch('users/{user}/salary', [UserController::class, 'setSalary'])
+            ->middleware('can:users.salary')->name('users.salary');
+
+        // No destroy route, for the same reason customers and products have none: an account is
+        // stopped, never deleted, so everything it recorded keeps naming somebody who exists.
+        Route::patch('users/{user}/activation', [UserController::class, 'setActivation'])
+            ->middleware('can:users.manage')->name('users.activation');
 
         // ── customers ───────────────────────────────────────────────────────────────────
         // No destroy route on purpose: a customer is deactivated, never deleted, so orders
@@ -124,6 +148,20 @@ Route::prefix('v1')->group(function (): void {
             ->middleware('can:customers.manage')
             ->scoped();
 
+        // A customer's notes — what staff write to each other about them.
+        //
+        // The whole set sits behind `customers.view`, including the writes, and that is the
+        // decision: a note is a working tool, not a privilege, and anyone who may look a
+        // customer up may leave the next person a sentence about them. Who may change *this*
+        // note is a per-row question — its author, or a moderator — so it is answered in the
+        // controller rather than by a middleware that can only see the route.
+        //
+        // No `show`: the list carries every field, and a note is only ever met in a list.
+        Route::apiResource('customers.comments', CustomerCommentController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->middleware('can:customers.view')
+            ->scoped();
+
         // ── مجالات العمل ────────────────────────────────────────────────────────────────
         // What a customer's shop sells. Reading is granted to every role — the customer form
         // cannot be filled in without the list — while curating the list is a rarer job, so it
@@ -146,6 +184,29 @@ Route::prefix('v1')->group(function (): void {
             ->middleware('can:business_fields.manage')->name('business-fields.activation');
 
         // ── catalogue ───────────────────────────────────────────────────────────────────
+        // التصنيفات — the headings the catalogue is organised under. Declared *before* the
+        // product routes so `products/{product}` never swallows a path of its own; they are a
+        // sibling resource rather than a nested one, because a category exists whether or not
+        // any product is in it.
+        //
+        // No pair of its own: whoever may read products needs the categories to read them by,
+        // and whoever maintains products maintains the headings they sit under.
+        Route::apiResource('product-categories', ProductCategoryController::class)
+            ->only(['index', 'show'])
+            ->middleware('can:products.view')
+            ->parameters(['product-categories' => 'product_category']);
+
+        // A destroy route exists, unlike products themselves, because this is a curated list and
+        // a typo in it should be removable. The action refuses once any product points at the
+        // category; deactivation is what retires one in use.
+        Route::apiResource('product-categories', ProductCategoryController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->middleware('can:products.manage')
+            ->parameters(['product-categories' => 'product_category']);
+
+        Route::patch('product-categories/{product_category}/activation', [ProductCategoryController::class, 'setActivation'])
+            ->middleware('can:products.manage')->name('product-categories.activation');
+
         // Reading the catalogue and pricing a quantity are everyday work; changing what things
         // cost is not. Hence two permissions rather than one.
         Route::apiResource('products', ProductController::class)
@@ -432,9 +493,13 @@ Route::prefix('v1')->group(function (): void {
             Route::get('users/{user}/logs', [UserController::class, 'logs'])->name('users.logs');
             Route::get('roles/{role}/logs', [RoleController::class, 'logs'])->name('roles.logs');
             Route::get('customers/{customer}/logs', [CustomerController::class, 'logs'])->name('customers.logs');
+            Route::get('customers/{customer}/comments/{comment}/logs', [CustomerCommentController::class, 'logs'])
+                ->scopeBindings()->name('customers.comments.logs');
             Route::get('business-fields/{business_field}/logs', [BusinessFieldController::class, 'logs'])
                 ->name('business-fields.logs');
             Route::get('products/{product}/logs', [ProductController::class, 'logs'])->name('products.logs');
+            Route::get('product-categories/{product_category}/logs', [ProductCategoryController::class, 'logs'])
+                ->name('product-categories.logs');
             Route::get('cities/{city}/logs', [CityController::class, 'logs'])->name('cities.logs');
             Route::get('orders/{order}/logs', [OrderController::class, 'logs'])->name('orders.logs');
             Route::get('shipping-companies/{shippingCompany}/logs', [ShippingCompanyController::class, 'logs'])

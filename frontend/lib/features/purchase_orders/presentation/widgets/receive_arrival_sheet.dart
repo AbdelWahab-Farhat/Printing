@@ -191,13 +191,18 @@ class _LineBox extends StatelessWidget {
           Text(
             // The arithmetic the server already did. A screen that subtracted would be a second
             // opinion about the number that decides whether the shipment is refused.
-            'المتبقي ${item.remainingLabel} من ${item.orderedLabel}',
+            //
+            // The unit lands once, on the figure the two are measured against.
+            'المتبقي ${item.remainingLabel} من ${item.orderedWithUnit}',
             style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
           SizedBox(height: 8.h),
           AppTextField(
             controller: controller,
-            label: 'الكمية التي وصلت',
+            // **Named, because this is the box that gets a number typed into it.** A storeman
+            // booking in a delivery of «الأكياس الشفافة السادة» is reading a weighbridge ticket,
+            // not counting bags — and the box has to say which of the two it wants.
+            label: item.lineUnit.receivedField,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),

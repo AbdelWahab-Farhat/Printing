@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/features/customers/models/customer.dart';
+import 'package:printing/features/customers/models/customers_filter.dart';
 import 'package:printing/features/customers/models/new_customer.dart';
 
 /// What the app can do about customers, stated without saying how.
@@ -15,9 +16,17 @@ abstract interface class CustomerRepository {
   /// [search] matches the name, the code *or* the phone number — the API's rule, not one
   /// re-implemented here. [isActive] left null returns both active and deactivated customers,
   /// which is what a staff list wants: a deactivated customer you cannot find is a support call.
+  ///
+  /// [hasOrders] and [sort] are the two the server answers out of the *orders*, and both need
+  /// `orders.view`: `false` gives «زبائن بدون طلب», and [CustomersSort.leastRecentOrder] puts
+  /// the customer nobody has heard from for longest at the top and carries a `lastOrderAt` on
+  /// every row. A caller without that permission gets a 403 rather than a quietly wider list,
+  /// which is why the screen hides the sheet rather than sending the request and coping.
   Future<Either<Failure, Paginated<Customer>>> customers({
     String? search,
     bool? isActive,
+    bool? hasOrders,
+    CustomersSort sort = CustomersSort.newest,
     int page = 1,
     int perPage = 20,
   });

@@ -97,58 +97,84 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
     return seeded;
   }
 
+  /// Records an answer, from a clean form **or from a refused one**.
+  ///
+  /// **Reading the state's own accessors rather than matching [OrderStatusReady] is the whole
+  /// point.** [submit] is sendable from a refusal — that is what its docblock is about — and a
+  /// refusal is usually acted on by *changing something* first: the warehouse that was short is
+  /// swapped for one that is not. Matching only the ready case dropped every one of those edits
+  /// on the floor and then resent the values that had just been refused, so the second attempt
+  /// failed exactly like the first and the screen looked broken.
+  ///
+  /// Landing back on `ready` clears the server's sentence, which is right: the complaint was
+  /// about the answer that has just been replaced, and leaving it over a field somebody has
+  /// already corrected is a warning about nothing. `TakeOrderCubit.clearFailure()` does the same
+  /// on the same reasoning.
   void setValue(String key, Object? value) {
-    if (state case OrderStatusReady(:final order, :final selected, :final values)) {
-      emit(
-        OrderStatusState.ready(
-          order: order,
-          selected: selected,
-          values: {...values, key: value},
-        ),
-      );
-    }
+    final order = state.order;
+    final selected = state.selected;
+
+    // Nothing to record against — the form is not on screen yet.
+    if (order == null) return;
+
+    emit(
+      OrderStatusState.ready(
+        order: order,
+        selected: selected,
+        values: {...state.values, key: value},
+      ),
+    );
   }
 
   /// Sends the move, and answers with the order the server sent back.
   ///
   /// Null when it was refused — the failure is on the state, in the server's own Arabic, and
   /// the screen stays where it is so nothing typed is lost.
+  ///
+  /// **Sendable from a refusal, not only from a clean form.** The server refuses for reasons
+  /// that pass on their own — a warehouse short of stock at ten and restocked at eleven — so
+  /// the same tap has to be answerable a second time. Reading the selection off the state
+  /// rather than off [OrderStatusReady] is what allows it, and going back through
+  /// `isSubmitting` on the way is what makes the second refusal a *different* state from the
+  /// first: identical states are dropped by Bloc, and a refusal nobody is told about twice is a
+  /// screen that looks broken.
   Future<Order?> submit() async {
-    if (state case OrderStatusReady(:final order, :final selected?, :final values)) {
-      emit(OrderStatusState.ready(order: order, selected: selected, values: values, isSubmitting: true));
+    final order = state.order;
+    final selected = state.selected;
+    if (order == null || selected == null || state.isSubmitting) return null;
 
-      final result = await _changeStatus(
-        _orderId,
-        status: selected.status,
-        fields: _payload(selected, values),
-      );
+    final values = state.values;
+    emit(OrderStatusState.ready(order: order, selected: selected, values: values, isSubmitting: true));
 
-      if (isClosed) return null;
+    final result = await _changeStatus(
+      _orderId,
+      status: selected.status,
+      fields: _payload(selected, values),
+    );
 
-      return result.fold<Order?>(
-        (failure) {
-          // The order and everything filled in stay: a refused move must leave the screen
-          // showing what it was showing, with the server's sentence over the top.
-          emit(
-            OrderStatusState.failure(
-              failure: failure,
-              order: order,
-              selected: selected,
-              values: values,
-            ),
-          );
+    if (isClosed) return null;
 
-          return null;
-        },
-        (updated) {
-          emit(OrderStatusState.ready(order: updated, selected: null));
+    return result.fold<Order?>(
+      (failure) {
+        // The order and everything filled in stay: a refused move must leave the screen
+        // showing what it was showing, with the server's sentence over the top.
+        emit(
+          OrderStatusState.failure(
+            failure: failure,
+            order: order,
+            selected: selected,
+            values: values,
+          ),
+        );
 
-          return updated;
-        },
-      );
-    }
+        return null;
+      },
+      (updated) {
+        emit(OrderStatusState.ready(order: updated, selected: null));
 
-    return null;
+        return updated;
+      },
+    );
   }
 
   /// What goes on the wire, keyed exactly as the transition described.

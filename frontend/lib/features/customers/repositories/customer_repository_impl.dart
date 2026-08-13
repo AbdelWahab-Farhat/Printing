@@ -5,6 +5,7 @@ import 'package:printing/core/network/api_endpoints.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/core/network/safe_request.dart';
 import 'package:printing/features/customers/models/customer.dart';
+import 'package:printing/features/customers/models/customers_filter.dart';
 import 'package:printing/features/customers/models/new_customer.dart';
 import 'package:printing/features/customers/repositories/customer_repository.dart';
 
@@ -22,6 +23,8 @@ class CustomerRepositoryImpl implements CustomerRepository {
   Future<Either<Failure, Paginated<Customer>>> customers({
     String? search,
     bool? isActive,
+    bool? hasOrders,
+    CustomersSort sort = CustomersSort.newest,
     int page = 1,
     int perPage = 20,
   }) {
@@ -35,6 +38,10 @@ class CustomerRepositoryImpl implements CustomerRepository {
           // "null" and the API would filter on it.
           if (search != null && search.isNotEmpty) 'search': search,
           if (isActive != null) 'is_active': isActive ? 1 : 0,
+          if (hasOrders != null) 'has_orders': hasOrders ? 1 : 0,
+          // The default is left out rather than spelled: `sort=newest` and no `sort` are the
+          // same request, and the shorter one is the one somebody reads in a log.
+          if (sort != CustomersSort.newest) 'sort': sort.wire,
         },
       ),
       parseItem: Customer.fromJson,

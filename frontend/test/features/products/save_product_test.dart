@@ -94,6 +94,8 @@ void main() {
       description: description,
       features: features,
       category: 'printed',
+      // Required by the API from today on — see PRODUCT-CATEGORIES.md.
+      productCategoryId: 3,
       pricingUnit: pricingUnit,
       pricingMode: pricingMode,
       minOrderQuantity: minOrderQuantity,
@@ -241,6 +243,8 @@ void main() {
         expect(sent().toJson(), {
           'name': 'أكياس الشحن',
           'category': 'printed',
+          // «التصنيف», required by the API — the heading the product is filed under.
+          'product_category_id': 3,
           'pricing_unit': 'piece',
           'pricing_mode': 'tiered',
           'min_order_quantity': '100',

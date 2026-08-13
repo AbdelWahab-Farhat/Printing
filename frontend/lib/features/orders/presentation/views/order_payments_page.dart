@@ -7,6 +7,7 @@ import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/session/session.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
 import 'package:printing/features/orders/models/order_payment.dart';
@@ -194,7 +195,7 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
             children: [
               Text(
                 'الدفعة تبقى في السجل مشطوبة، ويُكتب بجانبها قيدُ إلغائها — '
-                'المبلغ ${payment.amount}.',
+                'المبلغ ${payment.amount.grouped}.',
                 style: dialogContext.textTheme.bodyMedium?.copyWith(
                   color: dialogContext.colorScheme.onSurfaceVariant,
                 ),
@@ -372,7 +373,7 @@ class _Entry extends StatelessWidget {
               Text(
                 // The sign is the direction, stated once and never stored: the API keeps every
                 // amount positive precisely so a sum cannot be wrong by a stray minus.
-                '${payment.isIncoming ? '+' : '−'} ${payment.amount}',
+                '${payment.isIncoming ? '+' : '−'} ${payment.amount.grouped}',
                 style: context.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: tone,

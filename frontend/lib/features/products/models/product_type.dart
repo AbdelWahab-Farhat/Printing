@@ -6,15 +6,15 @@
 /// neutral badge, instead of the app inventing a translation for it. Same split as
 /// `OrderStatus`, for the same reason.
 ///
-/// Mirrors `ProductCategory.php`.
-enum ProductCategory {
+/// Mirrors `ProductType.php`.
+enum ProductType {
   printed('printed', 'مطبوعة'),
   general('general', 'سادة'),
 
   /// A category this build has never heard of. Reached through [fromWire], never sent anywhere.
   unknown('', '');
 
-  const ProductCategory(this.wire, this.label);
+  const ProductType(this.wire, this.label);
 
   /// Exactly the string the API sends in `category`.
   final String wire;
@@ -24,16 +24,16 @@ enum ProductCategory {
   /// A *product* is labelled from its own `category_label`, always — that is the split at the
   /// top of this file and it does not move. But a filter chip and a form's choice row both have
   /// to say «مطبوعة» before any product exists to say it for them, and those two used to spell
-  /// it separately: one in [ProductCategoryFilter], one in a private enum inside the product
+  /// it separately: one in [ProductTypeFilter], one in a private enum inside the product
   /// form. Two lists of the same two words is one list too many.
   final String label;
 
   /// Everything a person may actually choose. [unknown] is what the app *reads*, never what it
   /// offers — a form listing it would let somebody save a category the server cannot parse.
-  static List<ProductCategory> get choices =>
+  static List<ProductType> get choices =>
       values.where((category) => category != unknown).toList(growable: false);
 
-  static ProductCategory fromWire(String? wire) => values.firstWhere(
+  static ProductType fromWire(String? wire) => values.firstWhere(
     (category) => category.wire == wire,
     orElse: () => unknown,
   );
@@ -41,7 +41,7 @@ enum ProductCategory {
 
 /// How a bag is billed: by the piece, or by the kilo.
 ///
-/// The same split as [ProductCategory] — a product shows its own `pricing_unit_label`, and this
+/// The same split as [ProductType] — a product shows its own `pricing_unit_label`, and this
 /// exists for the one screen that has to name the units *before* there is a product: the form
 /// where somebody picks one.
 ///
@@ -67,26 +67,27 @@ enum PricingUnit {
       values.firstWhere((unit) => unit.wire == wire, orElse: () => piece);
 }
 
-/// What the catalogue can be narrowed to: everything, the printed bags, or the plain ones.
+/// What the catalogue can be narrowed to by *type*: everything, the printed bags, or the plain
+/// ones. Narrowing by catalogue heading is a different chip row — see `ProductCategory`.
 ///
 /// **A filter cannot use the server's words.** Everywhere a *product* is shown, its own
 /// `category_label` is displayed, precisely so no translation table has to be kept in step. The
 /// chips have to exist *before* any product is loaded, though, and a category absent from page
-/// one would otherwise be unfilterable — so the Arabic comes from [ProductCategory.label],
+/// one would otherwise be unfilterable — so the Arabic comes from [ProductType.label],
 /// which is the one place in this app that spells it.
 ///
 /// It replaced a filter on the pricing *unit* — بالقطعة / بالكيلوغرام. Both narrow the same list,
 /// but "plain or printed" is the question a customer actually opens with, and how the bag is
 /// billed is something read off the card once the bag has been found.
-enum ProductCategoryFilter {
+enum ProductTypeFilter {
   all(null, 'الكل'),
-  printed(ProductCategory.printed),
-  plain(ProductCategory.general);
+  printed(ProductType.printed),
+  plain(ProductType.general);
 
-  const ProductCategoryFilter(this.category, [this.ownLabel]);
+  const ProductTypeFilter(this.category, [this.ownLabel]);
 
   /// `null` for [all], which is what makes the parameter absent rather than empty.
-  final ProductCategory? category;
+  final ProductType? category;
 
   /// Only [all] has a word of its own — it stands for no category at all.
   final String? ownLabel;

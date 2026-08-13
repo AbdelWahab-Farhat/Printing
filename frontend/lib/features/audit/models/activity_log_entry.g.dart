@@ -24,6 +24,14 @@ _ActivityLogEntry _$ActivityLogEntryFromJson(Map<String, dynamic> json) =>
       attributeLabels: (json['attribute_labels'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, e as String),
       ),
+      valueLabels: json['value_labels'] == null
+          ? null
+          : AuditValueLabels.fromJson(
+              json['value_labels'] as Map<String, dynamic>,
+            ),
+      propertyLabels: (json['property_labels'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, Map<String, String>.from(e as Map)),
+      ),
       createdAt: json['created_at'] == null
           ? null
           : DateTime.parse(json['created_at'] as String),
@@ -41,8 +49,23 @@ Map<String, dynamic> _$ActivityLogEntryToJson(_ActivityLogEntry instance) =>
       'causer': instance.causer?.toJson(),
       'changes': instance.changes?.toJson(),
       'attribute_labels': instance.attributeLabels,
+      'value_labels': instance.valueLabels?.toJson(),
+      'property_labels': instance.propertyLabels,
       'created_at': instance.createdAt?.toIso8601String(),
     };
+
+_AuditValueLabels _$AuditValueLabelsFromJson(Map<String, dynamic> json) =>
+    _AuditValueLabels(
+      old: (json['old'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ),
+      attributes: (json['attributes'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ),
+    );
+
+Map<String, dynamic> _$AuditValueLabelsToJson(_AuditValueLabels instance) =>
+    <String, dynamic>{'old': instance.old, 'attributes': instance.attributes};
 
 _AuditCauser _$AuditCauserFromJson(Map<String, dynamic> json) => _AuditCauser(
   id: (json['id'] as num?)?.toInt(),

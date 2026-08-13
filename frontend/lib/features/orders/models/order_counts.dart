@@ -54,4 +54,18 @@ class OrderCounts {
   /// What to show beside one payment row. Keyed by the wire value for the same reason the
   /// statuses are: a state this build has never heard of still arrives and is still counted.
   int forPaymentStatus(PaymentStatus status) => byPaymentStatus[status.wire] ?? 0;
+
+  /// How many orders sit across a group of statuses — «الطلبات الجارية», «المستلمة».
+  ///
+  /// **Added up here rather than asked for again.** The server already answered per status for
+  /// this exact set of orders, so a second and third request narrowed by status would return
+  /// numbers this one already contains — and could disagree with it, since the two answers would
+  /// describe two different moments.
+  ///
+  /// A status missing from [byStatus] contributes zero, which is what a server that stopped
+  /// sending a key would mean. [total] is deliberately *not* built this way: see the note on it.
+  int forStatuses(Iterable<OrderStatus> statuses) => statuses.fold(
+    0,
+    (sum, status) => sum + (byStatus[status.wire] ?? 0),
+  );
 }

@@ -12,13 +12,17 @@ import 'package:printing/features/auth/models/auth_user.dart';
 ///
 /// Somebody with no roles yet is stated, not left blank: a new account holds nothing, and an
 /// empty row looks like a row that failed to load.
+///
+/// **A stopped account stays in this list** rather than disappearing, because the screen that
+/// puts it back is the one this row opens. It says so with a badge — the same «موقوف» word the
+/// customer card uses, so the two lists mean one thing by it.
 class EmployeeRowCard extends StatelessWidget {
   const EmployeeRowCard({required this.user, this.onTap, super.key});
 
   final AuthUser user;
 
-  /// Opens the roles sheet. Absent for somebody without `users.manage`, and the card then
-  /// simply reports.
+  /// Opens the employee's own screen. Every reader of this list gets it: what each of them may
+  /// *do* there is decided there, action by action.
   final VoidCallback? onTap;
 
   @override
@@ -54,14 +58,26 @@ class EmployeeRowCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          user.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: scheme.onSurface,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                user.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: scheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            // Only when it is *not* the normal case: a badge on every row stops
+                            // being read.
+                            if (!user.isActive) ...[
+                              SizedBox(width: 6.w),
+                              const _StoppedBadge(),
+                            ],
+                          ],
                         ),
                         SizedBox(height: 2.h),
                         Text(
@@ -100,6 +116,32 @@ class EmployeeRowCard extends StatelessWidget {
   }
 }
 
+/// Said on the row, so somebody scanning the list sees who can no longer sign in without
+/// opening each account.
+class _StoppedBadge extends StatelessWidget {
+  const _StoppedBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Text(
+        'موقوف',
+        style: context.textTheme.labelSmall?.copyWith(
+          color: scheme.onErrorContainer,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 class _Avatar extends StatelessWidget {
   const _Avatar({required this.user});
 
@@ -111,8 +153,9 @@ class _Avatar extends StatelessWidget {
     final side = 40.w;
 
     // The administrator is the one account with unlimited access; the accent says so before the
-    // role chip below is read.
-    final isAdmin = user.isAdmin;
+    // role chip below is read. A stopped account takes neither accent — it agrees with the
+    // badge beside the name rather than announcing a power it can no longer use.
+    final isAdmin = user.isAdmin && user.isActive;
 
     return Container(
       height: side,

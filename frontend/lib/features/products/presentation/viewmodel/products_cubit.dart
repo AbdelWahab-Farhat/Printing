@@ -4,7 +4,7 @@ import 'package:printing/core/network/paginated.dart';
 import 'package:printing/core/pagination/paged_cubit.dart';
 import 'package:printing/core/pagination/paged_state.dart';
 import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/models/product_category.dart';
+import 'package:printing/features/products/models/product_type.dart';
 import 'package:printing/features/products/usecases/get_products.dart';
 
 /// The catalogue screen's ViewModel.
@@ -29,7 +29,13 @@ class ProductsCubit extends PagedCubit<Product> {
   /// Which kind of bag the catalogue is narrowed to. Read by the chips row, which is inside the
   /// same `BlocBuilder` as the list — and every change goes through [filterByCategory], which
   /// emits, so the selected chip and the list can never disagree.
-  ProductCategoryFilter category = ProductCategoryFilter.all;
+  ProductTypeFilter category = ProductTypeFilter.all;
+
+  /// Which catalogue heading the list is narrowed to — «التصنيف». Null is «الكل».
+  ///
+  /// A raw id rather than an enum, because the headings are rows the business curates: a filter
+  /// this app spelled out in code would go stale the first time somebody adds one.
+  int? productCategoryId;
 
   @override
   Future<Either<Failure, Paginated<Product>>> fetchPage({
@@ -41,6 +47,7 @@ class ProductsCubit extends PagedCubit<Product> {
     return _getProducts(
       search: search,
       category: category.value,
+      productCategoryId: productCategoryId,
       isActive: onlyOrderable ? true : null,
       page: page,
     );
@@ -50,10 +57,21 @@ class ProductsCubit extends PagedCubit<Product> {
   ///
   /// The search term survives: someone who typed "شفافة" and then tapped سادة is asking a
   /// narrower question, not starting a new one.
-  Future<void> filterByCategory(ProductCategoryFilter next) async {
+  Future<void> filterByCategory(ProductTypeFilter next) async {
     if (next == category) return;
 
     category = next;
+    await load(search: currentSearch);
+  }
+
+  /// Narrows the catalogue to one heading, or widens it back to all of them.
+  ///
+  /// Independent of [filterByCategory]: «سادة» and «أكياس» are different questions about the
+  /// same list, and asking one must not silently drop the other.
+  Future<void> filterByProductCategory(int? next) async {
+    if (next == productCategoryId) return;
+
+    productCategoryId = next;
     await load(search: currentSearch);
   }
 }

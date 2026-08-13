@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/access/models/role.dart';
 
 /// One role in the list: what it is called, what it grants, and who holds it.
@@ -174,7 +175,7 @@ class _Counts extends StatelessWidget {
         ),
         SizedBox(height: 4.h),
         Text(
-          role.isHeld ? '${role.usersCount} موظف' : 'لا أحد يحمله',
+          role.isHeld ? '${role.usersCount!.grouped} موظف' : 'لا أحد يحمله',
           style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
       ],

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/presentation/widgets/product_category_badge.dart';
 import 'package:printing/features/products/presentation/widgets/product_gallery.dart';
+import 'package:printing/features/products/presentation/widgets/product_type_badge.dart';
 
 /// One product in the catalogue, priced in full.
 ///
@@ -28,7 +29,7 @@ import 'package:printing/features/products/presentation/widgets/product_gallery.
 /// chip identical in shape to a size — two different kinds of data in one visual language, so
 /// the eye could not separate them — and was then demoted to the first half of a grey subtitle,
 /// which is read only by somebody already reading the whole card. It is now
-/// [ProductCategoryBadge] in the far top corner: sizes are table rows and nothing else on the
+/// [ProductTypeBadge] in the far top corner: sizes are table rows and nothing else on the
 /// card is tinted, so «مطبوعة أو سادة» is answered before the name is and cannot be mistaken for
 /// a measurement. What stayed in the subtitle is the billing unit, which is read *after* a bag
 /// has been found rather than while looking for one.
@@ -175,7 +176,7 @@ class _Identity extends StatelessWidget {
         // column on purpose: a badge inside it would shift with every name length, and the point
         // of putting it here is that it is in the same place on every card, so the catalogue can
         // be skimmed for «سادة» without reading a word.
-        ProductCategoryBadge(
+        ProductTypeBadge(
           category: product.category,
           label: product.categoryLabel,
         ),
@@ -401,7 +402,7 @@ class _FlatPrice extends StatelessWidget {
     return Row(
       children: [
         Text(
-          tier.unitPrice,
+          tier.unitPrice.grouped,
           textDirection: TextDirection.ltr,
           style: context.textTheme.titleSmall?.copyWith(
             color: scheme.primary,
@@ -499,7 +500,7 @@ String _columnLabel(
   final isBelowMinimum = num.parse(minQuantity) < num.parse(product.minOrderQuantity);
   final label = isFirst && isBelowMinimum
       ? product.minOrderQuantityLabel
-      : labels[minQuantity] ?? minQuantity;
+      : labels[minQuantity] ?? groupedDecimal(minQuantity);
 
   return '$label+';
 }
@@ -510,7 +511,7 @@ String _columnLabel(
 /// under the wrong heading is how a quote goes out wrong; a dash is not.
 String _priceAt(ProductVariant variant, String minQuantity) {
   for (final tier in variant.priceTiers) {
-    if (tier.minQuantity == minQuantity) return tier.unitPrice;
+    if (tier.minQuantity == minQuantity) return tier.unitPrice.grouped;
   }
 
   return '—';

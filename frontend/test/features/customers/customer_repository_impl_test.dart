@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:printing/features/customers/models/customers_filter.dart';
 import 'package:printing/features/customers/models/new_customer.dart';
 import 'package:printing/features/customers/repositories/customer_repository_impl.dart';
 
@@ -18,6 +19,7 @@ import 'package:printing/features/customers/repositories/customer_repository_imp
 class _CapturingAdapter implements HttpClientAdapter {
   String? body;
   String? path;
+  Map<String, String> query = const {};
 
   @override
   Future<ResponseBody> fetch(
@@ -26,6 +28,7 @@ class _CapturingAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     path = options.path;
+    query = options.uri.queryParameters;
 
     if (requestStream != null) {
       final chunks = await requestStream.toList();
@@ -128,5 +131,42 @@ void main() {
     final sent = jsonDecode(adapter.body!) as Map<String, dynamic>;
     final shop = (sent['shops'] as List<dynamic>).single as Map<String, dynamic>;
     expect(shop.containsKey('page_url'), isFalse);
+  });
+
+  // ─────────────────────────── what the list asks for ───────────────────────────
+
+  test('the plain list mentions neither the orders filter nor a sort', () async {
+    // Arrange — the tab's own first request.
+
+    // Act
+    await repository.customers();
+
+    // Assert — `sort=newest` is the same request as no sort, and the shorter one is the one
+    // somebody reads in a log. A `has_orders` sent as null would arrive as the string "null".
+    expect(adapter.query.containsKey('has_orders'), isFalse);
+    expect(adapter.query.containsKey('sort'), isFalse);
+  });
+
+  test('«بدون طلبات» and «الأقدم طلباً» reach the API by their own names', () async {
+    // Arrange
+
+    // Act
+    await repository.customers(hasOrders: false, sort: CustomersSort.leastRecentOrder);
+
+    // Assert — the words `CustomerSort` and `CustomerFilters` know on the server. This is the
+    // seam that fails here rather than as an unfiltered list on somebody's phone.
+    expect(adapter.query['has_orders'], '0');
+    expect(adapter.query['sort'], 'least_recent_order');
+  });
+
+  test('the filter travels with the page number, not only with the first request', () async {
+    // Arrange
+
+    // Act
+    await repository.customers(hasOrders: false, page: 3);
+
+    // Assert — page three of «بدون طلبات», not page three of everybody.
+    expect(adapter.query['page'], '3');
+    expect(adapter.query['has_orders'], '0');
   });
 }

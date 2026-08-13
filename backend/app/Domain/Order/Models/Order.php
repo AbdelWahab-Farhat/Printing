@@ -19,6 +19,7 @@ use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentStatus;
+use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
 use App\Domain\Order\Support\Money;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -242,12 +243,18 @@ class Order extends Model implements HasAuditTrail
      * Whether this order ended without its money being accounted for.
      *
      * **The honest cost of a deliberate decision.** Settling an order does not write a ledger
-     * entry — no payment is recorded except by the person who took it — so an order can reach
-     * «تم التسوية» with money the ledger never saw. Rather than invent an entry nobody made,
-     * the discrepancy is surfaced: the app draws a warning, somebody records what was actually
-     * collected, and the warning goes away.
+     * entry — no payment is recorded except by the person who took it. Rather than invent an
+     * entry nobody made, the discrepancy is surfaced: the app draws a warning, somebody records
+     * what was actually collected, and the warning goes away.
      *
      * A generated entry would have hidden exactly this, which is why there isn't one.
+     *
+     * **The gap is no longer opened by settling.** An order that still owes anything is refused
+     * the move — see {@see SettlementRequiresFullPayment} — so what
+     * this now catches is the gap opened *afterwards*: a refund against a settled order takes
+     * `paid_amount` back down and leaves a remainder somebody has to explain. Orders settled
+     * before that guard existed keep whatever they were recorded with, and are exactly what this
+     * flag was written to surface.
      */
     public function hasUnrecordedMoney(): bool
     {

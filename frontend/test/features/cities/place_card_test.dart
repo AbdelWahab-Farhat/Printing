@@ -160,7 +160,7 @@ void main() {
     // Assert — the name is on screen, on one line, and the pill it must not push off the end
     // is still there beside it.
     expect(find.text('ضواحي طرابلس الجنوبية الشرقية'), findsOneWidget);
-    expect(find.text('2000.00 د.ل'), findsOneWidget);
+    expect(find.text('2,000.00 د.ل'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

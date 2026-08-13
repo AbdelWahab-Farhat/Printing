@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:printing/core/utils/digits.dart';
 
 part 'city.freezed.dart';
 part 'city.g.dart';
@@ -90,7 +91,7 @@ abstract class City with _$City {
   String get priceLabel {
     if (isOfficePickup) return 'مجاني';
 
-    return hasDeliveryPrice ? '$deliveryPrice د.ل' : 'لم يُحدد';
+    return hasDeliveryPrice ? '${deliveryPrice!.grouped} د.ل' : 'لم يُحدد';
   }
 
   /// The line under the name, or `null` when there is nothing to put there.

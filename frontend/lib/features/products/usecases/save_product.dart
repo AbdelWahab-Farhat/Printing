@@ -42,6 +42,7 @@ class SaveProduct {
     String? description,
     List<String> features = const [],
     required String category,
+    required int productCategoryId,
     required String pricingUnit,
     required String pricingMode,
     required String minOrderQuantity,
@@ -75,6 +76,7 @@ class SaveProduct {
       // product has no selling points" where absence says nothing at all.
       features: kept.isEmpty ? null : kept,
       category: category,
+      productCategoryId: productCategoryId,
       pricingUnit: pricingUnit,
       pricingMode: pricingMode,
       minOrderQuantity: _number(minOrderQuantity),

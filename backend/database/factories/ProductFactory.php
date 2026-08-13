@@ -4,7 +4,7 @@ namespace Database\Factories;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductCategory;
+use App\Domain\Catalog\Enums\ProductType;
 use App\Domain\Catalog\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -29,7 +29,7 @@ class ProductFactory extends Factory
             'name' => 'كيس '.fake()->word(),
             'description' => fake()->sentence(),
             'features' => ['مقاوم للماء', 'إمكانية طباعة الشعار'],
-            'category' => ProductCategory::Printed,
+            'category' => ProductType::Printed,
             'pricing_unit' => PricingUnit::Piece,
             'pricing_mode' => PricingMode::Tiered,
             'min_order_quantity' => 100,
@@ -42,7 +42,7 @@ class ProductFactory extends Factory
     public function perKilogram(): static
     {
         return $this->state(fn () => [
-            'category' => ProductCategory::General,
+            'category' => ProductType::General,
             'pricing_unit' => PricingUnit::Kilogram,
             'min_order_quantity' => 5,
         ]);

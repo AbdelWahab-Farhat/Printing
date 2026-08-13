@@ -15,6 +15,10 @@ _Customer _$CustomerFromJson(Map<String, dynamic> json) => _Customer(
   shops: (json['shops'] as List<dynamic>?)
       ?.map((e) => CustomerShop.fromJson(e as Map<String, dynamic>))
       .toList(),
+  ordersCount: (json['orders_count'] as num?)?.toInt(),
+  lastOrderAt: json['last_order_at'] == null
+      ? null
+      : DateTime.parse(json['last_order_at'] as String),
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -30,6 +34,8 @@ Map<String, dynamic> _$CustomerToJson(_Customer instance) => <String, dynamic>{
   'phone': instance.phone,
   'is_active': instance.isActive,
   'shops': instance.shops?.map((e) => e.toJson()).toList(),
+  'orders_count': instance.ordersCount,
+  'last_order_at': instance.lastOrderAt?.toIso8601String(),
   'created_at': instance.createdAt?.toIso8601String(),
   'updated_at': instance.updatedAt?.toIso8601String(),
 };

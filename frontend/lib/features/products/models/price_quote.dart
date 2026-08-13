@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:printing/core/utils/digits.dart';
 
 part 'price_quote.freezed.dart';
 part 'price_quote.g.dart';
@@ -37,13 +38,13 @@ abstract class PriceQuote with _$PriceQuote {
 
   factory PriceQuote.fromJson(Map<String, dynamic> json) => _$PriceQuoteFromJson(json);
 
-  String get quantityLabel => _trimDecimals(quantity);
+  String get quantityLabel => groupedDecimal(quantity);
 
-  String get unitPriceLabel => _trimDecimals(unitPrice);
+  String get unitPriceLabel => groupedDecimal(unitPrice);
 
-  String get totalLabel => _trimDecimals(total);
+  String get totalLabel => groupedDecimal(total);
 
-  String get appliedTierLabel => _trimDecimals(appliedTierMinQuantity);
+  String get appliedTierLabel => groupedDecimal(appliedTierMinQuantity);
 }
 
 /// «اطلب ٧٠٠ أكثر ينزل السعر إلى ٠٫٩٥٠».
@@ -62,21 +63,10 @@ abstract class NextPriceTier with _$NextPriceTier {
 
   factory NextPriceTier.fromJson(Map<String, dynamic> json) => _$NextPriceTierFromJson(json);
 
-  String get minQuantityLabel => _trimDecimals(minQuantity);
+  String get minQuantityLabel => groupedDecimal(minQuantity);
 
-  String get unitPriceLabel => _trimDecimals(unitPrice);
+  String get unitPriceLabel => groupedDecimal(unitPrice);
 
-  String get quantityToReachLabel => _trimDecimals(quantityToReach);
+  String get quantityToReachLabel => groupedDecimal(quantityToReach);
 }
 
-/// `'300.000'` reads as a quantity to a database and as noise to a person: `'300'`.
-///
-/// Only ever applied on the way to a widget — the value underneath stays exactly as the server
-/// sent it, because that is the one that gets multiplied.
-String _trimDecimals(String value) {
-  if (!value.contains('.')) return value;
-
-  final trimmed = value.replaceFirst(RegExp(r'0+$'), '');
-
-  return trimmed.endsWith('.') ? trimmed.substring(0, trimmed.length - 1) : trimmed;
-}

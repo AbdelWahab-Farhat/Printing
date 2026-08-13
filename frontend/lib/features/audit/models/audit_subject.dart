@@ -22,7 +22,12 @@ enum AuditSubject {
   /// The paperwork raised against one. Its lines share this history: the server returns the
   /// document's entries and its items' together, because a quantity changing is a change to
   /// the order.
-  purchaseOrder('purchase-orders', 'أمر الشراء');
+  purchaseOrder('purchase-orders', 'أمر الشراء'),
+
+  /// A standing manufacturing cost. Its history is the one that answers «منذ متى ونحن نحسب
+  /// العمالة بهذا الرقم؟», which no order can answer on its own: an order keeps the amount it was
+  /// charged, never the rate that produced it.
+  manufacturingCostRate('manufacturing-cost-rates', 'معدل تكلفة التصنيع');
 
   const AuditSubject(this.path, this.noun);
 

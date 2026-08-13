@@ -8,6 +8,7 @@ import 'package:printing/core/router/app_router.dart';
 import 'package:printing/core/session/session.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_speed_dial.dart';
 import 'package:printing/features/audit/models/audit_subject.dart';
@@ -15,13 +16,17 @@ import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/order_payment.dart';
 import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:printing/features/orders/presentation/widgets/edit_shortages_sheet.dart';
+import 'package:printing/features/orders/presentation/widgets/order_cost_section.dart';
 import 'package:printing/features/orders/presentation/widgets/order_customer_card.dart';
 import 'package:printing/features/orders/presentation/widgets/order_designs_section.dart';
 import 'package:printing/features/orders/presentation/widgets/order_invoice_actions.dart';
+import 'package:printing/features/orders/presentation/widgets/order_line_costs.dart';
 import 'package:printing/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:printing/features/orders/presentation/widgets/order_status_bar.dart';
 import 'package:printing/features/orders/presentation/widgets/order_timeline.dart';
 import 'package:printing/features/orders/presentation/widgets/order_totals.dart';
+import 'package:printing/features/orders/presentation/widgets/record_scrap_sheet.dart';
+import 'package:printing/features/orders/usecases/record_scrap_loss.dart';
 import 'package:printing/features/orders/usecases/set_order_shortages.dart';
 
 /// One order, everything about it, and the moves staff make on it.
@@ -130,6 +135,18 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                 onOpenCustomer: sl<Session>().can(AppPermission.viewCustomers)
                     ? _openCustomer
                     : null,
+                // **`reports.pnl.view`, and there is no closer grant.** The API publishes the
+                // cost side to anybody who may read the order, so this is the app choosing a
+                // line rather than enforcing one — and the line it chooses is the one the
+                // permission was written for: «هذه هي الشاشة التي تضع الإيراد والتكلفة جنباً
+                // إلى جنب», which is a different sensitivity from being allowed to see either
+                // alone. A clerk taking orders reads the invoice; what the bags cost us is not
+                // part of that job.
+                showCosts: sl<Session>().can(AppPermission.viewProfitAndLossReport),
+                // `inventory.manage`, because scrapping draws stock and posts its FIFO cost —
+                // it is a movement on the ledger, exactly like booking a shipment in, and the
+                // route is guarded by that same grant rather than by any `orders.*` one.
+                onScrap: sl<Session>().can(AppPermission.manageInventory) ? _recordScrap : null,
               ),
             ),
           },
@@ -188,6 +205,52 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
         final updated = cubit.state.order;
         if (updated != null) setState(() => _moved = updated);
       },
+    );
+  }
+
+  /// Writes off bags that were ruined making this line.
+  ///
+  /// **Nothing is re-read afterwards, and that is not an oversight.** A scrap loss is a separate
+  /// loss: it never touches the line's own `material_cost`, its `cogs`, or the order's
+  /// `total_cogs`, so every number on this screen reads the same one moment later. What moved is
+  /// the warehouse balance, and that is a different screen's business. Re-fetching here would
+  /// teach the next reader that the totals shift, and one day somebody would build on it.
+  ///
+  /// The send happens here rather than in the sheet, for the same reason every other form on this
+  /// screen works that way — a form's answer is what was typed, and what to do about a refusal
+  /// belongs to the screen that has somewhere to show it. And there is a lot to show: «لا يمكن
+  /// تسجيل تلف لطلبية لم تدخل مرحلة الطباعة بعد» and «الكمية المتوفرة في المخزن (٥٠) لا تكفي
+  /// للكمية المطلوبة (٦٠)» are both the server's, both name what to do next, and neither could be
+  /// written here without guessing at the shelf.
+  Future<void> _recordScrap(BuildContext context, OrderItem item) async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final draft = await showRecordScrapSheet(context: context, item: item);
+    if (draft == null || !mounted) return;
+
+    final result = await sl<RecordScrapLoss>()(
+      order.id,
+      item.id,
+      quantity: draft.quantity,
+      notes: draft.notes,
+    );
+
+    if (!mounted) return;
+
+    result.fold(
+      // The server's own Arabic, with its field errors underneath it — «الكمية» carries both the
+      // number asked for and the number available, which is the whole reason it is worth
+      // rendering instead of a sentence of ours.
+      (failure) => context.showFailure(failure),
+      // The cost is the server's answer, not an echo of anything typed: the storekeeper counted
+      // bags, and this is what those particular bags cost according to the batches they came out
+      // of. It is the one number in the exchange nobody in the shop knew.
+      (entry) => context.showSuccess(
+        'سُجّل تلف بتكلفة ${entry.amount.grouped}',
+        details: 'خُصمت الكمية من مخزن الطلبية — تكلفة البند وسعر الطلبية لم يتغيّرا',
+      ),
     );
   }
 
@@ -250,12 +313,32 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.order, required this.onOpenCustomer});
+  const _Body({
+    required this.order,
+    required this.onOpenCustomer,
+    required this.showCosts,
+    required this.onScrap,
+  });
 
   final Order order;
 
   /// Null for anybody without `customers.view` — see [OrderCustomerCard].
   final Future<void> Function()? onOpenCustomer;
+
+  /// Whether what the job cost us is drawn at all — see the call site for which grant answers
+  /// this and why it is that one.
+  final bool showCosts;
+
+  /// Null for anybody without `inventory.manage`.
+  final Future<void> Function(BuildContext context, OrderItem item)? onScrap;
+
+  /// Whether spoiling a bag is even possible yet.
+  ///
+  /// **The warehouse is the condition, not the status.** An order that has never entered «قيد
+  /// الطباعة» has no shelf to draw from, and the server refuses with «لا يمكن تسجيل تلف لطلبية لم
+  /// تدخل مرحلة الطباعة بعد» — a refusal worth never reaching, because the action would be
+  /// offered on every order in the shop to no purpose.
+  bool get _mayScrap => onScrap != null && order.fulfillmentWarehouseId != null;
 
   @override
   Widget build(BuildContext context) {
@@ -300,7 +383,11 @@ class _Body extends StatelessWidget {
         if (order.items != null && order.items!.isNotEmpty) ...[
           _Section(
             title: 'البنود',
-            child: _Items(items: order.items!),
+            child: _Items(
+              items: order.items!,
+              showCosts: showCosts,
+              onScrap: _mayScrap ? onScrap : null,
+            ),
           ),
           SizedBox(height: 16.h),
         ],
@@ -308,6 +395,17 @@ class _Body extends StatelessWidget {
           title: 'الحساب',
           child: OrderTotals(order: order),
         ),
+        // **Under «الحساب», never inside it.** What the customer pays is the question this screen
+        // is opened to answer; what the job cost us is the quieter one asked afterwards, by fewer
+        // people — see the grant at the call site — and mixing the two columns would put a figure
+        // nobody reads out to a customer in the middle of the ones they do.
+        if (showCosts) ...[
+          SizedBox(height: 16.h),
+          _Section(
+            title: 'التكلفة والربح',
+            child: OrderCostSection(order: order),
+          ),
+        ],
         // Shown even when no version exists yet, because that is exactly the order somebody
         // opens this screen to add one to. Any order may carry artwork — `design_source` says
         // whose work it was, which is a question about money, not about whether there is a file.
@@ -385,7 +483,8 @@ class _Header extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  collected,
+                  collected.grouped,
+                  textDirection: TextDirection.ltr,
                   style: context.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: scheme.error,
@@ -571,9 +670,15 @@ class _Destination extends StatelessWidget {
 }
 
 class _Items extends StatelessWidget {
-  const _Items({required this.items});
+  const _Items({required this.items, required this.showCosts, required this.onScrap});
 
   final List<OrderItem> items;
+
+  /// Whether each line says what it cost to make, under what it is charged at.
+  final bool showCosts;
+
+  /// Null when scrapping is not on offer — no grant, or an order with no shelf behind it yet.
+  final Future<void> Function(BuildContext context, OrderItem item)? onScrap;
 
   @override
   Widget build(BuildContext context) {
@@ -604,7 +709,8 @@ class _Items extends StatelessWidget {
                         // arithmetic comes out right on screen: «٢٠٠ قطعة × ١٫٥٥٠» beside
                         // «٣١٠٫٠٠». Printing the ordered 300 against a total built on 200 would
                         // make every short line look like a pricing error.
-                        '${item.pricedQuantity} ${item.pricingUnitLabel} × ${item.unitPrice}',
+                        '${item.pricedQuantity.grouped} ${item.pricingUnitLabel} '
+                        '× ${item.unitPrice.grouped}',
                         style: context.textTheme.bodySmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
@@ -616,7 +722,7 @@ class _Items extends StatelessWidget {
                       if (item.hasShortage) ...[
                         SizedBox(height: 2.h),
                         Text(
-                          'ناقص: ${item.shortageQuantity} من ${item.quantity} '
+                          'ناقص: ${item.shortageQuantity!.grouped} من ${item.quantity.grouped} '
                           '${item.pricingUnitLabel} — غير محتسب',
                           style: context.textTheme.bodySmall?.copyWith(
                             color: scheme.error,
@@ -624,12 +730,33 @@ class _Items extends StatelessWidget {
                           ),
                         ),
                       ],
+                      // Under the price it is being charged at, quietly — see [OrderLineCosts]
+                      // for why an uncosted line draws nothing here rather than «لم يُحتسب بعد».
+                      if (showCosts) ...[
+                        SizedBox(height: 2.h),
+                        OrderLineCosts(item: item),
+                      ],
+                      // A text button rather than an arm on the dial: the dial acts on the
+                      // *order*, and «أي بند تلف؟» is a question the row itself is the answer
+                      // to. It is the same shape «إلغاء الدفعة» takes on a ledger row, for the
+                      // same reason.
+                      if (onScrap case final scrap?)
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: TextButton.icon(
+                            onPressed: () => scrap(context, item),
+                            icon: Icon(AppIcons.delete, size: 16.sp),
+                            label: const Text('تسجيل تلف'),
+                            style: TextButton.styleFrom(foregroundColor: scheme.error),
+                          ),
+                        ),
                     ],
                   ),
                 ),
                 SizedBox(width: 8.w),
                 Text(
-                  item.lineTotal,
+                  item.lineTotal.grouped,
+                  textDirection: TextDirection.ltr,
                   style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ],

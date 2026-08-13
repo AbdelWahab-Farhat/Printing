@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Domain\Audit\Enums\AuditSubject;
+use App\Domain\Customer\Queries\CustomerOrderActivity;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Queries\OrderCustomerActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -15,7 +17,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // The customer list asks about orders — who has never placed one, who has not placed one
+        // for longest — through a port it declares itself, so the Customer module can be sorted
+        // by the orders without depending on them. `Order` already points at `Customer`; the two
+        // pointing at each other would be a cycle. This line is the only place the two meet.
+        $this->app->bind(CustomerOrderActivity::class, OrderCustomerActivity::class);
     }
 
     /**
@@ -56,5 +62,16 @@ class AppServiceProvider extends ServiceProvider
         // PermissionName. The route does not change — it already reads `can:users.create`, the
         // same as every other guarded route in api.php, and starts meaning the permission.
         Gate::define('users.create', fn (User $user) => $user->isAdmin());
+
+        // Resetting somebody else's password — the administrator's alone, and a Gate for the
+        // same reason as the line above rather than a weaker version of it.
+        //
+        // **This one is a takeover, not an edit.** Whoever sets a colleague's password can sign
+        // in as them and act under their name in the audit trail, so it must not be a tick box
+        // on the roles screen that somebody grants «to save the manager a phone call». Changing
+        // one's *own* password is a different endpoint with a different guard: it asks for the
+        // current password, because the account holder knows it and a stolen unlocked phone is
+        // the risk there.
+        Gate::define('users.password', fn (User $user) => $user->isAdmin());
     }
 }

@@ -6,14 +6,17 @@ namespace App\Domain\Catalog\Queries;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductCategory;
+use App\Domain\Catalog\Enums\ProductType;
 
 final readonly class ProductFilters
 {
     public function __construct(
         /** Matches the name or the slug. */
         public ?string $search = null,
-        public ?ProductCategory $category = null,
+        /** مطبوعة/سادة — «النوع». The wire key is still `category`; see ProductType. */
+        public ?ProductType $category = null,
+        /** The catalogue heading — «التصنيف». Sent as `product_category_id`. */
+        public ?int $productCategoryId = null,
         public ?PricingUnit $pricingUnit = null,
         public ?PricingMode $pricingMode = null,
         /** null = both active and inactive. */
@@ -29,7 +32,13 @@ final readonly class ProductFilters
 
         return new self(
             search: $search !== '' ? $search : null,
-            category: ProductCategory::tryFrom((string) ($query['category'] ?? '')),
+            category: ProductType::tryFrom((string) ($query['category'] ?? '')),
+            // `> 0` rather than a plain cast: `?product_category_id=` with nothing after it
+            // reads as «كل التصنيفات», and casting it would filter on id zero and return
+            // nothing at all.
+            productCategoryId: ((int) ($query['product_category_id'] ?? 0)) > 0
+                ? (int) $query['product_category_id']
+                : null,
             pricingUnit: PricingUnit::tryFrom((string) ($query['pricing_unit'] ?? '')),
             pricingMode: PricingMode::tryFrom((string) ($query['pricing_mode'] ?? '')),
             isActive: array_key_exists('is_active', $query) && $query['is_active'] !== null

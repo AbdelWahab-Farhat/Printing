@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Domain\Audit\Enums;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Customer\Models\BusinessField;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Customer\Models\CustomerComment;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Models\City;
@@ -65,10 +67,12 @@ enum AuditSubject: string
     case Customer = 'customer';
     case CustomerShop = 'customer_shop';
     case CustomerDesign = 'customer_design';
+    case CustomerComment = 'customer_comment';
     case BusinessField = 'business_field';
 
     // Catalogue
     case Product = 'product';
+    case ProductCategory = 'product_category';
     case ProductVariant = 'product_variant';
     case ProductPriceTier = 'product_price_tier';
     case ProductImage = 'product_image';
@@ -114,8 +118,10 @@ enum AuditSubject: string
             self::Customer => Customer::class,
             self::CustomerShop => CustomerShop::class,
             self::CustomerDesign => CustomerDesign::class,
+            self::CustomerComment => CustomerComment::class,
             self::BusinessField => BusinessField::class,
             self::Product => Product::class,
+            self::ProductCategory => ProductCategory::class,
             self::ProductVariant => ProductVariant::class,
             self::ProductPriceTier => ProductPriceTier::class,
             self::ProductImage => ProductImage::class,
@@ -153,8 +159,10 @@ enum AuditSubject: string
             self::Customer => 'عميل',
             self::CustomerShop => 'محل عميل',
             self::CustomerDesign => 'تصميم عميل',
+            self::CustomerComment => 'ملاحظة عميل',
             self::BusinessField => 'مجال عمل',
             self::Product => 'منتج',
+            self::ProductCategory => 'تصنيف منتجات',
             self::ProductVariant => 'مقاس منتج',
             self::ProductPriceTier => 'شريحة سعر',
             self::ProductImage => 'صورة منتج',

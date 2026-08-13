@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/business_fields/models/business_field.dart';
 
 /// One trade on the list: what it is called, how many shops are in it, and whether it is still
@@ -102,8 +103,8 @@ String _subtitle(BusinessField field) {
     0 => 'لا محلات بعد',
     1 => 'محل واحد',
     2 => 'محلان',
-    >= 3 && <= 10 => '$count محلات',
-    _ => '$count محلاً',
+    >= 3 && <= 10 => '${count.grouped} محلات',
+    _ => '${count.grouped} محلاً',
   };
 
   return '$shops$stopped';

@@ -26,6 +26,10 @@ extension SaveProductStateX on SaveProductState {
 
   String? get minimumError => _fieldError('min_order_quantity');
 
+  /// The server's complaint about «التصنيف» — most often a heading deleted between the list
+  /// being drawn and the form being saved.
+  String? get productCategoryError => _fieldError('product_category_id');
+
   /// The server's complaint about the photo — too large, or not an image after all.
   ///
   /// The form checks that one was *chosen* before submitting, so anything arriving here is

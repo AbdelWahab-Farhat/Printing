@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -50,6 +51,19 @@ class ProductSlugTest extends TestCase
         return ['Authorization' => 'Bearer '.$user->createToken('test-device')->plainTextToken];
     }
 
+    private ?int $categoryId = null;
+
+    /**
+     * The catalogue heading every product now needs — «التصنيف».
+     *
+     * Made once per test and reused: the field is required on create *and* on update, so a
+     * fresh row per call would leave a trail of categories nothing points at.
+     */
+    private function categoryId(): int
+    {
+        return $this->categoryId ??= ProductCategory::factory()->create()->id;
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
@@ -57,6 +71,7 @@ class ProductSlugTest extends TestCase
     private function payload(array $overrides = []): array
     {
         return array_merge([
+            'product_category_id' => $this->categoryId(),
             'name' => 'أكياس الشحن',
             'category' => 'printed',
             'pricing_unit' => 'piece',

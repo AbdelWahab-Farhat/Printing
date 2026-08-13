@@ -46,13 +46,11 @@ abstract class WarehouseStock with _$WarehouseStock {
   factory WarehouseStock.fromJson(Map<String, dynamic> json) => _$WarehouseStockFromJson(json);
 
   /// `'250.000'` reads as a quantity to a database and as noise to a storekeeper: `'250'`.
-  String get quantityLabel => trimDecimals(quantity);
-
-  /// The same number where it is the loudest thing on the screen: `'12450.000'` → `'12,450'`.
+  /// `'12450.000'` reads as neither: `'12,450'`.
   ///
-  /// Separate from [quantityLabel] rather than replacing it, because that one also prefills the
-  /// sheets — and a text field with a comma in it is a number the server will refuse.
-  String get quantityGrouped => groupedDecimal(quantity);
+  /// Only ever drawn. What prefills the sheets is [thresholdLabel], which groups nothing — a
+  /// text field with a comma in it is a number the server will refuse.
+  String get quantityLabel => groupedDecimal(quantity);
 
   /// Nothing on the shelf.
   ///
@@ -71,6 +69,8 @@ abstract class WarehouseStock with _$WarehouseStock {
   /// difference between a shelf that is nearly empty and one that is nearly full.
   String get quantityWithUnit => '$quantityLabel $unitLabel';
 
+  /// The alert level with its padding zeros gone — and **without separators**, because this is
+  /// what prefills «حد التنبيه» in the sheet. Whoever draws it groups it there.
   String? get thresholdLabel =>
       lowStockThreshold == null ? null : trimDecimals(lowStockThreshold!);
 
@@ -101,16 +101,4 @@ abstract class StockVariant with _$StockVariant {
   }) = _StockVariant;
 
   factory StockVariant.fromJson(Map<String, dynamic> json) => _$StockVariantFromJson(json);
-}
-
-/// `'100.000'` → `'100'`, `'0.850'` → `'0.85'`.
-///
-/// String surgery, not `double.parse().toString()`: the decimals the server chose to send are
-/// the decimals it means, and round-tripping them through a float loses that.
-String trimDecimals(String value) {
-  if (!value.contains('.')) return value;
-
-  final trimmed = value.replaceFirst(RegExp(r'0+$'), '');
-
-  return trimmed.endsWith('.') ? trimmed.substring(0, trimmed.length - 1) : trimmed;
 }

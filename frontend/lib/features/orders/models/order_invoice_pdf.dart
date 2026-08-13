@@ -1,7 +1,7 @@
 import 'dart:typed_data';
-
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/orders/models/order.dart';
 
 /// Who the invoice is *from* — the one block on the document that is not the order's own data.
@@ -325,15 +325,15 @@ class OrderInvoicePdf {
               _cell(item.productName),
               _cell(item.variantLabel, align: pw.TextAlign.center),
               _cell(
-                '${item.quantity} ${item.pricingUnitLabel}',
+                '${item.quantity.grouped} ${item.pricingUnitLabel}',
                 align: pw.TextAlign.center,
                 // The shortage is a fact about *this* quantity, so it is said against it.
                 note: item.shortageQuantity == null
                     ? null
-                    : 'ناقص: ${item.shortageQuantity} ${item.pricingUnitLabel}',
+                    : 'ناقص: ${item.shortageQuantity!.grouped} ${item.pricingUnitLabel}',
               ),
-              _cell(item.unitPrice, align: pw.TextAlign.center),
-              _cell(item.lineTotal, align: pw.TextAlign.center, bold: true),
+              _cell(item.unitPrice.grouped, align: pw.TextAlign.center),
+              _cell(item.lineTotal.grouped, align: pw.TextAlign.center, bold: true),
             ]),
           ),
       ],
@@ -404,7 +404,7 @@ class OrderInvoicePdf {
             children: [
               _totalLine('المنتجات', order.itemsTotal),
               if (order.hasDesignFee) _totalLine('التصميم', order.designFee),
-              if (order.hasDiscount) _totalLine('الخصم', '- ${order.discount}', colour: _danger),
+              if (order.hasDiscount) _totalLine('الخصم', '- ${order.discount.grouped}', colour: _danger),
               pw.Container(height: 0.5, color: _rule, margin: const pw.EdgeInsets.symmetric(vertical: 5)),
               _totalLine('الإجمالي', order.grandTotal, bold: true),
               _totalLine('المدفوع', order.paidAmount),
@@ -531,7 +531,9 @@ class OrderInvoicePdf {
     );
   }
 
-  static String _amount(String value) => '$value د';
+  /// Grouped, like every figure on the screens this document mirrors — and safely applied to
+  /// a value a caller grouped already, because a number that carries separators is left alone.
+  static String _amount(String value) => '${value.grouped} د';
 
   /// The day the order was taken, `Y-m-d` — the same day [OrderMessage] prints, for the same
   /// reason: a document is read long after it was made.

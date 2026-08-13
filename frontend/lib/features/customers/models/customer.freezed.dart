@@ -22,7 +22,21 @@ mixin _$Customer {
 @JsonKey(name: 'is_active') bool get isActive;/// Absent — not empty — when the API did not load them. `whenLoaded` on the backend means
 /// a missing key rather than `[]`, and "we did not ask" is a different fact from "this
 /// customer has none".
- List<CustomerShop>? get shops;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;
+ List<CustomerShop>? get shops;/// How many orders this customer has placed, ever — cancellations included.
+///
+/// **Null is «we were not told», and it happens two ways.** A reader without `orders.view`
+/// is not sent the key at all, and neither is the response to saving the form. Both are
+/// different from `0`, which is a real answer about a real customer — so a card draws the
+/// number when there is one and draws nothing when there is not, rather than printing a
+/// nought it was never given. See CUSTOMER-ORDERS-SECTION.md §٣.
+@JsonKey(name: 'orders_count') int? get ordersCount;/// When this customer last placed an order.
+///
+/// **Sent only by the list that is sorted by it** — `sort=least_recent_order`, the call
+/// sheet — because that is the only screen that shows it and the only request that pays for
+/// the subquery behind it. Null covers both «this customer has never ordered», which is the
+/// answer that sort gives explicitly, and «no list asked»; the card tells them apart by
+/// [ordersCount], which is on every row.
+@JsonKey(name: 'last_order_at') DateTime? get lastOrderAt;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;
 /// Create a copy of Customer
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -35,16 +49,16 @@ $CustomerCopyWith<Customer> get copyWith => _$CustomerCopyWithImpl<Customer>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Customer&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&const DeepCollectionEquality().equals(other.shops, shops)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Customer&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&const DeepCollectionEquality().equals(other.shops, shops)&&(identical(other.ordersCount, ordersCount) || other.ordersCount == ordersCount)&&(identical(other.lastOrderAt, lastOrderAt) || other.lastOrderAt == lastOrderAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,phone,isActive,const DeepCollectionEquality().hash(shops),createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,code,name,phone,isActive,const DeepCollectionEquality().hash(shops),ordersCount,lastOrderAt,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'Customer(id: $id, code: $code, name: $name, phone: $phone, isActive: $isActive, shops: $shops, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'Customer(id: $id, code: $code, name: $name, phone: $phone, isActive: $isActive, shops: $shops, ordersCount: $ordersCount, lastOrderAt: $lastOrderAt, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -55,7 +69,7 @@ abstract mixin class $CustomerCopyWith<$Res>  {
   factory $CustomerCopyWith(Customer value, $Res Function(Customer) _then) = _$CustomerCopyWithImpl;
 @useResult
 $Res call({
- int id, String code, String name, String phone,@JsonKey(name: 'is_active') bool isActive, List<CustomerShop>? shops,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id, String code, String name, String phone,@JsonKey(name: 'is_active') bool isActive, List<CustomerShop>? shops,@JsonKey(name: 'orders_count') int? ordersCount,@JsonKey(name: 'last_order_at') DateTime? lastOrderAt,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -72,7 +86,7 @@ class _$CustomerCopyWithImpl<$Res>
 
 /// Create a copy of Customer
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,Object? phone = null,Object? isActive = null,Object? shops = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,Object? phone = null,Object? isActive = null,Object? shops = freezed,Object? ordersCount = freezed,Object? lastOrderAt = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -80,7 +94,9 @@ as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,shops: freezed == shops ? _self.shops : shops // ignore: cast_nullable_to_non_nullable
-as List<CustomerShop>?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as List<CustomerShop>?,ordersCount: freezed == ordersCount ? _self.ordersCount : ordersCount // ignore: cast_nullable_to_non_nullable
+as int?,lastOrderAt: freezed == lastOrderAt ? _self.lastOrderAt : lastOrderAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -167,10 +183,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String name,  String phone, @JsonKey(name: 'is_active')  bool isActive,  List<CustomerShop>? shops, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String name,  String phone, @JsonKey(name: 'is_active')  bool isActive,  List<CustomerShop>? shops, @JsonKey(name: 'orders_count')  int? ordersCount, @JsonKey(name: 'last_order_at')  DateTime? lastOrderAt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Customer() when $default != null:
-return $default(_that.id,_that.code,_that.name,_that.phone,_that.isActive,_that.shops,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.code,_that.name,_that.phone,_that.isActive,_that.shops,_that.ordersCount,_that.lastOrderAt,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -188,10 +204,10 @@ return $default(_that.id,_that.code,_that.name,_that.phone,_that.isActive,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String name,  String phone, @JsonKey(name: 'is_active')  bool isActive,  List<CustomerShop>? shops, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String name,  String phone, @JsonKey(name: 'is_active')  bool isActive,  List<CustomerShop>? shops, @JsonKey(name: 'orders_count')  int? ordersCount, @JsonKey(name: 'last_order_at')  DateTime? lastOrderAt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Customer():
-return $default(_that.id,_that.code,_that.name,_that.phone,_that.isActive,_that.shops,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.code,_that.name,_that.phone,_that.isActive,_that.shops,_that.ordersCount,_that.lastOrderAt,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -208,10 +224,10 @@ return $default(_that.id,_that.code,_that.name,_that.phone,_that.isActive,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String name,  String phone, @JsonKey(name: 'is_active')  bool isActive,  List<CustomerShop>? shops, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String name,  String phone, @JsonKey(name: 'is_active')  bool isActive,  List<CustomerShop>? shops, @JsonKey(name: 'orders_count')  int? ordersCount, @JsonKey(name: 'last_order_at')  DateTime? lastOrderAt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Customer() when $default != null:
-return $default(_that.id,_that.code,_that.name,_that.phone,_that.isActive,_that.shops,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.code,_that.name,_that.phone,_that.isActive,_that.shops,_that.ordersCount,_that.lastOrderAt,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -223,7 +239,7 @@ return $default(_that.id,_that.code,_that.name,_that.phone,_that.isActive,_that.
 @JsonSerializable()
 
 class _Customer extends Customer {
-  const _Customer({required this.id, required this.code, required this.name, required this.phone, @JsonKey(name: 'is_active') required this.isActive, final  List<CustomerShop>? shops, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _shops = shops,super._();
+  const _Customer({required this.id, required this.code, required this.name, required this.phone, @JsonKey(name: 'is_active') required this.isActive, final  List<CustomerShop>? shops, @JsonKey(name: 'orders_count') this.ordersCount, @JsonKey(name: 'last_order_at') this.lastOrderAt, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _shops = shops,super._();
   factory _Customer.fromJson(Map<String, dynamic> json) => _$CustomerFromJson(json);
 
 @override final  int id;
@@ -250,6 +266,22 @@ class _Customer extends Customer {
   return EqualUnmodifiableListView(value);
 }
 
+/// How many orders this customer has placed, ever — cancellations included.
+///
+/// **Null is «we were not told», and it happens two ways.** A reader without `orders.view`
+/// is not sent the key at all, and neither is the response to saving the form. Both are
+/// different from `0`, which is a real answer about a real customer — so a card draws the
+/// number when there is one and draws nothing when there is not, rather than printing a
+/// nought it was never given. See CUSTOMER-ORDERS-SECTION.md §٣.
+@override@JsonKey(name: 'orders_count') final  int? ordersCount;
+/// When this customer last placed an order.
+///
+/// **Sent only by the list that is sorted by it** — `sort=least_recent_order`, the call
+/// sheet — because that is the only screen that shows it and the only request that pays for
+/// the subquery behind it. Null covers both «this customer has never ordered», which is the
+/// answer that sort gives explicitly, and «no list asked»; the card tells them apart by
+/// [ordersCount], which is on every row.
+@override@JsonKey(name: 'last_order_at') final  DateTime? lastOrderAt;
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
 @override@JsonKey(name: 'updated_at') final  DateTime? updatedAt;
 
@@ -266,16 +298,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Customer&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&const DeepCollectionEquality().equals(other._shops, _shops)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Customer&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&const DeepCollectionEquality().equals(other._shops, _shops)&&(identical(other.ordersCount, ordersCount) || other.ordersCount == ordersCount)&&(identical(other.lastOrderAt, lastOrderAt) || other.lastOrderAt == lastOrderAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,phone,isActive,const DeepCollectionEquality().hash(_shops),createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,code,name,phone,isActive,const DeepCollectionEquality().hash(_shops),ordersCount,lastOrderAt,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'Customer(id: $id, code: $code, name: $name, phone: $phone, isActive: $isActive, shops: $shops, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'Customer(id: $id, code: $code, name: $name, phone: $phone, isActive: $isActive, shops: $shops, ordersCount: $ordersCount, lastOrderAt: $lastOrderAt, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -286,7 +318,7 @@ abstract mixin class _$CustomerCopyWith<$Res> implements $CustomerCopyWith<$Res>
   factory _$CustomerCopyWith(_Customer value, $Res Function(_Customer) _then) = __$CustomerCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String code, String name, String phone,@JsonKey(name: 'is_active') bool isActive, List<CustomerShop>? shops,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id, String code, String name, String phone,@JsonKey(name: 'is_active') bool isActive, List<CustomerShop>? shops,@JsonKey(name: 'orders_count') int? ordersCount,@JsonKey(name: 'last_order_at') DateTime? lastOrderAt,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -303,7 +335,7 @@ class __$CustomerCopyWithImpl<$Res>
 
 /// Create a copy of Customer
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? name = null,Object? phone = null,Object? isActive = null,Object? shops = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? name = null,Object? phone = null,Object? isActive = null,Object? shops = freezed,Object? ordersCount = freezed,Object? lastOrderAt = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_Customer(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -311,7 +343,9 @@ as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,shops: freezed == shops ? _self._shops : shops // ignore: cast_nullable_to_non_nullable
-as List<CustomerShop>?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as List<CustomerShop>?,ordersCount: freezed == ordersCount ? _self.ordersCount : ordersCount // ignore: cast_nullable_to_non_nullable
+as int?,lastOrderAt: freezed == lastOrderAt ? _self.lastOrderAt : lastOrderAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));

@@ -136,4 +136,81 @@ void main() {
     // Act & Assert
     expect(entry.byWhom, 'النظام');
   });
+
+  test('a value the server translated is read in arabic', () {
+    // Arrange — the labels named «الحالة» and the screen went on saying `printing` beside it.
+    final entry = ActivityLogEntry.fromJson(<String, dynamic>{
+      'id': 10,
+      'event': 'updated',
+      'subject_type': 'order',
+      'changes': {
+        'old': {'status': 'new'},
+        'attributes': {'status': 'printing'},
+      },
+      'attribute_labels': {'status': 'الحالة'},
+      'value_labels': {
+        'old': {'status': 'جديدة'},
+        'attributes': {'status': 'قيد الطباعة'},
+      },
+    });
+
+    // Act & Assert — both halves, because «من جديدة» is half the sentence.
+    expect(entry.valueLabelFor('status', old: true), 'جديدة');
+    expect(entry.valueLabelFor('status', old: false), 'قيد الطباعة');
+  });
+
+  test('a value with no translation has none invented for it', () {
+    // Arrange — a name is already Arabic and a total is a number, so the server sends neither.
+    final entry = ActivityLogEntry.fromJson(<String, dynamic>{
+      'id': 11,
+      'event': 'created',
+      'subject_type': 'customer',
+      'changes': {
+        'attributes': {'name': 'مطبعة النور'},
+      },
+      'value_labels': {'old': <String, dynamic>{}, 'attributes': <String, dynamic>{}},
+    });
+
+    // Act & Assert — null, and the screen falls back to the raw value exactly as it falls back
+    // to a raw column name.
+    expect(entry.valueLabelFor('name', old: false), isNull);
+  });
+
+  test('an older server that sends no translations at all still renders', () {
+    // Arrange — the app ships before the API does, or after somebody rolls it back.
+    final entry = ActivityLogEntry.fromJson(<String, dynamic>{
+      'id': 12,
+      'event': 'updated',
+      'changes': {
+        'attributes': {'status': 'printing'},
+      },
+    });
+
+    // Act & Assert
+    expect(entry.valueLabels, isNull);
+    expect(entry.valueLabelFor('status', old: false), isNull);
+  });
+
+  test('the permissions a role gained are read in arabic', () {
+    // Arrange — the edit that reads worst: a list of `products.view` strings.
+    final entry = ActivityLogEntry.fromJson(<String, dynamic>{
+      'id': 13,
+      'event': 'updated',
+      'subject_type': 'role',
+      'properties': {
+        'permissions': {
+          'granted': ['products.view'],
+          'revoked': <String>[],
+        },
+      },
+      'property_labels': {
+        'permissions': {'products.view': 'عرض المنتجات'},
+      },
+    });
+
+    // Act & Assert
+    expect(entry.permissionLabelFor('products.view'), 'عرض المنتجات');
+    expect(entry.permissionLabelFor('a.permission.this.build.lacks'), isNull);
+  });
+
 }

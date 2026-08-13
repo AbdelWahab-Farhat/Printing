@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/theme/app_tones.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/presentation/widgets/product_gallery.dart';
 import 'package:printing/features/warehouses/models/warehouse_stock.dart';
@@ -122,7 +123,7 @@ class StockRow extends StatelessWidget {
                         Flexible(
                           child: Text(
                             switch (stock.thresholdLabel) {
-                              final level? => 'حد التنبيه $level',
+                              final level? => 'حد التنبيه ${level.grouped}',
                               // Said, not left blank: a shelf with no alert will never ask to be
                               // refilled, and that is a decision somebody can take here.
                               _ => 'بلا حد تنبيه',
@@ -148,7 +149,7 @@ class StockRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    stock.quantityGrouped,
+                    stock.quantityLabel,
                     textDirection: TextDirection.ltr,
                     style: context.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,

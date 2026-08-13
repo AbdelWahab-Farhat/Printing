@@ -4,6 +4,7 @@ import 'package:printing/core/network/paginated.dart';
 import 'package:printing/core/pagination/paged_cubit.dart';
 import 'package:printing/core/pagination/paged_state.dart';
 import 'package:printing/features/customers/models/customer.dart';
+import 'package:printing/features/customers/models/customers_filter.dart';
 import 'package:printing/features/customers/usecases/get_customers.dart';
 
 /// The list of customers, searchable by name, code or phone.
@@ -23,12 +24,38 @@ class CustomersCubit extends PagedCubit<Customer> {
   final GetCustomers _getCustomers;
   final bool _onlyActive;
 
+  CustomersFilter _filter = CustomersFilter.none;
+
+  /// What the filter sheet is currently set to — read by the button that opens it, so it opens
+  /// on the answers already given rather than on a blank sheet.
+  CustomersFilter get filter => _filter;
+
+  /// Applies what «تطبيق» handed back and reloads from page one.
+  ///
+  /// **From page one, and with the term still in the box.** A filter applied to page four would
+  /// leave three pages of the old question above it, and clearing the search would undo a
+  /// narrowing the user can still see in the box in front of them.
+  ///
+  /// A no-op when nothing changed: the sheet returns a fresh instance on every «تطبيق», and
+  /// reloading a list for a tap that answered the same way is a skeleton somebody watches for
+  /// no reason.
+  Future<void> applyFilter(CustomersFilter filter) async {
+    if (filter == _filter) return;
+
+    _filter = filter;
+    await load(search: currentSearch);
+  }
+
   @override
   Future<Either<Failure, Paginated<Customer>>> fetchPage({String? search, required int page}) {
     return _getCustomers(
       search: search,
       // Null rather than false: false would ask for the deactivated ones only.
       isActive: _onlyActive ? true : null,
+      // Carried on every page, including the ones `loadMore` asks for: page two of «بدون طلبات»
+      // must not arrive as page two of everybody.
+      hasOrders: _filter.hasOrders,
+      sort: _filter.sort,
       page: page,
     );
   }

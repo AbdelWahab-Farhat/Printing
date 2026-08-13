@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/utils/validators.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
@@ -14,7 +15,6 @@ import 'package:printing/features/purchase_orders/presentation/viewmodel/save_pu
 import 'package:printing/features/purchase_orders/usecases/purchase_order_usecases.dart';
 import 'package:printing/features/vendors/models/vendor.dart';
 import 'package:printing/features/vendors/presentation/widgets/vendor_picker_sheet.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 import 'package:printing/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
 
 /// Raising a purchase order, or correcting one.
@@ -75,6 +75,10 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
         id: item.id,
         productVariantId: item.productVariantId,
         title: item.title,
+        // Snapshotted on the line when it was raised, not looked up again: a product whose unit
+        // was corrected since must not silently re-label the quantity already agreed with the
+        // vendor.
+        unit: item.lineUnit,
         quantity: item.orderedLabel,
         // Empty for a line raised before cost tracking, so the field opens asking rather than
         // opening on a zero somebody would have to notice was never typed.
@@ -180,6 +184,9 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
         _LineDraft(
           productVariantId: picked.variant.id,
           title: '${picked.product.name} · ${picked.variant.label}',
+          // The product's own word, so the two boxes below say what they want before anything is
+          // typed into them. The server snapshots the same unit onto the line when it is saved.
+          unit: PurchaseLineUnit(picked.product.pricingUnitLabel),
           quantity: '',
           unitCost: '',
         ),
@@ -350,6 +357,7 @@ class _LineDraft {
     required this.title,
     required String quantity,
     required String unitCost,
+    this.unit = const PurchaseLineUnit(null),
     this.id,
   }) : quantity = TextEditingController(text: quantity),
        unitCost = TextEditingController(text: unitCost);
@@ -357,6 +365,14 @@ class _LineDraft {
   final int? id;
   final int productVariantId;
   final String title;
+
+  /// «كيلوغرام» or «قطعة» — what the two boxes below are asking for.
+  ///
+  /// The *same* type the saved line uses, so the form asks in the word the order will report
+  /// in. Null only on a line raised before the unit column existed, and everything built from it
+  /// then says nothing rather than guessing.
+  final PurchaseLineUnit unit;
+
   final TextEditingController quantity;
   final TextEditingController unitCost;
 
@@ -390,7 +406,7 @@ class _LinesHeader extends StatelessWidget {
             ),
             const Spacer(),
             Text(
-              count == 0 ? 'لا بنود' : '$count',
+              count == 0 ? 'لا بنود' : count.grouped,
               style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
@@ -458,7 +474,7 @@ class _LineRow extends StatelessWidget {
           // narrow box comes out clipped, which is a number nobody can check.
           AppTextField(
             controller: line.quantity,
-            label: 'الكمية المطلوبة',
+            label: line.unit.quantityField,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
@@ -477,7 +493,7 @@ class _LineRow extends StatelessWidget {
           // quantity is what a buyer knows first — the price is what they then ask for.
           AppTextField(
             controller: line.unitCost,
-            label: 'تكلفة الوحدة (د.ل)',
+            label: line.unit.costField,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),

@@ -25,12 +25,24 @@ abstract final class HomeEndpoints {
 
 /// Who works here, what jobs exist, and what each job may do.
 abstract final class AccessEndpoints {
-  /// Staff accounts. Read-only from the app: accounts are created elsewhere, and all this
-  /// screen changes is which roles somebody holds.
+  /// Staff accounts.
   static const String users = '/users';
+
+  /// One employee — and, with `PUT`, their name, email and phone.
+  static String user(int userId) => '/users/$userId';
 
   /// Replaces a user's whole set of roles — send every role they should end up with.
   static String userRoles(int userId) => '/users/$userId/roles';
+
+  /// **Four paths, not four fields on one.** Each is guarded differently on the server —
+  /// `users.manage` for the details and the activation, `users.salary` for the wage, and the
+  /// administrator alone for the password — so collapsing them into one endpoint would hand
+  /// every power to the weakest guard. See EMPLOYEE-DETAIL-DESIGN.md §٢.
+  static String userPassword(int userId) => '/users/$userId/password';
+
+  static String userSalary(int userId) => '/users/$userId/salary';
+
+  static String userActivation(int userId) => '/users/$userId/activation';
 
   static const String roles = '/roles';
 
@@ -133,6 +145,31 @@ abstract final class PurchaseOrderEndpoints {
       '/purchase-orders/$purchaseOrderId/arrivals';
 }
 
+/// معدلات تكلفة التصنيع — the standing prices an order is charged when it enters printing.
+///
+/// **The list is the priority ladder.** The API returns the size-specific rates first, then the
+/// product-wide ones, then the defaults — the same order it resolves them in — so nothing here is
+/// re-sorted by the app.
+abstract final class ManufacturingCostRateEndpoints {
+  static const String index = '/manufacturing-cost-rates';
+
+  static String show(int rateId) => '/manufacturing-cost-rates/$rateId';
+
+  /// Retiring a rate, which is what stopping one *is*: it leaves the ladder from that point on,
+  /// and every cost entry it already produced keeps the amount it was snapshotted with.
+  static String activation(int rateId) => '/manufacturing-cost-rates/$rateId/activation';
+}
+
+/// التصنيفات — the headings the catalogue is organised under. A sibling of the products
+/// resource rather than a child of it: a category exists whether or not any product is in it.
+abstract final class ProductCategoryEndpoints {
+  static const String index = '/product-categories';
+
+  static String show(int categoryId) => '/product-categories/$categoryId';
+
+  static String activation(int categoryId) => '/product-categories/$categoryId/activation';
+}
+
 abstract final class ProductEndpoints {
   static const String index = '/products';
 
@@ -163,6 +200,14 @@ abstract final class OrderEndpoints {
   static String reviewDesign(int orderId, int designId) =>
       '/orders/$orderId/designs/$designId/review';
 
+  /// Bags spoiled while the line was being produced. Guarded by `inventory.manage`, not by any
+  /// `orders.*` grant — it draws stock off the order's shelf and posts its FIFO cost, so it
+  /// belongs to the stock ledger the same way booking a shipment in does.
+  ///
+  /// The item is scoped *inside* the order by the API, so another order's line id is a 404
+  /// rather than a refusal somebody has to read.
+  static String scrapItem(int orderId, int itemId) => '/orders/$orderId/items/$itemId/scrap';
+
   /// An order's money ledger. A GET to read it, a POST to add to it — and **nothing that
   /// updates or deletes an entry**, because the API has no such route: a mistake is undone by
   /// [reversePayment] below, which writes a second entry beside the wrong one.
@@ -191,4 +236,22 @@ abstract final class CustomerEndpoints {
 
   static String design(int customerId, int designId) =>
       '/customers/$customerId/designs/$designId';
+
+  /// What staff have written to each other about this customer. Nested and scoped exactly as
+  /// the designs are — another customer's comment id is a 404 by construction.
+  static String comments(int customerId) => '/customers/$customerId/comments';
+
+  static String comment(int customerId, int commentId) =>
+      '/customers/$customerId/comments/$commentId';
+}
+
+/// What the business is read by, rather than what it is made of.
+///
+/// **Read-only, and never paginated.** Each of these answers one object about a whole period, so
+/// there is no page to ask for and no `meta` beside the data.
+abstract final class ReportEndpoints {
+  /// الأرباح والخسائر. `from` and `to` are both **required** — unlike every list in this app,
+  /// this call has no unfiltered form: a report without a period is not a smaller report, it is
+  /// a question nobody asked.
+  static const String profitAndLoss = '/reports/profit-loss';
 }

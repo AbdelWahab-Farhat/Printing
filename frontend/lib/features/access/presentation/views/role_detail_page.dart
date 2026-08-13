@@ -6,6 +6,7 @@ import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/router/app_router.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/app_dialog.dart';
 import 'package:printing/features/access/models/role.dart';
 import 'package:printing/features/access/presentation/viewmodel/role_detail_cubit.dart';
@@ -117,7 +118,7 @@ class _Actions extends StatelessWidget {
             // disappearing — «لماذا لا أستطيع الحذف؟» is a question the screen should answer.
             enabled: !role.isHeld,
             child: Text(
-              role.isHeld ? 'حذف الدور (يحمله ${role.usersCount})' : 'حذف الدور',
+              role.isHeld ? 'حذف الدور (يحمله ${role.usersCount!.grouped})' : 'حذف الدور',
               style: TextStyle(
                 color: role.isHeld ? null : context.colorScheme.error,
               ),
@@ -229,7 +230,7 @@ class _Summary extends StatelessWidget {
                 SizedBox(height: 8.h),
                 Text(
                   role.isHeld
-                      ? 'يحمله ${role.usersCount} من الموظفين'
+                      ? 'يحمله ${role.usersCount!.grouped} من الموظفين'
                       : 'لا يحمله أحد حالياً',
                   style: context.textTheme.labelMedium?.copyWith(
                     color: scheme.onSurfaceVariant,

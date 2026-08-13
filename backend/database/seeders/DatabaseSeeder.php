@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             AdminSeeder::class,
             CatalogSeeder::class,
+            // After the catalogue, because it files the products that seeder just made.
+            ProductCategorySeeder::class,
             DeliveryLocationSeeder::class,
             BusinessFieldSeeder::class,
             // Warehouses only. Stock arrives by being recorded, never by being seeded.

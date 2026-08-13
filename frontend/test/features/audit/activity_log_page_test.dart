@@ -58,6 +58,26 @@ void main() {
     createdAt: at ?? DateTime(2026, 1, 15, 10, 5),
   );
 
+  /// A status change, with the Arabic for both halves attached — as the server now sends it.
+  ActivityLogEntry statusChange({DateTime? at}) => ActivityLogEntry(
+    id: 3,
+    event: 'updated',
+    eventLabel: 'تعديل',
+    description: 'تم تعديل طلبية',
+    subjectType: 'order',
+    causer: const AuditCauser(id: 2, name: 'سالم'),
+    changes: const AuditChanges(
+      old: {'status': 'new', 'placed_at': null},
+      attributes: {'status': 'printing', 'placed_at': '2026-01-15T08:30:00+00:00'},
+    ),
+    attributeLabels: const {'status': 'الحالة', 'placed_at': 'تاريخ الطلب'},
+    valueLabels: const AuditValueLabels(
+      old: {'status': 'جديدة'},
+      attributes: {'status': 'قيد الطباعة'},
+    ),
+    createdAt: at ?? DateTime(2026, 1, 15, 11, 20),
+  );
+
   Paginated<ActivityLogEntry> page(
     List<ActivityLogEntry> items, {
     Map<String, dynamic>? counts,
@@ -285,4 +305,47 @@ void main() {
     expect(find.text('سجل العميل'), findsOneWidget);
     expect(find.text('مطبعة النور'), findsOneWidget);
   });
+
+  testWidgets('a value is read in Arabic too, not just the column it sits in', (tester) async {
+    // Arrange — the half the labels left behind: «الحالة» in Arabic, `printing` in English,
+    // on the same line, while the order card three taps away says «قيد الطباعة».
+    whenAsking(null, page([statusChange()]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — and the English is gone, which is the part that was on the screen.
+    expect(find.textContaining('جديدة'), findsOneWidget);
+    expect(find.textContaining('قيد الطباعة'), findsOneWidget);
+    expect(find.textContaining('printing'), findsNothing);
+    expect(find.textContaining('new'), findsNothing);
+  });
+
+  testWidgets('a timestamp is read as a date, not as the line the server stored', (tester) async {
+    // Arrange — `2026-01-15T08:30:00+00:00` is a full line of ISO inside a two-line box.
+    whenAsking(null, page([statusChange()]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — formatted on the device, because only the device knows its time zone.
+    expect(find.textContaining('T08:30:00'), findsNothing);
+    expect(find.textContaining('2026-01-15'), findsWidgets);
+  });
+
+  testWidgets('a value the server did not translate is still drawn', (tester) async {
+    // Arrange — a name is already Arabic, so no translation is sent for it. The fallback is
+    // the whole reason the dictionary lives on the server.
+    whenAsking(null, page([creation()]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('فرع الظهرة'), findsOneWidget);
+  });
+
 }

@@ -10,12 +10,13 @@ use App\Domain\Catalog\Actions\AllocateProductIdentifier;
 use App\Domain\Catalog\Actions\GenerateProductSlug;
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductCategory;
+use App\Domain\Catalog\Enums\ProductType;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -31,7 +32,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 #[UseFactory(ProductFactory::class)]
 #[Fillable([
-    'slug', 'name', 'description', 'features', 'category',
+    'slug', 'name', 'description', 'features', 'category', 'product_category_id',
     'pricing_unit', 'pricing_mode', 'min_order_quantity', 'is_active', 'sort_order',
 ])]
 class Product extends Model implements HasAuditTrail
@@ -76,13 +77,28 @@ class Product extends Model implements HasAuditTrail
     {
         return [
             'features' => 'array',
-            'category' => ProductCategory::class,
+            'category' => ProductType::class,
             'pricing_unit' => PricingUnit::class,
             'pricing_mode' => PricingMode::class,
             // String, not float: money and the quantities it is multiplied by must stay exact.
             'min_order_quantity' => 'decimal:3',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * The catalogue heading this product sits under — أكياس, علب وكراتين, ستيكرات.
+     *
+     * **Not `category`.** That attribute is the مطبوعة/سادة split, cast to {@see ProductType},
+     * and it kept the column name it was born with; see PRODUCT-CATEGORIES.md for why the two
+     * words swapped places. The relation is named after the table so the two cannot be confused
+     * at a call site.
+     *
+     * @return BelongsTo<ProductCategory, $this>
+     */
+    public function productCategory(): BelongsTo
+    {
+        return $this->belongsTo(ProductCategory::class);
     }
 
     /**

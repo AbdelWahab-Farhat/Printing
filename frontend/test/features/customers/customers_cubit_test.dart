@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/features/customers/models/customer.dart';
+import 'package:printing/features/customers/models/customers_filter.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customers_cubit.dart';
 import 'package:printing/features/customers/repositories/customer_repository.dart';
 import 'package:printing/features/customers/usecases/get_customers.dart';
@@ -38,11 +39,17 @@ void main() {
       () => repository.customers(
         search: any(named: 'search'),
         isActive: any(named: 'isActive'),
+        hasOrders: any(named: 'hasOrders'),
+        sort: any(named: 'sort'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
       ),
     ).thenAnswer((_) async => result);
   }
+
+  // `any(named: 'sort')` needs something of the type to stand in for. Any case will do — the
+  // matcher never reads it.
+  setUpAll(() => registerFallbackValue(CustomersSort.newest));
 
   setUp(() {
     repository = _MockCustomerRepository();
@@ -99,7 +106,116 @@ void main() {
         () => repository.customers(
           search: '0912345678',
           isActive: any(named: 'isActive'),
+          hasOrders: any(named: 'hasOrders'),
+          sort: any(named: 'sort'),
           page: 1,
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
+    },
+  );
+
+  // ─────────────────────────── the activity filter ───────────────────────────
+
+  blocTest<CustomersCubit, CustomersState>(
+    'the list opens on everybody, in no particular order',
+    setUp: () {
+      // Arrange
+      arrangeCustomers(right(page([customer])));
+    },
+    build: () => cubit,
+    // Act
+    act: (cubit) => cubit.load(),
+    // Assert — nothing about the orders is asked for until somebody asks.
+    verify: (_) {
+      verify(
+        () => repository.customers(
+          search: any(named: 'search'),
+          isActive: any(named: 'isActive'),
+          hasOrders: null,
+          sort: CustomersSort.newest,
+          page: 1,
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
+    },
+  );
+
+  blocTest<CustomersCubit, CustomersState>(
+    'the sheet\'s two ticks reach the API as has_orders and sort',
+    setUp: () {
+      // Arrange
+      arrangeCustomers(right(page([customer])));
+    },
+    build: () => cubit,
+    // Act
+    act: (cubit) => cubit.applyFilter(
+      const CustomersFilter(hasOrders: false, leastRecentOrderFirst: true),
+    ),
+    // Assert
+    verify: (_) {
+      verify(
+        () => repository.customers(
+          search: any(named: 'search'),
+          isActive: any(named: 'isActive'),
+          hasOrders: false,
+          sort: CustomersSort.leastRecentOrder,
+          page: 1,
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
+    },
+  );
+
+  blocTest<CustomersCubit, CustomersState>(
+    'filtering keeps the term already in the search box',
+    setUp: () {
+      // Arrange
+      arrangeCustomers(right(page([customer])));
+    },
+    build: () => cubit,
+    // Act — the box is not cleared by opening the sheet, so the list must not be either.
+    act: (cubit) async {
+      await cubit.load(search: 'مطبعة');
+      await cubit.applyFilter(const CustomersFilter(hasOrders: false));
+    },
+    // Assert
+    verify: (_) {
+      verify(
+        () => repository.customers(
+          search: 'مطبعة',
+          isActive: any(named: 'isActive'),
+          hasOrders: false,
+          sort: any(named: 'sort'),
+          page: 1,
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
+    },
+  );
+
+  blocTest<CustomersCubit, CustomersState>(
+    'the filter rides along on the pages after the first',
+    setUp: () {
+      // Arrange — two pages, so `loadMore` has somewhere to go.
+      arrangeCustomers(right(page([customer], last: 2)));
+    },
+    build: () => cubit,
+    // Act
+    act: (cubit) async {
+      await cubit.applyFilter(const CustomersFilter(hasOrders: false));
+      await cubit.loadMore();
+    },
+    // Assert — page two of «بدون طلبات» must not arrive as page two of everybody, which is the
+    // bug every filtered list ships once.
+    verify: (_) {
+      verify(
+        () => repository.customers(
+          search: any(named: 'search'),
+          isActive: any(named: 'isActive'),
+          hasOrders: false,
+          sort: any(named: 'sort'),
+          page: 2,
           perPage: any(named: 'perPage'),
         ),
       ).called(1);

@@ -29,6 +29,22 @@ class UserResource extends JsonResource
             // What the app puts on the employee's card, next to their name.
             'employee_code' => $this->employee_code,
 
+            // Whether this account can still sign in. Stopped accounts stay in the list — the
+            // screen that puts them back is the one that lists them.
+            'is_active' => $this->is_active,
+
+            // What this employee is paid a month, for a reader allowed to know.
+            //
+            // **Absent rather than null for everybody else**, and the two are different facts:
+            // `null` means «no wage has been agreed», which the salary sheet shows as «لم
+            // يُحدَّد», while a missing key means «you may not be told» and hides the section
+            // outright. `users.salary` is its own permission precisely so that managing staff
+            // and knowing their wages can be granted apart — see EMPLOYEE-DETAIL-DESIGN.md §١.
+            'salary' => $this->when(
+                $request->user()?->can(PermissionName::ManageUserSalaries->value) === true,
+                fn () => $this->salary,
+            ),
+
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->map(fn ($role) => [
                 'name' => $role->name,
                 'label' => RoleName::tryFrom($role->name)?->label() ?? $role->name,

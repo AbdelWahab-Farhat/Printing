@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/vendors/models/stock_arrival.dart';
 import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 
@@ -202,11 +203,30 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
       ? 'مقاس #$productVariantId'
       : '${variant!.productName} · ${variant!.label}';
 
-  String get orderedLabel => trimDecimals(quantityOrdered);
+  String get orderedLabel => groupedDecimal(quantityOrdered);
 
-  String get receivedLabel => trimDecimals(quantityReceived);
+  String get receivedLabel => groupedDecimal(quantityReceived);
 
-  String get remainingLabel => trimDecimals(quantityRemaining);
+  String get remainingLabel => groupedDecimal(quantityRemaining);
+
+  /// What this line's numbers are counted in, and the words built from it.
+  PurchaseLineUnit get lineUnit => PurchaseLineUnit(unitLabel);
+
+  /// «٥٠٠ كيلوغرام», or a bare «٥٠٠» on a line older than the unit column.
+  String get orderedWithUnit => lineUnit.amount(orderedLabel);
+
+  String get receivedWithUnit => lineUnit.amount(receivedLabel);
+
+  String get remainingWithUnit => lineUnit.amount(remainingLabel);
+
+  /// «للكيلوغرام» — what a unit cost is *per*, as it reads after the amount.
+  String get perUnitSuffix => lineUnit.per;
+
+  /// «تكلفة الكيلوغرام (د.ل)» — the price box names the thing being priced.
+  String get costFieldLabel => lineUnit.costField;
+
+  /// «الكمية المطلوبة (كيلوغرام)».
+  String get quantityFieldLabel => lineUnit.quantityField;
 
   bool get hasReceipts => (double.tryParse(quantityReceived) ?? 0) > 0;
 
@@ -217,4 +237,55 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
   /// **False only on a line older than cost tracking.** A cost of *zero* is a recorded answer —
   /// a free replacement from the vendor — so it renders as «0» rather than «غير مسجّلة».
   bool get hasCost => unitCost != null;
+}
+
+/// What a purchase-order line is counted in, and every phrase this app builds out of it.
+///
+/// **A quantity on a buying screen without its unit is a number nobody can act on.** «٥٠٠»
+/// against «الأكياس الشفافة السادة» is five hundred *kilograms* — that product is priced by
+/// weight — and a buyer reading it as five hundred bags orders about a tonne of the wrong thing.
+/// The server has always sent `unit_label`; this is what stops the screens dropping it.
+///
+/// **One place for the wording, and the Arabic is the reason.** Four surfaces print these — the
+/// form's two boxes, the line on the order, the receiving sheet — and «لل» + «كيلوغرام» is
+/// exactly the kind of join that comes out «لل كيلوغرام» on the fourth copy. It also keeps the
+/// form and the saved line saying the same word: a form that asks in one unit and a screen that
+/// reports the answer in another is the failure this exists to prevent.
+///
+/// A plain class rather than Freezed: it never crosses the wire and holds one nullable string.
+@immutable
+class PurchaseLineUnit {
+  const PurchaseLineUnit(this.label);
+
+  /// «كيلوغرام», «قطعة», or null on a line older than the unit column.
+  final String? label;
+
+  /// «٥٠٠ كيلوغرام», or a bare «٥٠٠» when there is no unit to name.
+  ///
+  /// **Bare, never guessed.** Falling back to «قطعة» is precisely how a weight comes to be read
+  /// as a count, and it would be wrong silently.
+  String amount(String value) => label == null ? value : '$value $label';
+
+  /// «للكيلوغرام» — what a unit cost is *per*, as it reads after the amount. «للوحدة» when
+  /// unknown: vague, but true of any unit.
+  String get per => label == null ? 'للوحدة' : 'لل$label';
+
+  /// «تكلفة الكيلوغرام (د.ل)».
+  String get costField => label == null ? 'تكلفة الوحدة (د.ل)' : 'تكلفة ال$label (د.ل)';
+
+  /// «الكمية المطلوبة (كيلوغرام)».
+  ///
+  /// The unit in brackets rather than inside the sentence: it is a note about what the box
+  /// expects, not part of what is being asked for.
+  String get quantityField => label == null ? 'الكمية المطلوبة' : 'الكمية المطلوبة ($label)';
+
+  /// «الكمية التي وصلت (كيلوغرام)» — the box a storeman types a weighbridge figure into.
+  String get receivedField =>
+      label == null ? 'الكمية التي وصلت' : 'الكمية التي وصلت ($label)';
+
+  @override
+  bool operator ==(Object other) => other is PurchaseLineUnit && other.label == label;
+
+  @override
+  int get hashCode => label.hashCode;
 }

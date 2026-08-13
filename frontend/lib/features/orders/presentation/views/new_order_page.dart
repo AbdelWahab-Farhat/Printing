@@ -9,6 +9,7 @@ import 'package:printing/core/router/app_router.dart';
 import 'package:printing/core/session/session.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
 import 'package:printing/features/cities/models/city.dart';
@@ -453,7 +454,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
         Text(
           error ??
               (city != null && city.hasDeliveryPrice
-                  ? 'سعر التوصيل ${city.deliveryPrice} د.ل، يضيفه الخادم إلى الإجمالي'
+                  ? 'سعر التوصيل ${city.deliveryPrice!.grouped} د.ل، يضيفه الخادم إلى الإجمالي'
                   : 'سعر التوصيل يأتي من المدينة المختارة'),
           style: context.textTheme.bodySmall?.copyWith(
             color: error != null ? scheme.error : scheme.onSurfaceVariant,
@@ -751,7 +752,7 @@ class _Estimate extends StatelessWidget {
             ),
           ),
           Text(
-            isComplete ? '$sum د.ل' : '—',
+            isComplete ? '${groupedDecimal(sum.toString())} د.ل' : '—',
             style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
           ),
         ],

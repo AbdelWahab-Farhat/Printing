@@ -37,6 +37,22 @@ abstract class ActivityLogEntry with _$ActivityLogEntry {
     /// entry touched keeps a page of fifteen entries small.
     @JsonKey(name: 'attribute_labels') Map<String, String>? attributeLabels,
 
+    /// And what each of those values *says* — `printing` → «قيد الطباعة».
+    ///
+    /// Mirrors [changes] half for half rather than being a value → translation map, because a
+    /// map cannot hold it: JSON keys are strings, so `12` and `'12'` collide, and `12` in
+    /// `customer_id` is not `12` in `city_id`. Only the column plus which half it is on
+    /// identifies a value without ambiguity.
+    ///
+    /// Null against a server that predates it, which is why every read goes through
+    /// [valueLabelFor] and falls back to the raw value.
+    @JsonKey(name: 'value_labels') AuditValueLabels? valueLabels,
+
+    /// The Arabic for what is inside [properties] — today, the permissions a role gained or
+    /// lost. Keyed by the permission itself, which *is* unambiguous in a way a foreign key's
+    /// `12` never is.
+    @JsonKey(name: 'property_labels') Map<String, Map<String, String>>? propertyLabels,
+
     @JsonKey(name: 'created_at') DateTime? createdAt,
   }) = _ActivityLogEntry;
 
@@ -60,6 +76,31 @@ abstract class ActivityLogEntry with _$ActivityLogEntry {
   /// existed. An unlabelled column looking unlabelled is what gets the label written; a guessed
   /// Arabic name would look right and be wrong.
   String labelFor(String field) => attributeLabels?[field] ?? field;
+
+  /// What one value *says*, or null when the server sent no translation for it.
+  ///
+  /// Null is the common case and not a fault: a name is already Arabic, a total is a number,
+  /// and «نعم/لا» this app says for itself. The caller draws the raw value, which is the same
+  /// fallback [labelFor] takes for a column nobody has named yet.
+  String? valueLabelFor(String field, {required bool old}) =>
+      (old ? valueLabels?.old : valueLabels?.attributes)?[field];
+
+  /// The Arabic for one permission, or null for one this server has not named.
+  String? permissionLabelFor(String permission) => propertyLabels?['permissions']?[permission];
+}
+
+/// What the values in [ActivityLogEntry.changes] say, in Arabic.
+///
+/// The same two halves as [AuditChanges], because it is read alongside it key for key.
+@freezed
+abstract class AuditValueLabels with _$AuditValueLabels {
+  const factory AuditValueLabels({
+    Map<String, String>? old,
+    Map<String, String>? attributes,
+  }) = _AuditValueLabels;
+
+  factory AuditValueLabels.fromJson(Map<String, dynamic> json) =>
+      _$AuditValueLabelsFromJson(json);
 }
 
 /// The person behind a change.

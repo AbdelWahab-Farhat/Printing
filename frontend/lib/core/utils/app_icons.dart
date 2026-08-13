@@ -152,6 +152,14 @@ abstract final class AppIcons {
   static IconData get designs =>
       _pick(Icons.palette_outlined, CupertinoIcons.paintbrush);
 
+  /// What staff have written to each other about a customer.
+  ///
+  /// A speech bubble, not a note-page: these are things colleagues *say* to one another about
+  /// somebody, and a page glyph would read as the customer's own paperwork — which [orders]
+  /// already is, on the same screen.
+  static IconData get comments =>
+      _pick(Icons.forum_outlined, CupertinoIcons.chat_bubble_2);
+
   // ── choosing a file ────────────────────────────────────────────────────────
   // The three rows of the attachment sheet. Distinct glyphs on purpose: they sit side by side
   // and the icon is what is read, not the label under it.
@@ -212,6 +220,29 @@ abstract final class AppIcons {
   static IconData get orders =>
       _pick(Icons.receipt_long_rounded, CupertinoIcons.doc_text_fill);
 
+  /// Orders nobody has finished with — «الطلبات الجارية».
+  ///
+  /// A clock over a list, not [history]'s clock-with-an-arrow: the two sit on the same customer
+  /// screen, one opening work in hand and the other opening a change log, and a reader who has
+  /// to tell them apart by the label has been given no icon at all.
+  static IconData get ordersInProgress =>
+      _pick(Icons.pending_actions_rounded, CupertinoIcons.clock_fill);
+
+  /// Orders that reached the customer — «الطلبات المستلمة».
+  ///
+  /// A filled tick against [activate]'s outlined circle, which is what says «عميل نشِط» a
+  /// finger's width above it on the same screen.
+  static IconData get ordersReceived =>
+      _pick(Icons.task_alt_rounded, CupertinoIcons.checkmark_seal_fill);
+
+  /// How long since a customer last ordered — «منذ شهرين» on a card in the call sheet.
+  ///
+  /// A bare clock, and deliberately none of the three above it: [orders] would make an elapsed
+  /// time look like a quantity of orders in the slot it stands in, [ordersInProgress] means work
+  /// in hand, and [history] means a change log. What this one measures is silence.
+  static IconData get elapsed =>
+      _pick(Icons.schedule_rounded, CupertinoIcons.clock);
+
   static IconData get today => _pick(Icons.today_rounded, CupertinoIcons.calendar_today);
 
   static IconData get month =>
@@ -229,6 +260,14 @@ abstract final class AppIcons {
   static IconData get businessField =>
       _pick(Icons.storefront_outlined, CupertinoIcons.building_2_fill);
 
+  /// التصنيف — a heading in the catalogue: أكياس, علب وكراتين, ستيكرات.
+  ///
+  /// Folders, because that is what a category *does*: it is where the products are filed. Not
+  /// [products]'s bag, which is one of the things inside it, and not [tag], which names the
+  /// machine-readable slug on a single product.
+  static IconData get productCategory =>
+      _pick(Icons.folder_copy_outlined, CupertinoIcons.folder);
+
   /// A branch the customer walks into and collects from.
   ///
   /// On the delivery map this sits in the same list as [mapPin], and the glyph is the only
@@ -240,6 +279,23 @@ abstract final class AppIcons {
   /// and the one that draws this one draws pins beside it.
   static IconData get officePickup =>
       _pick(Icons.storefront_rounded, CupertinoIcons.building_2_fill);
+
+  /// معدلات تكلفة التصنيع — what an hour of labour, a machine and the overhead are charged at.
+  ///
+  /// A price tag with an arrow rather than [payment]'s notes: this is not money crossing the
+  /// counter, it is the standing figure an order is later costed against. The distinction earns
+  /// its own glyph because both rows sit in the same drawer, and the first drafts of that drawer
+  /// gave this one and الأرباح والخسائر the same money icon — two adjacent rows a reader had to
+  /// tell apart by their labels alone.
+  static IconData get manufacturingCostRates =>
+      _pick(Icons.price_change_outlined, CupertinoIcons.money_dollar);
+
+  /// A report read for its figures rather than its records — الأرباح والخسائر today.
+  ///
+  /// Deliberately not [settled]: Material draws that as the same receipt the الطلبات tab uses,
+  /// and a report is not a document the shop issued.
+  static IconData get report =>
+      _pick(Icons.analytics_outlined, CupertinoIcons.chart_bar);
 
   // ── who works here, and what they may do ───────────────────────────────────
 
@@ -274,6 +330,11 @@ abstract final class AppIcons {
   static IconData get email => _pick(Icons.mail_outline_rounded, CupertinoIcons.mail);
 
   static IconData get password => _pick(Icons.lock_outline_rounded, CupertinoIcons.lock);
+
+  /// What an employee is paid a month. A wallet rather than a coin or a banknote: the two
+  /// money glyphs in this set already mean *a payment on an order*, and a wage is not one.
+  static IconData get salary =>
+      _pick(Icons.account_balance_wallet_outlined, CupertinoIcons.money_dollar_circle);
 
   static IconData get passwordVisible =>
       _pick(Icons.visibility_outlined, CupertinoIcons.eye);

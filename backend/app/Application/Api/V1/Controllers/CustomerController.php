@@ -16,6 +16,8 @@ use App\Domain\Customer\CustomerService;
 use App\Domain\Customer\DTOs\CustomerData;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Queries\CustomerFilters;
+use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Order\Queries\OrderCountsByCustomerQuery;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,15 +40,40 @@ class CustomerController extends Controller
      * List customers
      *
      * Newest first. `search` matches the name, the code, or the phone number.
+     *
+     * Each row carries `orders_count` — how many orders that customer has ever placed,
+     * cancellations included — for callers holding `orders.view`. Everyone else gets no such
+     * key, which is a different fact from a zero and is why it is omitted rather than nulled.
+     *
+     * Two options read the orders rather than the customers, and both need `orders.view`:
+     *
+     * - `has_orders` — `0` for the customers who have never ordered, «زبائن بدون طلب», and `1`
+     *   for «لديهم طلبات». Left out, the list is everybody. A cancelled order still counts as
+     *   one, exactly as it does in `orders_count`; a deleted one does not.
+     * - `sort=least_recent_order` — the longest since their last order first, so the customers
+     *   worth ringing are at the top. Those who never ordered come last, and every row on this
+     *   sort carries `last_order_at` (null for them).
      */
     public function index(Request $request): JsonResponse
     {
-        $filters = CustomerFilters::fromArray($request->only(['search', 'is_active']));
+        $filters = CustomerFilters::fromArray($request->only(['search', 'is_active', 'has_orders', 'sort']));
+
+        // Refused, not quietly answered without it. Omitting `orders_count` for this reader is
+        // honest — they did not ask for it — but a page that dropped a filter they *did* ask for
+        // would be the wrong answer to their question wearing a 200.
+        if ($filters->readsOrders() && ! $this->maySeeOrders($request)) {
+            return $this->error('لا تملك صلاحية عرض الطلبيات', 403);
+        }
+
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
-        return $this->successWithPagination(
-            CustomerResource::collection($this->customers->paginate($filters, $perPage)),
-        );
+        $customers = $this->customers->paginate($filters, $perPage);
+
+        // `items()`, which the paginator *contract* declares — the models come back by
+        // reference, so stamping them here is stamping what the resource is about to render.
+        $this->attachOrderCounts($request, $customers->items());
+
+        return $this->successWithPagination(CustomerResource::collection($customers));
     }
 
     /**
@@ -63,10 +90,16 @@ class CustomerController extends Controller
 
     /**
      * Get one customer
+     *
+     * Carries `orders_count` on the same terms as the list — see there.
      */
-    public function show(Customer $customer): JsonResponse
+    public function show(Request $request, Customer $customer): JsonResponse
     {
-        return $this->success(new CustomerResource($customer->load(Customer::SHOP_RELATIONS)));
+        $customer->load(Customer::SHOP_RELATIONS);
+
+        $this->attachOrderCounts($request, [$customer]);
+
+        return $this->success(new CustomerResource($customer));
     }
 
     /**
@@ -110,5 +143,46 @@ class CustomerController extends Controller
     public function logs(ActivityLogFilterRequest $request, Customer $customer, AuditService $audit): JsonResponse
     {
         return $this->auditTrailResponse($request, $customer, $audit);
+    }
+
+    /**
+     * Stamps `orders_count` onto customers about to be rendered, for readers allowed to see it.
+     *
+     * **Here rather than in the resource, because this is an authorization decision.** Somebody
+     * holding `customers.view` and not `orders.view` may read who a customer is without being
+     * told how much business they do; the resource leaves the key out entirely when nothing was
+     * stamped, so the app gets no key rather than a nought it would print on the card.
+     *
+     * **And here rather than as a `withCount` on the query, because `Customer` has no `orders()`
+     * relation on purpose** — see {@see OrderCountsByCustomerQuery}. Only the create and update
+     * responses go without: nobody reads a count off the form they have just saved.
+     *
+     * @param  list<Customer>  $customers
+     */
+    private function attachOrderCounts(Request $request, array $customers): void
+    {
+        if ($customers === [] || ! $this->maySeeOrders($request)) {
+            return;
+        }
+
+        $counts = (new OrderCountsByCustomerQuery)(
+            array_map(static fn (Customer $customer): int => $customer->id, $customers),
+        );
+
+        foreach ($customers as $customer) {
+            $customer->setAttribute('orders_count', $counts[$customer->id] ?? 0);
+        }
+    }
+
+    /**
+     * Whether this reader is allowed to be told anything the orders know.
+     *
+     * One method for the two things that turn on it — the count that is stamped on, and the
+     * filters that are refused — so a third cannot be added while reading the permission from a
+     * different place.
+     */
+    private function maySeeOrders(Request $request): bool
+    {
+        return $request->user()?->can(PermissionName::ViewOrders->value) === true;
     }
 }

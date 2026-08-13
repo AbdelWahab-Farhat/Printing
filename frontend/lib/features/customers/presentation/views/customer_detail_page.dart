@@ -8,14 +8,18 @@ import 'package:go_router/go_router.dart';
 import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/router/app_router.dart';
+import 'package:printing/core/session/session.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_dialog.dart';
 import 'package:printing/core/widgets/app_speed_dial.dart';
+import 'package:printing/core/widgets/copy_text.dart';
 import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/customers/models/customer.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
+import 'package:printing/features/customers/presentation/viewmodel/customer_order_counts_cubit.dart';
+import 'package:printing/features/customers/presentation/widgets/customer_orders_section.dart';
 
 /// Everything about one customer, and the things staff do to them.
 ///
@@ -34,15 +38,41 @@ class CustomerDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<CustomerDetailCubit>(
-      create: (_) => sl<CustomerDetailCubit>(param1: customerId)..load(),
-      child: const _CustomerDetailView(),
+    // Not created at all without `orders.view`, rather than created and its 403 swallowed: a
+    // request nobody may make is a request not worth sending, and the section it feeds is absent
+    // for the same reason «طلبية جديدة» is — see [_Actions].
+    final showsOrders = sl<Session>().can(AppPermission.viewOrders);
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<CustomerDetailCubit>(
+          create: (_) => sl<CustomerDetailCubit>(param1: customerId)..load(),
+        ),
+        if (showsOrders)
+          BlocProvider<CustomerOrderCountsCubit>(
+            create: (_) => sl<CustomerOrderCountsCubit>(param1: customerId)..load(),
+          ),
+      ],
+      child: _CustomerDetailView(showsOrders: showsOrders),
     );
   }
 }
 
 class _CustomerDetailView extends StatelessWidget {
-  const _CustomerDetailView();
+  const _CustomerDetailView({required this.showsOrders});
+
+  final bool showsOrders;
+
+  /// Both readings at once, so one pull answers the whole screen.
+  ///
+  /// `Future.wait` rather than one after the other: they are independent requests, and making
+  /// the numbers wait on the customer would double how long the spinner sits there.
+  Future<void> _refresh(BuildContext context) async {
+    await Future.wait([
+      context.read<CustomerDetailCubit>().load(),
+      if (showsOrders) context.read<CustomerOrderCountsCubit>().load(),
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,8 +110,12 @@ class _CustomerDetailView extends StatelessWidget {
             onRetry: cubit.load,
           ),
           _ => RefreshIndicator(
-            onRefresh: cubit.load,
-            child: _Body(customer: state.customer!, isChanging: state.isChanging),
+            onRefresh: () => _refresh(context),
+            child: _Body(
+              customer: state.customer!,
+              isChanging: state.isChanging,
+              showsOrders: showsOrders,
+            ),
           ),
         },
       ),
@@ -183,6 +217,16 @@ class _Actions extends StatelessWidget {
               context.push(Routes.customerDesigns(customer.id), extra: customer.name),
         ),
         AppAction(
+          label: 'الملاحظات',
+          icon: AppIcons.comments,
+          // `customers.view`, like the designs: leaving the next person a sentence about a
+          // customer is part of serving them, not a privilege over them. Who may change a
+          // *particular* note is answered per row inside that screen, by the server.
+          permission: AppPermission.viewCustomers,
+          onTap: (context) =>
+              context.push(Routes.customerComments(customer.id), extra: customer.name),
+        ),
+        AppAction(
           label: 'سجل التعديلات',
           icon: AppIcons.history,
           // `logs.view`, not `customers.view`, and that is the server's own line: a history
@@ -200,10 +244,15 @@ class _Actions extends StatelessWidget {
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.customer, required this.isChanging});
+  const _Body({
+    required this.customer,
+    required this.isChanging,
+    required this.showsOrders,
+  });
 
   final Customer customer;
   final bool isChanging;
+  final bool showsOrders;
 
   @override
   Widget build(BuildContext context) {
@@ -221,27 +270,28 @@ class _Body extends StatelessWidget {
         _StatusBand(customer: customer, isChanging: isChanging),
         SizedBox(height: 14.h),
 
-        _Section(
-          title: 'معلومات الاتصال',
-          child: Column(
-            children: [
-              _CopyRow(
-                icon: AppIcons.phone,
-                label: 'رقم الهاتف',
-                value: customer.phone,
-                copiedMessage: 'تم نسخ رقم الهاتف',
-              ),
-              Divider(height: 18.h),
-              _CopyRow(
-                icon: AppIcons.tag,
-                label: 'رمز العميل',
-                value: customer.code,
-                copiedMessage: 'تم نسخ رمز العميل',
-              ),
-            ],
+        // **The first thing under the identity, because it is why this screen is opened.**
+        // A customer is looked up to answer «ماذا طلب؟» far more often than anything else — the
+        // same reasoning that moved the money board above the status board on the home screen.
+        //
+        // There is no «معلومات الاتصال» card under it any more. It was a titled card, a border
+        // and two labelled rows around two values that are one line each, and both of them now
+        // sit where they are actually read: the phone under the name, the code in the corner —
+        // see [_Identity]. A section is worth its frame when it groups things; this one wrapped
+        // the identity in a second copy of itself.
+        if (showsOrders) ...[
+          BlocBuilder<CustomerOrderCountsCubit, CustomerOrderCountsState>(
+            builder: (context, state) => CustomerOrdersSection(
+              customerId: customer.id,
+              customerName: customer.name,
+              state: state,
+              // Pushed over the shell, exactly as the home screen's cards are: this is a screen
+              // the user is *in*, not a tab they are browsing.
+              onOpen: (filter) => context.push(Routes.ordersFiltered, extra: filter),
+            ),
           ),
-        ),
-        SizedBox(height: 14.h),
+          SizedBox(height: 14.h),
+        ],
 
         // Absent, not empty, when the API did not load them — «لا توجد محلات» about a customer
         // whose shops were simply not requested is a lie the model already refuses to tell.
@@ -254,6 +304,16 @@ class _Body extends StatelessWidget {
   }
 }
 
+/// Who this is, in one row: the avatar, the name over the phone, and the code.
+///
+/// **It carries what the «معلومات الاتصال» card used to.** That card put a title, a border and a
+/// row label around two values one line long each; here the phone reads directly under the name
+/// — which is how somebody says it out loud — and the code takes the far corner, where a
+/// three-character string is found without being read past.
+///
+/// Both are still tap-to-copy. That was the only thing the card did that the frame was not doing
+/// for it, and it is the reason this screen exists on a phone at all: the number gets pasted
+/// into WhatsApp, the code gets pasted into a message about an order.
 class _Identity extends StatelessWidget {
   const _Identity({required this.customer});
 
@@ -278,28 +338,88 @@ class _Identity extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(width: 14.w),
+        SizedBox(width: 12.w),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 customer.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: context.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
-              SizedBox(height: 4.h),
-              Text(
-                customer.code,
-                textDirection: TextDirection.ltr,
-                style: context.textTheme.labelLarge?.copyWith(
-                  color: scheme.primary,
-                  fontWeight: FontWeight.w700,
+              SizedBox(height: 2.h),
+              CopyText(
+                value: customer.phone,
+                copiedMessage: 'تم نسخ رقم الهاتف',
+                icon: AppIcons.phone,
+                style: context.textTheme.bodyLarge?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
         ),
+        SizedBox(width: 10.w),
+        // Last child of an RTL row, so it lands in the far corner — not an alignment, which is
+        // what stops it drifting when a long name grows. The same placement the list card gives
+        // it, so the two screens agree on where a code is found.
+        _CodeBadge(code: customer.code, isActive: isActive),
       ],
+    );
+  }
+}
+
+/// The customer's code, big enough to read across a counter.
+///
+/// **Bigger than it was, because it is what the customer is quoted by.** It used to be a line of
+/// `labelLarge` under the name, competing with the name for the same edge; sized up and moved to
+/// the corner it stops being read *through* on the way to something else.
+class _CodeBadge extends StatelessWidget {
+  const _CodeBadge({required this.code, required this.isActive});
+
+  final String code;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final radius = BorderRadius.circular(16.r);
+
+    return Material(
+      color: isActive ? scheme.primaryContainer : scheme.surfaceContainerHigh,
+      borderRadius: radius,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: () {
+          unawaited(Clipboard.setData(ClipboardData(text: code)));
+          context.showSuccess('تم نسخ رمز العميل');
+        },
+        child: Container(
+          height: 58.w,
+          constraints: BoxConstraints(minWidth: 58.w, maxWidth: 108.w),
+          alignment: Alignment.center,
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
+          // Codes are 'C' + the row id, so they grow: C10 today, C1284 in two years. Scaled
+          // down to fit rather than clipped — half a code is worse than a small one, because
+          // «C12…» and «C128…» read as the same customer.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              code,
+              // A Latin letter and digits: they read left-to-right even inside this RTL row.
+              textDirection: TextDirection.ltr,
+              style: context.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: isActive ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

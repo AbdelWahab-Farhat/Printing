@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/theme/app_tones.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/orders/models/order_payment.dart';
 
 /// What the order costs, what has been paid, and what is left — read in one glance.
@@ -99,7 +100,10 @@ class _Cell extends StatelessWidget {
           // than a smaller whole one.
           fit: BoxFit.scaleDown,
           child: Text(
-            value,
+            value.grouped,
+            // A Latin run inside an RTL row: without this the separator lands on the wrong
+            // side of the number.
+            textDirection: TextDirection.ltr,
             maxLines: 1,
             style: context.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
@@ -178,7 +182,7 @@ class _Warning extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: Text(
-        'الطلبية منتهية ولم يُسجَّل قبض $amount',
+        'الطلبية منتهية ولم يُسجَّل قبض ${amount.grouped}',
         style: context.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer),
       ),
     );

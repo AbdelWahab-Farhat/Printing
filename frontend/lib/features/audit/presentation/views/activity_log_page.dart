@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,6 +6,7 @@ import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/pagination/paged_state.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/paged_list_view.dart';
 import 'package:printing/features/audit/models/activity_log_entry.dart';
 import 'package:printing/features/audit/models/audit_event.dart';
@@ -270,7 +270,7 @@ class _Chip extends StatelessWidget {
                     borderRadius: BorderRadius.circular(100.r),
                   ),
                   child: Text(
-                    '$count',
+                    count!.grouped,
                     style: context.textTheme.labelSmall?.copyWith(
                       fontSize: 10.sp,
                       fontWeight: FontWeight.w700,
@@ -316,8 +316,8 @@ class _Day {
   String get countLabel => switch (count) {
     1 => 'حدث واحد',
     2 => 'حدثان',
-    >= 3 && <= 10 => '$count أحداث',
-    _ => '$count حدثاً',
+    >= 3 && <= 10 => '${count.grouped} أحداث',
+    _ => '${count.grouped} حدثاً',
   };
 }
 
@@ -483,11 +483,26 @@ class _Card extends StatelessWidget {
                 children: changes.isMovement
                     ? [
                         for (final (field, before, after) in changes.fields)
-                          _Movement(label: entry.labelFor(field), before: before, after: after),
+                          _Movement(
+                            label: entry.labelFor(field),
+                            before: before,
+                            after: after,
+                            beforeLabel: entry.valueLabelFor(field, old: true),
+                            afterLabel: entry.valueLabelFor(field, old: false),
+                          ),
                       ]
                     : [
                         for (final (field, value) in changes.statedValues)
-                          _Stated(label: entry.labelFor(field), value: value),
+                          _Stated(
+                            label: entry.labelFor(field),
+                            value: value,
+                            // A deletion states its values from `old`, a creation from
+                            // `attributes` — the same half `statedValues` read them from.
+                            valueLabel: entry.valueLabelFor(
+                              field,
+                              old: changes.attributes?.isEmpty ?? true,
+                            ),
+                          ),
                       ],
               ),
             ),
@@ -501,10 +516,14 @@ class _Card extends StatelessWidget {
 /// A value an entry simply states — a creation's starting values, or the last ones a deleted
 /// record had.
 class _Stated extends StatelessWidget {
-  const _Stated({required this.label, required this.value});
+  const _Stated({required this.label, required this.value, this.valueLabel});
 
   final String label;
   final Object? value;
+
+  /// The Arabic the server sent for this value, or null when it sent none — a name is already
+  /// Arabic and a total is a number.
+  final String? valueLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -522,7 +541,7 @@ class _Stated extends StatelessWidget {
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
-              _show(value),
+              _show(value, valueLabel),
               textAlign: TextAlign.end,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -537,11 +556,22 @@ class _Stated extends StatelessWidget {
 
 /// One field, and where it went.
 class _Movement extends StatelessWidget {
-  const _Movement({required this.label, required this.before, required this.after});
+  const _Movement({
+    required this.label,
+    required this.before,
+    required this.after,
+    this.beforeLabel,
+    this.afterLabel,
+  });
 
   final String label;
   final Object? before;
   final Object? after;
+
+  /// What each half *says*, when the server had something to say about it. Null for the values
+  /// that need no translating, which is most of them.
+  final String? beforeLabel;
+  final String? afterLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -561,7 +591,7 @@ class _Movement extends StatelessWidget {
             TextSpan(
               children: [
                 TextSpan(
-                  text: _show(before),
+                  text: _show(before, beforeLabel),
                   style: context.textTheme.bodySmall?.copyWith(
                     color: scheme.error,
                     // Struck through rather than merely faded: on a crowded row, "before" and
@@ -576,7 +606,7 @@ class _Movement extends StatelessWidget {
                   style: context.textTheme.bodySmall?.copyWith(color: scheme.outline),
                 ),
                 TextSpan(
-                  text: _show(after),
+                  text: _show(after, afterLabel),
                   style: context.textTheme.bodySmall?.copyWith(
                     color: scheme.primary,
                     fontWeight: FontWeight.w800,
@@ -619,15 +649,46 @@ class _EventChip extends StatelessWidget {
 }
 
 /// A value as a person would read it.
-String _show(Object? value) => switch (value) {
+///
+/// **The server's translation wins whenever there is one.** It is the only side that knows
+/// `printing` is a status and not a word — the enum that says «قيد الطباعة» lives beside the
+/// column that stores it. What is left here is the part that needs no schema at all: the empty
+/// cases, the two booleans, and a timestamp, which is formatted on the device because only the
+/// device knows what time zone it is in.
+String _show(Object? value, [String? label]) => switch (value) {
+  _ when label != null && label.isNotEmpty => label,
   null => '—',
   true => 'نعم',
   false => 'لا',
+  String() when _asDate(value) != null => _stamp(_asDate(value)!),
   // An empty string is a field that was cleared, and «فارغ» says that where a blank would look
   // like a rendering fault.
   '' => 'فارغ',
   _ => '$value',
 };
+
+/// A timestamp the trail stored, or null for a string that merely looks numeric.
+///
+/// Anchored to `yyyy-mm-dd` rather than handed straight to `DateTime.tryParse`, which is
+/// generous enough to read a bare year out of something that was never a date.
+DateTime? _asDate(String value) =>
+    RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(value) ? DateTime.tryParse(value) : null;
+
+/// `2026-08-02 · 14:30`, in the device's own local time — and the date alone when that is all
+/// the column held.
+///
+/// The same shape the order timeline draws, and written out for the same reason: one that reads
+/// identically in every locale is the honest choice for a workshop log, where the question is
+/// "in what order, and how long apart". Latin digits, like every other number this app draws.
+String _stamp(DateTime at) {
+  final local = at.toLocal();
+  String two(int value) => value.toString().padLeft(2, '0');
+
+  final day = '${local.year}-${two(local.month)}-${two(local.day)}';
+  final midnight = local.hour == 0 && local.minute == 0 && local.second == 0;
+
+  return midnight ? day : '$day · ${two(local.hour)}:${two(local.minute)}';
+}
 
 /// (strong, on-strong) for an event — the dot, and the active chip.
 (Color, Color) _toneOf(BuildContext context, AuditEvent? event) {

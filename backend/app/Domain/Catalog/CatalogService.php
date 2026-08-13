@@ -5,14 +5,21 @@ declare(strict_types=1);
 namespace App\Domain\Catalog;
 
 use App\Domain\Catalog\Actions\CreateProduct;
+use App\Domain\Catalog\Actions\CreateProductCategory;
+use App\Domain\Catalog\Actions\DeleteProductCategory;
 use App\Domain\Catalog\Actions\QuoteProductPrice;
 use App\Domain\Catalog\Actions\UpdateProduct;
+use App\Domain\Catalog\Actions\UpdateProductCategory;
 use App\Domain\Catalog\DTOs\PriceQuote;
+use App\Domain\Catalog\DTOs\ProductCategoryData;
 use App\Domain\Catalog\DTOs\ProductData;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Catalog\Queries\FindProductVariant;
+use App\Domain\Catalog\Queries\ProductCategoryFilters;
+use App\Domain\Catalog\Queries\ProductCategoryListQuery;
 use App\Domain\Catalog\Queries\ProductFilters;
 use App\Domain\Catalog\Queries\ProductListQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -39,7 +46,54 @@ class CatalogService
         private readonly QuoteProductPrice $quoteProductPrice,
         private readonly ProductListQuery $listQuery,
         private readonly FindProductVariant $findProductVariant,
+        private readonly CreateProductCategory $createCategory,
+        private readonly UpdateProductCategory $updateCategory,
+        private readonly DeleteProductCategory $deleteCategory,
+        private readonly ProductCategoryListQuery $categoryListQuery,
     ) {}
+
+    // ── التصنيفات ────────────────────────────────────────────────────────────────
+    // The catalogue's own headings — أكياس, علب وكراتين, ستيكرات. Curated from a screen, and
+    // pointed at by every product. Not to be confused with `ProductType`, which is the
+    // مطبوعة/سادة split living on the `category` column; see PRODUCT-CATEGORIES.md.
+
+    /**
+     * @return LengthAwarePaginator<int, ProductCategory>
+     */
+    public function paginateCategories(
+        ProductCategoryFilters $filters,
+        int $perPage = 15,
+    ): LengthAwarePaginator {
+        return ($this->categoryListQuery)($filters, $perPage);
+    }
+
+    public function createCategory(ProductCategoryData $data): ProductCategory
+    {
+        return ($this->createCategory)($data);
+    }
+
+    public function updateCategory(ProductCategory $category, ProductCategoryData $data): ProductCategory
+    {
+        return ($this->updateCategory)($category, $data);
+    }
+
+    /**
+     * Hides a category from the pickers without touching the products already under it.
+     *
+     * The ordinary way to retire one — {@see DeleteProductCategory} refuses outright once any
+     * product points at it.
+     */
+    public function setCategoryActive(ProductCategory $category, bool $isActive): ProductCategory
+    {
+        $category->update(['is_active' => $isActive]);
+
+        return $category->loadCount('products');
+    }
+
+    public function deleteCategory(ProductCategory $category): void
+    {
+        ($this->deleteCategory)($category);
+    }
 
     /**
      * @return LengthAwarePaginator<int, Product>
@@ -81,7 +135,7 @@ class CatalogService
     {
         $product->update(['is_active' => $isActive]);
 
-        return $product->load(['variants.priceTiers', 'images']);
+        return $product->load(['variants.priceTiers', 'images', 'productCategory']);
     }
 
     public function quote(Product $product, ProductVariant $variant, string $quantity): PriceQuote

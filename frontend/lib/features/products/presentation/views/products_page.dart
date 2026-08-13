@@ -14,6 +14,8 @@ import 'package:printing/core/widgets/paged_list_view.dart';
 import 'package:printing/core/widgets/search_field.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/models/product_category.dart';
+import 'package:printing/features/products/models/product_type.dart';
+import 'package:printing/features/products/presentation/viewmodel/product_categories_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:printing/features/products/presentation/widgets/product_card.dart';
 
@@ -28,7 +30,14 @@ class ProductsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<ProductsCubit>(
       create: (_) => sl<ProductsCubit>()..load(),
-      child: const _ProductsView(),
+      child: BlocProvider<ProductCategoriesCubit>(
+        // The offered headings only: filtering by a category nobody may file under any more
+        // would be a chip that finds a shrinking list and then nothing.
+        create: (_) =>
+            sl<ProductCategoriesCubit>(instanceName: Injector.activeProductCategoriesCubit)
+              ..load(),
+        child: const _ProductsView(),
+      ),
     );
   }
 }
@@ -71,6 +80,21 @@ class _ProductsView extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
             child: SearchField(hint: 'ابحث عن منتج', onChanged: cubit.search),
           ),
+          // Above the type row, because it is the broader question — «أين أبحث؟» before
+          // «مطبوعة أم سادة؟» — and the same order the product form asks them in.
+          //
+          // Absent entirely until there is more than one heading to choose between: a single
+          // chip beside «الكل» is a control that cannot change anything.
+          BlocBuilder<ProductCategoriesCubit, ProductCategoriesState>(
+            builder: (context, state) => _ProductCategoryFilterBar(
+              categories: switch (state) {
+                ProductCategoriesLoaded(:final page) => page.items,
+                _ => const <ProductCategory>[],
+              },
+              selected: cubit.productCategoryId,
+              onSelected: cubit.filterByProductCategory,
+            ),
+          ),
           // Rebuilt with the list, so the selected chip and what is on screen can never disagree.
           BlocBuilder<ProductsCubit, ProductsState>(
             builder: (context, state) => _CategoryFilterBar(
@@ -105,6 +129,72 @@ class _ProductsView extends StatelessWidget {
   }
 }
 
+/// «التصنيف» — أكياس, علب وكراتين, ستيكرات. The catalogue's own headings, as chips.
+///
+/// **Built from the server's list rather than from an enum**, because the headings are rows the
+/// business curates: a chip row spelled out in code would go stale the first time somebody adds
+/// one from «تصنيفات المنتجات».
+///
+/// It takes no room at all while there is nothing to choose between — one heading and «الكل»
+/// filter to the same list, and a control that cannot change anything is worse than none.
+class _ProductCategoryFilterBar extends StatelessWidget {
+  const _ProductCategoryFilterBar({
+    required this.categories,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final List<ProductCategory> categories;
+
+  /// The id being filtered on, or null for «الكل».
+  final int? selected;
+
+  final ValueChanged<int?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (categories.length < 2) return const SizedBox.shrink();
+
+    final scheme = context.colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: SizedBox(
+        height: 42.h,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          // One more than the headings: «الكل» leads, and is what clears the filter.
+          itemCount: categories.length + 1,
+          separatorBuilder: (context, index) => SizedBox(width: 8.w),
+          itemBuilder: (context, index) {
+            final category = index == 0 ? null : categories[index - 1];
+            final isSelected = category?.id == selected;
+
+            return ChoiceChip(
+              label: Text(category?.name ?? 'الكل'),
+              selected: isSelected,
+              // Tapping the chip that is already on is not a way to clear it: «الكل» is, and it
+              // is right there. Toggling off would leave two ways to mean the same thing.
+              onSelected: (_) => onSelected(category?.id),
+              showCheckmark: false,
+              backgroundColor: scheme.surfaceContainerLowest,
+              selectedColor: scheme.primaryContainer,
+              labelStyle: context.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isSelected ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+              ),
+              side: BorderSide(
+                color: isSelected ? Colors.transparent : scheme.outlineVariant,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
 /// مطبوعة or سادة — a filter, not something to type.
 ///
 /// The search box matches names and slugs, so "سادة" finds only the products that happen to say
@@ -117,8 +207,8 @@ class _ProductsView extends StatelessWidget {
 class _CategoryFilterBar extends StatelessWidget {
   const _CategoryFilterBar({required this.selected, required this.onSelected});
 
-  final ProductCategoryFilter selected;
-  final ValueChanged<ProductCategoryFilter> onSelected;
+  final ProductTypeFilter selected;
+  final ValueChanged<ProductTypeFilter> onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -129,10 +219,10 @@ class _CategoryFilterBar extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount: ProductCategoryFilter.values.length,
+        itemCount: ProductTypeFilter.values.length,
         separatorBuilder: (context, index) => SizedBox(width: 8.w),
         itemBuilder: (context, index) {
-          final filter = ProductCategoryFilter.values[index];
+          final filter = ProductTypeFilter.values[index];
           final isSelected = filter == selected;
 
           return ChoiceChip(

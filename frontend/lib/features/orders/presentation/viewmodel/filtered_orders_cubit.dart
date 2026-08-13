@@ -30,11 +30,13 @@ class FilteredOrdersCubit extends PagedCubit<Order> {
   @override
   Future<Either<Failure, Paginated<Order>>> fetchPage({String? search, required int page}) {
     // The filter rides along with every page, including the ones `loadMore` asks for: page two
-    // of «نواقص» must not arrive as page two of everything.
+    // of «نواقص» must not arrive as page two of everything — and page two of one customer's
+    // orders must not arrive as page two of the whole shop's.
     return _getOrders(
       search: search,
       statuses: _filter.statuses,
       paymentStatuses: _filter.paymentStatuses,
+      customerId: _filter.customerId,
       from: _filter.from,
       to: _filter.to,
       page: page,

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/utils/validators.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
@@ -162,7 +163,7 @@ class _RoleFormViewState extends State<_RoleFormView> {
                   // it is worth saying out loud, because it looks like a finished job and is not.
                   state.selected.isEmpty
                       ? 'بلا صلاحيات: من يحمل هذا الدور لن يستطيع فعل شيء.'
-                      : 'من يحمل هذا الدور سيستطيع تنفيذ ${state.selectedCount} إجراء.',
+                      : 'من يحمل هذا الدور سيستطيع تنفيذ ${state.selectedCount.grouped} إجراء.',
                   textAlign: TextAlign.center,
                   style: context.textTheme.labelSmall?.copyWith(
                     color: context.colorScheme.onSurfaceVariant,
@@ -193,7 +194,7 @@ class _PermissionsHeading extends StatelessWidget {
         ),
         const Spacer(),
         Text(
-          '${state.selectedCount} من ${state.catalogueCount} محددة',
+          '${state.selectedCount.grouped} من ${state.catalogueCount.grouped} محددة',
           style: context.textTheme.labelMedium?.copyWith(
             fontWeight: FontWeight.w700,
             color: context.colorScheme.primary,

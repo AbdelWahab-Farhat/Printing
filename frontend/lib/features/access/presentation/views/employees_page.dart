@@ -10,7 +10,6 @@ import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/widgets/paged_list_view.dart';
 import 'package:printing/core/widgets/search_field.dart';
 import 'package:printing/features/access/presentation/viewmodel/users_cubit.dart';
-import 'package:printing/features/access/presentation/widgets/assign_roles_sheet.dart';
 import 'package:printing/features/access/presentation/widgets/employee_row_card.dart';
 import 'package:printing/features/auth/models/auth_user.dart';
 
@@ -19,14 +18,16 @@ import 'package:printing/features/auth/models/auth_user.dart';
 /// Three different answers to "who may?", and deliberately not the same one:
 ///
 ///   * **reading the list** needs `users.view`, or the route sends you away,
-///   * **changing somebody's roles** needs `users.manage`, and without it the rows report
-///     instead of opening,
+///   * **everything done *to* an account** — its details, its roles, its wage, its password —
+///     lives one tap deeper on `EmployeeDetailPage`, each guarded separately there,
 ///   * **registering a colleague** is the **administrator's alone**, so the button is drawn for
 ///     nobody else — see `Session.isAdmin` for why that one is a role and not a permission.
 ///
-/// Editing an existing account — its name, its number, turning it off — is still absent, and
-/// that is not an oversight: the API has no endpoint for it, and a button with nothing behind it
-/// is a promise the screen cannot keep.
+/// **A row now opens the employee rather than the roles sheet.** It used to open that sheet
+/// directly, because roles were the only thing the API let this app change about a person; with
+/// the account's details, password, wage and activation all reachable, one of five things could
+/// no longer be the thing a tap does. The sheet is still one tap away, from the screen the row
+/// opens.
 class EmployeesPage extends StatelessWidget {
   const EmployeesPage({super.key});
 
@@ -46,7 +47,6 @@ class _EmployeesView extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<UsersCubit>();
     final session = sl<Session>();
-    final canManage = session.can(AppPermission.manageUsers);
 
     return Scaffold(
       // A ternary rather than a gate widget, and deliberately: a `SizedBox.shrink()` in the FAB
@@ -108,19 +108,17 @@ class _EmployeesView extends StatelessWidget {
                 itemBuilder: (context, user, index) => EmployeeRowCard(
                   key: ValueKey(user.id),
                   user: user,
-                  onTap: canManage
-                      ? () async {
-                          final updated = await showAssignRolesSheet(
-                            context: context,
-                            user: user,
-                          );
-
-                          // Only when something was actually saved: a dismissed sheet has
-                          // changed nothing, and refreshing anyway would scroll a long list
-                          // back to the top for no reason.
-                          if (updated != null) await cubit.refresh();
-                        }
-                      : null,
+                  // Open to everybody who may read the list: the screen behind decides what
+                  // each reader may *do* there, and a row that does nothing for somebody with
+                  // `users.view` is a row that looks broken.
+                  //
+                  // Reloaded on the way back, like the customer list: that screen can rename,
+                  // change roles and stop the account, and a list still showing the old row is
+                  // a list nobody trusts.
+                  onTap: () async {
+                    await context.push(Routes.employee(user.id));
+                    await cubit.refresh();
+                  },
                 ),
               ),
             ),

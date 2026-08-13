@@ -20,7 +20,7 @@ final class ProductListQuery
         return Product::query()
             // Two levels deep: the resource renders every variant's price list, which would
             // otherwise be a query per variant per row.
-            ->with(['variants.priceTiers', 'images'])
+            ->with(['variants.priceTiers', 'images', 'productCategory'])
             ->when($filters->search !== null, function ($query) use ($filters) {
                 $term = '%'.$filters->search.'%';
 
@@ -31,6 +31,10 @@ final class ProductListQuery
                 });
             })
             ->when($filters->category !== null, fn ($q) => $q->where('category', $filters->category))
+            ->when(
+                $filters->productCategoryId !== null,
+                fn ($q) => $q->where('product_category_id', $filters->productCategoryId),
+            )
             ->when($filters->pricingUnit !== null, fn ($q) => $q->where('pricing_unit', $filters->pricingUnit))
             ->when($filters->pricingMode !== null, fn ($q) => $q->where('pricing_mode', $filters->pricingMode))
             ->when($filters->isActive !== null, fn ($q) => $q->where('is_active', $filters->isActive))

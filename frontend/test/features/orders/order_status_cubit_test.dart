@@ -343,6 +343,95 @@ void main() {
     expect(cubit.state.values['design_ids'], isNotEmpty);
   });
 
+  /// **A refusal must be answerable by tapping the button again.**
+  ///
+  /// The server refuses a move for reasons that pass on their own — a warehouse that was short
+  /// when the clerk tapped and stocked a minute later. If the second tap does nothing, the
+  /// screen looks broken: the message came once and never again, with no way to find out
+  /// whether anything changed.
+  test('the same move can be sent again after it was refused', () async {
+    // Arrange
+    when(() => repository.order(7))
+        .thenAnswer((_) async => Right(orderWith(transitions: [toPrinting])));
+    await cubit.load();
+
+    when(
+      () => repository.changeStatus(
+        7,
+        status: any(named: 'status'),
+        reason: any(named: 'reason'),
+        fields: any(named: 'fields'),
+      ),
+    ).thenAnswer(
+      (_) async => const Left(Failure.server(message: 'الكمية المتوفرة لا تكفي')),
+    );
+
+    final seen = <OrderStatusState>[];
+    final subscription = cubit.stream.listen(seen.add);
+
+    // Act — the same tap, twice, with nothing touched in between.
+    await cubit.submit();
+    await cubit.submit();
+    await pumpEventQueue();
+    await subscription.cancel();
+
+    // Assert — it really goes back to the server...
+    verify(
+      () => repository.changeStatus(
+        7,
+        status: any(named: 'status'),
+        reason: any(named: 'reason'),
+        fields: any(named: 'fields'),
+      ),
+    ).called(2);
+
+    // ...and the refusal is a *new* state each time, or the screen would never say it twice.
+    expect(seen.whereType<OrderStatusFailure>(), hasLength(2));
+  });
+
+  test('a correction made after a refusal is the one that gets sent', () async {
+    // Arrange — the refusal a person actually acts on: the server objects to what was typed, so
+    // they rewrite it and send again. «ملغاة» is the move used here because it is the one in
+    // these fixtures that carries a field at all.
+    when(() => repository.order(7))
+        .thenAnswer((_) async => Right(orderWith(transitions: [toCancelled])));
+    await cubit.load();
+    cubit.setValue('reason', 'أول ما كُتب');
+
+    when(
+      () => repository.changeStatus(
+        7,
+        status: any(named: 'status'),
+        reason: any(named: 'reason'),
+        fields: any(named: 'fields'),
+      ),
+    ).thenAnswer(
+      (_) async => const Left(Failure.server(message: 'الكمية المتوفرة لا تكفي')),
+    );
+
+    await cubit.submit();
+
+    // Act — corrected *while standing on the refusal*, then sent again.
+    cubit.setValue('reason', 'ما كُتب بعد الرفض');
+    await cubit.submit();
+
+    // Assert — the second attempt carries the correction. Recording it only from a clean form
+    // dropped the edit and resent the answer that had just been refused, so the move failed
+    // identically and the screen looked broken.
+    final sent = verify(
+      () => repository.changeStatus(
+        7,
+        status: any(named: 'status'),
+        reason: any(named: 'reason'),
+        fields: captureAny(named: 'fields'),
+      ),
+    ).captured;
+
+    expect(sent, hasLength(2));
+    expect((sent.first as Map)['reason'], 'أول ما كُتب');
+    expect((sent.last as Map)['reason'], 'ما كُتب بعد الرفض');
+  });
+
   test('nothing is sent before a destination is picked', () async {
     // Arrange
     when(() => repository.order(7)).thenAnswer(

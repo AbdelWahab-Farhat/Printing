@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/presentation/widgets/product_card.dart';
-import 'package:printing/features/products/presentation/widgets/product_category_badge.dart';
+import 'package:printing/features/products/presentation/widgets/product_type_badge.dart';
 
 /// What one product row tells somebody quoting a customer over the phone.
 ///
@@ -135,7 +135,7 @@ void main() {
 
       // Assert — four size rows share one header, which is what makes the card readable.
       expect(find.text('300+'), findsOneWidget);
-      expect(find.text('1000+'), findsOneWidget);
+      expect(find.text('1,000+'), findsOneWidget);
     });
 
     testWidgets('the entry column is headed by the minimum order, not the tier floor', (
@@ -209,7 +209,7 @@ void main() {
       await tester.pump();
 
       // Assert — trusting `variants.first` would have hidden this column entirely.
-      expect(find.text('1000+'), findsOneWidget);
+      expect(find.text('1,000+'), findsOneWidget);
       expect(find.text('0.95'), findsOneWidget);
     });
   });
@@ -269,7 +269,7 @@ void main() {
       // on the card is the category badge — check it is the badge and not the size row.
       expect(
         find.descendant(
-          of: find.byType(ProductCategoryBadge),
+          of: find.byType(ProductTypeBadge),
           matching: find.text('سادة'),
         ),
         findsOneWidget,
@@ -301,7 +301,7 @@ void main() {
 
       // Act
       await tester.pump();
-      final badge = tester.getRect(find.byType(ProductCategoryBadge));
+      final badge = tester.getRect(find.byType(ProductTypeBadge));
       final code = tester.getRect(find.text('P1'));
       final prices = tester.getRect(find.text('0.85'));
 
@@ -331,7 +331,7 @@ void main() {
         return tester
             .widget<Icon>(
               find.descendant(
-                of: find.byType(ProductCategoryBadge),
+                of: find.byType(ProductTypeBadge),
                 matching: find.byType(Icon),
               ),
             )

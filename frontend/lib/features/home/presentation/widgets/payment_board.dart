@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/theme/app_tones.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/appear.dart';
 import 'package:printing/features/home/models/home_summary.dart';
 import 'package:printing/features/orders/models/order_payment.dart';
@@ -117,7 +118,7 @@ class _PaymentCard extends StatelessWidget {
               Icon(AppIcons.payment, size: 20.sp, color: tone.withValues(alpha: 0.8)),
               SizedBox(height: 8.h),
               Text(
-                '${payment.count}',
+                payment.count.grouped,
                 style: context.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: tone,

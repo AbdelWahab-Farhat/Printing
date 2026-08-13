@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +9,7 @@ import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/router/app_router.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/app_speed_dial.dart';
 import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/products/models/product.dart';
@@ -317,7 +317,7 @@ class _Pricing extends StatelessWidget {
               ),
               SizedBox(width: 8.w),
               Text(
-                startingPrice,
+                startingPrice.grouped,
                 textDirection: TextDirection.ltr,
                 style: context.textTheme.headlineSmall?.copyWith(
                   color: scheme.primary,
@@ -474,7 +474,7 @@ class _TierRow extends StatelessWidget {
               ),
             ),
             Text(
-              tier.unitPrice,
+              tier.unitPrice.grouped,
               textDirection: TextDirection.ltr,
               style: context.textTheme.bodyMedium?.copyWith(
                 color: scheme.primary,

@@ -8,6 +8,7 @@ import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/session/session.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
 import 'package:printing/features/cities/models/city.dart';
@@ -505,7 +506,7 @@ class _LineRowState extends State<_LineRow> {
           Text(
             // The rate is shown and never edited: it comes from the catalogue, and a field
             // here would be a way to undercut an agreed price.
-            'السعر: ${widget.line.unitPrice} · ${widget.line.pricingUnitLabel}',
+            'السعر: ${widget.line.unitPrice.grouped} · ${widget.line.pricingUnitLabel}',
             style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
           SizedBox(height: 10.h),
@@ -599,7 +600,8 @@ class _Estimate extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                total,
+                total.grouped,
+                textDirection: TextDirection.ltr,
                 style: context.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: scheme.primary,

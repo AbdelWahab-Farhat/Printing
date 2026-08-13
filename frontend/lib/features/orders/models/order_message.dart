@@ -1,3 +1,4 @@
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/orders/models/order.dart';
 
 /// The order written out as a message, for a reader who does not have the app.
@@ -102,13 +103,14 @@ class OrderMessage {
       lines
         ..add('${index + 1}. ${item.productName} — ${item.variantLabel}')
         ..add(
-          '   ${item.quantity} ${item.pricingUnitLabel} × ${item.unitPrice} = ${_amount(item.lineTotal)}',
+          '   ${item.quantity.grouped} ${item.pricingUnitLabel} × '
+          '${item.unitPrice.grouped} = ${_amount(item.lineTotal)}',
         );
 
       // Said on the line it is missing from, because that is the only place the number means
       // anything: «ناقص ٤٠» of *which* size.
       if (item.shortageQuantity case final missing?) {
-        lines.add('   ناقص: $missing ${item.pricingUnitLabel}');
+        lines.add('   ناقص: ${missing.grouped} ${item.pricingUnitLabel}');
       }
     }
 
@@ -158,7 +160,9 @@ class OrderMessage {
   static String _section(String heading, List<String> lines) =>
       lines.isEmpty ? '' : [heading, ...lines].join('\n');
 
-  static String _amount(String value) => '$value $currency';
+  /// Grouped, like every figure the app draws: a customer reading «2,975 د» on their phone is
+  /// reading the same number the clerk read on theirs.
+  static String _amount(String value) => '${value.grouped} $currency';
 
   /// The day the order was taken, `Y-m-d`.
   ///

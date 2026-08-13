@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/widgets/app_button.dart';
+import 'package:printing/core/widgets/filter_option_chip.dart';
 import 'package:printing/features/orders/models/order_counts.dart';
 import 'package:printing/features/orders/models/order_payment.dart';
 import 'package:printing/features/orders/models/order_status.dart';
@@ -202,7 +203,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _SectionTitle(title: 'حالة الطلبية'),
+                    const FilterSectionTitle(title: 'حالة الطلبية'),
                     SizedBox(height: 10.h),
                     Wrap(
                       spacing: 8.w,
@@ -211,7 +212,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                         // «الكل» first and status-less, then the statuses in the order the
                         // machine walks them — so the sheet reads as the route an order takes
                         // rather than as an alphabetised list of words.
-                        _FilterOption(
+                        FilterOptionChip(
                           // The enum's own Arabic, not an order's `status_label`: this sheet has
                           // no order in hand to read one from, and a chip reading zero — which is
                           // exactly the one worth showing — has none behind it either.
@@ -224,7 +225,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                           onTap: () => setState(() => _status = null),
                         ),
                         for (final status in OrderStatus.filterable)
-                          _FilterOption(
+                          FilterOptionChip(
                             label: status.label,
                             count: widget.counts.forStatus(status),
                             // The same colour the status chip on a card will have, so the filter
@@ -236,7 +237,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                       ],
                     ),
                     SizedBox(height: 18.h),
-                    const _SectionTitle(title: 'حالة الدفع'),
+                    const FilterSectionTitle(title: 'حالة الدفع'),
                     SizedBox(height: 10.h),
                     Wrap(
                       spacing: 8.w,
@@ -245,7 +246,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                         // Three, not four: «مدفوعة بالزيادة» is not a queue anybody works — see
                         // PaymentStatus.filterable.
                         for (final status in PaymentStatus.filterable)
-                          _FilterOption(
+                          FilterOptionChip(
                             label: status.label,
                             count: widget.counts.forPaymentStatus(status),
                             // A tick rather than a dot, and it is the whole way this section says
@@ -274,123 +275,6 @@ class _FilterSheetState extends State<_FilterSheet> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: context.textTheme.bodySmall?.copyWith(
-        fontWeight: FontWeight.w800,
-        color: context.colorScheme.onSurfaceVariant,
-      ),
-    );
-  }
-}
-
-/// One option on either axis: a word, how many orders stand in it, and whether it is picked.
-///
-/// **One widget for both sections, and the difference is [isTicked].** A status replaces the one
-/// before it; a payment state adds to it — with the two sections now laid out identically, the
-/// leading glyph is what says which. The dot doubles as the list's own colour legend; the box is
-/// the shape that says «هذه تُجمع».
-///
-/// **The box is drawn empty rather than left out, and that is not decoration.** Material's own
-/// filter chip slides its tick in on selection, which widens the chip — and in a `Wrap` a chip
-/// that widens pushes its neighbours onto the next line. Ticking «مدفوعة بالكامل» moved «غير
-/// مدفوعة» out from under the thumb that was about to tap it. Holding the width in both states
-/// costs the payment section one line and buys a row that never moves while it is being used.
-///
-/// The count is muted when it is zero, so an empty queue is recognised without reading its
-/// number — the reason a chip reading zero is on the sheet at all is to be asked about, and the
-/// reason it is dimmed is that it is usually not the one being looked for.
-class _FilterOption extends StatelessWidget {
-  const _FilterOption({
-    required this.label,
-    required this.count,
-    required this.isSelected,
-    required this.onTap,
-    this.dot,
-    this.isTicked = false,
-  });
-
-  final String label;
-  final int count;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  /// The status's own colour, drawn as a dot ahead of the word. Absent on the payment chips,
-  /// which carry a tick instead.
-  final Color? dot;
-
-  /// Whether picking this one adds to a set rather than replacing a choice.
-  final bool isTicked;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final foreground = isSelected ? scheme.onPrimaryContainer : scheme.onSurface;
-
-    return Material(
-      color: isSelected ? scheme.primaryContainer : Colors.transparent,
-      borderRadius: BorderRadius.circular(999.r),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999.r),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999.r),
-            border: Border.all(
-              color: isSelected ? scheme.primary.withValues(alpha: 0.55) : scheme.outlineVariant,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isTicked) ...[
-                Icon(
-                  isSelected
-                      ? Icons.check_box_rounded
-                      : Icons.check_box_outline_blank_rounded,
-                  size: 16.sp,
-                  color: isSelected ? scheme.primary : scheme.outline,
-                ),
-                SizedBox(width: 6.w),
-              ] else if (dot != null) ...[
-                Container(
-                  width: 8.w,
-                  height: 8.w,
-                  decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
-                ),
-                SizedBox(width: 7.w),
-              ],
-              Text(
-                label,
-                style: context.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: foreground,
-                ),
-              ),
-              SizedBox(width: 7.w),
-              Text(
-                '$count',
-                style: context.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: foreground.withValues(alpha: count == 0 ? 0.4 : 0.72),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

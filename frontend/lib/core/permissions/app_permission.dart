@@ -32,11 +32,28 @@ enum AppPermission {
   // Access management
   viewUsers('users.view', 'عرض المستخدمين'),
   manageUsers('users.manage', 'إدارة المستخدمين وأدوارهم'),
+
+  /// Seeing what a colleague is paid, and setting it. Its own case rather than part of
+  /// [manageUsers], because they are different jobs: whoever assigns roles is not necessarily
+  /// whoever agrees wages. The salary section of the employee screen is drawn off this — and
+  /// off the server, which simply omits the key for anybody without it.
+  manageUserSalaries('users.salary', 'عرض رواتب الموظفين وتعديلها'),
   manageRoles('roles.manage', 'إدارة الأدوار والصلاحيات'),
 
   // Customers
   viewCustomers('customers.view', 'عرض العملاء'),
   manageCustomers('customers.manage', 'إضافة وتعديل العملاء'),
+
+  // Rewriting or removing a note somebody else wrote about a customer. Its own permission
+  // rather than part of `customers.manage`: correcting a phone number is bookkeeping, while
+  // editing a colleague's sentence under their name is a claim about what they said. Writing a
+  // note and changing your own needs no grant at all — `customers.view` covers it.
+  //
+  // Nothing in the app gates on this. The server computes «صاحبه أو مشرف» per reader and sends
+  // the answer as `can_edit` on each note, so the buttons are drawn from the row rather than
+  // from a rule this side re-derives. The case exists because `permission_contract_test`
+  // requires the two catalogues to match, and because a role screen has to be able to tick it.
+  moderateCustomerComments('customers.comments.moderate', 'تعديل وحذف ملاحظات الآخرين على العملاء'),
 
   // مجالات العمل — what a customer's shop sells. Reading is granted to every role, because
   // the customer form cannot be filled in without the list; curating the list is the rare job.

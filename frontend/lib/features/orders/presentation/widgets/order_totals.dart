@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/orders/models/order.dart';
 
 /// How the order's total was reached.
@@ -23,21 +24,21 @@ class OrderTotals extends StatelessWidget {
 
     return Column(
       children: [
-        _Line(label: 'المنتجات', value: order.itemsTotal),
-        if (order.hasDesignFee) _Line(label: 'التصميم', value: order.designFee),
+        _Line(label: 'المنتجات', value: order.itemsTotal.grouped),
+        if (order.hasDesignFee) _Line(label: 'التصميم', value: order.designFee.grouped),
         _Line(
           label: 'التوصيل',
           // '0.00' is a fact worth stating here — it is what an office pickup costs, and the
           // reader is checking a total. Only the *fee* lines hide when empty.
-          value: order.deliveryPrice,
+          value: order.deliveryPrice.grouped,
         ),
         if (order.hasDiscount)
-          _Line(label: 'الخصم', value: '- ${order.discount}', tone: scheme.error),
+          _Line(label: 'الخصم', value: '- ${order.discount.grouped}', tone: scheme.error),
         Padding(
           padding: EdgeInsets.symmetric(vertical: 8.h),
           child: Divider(height: 1, color: scheme.outlineVariant),
         ),
-        _Line(label: 'الإجمالي', value: order.grandTotal, isTotal: true),
+        _Line(label: 'الإجمالي', value: order.grandTotal.grouped, isTotal: true),
       ],
     );
   }
@@ -75,7 +76,11 @@ class _Line extends StatelessWidget {
           ),
           const Spacer(),
           Text(
+            // Grouped by the caller: «الخصم» carries a leading sign, and the separator is added
+            // to the number rather than to the sentence around it.
             value,
+            // A Latin run inside an RTL row, so the separator stays where it was written.
+            textDirection: TextDirection.ltr,
             style: style?.copyWith(color: tone ?? (isTotal ? scheme.primary : null)),
           ),
         ],

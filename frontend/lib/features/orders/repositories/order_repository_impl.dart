@@ -10,6 +10,7 @@ import 'package:printing/features/orders/models/new_order.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/order_counts.dart';
 import 'package:printing/features/orders/models/order_status.dart';
+import 'package:printing/features/orders/models/production_cost_entry.dart';
 import 'package:printing/features/orders/repositories/order_repository.dart';
 import 'package:printing/features/orders/usecases/update_order_invoice.dart';
 
@@ -187,6 +188,28 @@ class OrderRepositoryImpl implements OrderRepository {
         },
       ),
       parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, ProductionCostEntry>> recordScrapLoss(
+    int orderId,
+    int itemId, {
+    required String quantity,
+    required String notes,
+  }) {
+    return safeRequest<ProductionCostEntry>(
+      () => _dio.post(
+        OrderEndpoints.scrapItem(orderId, itemId),
+        // The quantity travels as the decimal *string* it has been all the way from the box it
+        // was typed into. The server's `numeric` rule takes one, and rounding it through a
+        // double on the way out would be the one place in this app that did.
+        data: <String, dynamic>{'quantity': quantity, 'notes': notes},
+      ),
+      // Parsed rather than discarded for one field: `amount` is what the spoiled bags cost,
+      // read off the batches they came out of, and it is the only number in this exchange the
+      // person who filled the form in does not already know.
+      parse: (data) => ProductionCostEntry.fromJson(data as Map<String, dynamic>),
     );
   }
 

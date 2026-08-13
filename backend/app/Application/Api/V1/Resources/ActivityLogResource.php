@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources;
 
 use App\Domain\Audit\AuditAttributeLabels;
+use App\Domain\Audit\AuditReferenceNames;
+use App\Domain\Audit\AuditValueLabels;
 use App\Domain\Audit\Enums\AuditEvent;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Audit\Models\ActivityLog;
@@ -20,12 +22,49 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class ActivityLogResource extends JsonResource
 {
     /**
+     * The names behind this page's foreign keys, looked up once for the whole page.
+     *
+     * Null until {@see ActivityLogCollection} hands them over — an entry rendered on its own
+     * resolves nothing and prints raw ids, which is the same fallback every other missing label
+     * takes here.
+     */
+    private ?AuditReferenceNames $referenceNames = null;
+
+    /**
+     * A page of these, with its foreign keys resolved in one query per kind.
+     *
+     * Overridden so both call sites — the global feed and every `/{resource}/{id}/logs` — get
+     * the batching without knowing it exists.
+     *
+     * @param  mixed  $resource
+     */
+    public static function collection($resource): ActivityLogCollection
+    {
+        return new ActivityLogCollection($resource);
+    }
+
+    public function withReferenceNames(AuditReferenceNames $names): self
+    {
+        $this->referenceNames = $names;
+
+        return $this;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         $event = AuditEvent::tryFrom((string) $this->event);
         $subject = AuditSubject::tryFrom((string) $this->subject_type);
+
+        $valueLabels = AuditValueLabels::forChanges(
+            $subject,
+            $this->attribute_changes?->get('old'),
+            $this->attribute_changes?->get('attributes'),
+            $this->referenceNames,
+        );
+        $propertyLabels = AuditValueLabels::forProperties($this->properties);
 
         return [
             'id' => $this->id,
@@ -69,11 +108,31 @@ class ActivityLogResource extends JsonResource
                 $this->changedAttributeNames(),
             ),
 
+            // And what each of those values *says* — «قيد الطباعة», not `printing`.
+            //
+            // Mirrors `changes` key for key, so the client reads
+            // `value_labels[half][column] ?? changes[half][column]` and falls back to the raw
+            // value exactly as it falls back to the raw column name above. Only what needed
+            // translating is here: a name is already Arabic, a total is a number, and «نعم/لا»
+            // the app says for itself.
+            'value_labels' => [
+                'old' => (object) $valueLabels['old'],
+                'attributes' => (object) $valueLabels['attributes'],
+            ],
+
             // Anything recorded by hand rather than by a model event — today, the permissions a
             // role gained or lost. Omitted entirely when there is none.
             'properties' => $this->when(
                 $this->properties !== null && $this->properties->isNotEmpty(),
                 fn () => $this->properties,
+            ),
+
+            // The Arabic for what is inside them — «عرض المنتجات», not `products.view`. Keyed by
+            // the value itself, which is unambiguous for a permission in a way `12` never is for
+            // a foreign key.
+            'property_labels' => $this->when(
+                $propertyLabels !== [],
+                fn () => $propertyLabels,
             ),
 
             'created_at' => $this->created_at?->toIso8601String(),

@@ -23,7 +23,7 @@ use Spatie\Permission\Traits\HasRoles;
 // Models live under app/Domain/, so Laravel's App\Models convention can no longer
 // guess the factory. Every domain model names its factory explicitly.
 #[UseFactory(UserFactory::class)]
-#[Fillable(['name', 'email', 'phone', 'password'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'salary', 'is_active'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements HasAuditTrail
 {
@@ -51,6 +51,18 @@ class User extends Authenticatable implements HasAuditTrail
      * bug when the two are combined.
      */
     protected string $guard_name = 'web';
+
+    /**
+     * An account starts usable.
+     *
+     * Stated here as well as on the column, because the two are read at different moments: the
+     * database default fills the row, and this fills the *model* — which, having just been
+     * inserted, has never read the row back. Without it, the response to creating an account
+     * carries `is_active: null` and the app draws «موقوف» on somebody nobody stopped.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = ['is_active' => true];
 
     /**
      * Every account is stamped with an employee code as it is created.
@@ -91,6 +103,10 @@ class User extends Authenticatable implements HasAuditTrail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            // A string, not a float: a wage is money, and this schema counts money in decimals
+            // everywhere for the reason `OrderPayment` spells out.
+            'salary' => 'decimal:2',
+            'is_active' => 'boolean',
         ];
     }
 }

@@ -56,6 +56,7 @@ void main() {
   Future<void> submit(SaveProductCubit cubit) => cubit.submit(
     name: 'أكياس الشحن',
     category: 'printed',
+    productCategoryId: 3,
     pricingUnit: 'piece',
     pricingMode: 'tiered',
     minOrderQuantity: '100',

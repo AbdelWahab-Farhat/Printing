@@ -6,6 +6,7 @@ import 'package:printing/core/files/attachment_picker.dart';
 import 'package:printing/core/files/picked_file.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_dropdown.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
@@ -168,7 +169,7 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
                 SizedBox(height: 4.h),
                 Text(
                   _isIncoming
-                      ? 'المتبقي على الطلبية ${widget.remainingAmount}'
+                      ? 'المتبقي على الطلبية ${widget.remainingAmount.grouped}'
                       : 'الردّ حركة نقدية حقيقية — لتصحيح دفعة مسجّلة بالخطأ استعمل «إلغاء الدفعة»',
                   style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
@@ -187,7 +188,7 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
                   helperText: _isIncoming
                       ? 'مبدئياً كامل المتبقي — عدّله إن دفع أقل'
-                      : 'لا يتجاوز المدفوع فعلاً (${widget.paidAmount})',
+                      : 'لا يتجاوز المدفوع فعلاً (${widget.paidAmount.grouped})',
                   validator: _validateAmount,
                 ),
                 SizedBox(height: 16.h),

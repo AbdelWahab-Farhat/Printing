@@ -66,6 +66,74 @@ class AccessRepositoryImpl implements AccessRepository {
   }
 
   @override
+  Future<Either<Failure, AuthUser>> user(int userId) {
+    return safeRequest<AuthUser>(
+      () => _dio.get(AccessEndpoints.user(userId)),
+      parse: (data) => AuthUser.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, AuthUser>> updateUser({
+    required int userId,
+    required String name,
+    required String email,
+    required String phone,
+  }) {
+    return safeRequest<AuthUser>(
+      () => _dio.put(
+        AccessEndpoints.user(userId),
+        // Three keys and no fourth. A `password` here would be ignored by the server, and
+        // sending one anyway would put a live credential in a log for nothing.
+        data: <String, dynamic>{'name': name, 'email': email, 'phone': phone},
+      ),
+      parse: (data) => AuthUser.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, AuthUser>> setUserPassword(int userId, String password) {
+    return safeRequest<AuthUser>(
+      () => _dio.patch(
+        AccessEndpoints.userPassword(userId),
+        data: <String, dynamic>{
+          'password': password,
+          // Laravel's `confirmed` rule looks for exactly this key. The sheet asks twice and
+          // checks them itself, so by here they match — the server checks again because it is
+          // the one that decides.
+          'password_confirmation': password,
+        },
+      ),
+      parse: (data) => AuthUser.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, AuthUser>> setUserSalary(int userId, String? salary) {
+    return safeRequest<AuthUser>(
+      () => _dio.patch(
+        AccessEndpoints.userSalary(userId),
+        // Sent even when null, unlike every optional query parameter in this file: the endpoint
+        // requires the key to be present, because an explicit null is how «لم يُحدَّد» is
+        // recorded and an absent one would be indistinguishable from a half-built request.
+        data: <String, dynamic>{'salary': salary},
+      ),
+      parse: (data) => AuthUser.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, AuthUser>> setUserActivation(int userId, {required bool isActive}) {
+    return safeRequest<AuthUser>(
+      () => _dio.patch(
+        AccessEndpoints.userActivation(userId),
+        data: <String, dynamic>{'is_active': isActive},
+      ),
+      parse: (data) => AuthUser.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, AuthUser>> syncUserRoles(int userId, List<String> roleNames) {
     return safeRequest<AuthUser>(
       () => _dio.patch(

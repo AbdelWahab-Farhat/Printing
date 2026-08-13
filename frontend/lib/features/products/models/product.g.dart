@@ -17,6 +17,12 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
       const <String>[],
   category: json['category'] as String,
   categoryLabel: json['category_label'] as String,
+  productCategory: json['product_category'] == null
+      ? null
+      : ProductCategory.fromJson(
+          json['product_category'] as Map<String, dynamic>,
+        ),
+  productCategoryId: (json['product_category_id'] as num?)?.toInt(),
   pricingUnit: json['pricing_unit'] as String,
   pricingUnitLabel: json['pricing_unit_label'] as String,
   pricingMode: json['pricing_mode'] as String,
@@ -52,6 +58,8 @@ Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
   'features': instance.features,
   'category': instance.category,
   'category_label': instance.categoryLabel,
+  'product_category': instance.productCategory?.toJson(),
+  'product_category_id': instance.productCategoryId,
   'pricing_unit': instance.pricingUnit,
   'pricing_unit_label': instance.pricingUnitLabel,
   'pricing_mode': instance.pricingMode,

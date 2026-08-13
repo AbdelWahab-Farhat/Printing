@@ -38,6 +38,25 @@ abstract class AuthUser with _$AuthUser {
     /// [AppPermission.wire] there and nowhere else.
     List<String>? permissions,
 
+    /// Whether this account can still sign in.
+    ///
+    /// A stopped employee stays in the list rather than disappearing, because the screen that
+    /// puts them back is the one that lists them. Defaulted to `true` for the responses that
+    /// predate the column — an account nobody stopped is an account in use.
+    @JsonKey(name: 'is_active') @Default(true) bool isActive,
+
+    /// What this employee is paid a month, as a decimal string — `'2500.00'`.
+    ///
+    /// **A string, never a double**: money round-tripped through a float is how `2500.10`
+    /// becomes `2500.099999`. The same rule as every other amount in this app.
+    ///
+    /// **Null is two different facts, and the screen tells them apart by permission.** The
+    /// server omits the key entirely from a reader without `users.salary` — so `null` there
+    /// means «you may not know», and the section is not drawn at all. For a reader who does
+    /// hold it, `null` means «لم يُحدَّد»: a real state for an account created before a wage
+    /// was agreed, and different from a wage of zero.
+    String? salary,
+
     /// Comes from the server rather than being derived from [roles] here.
     ///
     /// An administrator's access is granted by a rule on the backend, not by permission rows,

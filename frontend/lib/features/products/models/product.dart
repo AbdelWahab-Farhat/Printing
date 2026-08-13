@@ -1,4 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:printing/core/utils/digits.dart';
+import 'package:printing/features/products/models/product_category.dart';
 
 part 'product.freezed.dart';
 part 'product.g.dart';
@@ -23,11 +25,22 @@ abstract class Product with _$Product {
     String? description,
     @Default(<String>[]) List<String> features,
 
-    /// The machine value, for logic that must switch on a category.
+    /// «النوع» — مطبوعة/سادة, as a machine value for logic that must switch on it. The wire
+    /// key kept the name it was born with; see `ProductType` and PRODUCT-CATEGORIES.md.
     required String category,
 
     /// The Arabic label for it, sent by the server so the app keeps no translation table.
     @JsonKey(name: 'category_label') required String categoryLabel,
+
+    /// «التصنيف» — the catalogue heading this product sits under. Null only for a product
+    /// recorded before categories existed and not edited since; the form refuses to save one.
+    ///
+    /// The API sends `{id, name}` here rather than the whole row — every other field on
+    /// [ProductCategory] has a default, so the same model parses both shapes and the app keeps
+    /// one type for one idea.
+    @JsonKey(name: 'product_category') ProductCategory? productCategory,
+
+    @JsonKey(name: 'product_category_id') int? productCategoryId,
 
     @JsonKey(name: 'pricing_unit') required String pricingUnit,
     @JsonKey(name: 'pricing_unit_label') required String pricingUnitLabel,
@@ -81,7 +94,7 @@ abstract class Product with _$Product {
   }
 
   /// `'100.000'` reads as a quantity to a database and as noise to a person: `'100'`.
-  String get minOrderQuantityLabel => _trimDecimals(minOrderQuantity);
+  String get minOrderQuantityLabel => groupedDecimal(minOrderQuantity);
 
   bool get hasDescription => description != null && description!.trim().isNotEmpty;
 
@@ -157,7 +170,7 @@ abstract class ProductPriceTier with _$ProductPriceTier {
   factory ProductPriceTier.fromJson(Map<String, dynamic> json) =>
       _$ProductPriceTierFromJson(json);
 
-  String get minQuantityLabel => _trimDecimals(minQuantity);
+  String get minQuantityLabel => groupedDecimal(minQuantity);
 }
 
 /// A photo of the product. The URL is generated per request by the server, so it is used and
@@ -202,15 +215,3 @@ abstract class ProductImage with _$ProductImage {
   }
 }
 
-/// `'100.000'` → `'100'`, `'0.850'` → `'0.85'`.
-///
-/// String surgery, not `double.parse().toString()`: the decimals the server chose to send are
-/// the decimals it means, and round-tripping them through a float is how `0.850` becomes
-/// something else entirely.
-String _trimDecimals(String value) {
-  if (!value.contains('.')) return value;
-
-  final trimmed = value.replaceFirst(RegExp(r'0+$'), '');
-
-  return trimmed.endsWith('.') ? trimmed.substring(0, trimmed.length - 1) : trimmed;
-}

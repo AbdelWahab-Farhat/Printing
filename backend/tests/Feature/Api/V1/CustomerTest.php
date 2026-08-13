@@ -9,13 +9,17 @@ use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Models\Order;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
@@ -1093,5 +1097,352 @@ class CustomerTest extends TestCase
 
         // Assert
         $this->assertSame(0, CustomerShop::withTrashed()->count());
+    }
+
+    // ── how much business each customer does ─────────────────────────────────
+    // The number on the card in the list, and on their own screen. See
+    // CUSTOMER-ORDERS-SECTION.md §٣.
+
+    public function test_the_list_says_how_many_orders_each_customer_has(): void
+    {
+        // Arrange
+        $busy = Customer::factory()->create();
+        $quiet = Customer::factory()->create();
+        Order::factory()->count(3)->forCustomer($busy)->create();
+
+        // Act
+        $response = $this->withHeaders($this->auth())->getJson('/api/v1/customers');
+
+        // Assert — a zero for the customer who has never ordered, not a missing key: the two
+        // read differently on a card, and only one of them is true here.
+        $counts = collect($response->json('data'))->pluck('orders_count', 'id');
+
+        $response->assertOk();
+        $this->assertSame(3, $counts[$busy->id]);
+        $this->assertSame(0, $counts[$quiet->id]);
+    }
+
+    public function test_one_customer_carries_the_same_number_as_their_row(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->create();
+        Order::factory()->count(2)->forCustomer($customer)->create();
+        Order::factory()->count(5)->create();
+
+        // Act
+        $response = $this->withHeaders($this->auth())->getJson("/api/v1/customers/{$customer->id}");
+
+        // Assert — theirs, not the shop's.
+        $response->assertOk()->assertJsonPath('data.orders_count', 2);
+    }
+
+    public function test_a_soft_deleted_order_is_not_counted(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->create();
+        $orders = Order::factory()->count(3)->forCustomer($customer)->create();
+        $orders->first()->delete();
+
+        // Act
+        $response = $this->withHeaders($this->auth())->getJson("/api/v1/customers/{$customer->id}");
+
+        // Assert — the same set every other count in this system means by "orders".
+        $response->assertOk()->assertJsonPath('data.orders_count', 2);
+    }
+
+    public function test_a_reader_who_may_not_see_orders_is_not_told_how_many_there_are(): void
+    {
+        // Arrange — customers, and nothing about orders.
+        foreach ([PermissionName::ViewCustomers, PermissionName::ViewOrders] as $permission) {
+            Permission::findOrCreate($permission->value, 'web');
+        }
+
+        $user = User::factory()->create();
+        $user->givePermissionTo(PermissionName::ViewCustomers->value);
+
+        $customer = Customer::factory()->create();
+        Order::factory()->count(3)->forCustomer($customer)->create();
+
+        $headers = ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/customers/{$customer->id}");
+
+        // Assert — the key is absent rather than zero. A nought would be a different lie from
+        // «you may not know», and the app draws a card off this.
+        $response->assertOk();
+        $this->assertArrayNotHasKey('orders_count', $response->json('data'));
+    }
+
+    public function test_counting_a_page_of_customers_costs_one_query(): void
+    {
+        // Arrange
+        $customers = Customer::factory()->count(5)->create();
+        foreach ($customers as $customer) {
+            Order::factory()->count(2)->forCustomer($customer)->create();
+        }
+
+        $headers = $this->auth();
+        DB::enableQueryLog();
+
+        // Act
+        $this->withHeaders($headers)->getJson('/api/v1/customers')->assertOk();
+
+        // Assert — one `where customer_id in (…)`, not one per row. This is the whole reason the
+        // count is a query over the orders rather than a relation walked per customer.
+        $counting = collect(DB::getRawQueryLog())
+            ->filter(fn (array $query): bool => str_contains($query['raw_query'], 'from "orders"'))
+            ->values();
+
+        DB::disableQueryLog();
+        $this->assertCount(1, $counting);
+    }
+
+    // ── who has stopped ordering ─────────────────────────────────────────────
+    // The two questions the list is asked when somebody sits down to make calls: who has never
+    // ordered, and who has not ordered for the longest. See CUSTOMERS-ACTIVITY-FILTER.md.
+
+    public function test_the_list_can_be_narrowed_to_the_customers_who_have_never_ordered(): void
+    {
+        // Arrange
+        $ordered = Customer::factory()->create();
+        $never = Customer::factory()->create();
+        Order::factory()->forCustomer($ordered)->create();
+
+        // Act
+        $response = $this->withHeaders($this->auth())->getJson('/api/v1/customers?has_orders=0');
+
+        // Assert
+        $ids = collect($response->json('data'))->pluck('id')->all();
+
+        $response->assertOk();
+        $this->assertSame([$never->id], $ids);
+    }
+
+    public function test_the_list_can_be_narrowed_to_the_customers_who_have_ordered(): void
+    {
+        // Arrange — the complement of the filter above, and its own question: «من نبيع لهم
+        // فعلاً؟» is asked as often as «من لم يشترِ قطّ؟».
+        $ordered = Customer::factory()->create();
+        Customer::factory()->create();
+        Order::factory()->forCustomer($ordered)->create();
+
+        // Act
+        $response = $this->withHeaders($this->auth())->getJson('/api/v1/customers?has_orders=1');
+
+        // Assert
+        $ids = collect($response->json('data'))->pluck('id')->all();
+
+        $response->assertOk();
+        $this->assertSame([$ordered->id], $ids);
+    }
+
+    public function test_a_cancelled_order_still_makes_a_customer_one_who_has_ordered(): void
+    {
+        // Arrange — the same set `orders_count` counts: a card reading «١ طلبية» must never
+        // appear inside a list titled «بدون طلبات».
+        $customer = Customer::factory()->create();
+        Order::factory()->forCustomer($customer)->status(OrderStatus::Cancelled)->create();
+
+        // Act
+        $response = $this->withHeaders($this->auth())->getJson('/api/v1/customers?has_orders=0');
+
+        // Assert
+        $response->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_a_soft_deleted_order_leaves_its_customer_among_those_who_never_ordered(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->create();
+        Order::factory()->forCustomer($customer)->create()->delete();
+
+        // Act
+        $response = $this->withHeaders($this->auth())->getJson('/api/v1/customers?has_orders=0');
+
+        // Assert — a deleted order is one that never happened, here as everywhere else.
+        $response->assertOk()->assertJsonPath('data.0.id', $customer->id);
+    }
+
+    public function test_never_ordered_narrows_the_search_rather_than_replacing_it(): void
+    {
+        // Arrange
+        $wanted = Customer::factory()->create(['name' => 'مطبعة الأمل']);
+        Customer::factory()->create(['name' => 'مخبز الأمل']);
+        Order::factory()->forCustomer(Customer::factory()->create(['name' => 'مطبعة النور']))->create();
+
+        // Act
+        $response = $this->withHeaders($this->auth())->getJson('/api/v1/customers?'.http_build_query(['has_orders' => '0', 'search' => 'مطبعة']));
+
+        // Assert — both conditions, not the last one to be read.
+        $ids = collect($response->json('data'))->pluck('id')->all();
+
+        $response->assertOk();
+        $this->assertSame([$wanted->id], $ids);
+    }
+
+    public function test_the_list_can_be_sorted_by_the_longest_since_the_last_order(): void
+    {
+        // Arrange
+        $stale = Customer::factory()->create();
+        $recent = Customer::factory()->create();
+        Order::factory()->forCustomer($stale)->create(['placed_at' => now()->subMonths(8)]);
+        Order::factory()->forCustomer($recent)->create(['placed_at' => now()->subDays(3)]);
+        // Their *latest* order is what places them, not their first.
+        Order::factory()->forCustomer($stale)->create(['placed_at' => now()->subMonths(5)]);
+
+        // Act
+        $response = $this->withHeaders($this->auth())
+            ->getJson('/api/v1/customers?sort=least_recent_order');
+
+        // Assert
+        $ids = collect($response->json('data'))->pluck('id')->all();
+
+        $response->assertOk();
+        $this->assertSame([$stale->id, $recent->id], $ids);
+    }
+
+    public function test_a_customer_who_has_never_ordered_sorts_after_everyone_who_has(): void
+    {
+        // Arrange
+        $never = Customer::factory()->create();
+        $stale = Customer::factory()->create();
+        Order::factory()->forCustomer($stale)->create(['placed_at' => now()->subYear()]);
+
+        // Act
+        $response = $this->withHeaders($this->auth())
+            ->getJson('/api/v1/customers?sort=least_recent_order');
+
+        // Assert — last, not first: «لم يطلب أبداً» is its own filter, and this list is for the
+        // customers who used to order and stopped.
+        $ids = collect($response->json('data'))->pluck('id')->all();
+
+        $response->assertOk();
+        $this->assertSame([$stale->id, $never->id], $ids);
+    }
+
+    public function test_the_oldest_first_list_says_when_each_customer_last_ordered(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->create();
+        $placedAt = now()->subMonths(3)->startOfSecond();
+        Order::factory()->forCustomer($customer)->create(['placed_at' => $placedAt]);
+
+        // Act
+        $response = $this->withHeaders($this->auth())
+            ->getJson('/api/v1/customers?sort=least_recent_order');
+
+        // Assert — the card shows the number the list was sorted by, so it is sent with it.
+        $response->assertOk()
+            ->assertJsonPath('data.0.last_order_at', $placedAt->toIso8601String());
+    }
+
+    public function test_a_customer_who_never_ordered_carries_a_null_last_order_date(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->create();
+
+        // Act
+        $response = $this->withHeaders($this->auth())
+            ->getJson('/api/v1/customers?sort=least_recent_order');
+
+        // Assert — present and null, which is «لم يطلب أبداً»; a missing key would be «لم نسأل».
+        $response->assertOk()
+            ->assertJsonPath('data.0.id', $customer->id)
+            ->assertJsonPath('data.0.last_order_at', null);
+    }
+
+    public function test_a_row_carries_no_last_order_date_unless_the_list_was_sorted_by_one(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->create();
+        Order::factory()->forCustomer($customer)->create();
+
+        // Act
+        $response = $this->withHeaders($this->auth())->getJson('/api/v1/customers');
+
+        // Assert — the ordinary list pays for no subquery it does not show.
+        $response->assertOk();
+        $this->assertArrayNotHasKey('last_order_at', $response->json('data.0'));
+    }
+
+    /**
+     * @param  array<string, string>  $query
+     */
+    #[DataProvider('orderDerivedQueries')]
+    public function test_a_reader_who_may_not_see_orders_may_not_ask_about_them(array $query): void
+    {
+        // Arrange — customers, and nothing about orders.
+        foreach ([PermissionName::ViewCustomers, PermissionName::ViewOrders] as $permission) {
+            Permission::findOrCreate($permission->value, 'web');
+        }
+
+        $user = User::factory()->create();
+        $user->givePermissionTo(PermissionName::ViewCustomers->value);
+
+        Customer::factory()->create();
+        $headers = ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson('/api/v1/customers?'.http_build_query($query));
+
+        // Assert — refused rather than answered without the filter: a list that quietly ignored
+        // it would be the wrong answer to the question that was asked. The count is merely
+        // omitted for this reader, because there the question was never theirs.
+        $response->assertForbidden();
+    }
+
+    /**
+     * @return array<string, array{array<string, string>}>
+     */
+    public static function orderDerivedQueries(): array
+    {
+        return [
+            'the never-ordered filter' => [['has_orders' => '0']],
+            'the least-recent-order sort' => [['sort' => 'least_recent_order']],
+        ];
+    }
+
+    public function test_an_unknown_sort_leaves_the_list_newest_first(): void
+    {
+        // Arrange
+        $older = Customer::factory()->create();
+        $newer = Customer::factory()->create();
+
+        // Act
+        $response = $this->withHeaders($this->auth())->getJson('/api/v1/customers?'.http_build_query(['sort' => 'قديم']));
+
+        // Assert — a word this API does not know is not a reason to refuse a list; it is a
+        // reason to answer the question it does understand.
+        $ids = collect($response->json('data'))->pluck('id')->all();
+
+        $response->assertOk();
+        $this->assertSame([$newer->id, $older->id], $ids);
+    }
+
+    public function test_sorting_by_the_last_order_still_costs_one_query_for_the_counts(): void
+    {
+        // Arrange
+        $customers = Customer::factory()->count(5)->create();
+        foreach ($customers as $customer) {
+            Order::factory()->forCustomer($customer)->create();
+        }
+
+        $headers = $this->auth();
+        DB::enableQueryLog();
+
+        // Act
+        $this->withHeaders($headers)->getJson('/api/v1/customers?sort=least_recent_order')->assertOk();
+
+        // Assert — two, whatever the page holds: the counts, and the page's own query carrying
+        // the date as a correlated subquery. Never one per row, which is what a relation walked
+        // per customer would have cost.
+        $overOrders = collect(DB::getRawQueryLog())
+            ->filter(fn (array $query): bool => str_contains($query['raw_query'], 'from "orders"'))
+            ->values();
+
+        DB::disableQueryLog();
+        $this->assertCount(2, $overOrders);
     }
 }

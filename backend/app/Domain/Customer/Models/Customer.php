@@ -51,6 +51,11 @@ class Customer extends Model implements HasAuditTrail
     {
         return [
             'is_active' => 'boolean',
+            // Not a column: {@see \App\Domain\Customer\Queries\CustomerListQuery} selects it as
+            // a subquery when the list is sorted by it, and a cast is what turns the string the
+            // driver hands back into the date the resource formats. Absent on every other path,
+            // which is why the resource asks `whenHas` before reading it.
+            'last_order_at' => 'datetime',
         ];
     }
 
@@ -75,6 +80,20 @@ class Customer extends Model implements HasAuditTrail
     }
 
     /**
+     * What staff have written to each other about this customer.
+     *
+     * Newest first, and by `id` rather than `created_at`: two notes typed in the same second
+     * would otherwise come back in whichever order the database felt like, and the list is read
+     * top-down as a conversation.
+     *
+     * @return HasMany<CustomerComment, $this>
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(CustomerComment::class)->latest('id');
+    }
+
+    /**
      * A customer's history includes their shops', because a shop is not a record anyone opens
      * on its own — it is edited through the customer, and "we moved their شارع الجمهورية branch"
      * is part of that customer's story.
@@ -93,6 +112,9 @@ class Customer extends Model implements HasAuditTrail
             // the question this history exists to answer, and a removed design is the only kind
             // anyone asks about.
             (new CustomerDesign)->getMorphClass() => $this->designs()->withTrashed()->pluck('id')->all(),
+            // Same reasoning, and the same `withTrashed`: «من حذف الملاحظة؟» is a question about
+            // this customer, and a removed note is the only kind anyone goes looking for.
+            (new CustomerComment)->getMorphClass() => $this->comments()->withTrashed()->pluck('id')->all(),
         ];
     }
 }

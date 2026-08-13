@@ -7,12 +7,15 @@ import 'package:printing/core/session/session.dart';
 import 'package:printing/core/storage/token_storage.dart';
 import 'package:printing/features/access/models/role.dart';
 import 'package:printing/features/access/presentation/views/add_employee_page.dart';
+import 'package:printing/features/access/presentation/views/employee_detail_page.dart';
+import 'package:printing/features/access/presentation/views/employee_form_page.dart';
 import 'package:printing/features/access/presentation/views/employees_page.dart';
 import 'package:printing/features/access/presentation/views/role_detail_page.dart';
 import 'package:printing/features/access/presentation/views/role_form_page.dart';
 import 'package:printing/features/access/presentation/views/roles_page.dart';
 import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/audit/presentation/views/activity_log_page.dart';
+import 'package:printing/features/auth/models/auth_user.dart';
 import 'package:printing/features/auth/presentation/views/login_page.dart';
 import 'package:printing/features/business_fields/presentation/views/business_fields_page.dart';
 import 'package:printing/features/cities/models/city.dart';
@@ -20,11 +23,15 @@ import 'package:printing/features/cities/presentation/views/cities_page.dart';
 import 'package:printing/features/cities/presentation/views/city_regions_page.dart';
 import 'package:printing/features/customers/models/customer.dart';
 import 'package:printing/features/customers/presentation/views/add_customer_page.dart';
+import 'package:printing/features/customers/presentation/views/customer_comments_page.dart';
 import 'package:printing/features/customers/presentation/views/customer_designs_page.dart';
 import 'package:printing/features/customers/presentation/views/customer_detail_page.dart';
 import 'package:printing/features/customers/presentation/views/customers_page.dart';
 import 'package:printing/features/home/presentation/views/home_page.dart';
 import 'package:printing/features/location/presentation/views/pick_location_page.dart';
+import 'package:printing/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
+import 'package:printing/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rate_form_page.dart';
+import 'package:printing/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rates_page.dart';
 import 'package:printing/features/orders/models/orders_filter.dart';
 import 'package:printing/features/orders/presentation/views/filtered_orders_page.dart';
 import 'package:printing/features/orders/presentation/views/new_order_page.dart';
@@ -34,6 +41,7 @@ import 'package:printing/features/orders/presentation/views/order_payments_page.
 import 'package:printing/features/orders/presentation/views/order_status_page.dart';
 import 'package:printing/features/orders/presentation/views/orders_page.dart';
 import 'package:printing/features/products/models/product.dart';
+import 'package:printing/features/products/presentation/views/product_categories_page.dart';
 import 'package:printing/features/products/presentation/views/product_detail_page.dart';
 import 'package:printing/features/products/presentation/views/product_form_page.dart';
 import 'package:printing/features/products/presentation/views/products_page.dart';
@@ -41,6 +49,7 @@ import 'package:printing/features/purchase_orders/models/purchase_order.dart';
 import 'package:printing/features/purchase_orders/presentation/views/purchase_order_detail_page.dart';
 import 'package:printing/features/purchase_orders/presentation/views/purchase_order_form_page.dart';
 import 'package:printing/features/purchase_orders/presentation/views/purchase_orders_page.dart';
+import 'package:printing/features/reports/presentation/views/profit_and_loss_page.dart';
 import 'package:printing/features/root/presentation/views/root_page.dart';
 import 'package:printing/features/settings/presentation/views/settings_page.dart';
 import 'package:printing/features/shipping_companies/models/shipping_company.dart';
@@ -91,10 +100,22 @@ abstract final class Routes {
 
   /// Every movement in the workshop, whatever the place.
   static const String stockMovements = '/stock-movements';
+
+  /// الأرباح والخسائر. A flat route with no id: the report is about a period the screen itself
+  /// chooses, so there is nothing to put in the path.
+  static const String profitAndLoss = '/reports/profit-loss';
   static const String cities = '/cities';
 
   /// مجالات العمل — the trades a customer's shop can be in.
   static const String businessFields = '/business-fields';
+
+  /// تصنيفات المنتجات — the headings the catalogue is organised under.
+  static const String productCategories = '/product-categories';
+
+  /// ما تكلّفه ساعة عمل، وتشغيل الآلة، والمصاريف العامة. A flat pair rather than a nested form,
+  /// because a rate is reached from its own list and — one day — from the product it is pinned to.
+  static const String manufacturingCostRates = '/manufacturing-cost-rates';
+  static const String manufacturingCostRateForm = '/manufacturing-cost-rates/form';
 
   /// Who carries our parcels. A flat pair rather than a nested form, because adding a company
   /// is reached from the list *and* — one day — from the dispatch screen when the carrier
@@ -144,6 +165,17 @@ abstract final class Routes {
   /// Registering a colleague. Administrators only — see `Session.isAdmin`.
   static const String addEmployee = '/employees/new';
 
+  /// One member of staff — what they are, and everything done to their account.
+  static const String employeePath = '/employees/:id';
+
+  static String employee(int id) => '/employees/$id';
+
+  /// Correcting their name, email and phone. Not their password, not their roles and not their
+  /// wage: each of those is guarded differently and reached its own way.
+  static const String editEmployeePath = '/employees/:id/edit';
+
+  static String editEmployee(int id) => '/employees/$id/edit';
+
   /// The jobs this business has. A sibling of [employees] rather than a child: a role exists
   /// whether or not anybody holds it, and it is administered by a different permission.
   static const String roles = '/roles';
@@ -185,6 +217,11 @@ abstract final class Routes {
   static const String customerDesignsPath = '/customers/:id/designs';
 
   static String customerDesigns(int id) => '/customers/$id/designs';
+
+  /// What staff have written to each other about a customer.
+  static const String customerCommentsPath = '/customers/:id/comments';
+
+  static String customerComments(int id) => '/customers/$id/comments';
 
   /// Taking an order from this customer.
   ///
@@ -363,6 +400,14 @@ abstract final class AppRouter {
             sl<Session>().can(AppPermission.viewInventory) ? null : Routes.home,
         builder: (context, state) => const StockMovementsPage(),
       ),
+      // No `/reports/:id` sibling to be shadowed by, so nothing here is ordering-sensitive.
+      // Guarded like every other screen whose every request would answer 403 without the grant.
+      GoRoute(
+        path: Routes.profitAndLoss,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewProfitAndLossReport) ? null : Routes.home,
+        builder: (context, state) => const ProfitAndLossPage(),
+      ),
       // Declared **before** `/orders/:id`, or go_router reads the literal word «filter» as an
       // id and `int.parse` throws — the same trap `/products/new` sits beside.
       GoRoute(
@@ -497,6 +542,34 @@ abstract final class AppRouter {
         path: Routes.businessFields,
         builder: (context, state) => const BusinessFieldsPage(),
       ),
+      // Guarded on reading the catalogue, which is what its every request needs: the screen
+      // hides the controls an account without `products.manage` cannot use, and the server
+      // refuses either way.
+      GoRoute(
+        path: Routes.productCategories,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewProducts) ? null : Routes.home,
+        builder: (context, state) => const ProductCategoriesPage(),
+      ),
+      // Declared **before** the list, so the literal word «form» is not captured by a sibling —
+      // the same trap `/products/new` sits beside — and guarded on the permission its every
+      // request would need.
+      GoRoute(
+        path: Routes.manufacturingCostRateForm,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.manageManufacturingCostRates)
+            ? null
+            : Routes.manufacturingCostRates,
+        // `extra` is ours, and the screen works without it: a cold link opens «معدل تكلفة جديد».
+        builder: (context, state) =>
+            ManufacturingCostRateFormPage(rate: state.extra as ManufacturingCostRate?),
+      ),
+      GoRoute(
+        path: Routes.manufacturingCostRates,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewManufacturingCostRates) ? null : Routes.home,
+        builder: (context, state) => const ManufacturingCostRatesPage(),
+      ),
       GoRoute(
         path: Routes.cities,
         builder: (context, state) => const CitiesPage(),
@@ -529,11 +602,39 @@ abstract final class AppRouter {
         redirect: (context, state) => sl<Session>().isAdmin ? null : Routes.home,
         builder: (context, state) => const AddEmployeePage(),
       ),
+      // Before `/employees/:id`, for the reason `/employees/new` is before both: go_router
+      // matches in declaration order, and `new` would otherwise be read as an id.
+      GoRoute(
+        path: Routes.editEmployeePath,
+        // `users.manage`, unlike the two above it: reading the list is one permission, and
+        // correcting somebody's details is another.
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.manageUsers) ? null : Routes.home,
+        builder: (context, state) {
+          // The employee comes through `extra`, which a deep link cannot carry — so a pasted
+          // URL lands on the screen that *can* fetch them rather than on an empty form.
+          final user = state.extra as AuthUser?;
+
+          return user == null
+              ? const _UnknownEmployee()
+              : EmployeeFormPage(user: user);
+        },
+      ),
       GoRoute(
         path: Routes.employees,
         redirect: (context, state) =>
             sl<Session>().can(AppPermission.viewUsers) ? null : Routes.home,
         builder: (context, state) => const EmployeesPage(),
+      ),
+      GoRoute(
+        path: Routes.employeePath,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewUsers) ? null : Routes.home,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          return id == null ? const _UnknownEmployee() : EmployeeDetailPage(userId: id);
+        },
       ),
       GoRoute(
         path: Routes.newRole,
@@ -599,6 +700,14 @@ abstract final class AppRouter {
               customerId: int.parse(state.pathParameters['id']!),
               // The name, so the bar can say whose library this is without a second request.
               // Null on a cold deep link, where the heading stands alone.
+              customerName: state.extra as String?,
+            ),
+          ),
+          GoRoute(
+            path: 'comments',
+            builder: (context, state) => CustomerCommentsPage(
+              customerId: int.parse(state.pathParameters['id']!),
+              // As above: whose notes these are, without a second request.
               customerName: state.extra as String?,
             ),
           ),
@@ -772,6 +881,21 @@ class _UnknownCity extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('المناطق')),
       body: const Center(child: Text('رقم المدينة غير صحيح')),
+    );
+  }
+}
+
+/// An `/employees/<something that is not a number>` link, or an edit form reached without the
+/// employee it is meant to edit — the second happens only on a pasted URL, since every button
+/// that opens it hands the record over in `extra`.
+class _UnknownEmployee extends StatelessWidget {
+  const _UnknownEmployee();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('الموظف')),
+      body: const Center(child: Text('لم يُحدَّد الموظف')),
     );
   }
 }

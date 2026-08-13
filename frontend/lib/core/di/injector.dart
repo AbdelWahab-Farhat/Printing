@@ -9,6 +9,8 @@ import 'package:printing/core/network/dio_client.dart';
 import 'package:printing/core/session/session.dart';
 import 'package:printing/core/storage/token_storage.dart';
 import 'package:printing/features/access/presentation/viewmodel/add_employee_cubit.dart';
+import 'package:printing/features/access/presentation/viewmodel/employee_detail_cubit.dart';
+import 'package:printing/features/access/presentation/viewmodel/employee_form_cubit.dart';
 import 'package:printing/features/access/presentation/viewmodel/role_detail_cubit.dart';
 import 'package:printing/features/access/presentation/viewmodel/role_form_cubit.dart';
 import 'package:printing/features/access/presentation/viewmodel/roles_cubit.dart';
@@ -22,9 +24,14 @@ import 'package:printing/features/access/usecases/delete_role.dart';
 import 'package:printing/features/access/usecases/get_permissions.dart';
 import 'package:printing/features/access/usecases/get_role.dart';
 import 'package:printing/features/access/usecases/get_roles.dart';
+import 'package:printing/features/access/usecases/get_user.dart';
 import 'package:printing/features/access/usecases/get_users.dart';
+import 'package:printing/features/access/usecases/set_user_activation.dart';
+import 'package:printing/features/access/usecases/set_user_password.dart';
+import 'package:printing/features/access/usecases/set_user_salary.dart';
 import 'package:printing/features/access/usecases/sync_user_roles.dart';
 import 'package:printing/features/access/usecases/update_role.dart';
+import 'package:printing/features/access/usecases/update_user.dart';
 import 'package:printing/features/audit/repositories/audit_repository.dart';
 import 'package:printing/features/audit/repositories/audit_repository_impl.dart';
 import 'package:printing/features/audit/usecases/get_activity_log.dart';
@@ -51,16 +58,24 @@ import 'package:printing/features/cities/repositories/city_repository_impl.dart'
 import 'package:printing/features/cities/usecases/get_cities.dart';
 import 'package:printing/features/cities/usecases/get_city_regions.dart';
 import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
+import 'package:printing/features/customers/presentation/viewmodel/customer_comments_cubit.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
+import 'package:printing/features/customers/presentation/viewmodel/customer_order_counts_cubit.dart';
 import 'package:printing/features/customers/presentation/viewmodel/customers_cubit.dart';
+import 'package:printing/features/customers/repositories/customer_comment_repository.dart';
+import 'package:printing/features/customers/repositories/customer_comment_repository_impl.dart';
 import 'package:printing/features/customers/repositories/customer_design_repository.dart';
 import 'package:printing/features/customers/repositories/customer_design_repository_impl.dart';
 import 'package:printing/features/customers/repositories/customer_repository.dart';
 import 'package:printing/features/customers/repositories/customer_repository_impl.dart';
+import 'package:printing/features/customers/usecases/add_customer_comment.dart';
 import 'package:printing/features/customers/usecases/create_customer.dart';
+import 'package:printing/features/customers/usecases/delete_customer_comment.dart';
 import 'package:printing/features/customers/usecases/delete_customer_design.dart';
+import 'package:printing/features/customers/usecases/edit_customer_comment.dart';
 import 'package:printing/features/customers/usecases/get_customer.dart';
+import 'package:printing/features/customers/usecases/get_customer_comments.dart';
 import 'package:printing/features/customers/usecases/get_customer_designs.dart';
 import 'package:printing/features/customers/usecases/get_customers.dart';
 import 'package:printing/features/customers/usecases/rename_customer_design.dart';
@@ -76,6 +91,11 @@ import 'package:printing/features/location/presentation/viewmodel/pick_location_
 import 'package:printing/features/location/repositories/geocoding_repository.dart';
 import 'package:printing/features/location/repositories/geocoding_repository_impl.dart';
 import 'package:printing/features/location/usecases/search_places.dart';
+import 'package:printing/features/manufacturing_cost_rates/presentation/viewmodel/manufacturing_cost_rates_cubit.dart';
+import 'package:printing/features/manufacturing_cost_rates/presentation/viewmodel/save_manufacturing_cost_rate_cubit.dart';
+import 'package:printing/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository.dart';
+import 'package:printing/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository_impl.dart';
+import 'package:printing/features/manufacturing_cost_rates/usecases/manufacturing_cost_rate_usecases.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/orders_filter.dart';
 import 'package:printing/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
@@ -96,25 +116,38 @@ import 'package:printing/features/orders/usecases/get_order_counts.dart';
 import 'package:printing/features/orders/usecases/get_orders.dart';
 import 'package:printing/features/orders/usecases/manage_order_designs.dart';
 import 'package:printing/features/orders/usecases/manage_order_payments.dart';
+import 'package:printing/features/orders/usecases/record_scrap_loss.dart';
 import 'package:printing/features/orders/usecases/save_order_invoice_pdf.dart';
 import 'package:printing/features/orders/usecases/set_order_shortages.dart';
 import 'package:printing/features/orders/usecases/take_order.dart';
 import 'package:printing/features/orders/usecases/update_order_invoice.dart';
+import 'package:printing/features/products/presentation/viewmodel/product_categories_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/product_detail_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
+import 'package:printing/features/products/presentation/viewmodel/save_product_category_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/save_product_cubit.dart';
+import 'package:printing/features/products/repositories/product_category_repository.dart';
+import 'package:printing/features/products/repositories/product_category_repository_impl.dart';
 import 'package:printing/features/products/repositories/product_repository.dart';
 import 'package:printing/features/products/repositories/product_repository_impl.dart';
+import 'package:printing/features/products/usecases/delete_product_category.dart';
 import 'package:printing/features/products/usecases/get_price_quote.dart';
 import 'package:printing/features/products/usecases/get_product.dart';
+import 'package:printing/features/products/usecases/get_product_categories.dart';
 import 'package:printing/features/products/usecases/get_products.dart';
 import 'package:printing/features/products/usecases/save_product.dart';
+import 'package:printing/features/products/usecases/save_product_category.dart';
+import 'package:printing/features/products/usecases/set_product_category_activation.dart';
 import 'package:printing/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
 import 'package:printing/features/purchase_orders/presentation/viewmodel/purchase_orders_cubit.dart';
 import 'package:printing/features/purchase_orders/presentation/viewmodel/save_purchase_order_cubit.dart';
 import 'package:printing/features/purchase_orders/repositories/purchase_order_repository.dart';
 import 'package:printing/features/purchase_orders/repositories/purchase_order_repository_impl.dart';
 import 'package:printing/features/purchase_orders/usecases/purchase_order_usecases.dart';
+import 'package:printing/features/reports/presentation/viewmodel/profit_and_loss_cubit.dart';
+import 'package:printing/features/reports/repositories/report_repository.dart';
+import 'package:printing/features/reports/repositories/report_repository_impl.dart';
+import 'package:printing/features/reports/usecases/get_profit_and_loss.dart';
 import 'package:printing/features/settings/presentation/viewmodel/settings_cubit.dart';
 import 'package:printing/features/settings/repositories/settings_repository.dart';
 import 'package:printing/features/settings/repositories/settings_repository_impl.dart';
@@ -232,13 +265,16 @@ abstract final class Injector {
     _registerProducts();
     _registerCities();
     _registerBusinessFields();
+    _registerProductCategories();
     _registerWarehouses();
     _registerVendors();
     _registerPurchaseOrders();
+    _registerManufacturingCostRates();
     _registerShippingCompanies();
     _registerCustomers();
     _registerSettings();
     _registerOrders();
+    _registerReports();
 
     _isInitialized = true;
     debugPrint('⏱️ injector ready in ${stopwatch.elapsed}');
@@ -254,6 +290,11 @@ abstract final class Injector {
       ..registerLazySingleton<AccessRepository>(() => AccessRepositoryImpl(sl<Dio>()))
       ..registerLazySingleton<GetUsers>(() => GetUsers(sl<AccessRepository>()))
       ..registerLazySingleton<CreateUser>(() => CreateUser(sl<AccessRepository>()))
+      ..registerLazySingleton<GetUser>(() => GetUser(sl<AccessRepository>()))
+      ..registerLazySingleton<UpdateUser>(() => UpdateUser(sl<AccessRepository>()))
+      ..registerLazySingleton<SetUserPassword>(() => SetUserPassword(sl<AccessRepository>()))
+      ..registerLazySingleton<SetUserSalary>(() => SetUserSalary(sl<AccessRepository>()))
+      ..registerLazySingleton<SetUserActivation>(() => SetUserActivation(sl<AccessRepository>()))
       ..registerLazySingleton<SyncUserRoles>(() => SyncUserRoles(sl<AccessRepository>()))
       ..registerLazySingleton<GetRoles>(() => GetRoles(sl<AccessRepository>()))
       ..registerLazySingleton<GetRole>(() => GetRole(sl<AccessRepository>()))
@@ -284,6 +325,21 @@ abstract final class Injector {
           roleId: roleId,
           getRole: sl<GetRole>(),
           getPermissions: sl<GetPermissions>(),
+        ),
+      )
+      // Parameterised for the same reason as the role's: the screen is *about* one employee.
+      ..registerFactoryParam<EmployeeDetailCubit, int, void>(
+        (userId, _) => EmployeeDetailCubit(
+          userId: userId,
+          getUser: sl<GetUser>(),
+          setPassword: sl<SetUserPassword>(),
+          setActivation: sl<SetUserActivation>(),
+        ),
+      )
+      ..registerFactory<EmployeeFormCubit>(
+        () => EmployeeFormCubit(
+          updateUser: sl<UpdateUser>(),
+          setSalary: sl<SetUserSalary>(),
         ),
       )
       // Two parameters, and both are needed at construction: which person, and which roles they
@@ -438,6 +494,11 @@ abstract final class Injector {
       ..registerLazySingleton<SetOrderShortages>(
         () => SetOrderShortages(sl<OrderRepository>()),
       )
+      // Spoiled stock, written off against the line that was being printed. A use case rather
+      // than a Cubit because there is no state to hold: the sheet asks twice and pops.
+      ..registerLazySingleton<RecordScrapLoss>(
+        () => RecordScrapLoss(sl<OrderRepository>()),
+      )
       ..registerLazySingleton<AddOrderDesign>(
         () => AddOrderDesign(sl<OrderRepository>()),
       )
@@ -523,6 +584,24 @@ abstract final class Injector {
       // One per line being edited, not one per screen — hence a factory.
       ..registerFactory<LineQuoteCubit>(
         () => LineQuoteCubit(getPriceQuote: sl<GetPriceQuote>()),
+      );
+  }
+
+  /// التقارير — the figures the business is read by, rather than the records it is made of.
+  ///
+  /// Registered after the orders block because that is what it reads across; nothing here holds
+  /// a reference to it, so the ordering is documentation rather than a dependency.
+  ///
+  /// No list Cubit and no `PagedCubit`: the report is one object about one period, so there is
+  /// no page to ask for.
+  static void _registerReports() {
+    sl
+      ..registerLazySingleton<ReportRepository>(() => ReportRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetProfitAndLoss>(() => GetProfitAndLoss(sl<ReportRepository>()))
+      // Factory: the screen owns its Cubit — the chosen period lives on it — and closes it on
+      // dispose.
+      ..registerFactory<ProfitAndLossCubit>(
+        () => ProfitAndLossCubit(getSummary: sl<GetProfitAndLoss>()),
       );
   }
 
@@ -612,6 +691,46 @@ abstract final class Injector {
       );
   }
 
+  /// معدلات تكلفة التصنيع — the standing costs an order is charged when it enters printing.
+  ///
+  /// Registered beside the purchase orders rather than inside orders, because it is the same
+  /// kind of thing the delivery map and مجالات العمل are: reference data curated in one place
+  /// and read by everything else.
+  ///
+  /// Both Cubits are factories: a screen-scoped Cubit registered as a singleton leaves every
+  /// later screen emitting into a stream the first one closed.
+  static void _registerManufacturingCostRates() {
+    sl
+      ..registerLazySingleton<ManufacturingCostRateRepository>(
+        () => ManufacturingCostRateRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetManufacturingCostRates>(
+        () => GetManufacturingCostRates(sl<ManufacturingCostRateRepository>()),
+      )
+      ..registerLazySingleton<GetManufacturingCostRate>(
+        () => GetManufacturingCostRate(sl<ManufacturingCostRateRepository>()),
+      )
+      ..registerLazySingleton<SaveManufacturingCostRate>(
+        () => SaveManufacturingCostRate(sl<ManufacturingCostRateRepository>()),
+      )
+      ..registerLazySingleton<SetManufacturingCostRateActivation>(
+        () => SetManufacturingCostRateActivation(sl<ManufacturingCostRateRepository>()),
+      )
+      ..registerLazySingleton<DeleteManufacturingCostRate>(
+        () => DeleteManufacturingCostRate(sl<ManufacturingCostRateRepository>()),
+      )
+      ..registerFactory<ManufacturingCostRatesCubit>(
+        () => ManufacturingCostRatesCubit(
+          getRates: sl<GetManufacturingCostRates>(),
+          setRateActivation: sl<SetManufacturingCostRateActivation>(),
+          deleteRate: sl<DeleteManufacturingCostRate>(),
+        ),
+      )
+      ..registerFactory<SaveManufacturingCostRateCubit>(
+        () => SaveManufacturingCostRateCubit(saveRate: sl<SaveManufacturingCostRate>()),
+      );
+  }
+
   static void _registerShippingCompanies() {
     sl
       ..registerLazySingleton<ShippingCompanyRepository>(
@@ -682,6 +801,52 @@ abstract final class Injector {
       )
       ..registerFactory<SaveBusinessFieldCubit>(
         () => SaveBusinessFieldCubit(saveBusinessField: sl<SaveBusinessField>()),
+      );
+  }
+
+  /// تصنيفات المنتجات — the headings the catalogue is organised under.
+  ///
+  /// Registered beside مجالات العمل rather than inside products, because it is the same kind of
+  /// thing: a short curated list that other screens pick from.
+  static void _registerProductCategories() {
+    sl
+      ..registerLazySingleton<ProductCategoryRepository>(
+        () => ProductCategoryRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetProductCategories>(
+        () => GetProductCategories(sl<ProductCategoryRepository>()),
+      )
+      ..registerLazySingleton<SaveProductCategory>(
+        () => SaveProductCategory(sl<ProductCategoryRepository>()),
+      )
+      ..registerLazySingleton<SetProductCategoryActivation>(
+        () => SetProductCategoryActivation(sl<ProductCategoryRepository>()),
+      )
+      ..registerLazySingleton<DeleteProductCategory>(
+        () => DeleteProductCategory(sl<ProductCategoryRepository>()),
+      )
+      // Factory: the list screen owns its Cubit and closes it on dispose.
+      ..registerFactory<ProductCategoriesCubit>(
+        () => ProductCategoriesCubit(
+          getCategories: sl<GetProductCategories>(),
+          setActivation: sl<SetProductCategoryActivation>(),
+          deleteCategory: sl<DeleteProductCategory>(),
+        ),
+      )
+      // The product form's picker and the catalogue's filter both ask for the offered ones
+      // only — a stopped heading is one nobody should be able to file under *today*, while the
+      // management screen must still see it. A named registration rather than a parameter, so
+      // the caller asks for what it means.
+      ..registerFactory<ProductCategoriesCubit>(
+        () => ProductCategoriesCubit(
+          getCategories: sl<GetProductCategories>(),
+          setActivation: sl<SetProductCategoryActivation>(),
+          deleteCategory: sl<DeleteProductCategory>(),
+        )..isActive = true,
+        instanceName: activeProductCategoriesCubit,
+      )
+      ..registerFactory<SaveProductCategoryCubit>(
+        () => SaveProductCategoryCubit(saveCategory: sl<SaveProductCategory>()),
       );
   }
 
@@ -808,6 +973,19 @@ abstract final class Injector {
           setActivation: sl<SetCustomerActivation>(),
         ),
       )
+      // The three numbers over «إدارة الطلبات» on the same screen. Its own Cubit rather than
+      // three more fields on the one above, because losing the numbers must not blank a page of
+      // contact details that arrived fine — see CUSTOMER-ORDERS-SECTION.md §٣.
+      //
+      // It reaches into the orders feature for `GetOrderCounts`, which is the whole reason that
+      // use case takes a `customerId` it was born with: the summary endpoint has always been
+      // able to answer about one person.
+      ..registerFactoryParam<CustomerOrderCountsCubit, int, void>(
+        (customerId, _) => CustomerOrderCountsCubit(
+          customerId: customerId,
+          getCounts: sl<GetOrderCounts>(),
+        ),
+      )
       // Factory: the form owns its Cubit and closes it on dispose. A singleton here would hand
       // the second customer the closed Cubit of the first.
       ..registerFactory<AddCustomerCubit>(
@@ -849,8 +1027,39 @@ abstract final class Injector {
           renameDesign: sl<RenameCustomerDesign>(),
           deleteDesign: sl<DeleteCustomerDesign>(),
         ),
+      )
+      // ── what staff say to each other about the customer ──────────────────────
+      // Its own repository for the same reason the design library has one: everything here is
+      // scoped to a single customer and none of it paginates.
+      ..registerLazySingleton<CustomerCommentRepository>(
+        () => CustomerCommentRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetCustomerComments>(
+        () => GetCustomerComments(sl<CustomerCommentRepository>()),
+      )
+      ..registerLazySingleton<AddCustomerComment>(
+        () => AddCustomerComment(sl<CustomerCommentRepository>()),
+      )
+      ..registerLazySingleton<EditCustomerComment>(
+        () => EditCustomerComment(sl<CustomerCommentRepository>()),
+      )
+      ..registerLazySingleton<DeleteCustomerComment>(
+        () => DeleteCustomerComment(sl<CustomerCommentRepository>()),
+      )
+      ..registerFactoryParam<CustomerCommentsCubit, int, void>(
+        (customerId, _) => CustomerCommentsCubit(
+          customerId: customerId,
+          getComments: sl<GetCustomerComments>(),
+          addComment: sl<AddCustomerComment>(),
+          editComment: sl<EditCustomerComment>(),
+          deleteComment: sl<DeleteCustomerComment>(),
+        ),
       );
   }
+
+  /// The categories a product may actually be filed under today — the stopped ones are absent.
+  /// Asked for by the product form's picker and by the catalogue's filter row.
+  static const String activeProductCategoriesCubit = 'product-categories:active';
 
   /// The customers list narrowed to the ones still being sold to. See `showCustomerPicker`.
   static const String activeCustomersCubit = 'customers:active';

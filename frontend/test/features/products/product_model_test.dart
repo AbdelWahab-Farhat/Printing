@@ -104,8 +104,9 @@ void main() {
       // Act
       final ordered = variant.tiersByQuantity;
 
-      // Assert — numerically, not as text: '1000' sorts before '300' as a string.
-      expect([for (final tier in ordered) tier.minQuantityLabel], ['100', '300', '1000']);
+      // Assert — numerically, not as text: '1000' sorts before '300' as a string. The
+      // labels arrive grouped, which is how every number in this app is drawn.
+      expect([for (final tier in ordered) tier.minQuantityLabel], ['100', '300', '1,000']);
     });
 
     test('leaves the price strings exactly as the server sent them', () {

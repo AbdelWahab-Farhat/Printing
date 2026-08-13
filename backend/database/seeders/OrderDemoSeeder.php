@@ -15,9 +15,11 @@ use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderItemData;
+use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\OrderService;
 use Illuminate\Database\Seeder;
@@ -195,14 +197,38 @@ class OrderDemoSeeder extends Seeder
             [OrderStatus::Cancelled, 'العميل تراجع عن الطلب'],
         ], DesignSource::Customer);
 
-        // محاسبة — delivered and the money counted.
-        $this->walk(-2, 'محاسبة: سُلّمت وحوسبت', [
+        // محاسبة — delivered, the money in, and only then settled.
+        //
+        // **The payment is a step of this scenario, not scene-setting.** «تم التسوية» is refused
+        // on an order that still owes anything — see {@see SettlementRequiresFullPayment} — so
+        // the collection is recorded through the real action first, exactly as the cashier would
+        // when the courier hands the cash over. Walking straight to the last status would not
+        // have produced a settled order here; it would have produced the failure.
+        $counted = $this->walk(-2, 'محاسبة: سُلّمت وحوسبت', [
             [OrderStatus::Printing, null],
             [OrderStatus::Ready, null],
             [OrderStatus::OutForDelivery, null],
             [OrderStatus::Delivered, null],
-            [OrderStatus::Settled, null],
         ]);
+
+        $this->collect($counted, at: -2, hoursIn: 15);
+        $this->move($counted, OrderStatus::Settled, at: -2, hoursIn: 16);
+    }
+
+    /**
+     * The whole invoice, taken in cash — what the courier hands back on a delivery that went to
+     * plan, and what an order owes before it may be settled.
+     */
+    private function collect(Order $order, int $at, int $hoursIn): void
+    {
+        Carbon::setTestNow($this->anchor->copy()->addDays($at)->setTime(9, 0)->addHours($hoursIn));
+
+        $order = $order->refresh();
+
+        $this->orders->recordPayment($order, OrderPaymentData::fromArray([
+            'amount' => (string) $order->grand_total,
+            'method' => PaymentMethod::Cash->value,
+        ]), $this->actor);
     }
 
     // ─────────────────────────── the differences ───────────────────────────

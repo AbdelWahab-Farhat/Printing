@@ -7,6 +7,7 @@ import 'package:printing/features/orders/models/new_order.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/order_counts.dart';
 import 'package:printing/features/orders/models/order_status.dart';
+import 'package:printing/features/orders/models/production_cost_entry.dart';
 import 'package:printing/features/orders/usecases/update_order_invoice.dart';
 
 /// What the app can ask about orders, stated without saying how.
@@ -94,6 +95,26 @@ abstract interface class OrderRepository {
   Future<Either<Failure, Order>> setShortages(
     int orderId, {
     required Map<int, String?> shortages,
+  });
+
+  /// Writes off bags spoiled while this line was being produced.
+  ///
+  /// **The cost is not sent, it comes back.** [quantity] is what the storekeeper counted; the
+  /// server draws it off the order's own shelf, reads what those particular bags cost out of the
+  /// batches they came from, and answers with the entry it wrote. There is no unit price on this
+  /// call and adding one would be inventing a number the batches already know.
+  ///
+  /// [notes] is required by the API and by this app's own form — the reason is the whole point of
+  /// the record, and «تلف» on its own is a row nobody can act on a month later.
+  ///
+  /// **Nothing on the order moves.** The line keeps the cost of what it actually fulfilled, so
+  /// `total_cogs` and the gross profit beside it are the same afterwards; what changes is the
+  /// warehouse balance.
+  Future<Either<Failure, ProductionCostEntry>> recordScrapLoss(
+    int orderId,
+    int itemId, {
+    required String quantity,
+    required String notes,
   });
 
   /// Puts the next version of the artwork in front of the customer.

@@ -1,9 +1,11 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:printing/core/di/injector.dart';
+import 'package:printing/features/manufacturing_cost_rates/presentation/viewmodel/manufacturing_cost_rates_cubit.dart';
 import 'package:printing/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:printing/features/products/usecases/get_price_quote.dart';
+import 'package:printing/features/reports/presentation/viewmodel/profit_and_loss_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// The graph the app actually builds — not the hand-wired one every widget test builds.
@@ -56,6 +58,25 @@ void main() {
 
     // Assert
     expect(cubit, isA<ProductsCubit>());
+    addTearDown(cubit.close);
+  });
+
+  test('builds the Cubit the manufacturing cost rates list runs on', () {
+    // Act — the factory resolves three use cases inside its closure, none of which the
+    // compiler can see from the call site.
+    final cubit = sl<ManufacturingCostRatesCubit>();
+
+    // Assert
+    expect(cubit, isA<ManufacturingCostRatesCubit>());
+    addTearDown(cubit.close);
+  });
+
+  test('builds the Cubit behind the profit and loss report', () {
+    // Act
+    final cubit = sl<ProfitAndLossCubit>();
+
+    // Assert
+    expect(cubit, isA<ProfitAndLossCubit>());
     addTearDown(cubit.close);
   });
 }

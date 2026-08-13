@@ -6,7 +6,7 @@ namespace App\Application\Api\V1\Requests\Product;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductCategory;
+use App\Domain\Catalog\Enums\ProductType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -87,7 +87,15 @@ class StoreProductRequest extends FormRequest
             'features' => ['nullable', 'array', 'max:12'],
             'features.*' => ['required', 'string', 'max:255'],
 
-            'category' => ['required', Rule::enum(ProductCategory::class)],
+            'category' => ['required', Rule::enum(ProductType::class)],
+            // **The catalogue heading, and it is required from today on.** The column is
+            // nullable because the products recorded before this feature existed have to stay
+            // valid; nothing saved through this request may be. `exists` refuses a category that
+            // was deleted — a product pointing at a hidden row is worse than one with none.
+            'product_category_id' => [
+                'required', 'integer',
+                Rule::exists('product_categories', 'id')->whereNull('deleted_at'),
+            ],
             'pricing_unit' => ['required', Rule::enum(PricingUnit::class)],
             'pricing_mode' => ['required', Rule::enum(PricingMode::class)],
 
@@ -191,7 +199,8 @@ class StoreProductRequest extends FormRequest
             'name' => 'اسم المنتج',
             'description' => 'الوصف',
             'features' => 'المميزات',
-            'category' => 'التصنيف',
+            'category' => 'النوع',
+            'product_category_id' => 'التصنيف',
             'pricing_unit' => 'وحدة التسعير',
             'pricing_mode' => 'طريقة التسعير',
             'min_order_quantity' => 'الحد الأدنى للطلب',

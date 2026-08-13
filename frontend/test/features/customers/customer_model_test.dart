@@ -152,4 +152,90 @@ void main() {
     expect(shop.city, isNull);
     expect(shop.placeLabel, isNull);
   });
+
+  // ─────────────────────────── when they last ordered ───────────────────────────
+
+  test('parses the date of the last order the list was sorted by', () {
+    // Arrange — the shape `GET /customers?sort=least_recent_order` sends.
+    final json = <String, dynamic>{
+      'id': 7,
+      'code': 'C7',
+      'name': 'مطبعة الأمل',
+      'phone': '0918887777',
+      'is_active': true,
+      'orders_count': 4,
+      'last_order_at': '2026-01-14T09:30:00+00:00',
+    };
+
+    // Act
+    final customer = Customer.fromJson(json);
+
+    // Assert
+    expect(customer.lastOrderAt, DateTime.parse('2026-01-14T09:30:00+00:00'));
+  });
+
+  test('a customer who has never ordered carries a null date, not a missing one', () {
+    // Arrange — the server sends the key with null on that sort, and omits it on every other
+    // list. Both land as null here; only the card's other fields tell them apart.
+    final json = <String, dynamic>{
+      'id': 8,
+      'code': 'C8',
+      'name': 'عميل جديد',
+      'phone': '0917778888',
+      'is_active': true,
+      'orders_count': 0,
+      'last_order_at': null,
+    };
+
+    // Act
+    final customer = Customer.fromJson(json);
+
+    // Assert
+    expect(customer.lastOrderAt, isNull);
+    expect(customer.lastOrderAgo, isNull);
+  });
+
+  test('says how long the silence has been, in the words a call sheet is read in', () {
+    // Arrange — one customer per band, all measured from the same instant.
+    final now = DateTime.now();
+    Customer at(Duration ago) => Customer(
+      id: 1,
+      code: 'C1',
+      name: 'مطبعة',
+      phone: '0910000000',
+      isActive: true,
+      lastOrderAt: now.subtract(ago),
+    );
+
+    // Act
+    final labels = [
+      at(const Duration(hours: 2)).lastOrderAgo,
+      at(const Duration(days: 1)).lastOrderAgo,
+      at(const Duration(days: 9)).lastOrderAgo,
+      at(const Duration(days: 62)).lastOrderAgo,
+      at(const Duration(days: 400)).lastOrderAgo,
+    ];
+
+    // Assert — no «منذ ٦٢ يوماً»: past a month nobody converts a day count back into a season.
+    expect(labels, ['اليوم', 'أمس', 'منذ 9 أيام', 'منذ شهرين', 'منذ سنة']);
+  });
+
+  test('a date the server sent in the future reads as today rather than as nonsense', () {
+    // Arrange — clock skew between the phone and the server, which is the only way this
+    // happens; «منذ -1 يوم» on a card is worse than a day's imprecision.
+    final customer = Customer(
+      id: 1,
+      code: 'C1',
+      name: 'مطبعة',
+      phone: '0910000000',
+      isActive: true,
+      lastOrderAt: DateTime.now().add(const Duration(hours: 3)),
+    );
+
+    // Act
+    final label = customer.lastOrderAgo;
+
+    // Assert
+    expect(label, 'اليوم');
+  });
 }

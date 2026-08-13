@@ -194,4 +194,95 @@ void main() {
     expect(state.page.items, hasLength(1));
     expect(state.page.items.single.id, 1);
   });
+
+  // ── the customer axis ──────────────────────────────────────────────────────
+  // Opened from the customer screen rather than from the home board, and it is the one axis a
+  // reader cannot check for themselves: «كل طلبات العميل» over somebody else's orders looks
+  // exactly like a correct screen. See CUSTOMER-ORDERS-SECTION.md.
+
+  test('a customer card asks for that customer', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+    final cubit = cubitFor(
+      const OrdersFilter(title: 'كل طلبات العميل', customerId: 7),
+    );
+
+    // Act
+    await cubit.load();
+
+    // Assert
+    final captured = verify(
+      () => repository.orders(
+        search: any(named: 'search'),
+        statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
+        customerId: captureAny(named: 'customerId'),
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        page: any(named: 'page'),
+        perPage: any(named: 'perPage'),
+      ),
+    ).captured.last;
+
+    expect(captured, 7);
+  });
+
+  test('page two stays on the same customer', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+    final cubit = cubitFor(
+      const OrdersFilter(
+        title: 'الطلبات الجارية',
+        statuses: ['new', 'printing'],
+        customerId: 7,
+      ),
+    );
+    await cubit.load();
+
+    // Act
+    await cubit.loadMore();
+
+    // Assert — the failure this guards is the quiet one: page two of *everybody's* orders
+    // appended under a title naming one person.
+    final captured = verify(
+      () => repository.orders(
+        search: any(named: 'search'),
+        statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
+        customerId: captureAny(named: 'customerId'),
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        page: any(named: 'page'),
+        perPage: any(named: 'perPage'),
+      ),
+    ).captured;
+
+    expect(captured.last, 7);
+  });
+
+  test('a screen about nobody in particular sends no customer', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+    final cubit = cubitFor(const OrdersFilter(title: 'نواقص', statuses: ['shortage']));
+
+    // Act
+    await cubit.load();
+
+    // Assert — null rather than a customer id nobody asked for, so the home board's cards keep
+    // counting the whole shop.
+    final captured = verify(
+      () => repository.orders(
+        search: any(named: 'search'),
+        statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
+        customerId: captureAny(named: 'customerId'),
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        page: any(named: 'page'),
+        perPage: any(named: 'perPage'),
+      ),
+    ).captured.last;
+
+    expect(captured, isNull);
+  });
 }

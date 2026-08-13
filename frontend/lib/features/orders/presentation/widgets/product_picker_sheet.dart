@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/paged_list_view.dart';
 import 'package:printing/core/widgets/search_field.dart';
 import 'package:printing/features/products/models/product.dart';
@@ -186,7 +187,7 @@ String _priceLine(Product product, ProductVariant variant) {
   final tiers = variant.tiersByQuantity;
   if (tiers.isEmpty) return 'بلا سعر مسجَّل';
 
-  return 'من ${tiers.first.unitPrice} د.ل';
+  return 'من ${tiers.first.unitPrice.grouped} د.ل';
 }
 
 /// One bag on offer: what it looks like, what it is called, and how many sizes it comes in.

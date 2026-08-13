@@ -49,7 +49,9 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = ProductFilters::fromArray(
-            $request->only(['search', 'category', 'pricing_unit', 'pricing_mode', 'is_active']),
+            $request->only([
+                'search', 'category', 'product_category_id', 'pricing_unit', 'pricing_mode', 'is_active',
+            ]),
         );
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
@@ -84,7 +86,7 @@ class ProductController extends Controller
      */
     public function show(Product $product): JsonResponse
     {
-        return $this->success(new ProductResource($product->load(['variants.priceTiers', 'images'])));
+        return $this->success(new ProductResource($product->load(['variants.priceTiers', 'images', 'productCategory'])));
     }
 
     /**

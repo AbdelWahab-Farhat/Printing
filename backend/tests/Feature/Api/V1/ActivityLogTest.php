@@ -15,6 +15,8 @@ use App\Domain\Identity\AccessService;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -211,6 +213,103 @@ class ActivityLogTest extends TestCase
         $labels = $response->assertOk()->json('data.0.attribute_labels');
         $this->assertArrayHasKey('name', $labels);
         $this->assertArrayNotHasKey('id', $labels, 'the id is never logged, so it can never need a label');
+    }
+
+    public function test_every_value_in_an_entry_is_read_in_arabic_too(): void
+    {
+        // Arrange — the labels named the columns and the screen went on reading «الحالة: new».
+        // An Arabic label in front of an English value is the half-translated line this closes.
+        $order = Order::factory()->create(['status' => OrderStatus::New]);
+        // Set on the model rather than mass assigned: `status` is not fillable, because the
+        // status is moved by ChangeOrderStatus and nothing else. The trail records it either way.
+        $order->status = OrderStatus::Printing;
+        $order->save();
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}/logs");
+
+        // Assert — both halves, because «من جديدة» is half the sentence.
+        $update = collect($response->assertOk()->json('data'))->firstWhere('event', 'updated');
+        $this->assertSame('جديدة', $update['value_labels']['old']['status']);
+        $this->assertSame('قيد الطباعة', $update['value_labels']['attributes']['status']);
+    }
+
+    public function test_a_foreign_key_is_read_as_the_record_it_names(): void
+    {
+        // Arrange — «العميل: 12» named nothing to the person reading the screen.
+        $customer = Customer::factory()->create(['name' => 'مطبعة النور']);
+        $order = Order::factory()->create(['customer_id' => $customer->id]);
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}/logs");
+
+        // Assert
+        $created = collect($response->assertOk()->json('data'))->firstWhere('event', 'created');
+        $this->assertSame('مطبعة النور', $created['value_labels']['attributes']['customer_id']);
+    }
+
+    public function test_a_value_needing_no_translation_is_left_out_of_the_response(): void
+    {
+        // Arrange — a name is already Arabic and a phone is a number. Sending them back
+        // untranslated would ship every row twice for nothing.
+        $customer = Customer::factory()->create(['name' => 'مطبعة الأمل']);
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/customers/{$customer->id}/logs");
+
+        // Assert — absent, and the client falls back to the raw value exactly as it does for an
+        // unlabelled column.
+        $labels = $response->assertOk()->json('data.0.value_labels.attributes');
+        $this->assertArrayNotHasKey('name', $labels);
+    }
+
+    public function test_a_whole_page_of_entries_resolves_its_references_in_one_query_per_kind(): void
+    {
+        // Arrange — fifteen orders naming fifteen customers is the shape a feed actually has,
+        // and the shape a per-entry lookup turns into forty round trips.
+        $headers = $this->auditorWithEmptyTrail();
+
+        foreach (Customer::factory()->count(15)->create() as $customer) {
+            Order::factory()->create(['customer_id' => $customer->id]);
+        }
+
+        // Act
+        DB::enableQueryLog();
+        $response = $this->withHeaders($headers)->getJson('/api/v1/logs?per_page=50');
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        // Assert — a ceiling rather than an exact number: the page also loads the auditor, the
+        // entries and their causers, and pinning that count would make this test fail for
+        // changes it is not about. What it will not survive is a lookup per entry.
+        $response->assertOk();
+        $this->assertLessThan(
+            20,
+            $queries,
+            'a page of history must resolve its foreign keys in one query per kind, not one per entry',
+        );
+    }
+
+    public function test_the_permissions_a_role_gained_are_named_in_arabic(): void
+    {
+        // Arrange — the most consequential edit the API allows, and the one that read worst:
+        // a list of `products.view` strings.
+        $role = Role::create(['name' => 'مصمم', 'guard_name' => 'web']);
+        app(AccessService::class)->updateRole($role, 'مصمم', [PermissionName::ViewProducts->value]);
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/roles/{$role->id}/logs");
+
+        // Assert
+        $entry = collect($response->assertOk()->json('data'))->firstWhere('event', 'updated');
+        $this->assertSame(
+            PermissionName::ViewProducts->label(),
+            $entry['property_labels']['permissions'][PermissionName::ViewProducts->value],
+        );
     }
 
     public function test_the_history_says_how_many_entries_of_each_kind_it_holds(): void

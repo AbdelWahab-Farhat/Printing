@@ -52,6 +52,9 @@ void main() {
       'lib/features/customers/models/customer.g.dart',
     ],
     'OrderItemResource': ['lib/features/orders/models/order.g.dart'],
+    // One file, not two: the recorder it nests is declared beside the entry rather than reached
+    // for from another feature, so the same generated parser reads `id` and `name` too.
+    'ProductionCostEntryResource': ['lib/features/orders/models/production_cost_entry.g.dart'],
     'WarehouseStockResource': ['lib/features/warehouses/models/warehouse_stock.g.dart'],
     'PurchaseOrderResource': [
       'lib/features/purchase_orders/models/purchase_order.g.dart',

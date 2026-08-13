@@ -37,6 +37,43 @@ abstract interface class AccessRepository {
     List<String> roleNames = const [],
   });
 
+  /// One employee with the roles they hold.
+  ///
+  /// A second request rather than the row lifted out of the list: the detail screen is opened
+  /// on a list that may be minutes old, and a screen built from a stale row shows a phone
+  /// number somebody has already corrected.
+  Future<Either<Failure, AuthUser>> user(int userId);
+
+  /// Corrects an employee's name, email and phone — and nothing else.
+  ///
+  /// **No password and no salary**, deliberately: each has its own method below because each
+  /// has its own guard. A password sent on this call would be ignored by the server anyway.
+  Future<Either<Failure, AuthUser>> updateUser({
+    required int userId,
+    required String name,
+    required String email,
+    required String phone,
+  });
+
+  /// Sets a new password for somebody who has forgotten theirs.
+  ///
+  /// **Administrators only** — a gate ability on the server, so it cannot be ticked onto a
+  /// role: whoever sets a colleague's password can sign in as them. The current password is
+  /// not asked for, because the person typing does not know it; every session already open on
+  /// that account is ended by the server.
+  Future<Either<Failure, AuthUser>> setUserPassword(int userId, String password);
+
+  /// What this employee is paid a month. `null` records that no wage has been agreed, which is
+  /// a real state and different from a wage of zero.
+  Future<Either<Failure, AuthUser>> setUserSalary(int userId, String? salary);
+
+  /// Stops an account or starts it again.
+  ///
+  /// Its own endpoint rather than a field on [updateUser], and that is a safety property rather
+  /// than tidiness: because saving an edit never carries `is_active`, correcting a stopped
+  /// employee's phone number can never silently let them back in.
+  Future<Either<Failure, AuthUser>> setUserActivation(int userId, {required bool isActive});
+
   /// Replaces a user's **whole** set of roles. An empty list takes them all away.
   ///
   /// Replace rather than add/remove, because that is what the endpoint is: sending the set the

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/features/products/models/product_category.dart';
+import 'package:printing/features/products/models/product_type.dart';
 
 /// مطبوعة or سادة, as the one thing on a product row that is a *kind* rather than a number.
 ///
@@ -18,8 +18,8 @@ import 'package:printing/features/products/models/product_category.dart';
 /// It is deliberately the only pill on the card. The design once tagged sizes this way too, and
 /// two different kinds of data in one visual language meant the eye could not separate them;
 /// the sizes are a table now, so nothing here can be mistaken for one.
-class ProductCategoryBadge extends StatelessWidget {
-  const ProductCategoryBadge({required this.category, required this.label, super.key});
+class ProductTypeBadge extends StatelessWidget {
+  const ProductTypeBadge({required this.category, required this.label, super.key});
 
   /// The machine value — `printed`, `general` — parsed for the glyph and the tone.
   final String category;
@@ -30,7 +30,7 @@ class ProductCategoryBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final kind = ProductCategory.fromWire(category);
+    final kind = ProductType.fromWire(category);
     final (background, foreground) = _tone(scheme, kind);
 
     return Container(
@@ -60,11 +60,11 @@ class ProductCategoryBadge extends StatelessWidget {
 
   /// Printed against plain, at 13 points. Not two bags: at this size the difference between two
   /// silhouettes of the same object is invisible, and the badge would be a colour swatch.
-  static IconData _icon(ProductCategory category) => switch (category) {
-    ProductCategory.printed => AppIcons.printedProduct,
-    ProductCategory.general => AppIcons.plainProduct,
+  static IconData _icon(ProductType category) => switch (category) {
+    ProductType.printed => AppIcons.printedProduct,
+    ProductType.general => AppIcons.plainProduct,
     // Nothing is claimed about a category this build has never heard of.
-    ProductCategory.unknown => AppIcons.products,
+    ProductType.unknown => AppIcons.products,
   };
 
   /// Two roles out of the scheme, never a hex: the theme is generated and gets replaced whole.
@@ -72,9 +72,9 @@ class ProductCategoryBadge extends StatelessWidget {
   /// **Not `primary`.** On this card primary means money — the code, and the floor price in the
   /// grid. Spending it on a badge that is present on every single row would leave the price
   /// column competing with a label that never changes.
-  static (Color, Color) _tone(ColorScheme scheme, ProductCategory category) => switch (category) {
-    ProductCategory.printed => (scheme.secondaryContainer, scheme.onSecondaryContainer),
-    ProductCategory.general => (scheme.tertiaryContainer, scheme.onTertiaryContainer),
-    ProductCategory.unknown => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
+  static (Color, Color) _tone(ColorScheme scheme, ProductType category) => switch (category) {
+    ProductType.printed => (scheme.secondaryContainer, scheme.onSecondaryContainer),
+    ProductType.general => (scheme.tertiaryContainer, scheme.onTertiaryContainer),
+    ProductType.unknown => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
   };
 }

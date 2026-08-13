@@ -46,8 +46,8 @@ class StatusBoard extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 2,
-          mainAxisSpacing: 12.h,
-          crossAxisSpacing: 12.w,
+          mainAxisSpacing: 18.h,
+          crossAxisSpacing: 18.w,
           childAspectRatio: 1.7,
           children: [
             for (final (index, status) in statuses.indexed)

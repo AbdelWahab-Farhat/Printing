@@ -71,6 +71,44 @@ enum OrderStatus {
   static List<OrderStatus> get filterable =>
       values.where((status) => status != OrderStatus.unknown).toList(growable: false);
 
+  /// Whether nobody in the shop still owes this order a decision.
+  ///
+  /// The customer has it, the money is agreed, or it was written off. Mirrors
+  /// `OrderStatus::isClosed()` on the server, which draws the same line — and
+  /// `order_status_groups_test.dart` reads that method and fails if the two drift.
+  ///
+  /// **«تم الاستلام» counts as finished even though it still has a move to make.** The move is
+  /// about money, not bags: the order is out of the workshop and out of everyone's queue, which
+  /// is the question this getter answers. [unknown] answers `false` for the honest reason — a
+  /// status this build has never heard of is not one it may declare over.
+  bool get isFinished => switch (this) {
+    OrderStatus.delivered || OrderStatus.settled || OrderStatus.cancelled => true,
+    _ => false,
+  };
+
+  /// Everything still in somebody's hands — «الطلبات الجارية».
+  ///
+  /// **Derived from [isFinished] rather than listed.** Two hand-written lists over fourteen
+  /// statuses are two things to keep in step, and the one that drifts is always the one nobody
+  /// reads. A status added to this enum tomorrow joins this queue by default, which is the right
+  /// default: new work is work until somebody says otherwise.
+  ///
+  /// The three returns and «إعادة إرسال» are in it. A parcel coming back is not an ending — it
+  /// goes out again or it is written off, and both are decisions somebody still owes.
+  static List<OrderStatus> get inProgress => filterable
+      .where((status) => !status.isFinished)
+      .toList(growable: false);
+
+  /// What actually reached the customer — «الطلبات المستلمة».
+  ///
+  /// **«تم التسوية» is in it.** Settled means the bags were handed over *and* the money was
+  /// agreed, so a settled order is a received one by definition; leaving it out would drain this
+  /// list as orders were settled, which is the opposite of what the word says. «إلغاء تام» is
+  /// out for the matching reason — it reached nobody.
+  static List<OrderStatus> get received => filterable
+      .where((status) => status.isFinished && status != OrderStatus.cancelled)
+      .toList(growable: false);
+
   /// Which family of colours the chip draws from.
   ///
   /// Grouped rather than one colour per status: twelve distinct colours is not a legend anyone

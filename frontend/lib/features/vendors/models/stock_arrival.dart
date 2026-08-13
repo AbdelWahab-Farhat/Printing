@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 
 part 'stock_arrival.freezed.dart';
@@ -95,7 +96,7 @@ abstract class StockArrivalItem with _$StockArrivalItem {
   factory StockArrivalItem.fromJson(Map<String, dynamic> json) => _$StockArrivalItemFromJson(json);
 
   /// `'200.000'` reads as a quantity to a database and as noise to a storekeeper: `'200'`.
-  String get quantityLabel => trimDecimals(quantity);
+  String get quantityLabel => groupedDecimal(quantity);
 
   String get title =>
       variant == null ? 'مقاس #$productVariantId' : '${variant!.productName} · ${variant!.label}';

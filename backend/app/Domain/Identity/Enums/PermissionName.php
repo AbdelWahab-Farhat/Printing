@@ -21,11 +21,25 @@ enum PermissionName: string
     // Access management
     case ViewUsers = 'users.view';
     case ManageUsers = 'users.manage';
+
+    // Seeing what a colleague is paid, and setting it. **Its own permission, deliberately not
+    // part of `users.manage`**: assigning somebody a role and knowing everyone's wage are
+    // different jobs, and the accountant who needs the second usually has no business with the
+    // first. Both halves are one case rather than a view/manage pair, because a wage is one
+    // number on one screen — the person trusted to read it is the person who agrees it.
+    case ManageUserSalaries = 'users.salary';
     case ManageRoles = 'roles.manage';
 
     // Customers
     case ViewCustomers = 'customers.view';
     case ManageCustomers = 'customers.manage';
+
+    // Rewriting or removing a note somebody else wrote about a customer. Its own permission
+    // rather than part of `customers.manage`, because they are different powers: correcting a
+    // customer's phone number is bookkeeping, while editing a colleague's sentence under their
+    // name is a claim about what they said. Everybody who may read a customer may *write* a
+    // note and change their own — that needs no grant at all.
+    case ModerateCustomerComments = 'customers.comments.moderate';
 
     // مجالات العمل — what a customer's shop sells. Reading is split from managing and granted
     // to every role, because anyone recording a customer needs the list to pick from; curating
@@ -130,9 +144,11 @@ enum PermissionName: string
         return match ($this) {
             self::ViewUsers => 'عرض المستخدمين',
             self::ManageUsers => 'إدارة المستخدمين وأدوارهم',
+            self::ManageUserSalaries => 'عرض رواتب الموظفين وتعديلها',
             self::ManageRoles => 'إدارة الأدوار والصلاحيات',
             self::ViewCustomers => 'عرض العملاء',
             self::ManageCustomers => 'إضافة وتعديل العملاء',
+            self::ModerateCustomerComments => 'تعديل وحذف ملاحظات الآخرين على العملاء',
             self::ViewBusinessFields => 'عرض مجالات العمل',
             self::ManageBusinessFields => 'إضافة وتعديل مجالات العمل',
             self::ViewProducts => 'عرض المنتجات والأسعار',
@@ -181,8 +197,10 @@ enum PermissionName: string
     public function group(): string
     {
         return match ($this) {
-            self::ViewUsers, self::ManageUsers, self::ManageRoles => 'الصلاحيات والمستخدمون',
-            self::ViewCustomers, self::ManageCustomers => 'العملاء',
+            self::ViewUsers, self::ManageUsers, self::ManageUserSalaries,
+            self::ManageRoles => 'الصلاحيات والمستخدمون',
+            self::ViewCustomers, self::ManageCustomers,
+            self::ModerateCustomerComments => 'العملاء',
             self::ViewBusinessFields, self::ManageBusinessFields => 'مجالات العمل',
             self::ViewProducts, self::ManageProducts => 'المنتجات',
             self::ViewDeliveryLocations, self::ManageDeliveryLocations => 'مدن ومناطق التوصيل',

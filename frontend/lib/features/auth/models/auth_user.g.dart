@@ -20,6 +20,8 @@ _AuthUser _$AuthUserFromJson(Map<String, dynamic> json) => _AuthUser(
   permissions: (json['permissions'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
+  isActive: json['is_active'] as bool? ?? true,
+  salary: json['salary'] as String?,
   isAdmin: json['is_admin'] as bool? ?? false,
 );
 
@@ -31,6 +33,8 @@ Map<String, dynamic> _$AuthUserToJson(_AuthUser instance) => <String, dynamic>{
   'employee_code': instance.employeeCode,
   'roles': instance.roles.map((e) => e.toJson()).toList(),
   'permissions': instance.permissions,
+  'is_active': instance.isActive,
+  'salary': instance.salary,
   'is_admin': instance.isAdmin,
 };
 

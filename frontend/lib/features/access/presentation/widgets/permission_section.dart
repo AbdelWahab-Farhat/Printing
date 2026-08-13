@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/access/models/role.dart';
 
 /// One section of permissions — a heading, a count, and the permissions under it.
@@ -81,7 +82,7 @@ class PermissionSection extends StatelessWidget {
               // section is granted. Reading a role, every row shown *is* granted, so the count is
               // simply how many.
               trailing: _isEditable
-                  ? '${selectedCount ?? 0} من ${group.permissions.length}'
+                  ? '${(selectedCount ?? 0).grouped} من ${group.permissions.length.grouped}'
                   : '${group.permissions.length}',
               isEditable: _isEditable,
               isWholeGroupSelected:

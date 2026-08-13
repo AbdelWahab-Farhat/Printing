@@ -39,6 +39,8 @@ void main() {
     String code = 'C8',
     String phone = '0917775555',
     bool isActive = true,
+    int? ordersCount,
+    DateTime? lastOrderAt,
   }) {
     return Customer(
       id: 8,
@@ -46,6 +48,8 @@ void main() {
       name: name,
       phone: phone,
       isActive: isActive,
+      ordersCount: ordersCount,
+      lastOrderAt: lastOrderAt,
     );
   }
 
@@ -149,5 +153,82 @@ void main() {
 
     // Assert
     expect(tapped, isTrue);
+  });
+
+  // ─────────────────────── how much they order ────────────────────────
+
+  testWidgets('the row says how many orders this customer has placed', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(CustomerCard(customer: customerWith(ordersCount: 17))));
+
+    // Act
+    final orders = find.text('17 طلبية');
+
+    // Assert
+    expect(orders, findsOneWidget);
+  });
+
+  testWidgets('a customer who has never ordered says so', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(CustomerCard(customer: customerWith(ordersCount: 0))));
+
+    // Act
+    final orders = find.text('لا طلبيات');
+
+    // Assert — a real answer about a real customer, and the one that makes «١٧ طلبية» beside it
+    // worth reading: a row that goes quiet at zero teaches the eye that the slot means nothing.
+    expect(orders, findsOneWidget);
+  });
+
+  testWidgets('a count nobody sent draws nothing at all', (tester) async {
+    // Arrange — a reader without `orders.view` gets no key, and neither does the form's own
+    // response after a save.
+    await tester.pumpWidget(host(CustomerCard(customer: customerWith())));
+
+    // Act
+    final orders = find.textContaining('طلبية');
+
+    // Assert — «لا طلبيات» about a customer nobody counted would be a claim this card was never
+    // given the right to make.
+    expect(orders, findsNothing);
+    expect(find.text('لا طلبيات'), findsNothing);
+  });
+
+  // ─────────────────────────── the call sheet ───────────────────────────
+
+  testWidgets('the sorted list shows how long the silence has been, in place of the count', (
+    tester,
+  ) async {
+    // Arrange — `last_order_at` arrives only on `sort=least_recent_order`, which is the list
+    // this card is being read off.
+    await tester.pumpWidget(
+      host(
+        CustomerCard(
+          customer: customerWith(
+            ordersCount: 4,
+            lastOrderAt: DateTime.now().subtract(const Duration(days: 70)),
+          ),
+        ),
+      ),
+    );
+
+    // Act
+    final silence = find.text('منذ شهرين');
+
+    // Assert — the number the list was sorted by is the number on the row. «٤ طلبية» is the
+    // right answer to a question nobody asked here, and both on one line is a line too long.
+    expect(silence, findsOneWidget);
+    expect(find.text('4 طلبية'), findsNothing);
+  });
+
+  testWidgets('a customer on that list who never ordered still says «لا طلبيات»', (tester) async {
+    // Arrange — they sort last and carry a null date; the count is what is left to say.
+    await tester.pumpWidget(host(CustomerCard(customer: customerWith(ordersCount: 0))));
+
+    // Act
+    final orders = find.text('لا طلبيات');
+
+    // Assert
+    expect(orders, findsOneWidget);
   });
 }

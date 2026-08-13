@@ -6,7 +6,7 @@ namespace Database\Seeders;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductCategory;
+use App\Domain\Catalog\Enums\ProductType;
 use App\Domain\Catalog\Models\Product;
 use Illuminate\Database\Seeder;
 
@@ -126,7 +126,7 @@ class CatalogSeeder extends Seeder
             [
                 'name' => $definition['name'],
                 'features' => $definition['features'],
-                'category' => ProductCategory::Printed,
+                'category' => ProductType::Printed,
                 'pricing_unit' => PricingUnit::Piece,
                 'pricing_mode' => PricingMode::Tiered,
                 'min_order_quantity' => $definition['min'],
@@ -167,7 +167,7 @@ class CatalogSeeder extends Seeder
                 'description' => 'لا يتم إدراج الأسعار بشكل مباشر نظراً لاختلاف المقاسات والمواصفات. '
                     .'يرجى إرسال تفاصيل المقاس والكمية المطلوبة ليتم تحديد السعر وتقديم العرض المناسب.',
                 'features' => ['مناسبة للملابس، العطور، الهدايا', 'تعكس هوية علامتك التجارية باحترافية'],
-                'category' => ProductCategory::Printed,
+                'category' => ProductType::Printed,
                 'pricing_unit' => PricingUnit::Piece,
                 'pricing_mode' => PricingMode::QuoteOnRequest,
                 'min_order_quantity' => 200,
@@ -205,7 +205,7 @@ class CatalogSeeder extends Seeder
                 [
                     'name' => $name,
                     'features' => ['بدون طباعة', 'تُباع بالكيلو'],
-                    'category' => ProductCategory::General,
+                    'category' => ProductType::General,
                     'pricing_unit' => PricingUnit::Kilogram,
                     'pricing_mode' => PricingMode::Tiered,
                     'min_order_quantity' => 1,

@@ -15,8 +15,10 @@ import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
 import 'package:printing/core/widgets/attachment_sheet.dart';
 import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/models/product_category.dart';
+import 'package:printing/features/products/models/product_type.dart';
+import 'package:printing/features/products/presentation/viewmodel/product_categories_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/save_product_cubit.dart';
+import 'package:printing/features/products/presentation/widgets/product_category_picker.dart';
 import 'package:printing/features/products/usecases/save_product.dart';
 
 /// Add a bag to the catalogue.
@@ -43,8 +45,18 @@ class ProductFormPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Created here rather than injected app-wide: the Cubit belongs to this screen and is
     // closed with it.
-    return BlocProvider<SaveProductCubit>(
-      create: (_) => sl<SaveProductCubit>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<SaveProductCubit>(create: (_) => sl<SaveProductCubit>()),
+        // Narrowed to the categories still on offer: a stopped heading is one nobody should be
+        // able to file under *today*, while the product's own stays selectable — see
+        // [ProductCategoryPicker].
+        BlocProvider<ProductCategoriesCubit>(
+          create: (_) =>
+              sl<ProductCategoriesCubit>(instanceName: Injector.activeProductCategoriesCubit)
+                ..load(),
+        ),
+      ],
       child: _ProductFormView(product: product),
     );
   }
@@ -76,7 +88,14 @@ class _ProductFormViewState extends State<_ProductFormView> {
 
   final List<_SizeRow> _sizes = [];
 
-  late ProductCategory _category = ProductCategory.fromWire(_editing?.category);
+  late ProductType _category = ProductType.fromWire(_editing?.category);
+
+  /// The catalogue heading. Null while nothing has been picked — which is a state a *new*
+  /// product opens in, and one an old product recorded before categories existed is still in.
+  late int? _productCategoryId = _editing?.productCategoryId;
+
+  /// Shown under the picker after a submit with nothing chosen. Cleared as soon as one is.
+  String? _categoryError;
   late PricingUnit _unit = PricingUnit.fromWire(_editing?.pricingUnit);
 
   /// Priced by the piece with a published list, which is nine bags in ten.
@@ -288,9 +307,15 @@ class _ProductFormViewState extends State<_ProductFormView> {
       _imageError = imageError;
     });
 
+    // The picker is a dropdown rather than a form field, so `validate()` cannot see it: the
+    // check is written here for the same reason the photo's is.
+    final categoryError = _productCategoryId == null ? 'اختر تصنيف المنتج' : null;
+    setState(() => _categoryError = categoryError);
+
     if (!_formKey.currentState!.validate() ||
         gridError != null ||
-        imageError != null) {
+        imageError != null ||
+        categoryError != null) {
       return;
     }
 
@@ -299,6 +324,8 @@ class _ProductFormViewState extends State<_ProductFormView> {
       image: _image,
       name: _name.text,
       category: _category.wire,
+      // Non-null by the guard above: nothing reaches here without a heading picked.
+      productCategoryId: _productCategoryId!,
       pricingUnit: _unit.wire,
       pricingMode: _isQuoteOnly ? 'quote_on_request' : 'tiered',
       minOrderQuantity: _minimum.text,
@@ -413,9 +440,22 @@ class _ProductFormViewState extends State<_ProductFormView> {
                         SizedBox(height: 16.h),
                       ],
 
-                      _ChoiceRow<ProductCategory>(
-                        label: 'التصنيف',
-                        values: ProductCategory.choices,
+                      ProductCategoryPicker(
+                        value: _productCategoryId,
+                        // The product's own heading, so a stopped one stays selectable rather
+                        // than being silently blanked by opening the form.
+                        current: _editing?.productCategory,
+                        errorText: state.productCategoryError ?? _categoryError,
+                        onChanged: (id) => setState(() {
+                          _productCategoryId = id;
+                          _categoryError = null;
+                        }),
+                      ),
+                      SizedBox(height: 12.h),
+
+                      _ChoiceRow<ProductType>(
+                        label: 'النوع',
+                        values: ProductType.choices,
                         selected: _category,
                         labelOf: (value) => value.label,
                         onSelected: (value) =>

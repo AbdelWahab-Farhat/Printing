@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
 import 'package:printing/features/orders/models/order.dart';
@@ -160,7 +161,7 @@ class _LineField extends StatelessWidget {
 
     final ordered = double.tryParse(item.quantity);
     if (ordered != null && missing > ordered) {
-      return 'الناقص أكبر من المطلوب (${item.quantity})';
+      return 'الناقص أكبر من المطلوب (${item.quantity.grouped})';
     }
 
     return null;
@@ -187,14 +188,14 @@ class _LineField extends StatelessWidget {
           // Arabic-Indic digits are what the keyboard produces, so they are allowed through and
           // the server normalises them — the same rule every other quantity here follows.
           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]'))],
-          helperText: 'المطلوب ${item.quantity} — اتركه فارغاً إذا لم ينقص شيء',
+          helperText: 'المطلوب ${item.quantity.grouped} — اتركه فارغاً إذا لم ينقص شيء',
           validator: _validate,
           onChanged: onChanged,
         ),
         if (billable != null) ...[
           SizedBox(height: 6.h),
           Text(
-            'يُحاسَب على $billable ${item.pricingUnitLabel} × ${item.unitPrice}',
+            'يُحاسَب على ${billable.grouped} ${item.pricingUnitLabel} × ${item.unitPrice.grouped}',
             style: context.textTheme.bodySmall?.copyWith(
               color: scheme.primary,
               fontWeight: FontWeight.w700,

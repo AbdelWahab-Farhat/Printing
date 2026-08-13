@@ -7,13 +7,13 @@ import 'package:printing/core/permissions/app_permission.dart';
 import 'package:printing/core/router/app_router.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/core/widgets/app_dialog.dart';
 import 'package:printing/core/widgets/app_speed_dial.dart';
 import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/purchase_orders/models/purchase_order.dart';
 import 'package:printing/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
 import 'package:printing/features/purchase_orders/presentation/widgets/receive_arrival_sheet.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 
 /// One purchase order: what was asked for, what has turned up, and what is left.
 ///
@@ -304,7 +304,7 @@ class _Body extends StatelessWidget {
               // raised before cost tracking, and left off entirely rather than shown as zero.
               if (order.totalAmount case final total?) ...[
                 Divider(height: 18.h),
-                _Row(label: 'إجمالي التكلفة', value: '${trimDecimals(total)} د.ل'),
+                _Row(label: 'إجمالي التكلفة', value: '${groupedDecimal(total)} د.ل'),
               ],
             ],
           ),
@@ -358,14 +358,16 @@ class _LineRow extends StatelessWidget {
               Text(
                 // The number that decides whether the next shipment is accepted, printed once
                 // and computed by the server.
-                'متبقٍ ${item.remainingLabel}',
+                'متبقٍ ${item.remainingWithUnit}',
                 style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
               ),
           ],
         ),
         SizedBox(height: 4.h),
         Text(
-          'مطلوب ${item.orderedLabel} · وصل ${item.receivedLabel}',
+          // The unit on the *ordered* figure and not repeated on the received one: they are the
+          // same unit by construction, and saying it twice in one line is read as two facts.
+          'مطلوب ${item.orderedWithUnit} · وصل ${item.receivedLabel}',
           style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
         // The money on its own line, and only when there is any. A line raised before cost
@@ -373,8 +375,10 @@ class _LineRow extends StatelessWidget {
         if (item.hasCost) ...[
           SizedBox(height: 4.h),
           Text(
-            '${trimDecimals(item.unitCost!)} د.ل للوحدة · '
-            'الإجمالي ${trimDecimals(item.totalCost ?? '0')} د.ل',
+            // «١٫٥ د.ل للكيلوغرام» — a price a buyer can check against the quote they were
+            // given. «للوحدة» named nothing, and named it identically for both units.
+            '${groupedDecimal(item.unitCost!)} د.ل ${item.perUnitSuffix} · '
+            'الإجمالي ${groupedDecimal(item.totalCost ?? '0')} د.ل',
             style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ],

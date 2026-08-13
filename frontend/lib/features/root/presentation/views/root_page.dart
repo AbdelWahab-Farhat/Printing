@@ -196,6 +196,16 @@ class _RootDrawer extends StatelessWidget {
                 onTap: () => context.push(Routes.purchaseOrders),
               ),
             ),
+            // Beside أوامر الشراء because it is the same kind of back-office reference data: a
+            // standing figure curated once and read by every order that reaches الطباعة.
+            PermissionGate(
+              permission: AppPermission.viewManufacturingCostRates,
+              child: _DrawerLink(
+                icon: AppIcons.manufacturingCostRates,
+                label: 'معدلات تكلفة التصنيع',
+                onTap: () => context.push(Routes.manufacturingCostRates),
+              ),
+            ),
             // Gated: unlike the map above, this list is not needed to fill any form in — a
             // carrier is chosen from the dispatch screen's own picker.
             PermissionGate(
@@ -214,6 +224,16 @@ class _RootDrawer extends StatelessWidget {
               label: 'مجالات العمل',
               onTap: () => context.push(Routes.businessFields),
             ),
+            // Gated on *reading* products, not on managing them: somebody who may see the
+            // catalogue may see how it is organised. Adding and renaming is hidden inside.
+            PermissionGate(
+              permission: AppPermission.viewProducts,
+              child: _DrawerLink(
+                icon: AppIcons.productCategory,
+                label: 'تصنيفات المنتجات',
+                onTap: () => context.push(Routes.productCategories),
+              ),
+            ),
             // Gated, not greyed: a link that only ever leads to a screen this account cannot
             // read is a row to leave out, not one to explain. The route guards it again — this
             // is the courtesy, that is the boundary.
@@ -231,6 +251,16 @@ class _RootDrawer extends StatelessWidget {
                 icon: AppIcons.roles,
                 label: 'الأدوار والصلاحيات',
                 onTap: () => context.push(Routes.roles),
+              ),
+            ),
+            // Last of the rows, because it is a manager's screen rather than a daily one — and
+            // the only one here that is read rather than curated.
+            PermissionGate(
+              permission: AppPermission.viewProfitAndLossReport,
+              child: _DrawerLink(
+                icon: AppIcons.report,
+                label: 'الأرباح والخسائر',
+                onTap: () => context.push(Routes.profitAndLoss),
               ),
             ),
             const Spacer(),

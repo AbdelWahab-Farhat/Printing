@@ -188,7 +188,10 @@ enum OrderStatus: string
             self::Resend => [self::OfficePickup, self::OutForDelivery, self::Cancelled],
 
             // Handing the bags over is not the end of the job: what was collected for them has
-            // to come back and be agreed.
+            // to come back and be agreed. Offered here whatever the order has been paid — the
+            // map answers what *follows* what — and refused by the action while anything is
+            // still owed, so the accountant is told what to record rather than left looking for
+            // a button that vanished. See SettlementRequiresFullPayment.
             self::Delivered => [self::Settled],
 
             self::Settled, self::Cancelled => [],

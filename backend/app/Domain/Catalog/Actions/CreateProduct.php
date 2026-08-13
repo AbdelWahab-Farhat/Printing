@@ -33,6 +33,7 @@ final class CreateProduct
                 'description' => $data->description,
                 'features' => $data->features,
                 'category' => $data->category,
+                'product_category_id' => $data->productCategoryId,
                 'pricing_unit' => $data->pricingUnit,
                 'pricing_mode' => $data->pricingMode,
                 'min_order_quantity' => $data->minOrderQuantity,
@@ -48,7 +49,7 @@ final class CreateProduct
             // the same trade DeleteProductImage makes in the other direction.
             ($this->uploadImage)($product, $image, $altText);
 
-            return $product->load(['variants.priceTiers', 'images']);
+            return $product->load(['variants.priceTiers', 'images', 'productCategory']);
         });
     }
 }

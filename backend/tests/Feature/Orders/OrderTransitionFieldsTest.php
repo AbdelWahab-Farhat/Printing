@@ -112,6 +112,21 @@ class OrderTransitionFieldsTest extends TestCase
     }
 
     /**
+     * An order with the bags handed over and a given amount of its invoice collected.
+     *
+     * `paid_amount` is written directly rather than through the payments endpoint — the same
+     * shortcut `OrderPaymentStatusFilterTest` takes, and for the same reason: what is under test
+     * here is the guard that *reads* the figure, not the ledger that writes it.
+     */
+    private function deliveredOrder(string $grandTotal, string $paid): Order
+    {
+        return Order::factory()->status(OrderStatus::Delivered)->create([
+            'grand_total' => $grandTotal,
+            'paid_amount' => $paid,
+        ]);
+    }
+
+    /**
      * @return array{0: Order, 1: Customer}
      */
     private function orderNeedingArtwork(): array
@@ -430,7 +445,7 @@ class OrderTransitionFieldsTest extends TestCase
     public function test_a_settlement_that_matches_the_invoice_records_no_amount(): void
     {
         // Arrange
-        $order = Order::factory()->status(OrderStatus::Delivered)->create(['grand_total' => '250.00']);
+        $order = $this->deliveredOrder('250.00', paid: '250.00');
         $headers = $this->accountant();
 
         // Act — the ordinary case: the money came back and it was the right money.
@@ -447,8 +462,9 @@ class OrderTransitionFieldsTest extends TestCase
 
     public function test_a_short_settlement_is_written_down_as_what_actually_arrived(): void
     {
-        // Arrange
-        $order = Order::factory()->status(OrderStatus::Delivered)->create(['grand_total' => '250.00']);
+        // Arrange — the invoice is paid off in the ledger; what the courier physically handed
+        // over is the separate fact this field exists to record.
+        $order = $this->deliveredOrder('250.00', paid: '250.00');
         $headers = $this->accountant();
 
         // Act
@@ -477,6 +493,75 @@ class OrderTransitionFieldsTest extends TestCase
         // Assert
         $response->assertStatus(403);
         $this->assertSame(OrderStatus::Delivered, $order->fresh()->status);
+    }
+
+    // ─────────────────── the money has to be in before the order is closed ───────────────────
+
+    public function test_an_unpaid_order_cannot_be_settled(): void
+    {
+        // Arrange — «تم التسوية» and «غير مدفوعة» at once was the bug: an order can be walked to
+        // the end of the line with nothing recorded against it.
+        $order = $this->deliveredOrder('250.00', paid: '0.00');
+        $headers = $this->accountant();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Settled);
+
+        // Assert — refused, and the message names what is still owed, so the accountant is told
+        // what to record rather than merely that the button did not work.
+        $response->assertStatus(422);
+        $this->assertStringContainsString('250.00', $response->json('message'));
+
+        $unmoved = $order->fresh();
+        $this->assertSame(OrderStatus::Delivered, $unmoved->status);
+        $this->assertNull($unmoved->settled_at);
+        $this->assertDatabaseMissing('order_status_transitions', [
+            'order_id' => $order->id,
+            'to_status' => OrderStatus::Settled->value,
+        ]);
+    }
+
+    public function test_an_order_paid_only_in_part_cannot_be_settled(): void
+    {
+        // Arrange — the عربون case: something came in, not all of it.
+        $order = $this->deliveredOrder('250.00', paid: '100.00');
+        $headers = $this->accountant();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Settled);
+
+        // Assert — the remainder is what is named, not the total.
+        $response->assertStatus(422);
+        $this->assertStringContainsString('150.00', $response->json('message'));
+        $this->assertSame(OrderStatus::Delivered, $order->fresh()->status);
+    }
+
+    public function test_an_overpaid_order_may_still_be_settled(): void
+    {
+        // Arrange — a discount granted after the money came in. Nothing is owed on it, so the
+        // guard has nothing to say: the rule is about money missing, not money matching.
+        $order = $this->deliveredOrder('250.00', paid: '300.00');
+        $headers = $this->accountant();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Settled);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.status', 'settled');
+    }
+
+    public function test_an_order_that_costs_nothing_may_be_settled(): void
+    {
+        // Arrange — an office pickup with no delivery to charge for. Nothing is outstanding on a
+        // total of zero, and refusing it would strand the order one step from the end.
+        $order = $this->deliveredOrder('0.00', paid: '0.00');
+        $headers = $this->accountant();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Settled);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.status', 'settled');
     }
 
     // ─────────────────────── the note that travels with every move ───────────────────────

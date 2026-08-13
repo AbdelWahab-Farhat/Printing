@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/warehouses/models/warehouse.dart';
 
 /// One place stock sits: what it is called, what kind it is, and how much of the catalogue is
@@ -85,7 +86,7 @@ class WarehouseCard extends StatelessWidget {
               if (warehouse.stocksCount case final count?) ...[
                 SizedBox(width: 8.w),
                 Text(
-                  count == 0 ? 'فارغ' : '$count صنفاً',
+                  count == 0 ? 'فارغ' : '${count.grouped} صنفاً',
                   style: context.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: count == 0 ? scheme.onSurfaceVariant : scheme.primary,

@@ -36,7 +36,12 @@ abstract class NewProduct with _$NewProduct {
 
     @JsonKey(includeIfNull: false) List<String>? features,
 
+    /// «النوع» — `printed` or `general`. The wire key is the one it was born with.
     required String category,
+
+    /// «التصنيف» — the catalogue heading. Required by the API from today on.
+    @JsonKey(name: 'product_category_id') required int productCategoryId,
+
     @JsonKey(name: 'pricing_unit') required String pricingUnit,
     @JsonKey(name: 'pricing_mode') required String pricingMode,
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/theme/app_tones.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/orders/models/order.dart';
 import 'package:printing/features/orders/models/order_payment.dart';
 import 'package:printing/features/orders/presentation/widgets/order_status_chip.dart';
@@ -136,15 +137,21 @@ class OrderCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: _Cell(label: 'سعر الطلبية', value: order.grandTotal, emphasize: true),
+                    child: _Cell(
+                      label: 'سعر الطلبية',
+                      value: order.grandTotal.grouped,
+                      isLtr: true,
+                      emphasize: true,
+                    ),
                   ),
                   Expanded(
-                    child: _Cell(label: 'المدفوع', value: order.paidAmount),
+                    child: _Cell(label: 'المدفوع', value: order.paidAmount.grouped, isLtr: true),
                   ),
                   Expanded(
                     child: _Cell(
                       label: 'المتبقي',
-                      value: order.remainingAmount,
+                      value: order.remainingAmount.grouped,
+                      isLtr: true,
                       // The one thing a work queue is scanned for after the status. Coloured
                       // only when something is still owed — a zero in alarm red would make the
                       // settled case look like the problem.

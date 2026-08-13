@@ -30,6 +30,24 @@ abstract class Customer with _$Customer {
     /// customer has none".
     List<CustomerShop>? shops,
 
+    /// How many orders this customer has placed, ever — cancellations included.
+    ///
+    /// **Null is «we were not told», and it happens two ways.** A reader without `orders.view`
+    /// is not sent the key at all, and neither is the response to saving the form. Both are
+    /// different from `0`, which is a real answer about a real customer — so a card draws the
+    /// number when there is one and draws nothing when there is not, rather than printing a
+    /// nought it was never given. See CUSTOMER-ORDERS-SECTION.md §٣.
+    @JsonKey(name: 'orders_count') int? ordersCount,
+
+    /// When this customer last placed an order.
+    ///
+    /// **Sent only by the list that is sorted by it** — `sort=least_recent_order`, the call
+    /// sheet — because that is the only screen that shows it and the only request that pays for
+    /// the subquery behind it. Null covers both «this customer has never ordered», which is the
+    /// answer that sort gives explicitly, and «no list asked»; the card tells them apart by
+    /// [ordersCount], which is on every row.
+    @JsonKey(name: 'last_order_at') DateTime? lastOrderAt,
+
     @JsonKey(name: 'created_at') DateTime? createdAt,
     @JsonKey(name: 'updated_at') DateTime? updatedAt,
   }) = _Customer;
@@ -41,6 +59,42 @@ abstract class Customer with _$Customer {
   /// True only when shops were loaded *and* there is at least one — a screen that shows
   /// "لا توجد محلات" must not say it about a customer whose shops were simply not requested.
   bool get hasShops => (shops ?? const []).isNotEmpty;
+
+  /// How long it has been since this customer last ordered, in words — «منذ شهرين».
+  ///
+  /// Null when there is no date to say it about, so a card draws the line it already had.
+  ///
+  /// **Coarse, and coarser than an order's `placedAgo`.** That one is read off a work
+  /// queue where an hour matters; this is read off a call sheet where the question is «هل
+  /// طال الصمت؟», and «منذ ٦٢ يوماً» is a number somebody has to convert into «شهرين» before
+  /// it means anything. Months and years are approximated at 30 and 365 days: this is a
+  /// judgement about whether to ring a customer, not a billing period.
+  ///
+  /// A future date reads as «اليوم». The only way to get one is a phone whose clock is behind
+  /// the server's, and «منذ -1 يوم» on a card is worse than a day's imprecision.
+  String? get lastOrderAgo {
+    final at = lastOrderAt?.toLocal();
+    if (at == null) return null;
+
+    final days = DateTime.now().difference(at).inDays;
+
+    if (days <= 0) return 'اليوم';
+    if (days == 1) return 'أمس';
+    if (days < 30) return 'منذ $days أيام';
+
+    final months = days ~/ 30;
+    if (months == 1) return 'منذ شهر';
+    if (months == 2) return 'منذ شهرين';
+    if (months < 12) return 'منذ $months أشهر';
+
+    // `<= 1`, not `== 1`: eleven-and-a-bit months divides to twelve months and to zero years,
+    // and «منذ 0 سنوات» is the gap that arithmetic leaves between the two bands.
+    final years = days ~/ 365;
+    if (years <= 1) return 'منذ سنة';
+    if (years == 2) return 'منذ سنتين';
+
+    return 'منذ $years سنوات';
+  }
 }
 
 /// A place a customer sells from, on the delivery map.

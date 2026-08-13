@@ -48,6 +48,21 @@ final class AuditAttributeLabels
         'pricing_unit' => 'وحدة التسعير',
         'delivery_price' => 'سعر التوصيل',
 
+        // The warehouse and money vocabulary, which reads the same on a purchase order, an
+        // arrival, a batch and a movement — the whole point of this list. Naming them per
+        // subject would be the same word written nine times, and nine chances to differ.
+        'quantity' => 'الكمية',
+        'unit' => 'الوحدة',
+        'unit_cost' => 'تكلفة الوحدة',
+        'total_cost' => 'إجمالي التكلفة',
+        'amount' => 'المبلغ',
+        'cost_type' => 'نوع التكلفة',
+        'warehouse_id' => 'المخزن',
+        'vendor_id' => 'المورد',
+        'product_variant_id' => 'المقاس',
+        'order_id' => 'الطلبية',
+        'recorded_by' => 'سجّلها',
+
         // The media layer, which is the same five columns on every model that stores a file.
         'disk' => 'مكان التخزين',
         'path' => 'مسار الملف',
@@ -70,6 +85,7 @@ final class AuditAttributeLabels
             'email' => 'البريد الإلكتروني',
             'email_verified_at' => 'تاريخ توثيق البريد',
             'employee_code' => 'الرقم الوظيفي',
+            'salary' => 'الراتب',
         ],
         'role' => [
             'name' => 'اسم الدور',
@@ -85,11 +101,21 @@ final class AuditAttributeLabels
             'city_id' => 'المدينة',
             'region_id' => 'المنطقة',
             'page_url' => 'رابط الصفحة',
+            'business_field_id' => 'مجال العمل',
         ],
         'customer_design' => [
             'customer_id' => 'العميل',
             'kind' => 'نوع التصميم',
             'label' => 'اسم التصميم',
+        ],
+        'customer_comment' => [
+            'customer_id' => 'العميل',
+            'user_id' => 'المستخدم',
+            'body' => 'نص الملاحظة',
+            'edited_at' => 'تاريخ التعديل',
+        ],
+        'business_field' => [
+            'name' => 'اسم مجال العمل',
         ],
 
         'product' => [
@@ -100,6 +126,11 @@ final class AuditAttributeLabels
             'category' => 'التصنيف',
             'pricing_mode' => 'طريقة التسعير',
             'min_order_quantity' => 'أقل كمية للطلب',
+            'product_category_id' => 'تصنيف المنتج',
+        ],
+        'product_category' => [
+            'name' => 'اسم التصنيف',
+            'description' => 'الوصف',
         ],
         'product_variant' => [
             'product_id' => 'المنتج',
@@ -159,6 +190,17 @@ final class AuditAttributeLabels
             'cancelled_at' => 'تاريخ الإلغاء',
             'cancellation_reason' => 'سبب الإلغاء',
             'created_by' => 'أنشأها',
+            'weight_kg' => 'الوزن (كجم)',
+            'paid_amount' => 'المدفوع',
+            'collected_amount' => 'المبلغ المحصّل',
+            'settled_at' => 'تاريخ التسوية',
+            // «شركة التوصيل» beside the older free-text `shipping_company`، وهما لا يجتمعان في
+            // صفٍّ واحد: أحدهما اسمٌ مكتوب باليد والآخر الشركة المسجّلة عندنا.
+            'shipping_company_id' => 'شركة التوصيل',
+            'courier_phone' => 'هاتف المندوب',
+            'stock_deducted_at' => 'تاريخ خصم المخزون',
+            'fulfillment_warehouse_id' => 'مخزن التنفيذ',
+            'total_cogs' => 'إجمالي تكلفة البضاعة',
         ],
         'order_item' => [
             'order_id' => 'الطلبية',
@@ -169,6 +211,37 @@ final class AuditAttributeLabels
             'quantity' => 'الكمية',
             'unit_price' => 'سعر الوحدة',
             'line_total' => 'إجمالي البند',
+            'shortage_quantity' => 'الكمية الناقصة',
+            'warehouse_quantity' => 'الكمية من المخزن',
+            'material_cost' => 'تكلفة الخامات',
+            'labor_cost' => 'تكلفة العمالة',
+            'overhead_cost' => 'التكاليف غير المباشرة',
+            'cogs' => 'تكلفة البضاعة',
+            'fulfillment_stock_movement_id' => 'حركة الصرف المخزني',
+        ],
+        'order_payment' => [
+            'type' => 'نوع الدفعة',
+            'method' => 'طريقة الدفع',
+            'reference' => 'المرجع',
+            'paid_at' => 'تاريخ الدفع',
+            // The reversal, not the reversed: a payment is never edited, it is undone by a
+            // second row pointing back at the first. See PAYMENTS-DESIGN.md.
+            'reverses_payment_id' => 'تعكس الدفعة',
+            'receipt_disk' => 'مكان تخزين الإيصال',
+            'receipt_path' => 'مسار الإيصال',
+            'receipt_original_filename' => 'اسم ملف الإيصال',
+            'receipt_size_bytes' => 'حجم الإيصال',
+            'receipt_checksum' => 'بصمة الإيصال',
+        ],
+        'manufacturing_cost_rate' => [
+            'product_id' => 'المنتج',
+            'rate_per_unit' => 'التكلفة للوحدة',
+        ],
+        'production_cost_entry' => [
+            'order_item_id' => 'بند الطلبية',
+            'rate' => 'المعدّل',
+            'incurred_at' => 'تاريخ التكلفة',
+            'reverses_entry_id' => 'يعكس القيد',
         ],
         'order_design' => [
             'order_id' => 'الطلبية',
@@ -184,6 +257,60 @@ final class AuditAttributeLabels
             'to_status' => 'إلى حالة',
             'reason' => 'السبب',
             'user_id' => 'المستخدم',
+        ],
+
+        'warehouse' => [
+            'name' => 'اسم المخزن',
+            'type' => 'نوع المخزن',
+            'location' => 'الموقع',
+        ],
+        'warehouse_stock' => [
+            'low_stock_threshold' => 'حدّ التنبيه',
+        ],
+        'stock_movement' => [
+            'from_warehouse_id' => 'من مخزن',
+            'to_warehouse_id' => 'إلى مخزن',
+            'movement_type' => 'نوع الحركة',
+            'reference_id' => 'المرجع',
+            'employee_id' => 'الموظف',
+        ],
+        'stock_batch' => [
+            'source_type' => 'مصدر الدفعة',
+            'stock_arrival_item_id' => 'بند التوريد',
+            'quantity_received' => 'الكمية المستلمة',
+            'quantity_remaining' => 'الكمية المتبقية',
+            'received_at' => 'تاريخ الاستلام',
+        ],
+        'stock_batch_consumption' => [
+            'stock_batch_id' => 'دفعة التكلفة',
+            'stock_movement_id' => 'الحركة المخزنية',
+        ],
+
+        'vendor' => [
+            'name' => 'اسم المورد',
+            'contact_person' => 'مسؤول التواصل',
+            'email' => 'البريد الإلكتروني',
+            'address' => 'العنوان',
+        ],
+        'stock_arrival' => [
+            'received_by' => 'استلمها',
+            'invoice_number' => 'رقم الفاتورة',
+            'purchase_order_id' => 'أمر الشراء',
+        ],
+        'stock_arrival_item' => [
+            'stock_arrival_id' => 'التوريد',
+            'stock_movement_id' => 'الحركة المخزنية',
+        ],
+
+        'purchase_order' => [
+            'order_date' => 'تاريخ الأمر',
+            'expected_date' => 'التاريخ المتوقع',
+            'total_amount' => 'الإجمالي',
+        ],
+        'purchase_order_item' => [
+            'purchase_order_id' => 'أمر الشراء',
+            'quantity_ordered' => 'الكمية المطلوبة',
+            'quantity_received' => 'الكمية المستلمة',
         ],
     ];
 

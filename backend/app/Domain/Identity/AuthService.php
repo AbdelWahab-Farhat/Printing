@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Identity;
 
 use App\Domain\Identity\DTOs\AuthResult;
+use App\Domain\Identity\Exceptions\AccountDeactivated;
 use App\Domain\Identity\Exceptions\InvalidCredentials;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -52,6 +53,14 @@ class AuthService
         // the service's job is to state the failure, and the boundary decides how it looks.
         if (! $user || ! Hash::check($password, $user->password)) {
             throw InvalidCredentials::make();
+        }
+
+        // **After the password check, never before.** Answering «هذا الحساب موقوف» to a wrong
+        // password would turn this endpoint into a way of discovering which accounts exist —
+        // the very thing the single failure above is written to prevent. Past that line the
+        // caller has already proved they are the account holder, so they may be told why.
+        if (! $user->is_active) {
+            throw AccountDeactivated::make();
         }
 
         return new AuthResult($user, $this->issueToken($user, $deviceName));

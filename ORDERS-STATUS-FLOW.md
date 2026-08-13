@@ -259,6 +259,8 @@
 
 `is_closed` يُنشر في `OrderResource` بجانب `is_final`، و`UpdateOrder` و`AddOrderDesign` و`destinationIsEditable()` تقرأ الجديد.
 
+**وشرطٌ واحد على المدخل:** ما دام على الطلبية متبقٍّ فالحركة تُرفض (`SettlementRequiresFullPayment`، ٤٢٢) — الحالة التي تعني «رجع المال واتُّفق عليه» لا تُدخَل والمال لم يرجع. تفصيلها في [PAYMENTS-DESIGN.md §٨](PAYMENTS-DESIGN.md).
+
 ### ١١.٤ الحقول
 
 | المسار | الحقل | مطلوب؟ |

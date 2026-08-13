@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/digits.dart';
 import 'package:printing/features/customers/models/customer.dart';
 
 /// One customer in the list.
@@ -88,6 +89,25 @@ class CustomerCard extends StatelessWidget {
                             color: scheme.onSurfaceVariant,
                           ),
                         ),
+                        // How much business this customer does, beside how to reach them —
+                        // which is the pair somebody scanning this list is weighing. Absent
+                        // when the server sent no count: see `Customer.ordersCount`.
+                        // Flexible, and the phone is not: at a large system text scale something
+                        // on this line has to give, and it must not be the number somebody rings.
+                        //
+                        // **The silence replaces the count rather than joining it**, on the one
+                        // list that has a date to show — «الأقدم طلباً». The row is read for the
+                        // number it was sorted by, and both on this line would be a line too
+                        // long on a phone. A customer on that same list who has never ordered
+                        // has no date, so the count falls through and says «لا طلبيات» — which
+                        // is the answer that sort gives about them anyway.
+                        if (customer.lastOrderAgo case final silence?) ...[
+                          SizedBox(width: 10.w),
+                          Flexible(child: _LastOrderBadge(label: silence)),
+                        ] else if (customer.ordersCount case final orders?) ...[
+                          SizedBox(width: 10.w),
+                          Flexible(child: _OrdersBadge(count: orders)),
+                        ],
                       ],
                     ),
                   ],
@@ -142,6 +162,84 @@ class _CodeBadge extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// How many orders this customer has placed, ever.
+///
+/// **Zero says so in words rather than going quiet.** A row that shows nothing at zero teaches
+/// the eye that the slot is noise, and then «١٧ طلبية» on the row below it does not get read
+/// either. «لا طلبيات» is also the one thing on this card that answers «هل هذا عميل جديد؟»
+/// without opening him.
+class _OrdersBadge extends StatelessWidget {
+  const _OrdersBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final isNew = count == 0;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          AppIcons.orders,
+          size: 15.sp,
+          color: isNew ? scheme.outline : scheme.onSurfaceVariant,
+        ),
+        SizedBox(width: 5.w),
+        Flexible(
+          child: Text(
+            // Not «٠ طلبية»: a numeral standing for nothing is read as a number before it is
+            // read as an absence, and Arabic has a shorter way to say it.
+            isNew ? 'لا طلبيات' : '${count.grouped} طلبية',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: isNew ? scheme.outline : scheme.onSurfaceVariant,
+              fontWeight: isNew ? FontWeight.w400 : FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// How long it has been since this customer last ordered — «منذ شهرين».
+///
+/// **Its own glyph, not the orders one.** It stands where the count stands and is read in the
+/// same glance, so borrowing that icon would make «منذ شهرين» look like a quantity of orders.
+/// A clock is what the row is actually about on this list: elapsed time.
+class _LastOrderBadge extends StatelessWidget {
+  const _LastOrderBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(AppIcons.elapsed, size: 15.sp, color: scheme.onSurfaceVariant),
+        SizedBox(width: 5.w),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

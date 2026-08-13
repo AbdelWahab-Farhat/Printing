@@ -9,6 +9,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
 use App\Domain\Order\Exceptions\OrderIsClosed;
+use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
 use App\Domain\Order\Exceptions\ShortageNeedsAQuantity;
 use App\Domain\Order\Exceptions\TransitionNotAllowed;
 use App\Domain\Order\Exceptions\TransitionRequiresReason;
@@ -55,6 +56,7 @@ final class ChangeOrderStatus
      * @throws OrderIsClosed
      * @throws TransitionNotAllowed
      * @throws TransitionRequiresReason
+     * @throws SettlementRequiresFullPayment
      * @throws FulfillmentRequiresAnActor
      */
     public function __invoke(
@@ -80,6 +82,15 @@ final class ChangeOrderStatus
 
         if ($target->requiresReason() && $reason === null) {
             throw TransitionRequiresReason::make($target);
+        }
+
+        // **The last step on the line is the money, and it may not be skipped.** «تم التسوية» is
+        // the statement that what the order was sent out to collect came back; an order reaching
+        // it while its payment status still reads «غير مدفوعة» closes the order and loses the
+        // debt in the same move. Read from the ledger's cached total rather than taken on trust
+        // from the person pressing the button — see {@see SettlementRequiresFullPayment}.
+        if ($target === OrderStatus::Settled && $order->paymentStatus()->isOutstanding()) {
+            throw SettlementRequiresFullPayment::make($order->remainingAmount());
         }
 
         return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields): Order {
