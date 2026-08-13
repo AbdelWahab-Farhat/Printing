@@ -24,9 +24,20 @@ final class Money
     /** Rounds a decimal string to two places, half away from zero. */
     public static function round(string $value): string
     {
-        $half = bccomp($value, '0', 8) < 0 ? '-0.005' : '0.005';
+        return self::roundTo($value, self::SCALE);
+    }
 
-        return bcadd(bcadd($value, $half, 8), '0', self::SCALE);
+    /**
+     * Rounds a decimal string to an arbitrary number of places, half away from zero — the same
+     * rule {@see round()} follows, generalised for `unit_cost`-shaped values that need three
+     * decimal places instead of two.
+     */
+    public static function roundTo(string $value, int $scale): string
+    {
+        $halfUnit = '0.'.str_repeat('0', $scale).'5';
+        $half = bccomp($value, '0', $scale + 4) < 0 ? '-'.$halfUnit : $halfUnit;
+
+        return bcadd(bcadd($value, $half, $scale + 4), '0', $scale);
     }
 
     /** Adds a list of decimal strings at full precision, then rounds once at the end. */

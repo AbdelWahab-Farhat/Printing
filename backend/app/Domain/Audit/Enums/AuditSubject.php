@@ -30,6 +30,7 @@ use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Models\OrderStatusTransition;
 use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
+use App\Domain\PurchaseOrder\Models\PurchaseOrderAdditionalCost;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\Models\StockArrivalItem;
@@ -102,6 +103,7 @@ enum AuditSubject: string
     // Purchase orders
     case PurchaseOrder = 'purchase_order';
     case PurchaseOrderItem = 'purchase_order_item';
+    case PurchaseOrderAdditionalCost = 'purchase_order_additional_cost';
 
     /**
      * @return class-string<Model>
@@ -139,6 +141,7 @@ enum AuditSubject: string
             self::StockArrivalItem => StockArrivalItem::class,
             self::PurchaseOrder => PurchaseOrder::class,
             self::PurchaseOrderItem => PurchaseOrderItem::class,
+            self::PurchaseOrderAdditionalCost => PurchaseOrderAdditionalCost::class,
         };
     }
 
@@ -178,6 +181,7 @@ enum AuditSubject: string
             self::StockArrivalItem => 'بند توريد',
             self::PurchaseOrder => 'أمر شراء',
             self::PurchaseOrderItem => 'بند أمر شراء',
+            self::PurchaseOrderAdditionalCost => 'تكلفة إضافية لأمر شراء',
         };
     }
 

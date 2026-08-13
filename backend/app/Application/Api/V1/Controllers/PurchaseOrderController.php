@@ -78,7 +78,7 @@ class PurchaseOrderController extends Controller
     public function show(PurchaseOrder $purchaseOrder): JsonResponse
     {
         return $this->success(new PurchaseOrderResource(
-            $purchaseOrder->load(['vendor', 'warehouse', 'items.productVariant.product']),
+            $purchaseOrder->load(['vendor', 'warehouse', 'items.productVariant.product', 'additionalCosts']),
         ));
     }
 

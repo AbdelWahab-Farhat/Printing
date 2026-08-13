@@ -10,12 +10,14 @@ final readonly class PurchaseOrderData
 {
     /**
      * @param  list<PurchaseOrderItemData>  $items
+     * @param  list<PurchaseOrderAdditionalCostData>  $additionalCosts
      */
     public function __construct(
         public int $vendorId,
         public ?int $warehouseId,
         public CarbonImmutable $orderDate,
         public array $items,
+        public array $additionalCosts = [],
         public ?CarbonImmutable $expectedDate = null,
         public ?string $notes = null,
     ) {}
@@ -33,6 +35,9 @@ final readonly class PurchaseOrderData
             warehouseId: self::intOrNull($validated['warehouse_id'] ?? null),
             orderDate: CarbonImmutable::parse($validated['order_date']),
             items: array_map(PurchaseOrderItemData::fromArray(...), $validated['items']),
+            // Absent or empty means "no additional costs" — the same "send the whole current
+            // set every time" contract `items` already carries, not a partial update.
+            additionalCosts: array_map(PurchaseOrderAdditionalCostData::fromArray(...), $validated['additional_costs'] ?? []),
             expectedDate: isset($validated['expected_date']) && $validated['expected_date'] !== ''
                 ? CarbonImmutable::parse($validated['expected_date'])
                 : null,

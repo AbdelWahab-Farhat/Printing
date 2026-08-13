@@ -55,7 +55,15 @@ class UpdatePurchaseOrderRequest extends StorePurchaseOrderRequest
 
             'items.*.quantity_ordered' => ['required', 'numeric', 'gt:0', 'max:999999999.999'],
 
-            'items.*.unit_cost' => ['required', 'numeric', 'gte:0', 'max:999999999.999'],
+            'items.*.base_total_cost' => ['required', 'numeric', 'gte:0', 'max:999999999999.99'],
+
+            // Same "send the whole current set every time" contract as items — see
+            // UpdatePurchaseOrder::syncAdditionalCosts(). Present on a cost that already exists;
+            // absent on one being added. Any existing cost missing from this set is removed.
+            'additional_costs' => ['nullable', 'array'],
+            'additional_costs.*.id' => ['nullable', 'integer'],
+            'additional_costs.*.name' => ['required', 'string', 'max:255'],
+            'additional_costs.*.amount' => ['required', 'numeric', 'gte:0', 'max:999999999999.99'],
         ];
     }
 
@@ -74,7 +82,11 @@ class UpdatePurchaseOrderRequest extends StorePurchaseOrderRequest
             'items.*.id' => 'معرف البند',
             'items.*.product_variant_id' => 'المقاس',
             'items.*.quantity_ordered' => 'الكمية المطلوبة',
-            'items.*.unit_cost' => 'تكلفة الوحدة',
+            'items.*.base_total_cost' => 'التكلفة الإجمالية للبند',
+            'additional_costs' => 'التكاليف الإضافية',
+            'additional_costs.*.id' => 'معرف التكلفة الإضافية',
+            'additional_costs.*.name' => 'اسم التكلفة الإضافية',
+            'additional_costs.*.amount' => 'قيمة التكلفة الإضافية',
         ];
     }
 }

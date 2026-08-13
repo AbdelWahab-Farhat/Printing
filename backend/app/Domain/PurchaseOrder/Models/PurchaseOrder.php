@@ -45,8 +45,9 @@ class PurchaseOrder extends Model implements HasAuditTrail
             'status' => PurchaseOrderStatus::class,
             'order_date' => 'date',
             'expected_date' => 'date',
-            // Not fillable — see RecalculatePurchaseOrderTotal, the only writer.
+            // Not fillable — see RecalculatePurchaseOrderTotal, the only writer for both.
             'total_amount' => 'decimal:2',
+            'total_additional_cost' => 'decimal:2',
         ];
     }
 
@@ -81,6 +82,18 @@ class PurchaseOrder extends Model implements HasAuditTrail
     }
 
     /**
+     * Order-level costs not tied to any single line — delivery, unloading, customs. Summed into
+     * `total_additional_cost` and distributed across {@see items()} by
+     * {@see AllocatePurchaseOrderAdditionalCosts}.
+     *
+     * @return HasMany<PurchaseOrderAdditionalCost, $this>
+     */
+    public function additionalCosts(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderAdditionalCost::class);
+    }
+
+    /**
      * Every shipment posted against this order. Read-only, for rendering — this module already
      * depends on Vendor (see {@see PurchaseOrderService}), so the
      * relation belongs here rather than as a back-reference on `StockArrival`, which would close
@@ -105,6 +118,7 @@ class PurchaseOrder extends Model implements HasAuditTrail
         return [
             $this->getMorphClass() => [$this->getKey()],
             (new PurchaseOrderItem)->getMorphClass() => $this->items()->withTrashed()->pluck('id')->all(),
+            (new PurchaseOrderAdditionalCost)->getMorphClass() => $this->additionalCosts()->withTrashed()->pluck('id')->all(),
         ];
     }
 }

@@ -13,11 +13,14 @@ final readonly class PurchaseOrderItemData
         /** Always positive, normalised to three decimal places — see {@see quantityOrdered()}. */
         public string $quantityOrdered,
         /**
-         * The negotiated vendor cost, per unit. There is no catalogue price for what *we* pay a
-         * vendor, so this always comes from the request — never derived, unlike
-         * `OrderItemData::unitPrice`, which the catalogue overrides whenever one exists.
+         * What this line costs in total, before its share of the order's additional costs —
+         * negotiated with the vendor, never derived. There is no catalogue price for what *we*
+         * pay a vendor, so this always comes from the request, unlike `OrderItemData::unitPrice`,
+         * which the catalogue overrides whenever one exists. The per-unit figure is computed
+         * from this, server-side, by {@see AllocatePurchaseOrderAdditionalCosts} — never the
+         * other way around.
          */
-        public string $unitCost,
+        public string $baseTotalCost,
         /** Present when updating an existing line; null when creating a new one. */
         public ?int $id = null,
     ) {}
@@ -30,7 +33,7 @@ final readonly class PurchaseOrderItemData
         return new self(
             productVariantId: (int) $validated['product_variant_id'],
             quantityOrdered: self::quantityOrdered($validated['quantity_ordered']),
-            unitCost: self::quantityOrdered($validated['unit_cost']),
+            baseTotalCost: self::money($validated['base_total_cost']),
             id: isset($validated['id']) ? (int) $validated['id'] : null,
         );
     }
@@ -42,5 +45,11 @@ final readonly class PurchaseOrderItemData
     private static function quantityOrdered(mixed $value): string
     {
         return number_format((float) $value, 3, '.', '');
+    }
+
+    /** Cast through string at two decimal places — money, never a float. */
+    private static function money(mixed $value): string
+    {
+        return number_format((float) $value, 2, '.', '');
     }
 }
