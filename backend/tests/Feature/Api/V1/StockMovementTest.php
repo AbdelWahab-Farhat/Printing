@@ -429,6 +429,7 @@ class StockMovementTest extends TestCase
             'warehouse_id' => $warehouse->id,
             'direction' => 'increase',
             'quantity' => 15,
+            'unit_cost' => 6,
             'notes' => 'جرد — وجد أكثر من المسجل',
         ]);
 

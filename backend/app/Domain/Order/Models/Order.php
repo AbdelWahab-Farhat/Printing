@@ -90,6 +90,9 @@ class Order extends Model implements HasAuditTrail
             'delivery_price' => 'decimal:2',
             'discount' => 'decimal:2',
             'grand_total' => 'decimal:2',
+            // The cost-side twin of grand_total — written only by RecalculateOrderCogs, and
+            // absent from the fillable list for the same reason grand_total is.
+            'total_cogs' => 'decimal:2',
             // The ledger's running total. Written only by RecalculateOrderPayments and absent
             // from the fillable list for the same reason `grand_total` is: a request that could
             // set it could tell us it had been paid.
@@ -215,6 +218,24 @@ class Order extends Model implements HasAuditTrail
     public function paymentStatus(): PaymentStatus
     {
         return PaymentStatus::for($this);
+    }
+
+    /**
+     * What this order made, on the accrual side: `grand_total` less what it cost to produce.
+     *
+     * **Null until `total_cogs` is known**, not zero — an order that has not reached printing has
+     * no cost to subtract yet, and a zero would read as "this order costs nothing to fulfil"
+     * rather than "production hasn't happened". Computed here rather than cached: both inputs are
+     * already cached columns, and a third one to keep in sync would only be able to disagree with
+     * them.
+     */
+    public function grossProfit(): ?string
+    {
+        if ($this->total_cogs === null) {
+            return null;
+        }
+
+        return Money::round(bcsub((string) $this->grand_total, (string) $this->total_cogs, 8));
     }
 
     /**

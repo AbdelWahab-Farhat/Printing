@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Inventory\DTOs;
 
+use App\Domain\Inventory\Actions\RecordStockMovement;
 use App\Domain\Inventory\Enums\AdjustmentDirection;
 use App\Domain\Inventory\Enums\MovementType;
 
@@ -34,6 +35,18 @@ final readonly class StockMovementData
         /** The order this belongs to, once Orders lands. Unconstrained until then. */
         public ?int $referenceId = null,
         public ?string $notes = null,
+        /**
+         * What a brand-new cost layer should open at — only meaningful for `arrival()` and an
+         * increasing `adjustment()`, ignored everywhere else. `null` means no cost was supplied;
+         * {@see RecordStockMovement} is what turns that into the
+         * documented `'0.000'` placeholder, not this DTO.
+         */
+        public ?string $unitCost = null,
+        /**
+         * The `OrderFulfillment` movement an `orderReversal()` credits back. Only meaningful for
+         * that one movement type.
+         */
+        public ?int $reversedMovementId = null,
     ) {}
 
     /**
@@ -52,6 +65,7 @@ final readonly class StockMovementData
             employeeId: $employeeId,
             referenceId: self::intOrNull($validated['reference_id'] ?? null),
             notes: self::textOrNull($validated['notes'] ?? null),
+            unitCost: self::costOrNull($validated['unit_cost'] ?? null),
         );
     }
 
@@ -113,6 +127,67 @@ final readonly class StockMovementData
             employeeId: $employeeId,
             referenceId: null,
             notes: self::textOrNull($validated['notes'] ?? null),
+            // Required by RecordAdjustmentRequest whenever direction is Increase — an adjustment
+            // has no natural cost signal of its own, so unlike an arrival it is never allowed to
+            // fall back to the "unknown" placeholder silently. Ignored for a Decrease, which only
+            // ever consumes existing layers.
+            unitCost: self::costOrNull($validated['unit_cost'] ?? null),
+        );
+    }
+
+    /**
+     * Stock credited back after a cancelled order's fulfillment: no source, because it re-enters
+     * the business the same way an arrival does — only the cost layers it lands in are already
+     * decided, by `$reversedMovementId`, rather than opened fresh.
+     *
+     * Built directly from typed values rather than a validated array: this is never posted
+     * through an HTTP endpoint, only constructed by `ReverseOrderStockDeduction` itself.
+     */
+    public static function orderReversal(
+        int $productVariantId,
+        int $warehouseId,
+        string $quantity,
+        int $reversedMovementId,
+        int $referenceId,
+        int $employeeId,
+    ): self {
+        return new self(
+            productVariantId: $productVariantId,
+            movementType: MovementType::OrderReversal,
+            quantity: self::quantity($quantity),
+            fromWarehouseId: null,
+            toWarehouseId: $warehouseId,
+            employeeId: $employeeId,
+            referenceId: $referenceId,
+            reversedMovementId: $reversedMovementId,
+        );
+    }
+
+    /**
+     * Stock destroyed during production: no destination, because it left the business by being
+     * thrown away rather than sold or moved.
+     *
+     * Built directly from typed values, like `orderReversal()`: this is never posted through a
+     * generic stock-movements endpoint, only constructed by `Order\Actions\RecordScrapLoss` — the
+     * scrap belongs to a specific order and line, which only that action knows.
+     */
+    public static function scrapLoss(
+        int $productVariantId,
+        int $warehouseId,
+        string $quantity,
+        int $orderId,
+        int $employeeId,
+        string $notes,
+    ): self {
+        return new self(
+            productVariantId: $productVariantId,
+            movementType: MovementType::ScrapLoss,
+            quantity: self::quantity($quantity),
+            fromWarehouseId: $warehouseId,
+            toWarehouseId: null,
+            employeeId: $employeeId,
+            referenceId: $orderId,
+            notes: $notes,
         );
     }
 
@@ -124,6 +199,15 @@ final readonly class StockMovementData
     private static function quantity(mixed $value): string
     {
         return number_format((float) $value, 3, '.', '');
+    }
+
+    /**
+     * Cast through string, never left as a float, and normalised to three places like every
+     * other cost in this schema — the same reasoning {@see quantity()} carries.
+     */
+    private static function costOrNull(mixed $value): ?string
+    {
+        return $value !== null && $value !== '' ? number_format((float) $value, 3, '.', '') : null;
     }
 
     private static function intOrNull(mixed $value): ?int

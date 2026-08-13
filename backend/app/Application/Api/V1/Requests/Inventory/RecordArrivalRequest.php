@@ -45,6 +45,11 @@ class RecordArrivalRequest extends FormRequest
             // The purchase order this arrived against, once Orders lands. Unconstrained today.
             'reference_id' => ['nullable', 'integer', 'min:1'],
 
+            // What this arrival cost, if known. Left blank for a shipment whose price was never
+            // recorded — its cost layer opens at zero rather than the arrival being refused; see
+            // ApplyStockChange::increase().
+            'unit_cost' => ['nullable', 'numeric', 'gte:0', 'max:999999999.999'],
+
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -63,6 +68,9 @@ class RecordArrivalRequest extends FormRequest
             'quantity.numeric' => 'الكمية يجب أن تكون رقماً',
             'quantity.gt' => 'الكمية يجب أن تكون أكبر من صفر',
             'quantity.max' => 'الكمية أكبر من الحد المسموح',
+            'unit_cost.numeric' => 'تكلفة الوحدة يجب أن تكون رقماً',
+            'unit_cost.gte' => 'تكلفة الوحدة يجب ألا تكون سالبة',
+            'unit_cost.max' => 'تكلفة الوحدة أكبر من الحد المسموح',
             'notes.max' => 'الملاحظات طويلة جداً',
         ];
     }
@@ -77,6 +85,7 @@ class RecordArrivalRequest extends FormRequest
             'to_warehouse_id' => 'مخزن الاستلام',
             'quantity' => 'الكمية',
             'reference_id' => 'رقم المرجع',
+            'unit_cost' => 'تكلفة الوحدة',
             'notes' => 'الملاحظات',
         ];
     }

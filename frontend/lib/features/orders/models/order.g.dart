@@ -78,6 +78,8 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   transitions: (json['transitions'] as List<dynamic>?)
       ?.map((e) => OrderTransitionRecord.fromJson(e as Map<String, dynamic>))
       .toList(),
+  totalCogs: json['total_cogs'] as String?,
+  grossProfit: json['gross_profit'] as String?,
   fulfillmentWarehouseId: (json['fulfillment_warehouse_id'] as num?)?.toInt(),
   stockDeductedAt: json['stock_deducted_at'] == null
       ? null
@@ -146,6 +148,8 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'items': instance.items?.map((e) => e.toJson()).toList(),
   'designs': instance.designs?.map((e) => e.toJson()).toList(),
   'transitions': instance.transitions?.map((e) => e.toJson()).toList(),
+  'total_cogs': instance.totalCogs,
+  'gross_profit': instance.grossProfit,
   'fulfillment_warehouse_id': instance.fulfillmentWarehouseId,
   'stock_deducted_at': instance.stockDeductedAt?.toIso8601String(),
   'placed_at': instance.placedAt?.toIso8601String(),
@@ -246,6 +250,10 @@ _OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => _OrderItem(
   warehouseQuantity: json['warehouse_quantity'] as String?,
   unitPrice: json['unit_price'] as String,
   lineTotal: json['line_total'] as String,
+  materialCost: json['material_cost'] as String?,
+  laborCost: json['labor_cost'] as String?,
+  overheadCost: json['overhead_cost'] as String?,
+  cogs: json['cogs'] as String?,
   notes: json['notes'] as String?,
 );
 
@@ -263,6 +271,10 @@ Map<String, dynamic> _$OrderItemToJson(_OrderItem instance) =>
       'warehouse_quantity': instance.warehouseQuantity,
       'unit_price': instance.unitPrice,
       'line_total': instance.lineTotal,
+      'material_cost': instance.materialCost,
+      'labor_cost': instance.laborCost,
+      'overhead_cost': instance.overheadCost,
+      'cogs': instance.cogs,
       'notes': instance.notes,
     };
 

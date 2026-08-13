@@ -7,20 +7,30 @@ namespace App\Domain\Order;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\AddOrderDesign;
 use App\Domain\Order\Actions\ChangeOrderStatus;
+use App\Domain\Order\Actions\CreateManufacturingCostRate;
 use App\Domain\Order\Actions\CreateOrder;
 use App\Domain\Order\Actions\RecordOrderPayment;
+use App\Domain\Order\Actions\RecordScrapLoss;
 use App\Domain\Order\Actions\RefundOrderPayment;
 use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\ReviewOrderDesign;
 use App\Domain\Order\Actions\SetOrderShortages;
+use App\Domain\Order\Actions\UpdateManufacturingCostRate;
 use App\Domain\Order\Actions\UpdateOrder;
+use App\Domain\Order\DTOs\ManufacturingCostRateData;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Exceptions\ScrapRequiresAnActor;
+use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
+use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderPayment;
+use App\Domain\Order\Models\ProductionCostEntry;
+use App\Domain\Order\Queries\ManufacturingCostRateFilters;
+use App\Domain\Order\Queries\ManufacturingCostRateListQuery;
 use App\Domain\Order\Queries\OrderFilters;
 use App\Domain\Order\Queries\OrderListQuery;
 use App\Domain\Order\Queries\OrderPaymentStatusCountsQuery;
@@ -49,10 +59,14 @@ class OrderService
         private readonly RecordOrderPayment $recordPayment,
         private readonly RefundOrderPayment $refundPayment,
         private readonly ReverseOrderPayment $reversePayment,
+        private readonly CreateManufacturingCostRate $createManufacturingCostRate,
+        private readonly UpdateManufacturingCostRate $updateManufacturingCostRate,
+        private readonly RecordScrapLoss $recordScrapLoss,
         private readonly OrderListQuery $listQuery,
         private readonly OrderStatusCountsQuery $statusCounts,
         private readonly OrderPaymentStatusCountsQuery $paymentStatusCounts,
         private readonly OrderTotalsQuery $totals,
+        private readonly ManufacturingCostRateListQuery $manufacturingCostRateListQuery,
     ) {}
 
     /**
@@ -184,6 +198,72 @@ class OrderService
         ?User $actor = null,
     ): OrderPayment {
         return ($this->reversePayment)($order, $payment, $reason, $actor);
+    }
+
+    // ── manufacturing cost rates ────────────────────────────────────────────────────────
+
+    /**
+     * @return LengthAwarePaginator<int, ManufacturingCostRate>
+     */
+    public function paginateManufacturingCostRates(
+        ManufacturingCostRateFilters $filters,
+        int $perPage = 15,
+    ): LengthAwarePaginator {
+        return ($this->manufacturingCostRateListQuery)($filters, $perPage);
+    }
+
+    public function createManufacturingCostRate(ManufacturingCostRateData $data): ManufacturingCostRate
+    {
+        return ($this->createManufacturingCostRate)($data);
+    }
+
+    public function updateManufacturingCostRate(
+        ManufacturingCostRate $rate,
+        ManufacturingCostRateData $data,
+    ): ManufacturingCostRate {
+        return ($this->updateManufacturingCostRate)($rate, $data);
+    }
+
+    /**
+     * The ordinary way to retire a rate — it stops applying to orders entering printing from
+     * this point on, and every entry it already produced keeps its own snapshotted value.
+     */
+    public function setManufacturingCostRateActive(ManufacturingCostRate $rate, bool $isActive): ManufacturingCostRate
+    {
+        $rate->update(['is_active' => $isActive]);
+
+        return $rate;
+    }
+
+    /**
+     * For the row that should never have existed — a typo, a rate entered against the wrong
+     * product. Nothing points at a rate by foreign key (an applied rate is snapshotted onto its
+     * `production_cost_entries` row, not referenced), so unlike a business field this needs no
+     * in-use guard.
+     */
+    public function deleteManufacturingCostRate(ManufacturingCostRate $rate): void
+    {
+        $rate->delete();
+    }
+
+    // ── production ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Bags spoiled producing one line — see {@see RecordScrapLoss}. Only possible once the order
+     * has reached printing.
+     */
+    public function recordScrapLoss(
+        Order $order,
+        OrderItem $item,
+        string $quantity,
+        string $notes,
+        ?User $actor = null,
+    ): ProductionCostEntry {
+        if ($actor === null) {
+            throw ScrapRequiresAnActor::make();
+        }
+
+        return ($this->recordScrapLoss)($order, $item, $quantity, $notes, (int) $actor->getKey());
     }
 
     /**

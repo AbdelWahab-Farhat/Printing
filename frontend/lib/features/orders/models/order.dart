@@ -156,6 +156,16 @@ abstract class Order with _$Order {
     List<OrderDesign>? designs,
     List<OrderTransitionRecord>? transitions,
 
+    /// What this order cost to produce, and what is left of the invoice after it.
+    ///
+    /// **Both null until the order has reached «قيد الطباعة»** — nothing is costed before stock
+    /// leaves a shelf, and «لم يُحتسب بعد» is not «صفر». [grossProfit] is derived by the server
+    /// from the two figures beside it and never stored, so the app reads it rather than
+    /// subtracting: which total the margin is taken against is a rule, and rules live in one
+    /// place.
+    @JsonKey(name: 'total_cogs') String? totalCogs,
+    @JsonKey(name: 'gross_profit') String? grossProfit,
+
     /// Which shelf this run came off, and when — both null until the order first reaches «قيد
     /// الطباعة», and never rewritten after. A reprint reads the *first* deduction here, which is
     /// what makes «هل خُصم المخزون؟» answerable without counting movements.
@@ -344,6 +354,18 @@ abstract class OrderItem with _$OrderItem {
 
     @JsonKey(name: 'unit_price') required String unitPrice,
     @JsonKey(name: 'line_total') required String lineTotal,
+
+    /// The accrual side of [lineTotal]: what this line cost to make, split three ways and
+    /// summed. **All four null until the line has reached «قيد الطباعة»** — a line nobody has
+    /// started has no cost, which is not a cost of zero.
+    @JsonKey(name: 'material_cost') String? materialCost,
+    @JsonKey(name: 'labor_cost') String? laborCost,
+    @JsonKey(name: 'overhead_cost') String? overheadCost,
+
+    /// The three above, added up by the server. Read rather than summed here for the same reason
+    /// [billableQuantity] is.
+    String? cogs,
+
     String? notes,
   }) = _OrderItem;
 

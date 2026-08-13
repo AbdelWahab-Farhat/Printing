@@ -29,6 +29,24 @@ enum MovementType: string
     /** A stocktake correction — the shelf disagreed with the book. */
     case Adjustment = 'adjustment';
 
+    /**
+     * Stock credited back after a cancelled order's fulfillment — the exact cost layers the
+     * original {@see OrderFulfillment} drew from, not a fresh one at an averaged cost. Its own
+     * type rather than a reuse of `Adjustment`: an operator correcting a miscount and the system
+     * undoing a cancelled order's deduction are different events, and a report should be able to
+     * tell them apart without inspecting `reference_id`.
+     */
+    case OrderReversal = 'order_reversal';
+
+    /**
+     * Stock destroyed during production — a misprint, a spoiled run — rather than sold or moved.
+     * Source-only, the same shape as {@see OrderFulfillment}: it leaves the warehouse and does
+     * not arrive anywhere else. Its own type rather than a reuse of `Adjustment`: this is
+     * production waste with a real cost that lands on the order's own cost ledger, in the Order
+     * context (`RecordScrapLoss`), not an operator's stocktake correction.
+     */
+    case ScrapLoss = 'scrap_loss';
+
     public function label(): string
     {
         return match ($this) {
@@ -36,6 +54,8 @@ enum MovementType: string
             self::InternalTransfer => 'تحويل داخلي',
             self::OrderFulfillment => 'صرف لطلب',
             self::Adjustment => 'تسوية جرد',
+            self::OrderReversal => 'إرجاع بعد إلغاء طلبية',
+            self::ScrapLoss => 'تلف أثناء الإنتاج',
         };
     }
 
@@ -49,8 +69,8 @@ enum MovementType: string
     public function requiresSource(): bool
     {
         return match ($this) {
-            self::InternalTransfer, self::OrderFulfillment => true,
-            self::PurchaseArrival, self::Adjustment => false,
+            self::InternalTransfer, self::OrderFulfillment, self::ScrapLoss => true,
+            self::PurchaseArrival, self::Adjustment, self::OrderReversal => false,
         };
     }
 
@@ -60,8 +80,8 @@ enum MovementType: string
     public function requiresDestination(): bool
     {
         return match ($this) {
-            self::PurchaseArrival, self::InternalTransfer => true,
-            self::OrderFulfillment, self::Adjustment => false,
+            self::PurchaseArrival, self::InternalTransfer, self::OrderReversal => true,
+            self::OrderFulfillment, self::Adjustment, self::ScrapLoss => false,
         };
     }
 

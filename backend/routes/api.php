@@ -8,11 +8,13 @@ use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\CustomerDesignController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
+use App\Application\Api\V1\Controllers\ManufacturingCostRateController;
 use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\OrderPaymentController;
 use App\Application\Api\V1\Controllers\PermissionController;
 use App\Application\Api\V1\Controllers\ProductController;
 use App\Application\Api\V1\Controllers\ProductImageController;
+use App\Application\Api\V1\Controllers\ProfitAndLossController;
 use App\Application\Api\V1\Controllers\PurchaseOrderController;
 use App\Application\Api\V1\Controllers\RegionController;
 use App\Application\Api\V1\Controllers\RoleController;
@@ -217,6 +219,14 @@ Route::prefix('v1')->group(function (): void {
             ->scopeBindings()
             ->middleware('can:orders.designs.manage')->name('orders.designs.review');
 
+        // Bags spoiled producing one line. Guarded by inventory.manage rather than an orders.*
+        // permission — it draws stock and posts a FIFO cost the same way a fulfillment does, so
+        // it is squarely part of the stock ledger regardless of which controller the route lives
+        // on, the same reasoning PurchaseOrderController::receiveArrival() already carries.
+        Route::post('orders/{order}/items/{item}/scrap', [OrderController::class, 'storeScrapLoss'])
+            ->scopeBindings()
+            ->middleware('can:inventory.manage')->name('orders.items.scrap');
+
         // ── an order's money ────────────────────────────────────────────────────────────
         // A ledger, not a balance. There is deliberately no PUT and no DELETE: an entry is
         // written once, and a mistake is undone by writing a second entry beside it — which is
@@ -245,6 +255,23 @@ Route::prefix('v1')->group(function (): void {
         Route::post('orders/{order}/payments/{payment}/reverse', [OrderPaymentController::class, 'reverse'])
             ->scopeBindings()
             ->middleware('can:orders.payments.reverse')->name('orders.payments.reverse');
+
+        // ── manufacturing cost rates ────────────────────────────────────────────────────
+        // What a unit of production standard-costs at — applied automatically when an order
+        // enters printing, never typed per job. Reading is separate from managing for the same
+        // reason purchase_orders.* splits paperwork from the ledger it feeds.
+        Route::apiResource('manufacturing-cost-rates', ManufacturingCostRateController::class)
+            ->only(['index', 'show'])
+            ->middleware('can:manufacturing_cost_rates.view')
+            ->parameters(['manufacturing-cost-rates' => 'manufacturing_cost_rate']);
+
+        Route::apiResource('manufacturing-cost-rates', ManufacturingCostRateController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->middleware('can:manufacturing_cost_rates.manage')
+            ->parameters(['manufacturing-cost-rates' => 'manufacturing_cost_rate']);
+
+        Route::patch('manufacturing-cost-rates/{manufacturing_cost_rate}/activation', [ManufacturingCostRateController::class, 'setActivation'])
+            ->middleware('can:manufacturing_cost_rates.manage')->name('manufacturing-cost-rates.activation');
 
         // ── delivery map ────────────────────────────────────────────────────────────────
         // Reading is its own permission because anyone taking an order needs the city and
@@ -381,6 +408,13 @@ Route::prefix('v1')->group(function (): void {
         Route::get('stock-arrivals/{stock_arrival}', [StockArrivalController::class, 'show'])
             ->middleware('can:inventory.view')->name('stock-arrivals.show');
 
+        // ── reports ─────────────────────────────────────────────────────────────────────
+        // Revenue against cost of goods sold, over a period. Its own permission rather than a
+        // ride on `orders.view`: this is the one screen that puts every order's money and every
+        // order's cost side by side, which is a different sensitivity from either alone.
+        Route::get('reports/profit-loss', [ProfitAndLossController::class, 'summary'])
+            ->middleware('can:reports.pnl.view')->name('reports.profit-loss');
+
         // ── audit trail ─────────────────────────────────────────────────────────────────
         // Every record's history hangs off the record itself, so `{product}` resolves, 404s
         // and — where a resource is scoped — nests exactly as it does on the endpoint beside
@@ -418,6 +452,9 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('purchase-orders/{purchase_order}/logs', [PurchaseOrderController::class, 'logs'])
                 ->name('purchase-orders.logs');
+
+            Route::get('manufacturing-cost-rates/{manufacturing_cost_rate}/logs', [ManufacturingCostRateController::class, 'logs'])
+                ->name('manufacturing-cost-rates.logs');
 
             // Scoped like the rest of the nested region routes: another city's region id is a
             // 404 here too, not a history leaked from the wrong place.

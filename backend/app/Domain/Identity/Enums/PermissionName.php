@@ -84,6 +84,13 @@ enum PermissionName: string
     case RecordOrderPayments = 'orders.payments.record';
     case ReverseOrderPayments = 'orders.payments.reverse';
 
+    // What a unit of production standard-costs at — labour, machine runtime, overhead. Applied
+    // automatically when an order enters printing (see ApplyManufacturingRates), so this pair
+    // guards only the admin screen that maintains the rate table itself, the same split
+    // purchase_orders.* draws between paperwork and the ledger it feeds.
+    case ViewManufacturingCostRates = 'manufacturing_cost_rates.view';
+    case ManageManufacturingCostRates = 'manufacturing_cost_rates.manage';
+
     // Stock. One pair covers warehouses, balances and the ledger: whoever may move stock between
     // two warehouses is necessarily administering both, so splitting them would produce a
     // permission that cannot usefully be granted alone. Reading is separate because taking an
@@ -111,6 +118,12 @@ enum PermissionName: string
     // nothing to manage — and reading it is its own decision, because it exposes every change
     // anyone has made to records the reader may not otherwise be allowed to see.
     case ViewActivityLogs = 'logs.view';
+
+    // Profit & loss. Read-only — the report is built entirely from figures every other context
+    // already computes and caches (order totals, cost of goods sold, the payment ledger) — but
+    // it is the one screen that puts revenue and cost side by side, which is a different
+    // sensitivity from being allowed to see either alone.
+    case ViewProfitAndLossReport = 'reports.pnl.view';
 
     public function label(): string
     {
@@ -148,6 +161,8 @@ enum PermissionName: string
             self::ViewOrderPayments => 'عرض دفعات الطلبية',
             self::RecordOrderPayments => 'تسجيل دفعة على الطلبية',
             self::ReverseOrderPayments => 'إلغاء دفعة أو ردّ مبلغ',
+            self::ViewManufacturingCostRates => 'عرض معدلات تكلفة التصنيع',
+            self::ManageManufacturingCostRates => 'إدارة معدلات تكلفة التصنيع',
 
             self::ViewInventory => 'عرض المخازن والأرصدة والحركات',
             self::ManageInventory => 'إدارة المخازن وتسجيل حركات المخزون',
@@ -156,6 +171,7 @@ enum PermissionName: string
             self::ViewPurchaseOrders => 'عرض أوامر الشراء',
             self::ManagePurchaseOrders => 'إنشاء وتعديل أوامر الشراء وإرسالها وإلغاؤها',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
+            self::ViewProfitAndLossReport => 'عرض تقرير الأرباح والخسائر',
         };
     }
 
@@ -182,10 +198,14 @@ enum PermissionName: string
             self::ViewOrderPayments, self::RecordOrderPayments,
             self::ReverseOrderPayments => 'مدفوعات الطلبيات',
 
+            self::ViewManufacturingCostRates,
+            self::ManageManufacturingCostRates => 'معدلات تكلفة التصنيع',
+
             self::ViewInventory, self::ManageInventory => 'المخازن والمخزون',
             self::ViewVendors, self::ManageVendors => 'الموردون',
             self::ViewPurchaseOrders, self::ManagePurchaseOrders => 'أوامر الشراء',
             self::ViewActivityLogs => 'سجل النشاطات',
+            self::ViewProfitAndLossReport => 'التقارير المالية',
         };
     }
 

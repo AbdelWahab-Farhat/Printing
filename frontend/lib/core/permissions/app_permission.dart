@@ -128,6 +128,17 @@ enum AppPermission {
   recordOrderPayments('orders.payments.record', 'تسجيل دفعة على الطلبية'),
   reverseOrderPayments('orders.payments.reverse', 'إلغاء دفعة أو ردّ مبلغ'),
 
+  // What a unit of production standard-costs at. The rates are applied automatically the moment
+  // an order enters printing, so this pair guards only the table that maintains them — the same
+  // split `purchase_orders.*` draws between the paperwork and the ledger it feeds.
+  viewManufacturingCostRates('manufacturing_cost_rates.view', 'عرض معدلات تكلفة التصنيع'),
+  manageManufacturingCostRates('manufacturing_cost_rates.manage', 'إدارة معدلات تكلفة التصنيع'),
+
+  // Read-only, and its own permission for one reason: every figure in it is already visible
+  // somewhere else, but this is the screen that puts revenue and cost side by side — which is a
+  // different sensitivity from being allowed to see either alone.
+  viewProfitAndLossReport('reports.pnl.view', 'عرض تقرير الأرباح والخسائر'),
+
   // The audit trail. One permission, not a pair: nothing writes to it by hand.
   viewActivityLogs('logs.view', 'عرض سجل النشاطات');
 

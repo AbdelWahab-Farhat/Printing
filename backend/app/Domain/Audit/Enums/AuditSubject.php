@@ -17,14 +17,18 @@ use App\Domain\Delivery\Models\Region;
 use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\StockBatch;
+use App\Domain\Inventory\Models\StockBatchConsumption;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
+use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Models\OrderStatusTransition;
+use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use App\Domain\Vendor\Models\StockArrival;
@@ -75,6 +79,8 @@ enum AuditSubject: string
     case OrderDesign = 'order_design';
     case OrderStatusTransition = 'order_status_transition';
     case OrderPayment = 'order_payment';
+    case ManufacturingCostRate = 'manufacturing_cost_rate';
+    case ProductionCostEntry = 'production_cost_entry';
 
     // Delivery map
     case City = 'city';
@@ -85,6 +91,8 @@ enum AuditSubject: string
     case Warehouse = 'warehouse';
     case WarehouseStock = 'warehouse_stock';
     case StockMovement = 'stock_movement';
+    case StockBatch = 'stock_batch';
+    case StockBatchConsumption = 'stock_batch_consumption';
 
     // Vendors
     case Vendor = 'vendor';
@@ -116,12 +124,16 @@ enum AuditSubject: string
             self::OrderDesign => OrderDesign::class,
             self::OrderStatusTransition => OrderStatusTransition::class,
             self::OrderPayment => OrderPayment::class,
+            self::ManufacturingCostRate => ManufacturingCostRate::class,
+            self::ProductionCostEntry => ProductionCostEntry::class,
             self::City => City::class,
             self::Region => Region::class,
             self::ShippingCompany => ShippingCompany::class,
             self::Warehouse => Warehouse::class,
             self::WarehouseStock => WarehouseStock::class,
             self::StockMovement => StockMovement::class,
+            self::StockBatch => StockBatch::class,
+            self::StockBatchConsumption => StockBatchConsumption::class,
             self::Vendor => Vendor::class,
             self::StockArrival => StockArrival::class,
             self::StockArrivalItem => StockArrivalItem::class,
@@ -151,12 +163,16 @@ enum AuditSubject: string
             self::OrderDesign => 'تصميم طلبية',
             self::OrderStatusTransition => 'انتقال حالة طلبية',
             self::OrderPayment => 'دفعة طلبية',
+            self::ManufacturingCostRate => 'معدل تكلفة تصنيع',
+            self::ProductionCostEntry => 'قيد تكلفة إنتاج',
             self::City => 'مدينة',
             self::Region => 'منطقة',
             self::ShippingCompany => 'شركة توصيل',
             self::Warehouse => 'مخزن',
             self::WarehouseStock => 'رصيد مخزني',
             self::StockMovement => 'حركة مخزنية',
+            self::StockBatch => 'دفعة تكلفة',
+            self::StockBatchConsumption => 'سحب من دفعة تكلفة',
             self::Vendor => 'مورد',
             self::StockArrival => 'توريد',
             self::StockArrivalItem => 'بند توريد',

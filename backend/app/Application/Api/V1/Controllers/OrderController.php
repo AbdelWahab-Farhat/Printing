@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
+use App\Application\Api\V1\Requests\Order\RecordScrapLossRequest;
 use App\Application\Api\V1\Requests\Order\ReviewOrderDesignRequest;
 use App\Application\Api\V1\Requests\Order\SetOrderShortagesRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderDesignRequest;
@@ -14,6 +15,7 @@ use App\Application\Api\V1\Requests\Order\StoreOrderRequest;
 use App\Application\Api\V1\Requests\Order\UpdateOrderRequest;
 use App\Application\Api\V1\Resources\OrderDesignResource;
 use App\Application\Api\V1\Resources\OrderResource;
+use App\Application\Api\V1\Resources\ProductionCostEntryResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
 use App\Domain\Identity\Models\User;
@@ -22,6 +24,7 @@ use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
+use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\OrderService;
 use App\Domain\Order\Queries\OrderFilters;
 use App\Support\ResponseTrait;
@@ -277,6 +280,28 @@ class OrderController extends Controller
                 ? 'تم اعتماد التصميم'
                 : 'تم رفض التصميم',
         );
+    }
+
+    /**
+     * Record scrap
+     *
+     * Bags spoiled producing this line — a misprint, a run gone wrong. Only possible once the
+     * order has reached printing; refused with 422 before then.
+     *
+     * The cost is drawn from the same FIFO layers the line's own fulfillment used, never typed —
+     * the number the storekeeper enters is a quantity, not a price.
+     */
+    public function storeScrapLoss(RecordScrapLossRequest $request, Order $order, OrderItem $item): JsonResponse
+    {
+        $entry = $this->orders->recordScrapLoss(
+            $order,
+            $item,
+            (string) $request->validated('quantity'),
+            (string) $request->validated('notes'),
+            $this->actor($request),
+        );
+
+        return $this->created(new ProductionCostEntryResource($entry), 'تم تسجيل التلف بنجاح');
     }
 
     /**
