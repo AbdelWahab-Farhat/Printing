@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:printing/core/di/injector.dart';
 import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
+import 'package:printing/core/utils/validators.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
 import 'package:printing/features/orders/presentation/widgets/product_picker_sheet.dart';
@@ -13,13 +14,15 @@ import 'package:printing/features/purchase_orders/presentation/viewmodel/save_pu
 import 'package:printing/features/purchase_orders/usecases/purchase_order_usecases.dart';
 import 'package:printing/features/vendors/models/vendor.dart';
 import 'package:printing/features/vendors/presentation/widgets/vendor_picker_sheet.dart';
+import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 import 'package:printing/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
 
 /// Raising a purchase order, or correcting one.
 ///
-/// **No money anywhere on it, and that is the domain rather than an omission.** A purchase
-/// order carries quantities alone — what we asked the supplier for, and later how much of it
-/// turned up. The invoice arrives with the goods and is recorded against the *shipment*.
+/// **Every line carries a cost, and it has to be typed.** What we pay a supplier is not in any
+/// catalogue — the tiers there price what we *sell* — so there is nothing to quote against and
+/// no sensible default to prefill. The server requires it on every line and the form asks for it
+/// beside the quantity.
 ///
 /// **The supplier is chosen once and then fixed while editing.** The server accepts a different
 /// `vendor_id` on an update, but an order that changed hands would leave its received lines
@@ -73,6 +76,9 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
         productVariantId: item.productVariantId,
         title: item.title,
         quantity: item.orderedLabel,
+        // Empty for a line raised before cost tracking, so the field opens asking rather than
+        // opening on a zero somebody would have to notice was never typed.
+        unitCost: item.unitCost == null ? '' : trimDecimals(item.unitCost!),
       ),
   ];
 
@@ -175,6 +181,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
           productVariantId: picked.variant.id,
           title: '${picked.product.name} · ${picked.variant.label}',
           quantity: '',
+          unitCost: '',
         ),
       );
     });
@@ -215,6 +222,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
             id: line.id,
             productVariantId: line.productVariantId,
             quantity: line.quantity.text,
+            unitCost: line.unitCost.text,
           ),
       ],
     );
@@ -335,21 +343,27 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
   }
 }
 
-/// One line as the form holds it: the quantity is still text, because that is what was typed.
+/// One line as the form holds it: both numbers are still text, because that is what was typed.
 class _LineDraft {
   _LineDraft({
     required this.productVariantId,
     required this.title,
     required String quantity,
+    required String unitCost,
     this.id,
-  }) : quantity = TextEditingController(text: quantity);
+  }) : quantity = TextEditingController(text: quantity),
+       unitCost = TextEditingController(text: unitCost);
 
   final int? id;
   final int productVariantId;
   final String title;
   final TextEditingController quantity;
+  final TextEditingController unitCost;
 
-  void dispose() => quantity.dispose();
+  void dispose() {
+    quantity.dispose();
+    unitCost.dispose();
+  }
 }
 
 class _LinesHeader extends StatelessWidget {
@@ -455,6 +469,29 @@ class _LineRow extends StatelessWidget {
               );
 
               return parsed == null || parsed <= 0 ? 'أدخل كمية أكبر من صفر' : null;
+            },
+            onChanged: onChanged,
+          ),
+          SizedBox(height: 10.h),
+          // Its own row for the same reason as the quantity above, and *under* it because the
+          // quantity is what a buyer knows first — the price is what they then ask for.
+          AppTextField(
+            controller: line.unitCost,
+            label: 'تكلفة الوحدة (د.ل)',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
+            ],
+            validator: (value) {
+              final parsed = double.tryParse(
+                Validators.toWesternDigits(value ?? '').replaceAll(',', '.').trim(),
+              );
+
+              // **Zero passes.** A vendor replacing a bad batch for nothing is a real cost of
+              // zero, and refusing it would have buyers typing «0.001» to get past the form.
+              if (parsed == null) return 'أدخل التكلفة';
+
+              return parsed < 0 ? 'التكلفة لا يمكن أن تكون سالبة' : null;
             },
             onChanged: onChanged,
           ),

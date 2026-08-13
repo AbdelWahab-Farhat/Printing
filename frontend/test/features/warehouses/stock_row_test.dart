@@ -23,11 +23,15 @@ void main() {
     String? threshold,
     bool isLow = false,
     String? imageUrl,
+    String unit = 'piece',
+    String unitLabel = 'قطعة',
   }) => WarehouseStock(
     id: 1,
     warehouseId: 1,
     productVariantId: 7,
     quantity: quantity,
+    unit: unit,
+    unitLabel: unitLabel,
     lowStockThreshold: threshold,
     isLowStock: isLow,
     variant: StockVariant(

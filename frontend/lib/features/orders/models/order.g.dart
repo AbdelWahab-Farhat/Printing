@@ -60,7 +60,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   notes: json['notes'] as String?,
   shippingCompany: json['shipping_company'] as String?,
   trackingNumber: json['tracking_number'] as String?,
-  courierName: json['courier_name'] as String?,
+  courierPhone: json['courier_phone'] as String?,
   cancellationReason: json['cancellation_reason'] as String?,
   progress: json['progress'] == null
       ? OrderProgress.unknown
@@ -78,6 +78,10 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   transitions: (json['transitions'] as List<dynamic>?)
       ?.map((e) => OrderTransitionRecord.fromJson(e as Map<String, dynamic>))
       .toList(),
+  fulfillmentWarehouseId: (json['fulfillment_warehouse_id'] as num?)?.toInt(),
+  stockDeductedAt: json['stock_deducted_at'] == null
+      ? null
+      : DateTime.parse(json['stock_deducted_at'] as String),
   placedAt: json['placed_at'] == null
       ? null
       : DateTime.parse(json['placed_at'] as String),
@@ -132,7 +136,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'notes': instance.notes,
   'shipping_company': instance.shippingCompany,
   'tracking_number': instance.trackingNumber,
-  'courier_name': instance.courierName,
+  'courier_phone': instance.courierPhone,
   'cancellation_reason': instance.cancellationReason,
   'progress': instance.progress.toJson(),
   'items_are_editable': instance.itemsAreEditable,
@@ -142,6 +146,8 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'items': instance.items?.map((e) => e.toJson()).toList(),
   'designs': instance.designs?.map((e) => e.toJson()).toList(),
   'transitions': instance.transitions?.map((e) => e.toJson()).toList(),
+  'fulfillment_warehouse_id': instance.fulfillmentWarehouseId,
+  'stock_deducted_at': instance.stockDeductedAt?.toIso8601String(),
   'placed_at': instance.placedAt?.toIso8601String(),
   'delivered_at': instance.deliveredAt?.toIso8601String(),
   'settled_at': instance.settledAt?.toIso8601String(),
@@ -237,6 +243,7 @@ _OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => _OrderItem(
   quantity: json['quantity'] as String,
   shortageQuantity: json['shortage_quantity'] as String?,
   billableQuantity: json['billable_quantity'] as String?,
+  warehouseQuantity: json['warehouse_quantity'] as String?,
   unitPrice: json['unit_price'] as String,
   lineTotal: json['line_total'] as String,
   notes: json['notes'] as String?,
@@ -253,6 +260,7 @@ Map<String, dynamic> _$OrderItemToJson(_OrderItem instance) =>
       'quantity': instance.quantity,
       'shortage_quantity': instance.shortageQuantity,
       'billable_quantity': instance.billableQuantity,
+      'warehouse_quantity': instance.warehouseQuantity,
       'unit_price': instance.unitPrice,
       'line_total': instance.lineTotal,
       'notes': instance.notes,

@@ -117,7 +117,10 @@ abstract class Order with _$Order {
 
     @JsonKey(name: 'shipping_company') String? shippingCompany,
     @JsonKey(name: 'tracking_number') String? trackingNumber,
-    @JsonKey(name: 'courier_name') String? courierName,
+    /// The number the man holding the parcel can be reached on — what «جاري التوصيل» asks for
+    /// and what `OrderResource` publishes. It was read from `courier_name`, a key the server has
+    /// never sent, so it parsed as null on every order ever fetched.
+    @JsonKey(name: 'courier_phone') String? courierPhone,
 
     @JsonKey(name: 'cancellation_reason') String? cancellationReason,
 
@@ -152,6 +155,12 @@ abstract class Order with _$Order {
     List<OrderItem>? items,
     List<OrderDesign>? designs,
     List<OrderTransitionRecord>? transitions,
+
+    /// Which shelf this run came off, and when — both null until the order first reaches «قيد
+    /// الطباعة», and never rewritten after. A reprint reads the *first* deduction here, which is
+    /// what makes «هل خُصم المخزون؟» answerable without counting movements.
+    @JsonKey(name: 'fulfillment_warehouse_id') int? fulfillmentWarehouseId,
+    @JsonKey(name: 'stock_deducted_at') DateTime? stockDeductedAt,
 
     @JsonKey(name: 'placed_at') DateTime? placedAt,
     @JsonKey(name: 'delivered_at') DateTime? deliveredAt,
@@ -323,6 +332,15 @@ abstract class OrderItem with _$OrderItem {
     /// built on is a rule and rules live in one place. Null only from a server too old to send
     /// it — see [pricedQuantity].
     @JsonKey(name: 'billable_quantity') String? billableQuantity,
+
+    /// How much of the warehouse's own unit this line takes off the shelf.
+    ///
+    /// **Null is the ordinary case and means «نفس وحدة البيع»** — the press deducts [quantity]
+    /// unchanged. A value here is the exception the scale creates: forty bags sold by the piece
+    /// may weigh ten kilos together, and the shelf is counted in kilos. It is the total for the
+    /// whole line, read off a scale, not a per-piece factor — a batch is weighed together, not
+    /// counted.
+    @JsonKey(name: 'warehouse_quantity') String? warehouseQuantity,
 
     @JsonKey(name: 'unit_price') required String unitPrice,
     @JsonKey(name: 'line_total') required String lineTotal,

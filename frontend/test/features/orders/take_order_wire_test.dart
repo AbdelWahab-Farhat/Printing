@@ -204,6 +204,45 @@ void main() {
     });
   });
 
+  test('a weighed line carries its warehouse figure, and an ordinary one omits it', () async {
+    // Arrange — forty bags sold by the piece that weigh ten kilos together, and beside it a
+    // line nobody put on a scale.
+    const weighed = NewOrder(
+      customerId: 3,
+      cityId: 1,
+      designSource: 'none',
+      items: [
+        NewOrderItem(
+          productId: 9,
+          productVariantId: 14,
+          quantity: '40',
+          warehouseQuantity: '10',
+          sortOrder: 0,
+        ),
+        NewOrderItem(
+          productId: 9,
+          productVariantId: 15,
+          quantity: '25',
+          sortOrder: 1,
+        ),
+      ],
+    );
+
+    // Act
+    await repository.create(weighed);
+
+    // Assert — **absent, never zero.** A `0` would tell the press to take nothing off the
+    // shelf; an absent key tells it to deduct the quantity unchanged.
+    final sent = jsonDecode(adapter.body!) as Map<String, dynamic>;
+    final items = sent['items'] as List;
+
+    expect((items.first as Map<String, dynamic>)['warehouse_quantity'], '10');
+    expect(
+      (items.last as Map<String, dynamic>).containsKey('warehouse_quantity'),
+      isFalse,
+    );
+  });
+
   test('the order that comes back is the server’s, not the one that was sent', () async {
     // Arrange — the answer carries the number staff will call this order from now on.
 

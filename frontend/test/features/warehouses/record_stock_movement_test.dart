@@ -32,6 +32,8 @@ void main() {
     warehouseId: 1,
     productVariantId: 3,
     quantity: '250.000',
+    unit: 'piece',
+    unitLabel: 'قطعة',
   );
 
   setUp(() {

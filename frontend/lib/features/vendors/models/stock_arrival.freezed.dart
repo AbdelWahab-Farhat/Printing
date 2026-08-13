@@ -415,7 +415,12 @@ mixin _$StockArrivalItem {
  String get quantity;@JsonKey(name: 'product_variant_id') int get productVariantId;/// Reuses the shelf model's own summary — the server flattens a variant to the same five
 /// fields wherever it appears, and a second class holding them would be a second thing to
 /// keep in step.
-@JsonKey(name: 'product_variant') StockVariant? get variant;/// The ledger row this line produced. What makes «هذا السطر، أي حركة كتب؟» answerable
+@JsonKey(name: 'product_variant') StockVariant? get variant;/// What this line cost, carried down from the purchase order it fulfilled.
+///
+/// **Null for a plain arrival**, which is the ordinary case: goods that turned up without
+/// paperwork have no agreed price to inherit, and inventing one here would put a number on
+/// a shipment nobody priced.
+@JsonKey(name: 'unit_cost') String? get unitCost;@JsonKey(name: 'total_cost') String? get totalCost;/// The ledger row this line produced. What makes «هذا السطر، أي حركة كتب؟» answerable
 /// without re-deriving it from dates and quantities.
 @JsonKey(name: 'stock_movement_id') int get stockMovementId;
 /// Create a copy of StockArrivalItem
@@ -430,16 +435,16 @@ $StockArrivalItemCopyWith<StockArrivalItem> get copyWith => _$StockArrivalItemCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockArrivalItem&&(identical(other.id, id) || other.id == id)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockArrivalItem&&(identical(other.id, id) || other.id == id)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.totalCost, totalCost) || other.totalCost == totalCost)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,quantity,productVariantId,variant,stockMovementId);
+int get hashCode => Object.hash(runtimeType,id,quantity,productVariantId,variant,unitCost,totalCost,stockMovementId);
 
 @override
 String toString() {
-  return 'StockArrivalItem(id: $id, quantity: $quantity, productVariantId: $productVariantId, variant: $variant, stockMovementId: $stockMovementId)';
+  return 'StockArrivalItem(id: $id, quantity: $quantity, productVariantId: $productVariantId, variant: $variant, unitCost: $unitCost, totalCost: $totalCost, stockMovementId: $stockMovementId)';
 }
 
 
@@ -450,7 +455,7 @@ abstract mixin class $StockArrivalItemCopyWith<$Res>  {
   factory $StockArrivalItemCopyWith(StockArrivalItem value, $Res Function(StockArrivalItem) _then) = _$StockArrivalItemCopyWithImpl;
 @useResult
 $Res call({
- int id, String quantity,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'stock_movement_id') int stockMovementId
+ int id, String quantity,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'unit_cost') String? unitCost,@JsonKey(name: 'total_cost') String? totalCost,@JsonKey(name: 'stock_movement_id') int stockMovementId
 });
 
 
@@ -467,13 +472,15 @@ class _$StockArrivalItemCopyWithImpl<$Res>
 
 /// Create a copy of StockArrivalItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? quantity = null,Object? productVariantId = null,Object? variant = freezed,Object? stockMovementId = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? quantity = null,Object? productVariantId = null,Object? variant = freezed,Object? unitCost = freezed,Object? totalCost = freezed,Object? stockMovementId = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
 as int,variant: freezed == variant ? _self.variant : variant // ignore: cast_nullable_to_non_nullable
-as StockVariant?,stockMovementId: null == stockMovementId ? _self.stockMovementId : stockMovementId // ignore: cast_nullable_to_non_nullable
+as StockVariant?,unitCost: freezed == unitCost ? _self.unitCost : unitCost // ignore: cast_nullable_to_non_nullable
+as String?,totalCost: freezed == totalCost ? _self.totalCost : totalCost // ignore: cast_nullable_to_non_nullable
+as String?,stockMovementId: null == stockMovementId ? _self.stockMovementId : stockMovementId // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }
@@ -571,10 +578,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String quantity, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'stock_movement_id')  int stockMovementId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String quantity, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'unit_cost')  String? unitCost, @JsonKey(name: 'total_cost')  String? totalCost, @JsonKey(name: 'stock_movement_id')  int stockMovementId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StockArrivalItem() when $default != null:
-return $default(_that.id,_that.quantity,_that.productVariantId,_that.variant,_that.stockMovementId);case _:
+return $default(_that.id,_that.quantity,_that.productVariantId,_that.variant,_that.unitCost,_that.totalCost,_that.stockMovementId);case _:
   return orElse();
 
 }
@@ -592,10 +599,10 @@ return $default(_that.id,_that.quantity,_that.productVariantId,_that.variant,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String quantity, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'stock_movement_id')  int stockMovementId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String quantity, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'unit_cost')  String? unitCost, @JsonKey(name: 'total_cost')  String? totalCost, @JsonKey(name: 'stock_movement_id')  int stockMovementId)  $default,) {final _that = this;
 switch (_that) {
 case _StockArrivalItem():
-return $default(_that.id,_that.quantity,_that.productVariantId,_that.variant,_that.stockMovementId);case _:
+return $default(_that.id,_that.quantity,_that.productVariantId,_that.variant,_that.unitCost,_that.totalCost,_that.stockMovementId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -612,10 +619,10 @@ return $default(_that.id,_that.quantity,_that.productVariantId,_that.variant,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String quantity, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'stock_movement_id')  int stockMovementId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String quantity, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'unit_cost')  String? unitCost, @JsonKey(name: 'total_cost')  String? totalCost, @JsonKey(name: 'stock_movement_id')  int stockMovementId)?  $default,) {final _that = this;
 switch (_that) {
 case _StockArrivalItem() when $default != null:
-return $default(_that.id,_that.quantity,_that.productVariantId,_that.variant,_that.stockMovementId);case _:
+return $default(_that.id,_that.quantity,_that.productVariantId,_that.variant,_that.unitCost,_that.totalCost,_that.stockMovementId);case _:
   return null;
 
 }
@@ -627,7 +634,7 @@ return $default(_that.id,_that.quantity,_that.productVariantId,_that.variant,_th
 @JsonSerializable()
 
 class _StockArrivalItem extends StockArrivalItem {
-  const _StockArrivalItem({required this.id, required this.quantity, @JsonKey(name: 'product_variant_id') required this.productVariantId, @JsonKey(name: 'product_variant') this.variant, @JsonKey(name: 'stock_movement_id') required this.stockMovementId}): super._();
+  const _StockArrivalItem({required this.id, required this.quantity, @JsonKey(name: 'product_variant_id') required this.productVariantId, @JsonKey(name: 'product_variant') this.variant, @JsonKey(name: 'unit_cost') this.unitCost, @JsonKey(name: 'total_cost') this.totalCost, @JsonKey(name: 'stock_movement_id') required this.stockMovementId}): super._();
   factory _StockArrivalItem.fromJson(Map<String, dynamic> json) => _$StockArrivalItemFromJson(json);
 
 @override final  int id;
@@ -640,6 +647,13 @@ class _StockArrivalItem extends StockArrivalItem {
 /// fields wherever it appears, and a second class holding them would be a second thing to
 /// keep in step.
 @override@JsonKey(name: 'product_variant') final  StockVariant? variant;
+/// What this line cost, carried down from the purchase order it fulfilled.
+///
+/// **Null for a plain arrival**, which is the ordinary case: goods that turned up without
+/// paperwork have no agreed price to inherit, and inventing one here would put a number on
+/// a shipment nobody priced.
+@override@JsonKey(name: 'unit_cost') final  String? unitCost;
+@override@JsonKey(name: 'total_cost') final  String? totalCost;
 /// The ledger row this line produced. What makes «هذا السطر، أي حركة كتب؟» answerable
 /// without re-deriving it from dates and quantities.
 @override@JsonKey(name: 'stock_movement_id') final  int stockMovementId;
@@ -657,16 +671,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockArrivalItem&&(identical(other.id, id) || other.id == id)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockArrivalItem&&(identical(other.id, id) || other.id == id)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.totalCost, totalCost) || other.totalCost == totalCost)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,quantity,productVariantId,variant,stockMovementId);
+int get hashCode => Object.hash(runtimeType,id,quantity,productVariantId,variant,unitCost,totalCost,stockMovementId);
 
 @override
 String toString() {
-  return 'StockArrivalItem(id: $id, quantity: $quantity, productVariantId: $productVariantId, variant: $variant, stockMovementId: $stockMovementId)';
+  return 'StockArrivalItem(id: $id, quantity: $quantity, productVariantId: $productVariantId, variant: $variant, unitCost: $unitCost, totalCost: $totalCost, stockMovementId: $stockMovementId)';
 }
 
 
@@ -677,7 +691,7 @@ abstract mixin class _$StockArrivalItemCopyWith<$Res> implements $StockArrivalIt
   factory _$StockArrivalItemCopyWith(_StockArrivalItem value, $Res Function(_StockArrivalItem) _then) = __$StockArrivalItemCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String quantity,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'stock_movement_id') int stockMovementId
+ int id, String quantity,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'unit_cost') String? unitCost,@JsonKey(name: 'total_cost') String? totalCost,@JsonKey(name: 'stock_movement_id') int stockMovementId
 });
 
 
@@ -694,13 +708,15 @@ class __$StockArrivalItemCopyWithImpl<$Res>
 
 /// Create a copy of StockArrivalItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? quantity = null,Object? productVariantId = null,Object? variant = freezed,Object? stockMovementId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? quantity = null,Object? productVariantId = null,Object? variant = freezed,Object? unitCost = freezed,Object? totalCost = freezed,Object? stockMovementId = null,}) {
   return _then(_StockArrivalItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
 as int,variant: freezed == variant ? _self.variant : variant // ignore: cast_nullable_to_non_nullable
-as StockVariant?,stockMovementId: null == stockMovementId ? _self.stockMovementId : stockMovementId // ignore: cast_nullable_to_non_nullable
+as StockVariant?,unitCost: freezed == unitCost ? _self.unitCost : unitCost // ignore: cast_nullable_to_non_nullable
+as String?,totalCost: freezed == totalCost ? _self.totalCost : totalCost // ignore: cast_nullable_to_non_nullable
+as String?,stockMovementId: null == stockMovementId ? _self.stockMovementId : stockMovementId // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

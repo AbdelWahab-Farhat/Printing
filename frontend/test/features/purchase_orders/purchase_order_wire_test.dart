@@ -62,8 +62,8 @@ void main() {
       // removes any it is not sent, so a line that arrived without one would be deleted and
       // recreated, taking its received quantity with it.
       const lines = [
-        PurchaseOrderLine(id: 12, productVariantId: 3, quantity: '10'),
-        PurchaseOrderLine(productVariantId: 4, quantity: '5'),
+        PurchaseOrderLine(id: 12, productVariantId: 3, quantity: '10', unitCost: '2.5'),
+        PurchaseOrderLine(productVariantId: 4, quantity: '5', unitCost: '3'),
       ];
 
       // Act
@@ -85,13 +85,39 @@ void main() {
       expect((items.last as Map<String, dynamic>).containsKey('id'), isFalse);
     });
 
+    test('every line carries its unit cost, zero included', () async {
+      // Arrange — a free replacement from the vendor. The server takes `gte:0`, so zero is a
+      // recorded answer and not the absence of one; a line that dropped it would be refused.
+      const lines = [
+        PurchaseOrderLine(productVariantId: 3, quantity: '10', unitCost: '2.500'),
+        PurchaseOrderLine(productVariantId: 4, quantity: '5', unitCost: '0'),
+      ];
+
+      // Act
+      await repository.create(
+        vendorId: 1,
+        warehouseId: 2,
+        orderDate: '2026-08-08',
+        items: lines,
+      );
+
+      // Assert
+      final body = captured.data as Map<String, dynamic>;
+      final items = body['items'] as List<dynamic>;
+
+      expect((items.first as Map<String, dynamic>)['unit_cost'], '2.500');
+      expect((items.last as Map<String, dynamic>)['unit_cost'], '0');
+    });
+
     test('an optional date left empty is left out of the body', () async {
       // Act
       await repository.create(
         vendorId: 1,
         warehouseId: 2,
         orderDate: '2026-08-08',
-        items: const [PurchaseOrderLine(productVariantId: 3, quantity: '10')],
+        items: const [
+          PurchaseOrderLine(productVariantId: 3, quantity: '10', unitCost: '2.5'),
+        ],
       );
 
       // Assert — `nullable|date` and "not mentioned" say slightly different things, and the

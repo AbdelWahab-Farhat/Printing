@@ -15,7 +15,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$WarehouseStock {
 
- int get id;@JsonKey(name: 'warehouse_id') int get warehouseId;@JsonKey(name: 'product_variant_id') int get productVariantId; String get quantity;/// The level at which this shelf starts asking to be refilled, or null for one nobody set.
+ int get id;@JsonKey(name: 'warehouse_id') int get warehouseId;@JsonKey(name: 'product_variant_id') int get productVariantId; String get quantity;/// What this balance is counted in, snapshotted when the shelf was first stocked and never
+/// re-derived — so a product whose pricing unit changes later cannot silently restate a
+/// balance that was counted the old way.
+ String get unit;/// The server's Arabic for [unit], kept as a label rather than a translation table here —
+/// the same treatment `pricing_unit_label` gets everywhere else in this app.
+@JsonKey(name: 'unit_label') String get unitLabel;/// The level at which this shelf starts asking to be refilled, or null for one nobody set.
 @JsonKey(name: 'low_stock_threshold') String? get lowStockThreshold;/// The server's answer, not a comparison this app re-derives — `null` threshold means "no
 /// alert", which is not the same as a threshold of zero.
 @JsonKey(name: 'is_low_stock') bool get isLowStock;@JsonKey(name: 'product_variant') StockVariant? get variant;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;
@@ -31,16 +36,16 @@ $WarehouseStockCopyWith<WarehouseStock> get copyWith => _$WarehouseStockCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WarehouseStock&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.lowStockThreshold, lowStockThreshold) || other.lowStockThreshold == lowStockThreshold)&&(identical(other.isLowStock, isLowStock) || other.isLowStock == isLowStock)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WarehouseStock&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.lowStockThreshold, lowStockThreshold) || other.lowStockThreshold == lowStockThreshold)&&(identical(other.isLowStock, isLowStock) || other.isLowStock == isLowStock)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,warehouseId,productVariantId,quantity,lowStockThreshold,isLowStock,variant,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,warehouseId,productVariantId,quantity,unit,unitLabel,lowStockThreshold,isLowStock,variant,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'WarehouseStock(id: $id, warehouseId: $warehouseId, productVariantId: $productVariantId, quantity: $quantity, lowStockThreshold: $lowStockThreshold, isLowStock: $isLowStock, variant: $variant, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'WarehouseStock(id: $id, warehouseId: $warehouseId, productVariantId: $productVariantId, quantity: $quantity, unit: $unit, unitLabel: $unitLabel, lowStockThreshold: $lowStockThreshold, isLowStock: $isLowStock, variant: $variant, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -51,7 +56,7 @@ abstract mixin class $WarehouseStockCopyWith<$Res>  {
   factory $WarehouseStockCopyWith(WarehouseStock value, $Res Function(WarehouseStock) _then) = _$WarehouseStockCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'warehouse_id') int warehouseId,@JsonKey(name: 'product_variant_id') int productVariantId, String quantity,@JsonKey(name: 'low_stock_threshold') String? lowStockThreshold,@JsonKey(name: 'is_low_stock') bool isLowStock,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id,@JsonKey(name: 'warehouse_id') int warehouseId,@JsonKey(name: 'product_variant_id') int productVariantId, String quantity, String unit,@JsonKey(name: 'unit_label') String unitLabel,@JsonKey(name: 'low_stock_threshold') String? lowStockThreshold,@JsonKey(name: 'is_low_stock') bool isLowStock,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -68,12 +73,14 @@ class _$WarehouseStockCopyWithImpl<$Res>
 
 /// Create a copy of WarehouseStock
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? warehouseId = null,Object? productVariantId = null,Object? quantity = null,Object? lowStockThreshold = freezed,Object? isLowStock = null,Object? variant = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? warehouseId = null,Object? productVariantId = null,Object? quantity = null,Object? unit = null,Object? unitLabel = null,Object? lowStockThreshold = freezed,Object? isLowStock = null,Object? variant = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,warehouseId: null == warehouseId ? _self.warehouseId : warehouseId // ignore: cast_nullable_to_non_nullable
 as int,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
 as int,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
+as String,unit: null == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
+as String,unitLabel: null == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
 as String,lowStockThreshold: freezed == lowStockThreshold ? _self.lowStockThreshold : lowStockThreshold // ignore: cast_nullable_to_non_nullable
 as String?,isLowStock: null == isLowStock ? _self.isLowStock : isLowStock // ignore: cast_nullable_to_non_nullable
 as bool,variant: freezed == variant ? _self.variant : variant // ignore: cast_nullable_to_non_nullable
@@ -176,10 +183,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity,  String unit, @JsonKey(name: 'unit_label')  String unitLabel, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _WarehouseStock() when $default != null:
-return $default(_that.id,_that.warehouseId,_that.productVariantId,_that.quantity,_that.lowStockThreshold,_that.isLowStock,_that.variant,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.warehouseId,_that.productVariantId,_that.quantity,_that.unit,_that.unitLabel,_that.lowStockThreshold,_that.isLowStock,_that.variant,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -197,10 +204,10 @@ return $default(_that.id,_that.warehouseId,_that.productVariantId,_that.quantity
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity,  String unit, @JsonKey(name: 'unit_label')  String unitLabel, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _WarehouseStock():
-return $default(_that.id,_that.warehouseId,_that.productVariantId,_that.quantity,_that.lowStockThreshold,_that.isLowStock,_that.variant,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.warehouseId,_that.productVariantId,_that.quantity,_that.unit,_that.unitLabel,_that.lowStockThreshold,_that.isLowStock,_that.variant,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -217,10 +224,10 @@ return $default(_that.id,_that.warehouseId,_that.productVariantId,_that.quantity
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity,  String unit, @JsonKey(name: 'unit_label')  String unitLabel, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _WarehouseStock() when $default != null:
-return $default(_that.id,_that.warehouseId,_that.productVariantId,_that.quantity,_that.lowStockThreshold,_that.isLowStock,_that.variant,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.warehouseId,_that.productVariantId,_that.quantity,_that.unit,_that.unitLabel,_that.lowStockThreshold,_that.isLowStock,_that.variant,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -232,13 +239,20 @@ return $default(_that.id,_that.warehouseId,_that.productVariantId,_that.quantity
 @JsonSerializable()
 
 class _WarehouseStock extends WarehouseStock {
-  const _WarehouseStock({required this.id, @JsonKey(name: 'warehouse_id') required this.warehouseId, @JsonKey(name: 'product_variant_id') required this.productVariantId, required this.quantity, @JsonKey(name: 'low_stock_threshold') this.lowStockThreshold, @JsonKey(name: 'is_low_stock') this.isLowStock = false, @JsonKey(name: 'product_variant') this.variant, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): super._();
+  const _WarehouseStock({required this.id, @JsonKey(name: 'warehouse_id') required this.warehouseId, @JsonKey(name: 'product_variant_id') required this.productVariantId, required this.quantity, required this.unit, @JsonKey(name: 'unit_label') required this.unitLabel, @JsonKey(name: 'low_stock_threshold') this.lowStockThreshold, @JsonKey(name: 'is_low_stock') this.isLowStock = false, @JsonKey(name: 'product_variant') this.variant, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): super._();
   factory _WarehouseStock.fromJson(Map<String, dynamic> json) => _$WarehouseStockFromJson(json);
 
 @override final  int id;
 @override@JsonKey(name: 'warehouse_id') final  int warehouseId;
 @override@JsonKey(name: 'product_variant_id') final  int productVariantId;
 @override final  String quantity;
+/// What this balance is counted in, snapshotted when the shelf was first stocked and never
+/// re-derived — so a product whose pricing unit changes later cannot silently restate a
+/// balance that was counted the old way.
+@override final  String unit;
+/// The server's Arabic for [unit], kept as a label rather than a translation table here —
+/// the same treatment `pricing_unit_label` gets everywhere else in this app.
+@override@JsonKey(name: 'unit_label') final  String unitLabel;
 /// The level at which this shelf starts asking to be refilled, or null for one nobody set.
 @override@JsonKey(name: 'low_stock_threshold') final  String? lowStockThreshold;
 /// The server's answer, not a comparison this app re-derives — `null` threshold means "no
@@ -261,16 +275,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WarehouseStock&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.lowStockThreshold, lowStockThreshold) || other.lowStockThreshold == lowStockThreshold)&&(identical(other.isLowStock, isLowStock) || other.isLowStock == isLowStock)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WarehouseStock&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.lowStockThreshold, lowStockThreshold) || other.lowStockThreshold == lowStockThreshold)&&(identical(other.isLowStock, isLowStock) || other.isLowStock == isLowStock)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,warehouseId,productVariantId,quantity,lowStockThreshold,isLowStock,variant,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,warehouseId,productVariantId,quantity,unit,unitLabel,lowStockThreshold,isLowStock,variant,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'WarehouseStock(id: $id, warehouseId: $warehouseId, productVariantId: $productVariantId, quantity: $quantity, lowStockThreshold: $lowStockThreshold, isLowStock: $isLowStock, variant: $variant, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'WarehouseStock(id: $id, warehouseId: $warehouseId, productVariantId: $productVariantId, quantity: $quantity, unit: $unit, unitLabel: $unitLabel, lowStockThreshold: $lowStockThreshold, isLowStock: $isLowStock, variant: $variant, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -281,7 +295,7 @@ abstract mixin class _$WarehouseStockCopyWith<$Res> implements $WarehouseStockCo
   factory _$WarehouseStockCopyWith(_WarehouseStock value, $Res Function(_WarehouseStock) _then) = __$WarehouseStockCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'warehouse_id') int warehouseId,@JsonKey(name: 'product_variant_id') int productVariantId, String quantity,@JsonKey(name: 'low_stock_threshold') String? lowStockThreshold,@JsonKey(name: 'is_low_stock') bool isLowStock,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id,@JsonKey(name: 'warehouse_id') int warehouseId,@JsonKey(name: 'product_variant_id') int productVariantId, String quantity, String unit,@JsonKey(name: 'unit_label') String unitLabel,@JsonKey(name: 'low_stock_threshold') String? lowStockThreshold,@JsonKey(name: 'is_low_stock') bool isLowStock,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -298,12 +312,14 @@ class __$WarehouseStockCopyWithImpl<$Res>
 
 /// Create a copy of WarehouseStock
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? warehouseId = null,Object? productVariantId = null,Object? quantity = null,Object? lowStockThreshold = freezed,Object? isLowStock = null,Object? variant = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? warehouseId = null,Object? productVariantId = null,Object? quantity = null,Object? unit = null,Object? unitLabel = null,Object? lowStockThreshold = freezed,Object? isLowStock = null,Object? variant = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_WarehouseStock(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,warehouseId: null == warehouseId ? _self.warehouseId : warehouseId // ignore: cast_nullable_to_non_nullable
 as int,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
 as int,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
+as String,unit: null == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
+as String,unitLabel: null == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
 as String,lowStockThreshold: freezed == lowStockThreshold ? _self.lowStockThreshold : lowStockThreshold // ignore: cast_nullable_to_non_nullable
 as String?,isLowStock: null == isLowStock ? _self.isLowStock : isLowStock // ignore: cast_nullable_to_non_nullable
 as bool,variant: freezed == variant ? _self.variant : variant // ignore: cast_nullable_to_non_nullable

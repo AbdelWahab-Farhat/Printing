@@ -77,6 +77,14 @@ abstract class StockArrivalItem with _$StockArrivalItem {
     /// keep in step.
     @JsonKey(name: 'product_variant') StockVariant? variant,
 
+    /// What this line cost, carried down from the purchase order it fulfilled.
+    ///
+    /// **Null for a plain arrival**, which is the ordinary case: goods that turned up without
+    /// paperwork have no agreed price to inherit, and inventing one here would put a number on
+    /// a shipment nobody priced.
+    @JsonKey(name: 'unit_cost') String? unitCost,
+    @JsonKey(name: 'total_cost') String? totalCost,
+
     /// The ledger row this line produced. What makes «هذا السطر، أي حركة كتب؟» answerable
     /// without re-deriving it from dates and quantities.
     @JsonKey(name: 'stock_movement_id') required int stockMovementId,

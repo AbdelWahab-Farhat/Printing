@@ -97,12 +97,13 @@ enum PurchaseOrderStatus {
       values.where((status) => status != unknown).toList(growable: false);
 }
 
-/// Paperwork raised against a supplier: what we asked for, and how much of it has turned up.
+/// Paperwork raised against a supplier: what we asked for, how much of it has turned up, and
+/// what it costs.
 ///
-/// **There is no money on it, and that is the server's design rather than an omission here.**
-/// A purchase order carries quantities and nothing else — no unit cost, no total. What it is
-/// for is knowing what is owed to us in *goods*, and the invoice that comes with the shipment is
-/// recorded against the arrival, not against this.
+/// **The cost is what we pay a vendor, which no catalogue can answer.** A sale is priced from
+/// the product's own tiers; a purchase is priced by whoever we are buying from, so the cost is
+/// typed per line and has no fallback to quote against. [totalAmount] is derived by the server
+/// from those lines and never added up here.
 @freezed
 abstract class PurchaseOrder with _$PurchaseOrder {
   const factory PurchaseOrder({
@@ -130,6 +131,12 @@ abstract class PurchaseOrder with _$PurchaseOrder {
     @JsonKey(name: 'expected_date') String? expectedDate,
 
     String? notes,
+
+    /// What the whole order costs, summed by the server from its lines.
+    ///
+    /// Null on an order raised before cost tracking existed — which is «غير مسجّل», not «صفر»,
+    /// and the screens say so rather than drawing a free purchase.
+    @JsonKey(name: 'total_amount') String? totalAmount,
 
     /// Present when one order was fetched, and on the list. Absent from a status change.
     @Default(<PurchaseOrderItem>[]) List<PurchaseOrderItem> items,
@@ -172,6 +179,18 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
     /// Computed by the server, never here — a client that subtracted would be a second opinion
     /// about arithmetic that decides whether a shipment is refused.
     @JsonKey(name: 'quantity_remaining') required String quantityRemaining,
+
+    /// What one of these costs us, and what the line comes to.
+    ///
+    /// Null only on a line written before cost tracking existed. **Zero is a real answer** — a
+    /// free replacement from the vendor costs nothing and is not the same as nobody having said.
+    @JsonKey(name: 'unit_cost') String? unitCost,
+    @JsonKey(name: 'total_cost') String? totalCost,
+
+    /// What this line is counted in, snapshotted from the product when the line was written.
+    /// Null on a line older than the column; the screens fall back to the variant's own unit.
+    String? unit,
+    @JsonKey(name: 'unit_label') String? unitLabel,
   }) = _PurchaseOrderItem;
 
   const PurchaseOrderItem._();
@@ -192,4 +211,10 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
   bool get hasReceipts => (double.tryParse(quantityReceived) ?? 0) > 0;
 
   bool get isOutstanding => (double.tryParse(quantityRemaining) ?? 0) > 0;
+
+  /// Whether a cost was ever recorded against this line.
+  ///
+  /// **False only on a line older than cost tracking.** A cost of *zero* is a recorded answer —
+  /// a free replacement from the vendor — so it renders as «0» rather than «غير مسجّلة».
+  bool get hasCost => unitCost != null;
 }

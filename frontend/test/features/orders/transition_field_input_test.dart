@@ -102,6 +102,49 @@ void main() {
     expect(reported, '40');
   });
 
+  testWidgets('the warehouse a run comes off is a picker, not a note', (tester) async {
+    // Arrange — exactly what the server sends for «قيد الطباعة» on an order whose stock has
+    // never left a shelf. This is the field that used to fall through to «unknown», which made
+    // the commonest move in the app unmakeable.
+    const store = TransitionField(
+      key: 'warehouse_id',
+      type: TransitionFieldType.warehouse,
+      label: 'المخزن',
+      isRequired: true,
+      hint: 'يُخصم منه ما تستهلكه هذه الطلبية من المخزون',
+    );
+
+    // Act
+    await tester.pumpWidget(host(input(store)));
+    await tester.pump();
+
+    // Assert — the label, the server's sentence under it, and something to press. Not the
+    // «needs a newer build» note, which is the whole bug.
+    expect(find.text('المخزن'), findsOneWidget);
+    expect(find.text('يُخصم منه ما تستهلكه هذه الطلبية من المخزون'), findsOneWidget);
+    expect(find.text('اختيار المخزن'), findsOneWidget);
+    expect(find.textContaining('يحتاج نسخة أحدث'), findsNothing);
+  });
+
+  testWidgets('a reprint is offered the warehouse without being made to answer', (tester) async {
+    // Arrange — stock already left a shelf for this order, so the server sends the field
+    // unrequired and does nothing with a second answer.
+    const store = TransitionField(
+      key: 'warehouse_id',
+      type: TransitionFieldType.warehouse,
+      label: 'المخزن',
+      hint: 'خُصم المخزون بالفعل من هذه الطلبية',
+    );
+
+    // Act
+    await tester.pumpWidget(host(input(store)));
+    await tester.pump();
+
+    // Assert — «(اختياري)» is how every other optional field says so, so nobody hunts for what
+    // is blocking them.
+    expect(find.text('المخزن (اختياري)'), findsOneWidget);
+  });
+
   testWidgets('a kind this build cannot draw says so instead of leaving a hole', (tester) async {
     // Arrange — what a field of a type added on the server after this release looks like.
     const future = TransitionField(

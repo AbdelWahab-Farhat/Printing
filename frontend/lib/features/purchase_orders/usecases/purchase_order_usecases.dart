@@ -44,6 +44,7 @@ class DraftLine {
   const DraftLine({
     required this.productVariantId,
     required this.quantity,
+    required this.unitCost,
     this.id,
     this.title,
   });
@@ -51,6 +52,10 @@ class DraftLine {
   final int? id;
   final int productVariantId;
   final String quantity;
+
+  /// What we pay the vendor for one of them, as typed. Required on every line — see
+  /// [PurchaseOrderLine.unitCost] for why there is nothing to fall back to.
+  final String unitCost;
 
   /// What to show while the form is open. Never sent.
   final String? title;
@@ -83,6 +88,7 @@ class SavePurchaseOrder {
           id: line.id,
           productVariantId: line.productVariantId,
           quantity: _number(line.quantity),
+          unitCost: _number(line.unitCost),
         ),
     ];
 

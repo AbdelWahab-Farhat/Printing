@@ -7,6 +7,7 @@ import 'package:printing/features/orders/models/transition_field.dart';
 import 'package:printing/features/orders/usecases/change_order_status.dart';
 import 'package:printing/features/orders/usecases/get_order.dart';
 import 'package:printing/features/shipping_companies/models/shipping_company.dart';
+import 'package:printing/features/warehouses/models/warehouse.dart';
 
 part 'order_status_state.dart';
 part 'order_status_cubit.freezed.dart';
@@ -164,6 +165,9 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
             // The picker hands over the whole company so the button can say its name; only the
             // id crosses the wire, exactly as for a design.
             final ShippingCompany carrier => carrier.id,
+            // Same again for the shelf the run comes off: the picker hands over the whole
+            // warehouse so the button can name it, and only the id is the server's business.
+            final Warehouse store => store.id,
             final String text => text.trim(),
             _ => value,
           },

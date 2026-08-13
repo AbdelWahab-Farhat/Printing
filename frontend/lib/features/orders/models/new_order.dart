@@ -81,6 +81,13 @@ abstract class NewOrderItem with _$NewOrderItem {
     /// undercutting an agreed price. Omitted when the app has no business naming one.
     @JsonKey(name: 'unit_price', includeIfNull: false) String? unitPrice,
 
+    /// What comes off the shelf for this line, when the warehouse counts in a unit the line is
+    /// not sold in — a batch weighed together, entered as the total for the whole line.
+    ///
+    /// **Omitted rather than zeroed when nobody weighed anything**: absent tells the server to
+    /// deduct [quantity] unchanged, while `0` would tell it to take nothing off the shelf.
+    @JsonKey(name: 'warehouse_quantity', includeIfNull: false) String? warehouseQuantity,
+
     @JsonKey(includeIfNull: false) String? notes,
 
     /// The order the clerk put the lines in, kept so the invoice reads the way it was written.

@@ -11,6 +11,8 @@ import 'package:printing/features/orders/models/transition_field.dart';
 import 'package:printing/features/orders/presentation/widgets/design_picker_sheet.dart';
 import 'package:printing/features/orders/presentation/widgets/shipping_company_picker_sheet.dart';
 import 'package:printing/features/shipping_companies/models/shipping_company.dart';
+import 'package:printing/features/warehouses/models/warehouse.dart';
+import 'package:printing/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
 
 /// One field of a move, drawn from the description the server sent with it.
 ///
@@ -62,8 +64,64 @@ class TransitionFieldInput extends StatelessWidget {
         chosen: value is ShippingCompany ? value! as ShippingCompany : null,
         onChanged: onChanged,
       ),
+      TransitionFieldType.warehouse => _Store(
+        field: field,
+        chosen: value is Warehouse ? value! as Warehouse : null,
+        onChanged: onChanged,
+      ),
       TransitionFieldType.unknown => _Unsupported(field: field),
     };
+  }
+}
+
+/// Which shelf the run empties.
+///
+/// Holds the whole warehouse rather than its id for the same reason [_Carrier] holds the whole
+/// company: the button has to say the name that was picked, and the cubit turns it into an id on
+/// the way out.
+///
+/// **A dismissal leaves the field as it was**, and on the second pass that is the right answer
+/// rather than a gap: a reprint has already taken its stock, so the server offers the picker
+/// without requiring it and does nothing with a second reply.
+class _Store extends StatelessWidget {
+  const _Store({required this.field, required this.chosen, required this.onChanged});
+
+  final TransitionField field;
+  final Warehouse? chosen;
+  final ValueChanged<Object?> onChanged;
+
+  Future<void> _pick(BuildContext context) async {
+    final picked = await showWarehousePicker(context: context);
+
+    if (picked != null) onChanged(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          field.isRequired ? field.label : '${field.label} (اختياري)',
+          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        if (field.hint case final hint?) ...[
+          SizedBox(height: 4.h),
+          Text(
+            hint,
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+        SizedBox(height: 10.h),
+        AppButton.tonal(
+          label: chosen?.name ?? 'اختيار المخزن',
+          icon: AppIcons.warehouse,
+          onPressed: () => _pick(context),
+        ),
+      ],
+    );
   }
 }
 

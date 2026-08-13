@@ -19,6 +19,15 @@ abstract class WarehouseStock with _$WarehouseStock {
 
     required String quantity,
 
+    /// What this balance is counted in, snapshotted when the shelf was first stocked and never
+    /// re-derived — so a product whose pricing unit changes later cannot silently restate a
+    /// balance that was counted the old way.
+    required String unit,
+
+    /// The server's Arabic for [unit], kept as a label rather than a translation table here —
+    /// the same treatment `pricing_unit_label` gets everywhere else in this app.
+    @JsonKey(name: 'unit_label') required String unitLabel,
+
     /// The level at which this shelf starts asking to be refilled, or null for one nobody set.
     @JsonKey(name: 'low_stock_threshold') String? lowStockThreshold,
 
@@ -55,6 +64,12 @@ abstract class WarehouseStock with _$WarehouseStock {
   /// cannot read is treated as "not empty", because inventing «نافد» for a shelf that has
   /// something on it is the worse mistake.
   bool get isOutOfStock => (num.tryParse(quantity) ?? 1) <= 0;
+
+  /// «250 كيلوغرام» — the balance together with what it is counted in.
+  ///
+  /// A bare number is ambiguous on a floor that holds both bags and kilos, and the unit is the
+  /// difference between a shelf that is nearly empty and one that is nearly full.
+  String get quantityWithUnit => '$quantityLabel $unitLabel';
 
   String? get thresholdLabel =>
       lowStockThreshold == null ? null : trimDecimals(lowStockThreshold!);

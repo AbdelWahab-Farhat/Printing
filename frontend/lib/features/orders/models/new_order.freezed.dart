@@ -368,7 +368,12 @@ mixin _$NewOrderItem {
  String get quantity;/// **Honoured only for a product the catalogue prices «حسب الطلب»**, and ignored otherwise:
 /// for a listed product the catalogue's rate wins, which is what stops a posted number
 /// undercutting an agreed price. Omitted when the app has no business naming one.
-@JsonKey(name: 'unit_price', includeIfNull: false) String? get unitPrice;@JsonKey(includeIfNull: false) String? get notes;/// The order the clerk put the lines in, kept so the invoice reads the way it was written.
+@JsonKey(name: 'unit_price', includeIfNull: false) String? get unitPrice;/// What comes off the shelf for this line, when the warehouse counts in a unit the line is
+/// not sold in — a batch weighed together, entered as the total for the whole line.
+///
+/// **Omitted rather than zeroed when nobody weighed anything**: absent tells the server to
+/// deduct [quantity] unchanged, while `0` would tell it to take nothing off the shelf.
+@JsonKey(name: 'warehouse_quantity', includeIfNull: false) String? get warehouseQuantity;@JsonKey(includeIfNull: false) String? get notes;/// The order the clerk put the lines in, kept so the invoice reads the way it was written.
 @JsonKey(name: 'sort_order') int get sortOrder;
 /// Create a copy of NewOrderItem
 /// with the given fields replaced by the non-null parameter values.
@@ -382,16 +387,16 @@ $NewOrderItemCopyWith<NewOrderItem> get copyWith => _$NewOrderItemCopyWithImpl<N
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrderItem&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrderItem&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.warehouseQuantity, warehouseQuantity) || other.warehouseQuantity == warehouseQuantity)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,productId,productVariantId,quantity,unitPrice,notes,sortOrder);
+int get hashCode => Object.hash(runtimeType,productId,productVariantId,quantity,unitPrice,warehouseQuantity,notes,sortOrder);
 
 @override
 String toString() {
-  return 'NewOrderItem(productId: $productId, productVariantId: $productVariantId, quantity: $quantity, unitPrice: $unitPrice, notes: $notes, sortOrder: $sortOrder)';
+  return 'NewOrderItem(productId: $productId, productVariantId: $productVariantId, quantity: $quantity, unitPrice: $unitPrice, warehouseQuantity: $warehouseQuantity, notes: $notes, sortOrder: $sortOrder)';
 }
 
 
@@ -402,7 +407,7 @@ abstract mixin class $NewOrderItemCopyWith<$Res>  {
   factory $NewOrderItemCopyWith(NewOrderItem value, $Res Function(NewOrderItem) _then) = _$NewOrderItemCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_variant_id') int productVariantId, String quantity,@JsonKey(name: 'unit_price', includeIfNull: false) String? unitPrice,@JsonKey(includeIfNull: false) String? notes,@JsonKey(name: 'sort_order') int sortOrder
+@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_variant_id') int productVariantId, String quantity,@JsonKey(name: 'unit_price', includeIfNull: false) String? unitPrice,@JsonKey(name: 'warehouse_quantity', includeIfNull: false) String? warehouseQuantity,@JsonKey(includeIfNull: false) String? notes,@JsonKey(name: 'sort_order') int sortOrder
 });
 
 
@@ -419,12 +424,13 @@ class _$NewOrderItemCopyWithImpl<$Res>
 
 /// Create a copy of NewOrderItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? productId = null,Object? productVariantId = null,Object? quantity = null,Object? unitPrice = freezed,Object? notes = freezed,Object? sortOrder = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? productId = null,Object? productVariantId = null,Object? quantity = null,Object? unitPrice = freezed,Object? warehouseQuantity = freezed,Object? notes = freezed,Object? sortOrder = null,}) {
   return _then(_self.copyWith(
 productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
 as int,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
 as int,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,unitPrice: freezed == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
+as String?,warehouseQuantity: freezed == warehouseQuantity ? _self.warehouseQuantity : warehouseQuantity // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
 as int,
@@ -512,10 +518,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity, @JsonKey(name: 'unit_price', includeIfNull: false)  String? unitPrice, @JsonKey(includeIfNull: false)  String? notes, @JsonKey(name: 'sort_order')  int sortOrder)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity, @JsonKey(name: 'unit_price', includeIfNull: false)  String? unitPrice, @JsonKey(name: 'warehouse_quantity', includeIfNull: false)  String? warehouseQuantity, @JsonKey(includeIfNull: false)  String? notes, @JsonKey(name: 'sort_order')  int sortOrder)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NewOrderItem() when $default != null:
-return $default(_that.productId,_that.productVariantId,_that.quantity,_that.unitPrice,_that.notes,_that.sortOrder);case _:
+return $default(_that.productId,_that.productVariantId,_that.quantity,_that.unitPrice,_that.warehouseQuantity,_that.notes,_that.sortOrder);case _:
   return orElse();
 
 }
@@ -533,10 +539,10 @@ return $default(_that.productId,_that.productVariantId,_that.quantity,_that.unit
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity, @JsonKey(name: 'unit_price', includeIfNull: false)  String? unitPrice, @JsonKey(includeIfNull: false)  String? notes, @JsonKey(name: 'sort_order')  int sortOrder)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity, @JsonKey(name: 'unit_price', includeIfNull: false)  String? unitPrice, @JsonKey(name: 'warehouse_quantity', includeIfNull: false)  String? warehouseQuantity, @JsonKey(includeIfNull: false)  String? notes, @JsonKey(name: 'sort_order')  int sortOrder)  $default,) {final _that = this;
 switch (_that) {
 case _NewOrderItem():
-return $default(_that.productId,_that.productVariantId,_that.quantity,_that.unitPrice,_that.notes,_that.sortOrder);case _:
+return $default(_that.productId,_that.productVariantId,_that.quantity,_that.unitPrice,_that.warehouseQuantity,_that.notes,_that.sortOrder);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -553,10 +559,10 @@ return $default(_that.productId,_that.productVariantId,_that.quantity,_that.unit
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity, @JsonKey(name: 'unit_price', includeIfNull: false)  String? unitPrice, @JsonKey(includeIfNull: false)  String? notes, @JsonKey(name: 'sort_order')  int sortOrder)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'product_variant_id')  int productVariantId,  String quantity, @JsonKey(name: 'unit_price', includeIfNull: false)  String? unitPrice, @JsonKey(name: 'warehouse_quantity', includeIfNull: false)  String? warehouseQuantity, @JsonKey(includeIfNull: false)  String? notes, @JsonKey(name: 'sort_order')  int sortOrder)?  $default,) {final _that = this;
 switch (_that) {
 case _NewOrderItem() when $default != null:
-return $default(_that.productId,_that.productVariantId,_that.quantity,_that.unitPrice,_that.notes,_that.sortOrder);case _:
+return $default(_that.productId,_that.productVariantId,_that.quantity,_that.unitPrice,_that.warehouseQuantity,_that.notes,_that.sortOrder);case _:
   return null;
 
 }
@@ -568,7 +574,7 @@ return $default(_that.productId,_that.productVariantId,_that.quantity,_that.unit
 @JsonSerializable()
 
 class _NewOrderItem implements NewOrderItem {
-  const _NewOrderItem({@JsonKey(name: 'product_id') required this.productId, @JsonKey(name: 'product_variant_id') required this.productVariantId, required this.quantity, @JsonKey(name: 'unit_price', includeIfNull: false) this.unitPrice, @JsonKey(includeIfNull: false) this.notes, @JsonKey(name: 'sort_order') this.sortOrder = 0});
+  const _NewOrderItem({@JsonKey(name: 'product_id') required this.productId, @JsonKey(name: 'product_variant_id') required this.productVariantId, required this.quantity, @JsonKey(name: 'unit_price', includeIfNull: false) this.unitPrice, @JsonKey(name: 'warehouse_quantity', includeIfNull: false) this.warehouseQuantity, @JsonKey(includeIfNull: false) this.notes, @JsonKey(name: 'sort_order') this.sortOrder = 0});
   factory _NewOrderItem.fromJson(Map<String, dynamic> json) => _$NewOrderItemFromJson(json);
 
 @override@JsonKey(name: 'product_id') final  int productId;
@@ -579,6 +585,12 @@ class _NewOrderItem implements NewOrderItem {
 /// for a listed product the catalogue's rate wins, which is what stops a posted number
 /// undercutting an agreed price. Omitted when the app has no business naming one.
 @override@JsonKey(name: 'unit_price', includeIfNull: false) final  String? unitPrice;
+/// What comes off the shelf for this line, when the warehouse counts in a unit the line is
+/// not sold in — a batch weighed together, entered as the total for the whole line.
+///
+/// **Omitted rather than zeroed when nobody weighed anything**: absent tells the server to
+/// deduct [quantity] unchanged, while `0` would tell it to take nothing off the shelf.
+@override@JsonKey(name: 'warehouse_quantity', includeIfNull: false) final  String? warehouseQuantity;
 @override@JsonKey(includeIfNull: false) final  String? notes;
 /// The order the clerk put the lines in, kept so the invoice reads the way it was written.
 @override@JsonKey(name: 'sort_order') final  int sortOrder;
@@ -596,16 +608,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrderItem&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrderItem&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.warehouseQuantity, warehouseQuantity) || other.warehouseQuantity == warehouseQuantity)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,productId,productVariantId,quantity,unitPrice,notes,sortOrder);
+int get hashCode => Object.hash(runtimeType,productId,productVariantId,quantity,unitPrice,warehouseQuantity,notes,sortOrder);
 
 @override
 String toString() {
-  return 'NewOrderItem(productId: $productId, productVariantId: $productVariantId, quantity: $quantity, unitPrice: $unitPrice, notes: $notes, sortOrder: $sortOrder)';
+  return 'NewOrderItem(productId: $productId, productVariantId: $productVariantId, quantity: $quantity, unitPrice: $unitPrice, warehouseQuantity: $warehouseQuantity, notes: $notes, sortOrder: $sortOrder)';
 }
 
 
@@ -616,7 +628,7 @@ abstract mixin class _$NewOrderItemCopyWith<$Res> implements $NewOrderItemCopyWi
   factory _$NewOrderItemCopyWith(_NewOrderItem value, $Res Function(_NewOrderItem) _then) = __$NewOrderItemCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_variant_id') int productVariantId, String quantity,@JsonKey(name: 'unit_price', includeIfNull: false) String? unitPrice,@JsonKey(includeIfNull: false) String? notes,@JsonKey(name: 'sort_order') int sortOrder
+@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'product_variant_id') int productVariantId, String quantity,@JsonKey(name: 'unit_price', includeIfNull: false) String? unitPrice,@JsonKey(name: 'warehouse_quantity', includeIfNull: false) String? warehouseQuantity,@JsonKey(includeIfNull: false) String? notes,@JsonKey(name: 'sort_order') int sortOrder
 });
 
 
@@ -633,12 +645,13 @@ class __$NewOrderItemCopyWithImpl<$Res>
 
 /// Create a copy of NewOrderItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? productId = null,Object? productVariantId = null,Object? quantity = null,Object? unitPrice = freezed,Object? notes = freezed,Object? sortOrder = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? productId = null,Object? productVariantId = null,Object? quantity = null,Object? unitPrice = freezed,Object? warehouseQuantity = freezed,Object? notes = freezed,Object? sortOrder = null,}) {
   return _then(_NewOrderItem(
 productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
 as int,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
 as int,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,unitPrice: freezed == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
+as String?,warehouseQuantity: freezed == warehouseQuantity ? _self.warehouseQuantity : warehouseQuantity // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
 as int,

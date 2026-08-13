@@ -13,6 +13,7 @@ import 'package:printing/features/audit/models/audit_subject.dart';
 import 'package:printing/features/purchase_orders/models/purchase_order.dart';
 import 'package:printing/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
 import 'package:printing/features/purchase_orders/presentation/widgets/receive_arrival_sheet.dart';
+import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 
 /// One purchase order: what was asked for, what has turned up, and what is left.
 ///
@@ -299,6 +300,12 @@ class _Body extends StatelessWidget {
                 Divider(height: 18.h),
                 _Row(label: 'الوصول المتوقع', value: expected),
               ],
+              // Summed by the server from the lines, never added up here. Absent on paperwork
+              // raised before cost tracking, and left off entirely rather than shown as zero.
+              if (order.totalAmount case final total?) ...[
+                Divider(height: 18.h),
+                _Row(label: 'إجمالي التكلفة', value: '${trimDecimals(total)} د.ل'),
+              ],
             ],
           ),
         ),
@@ -361,6 +368,16 @@ class _LineRow extends StatelessWidget {
           'مطلوب ${item.orderedLabel} · وصل ${item.receivedLabel}',
           style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
+        // The money on its own line, and only when there is any. A line raised before cost
+        // tracking says nothing rather than «0 د.ل», which would read as a free delivery.
+        if (item.hasCost) ...[
+          SizedBox(height: 4.h),
+          Text(
+            '${trimDecimals(item.unitCost!)} د.ل للوحدة · '
+            'الإجمالي ${trimDecimals(item.totalCost ?? '0')} د.ل',
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
       ],
     );
   }

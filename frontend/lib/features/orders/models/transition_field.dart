@@ -30,6 +30,15 @@ enum TransitionFieldType {
   @JsonValue('shipping_company')
   shippingCompany,
 
+  /// Which store the run's stock comes out of.
+  ///
+  /// Like the carrier, no options arrive with it — the app manages the list of warehouses, so
+  /// the picker fetches them itself and only the id travels back. Asked on the way into «قيد
+  /// الطباعة», and required exactly once: a reprint that has already emptied a shelf is offered
+  /// the field but not made to answer it again.
+  @JsonValue('warehouse')
+  warehouse,
+
   /// A kind this build has no widget for. Rendered as a note rather than silently skipped: a
   /// field the server thinks is required and the screen never shows is a form that cannot be
   /// submitted with nothing on screen to explain why.

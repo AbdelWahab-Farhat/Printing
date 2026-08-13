@@ -26,6 +26,7 @@ _PurchaseOrder _$PurchaseOrderFromJson(Map<String, dynamic> json) =>
       orderDate: json['order_date'] as String,
       expectedDate: json['expected_date'] as String?,
       notes: json['notes'] as String?,
+      totalAmount: json['total_amount'] as String?,
       items:
           (json['items'] as List<dynamic>?)
               ?.map(
@@ -53,6 +54,7 @@ Map<String, dynamic> _$PurchaseOrderToJson(_PurchaseOrder instance) =>
       'order_date': instance.orderDate,
       'expected_date': instance.expectedDate,
       'notes': instance.notes,
+      'total_amount': instance.totalAmount,
       'items': instance.items.map((e) => e.toJson()).toList(),
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
@@ -78,6 +80,10 @@ _PurchaseOrderItem _$PurchaseOrderItemFromJson(Map<String, dynamic> json) =>
       quantityOrdered: json['quantity_ordered'] as String,
       quantityReceived: json['quantity_received'] as String,
       quantityRemaining: json['quantity_remaining'] as String,
+      unitCost: json['unit_cost'] as String?,
+      totalCost: json['total_cost'] as String?,
+      unit: json['unit'] as String?,
+      unitLabel: json['unit_label'] as String?,
     );
 
 Map<String, dynamic> _$PurchaseOrderItemToJson(_PurchaseOrderItem instance) =>
@@ -88,4 +94,8 @@ Map<String, dynamic> _$PurchaseOrderItemToJson(_PurchaseOrderItem instance) =>
       'quantity_ordered': instance.quantityOrdered,
       'quantity_received': instance.quantityReceived,
       'quantity_remaining': instance.quantityRemaining,
+      'unit_cost': instance.unitCost,
+      'total_cost': instance.totalCost,
+      'unit': instance.unit,
+      'unit_label': instance.unitLabel,
     };

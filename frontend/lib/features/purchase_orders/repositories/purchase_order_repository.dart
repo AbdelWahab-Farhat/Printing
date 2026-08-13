@@ -12,6 +12,7 @@ class PurchaseOrderLine {
   const PurchaseOrderLine({
     required this.productVariantId,
     required this.quantity,
+    required this.unitCost,
     this.id,
   });
 
@@ -27,10 +28,19 @@ class PurchaseOrderLine {
   /// As typed, normalised to ASCII digits. Never parsed here.
   final String quantity;
 
+  /// What one of them costs us, as typed. **Required by the server on every line**, with no
+  /// catalogue to fall back on: a sale is priced from the product's tiers, but what we pay a
+  /// vendor is only ever something a person knows.
+  ///
+  /// `'0'` is a legitimate answer — a free replacement — so this is never omitted to mean
+  /// «unknown». There is no such thing here.
+  final String unitCost;
+
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': ?id,
     'product_variant_id': productVariantId,
     'quantity_ordered': quantity,
+    'unit_cost': unitCost,
   };
 }
 

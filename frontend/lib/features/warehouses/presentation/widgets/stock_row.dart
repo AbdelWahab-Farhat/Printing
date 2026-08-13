@@ -140,19 +140,36 @@ class StockRow extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 8.w),
-              Text(
-                stock.quantityGrouped,
-                textDirection: TextDirection.ltr,
-                style: context.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  // The number wears the state it is in: red for nothing left, amber for a
-                  // shelf that is asking, plain ink for one that is fine.
-                  color: switch ((isEmpty, stock.isLowStock)) {
-                    (true, _) => scheme.error,
-                    (_, true) => scheme.warn,
-                    _ => scheme.onSurface,
-                  },
-                ),
+              // The unit sits under the number rather than beside it: «250» stays the loudest
+              // thing on the row, and a floor holding both bags and kilos stops being ambiguous
+              // without the balance having to share its weight with a word.
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    stock.quantityGrouped,
+                    textDirection: TextDirection.ltr,
+                    style: context.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      // The number wears the state it is in: red for nothing left, amber for a
+                      // shelf that is asking, plain ink for one that is fine.
+                      color: switch ((isEmpty, stock.isLowStock)) {
+                        (true, _) => scheme.error,
+                        (_, true) => scheme.warn,
+                        _ => scheme.onSurface,
+                      },
+                    ),
+                  ),
+                  Text(
+                    stock.unitLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
               // The alert level gets its own button, because the row itself now leads somewhere:
               // one tap cannot both open a history and edit a number.

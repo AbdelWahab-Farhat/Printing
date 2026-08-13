@@ -117,6 +117,39 @@ void main() {
       expect(sent().items.single.quantity, '1.5');
     });
 
+    test('a weight read off a scale is converted like every other number', () async {
+      // Arrange — the employee reads «١٠٫٥» off the scale for the whole batch.
+      const line = DraftOrderLine(
+        productId: 7,
+        productVariantId: 12,
+        quantity: '٤٠',
+        warehouseQuantity: '١٠٫٥',
+      );
+
+      // Act
+      await submit(lines: const [line]);
+
+      // Assert
+      expect(sent().items.single.warehouseQuantity, '10.5');
+    });
+
+    test('an untouched scale box is absent, not a zero', () async {
+      // Arrange — the ordinary line: sales unit and warehouse unit agree, so nobody weighed
+      // anything. A zero here would tell the press to take nothing off the shelf.
+      const line = DraftOrderLine(
+        productId: 7,
+        productVariantId: 12,
+        quantity: '300',
+        warehouseQuantity: '   ',
+      );
+
+      // Act
+      await submit(lines: const [line]);
+
+      // Assert
+      expect(sent().items.single.warehouseQuantity, isNull);
+    });
+
     test('the discount and the design fee are converted too', () async {
       // Arrange
       // Act

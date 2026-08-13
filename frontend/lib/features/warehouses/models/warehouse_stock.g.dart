@@ -12,6 +12,8 @@ _WarehouseStock _$WarehouseStockFromJson(Map<String, dynamic> json) =>
       warehouseId: (json['warehouse_id'] as num).toInt(),
       productVariantId: (json['product_variant_id'] as num).toInt(),
       quantity: json['quantity'] as String,
+      unit: json['unit'] as String,
+      unitLabel: json['unit_label'] as String,
       lowStockThreshold: json['low_stock_threshold'] as String?,
       isLowStock: json['is_low_stock'] as bool? ?? false,
       variant: json['product_variant'] == null
@@ -33,6 +35,8 @@ Map<String, dynamic> _$WarehouseStockToJson(_WarehouseStock instance) =>
       'warehouse_id': instance.warehouseId,
       'product_variant_id': instance.productVariantId,
       'quantity': instance.quantity,
+      'unit': instance.unit,
+      'unit_label': instance.unitLabel,
       'low_stock_threshold': instance.lowStockThreshold,
       'is_low_stock': instance.isLowStock,
       'product_variant': instance.variant?.toJson(),
