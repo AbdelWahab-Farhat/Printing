@@ -37,9 +37,12 @@ use Illuminate\Http\UploadedFile;
  *
  * Inventory asks the same way: a stock movement resolves the size it names through
  * `findVariant()` and asks `requiresWholeQuantities()` whether a fraction of it is meaningful,
- * rather than reading `products.pricing_unit` itself. Same reason — the rule that stops an order
- * for half a bag and the rule that stops half a bag being moved between warehouses have to be
- * one rule, or they will eventually disagree.
+ * rather than reading a product column itself — but unlike `quote()`, this is *not* the same rule
+ * an order's own quantity is checked against. Ordering is checked against `pricing_unit` (what
+ * the customer is charged by — see `QuoteProductRequest`); a warehouse movement is checked
+ * against `pricing_unit`'s sibling `stock_unit` (what the warehouse counts it in) through this
+ * method. The two are allowed to disagree on purpose: a product bought in by weight and sold by
+ * the piece needs whole numbers on an order and may still take a fractional weight off a shelf.
  */
 class CatalogService
 {
@@ -181,16 +184,19 @@ class CatalogService
     }
 
     /**
-     * Whether a fraction of this size means anything.
+     * Whether a fraction of this size means anything **to the warehouse**.
      *
      * Pieces are countable, so half a shipping bag is a typo; a per-kilo product's quantity is a
      * weight and fractions are the normal case. The rule itself lives on
-     * {@see PricingUnit}, next to the two cases it distinguishes —
-     * this only carries it across the context boundary so a caller does not have to walk into
-     * the product to find it.
+     * {@see PricingUnit}, next to the two cases it distinguishes — this only carries it across
+     * the context boundary so a caller does not have to walk into the product to find it.
+     *
+     * Reads `stock_unit`, not `pricing_unit` — the only caller is
+     * {@see \App\Domain\Inventory\Actions\RecordStockMovement}'s whole-quantity guard on a
+     * movement, which is a fact about what the shelf holds, not about what a customer ordered.
      */
     public function requiresWholeQuantities(ProductVariant $variant): bool
     {
-        return $variant->loadMissing('product')->product->pricing_unit->requiresWholeQuantities();
+        return $variant->loadMissing('product')->product->stock_unit->requiresWholeQuantities();
     }
 }

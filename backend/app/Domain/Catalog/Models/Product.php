@@ -28,11 +28,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * `code` is deliberately absent from the fillable list: it is allocated by
  * {@see AllocateProductIdentifier} and must never arrive in a request.
+ *
+ * `stock_unit` is fillable for the same reason `pricing_unit` is — a product needs one to be
+ * created at all — but only `CreateProduct` ever reaches it in practice: `UpdateProductRequest`
+ * deliberately carries no `stock_unit` rule, so a PUT can never change it. Past creation, the
+ * only writer is {@see \App\Domain\Inventory\Actions\SetStockUnit}, which is what keeps
+ * `warehouse_stocks.unit`/`stock_batches.unit` in step with whatever this column says.
  */
 #[UseFactory(ProductFactory::class)]
 #[Fillable([
     'slug', 'name', 'description', 'features', 'category', 'product_category_id',
-    'pricing_unit', 'pricing_mode', 'min_order_quantity', 'is_active', 'sort_order',
+    'pricing_unit', 'pricing_mode', 'stock_unit', 'min_order_quantity', 'is_active', 'sort_order',
 ])]
 class Product extends Model implements HasAuditTrail
 {
@@ -77,6 +83,7 @@ class Product extends Model implements HasAuditTrail
         return [
             'features' => 'array',
             'pricing_unit' => PricingUnit::class,
+            'stock_unit' => PricingUnit::class,
             'pricing_mode' => PricingMode::class,
             // String, not float: money and the quantities it is multiplied by must stay exact.
             'min_order_quantity' => 'decimal:3',

@@ -14,7 +14,7 @@ use App\Domain\Order\Support\Money;
 /**
  * Takes an order's lines out of a warehouse, once — the first real link between `Order` and
  * `Inventory`. Called by {@see ChangeOrderStatus}, inside its own transaction, the moment an
- * order first enters `printing`.
+ * order first enters `ready`.
  *
  * **This class never writes a balance or a ledger row itself.**
  * {@see InventoryService::recordMovement()} — the same call every other stock movement in this

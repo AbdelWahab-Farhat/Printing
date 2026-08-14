@@ -244,6 +244,12 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('products/{product}/activation', [ProductController::class, 'setActivation'])
             ->middleware('can:products.manage')->name('products.activation');
 
+        // Gated by `inventory.manage`, not `products.manage`: what a product is counted in on
+        // the shelf is an inventory fact, not a catalogue one, even though it is addressed by
+        // product id — see SetStockUnit.
+        Route::patch('products/{product}/stock-unit', [ProductController::class, 'setStockUnit'])
+            ->middleware('can:inventory.manage')->name('products.stock-unit');
+
         // scoped() makes {image} resolve *within* {product}, so another product's image id is a
         // 404 rather than something every controller method has to remember to check.
         Route::apiResource('products.images', ProductImageController::class)

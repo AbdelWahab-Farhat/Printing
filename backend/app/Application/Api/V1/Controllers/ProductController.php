@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Controllers;
 
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
+use App\Application\Api\V1\Requests\Inventory\SetStockUnitRequest;
 use App\Application\Api\V1\Requests\Product\QuoteProductRequest;
 use App\Application\Api\V1\Requests\Product\StoreProductRequest;
 use App\Application\Api\V1\Requests\Product\UpdateProductRequest;
@@ -16,9 +17,11 @@ use App\Application\Controller;
 use App\Domain\Audit\AuditService;
 use App\Domain\Catalog\CatalogService;
 use App\Domain\Catalog\DTOs\ProductData;
+use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Catalog\Queries\ProductFilters;
+use App\Domain\Inventory\InventoryService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,7 +42,10 @@ class ProductController extends Controller
 {
     use ReadsAuditTrail, ResponseTrait;
 
-    public function __construct(private readonly CatalogService $catalog) {}
+    public function __construct(
+        private readonly CatalogService $catalog,
+        private readonly InventoryService $inventory,
+    ) {}
 
     /**
      * List products
@@ -117,6 +123,23 @@ class ProductController extends Controller
             new ProductResource($updated),
             $updated->is_active ? 'تم تنشيط المنتج' : 'تم إلغاء تنشيط المنتج',
         );
+    }
+
+    /**
+     * Set what a product's stock is counted in
+     *
+     * Independent of `pricing_unit` — what the customer is charged by. Changing it cascades to
+     * every existing warehouse balance and cost-layer batch across this product's variants, so
+     * they can never disagree about the unit they're in. See {@see \App\Domain\Inventory\Actions\SetStockUnit}.
+     */
+    public function setStockUnit(SetStockUnitRequest $request, Product $product): JsonResponse
+    {
+        $updated = $this->inventory->setStockUnit(
+            $product,
+            PricingUnit::from($request->string('unit')->toString()),
+        );
+
+        return $this->success(new ProductResource($updated), 'تم تحديث وحدة التخزين بنجاح');
     }
 
     /**

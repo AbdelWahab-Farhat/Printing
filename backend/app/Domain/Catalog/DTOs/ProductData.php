@@ -21,6 +21,13 @@ final readonly class ProductData
         /** The catalogue heading it sits under — «التصنيف». Required from every request. */
         public int $productCategoryId,
         public PricingUnit $pricingUnit,
+        /**
+         * What the warehouse counts this in. Only ever read by {@see \App\Domain\Catalog\Actions\CreateProduct}
+         * — {@see \App\Domain\Catalog\Actions\UpdateProduct} builds its own attribute list and
+         * never touches this, since past creation the only writer is
+         * {@see \App\Domain\Inventory\Actions\SetStockUnit}.
+         */
+        public PricingUnit $stockUnit,
         public PricingMode $pricingMode,
         public string $minOrderQuantity,
         public ?string $description = null,
@@ -36,13 +43,20 @@ final readonly class ProductData
      */
     public static function fromArray(array $validated): self
     {
+        $pricingUnit = PricingUnit::from((string) $validated['pricing_unit']);
+
         return new self(
             slug: isset($validated['slug']) && $validated['slug'] !== ''
                 ? (string) $validated['slug']
                 : null,
             name: (string) $validated['name'],
             productCategoryId: (int) $validated['product_category_id'],
-            pricingUnit: PricingUnit::from((string) $validated['pricing_unit']),
+            pricingUnit: $pricingUnit,
+            // Absent means "same as pricing_unit" — the common case, where what is stocked and
+            // what is sold agree.
+            stockUnit: isset($validated['stock_unit']) && $validated['stock_unit'] !== ''
+                ? PricingUnit::from((string) $validated['stock_unit'])
+                : $pricingUnit,
             pricingMode: PricingMode::from((string) $validated['pricing_mode']),
             minOrderQuantity: (string) ($validated['min_order_quantity'] ?? '1'),
             description: isset($validated['description']) && $validated['description'] !== ''
