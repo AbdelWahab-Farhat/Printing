@@ -7,6 +7,17 @@ import 'package:printing/core/utils/app_icons.dart';
 import 'package:printing/core/utils/context_extensions.dart';
 import 'package:printing/core/widgets/permission_gate.dart';
 
+/// Whether معدلات تكلفة التصنيع appears in the drawer.
+///
+/// **Hidden, not removed.** The screen, its route, its permissions, its repository and its
+/// tests are all still here and still passing — this drawer row is the only door to them, so
+/// closing the door is the whole change. Flip this to `true` to reopen it.
+///
+/// A flag rather than a deleted block: the code stays compiled and covered, so it cannot rot
+/// quietly while it is out of sight, and coming back is one word rather than an archaeology
+/// exercise in the history.
+const bool _showManufacturingCostRates = false;
+
 /// The frame every signed-in screen sits inside: one app bar, one bottom bar, one drawer.
 ///
 /// **Why a shell and not an app bar per screen.** Each screen building its own would mean the
@@ -198,14 +209,17 @@ class _RootDrawer extends StatelessWidget {
             ),
             // Beside أوامر الشراء because it is the same kind of back-office reference data: a
             // standing figure curated once and read by every order that reaches الطباعة.
-            PermissionGate(
-              permission: AppPermission.viewManufacturingCostRates,
-              child: _DrawerLink(
-                icon: AppIcons.manufacturingCostRates,
-                label: 'معدلات تكلفة التصنيع',
-                onTap: () => context.push(Routes.manufacturingCostRates),
+            //
+            // Hidden for now — see [_showManufacturingCostRates].
+            if (_showManufacturingCostRates)
+              PermissionGate(
+                permission: AppPermission.viewManufacturingCostRates,
+                child: _DrawerLink(
+                  icon: AppIcons.manufacturingCostRates,
+                  label: 'معدلات تكلفة التصنيع',
+                  onTap: () => context.push(Routes.manufacturingCostRates),
+                ),
               ),
-            ),
             // Gated: unlike the map above, this list is not needed to fill any form in — a
             // carrier is chosen from the dispatch screen's own picker.
             PermissionGate(

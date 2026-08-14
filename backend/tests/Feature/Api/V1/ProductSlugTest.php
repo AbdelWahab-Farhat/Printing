@@ -73,7 +73,6 @@ class ProductSlugTest extends TestCase
         return array_merge([
             'product_category_id' => $this->categoryId(),
             'name' => 'أكياس الشحن',
-            'category' => 'printed',
             'pricing_unit' => 'piece',
             'pricing_mode' => 'tiered',
             'min_order_quantity' => '100',

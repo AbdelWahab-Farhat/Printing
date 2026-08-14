@@ -32,12 +32,9 @@ class ProductResource extends JsonResource
 
             // Each enum ships its value *and* its Arabic label, so the app never has to keep its
             // own translation table in step with the backend's.
-            // «النوع» — مطبوعة/سادة. The key kept the name it was born with; renaming it would
-            // break every consumer to tidy a word. See PRODUCT-CATEGORIES.md.
-            'category' => $this->category->value,
-            'category_label' => $this->category->label(),
-
-            // «التصنيف» — the catalogue heading. A whole object rather than an id, because
+            // «التصنيف» — the catalogue heading, and the only thing that classifies a product
+            // since «النوع» became two rows in the same table. A whole object rather than an id,
+            // because
             // every screen showing a product shows the name, and an app that looks one up per
             // row is an app making N requests to draw a list. Null only for a product recorded
             // before categories existed and not yet edited since.

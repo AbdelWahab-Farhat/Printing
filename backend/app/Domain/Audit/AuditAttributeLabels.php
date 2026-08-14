@@ -123,10 +123,10 @@ final class AuditAttributeLabels
             'slug' => 'المعرّف',
             'description' => 'الوصف',
             'features' => 'المزايا',
-            'category' => 'التصنيف',
             'pricing_mode' => 'طريقة التسعير',
             'min_order_quantity' => 'أقل كمية للطلب',
-            'product_category_id' => 'تصنيف المنتج',
+            // «تصنيف المنتج» while a `category` column stood beside it; the word is free now.
+            'product_category_id' => 'التصنيف',
         ],
         'product_category' => [
             'name' => 'اسم التصنيف',

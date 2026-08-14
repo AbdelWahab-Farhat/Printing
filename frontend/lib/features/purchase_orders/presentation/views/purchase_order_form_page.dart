@@ -24,6 +24,15 @@ import 'package:printing/features/warehouses/presentation/widgets/warehouse_pick
 /// no sensible default to prefill. The server requires it on every line and the form asks for it
 /// beside the quantity.
 ///
+/// **It asks for the line's total, not a unit price.** That is what a supplier's invoice is
+/// written in — «٤ لفّات بـ ٧٥ د.ل» — and it is what the server stores; it works the per-unit
+/// figure out itself. A box asking for the unit price would have buyers dividing on paper before
+/// they could fill the form in.
+///
+/// **Delivery and customs are a second list, not a line.** They are charged on the order rather
+/// than on any one size, so the form collects them separately and the server spreads them across
+/// the lines in proportion to what each is worth.
+///
 /// **The supplier is chosen once and then fixed while editing.** The server accepts a different
 /// `vendor_id` on an update, but an order that changed hands would leave its received lines
 /// pointing at a shipment from somebody else — so the picker is offered while raising one and
@@ -82,7 +91,25 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
         quantity: item.orderedLabel,
         // Empty for a line raised before cost tracking, so the field opens asking rather than
         // opening on a zero somebody would have to notice was never typed.
-        unitCost: item.unitCost == null ? '' : trimDecimals(item.unitCost!),
+        //
+        // The *base* total, not the landed one: this box is the figure the buyer typed, and
+        // seeding it with the line's share of delivery folded in would add that share again on
+        // every save.
+        baseTotalCost: item.baseTotalCost == null ? '' : trimDecimals(item.baseTotalCost!),
+      ),
+  ];
+
+  /// The order's delivery, unloading and customs, as they stand.
+  ///
+  /// **Seeded from what the server has, and sent back in full every save.** The set is replaced
+  /// wholesale, so a cost left out of this list is deleted — which is exactly what removing a
+  /// row on screen should mean, and exactly what must not happen by accident.
+  late final List<_AdditionalCostDraft> _additionalCosts = [
+    for (final cost in widget.order?.additionalCosts ?? const <PurchaseOrderAdditionalCost>[])
+      _AdditionalCostDraft(
+        id: cost.id,
+        name: cost.name,
+        amount: trimDecimals(cost.amount),
       ),
   ];
 
@@ -121,6 +148,9 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
     _notes.dispose();
     for (final line in _lines) {
       line.dispose();
+    }
+    for (final cost in _additionalCosts) {
+      cost.dispose();
     }
     super.dispose();
   }
@@ -188,7 +218,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
           // typed into them. The server snapshots the same unit onto the line when it is saved.
           unit: PurchaseLineUnit(picked.product.pricingUnitLabel),
           quantity: '',
-          unitCost: '',
+          baseTotalCost: '',
         ),
       );
     });
@@ -198,6 +228,17 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
     setState(() => _lines.remove(line));
     // Disposed after the rebuild, so nothing is reading the controller as it goes.
     WidgetsBinding.instance.addPostFrameCallback((_) => line.dispose());
+  }
+
+  /// A blank row, rather than a dialog: there is nothing to pick from — the name is whatever the
+  /// supplier called it on the invoice — so a sheet would be one more tap around an empty box.
+  void _addAdditionalCost() {
+    setState(() => _additionalCosts.add(_AdditionalCostDraft(name: '', amount: '')));
+  }
+
+  void _removeAdditionalCost(_AdditionalCostDraft cost) {
+    setState(() => _additionalCosts.remove(cost));
+    WidgetsBinding.instance.addPostFrameCallback((_) => cost.dispose());
   }
 
   void _submit() {
@@ -229,7 +270,17 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
             id: line.id,
             productVariantId: line.productVariantId,
             quantity: line.quantity.text,
-            unitCost: line.unitCost.text,
+            baseTotalCost: line.baseTotalCost.text,
+          ),
+      ],
+      // The whole current list every time, including when it is empty — that is how the server
+      // is told the last one was removed.
+      additionalCosts: [
+        for (final cost in _additionalCosts)
+          DraftAdditionalCost(
+            id: cost.id,
+            name: cost.name.text,
+            amount: cost.amount.text,
           ),
       ],
     );
@@ -309,7 +360,12 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
                   ),
                   SizedBox(height: 20.h),
 
-                  _LinesHeader(count: _lines.length, error: state.itemsError),
+                  _ListHeader(
+                    title: 'البنود',
+                    count: _lines.length,
+                    emptyLabel: 'لا بنود',
+                    error: state.itemsError,
+                  ),
                   SizedBox(height: 8.h),
                   for (final line in _lines)
                     _LineRow(
@@ -323,6 +379,37 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
                     label: 'إضافة مقاس',
                     icon: AppIcons.add,
                     onPressed: _addLine,
+                  ),
+
+                  SizedBox(height: 20.h),
+                  // Under the lines, because they are what it is spread over: delivery is only
+                  // meaningful once there is something being delivered.
+                  _ListHeader(
+                    title: 'تكاليف إضافية',
+                    count: _additionalCosts.length,
+                    emptyLabel: 'لا تكاليف',
+                    error: state.additionalCostsError,
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    'التوصيل والتفريغ والجمارك — تُوزَّع على البنود حسب قيمة كل بند',
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  for (final cost in _additionalCosts)
+                    _AdditionalCostRow(
+                      key: ObjectKey(cost),
+                      cost: cost,
+                      onChanged: (_) => cubit.clearFailure(),
+                      onRemove: () => _removeAdditionalCost(cost),
+                    ),
+                  SizedBox(height: 8.h),
+                  AppButton.tonal(
+                    label: 'إضافة تكلفة',
+                    icon: AppIcons.add,
+                    onPressed: _addAdditionalCost,
                   ),
 
                   SizedBox(height: 20.h),
@@ -356,17 +443,17 @@ class _LineDraft {
     required this.productVariantId,
     required this.title,
     required String quantity,
-    required String unitCost,
+    required String baseTotalCost,
     this.unit = const PurchaseLineUnit(null),
     this.id,
   }) : quantity = TextEditingController(text: quantity),
-       unitCost = TextEditingController(text: unitCost);
+       baseTotalCost = TextEditingController(text: baseTotalCost);
 
   final int? id;
   final int productVariantId;
   final String title;
 
-  /// «كيلوغرام» or «قطعة» — what the two boxes below are asking for.
+  /// «كيلوغرام» or «قطعة» — what the quantity box below is asking for.
   ///
   /// The *same* type the saved line uses, so the form asks in the word the order will report
   /// in. Null only on a line raised before the unit column existed, and everything built from it
@@ -374,18 +461,60 @@ class _LineDraft {
   final PurchaseLineUnit unit;
 
   final TextEditingController quantity;
-  final TextEditingController unitCost;
+
+  /// What the whole line costs, as invoiced. Names no unit — see the note on the page.
+  final TextEditingController baseTotalCost;
 
   void dispose() {
     quantity.dispose();
-    unitCost.dispose();
+    baseTotalCost.dispose();
   }
 }
 
-class _LinesHeader extends StatelessWidget {
-  const _LinesHeader({required this.count, this.error});
+/// One order-level cost as the form holds it.
+class _AdditionalCostDraft {
+  _AdditionalCostDraft({required String name, required String amount, this.id})
+    : name = TextEditingController(text: name),
+      amount = TextEditingController(text: amount);
 
+  /// Carried through so an existing cost is corrected rather than deleted and recreated.
+  final int? id;
+
+  final TextEditingController name;
+  final TextEditingController amount;
+
+  /// Whether anything has been typed into either box.
+  ///
+  /// **A row nobody filled in is dropped rather than refused.** Tapping «إضافة تكلفة» and
+  /// changing your mind is not an error worth blocking a save over, and the same test runs again
+  /// in [DraftAdditionalCost.isBlank] before anything reaches the wire.
+  bool get isBlank => name.text.trim().isEmpty && amount.text.trim().isEmpty;
+
+  void dispose() {
+    name.dispose();
+    amount.dispose();
+  }
+}
+
+/// The bar above an editable list: what it is, how much is in it, and what the server said about
+/// it as a whole.
+///
+/// Shared by the two lists so they read as one screen — a complaint about the lines and one
+/// about the delivery charges land in the same place, in the same words.
+class _ListHeader extends StatelessWidget {
+  const _ListHeader({
+    required this.title,
+    required this.count,
+    required this.emptyLabel,
+    this.error,
+  });
+
+  final String title;
   final int count;
+
+  /// What to say instead of «0», which reads as a figure rather than as an absence.
+  final String emptyLabel;
+
   final String? error;
 
   @override
@@ -398,7 +527,7 @@ class _LinesHeader extends StatelessWidget {
         Row(
           children: [
             Text(
-              'البنود',
+              title,
               style: context.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,
                 color: scheme.primary,
@@ -406,7 +535,7 @@ class _LinesHeader extends StatelessWidget {
             ),
             const Spacer(),
             Text(
-              count == 0 ? 'لا بنود' : count.grouped,
+              count == 0 ? emptyLabel : count.grouped,
               style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
@@ -492,8 +621,10 @@ class _LineRow extends StatelessWidget {
           // Its own row for the same reason as the quantity above, and *under* it because the
           // quantity is what a buyer knows first — the price is what they then ask for.
           AppTextField(
-            controller: line.unitCost,
-            label: line.unit.costField,
+            controller: line.baseTotalCost,
+            // The line's total, which is what the invoice in the buyer's hand is written in.
+            // The server divides by the quantity above to get the per-unit figure.
+            label: 'تكلفة البند الإجمالية (د.ل)',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
@@ -508,6 +639,89 @@ class _LineRow extends StatelessWidget {
               if (parsed == null) return 'أدخل التكلفة';
 
               return parsed < 0 ? 'التكلفة لا يمكن أن تكون سالبة' : null;
+            },
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One order-level cost: what it was for, and how much.
+///
+/// **The same card the line items use**, so the two lists read as one screen rather than as two
+/// features bolted together — one add button under each, one delete on each row, in the same
+/// place.
+class _AdditionalCostRow extends StatelessWidget {
+  const _AdditionalCostRow({
+    required this.cost,
+    required this.onChanged,
+    required this.onRemove,
+    super.key,
+  });
+
+  final _AdditionalCostDraft cost;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 12.h),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: AppTextField(
+                  controller: cost.name,
+                  label: 'البيان',
+                  hint: 'توصيل، تفريغ، جمارك…',
+                  // Only when the row has something in it: an untouched row is dropped before
+                  // sending, so refusing to save because of one is a wall with nothing behind it.
+                  validator: (value) =>
+                      cost.isBlank || (value ?? '').trim().isNotEmpty
+                      ? null
+                      : 'أدخل بيان التكلفة',
+                  onChanged: onChanged,
+                ),
+              ),
+              IconButton(
+                onPressed: onRemove,
+                icon: Icon(AppIcons.delete, size: 20.sp),
+                color: scheme.error,
+                tooltip: 'إزالة التكلفة',
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          AppTextField(
+            controller: cost.amount,
+            label: 'القيمة (د.ل)',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
+            ],
+            validator: (value) {
+              if (cost.isBlank) return null;
+
+              final parsed = double.tryParse(
+                Validators.toWesternDigits(value ?? '').replaceAll(',', '.').trim(),
+              );
+
+              if (parsed == null) return 'أدخل القيمة';
+
+              return parsed < 0 ? 'القيمة لا يمكن أن تكون سالبة' : null;
             },
             onChanged: onChanged,
           ),

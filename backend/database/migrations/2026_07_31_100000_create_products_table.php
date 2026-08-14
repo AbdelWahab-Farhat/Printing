@@ -31,7 +31,7 @@ return new class extends Migration
             // Selling points shown under the price table in the catalogue.
             $table->json('features')->nullable();
 
-            $table->string('category', 20)->index();      // ProductType
+            $table->string('category', 20)->index();      // مطبوعة/سادة — dropped 2026-08-13
             $table->string('pricing_unit', 20);           // PricingUnit
             $table->string('pricing_mode', 20)->index();  // PricingMode
 

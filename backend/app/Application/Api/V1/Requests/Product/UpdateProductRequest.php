@@ -6,7 +6,6 @@ namespace App\Application\Api\V1\Requests\Product;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductType;
 use App\Domain\Catalog\Models\Product;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
@@ -33,7 +32,6 @@ class UpdateProductRequest extends StoreProductRequest
             'features' => ['nullable', 'array', 'max:12'],
             'features.*' => ['required', 'string', 'max:255'],
 
-            'category' => ['required', Rule::enum(ProductType::class)],
             // **The catalogue heading, and it is required from today on.** The column is
             // nullable because the products recorded before this feature existed have to stay
             // valid; nothing saved through this request may be. `exists` refuses a category that

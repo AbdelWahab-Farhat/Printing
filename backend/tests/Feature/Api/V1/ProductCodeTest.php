@@ -74,7 +74,6 @@ class ProductCodeTest extends TestCase
             'product_category_id' => $this->categoryId(),
             'slug' => 'shipping-bag',
             'name' => 'أكياس الشحن',
-            'category' => 'printed',
             'pricing_unit' => 'piece',
             'pricing_mode' => 'tiered',
             'min_order_quantity' => 100,

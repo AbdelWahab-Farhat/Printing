@@ -18,7 +18,6 @@ abstract interface class ProductRepository {
   /// inactive products.
   Future<Either<Failure, Paginated<Product>>> products({
     String? search,
-    String? category,
     /// «التصنيف» — the catalogue heading. Null means every heading.
     int? productCategoryId,
     String? pricingUnit,

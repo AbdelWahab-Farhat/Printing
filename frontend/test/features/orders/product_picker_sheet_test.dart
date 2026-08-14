@@ -46,8 +46,6 @@ void main() {
       code: 'P$id',
       slug: 'bag-$id',
       name: name,
-      category: 'printed',
-      categoryLabel: 'مطبوعة',
       pricingUnit: 'piece',
       pricingUnitLabel: 'قطعة',
       pricingMode: 'listed',
@@ -68,7 +66,6 @@ void main() {
     when(
       () => products.products(
         search: any(named: 'search'),
-        category: any(named: 'category'),
         pricingUnit: any(named: 'pricingUnit'),
         isActive: any(named: 'isActive'),
         page: any(named: 'page'),

@@ -19,7 +19,6 @@ final class UpdateProduct
                 'name' => $data->name,
                 'description' => $data->description,
                 'features' => $data->features,
-                'category' => $data->category,
                 'product_category_id' => $data->productCategoryId,
                 'pricing_unit' => $data->pricingUnit,
                 'pricing_mode' => $data->pricingMode,

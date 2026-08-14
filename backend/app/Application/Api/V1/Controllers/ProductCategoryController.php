@@ -27,8 +27,9 @@ use Illuminate\Http\Request;
  * ستيكرات ومطبوعات أخرى. A short list the business curates, picked from when a product is
  * recorded, and filtered by on the products screen.
  *
- * **Not the `category` field on a product.** That one is مطبوعة/سادة — «النوع» — and says how a
- * bag is made rather than where a customer would look for it. See PRODUCT-CATEGORIES.md.
+ * **The only thing that classifies a product.** A `category` field carrying مطبوعة/سادة used to
+ * sit beside it; it drove nothing, so it became two rows in this table. See
+ * PRODUCT-CATEGORIES.md.
  *
  * Reading needs `products.view` and changing the list needs `products.manage`: no pair of its
  * own, because whoever may read products needs their categories to read them by, and whoever

@@ -94,8 +94,6 @@ void main() {
     code: 'P7',
     slug: 'shipping-bags',
     name: 'أكياس الشحن',
-    category: 'printed',
-    categoryLabel: 'مطبوعة',
     pricingUnit: 'piece',
     pricingUnitLabel: 'بالقطعة',
     pricingMode: 'tiered',
@@ -218,10 +216,12 @@ void main() {
 
   // ─────────────────────────── the catalogue heading ───────────────────────────
 
-  /// **«التصنيف» is required, and it is a different question from «النوع».**
+  /// **«التصنيف» is required, and it is the only question of its kind left.**
   ///
   /// A product with no heading cannot be found in the catalogue at all — which is what the
-  /// catalogue is for — so the form refuses to send one. See PRODUCT-CATEGORIES.md.
+  /// catalogue is for — so the form refuses to send one. «النوع» used to sit under it asking a
+  /// second, nearly identical question; مطبوعة and سادة are two more headings now, and the form
+  /// asks once. See PRODUCT-CATEGORIES.md.
   testWidgets('the form asks for a catalogue heading, and refuses to send without one', (
     tester,
   ) async {
@@ -229,9 +229,9 @@ void main() {
     await tester.pumpWidget(host(const ProductFormPage()));
     await tester.pumpAndSettle();
 
-    // Assert — both questions are on screen, under words that no longer mean the same thing.
+    // Assert — one classification question, not two.
     expect(find.text('التصنيف'), findsOneWidget);
-    expect(find.text('النوع'), findsOneWidget);
+    expect(find.text('النوع'), findsNothing);
 
     // Act
     await tester.ensureVisible(find.text('إضافة المنتج'));
@@ -254,8 +254,6 @@ void main() {
       code: 'P7',
       slug: 'shipping-bags',
       name: 'أكياس الشحن',
-      category: 'printed',
-      categoryLabel: 'مطبوعة',
       productCategory: ProductCategory(id: 3, name: 'أكياس'),
       productCategoryId: 3,
       pricingUnit: 'piece',

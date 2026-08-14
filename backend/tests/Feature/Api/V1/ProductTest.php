@@ -80,7 +80,6 @@ class ProductTest extends TestCase
             'product_category_id' => $this->categoryId(),
             'slug' => 'shipping-bag',
             'name' => 'أكياس الشحن',
-            'category' => 'printed',
             'pricing_unit' => 'piece',
             'pricing_mode' => 'tiered',
             'min_order_quantity' => 100,
@@ -225,14 +224,16 @@ class ProductTest extends TestCase
                 'message' => 'تم إضافة المنتج بنجاح',
                 'data' => [
                     'slug' => 'shipping-bag',
-                    'category' => 'printed',
-                    'category_label' => 'مطبوعة',
                     'pricing_unit' => 'piece',
                     'pricing_mode' => 'tiered',
                     'has_listed_prices' => true,
                     'is_active' => true,
                 ],
             ])
+            // «النوع» is gone: مطبوعة/سادة is a heading in the categories table now, not a
+            // second word on every product. See PRODUCT-CATEGORIES.md.
+            ->assertJsonMissingPath('data.category')
+            ->assertJsonMissingPath('data.category_label')
             ->assertJsonCount(1, 'data.variants')
             ->assertJsonCount(3, 'data.variants.0.price_tiers')
             ->assertJsonPath('data.variants.0.price_tiers.0.unit_price', '1.100')
@@ -251,7 +252,6 @@ class ProductTest extends TestCase
         $response = $this->create($headers, [
             'slug' => 'general-shipping-bag',
             'name' => 'أكياس الشحن السادة',
-            'category' => 'general',
             'pricing_unit' => 'kilogram',
             'min_order_quantity' => '2.5',
             'variants' => [
@@ -263,7 +263,6 @@ class ProductTest extends TestCase
         $response->assertCreated()
             ->assertJsonPath('data.pricing_unit', 'kilogram')
             ->assertJsonPath('data.pricing_unit_label', 'كيلوغرام')
-            ->assertJsonPath('data.category_label', 'سادة')
             ->assertJsonPath('data.min_order_quantity', '2.500');
     }
 
@@ -351,7 +350,6 @@ class ProductTest extends TestCase
             'slug with arabic' => [['slug' => 'كيس'], 'slug'],
             'slug uppercase' => [['slug' => 'Shipping-Bag'], 'slug'],
             'name missing' => [['name' => ''], 'name'],
-            'unknown category' => [['category' => 'plastic'], 'category'],
             'unknown pricing unit' => [['pricing_unit' => 'metre'], 'pricing_unit'],
             'unknown pricing mode' => [['pricing_mode' => 'auction'], 'pricing_mode'],
             'minimum of zero' => [['min_order_quantity' => 0], 'min_order_quantity'],
@@ -408,7 +406,7 @@ class ProductTest extends TestCase
             ->assertJsonStructure([
                 'status',
                 'message',
-                'data' => [['id', 'slug', 'name', 'category', 'pricing_unit', 'pricing_mode', 'variants']],
+                'data' => [['id', 'slug', 'name', 'product_category_id', 'pricing_unit', 'pricing_mode', 'variants']],
                 'meta' => ['current_page', 'per_page', 'last_page', 'total'],
             ]);
 
@@ -442,24 +440,23 @@ class ProductTest extends TestCase
         $capped->assertOk()->assertJsonPath('meta.per_page', 100);
     }
 
-    public function test_index_filters_by_category_unit_and_mode(): void
+    public function test_index_filters_by_unit_and_mode(): void
     {
-        // Arrange
+        // Arrange — `?category=` is gone with «النوع»; the catalogue heading is filtered by
+        // `?product_category_id=`, which ProductCategoryTest owns.
         $printed = Product::factory()->create(['slug' => 'printed-one']);
         $general = Product::factory()->perKilogram()->create(['slug' => 'general-one']);
         $quoted = Product::factory()->quoteOnRequest()->create(['slug' => 'quoted-one']);
         $headers = $this->auth();
 
         // Act
-        $byCategory = $this->withHeaders($headers)->getJson('/api/v1/products?category=general');
         $byUnit = $this->withHeaders($headers)->getJson('/api/v1/products?pricing_unit=kilogram');
         $byMode = $this->withHeaders($headers)->getJson('/api/v1/products?pricing_mode=quote_on_request');
 
         // Assert
-        $this->assertSame([$general->id], array_column($byCategory->json('data'), 'id'));
         $this->assertSame([$general->id], array_column($byUnit->json('data'), 'id'));
         $this->assertSame([$quoted->id], array_column($byMode->json('data'), 'id'));
-        $this->assertNotContains($printed->id, array_column($byCategory->json('data'), 'id'));
+        $this->assertNotContains($printed->id, array_column($byUnit->json('data'), 'id'));
     }
 
     public function test_index_searches_by_name_and_slug(): void

@@ -62,8 +62,8 @@ void main() {
       // removes any it is not sent, so a line that arrived without one would be deleted and
       // recreated, taking its received quantity with it.
       const lines = [
-        PurchaseOrderLine(id: 12, productVariantId: 3, quantity: '10', unitCost: '2.5'),
-        PurchaseOrderLine(productVariantId: 4, quantity: '5', unitCost: '3'),
+        PurchaseOrderLine(id: 12, productVariantId: 3, quantity: '10', baseTotalCost: '25'),
+        PurchaseOrderLine(productVariantId: 4, quantity: '5', baseTotalCost: '15'),
       ];
 
       // Act
@@ -85,12 +85,12 @@ void main() {
       expect((items.last as Map<String, dynamic>).containsKey('id'), isFalse);
     });
 
-    test('every line carries its unit cost, zero included', () async {
+    test('every line carries its total cost, zero included', () async {
       // Arrange — a free replacement from the vendor. The server takes `gte:0`, so zero is a
       // recorded answer and not the absence of one; a line that dropped it would be refused.
       const lines = [
-        PurchaseOrderLine(productVariantId: 3, quantity: '10', unitCost: '2.500'),
-        PurchaseOrderLine(productVariantId: 4, quantity: '5', unitCost: '0'),
+        PurchaseOrderLine(productVariantId: 3, quantity: '10', baseTotalCost: '25.500'),
+        PurchaseOrderLine(productVariantId: 4, quantity: '5', baseTotalCost: '0'),
       ];
 
       // Act
@@ -101,12 +101,14 @@ void main() {
         items: lines,
       );
 
-      // Assert
+      // Assert — `base_total_cost`, and it is the *line's* total: the server divides by the
+      // quantity to get `base_unit_cost`, never the other way around.
       final body = captured.data as Map<String, dynamic>;
       final items = body['items'] as List<dynamic>;
 
-      expect((items.first as Map<String, dynamic>)['unit_cost'], '2.500');
-      expect((items.last as Map<String, dynamic>)['unit_cost'], '0');
+      expect((items.first as Map<String, dynamic>)['base_total_cost'], '25.500');
+      expect((items.last as Map<String, dynamic>)['base_total_cost'], '0');
+      expect((items.first as Map<String, dynamic>).containsKey('unit_cost'), isFalse);
     });
 
     test('an optional date left empty is left out of the body', () async {
@@ -116,7 +118,7 @@ void main() {
         warehouseId: 2,
         orderDate: '2026-08-08',
         items: const [
-          PurchaseOrderLine(productVariantId: 3, quantity: '10', unitCost: '2.5'),
+          PurchaseOrderLine(productVariantId: 3, quantity: '10', baseTotalCost: '25'),
         ],
       );
 
@@ -127,6 +129,111 @@ void main() {
       expect(captured.method, 'POST');
       expect(body.containsKey('expected_date'), isFalse);
       expect(body.containsKey('notes'), isFalse);
+    });
+  });
+
+  group('the order-level costs', () {
+    test('a new one carries no id, and an existing one does', () async {
+      // Arrange — the same replace-the-whole-set contract the items follow.
+      const costs = [
+        PurchaseOrderAdditionalCostLine(id: 7, name: 'توصيل', amount: '10'),
+        PurchaseOrderAdditionalCostLine(name: 'جمارك', amount: '3'),
+      ];
+
+      // Act
+      await repository.update(
+        7,
+        vendorId: 1,
+        warehouseId: 2,
+        orderDate: '2026-08-08',
+        items: const [
+          PurchaseOrderLine(productVariantId: 3, quantity: '10', baseTotalCost: '25'),
+        ],
+        additionalCosts: costs,
+      );
+
+      // Assert
+      final body = captured.data as Map<String, dynamic>;
+      final sent = body['additional_costs'] as List<dynamic>;
+
+      expect((sent.first as Map<String, dynamic>)['id'], 7);
+      expect((sent.first as Map<String, dynamic>)['name'], 'توصيل');
+      expect((sent.first as Map<String, dynamic>)['amount'], '10');
+      expect((sent.last as Map<String, dynamic>).containsKey('id'), isFalse);
+    });
+
+    test('an empty list is sent rather than omitted', () async {
+      // Act — an order whose last additional cost was just deleted on the form.
+      await repository.update(
+        7,
+        vendorId: 1,
+        warehouseId: 2,
+        orderDate: '2026-08-08',
+        items: const [
+          PurchaseOrderLine(productVariantId: 3, quantity: '10', baseTotalCost: '25'),
+        ],
+      );
+
+      // Assert — omitting the key on a PUT is how the server is told nothing changed; an empty
+      // array is how it is told they are gone. The form always knows which, so it always says.
+      final body = captured.data as Map<String, dynamic>;
+
+      expect(body['additional_costs'], isEmpty);
+    });
+
+    test('an amount typed on an Arabic keyboard reaches the server as digits', () async {
+      // Arrange — `numeric` on the server is ASCII-only, and «١٠٫٥» is not a number to it.
+      final save = SavePurchaseOrder(repository);
+
+      // Act
+      await save(
+        vendorId: 1,
+        warehouseId: 2,
+        orderDate: '2026-08-08',
+        items: const [
+          DraftLine(productVariantId: 3, quantity: '١٠', baseTotalCost: '٢٥'),
+        ],
+        additionalCosts: const [
+          DraftAdditionalCost(name: '  توصيل  ', amount: '١٠٫٥'),
+        ],
+      );
+
+      // Assert — the same normalising the quantity has always had, applied to both new numbers.
+      final body = captured.data as Map<String, dynamic>;
+      final line = (body['items'] as List<dynamic>).single as Map<String, dynamic>;
+      final cost = (body['additional_costs'] as List<dynamic>).single
+          as Map<String, dynamic>;
+
+      expect(line['quantity_ordered'], '10');
+      expect(line['base_total_cost'], '25');
+      expect(cost['amount'], '10.5');
+      expect(cost['name'], 'توصيل');
+    });
+
+    test('a row left blank on the form is not a cost', () async {
+      // Arrange — the editor opens rows the way the line list does, and a half-filled one left
+      // behind would be refused by `additional_costs.*.name.required` at an index nobody can
+      // point at on screen.
+      final save = SavePurchaseOrder(repository);
+
+      // Act
+      await save(
+        vendorId: 1,
+        warehouseId: 2,
+        orderDate: '2026-08-08',
+        items: const [
+          DraftLine(productVariantId: 3, quantity: '10', baseTotalCost: '25'),
+        ],
+        additionalCosts: const [
+          DraftAdditionalCost(name: 'توصيل', amount: '10'),
+          DraftAdditionalCost(name: '   ', amount: '  '),
+        ],
+      );
+
+      // Assert
+      final body = captured.data as Map<String, dynamic>;
+
+      expect((body['additional_costs'] as List<dynamic>).length, 1);
     });
   });
 

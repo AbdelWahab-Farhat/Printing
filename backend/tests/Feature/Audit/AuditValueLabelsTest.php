@@ -55,7 +55,7 @@ class AuditValueLabelsTest extends TestCase
     public function test_the_rule_holds_for_any_model_not_just_orders(): void
     {
         // Arrange — a different context entirely, and nothing was added to make it work.
-        $new = ['pricing_mode' => 'quote_on_request', 'category' => 'printed'];
+        $new = ['pricing_mode' => 'quote_on_request', 'name' => 'أكياس ورقية'];
 
         // Act
         $labels = AuditValueLabels::forChanges(AuditSubject::Product, [], $new);

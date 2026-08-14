@@ -6,15 +6,12 @@ namespace App\Domain\Catalog\Queries;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductType;
 
 final readonly class ProductFilters
 {
     public function __construct(
         /** Matches the name or the slug. */
         public ?string $search = null,
-        /** مطبوعة/سادة — «النوع». The wire key is still `category`; see ProductType. */
-        public ?ProductType $category = null,
         /** The catalogue heading — «التصنيف». Sent as `product_category_id`. */
         public ?int $productCategoryId = null,
         public ?PricingUnit $pricingUnit = null,
@@ -32,7 +29,6 @@ final readonly class ProductFilters
 
         return new self(
             search: $search !== '' ? $search : null,
-            category: ProductType::tryFrom((string) ($query['category'] ?? '')),
             // `> 0` rather than a plain cast: `?product_category_id=` with nothing after it
             // reads as «كل التصنيفات», and casting it would filter on id zero and return
             // nothing at all.

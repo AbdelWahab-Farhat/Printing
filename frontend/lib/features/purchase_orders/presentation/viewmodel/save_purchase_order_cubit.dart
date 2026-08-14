@@ -24,6 +24,7 @@ class SavePurchaseOrderCubit extends Cubit<SavePurchaseOrderState> {
     required int warehouseId,
     required String orderDate,
     required List<DraftLine> items,
+    List<DraftAdditionalCost> additionalCosts = const [],
     String? expectedDate,
     String? notes,
   }) async {
@@ -40,6 +41,7 @@ class SavePurchaseOrderCubit extends Cubit<SavePurchaseOrderState> {
       warehouseId: warehouseId,
       orderDate: orderDate,
       items: items,
+      additionalCosts: additionalCosts,
       expectedDate: expectedDate,
       notes: notes,
     );

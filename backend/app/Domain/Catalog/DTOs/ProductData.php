@@ -6,7 +6,6 @@ namespace App\Domain\Catalog\DTOs;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductType;
 
 final readonly class ProductData
 {
@@ -19,8 +18,6 @@ final readonly class ProductData
         /** null means "not supplied": the model derives one from the name and the code. */
         public ?string $slug,
         public string $name,
-        /** مطبوعة/سادة — «النوع». */
-        public ProductType $category,
         /** The catalogue heading it sits under — «التصنيف». Required from every request. */
         public int $productCategoryId,
         public PricingUnit $pricingUnit,
@@ -44,7 +41,6 @@ final readonly class ProductData
                 ? (string) $validated['slug']
                 : null,
             name: (string) $validated['name'],
-            category: ProductType::from((string) $validated['category']),
             productCategoryId: (int) $validated['product_category_id'],
             pricingUnit: PricingUnit::from((string) $validated['pricing_unit']),
             pricingMode: PricingMode::from((string) $validated['pricing_mode']),

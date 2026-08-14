@@ -3,8 +3,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:printing/features/products/models/product.dart';
+import 'package:printing/features/products/models/product_category.dart';
 import 'package:printing/features/products/presentation/widgets/product_card.dart';
-import 'package:printing/features/products/presentation/widgets/product_type_badge.dart';
+import 'package:printing/features/products/presentation/widgets/product_category_badge.dart';
 
 /// What one product row tells somebody quoting a customer over the phone.
 ///
@@ -62,8 +63,7 @@ void main() {
   Product product({
     String code = 'P1',
     String name = 'أكياس الشحن',
-    String category = 'printed',
-    String categoryLabel = 'مطبوعة',
+    String? categoryName = 'مطبوعة',
     String pricingUnitLabel = 'قطعة',
     String minOrderQuantity = '100.000',
     bool hasListedPrices = true,
@@ -77,8 +77,9 @@ void main() {
       slug: 'shipping-bag',
       name: name,
       features: features,
-      category: category,
-      categoryLabel: categoryLabel,
+      productCategory: categoryName == null
+          ? null
+          : ProductCategory(id: 1, name: categoryName),
       pricingUnit: 'piece',
       pricingUnitLabel: pricingUnitLabel,
       pricingMode: 'tiered',
@@ -247,8 +248,7 @@ void main() {
           ProductCard(
             product: product(
               name: 'أكياس الشحن السادة',
-              category: 'general',
-              categoryLabel: 'سادة',
+              categoryName: 'سادة',
               pricingUnitLabel: 'كيلوغرام',
               minOrderQuantity: '1.000',
               variants: [variant('سادة', const [('1.000', '32.000')])],
@@ -266,10 +266,10 @@ void main() {
       expect(find.text('1000+'), findsNothing);
       expect(find.text('أقل كمية 1 كيلوغرام'), findsOneWidget);
       // The variant label only repeats the product name, so it is not printed. The one «سادة»
-      // on the card is the category badge — check it is the badge and not the size row.
+      // on the card is the heading badge — check it is the badge and not the size row.
       expect(
         find.descendant(
-          of: find.byType(ProductTypeBadge),
+          of: find.byType(ProductCategoryBadge),
           matching: find.text('سادة'),
         ),
         findsOneWidget,
@@ -279,7 +279,7 @@ void main() {
   });
 
   group('identity', () {
-    testWidgets('the category is a badge and the unit is what is left of the sentence', (
+    testWidgets('the heading is a badge and the unit is what is left of the sentence', (
       tester,
     ) async {
       // Arrange
@@ -288,7 +288,7 @@ void main() {
       // Act
       await tester.pump();
 
-      // Assert — the category is the first question a customer asks, so it is a thing to look
+      // Assert — the heading is the first question a customer asks, so it is a thing to look
       // at rather than the first half of a subtitle. What it leaves behind is the billing unit.
       expect(find.text('مطبوعة'), findsOneWidget);
       expect(find.text('بالقطعة'), findsOneWidget);
@@ -301,7 +301,7 @@ void main() {
 
       // Act
       await tester.pump();
-      final badge = tester.getRect(find.byType(ProductTypeBadge));
+      final badge = tester.getRect(find.byType(ProductCategoryBadge));
       final code = tester.getRect(find.text('P1'));
       final prices = tester.getRect(find.text('0.85'));
 
@@ -311,50 +311,13 @@ void main() {
       expect(badge.center.dy, lessThan(prices.top));
     });
 
-    testWidgets('printed and plain are told apart by glyph, not only by word', (tester) async {
-      // Arrange
-      Future<IconData> glyphOf(String category) async {
-        await tester.pumpWidget(
-          host(
-            ProductCard(
-              product: product(
-                category: category,
-                variants: [
-                  variant('25*35', const [('1.000', '1.10')]),
-                ],
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
-
-        return tester
-            .widget<Icon>(
-              find.descendant(
-                of: find.byType(ProductTypeBadge),
-                matching: find.byType(Icon),
-              ),
-            )
-            .icon!;
-      }
-
-      // Act
-      final printed = await glyphOf('printed');
-      final plain = await glyphOf('general');
-
-      // Assert — a badge that carries the same icon either way is a colour swatch with a word
-      // on it, and the word was already there.
-      expect(printed, isNot(plain));
-    });
-
-    testWidgets('a category this build has never heard of still shows its label', (tester) async {
-      // Arrange — the server may add a third category; its Arabic arrived with it.
+    testWidgets('a product filed under no heading shows no badge at all', (tester) async {
+      // Arrange — a handful were recorded before the categories table existed.
       await tester.pumpWidget(
         host(
           ProductCard(
             product: product(
-              category: 'laminated',
-              categoryLabel: 'مغلّفة',
+              categoryName: null,
               variants: [
                 variant('25*35', const [('1.000', '1.10')]),
               ],
@@ -366,8 +329,33 @@ void main() {
       // Act
       await tester.pump();
 
-      // Assert — no invented translation, and no card lost to an unknown value.
-      expect(find.text('مغلّفة'), findsOneWidget);
+      // Assert — absent, not an untinted pill saying nothing, which reads as a heading called
+      // nothing. The card keeps everything else.
+      expect(find.byType(ProductCategoryBadge), findsOneWidget);
+      expect(find.text('مطبوعة'), findsNothing);
+      expect(find.text('P1'), findsOneWidget);
+    });
+
+    testWidgets('a heading this build has never heard of is drawn as it arrived', (tester) async {
+      // Arrange — the business curates the list; the app never spells one itself.
+      await tester.pumpWidget(
+        host(
+          ProductCard(
+            product: product(
+              categoryName: 'ستيكرات ومطبوعات أخرى',
+              variants: [
+                variant('25*35', const [('1.000', '1.10')]),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Act
+      await tester.pump();
+
+      // Assert — no invented translation, and no card lost to a name added yesterday.
+      expect(find.text('ستيكرات ومطبوعات أخرى'), findsOneWidget);
     });
 
     testWidgets('the code leads the name line, where the eye lands first', (tester) async {

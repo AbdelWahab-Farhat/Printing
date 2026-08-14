@@ -34,10 +34,20 @@ extension SavePurchaseOrderStateX on SavePurchaseOrderState {
       // person needs has to be found among keys like `items.1.product_variant_id`.
       _firstMatching(RegExp(r'^items\.\d+\.'));
 
+  /// The same, for the order-level costs. Sits above that list for the same reason: an
+  /// `additional_costs.1.amount` complaint has no box on screen that key can be matched to.
+  String? get additionalCostsError =>
+      _fieldError('additional_costs') ?? _firstMatching(RegExp(r'^additional_costs\.\d+\.'));
+
   bool get hasUnrenderedErrors => switch (this) {
     SavePurchaseOrderFailure(:final failure) => switch (failure) {
       ServerFailure(:final fieldErrors) when fieldErrors != null && fieldErrors.isNotEmpty =>
-        fieldErrors.keys.any((key) => !_rendered.contains(key) && !key.startsWith('items')),
+        fieldErrors.keys.any(
+          (key) =>
+              !_rendered.contains(key) &&
+              !key.startsWith('items') &&
+              !key.startsWith('additional_costs'),
+        ),
       _ => true,
     },
     _ => false,

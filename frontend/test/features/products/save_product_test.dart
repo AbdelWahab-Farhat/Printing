@@ -40,8 +40,6 @@ void main() {
     code: 'P1',
     slug: 'shipping-bag',
     name: 'أكياس الشحن',
-    category: 'printed',
-    categoryLabel: 'مطبوعة',
     pricingUnit: 'piece',
     pricingUnitLabel: 'قطعة',
     pricingMode: 'tiered',
@@ -93,7 +91,6 @@ void main() {
       name: name,
       description: description,
       features: features,
-      category: 'printed',
       // Required by the API from today on — see PRODUCT-CATEGORIES.md.
       productCategoryId: 3,
       pricingUnit: pricingUnit,
@@ -242,7 +239,6 @@ void main() {
         // No `slug` key at all: the server derives it from the name and the code it allocates.
         expect(sent().toJson(), {
           'name': 'أكياس الشحن',
-          'category': 'printed',
           // «التصنيف», required by the API — the heading the product is filed under.
           'product_category_id': 3,
           'pricing_unit': 'piece',

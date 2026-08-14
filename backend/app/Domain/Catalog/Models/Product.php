@@ -10,7 +10,6 @@ use App\Domain\Catalog\Actions\AllocateProductIdentifier;
 use App\Domain\Catalog\Actions\GenerateProductSlug;
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductType;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -77,7 +76,6 @@ class Product extends Model implements HasAuditTrail
     {
         return [
             'features' => 'array',
-            'category' => ProductType::class,
             'pricing_unit' => PricingUnit::class,
             'pricing_mode' => PricingMode::class,
             // String, not float: money and the quantities it is multiplied by must stay exact.
@@ -87,12 +85,13 @@ class Product extends Model implements HasAuditTrail
     }
 
     /**
-     * The catalogue heading this product sits under — أكياس, علب وكراتين, ستيكرات.
+     * The catalogue heading this product sits under — أكياس, علب وكراتين, ستيكرات, and since
+     * «النوع» was folded into the list, مطبوعة and سادة too.
      *
-     * **Not `category`.** That attribute is the مطبوعة/سادة split, cast to {@see ProductType},
-     * and it kept the column name it was born with; see PRODUCT-CATEGORIES.md for why the two
-     * words swapped places. The relation is named after the table so the two cannot be confused
-     * at a call site.
+     * **The only thing that classifies a product.** There used to be a second one — a `category`
+     * column holding مطبوعة/سادة — and the two spent a release arguing over one word. It read
+     * into no calculation anywhere, so it became two rows in this table and its column was
+     * dropped; see PRODUCT-CATEGORIES.md.
      *
      * @return BelongsTo<ProductCategory, $this>
      */

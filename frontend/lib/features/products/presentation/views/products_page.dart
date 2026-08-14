@@ -14,7 +14,6 @@ import 'package:printing/core/widgets/paged_list_view.dart';
 import 'package:printing/core/widgets/search_field.dart';
 import 'package:printing/features/products/models/product.dart';
 import 'package:printing/features/products/models/product_category.dart';
-import 'package:printing/features/products/models/product_type.dart';
 import 'package:printing/features/products/presentation/viewmodel/product_categories_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:printing/features/products/presentation/widgets/product_card.dart';
@@ -93,13 +92,6 @@ class _ProductsView extends StatelessWidget {
               },
               selected: cubit.productCategoryId,
               onSelected: cubit.filterByProductCategory,
-            ),
-          ),
-          // Rebuilt with the list, so the selected chip and what is on screen can never disagree.
-          BlocBuilder<ProductsCubit, ProductsState>(
-            builder: (context, state) => _CategoryFilterBar(
-              selected: cubit.category,
-              onSelected: cubit.filterByCategory,
             ),
           ),
           Expanded(
@@ -195,60 +187,3 @@ class _ProductCategoryFilterBar extends StatelessWidget {
   }
 }
 
-/// مطبوعة or سادة — a filter, not something to type.
-///
-/// The search box matches names and slugs, so "سادة" finds only the products that happen to say
-/// so in their name: the category is a field, not a word in the title. Making it a tap rather
-/// than a word is the difference between an answer and a partial one.
-///
-/// It replaced the same row filtering on بالقطعة / بالكيلوغرام. Both narrow the same list, but
-/// this is the question a customer opens with — and the pricing unit is on every card anyway,
-/// read once the bag has been found.
-class _CategoryFilterBar extends StatelessWidget {
-  const _CategoryFilterBar({required this.selected, required this.onSelected});
-
-  final ProductTypeFilter selected;
-  final ValueChanged<ProductTypeFilter> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return SizedBox(
-      height: 42.h,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount: ProductTypeFilter.values.length,
-        separatorBuilder: (context, index) => SizedBox(width: 8.w),
-        itemBuilder: (context, index) {
-          final filter = ProductTypeFilter.values[index];
-          final isSelected = filter == selected;
-
-          return ChoiceChip(
-            label: Text(filter.label),
-            selected: isSelected,
-            // Tapping the chip that is already on is not a way to clear it: "الكل" is, and it
-            // is right there. Toggling off would leave two ways to mean the same thing.
-            onSelected: (_) => onSelected(filter),
-            showCheckmark: false,
-            backgroundColor: scheme.surfaceContainerLowest,
-            selectedColor: scheme.primaryContainer,
-            labelStyle: context.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: isSelected
-                  ? scheme.onPrimaryContainer
-                  : scheme.onSurfaceVariant,
-            ),
-            side: BorderSide(
-              color: isSelected ? Colors.transparent : scheme.outlineVariant,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}

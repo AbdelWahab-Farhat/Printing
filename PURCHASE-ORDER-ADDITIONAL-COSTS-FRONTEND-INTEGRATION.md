@@ -1,30 +1,31 @@
 # Purchase order additional costs — connecting the Flutter app
 
-> How to bring `frontend/lib/features/purchase_orders/` up to date with the backend change in
+> **Status: implemented.** `frontend/lib/features/purchase_orders/` now matches the backend
+> change in
 > [PURCHASE-ORDER-ADDITIONAL-COSTS-BACKEND-CHANGES.md](PURCHASE-ORDER-ADDITIONAL-COSTS-BACKEND-CHANGES.md).
-> Nothing here has been implemented — the backend task this doc follows was explicitly backend
-> only. File paths, class names and code below are shown against what is **actually in the repo
-> today** (read directly from `frontend/lib/features/purchase_orders/`), not the older, more
-> generic [PURCHASE-ORDERS-FRONTEND-INTEGRATION.md](PURCHASE-ORDERS-FRONTEND-INTEGRATION.md).
+> This doc was written as a plan *before* the app was wired up; §0 records where the plan was
+> wrong about the starting point, and the checklist at the end records what was actually built.
+> Sections 1–5 describe the shipped shape. Where they and the code disagree, the code is right.
 
 ---
 
-## 0. Read this first — this is not a field rename
+## 0. What the plan got wrong about the starting point
 
-The current app carries **no cost of any kind** on a purchase order. `PurchaseOrderItem` and
-`PurchaseOrder` (`lib/features/purchase_orders/models/purchase_order.dart`) have no cost fields,
-and `PurchaseOrderLine.toJson()` (`repositories/purchase_order_repository.dart`) sends only `id`,
-`product_variant_id`, `quantity_ordered`. That reflects the *original* design
-(`VENDORS-AND-PURCHASE-ORDERS.md`: **"لا مال فيها إطلاقاً"** — no money on it at all), which the
-model's own docblock still quotes.
+**This doc originally claimed the app carried «no cost of any kind» on a purchase order. It
+did.** A previous change (commit `8999624`, "wire the unit, cost and warehouse fields the backend
+now sends") had already put `unit_cost`/`total_cost` on `PurchaseOrderItem`, `total_amount` on
+`PurchaseOrder`, a `unitCost` on `PurchaseOrderLine`/`DraftLine`, and a per-line cost box on the
+form. So the line-cost half of this work was **not** new UI, and the app was **not** failing
+validation before the change.
 
-The server moved on from that design before this change (see
-`COST-TRACKING-UNIT-CONVERSION.md`), and `items.*.base_total_cost` (formerly `items.*.unit_cost`)
-has been **required** on `POST`/`PUT /purchase-orders` since then. That means **creating or
-editing a purchase order through the live app fails validation today, independent of this
-change** — this isn't a regression this feature introduces, but closing it is now unavoidable if
-that screen is to work at all. Budget for it as new UI (a cost field per line, plus a whole new
-additional-costs editor), not a one-line rename.
+What it *was*, and what matters more than a rename:
+
+* **`unit_cost` → `base_total_cost` changed the field's meaning, not just its name.** The box used
+  to ask «تكلفة الكيلوغرام» — a per-unit price. It now asks «تكلفة البند الإجمالية» — the line's
+  total, which is what the supplier's invoice is written in. The server divides by the quantity
+  itself. A rename that kept the old label would have multiplied every order's cost by its own
+  quantity, silently, and the arithmetic would have looked plausible on screen.
+* **The additional-costs editor genuinely was new UI**, as planned.
 
 ---
 
@@ -319,21 +320,42 @@ the existing `initial → submitting → success/failure` shape.
 
 ---
 
-## 6. Migration checklist
+## 6. What was built
 
-1. `models/purchase_order.dart` — §2, then `dart run build_runner build`.
-2. `repositories/purchase_order_repository.dart` + `_impl.dart` — §3.
-3. `usecases/purchase_order_usecases.dart` — §4.
-4. `presentation/viewmodel/save_purchase_order_cubit.dart` — §4.
-5. `presentation/views/purchase_order_form_page.dart` — §5 (cost field per line, additional-costs
-   editor).
-6. `presentation/views/purchase_order_detail_page.dart` — §5 (totals + additional-costs display).
-7. Existing tests that build a `PurchaseOrderLine`/`DraftLine`/call `SavePurchaseOrder` will fail
-   to compile once `baseTotalCost` becomes required — update fixtures alongside the production
-   code, don't default it to `'0'` just to keep them green.
-8. `test/features/purchase_orders/purchase_order_wire_test.dart` — extend with the new
-   response fields (§1's example payload is a ready-made fixture).
-9. `dart run build_runner build`, then `flutter analyze`, then `flutter test`.
+All done. `flutter analyze` is clean, and the whole suite (1,175 tests) passes.
 
-Verify against the live contract before wiring anything: run the backend and open
+1. ✅ `models/purchase_order.dart` — `totalAdditionalCost` + `additionalCosts` on the order, the
+   five cost fields on the item, and a new `PurchaseOrderAdditionalCost`.
+2. ✅ `repositories/purchase_order_repository.dart` + `_impl.dart` — `baseTotalCost` on
+   `PurchaseOrderLine`, new `PurchaseOrderAdditionalCostLine`, `additionalCosts` on
+   `create`/`update`.
+3. ✅ `usecases/purchase_order_usecases.dart` — `DraftLine.baseTotalCost`, new
+   `DraftAdditionalCost`.
+4. ✅ `presentation/viewmodel/save_purchase_order_cubit.dart` — `additionalCosts` on `submit()`.
+5. ✅ `presentation/views/purchase_order_form_page.dart` — the line box now asks for the total,
+   plus a new additional-costs editor.
+6. ✅ `presentation/views/purchase_order_detail_page.dart` — «منها تكاليف إضافية», an itemised
+   «التكاليف الإضافية» section, and the landed cost per line with the base/allocated split under
+   it.
+7. ✅ Tests — `purchase_order_wire_test.dart` and `purchase_order_unit_test.dart` updated and
+   extended; no fixture was defaulted to `'0'` to keep it green.
+
+### Where the shipped code differs from §§2–5 above
+
+* **`additionalCosts` defaults to `const []` rather than being `required`** on `SavePurchaseOrder`
+  and `submit()`, matching the repository signature §3 already gave it. One shape at every layer.
+* **`PurchaseLineUnit.costField` was removed** (and `PurchaseOrderItem.costFieldLabel` with it).
+  It built «تكلفة الكيلوغرام (د.ل)» — a per-unit label for a box that now asks for the line's
+  total. The cost box names no unit at all; the quantity box still does.
+* **Blank additional-cost rows are dropped, not refused.** Tapping «إضافة تكلفة» and changing your
+  mind shouldn't block a save. Dropped in `DraftAdditionalCost.isBlank` before the wire, and the
+  row's own validators stand down while it is untouched.
+* **`SavePurchaseOrderState.additionalCostsError`** was added alongside `itemsError`, and
+  `hasUnrenderedErrors` now also ignores `additional_costs.*` — otherwise a complaint about a
+  delivery charge would be shown twice: once above the list, once as a snackbar.
+* **Line cost seeds from `base_total_cost`, never `final_total_cost`.** Seeding the edit form with
+  the landed figure would fold the line's share of delivery back into the base on every save,
+  compounding it each time.
+
+Verify against the live contract if anything here is in doubt: run the backend and open
 `http://localhost:8000/docs/api` — if this document disagrees with it, the spec is right.

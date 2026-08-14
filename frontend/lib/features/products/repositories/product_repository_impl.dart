@@ -23,7 +23,6 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<Either<Failure, Paginated<Product>>> products({
     String? search,
-    String? category,
     int? productCategoryId,
     String? pricingUnit,
     bool? isActive,
@@ -39,7 +38,6 @@ class ProductRepositoryImpl implements ProductRepository {
           // Omitted rather than sent as null: a null in a query string arrives as the literal
           // "null" and the API would filter on it.
           if (search != null && search.isNotEmpty) 'search': search,
-          if (category != null && category.isNotEmpty) 'category': category,
           // Omitted rather than sent empty: the API reads a blank as «كل التصنيفات», and this
           // keeps the query string honest about what was actually asked.
           'product_category_id': ?productCategoryId,

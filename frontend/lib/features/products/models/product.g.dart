@@ -15,8 +15,6 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
   features:
       (json['features'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
-  category: json['category'] as String,
-  categoryLabel: json['category_label'] as String,
   productCategory: json['product_category'] == null
       ? null
       : ProductCategory.fromJson(
@@ -56,8 +54,6 @@ Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
   'name': instance.name,
   'description': instance.description,
   'features': instance.features,
-  'category': instance.category,
-  'category_label': instance.categoryLabel,
   'product_category': instance.productCategory?.toJson(),
   'product_category_id': instance.productCategoryId,
   'pricing_unit': instance.pricingUnit,

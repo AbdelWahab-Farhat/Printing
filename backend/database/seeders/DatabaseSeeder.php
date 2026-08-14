@@ -18,9 +18,10 @@ class DatabaseSeeder extends Seeder
             // Roles first — the accounts below are assigned roles as they are created.
             RoleSeeder::class,
             AdminSeeder::class,
-            CatalogSeeder::class,
-            // After the catalogue, because it files the products that seeder just made.
+            // Before the catalogue, because that seeder files each product under a heading as
+            // it creates it — «مطبوعة» or «سادة», the two that replaced the old «النوع» column.
             ProductCategorySeeder::class,
+            CatalogSeeder::class,
             DeliveryLocationSeeder::class,
             BusinessFieldSeeder::class,
             // Warehouses only. Stock arrives by being recorded, never by being seeded.

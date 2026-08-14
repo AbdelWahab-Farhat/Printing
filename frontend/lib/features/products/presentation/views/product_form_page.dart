@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -14,8 +13,8 @@ import 'package:printing/core/utils/validators.dart';
 import 'package:printing/core/widgets/app_button.dart';
 import 'package:printing/core/widgets/app_text_field.dart';
 import 'package:printing/core/widgets/attachment_sheet.dart';
+import 'package:printing/features/products/models/pricing_unit.dart';
 import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/models/product_type.dart';
 import 'package:printing/features/products/presentation/viewmodel/product_categories_cubit.dart';
 import 'package:printing/features/products/presentation/viewmodel/save_product_cubit.dart';
 import 'package:printing/features/products/presentation/widgets/product_category_picker.dart';
@@ -87,8 +86,6 @@ class _ProductFormViewState extends State<_ProductFormView> {
   late final List<TextEditingController> _breaks = _seedBreaks();
 
   final List<_SizeRow> _sizes = [];
-
-  late ProductType _category = ProductType.fromWire(_editing?.category);
 
   /// The catalogue heading. Null while nothing has been picked — which is a state a *new*
   /// product opens in, and one an old product recorded before categories existed is still in.
@@ -323,7 +320,6 @@ class _ProductFormViewState extends State<_ProductFormView> {
       id: _editing?.id,
       image: _image,
       name: _name.text,
-      category: _category.wire,
       // Non-null by the guard above: nothing reaches here without a heading picked.
       productCategoryId: _productCategoryId!,
       pricingUnit: _unit.wire,
@@ -450,16 +446,6 @@ class _ProductFormViewState extends State<_ProductFormView> {
                           _productCategoryId = id;
                           _categoryError = null;
                         }),
-                      ),
-                      SizedBox(height: 12.h),
-
-                      _ChoiceRow<ProductType>(
-                        label: 'النوع',
-                        values: ProductType.choices,
-                        selected: _category,
-                        labelOf: (value) => value.label,
-                        onSelected: (value) =>
-                            setState(() => _category = value),
                       ),
                       SizedBox(height: 12.h),
 

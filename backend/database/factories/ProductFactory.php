@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductType;
 use App\Domain\Catalog\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -29,7 +28,6 @@ class ProductFactory extends Factory
             'name' => 'كيس '.fake()->word(),
             'description' => fake()->sentence(),
             'features' => ['مقاوم للماء', 'إمكانية طباعة الشعار'],
-            'category' => ProductType::Printed,
             'pricing_unit' => PricingUnit::Piece,
             'pricing_mode' => PricingMode::Tiered,
             'min_order_quantity' => 100,
@@ -38,11 +36,10 @@ class ProductFactory extends Factory
         ];
     }
 
-    /** Plain bags sold by weight — the catalogue's General section. */
+    /** Plain bags sold by weight — the catalogue's «سادة» heading. */
     public function perKilogram(): static
     {
         return $this->state(fn () => [
-            'category' => ProductType::General,
             'pricing_unit' => PricingUnit::Kilogram,
             'min_order_quantity' => 5,
         ]);

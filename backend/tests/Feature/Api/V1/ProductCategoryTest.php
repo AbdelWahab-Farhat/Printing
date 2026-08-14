@@ -280,7 +280,6 @@ class ProductCategoryTest extends TestCase
         // Act
         $response = $this->post('/api/v1/products', [
             'name' => 'أكياس الشحن',
-            'category' => 'printed',
             'pricing_unit' => 'piece',
             'pricing_mode' => 'tiered',
             'min_order_quantity' => 100,
@@ -301,7 +300,6 @@ class ProductCategoryTest extends TestCase
         // Act
         $response = $this->post('/api/v1/products', [
             'name' => 'أكياس الشحن',
-            'category' => 'printed',
             'product_category_id' => $category->id,
             'pricing_unit' => 'piece',
             'pricing_mode' => 'tiered',
@@ -325,7 +323,6 @@ class ProductCategoryTest extends TestCase
         // Act
         $response = $this->post('/api/v1/products', [
             'name' => 'أكياس الشحن',
-            'category' => 'printed',
             'product_category_id' => $category->id,
             'pricing_unit' => 'piece',
             'pricing_mode' => 'tiered',

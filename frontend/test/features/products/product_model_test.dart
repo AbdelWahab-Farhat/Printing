@@ -12,8 +12,6 @@ void main() {
     'code': 'P7',
     'slug': 'shipping-bag',
     'name': 'كيس شحن',
-    'category': 'printed',
-    'category_label': 'مطبوعة',
     'pricing_unit': 'piece',
     'pricing_unit_label': 'قطعة',
     'pricing_mode': 'listed',

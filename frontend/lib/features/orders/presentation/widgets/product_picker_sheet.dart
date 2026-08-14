@@ -247,8 +247,8 @@ class _ProductRow extends StatelessWidget {
                   SizedBox(height: 2.h),
                   Text(
                     product.hasListedPrices
-                        ? '${product.categoryLabel} · $sizes مقاس'
-                        : '${product.categoryLabel} · السعر حسب الطلب',
+                        ? 'بال${product.pricingUnitLabel} · $sizes مقاس'
+                        : 'بال${product.pricingUnitLabel} · السعر حسب الطلب',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.textTheme.bodySmall?.copyWith(

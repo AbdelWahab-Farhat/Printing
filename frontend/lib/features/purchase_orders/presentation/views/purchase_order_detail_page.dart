@@ -306,9 +306,37 @@ class _Body extends StatelessWidget {
                 Divider(height: 18.h),
                 _Row(label: 'إجمالي التكلفة', value: '${groupedDecimal(total)} د.ل'),
               ],
+              // **Part of the total above, not on top of it.** Every line's cost already carries
+              // its share, so the two must never be added together — this row says how much of
+              // the total was not goods.
+              if (order.hasAdditionalCosts)
+                if (order.totalAdditionalCost case final additional?) ...[
+                  Divider(height: 18.h),
+                  _Row(
+                    label: 'منها تكاليف إضافية',
+                    value: '${groupedDecimal(additional)} د.ل',
+                  ),
+                ],
             ],
           ),
         ),
+        // Itemised, and only when there is something to itemise. This is what answers «why is
+        // this line dearer than the invoice said» — without it the allocated shares on the lines
+        // below are a number with no source.
+        if (order.hasAdditionalCosts) ...[
+          SizedBox(height: 14.h),
+          _Section(
+            title: 'التكاليف الإضافية',
+            child: Column(
+              children: [
+                for (final (index, cost) in order.additionalCosts.indexed) ...[
+                  if (index > 0) Divider(height: 18.h),
+                  _Row(label: cost.name, value: '${cost.amountLabel} د.ل'),
+                ],
+              ],
+            ),
+          ),
+        ],
         if (order.notes case final notes?) ...[
           SizedBox(height: 14.h),
           _Section(title: 'ملاحظات', child: Text(notes)),
@@ -375,12 +403,25 @@ class _LineRow extends StatelessWidget {
         if (item.hasCost) ...[
           SizedBox(height: 4.h),
           Text(
-            // «١٫٥ د.ل للكيلوغرام» — a price a buyer can check against the quote they were
-            // given. «للوحدة» named nothing, and named it identically for both units.
-            '${groupedDecimal(item.unitCost!)} د.ل ${item.perUnitSuffix} · '
-            'الإجمالي ${groupedDecimal(item.totalCost ?? '0')} د.ل',
+            // **The landed cost, not the invoiced one.** «١٫٥ د.ل للكيلوغرام» is a price a buyer
+            // can check against the quote they were given — and once delivery has been spread
+            // over the lines, the landed figure is the one a job's margin is worked out against.
+            // «للوحدة» named nothing, and named it identically for both units.
+            '${item.unitCostLabel} د.ل ${item.perUnitSuffix} · '
+            'الإجمالي ${item.totalCostLabel} د.ل',
             style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
+          // The split, and only when something was actually spread onto this line. Faint,
+          // because it explains the figure above rather than competing with it — and absent on
+          // the ordinary order that carried no delivery at all.
+          if (item.hasAllocatedCost) ...[
+            SizedBox(height: 2.h),
+            Text(
+              'الأساسي ${item.baseTotalCostLabel} د.ل '
+              '+ حصة من التكاليف الإضافية ${item.allocatedCostLabel} د.ل',
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.outline),
+            ),
+          ],
         ],
       ],
     );

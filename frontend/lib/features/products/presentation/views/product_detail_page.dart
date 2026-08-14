@@ -233,8 +233,12 @@ class _Identity extends StatelessWidget {
         ),
         SizedBox(height: 6.h),
         Text(
-          // Both halves are the server's own Arabic, so the app keeps no translation table.
-          '${product.categoryLabel} · بال${product.pricingUnitLabel}',
+          // Both halves are the server's own Arabic, so the app keeps no translation table. The
+          // heading is dropped rather than replaced by a dash when a product has none.
+          [
+            ?product.productCategory?.name,
+            'بال${product.pricingUnitLabel}',
+          ].join(' · '),
           style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
         ),
       ],
@@ -558,7 +562,7 @@ class _Identifiers extends StatelessWidget {
           copiedMessage: 'تم نسخ المعرّف',
         ),
         const _Rule(height: 18),
-        _FactRow(label: 'التصنيف', value: product.categoryLabel),
+        _FactRow(label: 'التصنيف', value: product.productCategory?.name ?? 'بلا تصنيف'),
         SizedBox(height: 8.h),
         _FactRow(label: 'وحدة التسعير', value: product.pricingUnitLabel),
         SizedBox(height: 8.h),

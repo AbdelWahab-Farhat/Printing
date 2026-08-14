@@ -25,12 +25,8 @@ abstract class Product with _$Product {
     String? description,
     @Default(<String>[]) List<String> features,
 
-    /// «النوع» — مطبوعة/سادة, as a machine value for logic that must switch on it. The wire
-    /// key kept the name it was born with; see `ProductType` and PRODUCT-CATEGORIES.md.
-    required String category,
 
     /// The Arabic label for it, sent by the server so the app keeps no translation table.
-    @JsonKey(name: 'category_label') required String categoryLabel,
 
     /// «التصنيف» — the catalogue heading this product sits under. Null only for a product
     /// recorded before categories existed and not edited since; the form refuses to save one.

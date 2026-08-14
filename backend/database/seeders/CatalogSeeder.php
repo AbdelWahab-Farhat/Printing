@@ -6,8 +6,8 @@ namespace Database\Seeders;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductType;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductCategory;
 use Illuminate\Database\Seeder;
 
 /**
@@ -31,12 +31,34 @@ class CatalogSeeder extends Seeder
 
     public function run(): void
     {
+        // The headings have to exist before anything can point at one, and this seeder is run on
+        // its own often enough that depending on DatabaseSeeder's order would be a trap.
+        $this->callOnce(ProductCategorySeeder::class);
+
         foreach ($this->printedBags() as $sortOrder => $definition) {
             $this->seedPrinted($definition, $sortOrder);
         }
 
         $this->seedQuoteOnRequest();
         $this->seedGeneralPerKilo();
+    }
+
+    /**
+     * The id of one catalogue heading, resolved once per run.
+     *
+     * @var array<string, int>
+     */
+    private array $categoryIds = [];
+
+    /**
+     * «مطبوعة» or «سادة» — the two headings that replaced the old مطبوعة/سادة column.
+     */
+    private function categoryId(string $name): int
+    {
+        return $this->categoryIds[$name] ??= (int) ProductCategory::query()
+            ->where('name', $name)
+            ->sole()
+            ->getKey();
     }
 
     /**
@@ -126,7 +148,7 @@ class CatalogSeeder extends Seeder
             [
                 'name' => $definition['name'],
                 'features' => $definition['features'],
-                'category' => ProductType::Printed,
+                'product_category_id' => $this->categoryId('مطبوعة'),
                 'pricing_unit' => PricingUnit::Piece,
                 'pricing_mode' => PricingMode::Tiered,
                 'min_order_quantity' => $definition['min'],
@@ -167,7 +189,7 @@ class CatalogSeeder extends Seeder
                 'description' => 'لا يتم إدراج الأسعار بشكل مباشر نظراً لاختلاف المقاسات والمواصفات. '
                     .'يرجى إرسال تفاصيل المقاس والكمية المطلوبة ليتم تحديد السعر وتقديم العرض المناسب.',
                 'features' => ['مناسبة للملابس، العطور، الهدايا', 'تعكس هوية علامتك التجارية باحترافية'],
-                'category' => ProductType::Printed,
+                'product_category_id' => $this->categoryId('مطبوعة'),
                 'pricing_unit' => PricingUnit::Piece,
                 'pricing_mode' => PricingMode::QuoteOnRequest,
                 'min_order_quantity' => 200,
@@ -205,7 +227,7 @@ class CatalogSeeder extends Seeder
                 [
                     'name' => $name,
                     'features' => ['بدون طباعة', 'تُباع بالكيلو'],
-                    'category' => ProductType::General,
+                    'product_category_id' => $this->categoryId('سادة'),
                     'pricing_unit' => PricingUnit::Kilogram,
                     'pricing_mode' => PricingMode::Tiered,
                     'min_order_quantity' => 1,

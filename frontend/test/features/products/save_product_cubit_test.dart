@@ -37,8 +37,6 @@ void main() {
     code: 'P7',
     slug: 'shipping-bag',
     name: 'أكياس الشحن',
-    category: 'printed',
-    categoryLabel: 'مطبوعة',
     pricingUnit: 'piece',
     pricingUnitLabel: 'قطعة',
     pricingMode: 'tiered',
@@ -55,7 +53,6 @@ void main() {
 
   Future<void> submit(SaveProductCubit cubit) => cubit.submit(
     name: 'أكياس الشحن',
-    category: 'printed',
     productCategoryId: 3,
     pricingUnit: 'piece',
     pricingMode: 'tiered',

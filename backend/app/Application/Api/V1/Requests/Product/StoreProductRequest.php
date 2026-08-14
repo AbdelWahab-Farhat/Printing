@@ -6,7 +6,6 @@ namespace App\Application\Api\V1\Requests\Product;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Enums\ProductType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -87,7 +86,6 @@ class StoreProductRequest extends FormRequest
             'features' => ['nullable', 'array', 'max:12'],
             'features.*' => ['required', 'string', 'max:255'],
 
-            'category' => ['required', Rule::enum(ProductType::class)],
             // **The catalogue heading, and it is required from today on.** The column is
             // nullable because the products recorded before this feature existed have to stay
             // valid; nothing saved through this request may be. `exists` refuses a category that
@@ -175,7 +173,6 @@ class StoreProductRequest extends FormRequest
             'slug.regex' => 'المعرف يجب أن يحتوي على أحرف إنجليزية صغيرة وأرقام وشرطات فقط',
             'slug.unique' => 'المعرف مستخدم مسبقاً',
             'name.required' => 'اسم المنتج مطلوب',
-            'category.required' => 'التصنيف مطلوب',
             'pricing_unit.required' => 'وحدة التسعير مطلوبة',
             'pricing_mode.required' => 'طريقة التسعير مطلوبة',
             'min_order_quantity.required' => 'الحد الأدنى للطلب مطلوب',
@@ -199,7 +196,6 @@ class StoreProductRequest extends FormRequest
             'name' => 'اسم المنتج',
             'description' => 'الوصف',
             'features' => 'المميزات',
-            'category' => 'النوع',
             'product_category_id' => 'التصنيف',
             'pricing_unit' => 'وحدة التسعير',
             'pricing_mode' => 'طريقة التسعير',

@@ -12,7 +12,7 @@ class PurchaseOrderLine {
   const PurchaseOrderLine({
     required this.productVariantId,
     required this.quantity,
-    required this.unitCost,
+    required this.baseTotalCost,
     this.id,
   });
 
@@ -28,19 +28,47 @@ class PurchaseOrderLine {
   /// As typed, normalised to ASCII digits. Never parsed here.
   final String quantity;
 
-  /// What one of them costs us, as typed. **Required by the server on every line**, with no
-  /// catalogue to fall back on: a sale is priced from the product's tiers, but what we pay a
+  /// What the line costs us in total, as typed. **Required by the server on every line**, with
+  /// no catalogue to fall back on: a sale is priced from the product's tiers, but what we pay a
   /// vendor is only ever something a person knows.
+  ///
+  /// **The line's total, not a per-unit price.** The server divides it by [quantity] to get
+  /// `base_unit_cost` and never the other way around — sending a unit price here would multiply
+  /// the order's cost by its own quantity, silently.
   ///
   /// `'0'` is a legitimate answer — a free replacement — so this is never omitted to mean
   /// «unknown». There is no such thing here.
-  final String unitCost;
+  final String baseTotalCost;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': ?id,
     'product_variant_id': productVariantId,
     'quantity_ordered': quantity,
-    'unit_cost': unitCost,
+    'base_total_cost': baseTotalCost,
+  };
+}
+
+/// One order-level cost as the server needs it — delivery, unloading, customs.
+class PurchaseOrderAdditionalCostLine {
+  const PurchaseOrderAdditionalCostLine({
+    required this.name,
+    required this.amount,
+    this.id,
+  });
+
+  /// **Absent means "new", and a cost left out of the list is removed** — the same replace-in-
+  /// full contract [PurchaseOrderLine] follows.
+  final int? id;
+
+  final String name;
+
+  /// As typed, normalised to ASCII digits.
+  final String amount;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': ?id,
+    'name': name,
+    'amount': amount,
   };
 }
 
@@ -75,17 +103,26 @@ abstract interface class PurchaseOrderRepository {
     required int warehouseId,
     required String orderDate,
     required List<PurchaseOrderLine> items,
+
+    /// Empty rather than null when there are none: the server reads an absent list and an empty
+    /// one the same way, and one shape here is one fewer thing for a caller to get wrong.
+    List<PurchaseOrderAdditionalCostLine> additionalCosts,
     String? expectedDate,
     String? notes,
   });
 
-  /// Rewrites the document and its lines. Refused by the server unless the order is «جديد».
+  /// Rewrites the document, its lines and its additional costs. Refused by the server unless the
+  /// order is «جديد».
+  ///
+  /// **Both lists replace what is stored.** Whatever is not sent is deleted, so a caller always
+  /// sends the full current set — see [PurchaseOrderLine.id].
   Future<Either<Failure, PurchaseOrder>> update(
     int purchaseOrderId, {
     required int vendorId,
     required int warehouseId,
     required String orderDate,
     required List<PurchaseOrderLine> items,
+    List<PurchaseOrderAdditionalCostLine> additionalCosts,
     String? expectedDate,
     String? notes,
   });

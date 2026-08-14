@@ -39,12 +39,12 @@ class GetPurchaseOrder {
       _repository.purchaseOrder(purchaseOrderId);
 }
 
-/// One line as the form holds it: the quantity is still text, because that is what was typed.
+/// One line as the form holds it: both numbers are still text, because that is what was typed.
 class DraftLine {
   const DraftLine({
     required this.productVariantId,
     required this.quantity,
-    required this.unitCost,
+    required this.baseTotalCost,
     this.id,
     this.title,
   });
@@ -53,12 +53,31 @@ class DraftLine {
   final int productVariantId;
   final String quantity;
 
-  /// What we pay the vendor for one of them, as typed. Required on every line — see
-  /// [PurchaseOrderLine.unitCost] for why there is nothing to fall back to.
-  final String unitCost;
+  /// What the whole line costs us, as typed. Required on every line — see
+  /// [PurchaseOrderLine.baseTotalCost] for why there is nothing to fall back to, and why it is
+  /// the line's total rather than a unit price.
+  final String baseTotalCost;
 
   /// What to show while the form is open. Never sent.
   final String? title;
+}
+
+/// One order-level cost as the form holds it — delivery, unloading, customs.
+class DraftAdditionalCost {
+  const DraftAdditionalCost({required this.name, required this.amount, this.id});
+
+  /// Absent on a cost being added; present on one being corrected.
+  final int? id;
+
+  final String name;
+  final String amount;
+
+  /// Whether there is anything here to send.
+  ///
+  /// **An empty row is not a cost.** The editor adds blank rows the way the line list does, and
+  /// one left behind would be refused by `additional_costs.2.name.required` — an index that is
+  /// not a thing on screen.
+  bool get isBlank => name.trim().isEmpty && amount.trim().isEmpty;
 }
 
 /// Raises a purchase order, or corrects one.
@@ -77,6 +96,7 @@ class SavePurchaseOrder {
     required int warehouseId,
     required String orderDate,
     required List<DraftLine> items,
+    List<DraftAdditionalCost> additionalCosts = const [],
     String? expectedDate,
     String? notes,
   }) {
@@ -88,8 +108,18 @@ class SavePurchaseOrder {
           id: line.id,
           productVariantId: line.productVariantId,
           quantity: _number(line.quantity),
-          unitCost: _number(line.unitCost),
+          baseTotalCost: _number(line.baseTotalCost),
         ),
+    ];
+
+    final costs = [
+      for (final cost in additionalCosts)
+        if (!cost.isBlank)
+          PurchaseOrderAdditionalCostLine(
+            id: cost.id,
+            name: cost.name.trim(),
+            amount: _number(cost.amount),
+          ),
     ];
 
     if (id == null) {
@@ -98,6 +128,7 @@ class SavePurchaseOrder {
         warehouseId: warehouseId,
         orderDate: orderDate,
         items: lines,
+        additionalCosts: costs,
         expectedDate: _blankToNull(expectedDate),
         notes: _blankToNull(notes),
       );
@@ -109,6 +140,7 @@ class SavePurchaseOrder {
       warehouseId: warehouseId,
       orderDate: orderDate,
       items: lines,
+      additionalCosts: costs,
       expectedDate: _blankToNull(expectedDate),
       notes: _blankToNull(notes),
     );

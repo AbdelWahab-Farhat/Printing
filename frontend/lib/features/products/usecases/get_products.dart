@@ -12,7 +12,6 @@ class GetProducts {
 
   Future<Either<Failure, Paginated<Product>>> call({
     String? search,
-    String? category,
     int? productCategoryId,
     String? pricingUnit,
     bool? isActive,
@@ -23,7 +22,6 @@ class GetProducts {
       // Trimmed here rather than in the Cubit: a trailing space from a paste is a search that
       // silently finds nothing, and every caller would otherwise have to remember this.
       search: search?.trim(),
-      category: category,
       productCategoryId: productCategoryId,
       pricingUnit: pricingUnit,
       isActive: isActive,

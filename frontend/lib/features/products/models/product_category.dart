@@ -3,16 +3,17 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'product_category.freezed.dart';
 part 'product_category.g.dart';
 
-/// التصنيف — a heading in the catalogue: أكياس, علب وكراتين التغليف, ستيكرات ومطبوعات أخرى.
+/// التصنيف — a heading in the catalogue: أكياس, علب وكراتين التغليف, ستيكرات ومطبوعات أخرى,
+/// مطبوعة, سادة.
 ///
 /// Reference data the business curates from its own screen, exactly as `BusinessField` is.
 /// Nothing in the app branches on a particular category, and nothing should: the list is the
 /// shop's to shape, and code that knows «أكياس» by name would break the first time somebody
 /// renames it.
 ///
-/// **Not `ProductType`.** That one is مطبوعة/سادة — «النوع» — and says how a bag is made rather
-/// than where a customer would look for it. The two words swapped places; see
-/// PRODUCT-CATEGORIES.md.
+/// **The only thing that classifies a product.** «النوع» — مطبوعة/سادة — was a second field
+/// asking nearly the same question; it fed no calculation anywhere, so it became the last two
+/// names on this list and its column was dropped. See PRODUCT-CATEGORIES.md.
 @freezed
 abstract class ProductCategory with _$ProductCategory {
   const factory ProductCategory({

@@ -19,10 +19,16 @@ use Illuminate\Database\Seeder;
  * backfill only touches products that have no category at all: a product somebody has since
  * filed under «علب» is left exactly where they put it.
  *
- * The backfill puts every uncategorised product under «أكياس» because, on the day this was
- * written, every product in the system was a bag — twelve of them, printed and plain. That is a
- * fact about this data, not a rule: a box added tomorrow is filed by whoever adds it, and this
- * seeder will not touch it.
+ * **«مطبوعة» and «سادة» are on the list because «النوع» is not a field any more.** That split
+ * lived in a `category` column beside this one and fed no calculation anywhere — see the
+ * migration that dropped it — so it became two headings here rather than a second word on every
+ * product. Mixing «كيف يُصنع» with «أين يقف في الكتالوج» in one list is the price of having one
+ * list, and it is the cheaper of the two.
+ *
+ * The backfill puts a still-uncategorised product under «أكياس» because, on the day this was
+ * written, every product in the system was a bag. That is a fact about this data, not a rule: a
+ * box added tomorrow is filed by whoever adds it, and this seeder will not touch it. Products
+ * the migration already filed under مطبوعة/سادة are not uncategorised, so it passes them by.
  */
 class ProductCategorySeeder extends Seeder
 {
@@ -47,6 +53,16 @@ class ProductCategorySeeder extends Seeder
             'name' => 'ستيكرات ومطبوعات أخرى',
             'description' => 'ملصقات، كروت شكر، وشريط لاصق لتعزيز تفاصيل التغليف.',
             'sort_order' => 3,
+        ],
+        [
+            'name' => 'مطبوعة',
+            'description' => 'منتجات تُطبع بالشعار والألوان حسب الطلب.',
+            'sort_order' => 4,
+        ],
+        [
+            'name' => 'سادة',
+            'description' => 'منتجات بلا طباعة، تُباع غالباً بالوزن.',
+            'sort_order' => 5,
         ],
     ];
 

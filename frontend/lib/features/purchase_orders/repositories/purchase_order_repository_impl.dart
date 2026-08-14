@@ -57,6 +57,7 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
     required int warehouseId,
     required String orderDate,
     required List<PurchaseOrderLine> items,
+    List<PurchaseOrderAdditionalCostLine> additionalCosts = const [],
     String? expectedDate,
     String? notes,
   }) {
@@ -68,6 +69,7 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
           warehouseId: warehouseId,
           orderDate: orderDate,
           items: items,
+          additionalCosts: additionalCosts,
           expectedDate: expectedDate,
           notes: notes,
         ),
@@ -83,6 +85,7 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
     required int warehouseId,
     required String orderDate,
     required List<PurchaseOrderLine> items,
+    List<PurchaseOrderAdditionalCostLine> additionalCosts = const [],
     String? expectedDate,
     String? notes,
   }) {
@@ -94,6 +97,7 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
           warehouseId: warehouseId,
           orderDate: orderDate,
           items: items,
+          additionalCosts: additionalCosts,
           expectedDate: expectedDate,
           notes: notes,
         ),
@@ -146,6 +150,7 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
     required int warehouseId,
     required String orderDate,
     required List<PurchaseOrderLine> items,
+    required List<PurchaseOrderAdditionalCostLine> additionalCosts,
     String? expectedDate,
     String? notes,
   }) {
@@ -156,6 +161,12 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
       if (expectedDate != null && expectedDate.isNotEmpty) 'expected_date': expectedDate,
       if (notes != null && notes.isNotEmpty) 'notes': notes,
       'items': items.map((line) => line.toJson()).toList(growable: false),
+      // Sent even when empty, unlike the optional dates above. An absent `additional_costs` on a
+      // PUT clears the stored set anyway, so leaving it out would say the same thing less
+      // clearly — and the form always knows the full current list.
+      'additional_costs': additionalCosts
+          .map((cost) => cost.toJson())
+          .toList(growable: false),
     };
   }
 }

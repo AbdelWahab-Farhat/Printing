@@ -398,7 +398,7 @@ class RoleManagementTest extends TestCase
         $listCustomers = $this->withHeaders($headers)->getJson('/api/v1/customers');
         $listProducts = $this->withHeaders($headers)->getJson('/api/v1/products');
         $editPrices = $this->withHeaders($headers)->postJson('/api/v1/products', [
-            'slug' => 'sneaky-bag', 'name' => 'كيس', 'category' => 'printed',
+            'slug' => 'sneaky-bag', 'name' => 'كيس',
             'pricing_unit' => 'piece', 'pricing_mode' => 'tiered', 'min_order_quantity' => 1,
         ]);
 

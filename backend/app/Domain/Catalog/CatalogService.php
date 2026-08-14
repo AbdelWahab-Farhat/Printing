@@ -54,8 +54,8 @@ class CatalogService
 
     // ── التصنيفات ────────────────────────────────────────────────────────────────
     // The catalogue's own headings — أكياس, علب وكراتين, ستيكرات. Curated from a screen, and
-    // pointed at by every product. Not to be confused with `ProductType`, which is the
-    // مطبوعة/سادة split living on the `category` column; see PRODUCT-CATEGORIES.md.
+    // pointed at by every product — مطبوعة and سادة among the headings, since «النوع» was
+    // folded into this list rather than kept as a column; see PRODUCT-CATEGORIES.md.
 
     /**
      * @return LengthAwarePaginator<int, ProductCategory>

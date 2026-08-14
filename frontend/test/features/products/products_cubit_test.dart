@@ -5,7 +5,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:printing/core/error/failure.dart';
 import 'package:printing/core/network/paginated.dart';
 import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/models/product_type.dart';
 import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:printing/features/products/repositories/product_repository.dart';
 import 'package:printing/features/products/usecases/get_products.dart';
@@ -24,8 +23,6 @@ void main() {
     code: 'P$id',
     slug: 'product-$id',
     name: name,
-    category: 'printed',
-    categoryLabel: 'مطبوعة',
     pricingUnit: 'piece',
     pricingUnitLabel: 'قطعة',
     pricingMode: 'tiered',
@@ -64,7 +61,6 @@ void main() {
     when(
       () => repository.products(
         search: search ?? any(named: 'search'),
-        category: any(named: 'category'),
         productCategoryId: any(named: 'productCategoryId'),
         pricingUnit: any(named: 'pricingUnit'),
         isActive: any(named: 'isActive'),
@@ -81,7 +77,6 @@ void main() {
   /// captured list.
   void verifyAsked({
     required String? search,
-    required String? category,
     required int page,
     int? productCategoryId,
     int times = 1,
@@ -89,7 +84,6 @@ void main() {
     verify(
       () => repository.products(
         search: search,
-        category: category,
         productCategoryId: productCategoryId,
         pricingUnit: any(named: 'pricingUnit'),
         isActive: any(named: 'isActive'),
@@ -175,8 +169,7 @@ void main() {
         verify(
           () => repository.products(
             search: 'أكياس',
-            category: any(named: 'category'),
-            isActive: any(named: 'isActive'),
+                isActive: any(named: 'isActive'),
             page: any(named: 'page'),
             perPage: any(named: 'perPage'),
           ),
@@ -199,8 +192,7 @@ void main() {
         verify(
           () => repository.products(
             search: null,
-            category: any(named: 'category'),
-            isActive: any(named: 'isActive'),
+                isActive: any(named: 'isActive'),
             page: any(named: 'page'),
             perPage: any(named: 'perPage'),
           ),
@@ -275,8 +267,7 @@ void main() {
         verify(
           () => repository.products(
             search: any(named: 'search'),
-            category: any(named: 'category'),
-            isActive: any(named: 'isActive'),
+                isActive: any(named: 'isActive'),
             page: any(named: 'page'),
             perPage: any(named: 'perPage'),
           ),
@@ -285,9 +276,9 @@ void main() {
     );
   });
 
-  group('filtering by category', () {
+  group('filtering by the catalogue heading', () {
     blocTest<ProductsCubit, ProductsState>(
-      'starts with no category filter at all',
+      'starts with no filter at all',
       setUp: () {
         // Arrange
         arrangeProducts(right(page([product(1, 'أكياس الشحن')])));
@@ -297,22 +288,29 @@ void main() {
       act: (cubit) => cubit.load(),
       // Assert — the parameter is absent, not sent empty.
       verify: (cubit) {
-        expect(cubit.category, ProductTypeFilter.all);
-        verifyAsked(search: null, category: null, page: 1);
+        expect(cubit.productCategoryId, isNull);
+        verifyAsked(search: null, page: 1);
       },
     );
 
+    /// **The heading is the only thing the catalogue is narrowed by.**
+    ///
+    /// «النوع» — مطبوعة/سادة — had a chip row of its own beside this one until it turned out to
+    /// feed no calculation anywhere; it is two more rows in the headings table now, so the two
+    /// rows became one. The id rather than a word, because the business curates the list: a
+    /// filter this app spelled out in code would go stale the first time somebody adds one.
+    /// See PRODUCT-CATEGORIES.md.
     blocTest<ProductsCubit, ProductsState>(
-      'سادة asks the API for the plain bags',
+      'a heading is asked for by its id',
       setUp: () {
         // Arrange
-        arrangeProducts(right(page([product(1, 'أكياس الشحن السادة')])));
+        arrangeProducts(right(page([product(1, 'كيس ورقي')])));
       },
       build: () => cubit,
       // Act
-      act: (cubit) => cubit.filterByCategory(ProductTypeFilter.plain),
-      // Assert — the value the backend enum uses, not the Arabic label.
-      verify: (_) => verifyAsked(search: null, category: 'general', page: 1),
+      act: (cubit) => cubit.filterByProductCategory(3),
+      // Assert
+      verify: (_) => verifyAsked(search: null, productCategoryId: 3, page: 1),
     );
 
     blocTest<ProductsCubit, ProductsState>(
@@ -325,10 +323,10 @@ void main() {
       // Act — someone who typed a word and then tapped a chip is narrowing, not restarting.
       act: (cubit) async {
         await cubit.load(search: 'شفافة');
-        await cubit.filterByCategory(ProductTypeFilter.plain);
+        await cubit.filterByProductCategory(5);
       },
       // Assert
-      verify: (_) => verifyAsked(search: 'شفافة', category: 'general', page: 1),
+      verify: (_) => verifyAsked(search: 'شفافة', productCategoryId: 5, page: 1),
     );
 
     blocTest<ProductsCubit, ProductsState>(
@@ -341,11 +339,11 @@ void main() {
       build: () => cubit,
       // Act
       act: (cubit) async {
-        await cubit.filterByCategory(ProductTypeFilter.printed);
+        await cubit.filterByProductCategory(4);
         await cubit.loadMore();
       },
-      // Assert — page two of "مطبوعة" must not arrive as page two of everything.
-      verify: (_) => verifyAsked(search: null, category: 'printed', page: 2),
+      // Assert — page two of «مطبوعة» must not arrive as page two of everything.
+      verify: (_) => verifyAsked(search: null, productCategoryId: 4, page: 2),
     );
 
     blocTest<ProductsCubit, ProductsState>(
@@ -357,71 +355,14 @@ void main() {
       build: () => cubit,
       // Act
       act: (cubit) async {
-        await cubit.filterByCategory(ProductTypeFilter.plain);
-        await cubit.filterByCategory(ProductTypeFilter.all);
+        await cubit.filterByProductCategory(5);
+        await cubit.filterByProductCategory(null);
       },
       // Assert — one narrowed request, then one wide one.
       verify: (_) {
-        verifyAsked(search: null, category: 'general', page: 1);
-        verifyAsked(search: null, category: null, page: 1);
+        verifyAsked(search: null, productCategoryId: 5, page: 1);
+        verifyAsked(search: null, page: 1);
       },
-    );
-
-    /// **«التصنيف» and «النوع» are two questions about one list.**
-    ///
-    /// The catalogue heading — أكياس, علب, ستيكرات — is a row the business curates, so the app
-    /// filters on its id rather than on anything it spells itself. See PRODUCT-CATEGORIES.md.
-    blocTest<ProductsCubit, ProductsState>(
-      'a catalogue heading is asked for by its id',
-      setUp: () {
-        // Arrange
-        arrangeProducts(right(page([product(1, 'كيس ورقي')])));
-      },
-      build: () => cubit,
-      // Act
-      act: (cubit) => cubit.filterByProductCategory(3),
-      // Assert
-      verify: (_) => verifyAsked(search: null, category: null, productCategoryId: 3, page: 1),
-    );
-
-    blocTest<ProductsCubit, ProductsState>(
-      'narrowing by heading and by type at once keeps both',
-      setUp: () {
-        // Arrange
-        arrangeProducts(right(page([product(1, 'كيس ورقي سادة')])));
-      },
-      build: () => cubit,
-      // Act — two different questions, and answering one must not silently drop the other.
-      act: (cubit) async {
-        await cubit.filterByProductCategory(3);
-        await cubit.filterByCategory(ProductTypeFilter.plain);
-      },
-      // Assert
-      verify: (_) =>
-          verifyAsked(search: null, category: 'general', productCategoryId: 3, page: 1),
-    );
-
-    blocTest<ProductsCubit, ProductsState>(
-      'الكل clears the heading without touching the type',
-      setUp: () {
-        // Arrange
-        arrangeProducts(right(page([product(1, 'أكياس الشحن')])));
-      },
-      build: () => cubit,
-      // Act
-      act: (cubit) async {
-        await cubit.filterByCategory(ProductTypeFilter.printed);
-        await cubit.filterByProductCategory(3);
-        await cubit.filterByProductCategory(null);
-      },
-      // Assert — the type survives the heading being cleared.
-      verify: (_) => verifyAsked(
-        search: null,
-        category: 'printed',
-        productCategoryId: null,
-        page: 1,
-        times: 2,
-      ),
     );
 
     blocTest<ProductsCubit, ProductsState>(
@@ -433,9 +374,9 @@ void main() {
       build: () => cubit,
       // Act
       act: (cubit) async {
-        await cubit.filterByCategory(ProductTypeFilter.printed);
-        await cubit.filterByCategory(ProductTypeFilter.printed);
-        await cubit.filterByCategory(ProductTypeFilter.printed);
+        await cubit.filterByProductCategory(4);
+        await cubit.filterByProductCategory(4);
+        await cubit.filterByProductCategory(4);
       },
       // Assert — one request, and one screen-blanking `loading` state, not three.
       expect: () => [

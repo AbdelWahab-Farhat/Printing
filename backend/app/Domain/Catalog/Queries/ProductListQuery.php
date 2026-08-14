@@ -30,7 +30,6 @@ final class ProductListQuery
                         ->orWhere('slug', 'ilike', $term);
                 });
             })
-            ->when($filters->category !== null, fn ($q) => $q->where('category', $filters->category))
             ->when(
                 $filters->productCategoryId !== null,
                 fn ($q) => $q->where('product_category_id', $filters->productCategoryId),

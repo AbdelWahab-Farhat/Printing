@@ -105,6 +105,12 @@ enum PurchaseOrderStatus {
 /// the product's own tiers; a purchase is priced by whoever we are buying from, so the cost is
 /// typed per line and has no fallback to quote against. [totalAmount] is derived by the server
 /// from those lines and never added up here.
+///
+/// **And the invoice is not the whole cost.** Delivery, unloading and customs are charged on the
+/// order rather than on any one line, so the server holds them in [additionalCosts] and spreads
+/// them across the lines in proportion to what each is worth — see [PurchaseOrderItem]'s
+/// `final` figures. That is the number a job's margin is worked out against, so it is the number
+/// the screens lead with.
 @freezed
 abstract class PurchaseOrder with _$PurchaseOrder {
   const factory PurchaseOrder({
@@ -137,7 +143,24 @@ abstract class PurchaseOrder with _$PurchaseOrder {
     ///
     /// Null on an order raised before cost tracking existed — which is «غير مسجّل», not «صفر»,
     /// and the screens say so rather than drawing a free purchase.
+    ///
+    /// **Already inclusive of [totalAdditionalCost].** Each line's `final_total_cost` carries its
+    /// allocated share, and this is the sum of those — so the two are never added together on
+    /// screen, only shown as a total and the part of it that was not goods.
     @JsonKey(name: 'total_amount') String? totalAmount,
+
+    /// Delivery, unloading, customs — what the order cost beyond the goods themselves, summed
+    /// by the server from [additionalCosts].
+    @JsonKey(name: 'total_additional_cost') String? totalAdditionalCost,
+
+    /// The order-level costs one by one, as they were typed.
+    ///
+    /// **Sent with the list as well as with a single order**, so the edit form always opens on
+    /// the full current set — which matters, because saving replaces the set wholesale and a
+    /// form that opened on half of it would delete the rest.
+    @JsonKey(name: 'additional_costs')
+    @Default(<PurchaseOrderAdditionalCost>[])
+    List<PurchaseOrderAdditionalCost> additionalCosts,
 
     /// Present when one order was fetched, and on the list. Absent from a status change.
     @Default(<PurchaseOrderItem>[]) List<PurchaseOrderItem> items,
@@ -162,6 +185,37 @@ abstract class PurchaseOrder with _$PurchaseOrder {
   /// The lines still owing something. What the receive screen opens on.
   List<PurchaseOrderItem> get outstanding =>
       items.where((item) => item.isOutstanding).toList(growable: false);
+
+  /// Whether anything beyond the goods was charged on this order.
+  ///
+  /// Read off the list rather than off [totalAdditionalCost]: most orders have none, and a
+  /// «التكاليف الإضافية» section drawn empty — or a «٠ د.ل» row — is a question on every screen
+  /// that has no answer worth reading.
+  bool get hasAdditionalCosts => additionalCosts.isNotEmpty;
+}
+
+/// One order-level cost not tied to any line — delivery, unloading, customs.
+///
+/// **Spread across the lines by the server, not shown as a separate bill.** Each line's
+/// `final_total_cost` already carries its share; this is the itemised split, kept so the detail
+/// screen can answer «why is this line dearer than the invoice said».
+@freezed
+abstract class PurchaseOrderAdditionalCost with _$PurchaseOrderAdditionalCost {
+  const factory PurchaseOrderAdditionalCost({
+    required int id,
+    required String name,
+
+    /// A string like every other money field here: `'10.00'` as the server stored it.
+    required String amount,
+  }) = _PurchaseOrderAdditionalCost;
+
+  const PurchaseOrderAdditionalCost._();
+
+  factory PurchaseOrderAdditionalCost.fromJson(Map<String, dynamic> json) =>
+      _$PurchaseOrderAdditionalCostFromJson(json);
+
+  /// `'10.00'` → `'10'`, ready for a widget.
+  String get amountLabel => groupedDecimal(amount);
 }
 
 /// One line: a size, how much was ordered, and how much of it has turned up.
@@ -181,12 +235,25 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
     /// about arithmetic that decides whether a shipment is refused.
     @JsonKey(name: 'quantity_remaining') required String quantityRemaining,
 
-    /// What one of these costs us, and what the line comes to.
+    /// What the vendor charged for this line, and that divided by the quantity.
     ///
-    /// Null only on a line written before cost tracking existed. **Zero is a real answer** — a
-    /// free replacement from the vendor costs nothing and is not the same as nobody having said.
-    @JsonKey(name: 'unit_cost') String? unitCost,
-    @JsonKey(name: 'total_cost') String? totalCost,
+    /// **[baseTotalCost] is the one that was typed**; the server derives [baseUnitCost] from it,
+    /// never the other way around. Null only on a line written before cost tracking existed.
+    /// **Zero is a real answer** — a free replacement from the vendor costs nothing and is not
+    /// the same as nobody having said.
+    @JsonKey(name: 'base_total_cost') String? baseTotalCost,
+    @JsonKey(name: 'base_unit_cost') String? baseUnitCost,
+
+    /// This line's share of the order's delivery, unloading and customs, worked out by the
+    /// server in proportion to what the line is worth.
+    @JsonKey(name: 'allocated_additional_cost') String? allocatedAdditionalCost,
+
+    /// The landed cost — [baseTotalCost] plus [allocatedAdditionalCost].
+    ///
+    /// **This is what the goods actually cost us**, and what every screen leads with. Null on a
+    /// line the allocator never ran over, where the base figures are all there is.
+    @JsonKey(name: 'final_unit_cost') String? finalUnitCost,
+    @JsonKey(name: 'final_total_cost') String? finalTotalCost,
 
     /// What this line is counted in, snapshotted from the product when the line was written.
     /// Null on a line older than the column; the screens fall back to the variant's own unit.
@@ -222,9 +289,6 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
   /// «للكيلوغرام» — what a unit cost is *per*, as it reads after the amount.
   String get perUnitSuffix => lineUnit.per;
 
-  /// «تكلفة الكيلوغرام (د.ل)» — the price box names the thing being priced.
-  String get costFieldLabel => lineUnit.costField;
-
   /// «الكمية المطلوبة (كيلوغرام)».
   String get quantityFieldLabel => lineUnit.quantityField;
 
@@ -236,7 +300,30 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
   ///
   /// **False only on a line older than cost tracking.** A cost of *zero* is a recorded answer —
   /// a free replacement from the vendor — so it renders as «0» rather than «غير مسجّلة».
-  bool get hasCost => unitCost != null;
+  bool get hasCost => baseTotalCost != null;
+
+  /// What one of these really cost, ready for a widget.
+  ///
+  /// **The landed figure when there is one, the base when there is not.** A line the allocator
+  /// never ran over has no `final_unit_cost`, and its base cost is a true answer — printing it
+  /// beats printing nothing on paperwork somebody is trying to check against a quote.
+  String get unitCostLabel => groupedDecimal(finalUnitCost ?? baseUnitCost ?? '0');
+
+  /// What the whole line really cost, on the same rule as [unitCostLabel].
+  String get totalCostLabel => groupedDecimal(finalTotalCost ?? baseTotalCost ?? '0');
+
+  /// What the vendor invoiced for this line, before anything was spread onto it.
+  String get baseTotalCostLabel => groupedDecimal(baseTotalCost ?? '0');
+
+  /// This line's share of the order's additional costs.
+  String get allocatedCostLabel => groupedDecimal(allocatedAdditionalCost ?? '0');
+
+  /// Whether any of the order's additional costs landed here.
+  ///
+  /// **Zero is not worth splitting out.** Most orders carry no delivery or customs at all, and
+  /// «الأساسي ٧٥ د.ل + إضافي ٠ د.ل» on every line of every one of them is a sentence that says
+  /// the price twice and explains nothing.
+  bool get hasAllocatedCost => (double.tryParse(allocatedAdditionalCost ?? '0') ?? 0) > 0;
 }
 
 /// What a purchase-order line is counted in, and every phrase this app builds out of it.
@@ -246,11 +333,14 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
 /// weight — and a buyer reading it as five hundred bags orders about a tonne of the wrong thing.
 /// The server has always sent `unit_label`; this is what stops the screens dropping it.
 ///
-/// **One place for the wording, and the Arabic is the reason.** Four surfaces print these — the
-/// form's two boxes, the line on the order, the receiving sheet — and «لل» + «كيلوغرام» is
-/// exactly the kind of join that comes out «لل كيلوغرام» on the fourth copy. It also keeps the
+/// **One place for the wording, and the Arabic is the reason.** Three surfaces print these — the
+/// form's quantity box, the line on the order, the receiving sheet — and «لل» + «كيلوغرام» is
+/// exactly the kind of join that comes out «لل كيلوغرام» on the third copy. It also keeps the
 /// form and the saved line saying the same word: a form that asks in one unit and a screen that
 /// reports the answer in another is the failure this exists to prevent.
+///
+/// The cost box is deliberately *not* here: it asks for the line's total, which is money and not
+/// a quantity, so it names no unit at all.
 ///
 /// A plain class rather than Freezed: it never crosses the wire and holds one nullable string.
 @immutable
@@ -269,9 +359,6 @@ class PurchaseLineUnit {
   /// «للكيلوغرام» — what a unit cost is *per*, as it reads after the amount. «للوحدة» when
   /// unknown: vague, but true of any unit.
   String get per => label == null ? 'للوحدة' : 'لل$label';
-
-  /// «تكلفة الكيلوغرام (د.ل)».
-  String get costField => label == null ? 'تكلفة الوحدة (د.ل)' : 'تكلفة ال$label (د.ل)';
 
   /// «الكمية المطلوبة (كيلوغرام)».
   ///
