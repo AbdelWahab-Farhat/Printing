@@ -127,7 +127,7 @@ class PurchaseOrderTest extends TestCase
             'expected_date' => now()->addWeek()->toDateString(),
             'notes' => 'دفعة أولى',
             'items' => [
-                ['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'unit_cost' => 5],
+                ['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 50],
             ],
         ], $overrides);
     }
@@ -370,7 +370,7 @@ class PurchaseOrderTest extends TestCase
             'vendor_id' => 999999,
             'warehouse_id' => $warehouse->id,
             'order_date' => now()->toDateString(),
-            'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'unit_cost' => 5]],
+            'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 50]],
         ]);
 
         // Assert
@@ -391,8 +391,8 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $variant,
             ['items' => [
-                ['product_variant_id' => $variant->id, 'quantity_ordered' => 5, 'unit_cost' => 5],
-                ['product_variant_id' => $variant->id, 'quantity_ordered' => 3, 'unit_cost' => 5],
+                ['product_variant_id' => $variant->id, 'quantity_ordered' => 5, 'base_total_cost' => 25],
+                ['product_variant_id' => $variant->id, 'quantity_ordered' => 3, 'base_total_cost' => 15],
             ]],
         ));
 
@@ -440,8 +440,8 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $kept,
             ['items' => [
-                ['product_variant_id' => $kept->id, 'quantity_ordered' => 10, 'unit_cost' => 5],
-                ['product_variant_id' => $removed->id, 'quantity_ordered' => 4, 'unit_cost' => 5],
+                ['product_variant_id' => $kept->id, 'quantity_ordered' => 10, 'base_total_cost' => 50],
+                ['product_variant_id' => $removed->id, 'quantity_ordered' => 4, 'base_total_cost' => 20],
             ]],
         ))->json('data');
 
@@ -451,8 +451,8 @@ class PurchaseOrderTest extends TestCase
         $response = $this->withHeaders($headers)->putJson(
             "/api/v1/purchase-orders/{$order['id']}",
             $this->payload($vendor, $warehouse, $kept, ['items' => [
-                ['id' => $keptItemId, 'product_variant_id' => $kept->id, 'quantity_ordered' => 20, 'unit_cost' => 5],
-                ['product_variant_id' => $added->id, 'quantity_ordered' => 7, 'unit_cost' => 5],
+                ['id' => $keptItemId, 'product_variant_id' => $kept->id, 'quantity_ordered' => 20, 'base_total_cost' => 100],
+                ['product_variant_id' => $added->id, 'quantity_ordered' => 7, 'base_total_cost' => 35],
             ]]),
         );
 
@@ -942,21 +942,30 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $variantA,
             ['items' => [
-                ['product_variant_id' => $variantA->id, 'quantity_ordered' => 10, 'unit_cost' => 2.5],
-                ['product_variant_id' => $variantB->id, 'quantity_ordered' => 4, 'unit_cost' => 3],
+                ['product_variant_id' => $variantA->id, 'quantity_ordered' => 10, 'base_total_cost' => 25],
+                ['product_variant_id' => $variantB->id, 'quantity_ordered' => 4, 'base_total_cost' => 12],
             ]],
         ));
 
-        // Assert — 10 * 2.5 = 25.00, 4 * 3 = 12.00, order total = 37.00
+        // Assert — 25.00 / 10 = 2.500 per unit, 12.00 / 4 = 3.000 per unit, no additional costs
+        // so final equals base and the order total is just the two lines summed: 37.00.
         $response->assertCreated()
-            ->assertJsonPath('data.items.0.unit_cost', '2.500')
-            ->assertJsonPath('data.items.0.total_cost', '25.00')
+            ->assertJsonPath('data.items.0.base_total_cost', '25.00')
+            ->assertJsonPath('data.items.0.base_unit_cost', '2.500')
+            ->assertJsonPath('data.items.0.allocated_additional_cost', '0.00')
+            ->assertJsonPath('data.items.0.final_unit_cost', '2.500')
+            ->assertJsonPath('data.items.0.final_total_cost', '25.00')
             ->assertJsonPath('data.items.0.unit', 'piece')
-            ->assertJsonPath('data.items.1.total_cost', '12.00')
-            ->assertJsonPath('data.total_amount', '37.00');
+            ->assertJsonPath('data.items.1.base_unit_cost', '3.000')
+            ->assertJsonPath('data.items.1.final_total_cost', '12.00')
+            ->assertJsonPath('data.total_amount', '37.00')
+            ->assertJsonPath('data.total_additional_cost', '0.00');
 
         $this->assertDatabaseHas('purchase_order_items', [
-            'product_variant_id' => $variantA->id, 'unit_cost' => '2.500', 'total_cost' => '25.00', 'unit' => 'piece',
+            'product_variant_id' => $variantA->id,
+            'base_total_cost' => '25.00', 'base_unit_cost' => '2.500',
+            'final_unit_cost' => '2.500', 'final_total_cost' => '25.00',
+            'unit' => 'piece',
         ]);
     }
 
@@ -971,14 +980,14 @@ class PurchaseOrderTest extends TestCase
             $vendor,
             $warehouse,
             $variant,
-            ['items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'unit_cost' => 2]]],
+            ['items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 20]]],
         ))->json('data');
 
-        // Act — same line, different cost: 10 * 8 = 80.00
+        // Act — same line, different total cost
         $response = $this->withHeaders($headers)->putJson(
             "/api/v1/purchase-orders/{$order['id']}",
             $this->payload($vendor, $warehouse, $variant, ['items' => [
-                ['id' => $order['items'][0]['id'], 'product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'unit_cost' => 8],
+                ['id' => $order['items'][0]['id'], 'product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 80],
             ]]),
         );
 
@@ -987,7 +996,7 @@ class PurchaseOrderTest extends TestCase
         $this->assertDatabaseHas('purchase_orders', ['id' => $order['id'], 'total_amount' => '80.00']);
     }
 
-    public function test_unit_cost_is_required_to_create_a_purchase_order(): void
+    public function test_base_total_cost_is_required_to_create_a_purchase_order(): void
     {
         // Arrange
         $vendor = Vendor::factory()->create();
@@ -995,7 +1004,7 @@ class PurchaseOrderTest extends TestCase
         $variant = $this->variant();
         $headers = $this->manager();
 
-        // Act — items entry deliberately omits unit_cost
+        // Act — items entry deliberately omits base_total_cost
         $response = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
             $vendor,
             $warehouse,
@@ -1004,12 +1013,13 @@ class PurchaseOrderTest extends TestCase
         ));
 
         // Assert
-        $response->assertStatus(422)->assertJsonStructure(['errors' => ['items.0.unit_cost']]);
+        $response->assertStatus(422)->assertJsonStructure(['errors' => ['items.0.base_total_cost']]);
     }
 
     public function test_receiving_a_shipment_carries_cost_onto_the_stock_arrival_item(): void
     {
-        // Arrange — order 10 at 4.00 each; only 6 arrive in this shipment
+        // Arrange — order 10 at a base cost of 40.00 (4.00/unit), no additional costs; only 6
+        // arrive in this shipment
         $vendor = Vendor::factory()->create();
         $warehouse = Warehouse::factory()->create();
         $variant = $this->variant();
@@ -1017,7 +1027,7 @@ class PurchaseOrderTest extends TestCase
             $vendor,
             $warehouse,
             $variant,
-            ['items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'unit_cost' => 4]]],
+            ['items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 40]]],
         ))->json('data');
         $headers = $this->inventoryManager();
         $this->forgetAuth();
@@ -1029,7 +1039,7 @@ class PurchaseOrderTest extends TestCase
         );
 
         // Assert — priced against what actually arrived (6 * 4.00 = 24.00), not the order line's
-        // own total_cost (10 * 4.00 = 40.00)
+        // own final_total_cost (10 * 4.00 = 40.00)
         $response->assertCreated()
             ->assertJsonPath('data.items.0.unit_cost', '4.000')
             ->assertJsonPath('data.items.0.total_cost', '24.00');
@@ -1037,6 +1047,324 @@ class PurchaseOrderTest extends TestCase
         $this->assertDatabaseHas('stock_arrival_items', [
             'product_variant_id' => $variant->id, 'unit_cost' => '4.000', 'total_cost' => '24.00',
         ]);
+    }
+
+    public function test_receiving_a_shipment_carries_the_landed_cost_including_additional_costs(): void
+    {
+        // Arrange — order 10 at a base cost of 40.00 (4.00/unit) plus a 10.00 delivery fee, the
+        // order's only line, so it absorbs the whole fee: landed cost is (40 + 10) / 10 = 5.00/unit
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $order = $this->withHeaders($this->manager())->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variant,
+            [
+                'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 40]],
+                'additional_costs' => [['name' => 'Delivery', 'amount' => 10]],
+            ],
+        ))->json('data');
+        $headers = $this->inventoryManager();
+        $this->forgetAuth();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson(
+            "/api/v1/purchase-orders/{$order['id']}/arrivals",
+            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 6]]],
+        );
+
+        // Assert — 6 units at the landed 5.00/unit, not the base 4.00/unit
+        $response->assertCreated()
+            ->assertJsonPath('data.items.0.unit_cost', '5.000')
+            ->assertJsonPath('data.items.0.total_cost', '30.00');
+
+        $this->assertDatabaseHas('stock_arrival_items', [
+            'product_variant_id' => $variant->id, 'unit_cost' => '5.000', 'total_cost' => '30.00',
+        ]);
+    }
+
+    public function test_additional_costs_are_distributed_proportionally_to_each_lines_base_cost(): void
+    {
+        // Arrange — line A is 75% of the order's base cost, line B is 25%
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variantA = $this->variant();
+        $variantB = $this->variant();
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variantA,
+            [
+                'items' => [
+                    ['product_variant_id' => $variantA->id, 'quantity_ordered' => 4, 'base_total_cost' => 75],
+                    ['product_variant_id' => $variantB->id, 'quantity_ordered' => 6, 'base_total_cost' => 25],
+                ],
+                'additional_costs' => [
+                    ['name' => 'Delivery', 'amount' => 10],
+                    ['name' => 'Customs', 'amount' => 3],
+                ],
+            ],
+        ));
+
+        // Assert — total additional cost is 13.00; A gets 75% (9.75), B gets 25% (3.25)
+        $response->assertCreated()
+            ->assertJsonPath('data.total_additional_cost', '13.00')
+            ->assertJsonPath('data.total_amount', '113.00')
+            ->assertJsonCount(2, 'data.additional_costs')
+            ->assertJsonPath('data.items.0.allocated_additional_cost', '9.75')
+            ->assertJsonPath('data.items.0.final_total_cost', '84.75')
+            ->assertJsonPath('data.items.0.final_unit_cost', '21.188')
+            ->assertJsonPath('data.items.1.allocated_additional_cost', '3.25')
+            ->assertJsonPath('data.items.1.final_total_cost', '28.25');
+    }
+
+    public function test_additional_costs_use_largest_remainder_so_allocated_shares_sum_exactly(): void
+    {
+        // Arrange — three lines with an identical base cost split a total that doesn't divide
+        // evenly by three (1000 cents / 3 = 333.33... each): the leftover cent must land
+        // somewhere, and land exactly once, not be dropped or double-counted.
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variantA = $this->variant();
+        $variantB = $this->variant();
+        $variantC = $this->variant();
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variantA,
+            [
+                'items' => [
+                    ['product_variant_id' => $variantA->id, 'quantity_ordered' => 10, 'base_total_cost' => 10],
+                    ['product_variant_id' => $variantB->id, 'quantity_ordered' => 10, 'base_total_cost' => 10],
+                    ['product_variant_id' => $variantC->id, 'quantity_ordered' => 10, 'base_total_cost' => 10],
+                ],
+                'additional_costs' => [['name' => 'Delivery', 'amount' => 10]],
+            ],
+        ));
+
+        // Assert — the tied leftover cent goes to the first line (lowest id); the shares still
+        // sum to exactly 10.00, not 9.99 or 10.01.
+        $response->assertCreated()
+            ->assertJsonPath('data.items.0.allocated_additional_cost', '3.34')
+            ->assertJsonPath('data.items.1.allocated_additional_cost', '3.33')
+            ->assertJsonPath('data.items.2.allocated_additional_cost', '3.33')
+            ->assertJsonPath('data.total_additional_cost', '10.00')
+            ->assertJsonPath('data.total_amount', '40.00');
+    }
+
+    public function test_a_single_line_purchase_order_receives_all_additional_costs(): void
+    {
+        // Arrange
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variant,
+            [
+                'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 5, 'base_total_cost' => 50]],
+                'additional_costs' => [['name' => 'Unloading', 'amount' => 7.5]],
+            ],
+        ));
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonPath('data.items.0.allocated_additional_cost', '7.50')
+            ->assertJsonPath('data.items.0.final_total_cost', '57.50')
+            ->assertJsonPath('data.items.0.final_unit_cost', '11.500')
+            ->assertJsonPath('data.total_amount', '57.50');
+    }
+
+    public function test_additional_costs_split_equally_when_every_line_is_free(): void
+    {
+        // Arrange — every line's base_total_cost is zero, so there is no proportion to split by
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variantA = $this->variant();
+        $variantB = $this->variant();
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variantA,
+            [
+                'items' => [
+                    ['product_variant_id' => $variantA->id, 'quantity_ordered' => 10, 'base_total_cost' => 0],
+                    ['product_variant_id' => $variantB->id, 'quantity_ordered' => 5, 'base_total_cost' => 0],
+                ],
+                'additional_costs' => [['name' => 'Delivery', 'amount' => 5]],
+            ],
+        ));
+
+        // Assert — split evenly rather than by an undefined proportion
+        $response->assertCreated()
+            ->assertJsonPath('data.items.0.allocated_additional_cost', '2.50')
+            ->assertJsonPath('data.items.0.final_total_cost', '2.50')
+            ->assertJsonPath('data.items.1.allocated_additional_cost', '2.50')
+            ->assertJsonPath('data.items.1.final_total_cost', '2.50')
+            ->assertJsonPath('data.total_amount', '5.00');
+    }
+
+    public function test_updating_additional_costs_by_id_recomputes_allocation(): void
+    {
+        // Arrange
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $headers = $this->manager();
+        $order = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variant,
+            [
+                'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100]],
+                'additional_costs' => [['name' => 'Delivery', 'amount' => 20]],
+            ],
+        ))->json('data');
+        $costId = $order['additional_costs'][0]['id'];
+
+        // Act — same cost, higher amount
+        $response = $this->withHeaders($headers)->putJson(
+            "/api/v1/purchase-orders/{$order['id']}",
+            $this->payload($vendor, $warehouse, $variant, [
+                'items' => [
+                    ['id' => $order['items'][0]['id'], 'product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100],
+                ],
+                'additional_costs' => [['id' => $costId, 'name' => 'Delivery', 'amount' => 50]],
+            ]),
+        );
+
+        // Assert — updated in place, not duplicated
+        $response->assertOk()
+            ->assertJsonCount(1, 'data.additional_costs')
+            ->assertJsonPath('data.total_additional_cost', '50.00')
+            ->assertJsonPath('data.items.0.final_total_cost', '150.00');
+        $this->assertDatabaseCount('purchase_order_additional_costs', 1);
+        $this->assertDatabaseHas('purchase_order_additional_costs', ['id' => $costId, 'amount' => '50.00']);
+    }
+
+    public function test_removing_all_additional_costs_resets_allocation_to_base(): void
+    {
+        // Arrange
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $headers = $this->manager();
+        $order = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variant,
+            [
+                'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100]],
+                'additional_costs' => [['name' => 'Delivery', 'amount' => 20]],
+            ],
+        ))->json('data');
+        $costId = $order['additional_costs'][0]['id'];
+
+        // Act — additional_costs omitted entirely: the whole current set, which is now empty
+        $response = $this->withHeaders($headers)->putJson(
+            "/api/v1/purchase-orders/{$order['id']}",
+            $this->payload($vendor, $warehouse, $variant, [
+                'items' => [
+                    ['id' => $order['items'][0]['id'], 'product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100],
+                ],
+            ]),
+        );
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonCount(0, 'data.additional_costs')
+            ->assertJsonPath('data.total_additional_cost', '0.00')
+            ->assertJsonPath('data.items.0.allocated_additional_cost', '0.00')
+            ->assertJsonPath('data.items.0.final_total_cost', '100.00');
+        $this->assertSoftDeleted('purchase_order_additional_costs', ['id' => $costId]);
+    }
+
+    public function test_an_additional_cost_name_is_required_when_additional_costs_are_present(): void
+    {
+        // Arrange
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variant,
+            ['additional_costs' => [['amount' => 10]]],
+        ));
+
+        // Assert
+        $response->assertStatus(422)->assertJsonStructure(['errors' => ['additional_costs.0.name']]);
+    }
+
+    public function test_an_additional_costs_amount_cannot_be_negative(): void
+    {
+        // Arrange
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variant,
+            ['additional_costs' => [['name' => 'Delivery', 'amount' => -5]]],
+        ));
+
+        // Assert
+        $response->assertStatus(422)->assertJsonStructure(['errors' => ['additional_costs.0.amount']]);
+    }
+
+    public function test_updating_with_an_additional_cost_id_from_another_order_is_refused(): void
+    {
+        // Arrange
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $headers = $this->manager();
+        $ownOrder = $this->withHeaders($headers)->postJson(
+            '/api/v1/purchase-orders',
+            $this->payload($vendor, $warehouse, $variant),
+        )->json('data');
+        $otherOrder = $this->withHeaders($headers)->postJson('/api/v1/purchase-orders', $this->payload(
+            $vendor,
+            $warehouse,
+            $variant,
+            ['additional_costs' => [['name' => 'Delivery', 'amount' => 10]]],
+        ))->json('data');
+        $foreignCostId = $otherOrder['additional_costs'][0]['id'];
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson(
+            "/api/v1/purchase-orders/{$ownOrder['id']}",
+            $this->payload($vendor, $warehouse, $variant, [
+                'items' => [
+                    ['id' => $ownOrder['items'][0]['id'], 'product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 50],
+                ],
+                'additional_costs' => [['id' => $foreignCostId, 'name' => 'Delivery', 'amount' => 10]],
+            ]),
+        );
+
+        // Assert
+        $response->assertStatus(422)->assertJsonStructure(['errors' => ['additional_costs']]);
     }
 
     public function test_a_plain_stock_arrival_never_carries_cost(): void

@@ -51,8 +51,16 @@ class StorePurchaseOrderRequest extends FormRequest
 
             // `gte:0`, not `gt:0` — a free replacement from the vendor is a real cost of zero,
             // not an omission. There is no catalogue price to fall back on for what *we* pay a
-            // vendor, so this is always required.
-            'items.*.unit_cost' => ['required', 'numeric', 'gte:0', 'max:999999999.999'],
+            // vendor, so this is always required. The server derives the per-unit figure from
+            // this — see PurchaseOrderItemData — never the other way around.
+            'items.*.base_total_cost' => ['required', 'numeric', 'gte:0', 'max:999999999999.99'],
+
+            // Optional order-level costs (delivery, unloading, customs, ...) distributed across
+            // the lines above — see AllocatePurchaseOrderAdditionalCosts. Absent or empty means
+            // there are none.
+            'additional_costs' => ['nullable', 'array'],
+            'additional_costs.*.name' => ['required', 'string', 'max:255'],
+            'additional_costs.*.amount' => ['required', 'numeric', 'gte:0', 'max:999999999999.99'],
         ];
     }
 
@@ -80,10 +88,16 @@ class StorePurchaseOrderRequest extends FormRequest
             'items.*.quantity_ordered.numeric' => 'الكمية المطلوبة يجب أن تكون رقماً',
             'items.*.quantity_ordered.gt' => 'الكمية المطلوبة يجب أن تكون أكبر من صفر',
             'items.*.quantity_ordered.max' => 'الكمية المطلوبة أكبر من الحد المسموح',
-            'items.*.unit_cost.required' => 'تكلفة الوحدة مطلوبة',
-            'items.*.unit_cost.numeric' => 'تكلفة الوحدة يجب أن تكون رقماً',
-            'items.*.unit_cost.gte' => 'تكلفة الوحدة لا يمكن أن تكون سالبة',
-            'items.*.unit_cost.max' => 'تكلفة الوحدة أكبر من الحد المسموح',
+            'items.*.base_total_cost.required' => 'التكلفة الإجمالية للبند مطلوبة',
+            'items.*.base_total_cost.numeric' => 'التكلفة الإجمالية للبند يجب أن تكون رقماً',
+            'items.*.base_total_cost.gte' => 'التكلفة الإجمالية للبند لا يمكن أن تكون سالبة',
+            'items.*.base_total_cost.max' => 'التكلفة الإجمالية للبند أكبر من الحد المسموح',
+            'additional_costs.*.name.required' => 'اسم التكلفة الإضافية مطلوب',
+            'additional_costs.*.name.max' => 'اسم التكلفة الإضافية طويل جداً',
+            'additional_costs.*.amount.required' => 'قيمة التكلفة الإضافية مطلوبة',
+            'additional_costs.*.amount.numeric' => 'قيمة التكلفة الإضافية يجب أن تكون رقماً',
+            'additional_costs.*.amount.gte' => 'قيمة التكلفة الإضافية لا يمكن أن تكون سالبة',
+            'additional_costs.*.amount.max' => 'قيمة التكلفة الإضافية أكبر من الحد المسموح',
         ];
     }
 
@@ -101,7 +115,10 @@ class StorePurchaseOrderRequest extends FormRequest
             'items' => 'البنود',
             'items.*.product_variant_id' => 'المقاس',
             'items.*.quantity_ordered' => 'الكمية المطلوبة',
-            'items.*.unit_cost' => 'تكلفة الوحدة',
+            'items.*.base_total_cost' => 'التكلفة الإجمالية للبند',
+            'additional_costs' => 'التكاليف الإضافية',
+            'additional_costs.*.name' => 'اسم التكلفة الإضافية',
+            'additional_costs.*.amount' => 'قيمة التكلفة الإضافية',
         ];
     }
 }

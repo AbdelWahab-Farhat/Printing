@@ -33,9 +33,12 @@ use Illuminate\Support\Facades\DB;
  * `quantity_received` climbs by what this shipment carried, and the order's status is
  * recomputed from the result.
  *
- * Each line's `unit_cost` also travels into the {@see StockArrivalItemData} built here — priced
+ * Each line's `final_unit_cost` — the base cost plus its allocated share of the order's
+ * additional costs, from {@see AllocatePurchaseOrderAdditionalCosts} — also travels into the
+ * {@see StockArrivalItemData} built here, so a shipment's landed cost (and the FIFO stock batch
+ * it opens) includes delivery/customs/unloading, not just the vendor's quoted price. Priced
  * against what *this* shipment delivered, which can be less than the order line's own
- * `total_cost` on a partial receipt — so the vendor module still never decides a cost, only
+ * `final_total_cost` on a partial receipt — so the vendor module still never decides a cost, only
  * records the one this module already agreed to.
  *
  * @throws PurchaseOrderNotReceivable
@@ -76,7 +79,7 @@ final class ReceivePurchaseOrder
                     function (ReceivePurchaseOrderItemData $line) use ($items): StockArrivalItemData {
                         /** @var PurchaseOrderItem $orderedLine */
                         $orderedLine = $items->get($line->productVariantId);
-                        $unitCost = $orderedLine->unit_cost === null ? null : (string) $orderedLine->unit_cost;
+                        $unitCost = $orderedLine->final_unit_cost === null ? null : (string) $orderedLine->final_unit_cost;
 
                         return new StockArrivalItemData(
                             productVariantId: $line->productVariantId,

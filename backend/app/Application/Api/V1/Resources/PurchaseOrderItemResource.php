@@ -43,8 +43,12 @@ class PurchaseOrderItemResource extends JsonResource
             ),
 
             // Null only on a line written before cost tracking existed.
-            'unit_cost' => $this->unit_cost !== null ? (string) $this->unit_cost : null,
-            'total_cost' => $this->total_cost !== null ? (string) $this->total_cost : null,
+            'base_total_cost' => $this->base_total_cost !== null ? (string) $this->base_total_cost : null,
+            'base_unit_cost' => $this->base_unit_cost !== null ? (string) $this->base_unit_cost : null,
+            'allocated_additional_cost' => $this->allocated_additional_cost !== null ? (string) $this->allocated_additional_cost : null,
+            // The landed cost — includes this line's share of the order's additional costs.
+            'final_unit_cost' => $this->final_unit_cost !== null ? (string) $this->final_unit_cost : null,
+            'final_total_cost' => $this->final_total_cost !== null ? (string) $this->final_total_cost : null,
 
             'unit' => $this->unit?->value,
             'unit_label' => $this->unit?->label(),

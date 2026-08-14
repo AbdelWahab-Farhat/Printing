@@ -29,18 +29,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * posted the stock it describes — the same rule that keeps `StockArrivalItem::stock_movement_id`
  * out of the fillable list.
  *
- * `unit_cost` is typed by whoever raised the order — there is no catalogue price for what *we*
- * pay a vendor. `total_cost` is not fillable: it is `unit_cost * quantity_ordered`, computed once
- * by {@see CreatePurchaseOrder} /
- * {@see UpdatePurchaseOrder}, the same relationship
- * `OrderItem::unit_price`/`line_total` already have.
+ * `base_total_cost` is typed by whoever raised the order — there is no catalogue price for what
+ * *we* pay a vendor. Everything else cost-shaped on this line is derived from it, never fillable,
+ * and computed in exactly one place, {@see AllocatePurchaseOrderAdditionalCosts}:
+ * `base_unit_cost` (`base_total_cost / quantity_ordered`), `allocated_additional_cost` (this
+ * line's proportional share of the order's {@see PurchaseOrder::additionalCosts()}), and
+ * `final_unit_cost`/`final_total_cost` (the base figures plus that share — the landed cost,
+ * which is what {@see ReceivePurchaseOrder} carries onto a stock arrival).
  *
  * `unit` is not fillable either: a snapshot of `productVariant->product->pricing_unit`, taken when
  * the line is created and never re-derived — for rendering only, the same treatment
  * `PurchaseOrder::warehouse()` documents.
  */
 #[UseFactory(PurchaseOrderItemFactory::class)]
-#[Fillable(['quantity_ordered', 'unit_cost'])]
+#[Fillable(['quantity_ordered', 'base_total_cost'])]
 class PurchaseOrderItem extends Model
 {
     /** @use HasFactory<PurchaseOrderItemFactory> */
@@ -57,8 +59,11 @@ class PurchaseOrderItem extends Model
             // a discrepancy nobody could ever explain.
             'quantity_ordered' => 'decimal:3',
             'quantity_received' => 'decimal:3',
-            'unit_cost' => 'decimal:3',
-            'total_cost' => 'decimal:2',
+            'base_total_cost' => 'decimal:2',
+            'base_unit_cost' => 'decimal:3',
+            'allocated_additional_cost' => 'decimal:2',
+            'final_unit_cost' => 'decimal:3',
+            'final_total_cost' => 'decimal:2',
             'unit' => PricingUnit::class,
         ];
     }

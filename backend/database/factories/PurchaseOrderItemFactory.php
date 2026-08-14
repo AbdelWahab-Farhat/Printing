@@ -26,8 +26,11 @@ class PurchaseOrderItemFactory extends Factory
             'product_variant_id' => ProductVariant::factory(),
             'quantity_ordered' => '10.000',
             'quantity_received' => '0.000',
-            'unit_cost' => '5.000',
-            'total_cost' => '50.00',
+            'base_total_cost' => '50.00',
+            'base_unit_cost' => '5.000',
+            'allocated_additional_cost' => '0.00',
+            'final_unit_cost' => '5.000',
+            'final_total_cost' => '50.00',
             'unit' => PricingUnit::Piece,
         ];
     }

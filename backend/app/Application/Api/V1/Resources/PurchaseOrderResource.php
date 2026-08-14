@@ -44,9 +44,13 @@ class PurchaseOrderResource extends JsonResource
             'notes' => $this->notes,
 
             // Null on an order raised before cost tracking existed — see RecalculatePurchaseOrderTotal.
+            // Already inclusive of total_additional_cost: each line's final_total_cost (summed
+            // into this figure) already carries its allocated share.
             'total_amount' => $this->total_amount !== null ? (string) $this->total_amount : null,
+            'total_additional_cost' => $this->total_additional_cost !== null ? (string) $this->total_additional_cost : null,
 
             'items' => PurchaseOrderItemResource::collection($this->whenLoaded('items')),
+            'additional_costs' => PurchaseOrderAdditionalCostResource::collection($this->whenLoaded('additionalCosts')),
 
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
