@@ -1,12 +1,12 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/features/products/models/new_product.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/repositories/product_repository.dart';
+import 'package:dayaa/features/products/usecases/save_product.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/files/picked_file.dart';
-import 'package:printing/features/products/models/new_product.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/repositories/product_repository.dart';
-import 'package:printing/features/products/usecases/save_product.dart';
 
 /// What the form typed, turned into what the API accepts.
 ///

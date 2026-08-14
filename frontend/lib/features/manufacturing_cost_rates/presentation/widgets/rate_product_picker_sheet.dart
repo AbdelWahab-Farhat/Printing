@@ -1,12 +1,12 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/core/widgets/search_field.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/paged_list_view.dart';
-import 'package:printing/core/widgets/search_field.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
 
 /// Which product a rate is pinned to — the product, and not one of its sizes.
 ///

@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/files/picked_file.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/products/models/new_product.dart';
-import 'package:printing/features/products/models/price_quote.dart';
-import 'package:printing/features/products/models/product.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/products/models/new_product.dart';
+import 'package:dayaa/features/products/models/price_quote.dart';
+import 'package:dayaa/features/products/models/product.dart';
 
 /// Reading the catalogue, stated without saying how.
 abstract interface class ProductRepository {

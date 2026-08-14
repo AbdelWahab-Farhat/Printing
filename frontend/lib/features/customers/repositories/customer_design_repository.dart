@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
 
 /// What the app can do about a customer's artwork.
 ///

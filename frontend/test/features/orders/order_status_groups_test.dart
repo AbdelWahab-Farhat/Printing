@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/orders/models/order_status.dart';
 
 /// The two queues the customer screen asks for, and the line between them.
 ///
@@ -59,16 +59,40 @@ void main() {
       expect(received, [OrderStatus.delivered, OrderStatus.settled]);
     });
 
-    test('«إلغاء تام» is in neither group', () {
-      // Act & Assert — nobody is working on it, and it reached nobody.
+    test('«إلغاء تام» is in neither of the two, and has a third of its own', () {
+      // Act
+      final cancellations = OrderStatus.cancellations;
+
+      // Assert — nobody is working on it, and it reached nobody, so it belongs to neither. It
+      // is asked for often enough on its own — «كم طلبية ألغينا لهذا العميل؟» — to have its own
+      // box rather than to be dug out of «الكل». See VENDOR-PURCHASE-ORDERS-SECTION.md §١.
       expect(OrderStatus.inProgress, isNot(contains(OrderStatus.cancelled)));
       expect(OrderStatus.received, isNot(contains(OrderStatus.cancelled)));
+      expect(cancellations, [OrderStatus.cancelled]);
     });
 
-    test('neither group offers «unknown», which the server has never defined', () {
+    test('the three groups do not overlap, and together they are every status', () {
+      // Arrange
+      final groups = [
+        ...OrderStatus.inProgress,
+        ...OrderStatus.received,
+        ...OrderStatus.cancellations,
+      ];
+
+      // Act
+      final unique = groups.toSet();
+
+      // Assert — a status in two boxes is counted twice by the numbers beside them; a status in
+      // none is reachable only through «كل الطلبات».
+      expect(unique.length, groups.length, reason: 'a status appears in two groups');
+      expect(unique, OrderStatus.filterable.toSet());
+    });
+
+    test('no group offers «unknown», which the server has never defined', () {
       // Act & Assert — sending it as a filter would ask for a status that does not exist.
       expect(OrderStatus.inProgress, isNot(contains(OrderStatus.unknown)));
       expect(OrderStatus.received, isNot(contains(OrderStatus.unknown)));
+      expect(OrderStatus.cancellations, isNot(contains(OrderStatus.unknown)));
     });
   });
 

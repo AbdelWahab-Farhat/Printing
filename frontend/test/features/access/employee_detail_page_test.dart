@@ -1,19 +1,19 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/employee_detail_cubit.dart';
+import 'package:dayaa/features/access/presentation/views/employee_detail_page.dart';
+import 'package:dayaa/features/access/repositories/access_repository.dart';
+import 'package:dayaa/features/access/usecases/get_user.dart';
+import 'package:dayaa/features/access/usecases/set_user_activation.dart';
+import 'package:dayaa/features/access/usecases/set_user_password.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/features/access/presentation/viewmodel/employee_detail_cubit.dart';
-import 'package:printing/features/access/presentation/views/employee_detail_page.dart';
-import 'package:printing/features/access/repositories/access_repository.dart';
-import 'package:printing/features/access/usecases/get_user.dart';
-import 'package:printing/features/access/usecases/set_user_activation.dart';
-import 'package:printing/features/access/usecases/set_user_password.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
 
 /// What the employee screen shows, and — mostly — what it refuses to show.
 ///

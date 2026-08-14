@@ -1,16 +1,16 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_status_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_status_bar.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
+import 'package:dayaa/features/orders/presentation/widgets/transition_field_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/presentation/viewmodel/order_status_cubit.dart';
-import 'package:printing/features/orders/presentation/widgets/order_status_bar.dart';
-import 'package:printing/features/orders/presentation/widgets/order_status_chip.dart';
-import 'package:printing/features/orders/presentation/widgets/transition_field_input.dart';
 
 /// Moving one order: where it goes, and what that path asks for on the way.
 ///

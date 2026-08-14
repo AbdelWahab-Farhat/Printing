@@ -1,70 +1,73 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/storage/token_storage.dart';
+import 'package:dayaa/features/access/models/role.dart';
+import 'package:dayaa/features/access/presentation/views/add_employee_page.dart';
+import 'package:dayaa/features/access/presentation/views/employee_detail_page.dart';
+import 'package:dayaa/features/access/presentation/views/employee_form_page.dart';
+import 'package:dayaa/features/access/presentation/views/employees_page.dart';
+import 'package:dayaa/features/access/presentation/views/role_detail_page.dart';
+import 'package:dayaa/features/access/presentation/views/role_form_page.dart';
+import 'package:dayaa/features/access/presentation/views/roles_page.dart';
+import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/audit/presentation/views/activity_log_page.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/auth/presentation/views/login_page.dart';
+import 'package:dayaa/features/business_fields/presentation/views/business_fields_page.dart';
+import 'package:dayaa/features/cities/models/city.dart';
+import 'package:dayaa/features/cities/presentation/views/cities_page.dart';
+import 'package:dayaa/features/cities/presentation/views/city_regions_page.dart';
+import 'package:dayaa/features/comments/models/comment_subject.dart';
+import 'package:dayaa/features/comments/presentation/views/comments_page.dart';
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/presentation/views/add_customer_page.dart';
+import 'package:dayaa/features/customers/presentation/views/customer_designs_page.dart';
+import 'package:dayaa/features/customers/presentation/views/customer_detail_page.dart';
+import 'package:dayaa/features/customers/presentation/views/customers_page.dart';
+import 'package:dayaa/features/home/presentation/views/home_page.dart';
+import 'package:dayaa/features/location/presentation/views/pick_location_page.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rate_form_page.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rates_page.dart';
+import 'package:dayaa/features/orders/models/orders_filter.dart';
+import 'package:dayaa/features/orders/presentation/views/filtered_orders_page.dart';
+import 'package:dayaa/features/orders/presentation/views/new_order_page.dart';
+import 'package:dayaa/features/orders/presentation/views/order_detail_page.dart';
+import 'package:dayaa/features/orders/presentation/views/order_edit_page.dart';
+import 'package:dayaa/features/orders/presentation/views/order_payments_page.dart';
+import 'package:dayaa/features/orders/presentation/views/order_status_page.dart';
+import 'package:dayaa/features/orders/presentation/views/orders_page.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/presentation/views/product_categories_page.dart';
+import 'package:dayaa/features/products/presentation/views/product_detail_page.dart';
+import 'package:dayaa/features/products/presentation/views/product_form_page.dart';
+import 'package:dayaa/features/products/presentation/views/products_page.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_orders_filter.dart';
+import 'package:dayaa/features/purchase_orders/presentation/views/filtered_purchase_orders_page.dart';
+import 'package:dayaa/features/purchase_orders/presentation/views/purchase_order_detail_page.dart';
+import 'package:dayaa/features/purchase_orders/presentation/views/purchase_order_form_page.dart';
+import 'package:dayaa/features/purchase_orders/presentation/views/purchase_orders_page.dart';
+import 'package:dayaa/features/reports/presentation/views/profit_and_loss_page.dart';
+import 'package:dayaa/features/root/presentation/views/root_page.dart';
+import 'package:dayaa/features/settings/presentation/views/settings_page.dart';
+import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/features/shipping_companies/presentation/views/shipping_companies_page.dart';
+import 'package:dayaa/features/shipping_companies/presentation/views/shipping_company_form_page.dart';
+import 'package:dayaa/features/splash/presentation/views/splash_page.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/presentation/views/vendor_detail_page.dart';
+import 'package:dayaa/features/vendors/presentation/views/vendor_form_page.dart';
+import 'package:dayaa/features/vendors/presentation/views/vendors_page.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
+import 'package:dayaa/features/warehouses/presentation/views/stock_movements_page.dart';
+import 'package:dayaa/features/warehouses/presentation/views/warehouse_stocks_page.dart';
+import 'package:dayaa/features/warehouses/presentation/views/warehouses_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/storage/token_storage.dart';
-import 'package:printing/features/access/models/role.dart';
-import 'package:printing/features/access/presentation/views/add_employee_page.dart';
-import 'package:printing/features/access/presentation/views/employee_detail_page.dart';
-import 'package:printing/features/access/presentation/views/employee_form_page.dart';
-import 'package:printing/features/access/presentation/views/employees_page.dart';
-import 'package:printing/features/access/presentation/views/role_detail_page.dart';
-import 'package:printing/features/access/presentation/views/role_form_page.dart';
-import 'package:printing/features/access/presentation/views/roles_page.dart';
-import 'package:printing/features/audit/models/audit_subject.dart';
-import 'package:printing/features/audit/presentation/views/activity_log_page.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
-import 'package:printing/features/auth/presentation/views/login_page.dart';
-import 'package:printing/features/business_fields/presentation/views/business_fields_page.dart';
-import 'package:printing/features/cities/models/city.dart';
-import 'package:printing/features/cities/presentation/views/cities_page.dart';
-import 'package:printing/features/cities/presentation/views/city_regions_page.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/presentation/views/add_customer_page.dart';
-import 'package:printing/features/customers/presentation/views/customer_comments_page.dart';
-import 'package:printing/features/customers/presentation/views/customer_designs_page.dart';
-import 'package:printing/features/customers/presentation/views/customer_detail_page.dart';
-import 'package:printing/features/customers/presentation/views/customers_page.dart';
-import 'package:printing/features/home/presentation/views/home_page.dart';
-import 'package:printing/features/location/presentation/views/pick_location_page.dart';
-import 'package:printing/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
-import 'package:printing/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rate_form_page.dart';
-import 'package:printing/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rates_page.dart';
-import 'package:printing/features/orders/models/orders_filter.dart';
-import 'package:printing/features/orders/presentation/views/filtered_orders_page.dart';
-import 'package:printing/features/orders/presentation/views/new_order_page.dart';
-import 'package:printing/features/orders/presentation/views/order_detail_page.dart';
-import 'package:printing/features/orders/presentation/views/order_edit_page.dart';
-import 'package:printing/features/orders/presentation/views/order_payments_page.dart';
-import 'package:printing/features/orders/presentation/views/order_status_page.dart';
-import 'package:printing/features/orders/presentation/views/orders_page.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/presentation/views/product_categories_page.dart';
-import 'package:printing/features/products/presentation/views/product_detail_page.dart';
-import 'package:printing/features/products/presentation/views/product_form_page.dart';
-import 'package:printing/features/products/presentation/views/products_page.dart';
-import 'package:printing/features/purchase_orders/models/purchase_order.dart';
-import 'package:printing/features/purchase_orders/presentation/views/purchase_order_detail_page.dart';
-import 'package:printing/features/purchase_orders/presentation/views/purchase_order_form_page.dart';
-import 'package:printing/features/purchase_orders/presentation/views/purchase_orders_page.dart';
-import 'package:printing/features/reports/presentation/views/profit_and_loss_page.dart';
-import 'package:printing/features/root/presentation/views/root_page.dart';
-import 'package:printing/features/settings/presentation/views/settings_page.dart';
-import 'package:printing/features/shipping_companies/models/shipping_company.dart';
-import 'package:printing/features/shipping_companies/presentation/views/shipping_companies_page.dart';
-import 'package:printing/features/shipping_companies/presentation/views/shipping_company_form_page.dart';
-import 'package:printing/features/splash/presentation/views/splash_page.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
-import 'package:printing/features/vendors/presentation/views/vendor_detail_page.dart';
-import 'package:printing/features/vendors/presentation/views/vendor_form_page.dart';
-import 'package:printing/features/vendors/presentation/views/vendors_page.dart';
-import 'package:printing/features/warehouses/models/warehouse.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
-import 'package:printing/features/warehouses/presentation/views/stock_movements_page.dart';
-import 'package:printing/features/warehouses/presentation/views/warehouse_stocks_page.dart';
-import 'package:printing/features/warehouses/presentation/views/warehouses_page.dart';
 
 /// Route names, as constants.
 ///
@@ -91,9 +94,11 @@ abstract final class Routes {
 
   /// The shelves of one warehouse, and the ledger narrowed to it. Declared as children of
   /// `/warehouse`, because that is what they are: a balance has no life outside its place.
-  static String warehouseStocks(int warehouseId) => '/warehouse/$warehouseId/stocks';
+  static String warehouseStocks(int warehouseId) =>
+      '/warehouse/$warehouseId/stocks';
 
-  static String warehouseMovements(int warehouseId) => '/warehouse/$warehouseId/movements';
+  static String warehouseMovements(int warehouseId) =>
+      '/warehouse/$warehouseId/movements';
 
   static const String warehouseStocksPath = ':id/stocks';
   static const String warehouseMovementsPath = ':id/movements';
@@ -115,7 +120,8 @@ abstract final class Routes {
   /// ما تكلّفه ساعة عمل، وتشغيل الآلة، والمصاريف العامة. A flat pair rather than a nested form,
   /// because a rate is reached from its own list and — one day — from the product it is pinned to.
   static const String manufacturingCostRates = '/manufacturing-cost-rates';
-  static const String manufacturingCostRateForm = '/manufacturing-cost-rates/form';
+  static const String manufacturingCostRateForm =
+      '/manufacturing-cost-rates/form';
 
   /// Who carries our parcels. A flat pair rather than a nested form, because adding a company
   /// is reached from the list *and* — one day — from the dispatch screen when the carrier
@@ -135,6 +141,11 @@ abstract final class Routes {
 
   // ── أوامر الشراء ──────────────────────────────────────────────────────────
   static const String purchaseOrders = '/purchase-orders';
+
+  /// The purchase orders behind one number on a supplier's screen. Takes a [PurchaseOrdersFilter]
+  /// as `extra`, so the Arabic title travels with the question — the same arrangement
+  /// [ordersFiltered] uses.
+  static const String purchaseOrdersFiltered = '/purchase-orders/filter';
   static const String purchaseOrderForm = '/purchase-orders/form';
   static const String purchaseOrderDetailPath = '/purchase-orders/:id';
 
@@ -223,6 +234,12 @@ abstract final class Routes {
 
   static String customerComments(int id) => '/customers/$id/comments';
 
+  /// A supplier's notes. Nested under the supplier exactly as the customer's are, because that
+  /// is what the API does and what a link should say.
+  static const String vendorCommentsPath = '/vendors/:id/comments';
+
+  static String vendorComments(int id) => '/vendors/$id/comments';
+
   /// Taking an order from this customer.
   ///
   /// **A child of the customer, and that is the design rather than a tidy URL.** An order does
@@ -232,12 +249,14 @@ abstract final class Routes {
   /// unnameable. See NEW-ORDER-DESIGN.md.
   static const String newCustomerOrderPath = 'orders/new';
 
-  static String newCustomerOrder(int customerId) => '/customers/$customerId/orders/new';
+  static String newCustomerOrder(int customerId) =>
+      '/customers/$customerId/orders/new';
 
   /// Any record's history. One screen for every model — see [AuditSubject].
   static const String activityLogPath = '/logs/:type/:id';
 
-  static String activityLog(AuditSubject subject, int id) => '/logs/${subject.path}/$id';
+  static String activityLog(AuditSubject subject, int id) =>
+      '/logs/${subject.path}/$id';
 
   static const String addProduct = '/products/new';
 
@@ -317,7 +336,10 @@ abstract final class AppRouter {
         branches: [
           StatefulShellBranch(
             routes: [
-              GoRoute(path: Routes.home, builder: (context, state) => const HomePage()),
+              GoRoute(
+                path: Routes.home,
+                builder: (context, state) => const HomePage(),
+              ),
             ],
           ),
           StatefulShellBranch(
@@ -383,7 +405,9 @@ abstract final class AppRouter {
 
               // `extra` is ours and is absent on a deep link, which is exactly why the screen
               // has to work without it: the wider feed is still a correct answer.
-              final shelf = state.extra as ({Warehouse? warehouse, WarehouseStock stock})?;
+              final shelf =
+                  state.extra
+                      as ({Warehouse? warehouse, WarehouseStock stock})?;
 
               return StockMovementsPage(
                 warehouseId: id,
@@ -405,7 +429,9 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.profitAndLoss,
         redirect: (context, state) =>
-            sl<Session>().can(AppPermission.viewProfitAndLossReport) ? null : Routes.home,
+            sl<Session>().can(AppPermission.viewProfitAndLossReport)
+            ? null
+            : Routes.home,
         builder: (context, state) => const ProfitAndLossPage(),
       ),
       // Declared **before** `/orders/:id`, or go_router reads the literal word «filter» as an
@@ -426,9 +452,8 @@ abstract final class AppRouter {
       // while `/orders/7` covers it.
       GoRoute(
         path: Routes.orderDetailPath,
-        builder: (context, state) => OrderDetailPage(
-          orderId: int.parse(state.pathParameters['id']!),
-        ),
+        builder: (context, state) =>
+            OrderDetailPage(orderId: int.parse(state.pathParameters['id']!)),
         routes: [
           // A child of the order, because that is what it is: moving *this* order. No guard of
           // its own — which moves are on offer, and to whom, is a question only the server
@@ -441,16 +466,16 @@ abstract final class AppRouter {
           ),
           GoRoute(
             path: Routes.orderEditPath,
-            builder: (context, state) => OrderEditPage(
-              orderId: int.parse(state.pathParameters['id']!),
-            ),
+            builder: (context, state) =>
+                OrderEditPage(orderId: int.parse(state.pathParameters['id']!)),
           ),
           // Guarded here rather than only on the arm that opens it, so a deep link cannot walk
           // past the check — the API refuses too, and this is what stops the screen 403ing in
           // front of somebody instead of never opening.
           GoRoute(
             path: Routes.orderPaymentsPath,
-            redirect: (context, state) => sl<Session>().can(AppPermission.viewOrderPayments)
+            redirect: (context, state) =>
+                sl<Session>().can(AppPermission.viewOrderPayments)
                 ? null
                 : Routes.order(int.parse(state.pathParameters['id']!)),
             builder: (context, state) => OrderPaymentsPage(
@@ -465,8 +490,11 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.vendorForm,
         redirect: (context, state) =>
-            sl<Session>().can(AppPermission.manageVendors) ? null : Routes.vendors,
-        builder: (context, state) => VendorFormPage(vendor: state.extra as Vendor?),
+            sl<Session>().can(AppPermission.manageVendors)
+            ? null
+            : Routes.vendors,
+        builder: (context, state) =>
+            VendorFormPage(vendor: state.extra as Vendor?),
       ),
       GoRoute(
         path: Routes.vendors,
@@ -485,20 +513,44 @@ abstract final class AppRouter {
         builder: (context, state) => PurchaseOrderFormPage(
           // Both arrive as `extra` and only one is ever present: an order when the form is
           // opened to correct it, a vendor when it is opened from that supplier's screen.
-          order: state.extra is PurchaseOrder ? state.extra! as PurchaseOrder : null,
+          order: state.extra is PurchaseOrder
+              ? state.extra! as PurchaseOrder
+              : null,
           vendor: state.extra is Vendor ? state.extra! as Vendor : null,
         ),
       ),
       GoRoute(
         path: Routes.purchaseOrders,
         redirect: (context, state) =>
-            sl<Session>().can(AppPermission.viewPurchaseOrders) ? null : Routes.home,
+            sl<Session>().can(AppPermission.viewPurchaseOrders)
+            ? null
+            : Routes.home,
         builder: (context, state) => const PurchaseOrdersPage(),
+      ),
+      // Declared **before** `/purchase-orders/:id`, or go_router reads the literal word
+      // «filter» as an id — the same trap `/orders/filter` sits beside.
+      GoRoute(
+        path: Routes.purchaseOrdersFiltered,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewPurchaseOrders)
+            ? null
+            : Routes.home,
+        builder: (context, state) {
+          final filter = state.extra as PurchaseOrdersFilter?;
+
+          // A deep link carries no `extra`. Rather than an error screen, it answers the widest
+          // honest version of the question it was given.
+          return FilteredPurchaseOrdersPage(
+            filter: filter ?? const PurchaseOrdersFilter(title: 'أوامر الشراء'),
+          );
+        },
       ),
       GoRoute(
         path: Routes.purchaseOrderDetailPath,
         redirect: (context, state) =>
-            sl<Session>().can(AppPermission.viewPurchaseOrders) ? null : Routes.home,
+            sl<Session>().can(AppPermission.viewPurchaseOrders)
+            ? null
+            : Routes.home,
         builder: (context, state) {
           final id = int.tryParse(state.pathParameters['id'] ?? '');
 
@@ -509,6 +561,18 @@ abstract final class AppRouter {
       ),
       // After `/vendors/form`, and that ordering is load-bearing: declared first, `:id` would
       // capture the literal word and `int.parse('form')` would throw on the way in.
+      // The supplier's notes, nested under the supplier — declared before the detail route so
+      // `:id` cannot swallow it, the same ordering `/vendors/form` needs.
+      GoRoute(
+        path: Routes.vendorCommentsPath,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewVendors) ? null : Routes.home,
+        builder: (context, state) => CommentsPage(
+          subject: CommentSubject.vendor(int.parse(state.pathParameters['id']!)),
+          // Whose notes these are, without a second request. Null on a cold deep link.
+          ownerName: state.extra as String?,
+        ),
+      ),
       GoRoute(
         path: Routes.vendorDetailPath,
         redirect: (context, state) =>
@@ -528,7 +592,9 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.shippingCompanyForm,
         redirect: (context, state) =>
-            sl<Session>().can(AppPermission.manageShippingCompanies) ? null : Routes.shippingCompanies,
+            sl<Session>().can(AppPermission.manageShippingCompanies)
+            ? null
+            : Routes.shippingCompanies,
         builder: (context, state) =>
             ShippingCompanyFormPage(company: state.extra as ShippingCompany?),
       ),
@@ -561,13 +627,16 @@ abstract final class AppRouter {
             ? null
             : Routes.manufacturingCostRates,
         // `extra` is ours, and the screen works without it: a cold link opens «معدل تكلفة جديد».
-        builder: (context, state) =>
-            ManufacturingCostRateFormPage(rate: state.extra as ManufacturingCostRate?),
+        builder: (context, state) => ManufacturingCostRateFormPage(
+          rate: state.extra as ManufacturingCostRate?,
+        ),
       ),
       GoRoute(
         path: Routes.manufacturingCostRates,
         redirect: (context, state) =>
-            sl<Session>().can(AppPermission.viewManufacturingCostRates) ? null : Routes.home,
+            sl<Session>().can(AppPermission.viewManufacturingCostRates)
+            ? null
+            : Routes.home,
         builder: (context, state) => const ManufacturingCostRatesPage(),
       ),
       GoRoute(
@@ -599,7 +668,8 @@ abstract final class AppRouter {
         // The only route in this file guarded by a role rather than a permission. The server
         // enforces it with a gate ability that cannot be ticked onto a role; this is the
         // matching courtesy, so a deep link cannot open a form whose only ending is a 403.
-        redirect: (context, state) => sl<Session>().isAdmin ? null : Routes.home,
+        redirect: (context, state) =>
+            sl<Session>().isAdmin ? null : Routes.home,
         builder: (context, state) => const AddEmployeePage(),
       ),
       // Before `/employees/:id`, for the reason `/employees/new` is before both: go_router
@@ -633,7 +703,9 @@ abstract final class AppRouter {
         builder: (context, state) {
           final id = int.tryParse(state.pathParameters['id'] ?? '');
 
-          return id == null ? const _UnknownEmployee() : EmployeeDetailPage(userId: id);
+          return id == null
+              ? const _UnknownEmployee()
+              : EmployeeDetailPage(userId: id);
         },
       ),
       GoRoute(
@@ -662,7 +734,8 @@ abstract final class AppRouter {
             path: 'edit',
             // `extra` carries the role the user was just looking at, so the form opens with its
             // name and ticks already in place instead of fetching what the caller already held.
-            builder: (context, state) => RoleFormPage(role: state.extra as Role?),
+            builder: (context, state) =>
+                RoleFormPage(role: state.extra as Role?),
           ),
         ],
       ),
@@ -692,7 +765,8 @@ abstract final class AppRouter {
         routes: [
           GoRoute(
             path: 'edit',
-            builder: (context, state) => AddCustomerPage(customer: state.extra as Customer?),
+            builder: (context, state) =>
+                AddCustomerPage(customer: state.extra as Customer?),
           ),
           GoRoute(
             path: 'designs',
@@ -705,10 +779,10 @@ abstract final class AppRouter {
           ),
           GoRoute(
             path: 'comments',
-            builder: (context, state) => CustomerCommentsPage(
-              customerId: int.parse(state.pathParameters['id']!),
+            builder: (context, state) => CommentsPage(
+              subject: CommentSubject.customer(int.parse(state.pathParameters['id']!)),
               // As above: whose notes these are, without a second request.
-              customerName: state.extra as String?,
+              ownerName: state.extra as String?,
             ),
           ),
           // Guarded here rather than only on the arm that opens it, so a deep link cannot walk
@@ -716,7 +790,8 @@ abstract final class AppRouter {
           // front of somebody instead of never opening.
           GoRoute(
             path: Routes.newCustomerOrderPath,
-            redirect: (context, state) => sl<Session>().can(AppPermission.manageOrders)
+            redirect: (context, state) =>
+                sl<Session>().can(AppPermission.manageOrders)
                 ? null
                 : Routes.customer(int.parse(state.pathParameters['id']!)),
             builder: (context, state) => NewOrderPage(
@@ -731,7 +806,9 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.activityLogPath,
         builder: (context, state) {
-          final subject = AuditSubject.tryFromPath(state.pathParameters['type']);
+          final subject = AuditSubject.tryFromPath(
+            state.pathParameters['type'],
+          );
           final id = int.tryParse(state.pathParameters['id'] ?? '');
 
           // A deep link is somebody else's text. An unknown model or a non-numeric id is a
@@ -747,7 +824,8 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: Routes.pickLocation,
-        builder: (context, state) => PickLocationPage(initial: state.extra as LatLng?),
+        builder: (context, state) =>
+            PickLocationPage(initial: state.extra as LatLng?),
       ),
       GoRoute(
         path: Routes.addProduct,
@@ -756,7 +834,9 @@ abstract final class AppRouter {
         // only possible ending is a 403. Expressible only because `can()` answers synchronously
         // — a redirect cannot await.
         redirect: (context, state) =>
-            sl<Session>().can(AppPermission.manageProducts) ? null : Routes.products,
+            sl<Session>().can(AppPermission.manageProducts)
+            ? null
+            : Routes.products,
         builder: (context, state) => const ProductFormPage(),
       ),
       // After `/products/new`, and that ordering is load-bearing: go_router matches in
@@ -777,7 +857,9 @@ abstract final class AppRouter {
           GoRoute(
             path: Routes.editProductPath,
             redirect: (context, state) =>
-                sl<Session>().can(AppPermission.manageProducts) ? null : Routes.products,
+                sl<Session>().can(AppPermission.manageProducts)
+                ? null
+                : Routes.products,
             builder: (context, state) {
               // The product travels as `extra` so the form opens filled from the screen that
               // already had it. A deep link carries none, and rather than a blank form
@@ -788,7 +870,9 @@ abstract final class AppRouter {
 
               if (product != null) return ProductFormPage(product: product);
 
-              return id == null ? const _UnknownProduct() : ProductDetailPage(productId: id);
+              return id == null
+                  ? const _UnknownProduct()
+                  : ProductDetailPage(productId: id);
             },
           ),
         ],
@@ -803,13 +887,20 @@ abstract final class AppRouter {
       if (at == Routes.splash || at == Routes.login) return null;
 
       if (!sl<Session>().isSignedIn) {
-        return sl<TokenStorage>().hasTokenInMemory ? Routes.splash : Routes.login;
+        return sl<TokenStorage>().hasTokenInMemory
+            ? Routes.splash
+            : Routes.login;
       }
 
       return null;
     },
     errorBuilder: (context, state) => Scaffold(
-      body: Center(child: Text('الصفحة غير موجودة\n${state.uri}', textAlign: TextAlign.center)),
+      body: Center(
+        child: Text(
+          'الصفحة غير موجودة\n${state.uri}',
+          textAlign: TextAlign.center,
+        ),
+      ),
     ),
   );
 }

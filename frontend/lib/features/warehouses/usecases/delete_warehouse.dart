@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/warehouses/repositories/warehouse_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/warehouses/repositories/warehouse_repository.dart';
 
 /// Removes a warehouse from the list.
 ///

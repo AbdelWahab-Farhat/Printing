@@ -1,10 +1,10 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/filter_option_chip.dart';
+import 'package:dayaa/features/customers/models/customers_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/filter_option_chip.dart';
-import 'package:printing/features/customers/models/customers_filter.dart';
 
 /// Turning the customer register into a call sheet.
 ///

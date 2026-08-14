@@ -1,7 +1,7 @@
+import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository_impl.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
-import 'package:printing/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository_impl.dart';
 
 /// What actually leaves the phone for معدلات تكلفة التصنيع.
 ///

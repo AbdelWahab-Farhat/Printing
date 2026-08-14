@@ -1,9 +1,9 @@
+import 'package:dayaa/core/theme/app_tones.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/theme/app_tones.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock_summary.dart';
 
 /// What this warehouse holds, before anybody scrolls.
 ///

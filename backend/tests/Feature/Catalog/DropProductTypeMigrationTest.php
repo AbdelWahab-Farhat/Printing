@@ -27,11 +27,30 @@ class DropProductTypeMigrationTest extends TestCase
 {
     use DatabaseMigrations;
 
+    /**
+     * Steps back until «النوع» exists again, rather than assuming it is one step away.
+     *
+     * It was the last migration on the day this test was written and has not been since — every
+     * migration added after it puts another step between here and there. Searching for the
+     * schema this test is *about* is what keeps it from breaking on work that has nothing to do
+     * with it; the bound is a guard against a rollback that can never arrive.
+     */
+    private function rollBackToTheSchemaThatStillHadTheColumn(int $mostSteps = 20): void
+    {
+        for ($step = 0; $step < $mostSteps; $step++) {
+            if (Schema::hasColumn('products', 'category')) {
+                return;
+            }
+
+            Artisan::call('migrate:rollback', ['--step' => 1]);
+        }
+    }
+
     public function test_it_files_every_product_by_its_old_type_before_dropping_the_column(): void
     {
         // Arrange — back to the schema that still had «النوع», and one product of each kind
         // sitting in it uncategorised, exactly as a pre-categories product does.
-        Artisan::call('migrate:rollback', ['--step' => 1]);
+        $this->rollBackToTheSchemaThatStillHadTheColumn();
         $this->assertTrue(Schema::hasColumn('products', 'category'));
 
         foreach ([['printed-one', 'printed', 'P1'], ['plain-one', 'general', 'P2']] as [$slug, $type, $code]) {
@@ -69,7 +88,7 @@ class DropProductTypeMigrationTest extends TestCase
     public function test_it_leaves_a_product_somebody_already_filed_where_they_put_it(): void
     {
         // Arrange — a plain bag deliberately filed under «علب وكراتين التغليف».
-        Artisan::call('migrate:rollback', ['--step' => 1]);
+        $this->rollBackToTheSchemaThatStillHadTheColumn();
 
         $boxes = DB::table('product_categories')->insertGetId([
             'name' => 'علب وكراتين التغليف',

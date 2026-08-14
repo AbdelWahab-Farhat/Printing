@@ -1,11 +1,11 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/usecases/update_order_invoice.dart';
 
-part 'order_invoice_state.dart';
 part 'order_invoice_cubit.freezed.dart';
+part 'order_invoice_state.dart';
 
 /// Editing one order's lines and its discount.
 ///

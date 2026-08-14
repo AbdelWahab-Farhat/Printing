@@ -1,17 +1,17 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/warehouses/models/stock_movement.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/warehouses_cubit.dart';
+import 'package:dayaa/features/warehouses/repositories/warehouse_repository.dart';
+import 'package:dayaa/features/warehouses/usecases/delete_warehouse.dart';
+import 'package:dayaa/features/warehouses/usecases/get_stock_movements.dart';
+import 'package:dayaa/features/warehouses/usecases/get_warehouses.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/warehouses/models/stock_movement.dart';
-import 'package:printing/features/warehouses/models/warehouse.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/warehouses_cubit.dart';
-import 'package:printing/features/warehouses/repositories/warehouse_repository.dart';
-import 'package:printing/features/warehouses/usecases/delete_warehouse.dart';
-import 'package:printing/features/warehouses/usecases/get_stock_movements.dart';
-import 'package:printing/features/warehouses/usecases/get_warehouses.dart';
 
 /// المخازن — the list screen's ViewModel, with the repository faked and no Dio anywhere.
 ///

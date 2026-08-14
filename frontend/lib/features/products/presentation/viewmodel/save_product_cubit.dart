@@ -1,12 +1,12 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/usecases/save_product.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/files/picked_file.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/usecases/save_product.dart';
 
-part 'save_product_state.dart';
 part 'save_product_cubit.freezed.dart';
+part 'save_product_state.dart';
 
 /// The ViewModel behind the product form — adding one, and correcting one.
 ///

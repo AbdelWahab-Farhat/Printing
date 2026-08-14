@@ -1,11 +1,11 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/features/shipping_companies/usecases/save_shipping_company.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/shipping_companies/models/shipping_company.dart';
-import 'package:printing/features/shipping_companies/usecases/save_shipping_company.dart';
 
-part 'save_shipping_company_state.dart';
 part 'save_shipping_company_cubit.freezed.dart';
+part 'save_shipping_company_state.dart';
 
 /// The ViewModel behind the carrier form.
 ///

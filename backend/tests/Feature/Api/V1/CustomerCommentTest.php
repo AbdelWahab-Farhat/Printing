@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
+use App\Domain\Comment\Models\Comment;
 use App\Domain\Customer\Models\Customer;
-use App\Domain\Customer\Models\CustomerComment;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\Role;
@@ -50,7 +50,7 @@ class CustomerCommentTest extends TestCase
     private function moderator(): User
     {
         $user = $this->reader();
-        $user->givePermissionTo(PermissionName::ModerateCustomerComments->value);
+        $user->givePermissionTo(PermissionName::ModerateComments->value);
 
         return $user;
     }
@@ -99,8 +99,9 @@ class CustomerCommentTest extends TestCase
             ->assertJsonPath('data.can_edit', true)
             ->assertJsonPath('data.can_delete', true);
 
-        $this->assertDatabaseHas('customer_comments', [
-            'customer_id' => $customer->id,
+        $this->assertDatabaseHas('comments', [
+            'commentable_type' => 'customer',
+            'commentable_id' => $customer->id,
             'user_id' => $user->id,
         ]);
     }
@@ -148,15 +149,15 @@ class CustomerCommentTest extends TestCase
         $customer = Customer::factory()->create();
         $other = Customer::factory()->create();
 
-        CustomerComment::factory()->for($customer)->create([
+        Comment::factory()->on($customer)->create([
             'body' => 'الأقدم',
             'created_at' => now()->subDay(),
         ]);
-        CustomerComment::factory()->for($customer)->create([
+        Comment::factory()->on($customer)->create([
             'body' => 'الأحدث',
             'created_at' => now(),
         ]);
-        CustomerComment::factory()->for($other)->create(['body' => 'عميل آخر']);
+        Comment::factory()->on($other)->create(['body' => 'عميل آخر']);
 
         // Act
         $response = $this->getJson(
@@ -176,7 +177,7 @@ class CustomerCommentTest extends TestCase
         // Arrange
         $user = $this->reader();
         $customer = Customer::factory()->create();
-        $comment = CustomerComment::factory()->for($customer)->create();
+        $comment = Comment::factory()->on($customer)->create();
         $comment->delete();
 
         // Act
@@ -194,8 +195,8 @@ class CustomerCommentTest extends TestCase
         // Arrange
         $user = $this->reader();
         $customer = Customer::factory()->create();
-        CustomerComment::factory()->for($customer)->for($user, 'author')->create(['body' => 'ملاحظتي']);
-        CustomerComment::factory()->for($customer)->create(['body' => 'ملاحظة زميل']);
+        Comment::factory()->on($customer)->for($user, 'author')->create(['body' => 'ملاحظتي']);
+        Comment::factory()->on($customer)->create(['body' => 'ملاحظة زميل']);
 
         // Act
         $response = $this->getJson(
@@ -220,7 +221,7 @@ class CustomerCommentTest extends TestCase
         // Arrange
         $user = $this->reader();
         $customer = Customer::factory()->create();
-        $comment = CustomerComment::factory()->for($customer)->for($user, 'author')->create();
+        $comment = Comment::factory()->on($customer)->for($user, 'author')->create();
 
         // Act
         $response = $this->patchJson(
@@ -241,7 +242,7 @@ class CustomerCommentTest extends TestCase
         // Arrange
         $user = $this->reader();
         $customer = Customer::factory()->create();
-        $comment = CustomerComment::factory()->for($customer)->create(['body' => 'كلام زميل']);
+        $comment = Comment::factory()->on($customer)->create(['body' => 'كلام زميل']);
 
         // Act
         $response = $this->patchJson(
@@ -260,7 +261,7 @@ class CustomerCommentTest extends TestCase
         // Arrange
         $moderator = $this->moderator();
         $customer = Customer::factory()->create();
-        $comment = CustomerComment::factory()->for($customer)->create();
+        $comment = Comment::factory()->on($customer)->create();
 
         // Act
         $response = $this->patchJson(
@@ -280,7 +281,7 @@ class CustomerCommentTest extends TestCase
         // Arrange
         $user = $this->reader();
         $customer = Customer::factory()->create();
-        $comment = CustomerComment::factory()->for($customer)->for($user, 'author')->create();
+        $comment = Comment::factory()->on($customer)->for($user, 'author')->create();
 
         // Act
         $response = $this->deleteJson(
@@ -291,7 +292,7 @@ class CustomerCommentTest extends TestCase
 
         // Assert — soft-deleted: the audit trail still answers who wrote what and when.
         $response->assertOk();
-        $this->assertSoftDeleted('customer_comments', ['id' => $comment->id]);
+        $this->assertSoftDeleted('comments', ['id' => $comment->id]);
     }
 
     public function test_a_colleagues_note_may_not_be_removed(): void
@@ -299,7 +300,7 @@ class CustomerCommentTest extends TestCase
         // Arrange
         $user = $this->reader();
         $customer = Customer::factory()->create();
-        $comment = CustomerComment::factory()->for($customer)->create();
+        $comment = Comment::factory()->on($customer)->create();
 
         // Act
         $response = $this->deleteJson(
@@ -310,7 +311,7 @@ class CustomerCommentTest extends TestCase
 
         // Assert
         $response->assertForbidden();
-        $this->assertDatabaseHas('customer_comments', ['id' => $comment->id, 'deleted_at' => null]);
+        $this->assertDatabaseHas('comments', ['id' => $comment->id, 'deleted_at' => null]);
     }
 
     public function test_a_moderator_may_remove_anybodys_note(): void
@@ -318,7 +319,7 @@ class CustomerCommentTest extends TestCase
         // Arrange
         $moderator = $this->moderator();
         $customer = Customer::factory()->create();
-        $comment = CustomerComment::factory()->for($customer)->create();
+        $comment = Comment::factory()->on($customer)->create();
 
         // Act
         $response = $this->deleteJson(
@@ -329,7 +330,7 @@ class CustomerCommentTest extends TestCase
 
         // Assert
         $response->assertOk();
-        $this->assertSoftDeleted('customer_comments', ['id' => $comment->id]);
+        $this->assertSoftDeleted('comments', ['id' => $comment->id]);
     }
 
     // ─────────────────────────── scoping ───────────────────────────
@@ -339,7 +340,7 @@ class CustomerCommentTest extends TestCase
         // Arrange — the id exists; it just does not belong under this customer.
         $user = $this->reader();
         $customer = Customer::factory()->create();
-        $elsewhere = CustomerComment::factory()->for(Customer::factory())->for($user, 'author')->create();
+        $elsewhere = Comment::factory()->on(Customer::factory()->create())->for($user, 'author')->create();
 
         // Act
         $response = $this->patchJson(
@@ -360,7 +361,7 @@ class CustomerCommentTest extends TestCase
         // Arrange
         $admin = $this->admin();
         $customer = Customer::factory()->create();
-        $comment = CustomerComment::factory()->for($customer)->create();
+        $comment = Comment::factory()->on($customer)->create();
 
         $this->patchJson(
             "/api/v1/customers/{$customer->id}/comments/{$comment->id}",

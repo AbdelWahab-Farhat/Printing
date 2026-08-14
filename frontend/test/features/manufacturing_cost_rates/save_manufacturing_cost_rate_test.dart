@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/usecases/manufacturing_cost_rate_usecases.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
-import 'package:printing/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository.dart';
-import 'package:printing/features/manufacturing_cost_rates/usecases/manufacturing_cost_rate_usecases.dart';
 
 /// What the rate form's answers turn into before they reach the wire.
 ///

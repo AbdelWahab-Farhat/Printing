@@ -1,23 +1,23 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
+import 'package:dayaa/features/customers/presentation/views/customer_designs_page.dart';
+import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
+import 'package:dayaa/features/customers/usecases/delete_customer_design.dart';
+import 'package:dayaa/features/customers/usecases/get_customer_designs.dart';
+import 'package:dayaa/features/customers/usecases/rename_customer_design.dart';
+import 'package:dayaa/features/customers/usecases/upload_customer_design.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/files/attachment_picker.dart';
-import 'package:printing/core/files/picked_file.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
-import 'package:printing/features/customers/presentation/views/customer_designs_page.dart';
-import 'package:printing/features/customers/repositories/customer_design_repository.dart';
-import 'package:printing/features/customers/usecases/delete_customer_design.dart';
-import 'package:printing/features/customers/usecases/get_customer_designs.dart';
-import 'package:printing/features/customers/usecases/rename_customer_design.dart';
-import 'package:printing/features/customers/usecases/upload_customer_design.dart';
 
 /// The screen that holds a customer's artwork.
 ///

@@ -1,7 +1,7 @@
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/vendors/models/stock_arrival.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/vendors/models/stock_arrival.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 
 part 'purchase_order.freezed.dart';
 part 'purchase_order.g.dart';
@@ -75,7 +75,8 @@ enum PurchaseOrderStatus {
 
   /// Nothing follows, and nothing reopens it.
   bool get isFinal =>
-      this == PurchaseOrderStatus.completed || this == PurchaseOrderStatus.cancelled;
+      this == PurchaseOrderStatus.completed ||
+      this == PurchaseOrderStatus.cancelled;
 
   /// Whether the document and its lines may still be changed. «جديد» alone, mirroring
   /// `isEditable()` — once anything has arrived, the paperwork is what the shipment was checked
@@ -96,6 +97,35 @@ enum PurchaseOrderStatus {
   /// Everything a person may filter by. [unknown] is what the app *reads*, never what it offers.
   static List<PurchaseOrderStatus> get choices =>
       values.where((status) => status != unknown).toList(growable: false);
+
+  /// Everything still owed a move — «أوامر الشراء الجارية».
+  ///
+  /// **Derived from [isFinal] rather than listed**, so a fifth status added to this enum joins
+  /// this queue by default. That is the right default: a new state is work until somebody says
+  /// otherwise, and two hand-written lists over one machine are two things to keep in step.
+  ///
+  /// **«جديد» is in it**, which is the decision worth writing down: a draft nobody sent is stock
+  /// the shop decided to buy and has not bought, and one forgotten there for a month is exactly
+  /// what this queue exists to surface. See VENDOR-PURCHASE-ORDERS-SECTION.md §١.
+  static List<PurchaseOrderStatus> get inProgress =>
+      choices.where((status) => !status.isFinal).toList(growable: false);
+
+  /// What arrived in full — «أوامر الشراء المكتملة».
+  ///
+  /// «مكتمل» alone. Named apart from the case it contains because a static getter cannot share
+  /// a name with an enum constant; it is a group of one today and stays a group because the
+  /// screens ask it as one.
+  static List<PurchaseOrderStatus> get fulfilled =>
+      choices.where((status) => status == completed).toList(growable: false);
+
+  /// What was called off — «أوامر الشراء الملغاة».
+  ///
+  /// **Its own box, beside the other two rather than folded into either.** It is not in progress
+  /// — nobody will work on it — and not completed — nothing arrived. Written as a filter over
+  /// every cancellation rather than as `[cancelled]`, so a second kind of cancellation added
+  /// later lands here instead of quietly disappearing from all three groups.
+  static List<PurchaseOrderStatus> get cancellations =>
+      choices.where((status) => status == cancelled).toList(growable: false);
 }
 
 /// Paperwork raised against a supplier: what we asked for, how much of it has turned up, and
@@ -307,23 +337,27 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
   /// **The landed figure when there is one, the base when there is not.** A line the allocator
   /// never ran over has no `final_unit_cost`, and its base cost is a true answer — printing it
   /// beats printing nothing on paperwork somebody is trying to check against a quote.
-  String get unitCostLabel => groupedDecimal(finalUnitCost ?? baseUnitCost ?? '0');
+  String get unitCostLabel =>
+      groupedDecimal(finalUnitCost ?? baseUnitCost ?? '0');
 
   /// What the whole line really cost, on the same rule as [unitCostLabel].
-  String get totalCostLabel => groupedDecimal(finalTotalCost ?? baseTotalCost ?? '0');
+  String get totalCostLabel =>
+      groupedDecimal(finalTotalCost ?? baseTotalCost ?? '0');
 
   /// What the vendor invoiced for this line, before anything was spread onto it.
   String get baseTotalCostLabel => groupedDecimal(baseTotalCost ?? '0');
 
   /// This line's share of the order's additional costs.
-  String get allocatedCostLabel => groupedDecimal(allocatedAdditionalCost ?? '0');
+  String get allocatedCostLabel =>
+      groupedDecimal(allocatedAdditionalCost ?? '0');
 
   /// Whether any of the order's additional costs landed here.
   ///
   /// **Zero is not worth splitting out.** Most orders carry no delivery or customs at all, and
   /// «الأساسي ٧٥ د.ل + إضافي ٠ د.ل» on every line of every one of them is a sentence that says
   /// the price twice and explains nothing.
-  bool get hasAllocatedCost => (double.tryParse(allocatedAdditionalCost ?? '0') ?? 0) > 0;
+  bool get hasAllocatedCost =>
+      (double.tryParse(allocatedAdditionalCost ?? '0') ?? 0) > 0;
 }
 
 /// What a purchase-order line is counted in, and every phrase this app builds out of it.
@@ -364,14 +398,16 @@ class PurchaseLineUnit {
   ///
   /// The unit in brackets rather than inside the sentence: it is a note about what the box
   /// expects, not part of what is being asked for.
-  String get quantityField => label == null ? 'الكمية المطلوبة' : 'الكمية المطلوبة ($label)';
+  String get quantityField =>
+      label == null ? 'الكمية المطلوبة' : 'الكمية المطلوبة ($label)';
 
   /// «الكمية التي وصلت (كيلوغرام)» — the box a storeman types a weighbridge figure into.
   String get receivedField =>
       label == null ? 'الكمية التي وصلت' : 'الكمية التي وصلت ($label)';
 
   @override
-  bool operator ==(Object other) => other is PurchaseLineUnit && other.label == label;
+  bool operator ==(Object other) =>
+      other is PurchaseLineUnit && other.label == label;
 
   @override
   int get hashCode => label.hashCode;

@@ -1,14 +1,14 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/api_endpoints.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/warehouses/models/stock_movement.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock_summary.dart';
+import 'package:dayaa/features/warehouses/repositories/warehouse_repository.dart';
 import 'package:dio/dio.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/api_endpoints.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/network/safe_request.dart';
-import 'package:printing/features/warehouses/models/stock_movement.dart';
-import 'package:printing/features/warehouses/models/warehouse.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock_summary.dart';
-import 'package:printing/features/warehouses/repositories/warehouse_repository.dart';
 
 /// Fulfils [WarehouseRepository] over HTTP.
 class WarehouseRepositoryImpl implements WarehouseRepository {

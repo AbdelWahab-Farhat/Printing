@@ -1,9 +1,9 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/warehouses/models/warehouse.dart';
 
 /// One place stock sits: what it is called, what kind it is, and how much of the catalogue is
 /// on its shelves.

@@ -1,9 +1,9 @@
 import 'package:dartz/dartz.dart' hide Order;
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/features/orders/models/new_order.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/repositories/order_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/features/orders/models/new_order.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/repositories/order_repository.dart';
 
 /// Takes an order for a customer already known.
 ///

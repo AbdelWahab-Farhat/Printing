@@ -1,8 +1,9 @@
 import 'dart:typed_data';
+
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/orders/models/order.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/orders/models/order.dart';
 
 /// Who the invoice is *from* — the one block on the document that is not the order's own data.
 ///

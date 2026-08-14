@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/shipping_companies/models/shipping_company.dart';
-import 'package:printing/features/shipping_companies/repositories/shipping_company_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/features/shipping_companies/repositories/shipping_company_repository.dart';
 
 /// Adds a carrier, or corrects one.
 ///

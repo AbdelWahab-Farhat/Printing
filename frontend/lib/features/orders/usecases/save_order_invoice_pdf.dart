@@ -2,12 +2,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart' hide Order;
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_invoice_pdf.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/models/order_invoice_pdf.dart';
 
 /// Draws the invoice and writes it somewhere the phone can hand to its own share sheet.
 ///

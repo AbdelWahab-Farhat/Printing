@@ -1,6 +1,6 @@
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/products/models/product_category.dart';
 
 part 'product.freezed.dart';
 part 'product.g.dart';

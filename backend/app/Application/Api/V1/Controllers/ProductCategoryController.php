@@ -6,6 +6,8 @@ namespace App\Application\Api\V1\Controllers;
 
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
+use App\Application\Api\V1\Requests\Product\ReorderProductCategoriesRequest;
+use App\Application\Api\V1\Requests\Product\SetProductCategoryImageRequest;
 use App\Application\Api\V1\Requests\Product\StoreProductCategoryRequest;
 use App\Application\Api\V1\Requests\Product\UpdateProductCategoryRequest;
 use App\Application\Api\V1\Requests\SetActivationRequest;
@@ -46,12 +48,17 @@ class ProductCategoryController extends Controller
      * List product categories
      *
      * In the catalogue's own order, then by name. `search` matches the name; `is_active=1` is
-     * what a picker asks for, while the management screen leaves it off and sees both. Each row
-     * carries `products_count`.
+     * what a picker asks for, while the management screen leaves it off and sees both.
+     *
+     * `leaf_only=1` narrows it to the headings a product may actually be filed under — one
+     * holding subheadings is a heading, not a slot. Each row carries `products_count`,
+     * `children_count` and `total_products_count`.
      */
     public function index(Request $request): JsonResponse
     {
-        $filters = ProductCategoryFilters::fromArray($request->only(['search', 'is_active']));
+        $filters = ProductCategoryFilters::fromArray(
+            $request->only(['search', 'is_active', 'leaf_only']),
+        );
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
         return $this->successWithPagination(
@@ -74,7 +81,11 @@ class ProductCategoryController extends Controller
      */
     public function show(ProductCategory $productCategory): JsonResponse
     {
-        return $this->success(new ProductCategoryResource($productCategory->loadCount('products')));
+        return $this->success(
+            new ProductCategoryResource(
+                $productCategory->loadCount(['products', 'children'])->load('parent:id,name'),
+            ),
+        );
     }
 
     /**
@@ -125,6 +136,62 @@ class ProductCategoryController extends Controller
         $this->catalog->deleteCategory($productCategory);
 
         return $this->successMessage('تم حذف التصنيف بنجاح');
+    }
+
+    /**
+     * Reorder the categories
+     *
+     * Send `ids` in the order they should appear. **The whole order in one call**, because a
+     * drag moves one card and renumbers everything after it — a request per moved row would be
+     * a burst of writes where one is needed, and a dropped connection halfway would leave the
+     * list in an order nobody chose.
+     *
+     * Ids left out keep the position they had, so a screen showing one page can reorder that
+     * page without claiming anything about the rest.
+     */
+    public function reorder(ReorderProductCategoriesRequest $request): JsonResponse
+    {
+        /** @var list<int> $ids */
+        $ids = array_map(intval(...), (array) $request->validated('ids'));
+
+        $this->catalog->reorderCategories($ids);
+
+        return $this->successMessage('تم حفظ ترتيب التصنيفات');
+    }
+
+    /**
+     * Set a category's image
+     *
+     * Send as `multipart/form-data`. **Replaces whatever was there**, and deletes the old file:
+     * nothing points at a heading's picture the way an order points at a design, so a replaced
+     * one is bytes nobody will read again.
+     */
+    public function setImage(
+        SetProductCategoryImageRequest $request,
+        ProductCategory $productCategory,
+    ): JsonResponse {
+        $updated = $this->catalog->setCategoryImage($productCategory, $request->file('image'));
+
+        return $this->success(
+            new ProductCategoryResource($updated->loadCount(['products', 'children'])),
+            'تم حفظ صورة التصنيف',
+        );
+    }
+
+    /**
+     * Remove a category's image
+     *
+     * Idempotent: a heading with no picture is already in the state this asks for, so a second
+     * tap after a dropped connection is not an error.
+     */
+    public function removeImage(ProductCategory $productCategory): JsonResponse
+    {
+        $updated = $this->catalog->removeCategoryImage($productCategory);
+
+        return $this->success(
+            new ProductCategoryResource($updated->loadCount(['products', 'children'])),
+            'تم حذف صورة التصنيف',
+        );
     }
 
     /**

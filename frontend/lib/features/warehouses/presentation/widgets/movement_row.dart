@@ -1,8 +1,9 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/features/warehouses/models/stock_movement.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/features/warehouses/models/stock_movement.dart';
 
 /// One line of the ledger.
 ///
@@ -128,15 +129,9 @@ class MovementRow extends StatelessWidget {
     if (movement.referenceId case final reference?) 'مرجع #$reference',
   ].join(' · ');
 
-  /// `2026-08-06 · 14:30`, in the device's own local time — the same stamp the order timeline
-  /// uses, because both are read as "in what order, and how far apart".
-  String _stamp(DateTime at) {
-    final local = at.toLocal();
-    String two(int value) => value.toString().padLeft(2, '0');
-
-    return '${local.year}-${two(local.month)}-${two(local.day)} '
-        '${two(local.hour)}:${two(local.minute)}';
-  }
+  /// «6 أغسطس 2026 · 2:30 م», in the device's own local time — the one stamp the whole app
+  /// draws, because a ledger is read as "in what order, and how far apart".
+  String _stamp(DateTime at) => at.stampLabel;
 
   (IconData, Color) _look(BuildContext context, MovementType type) {
     final scheme = context.colorScheme;

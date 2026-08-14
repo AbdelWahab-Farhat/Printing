@@ -1,5 +1,5 @@
+import 'package:dayaa/features/cities/models/city.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/cities/models/city.dart';
 
 /// What a city card reads off the model, and nothing a widget is allowed to work out for
 /// itself: whether this row is a branch or a destination, what its pill says, and what the line

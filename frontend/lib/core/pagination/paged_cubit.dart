@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/pagination/paged_state.dart';
 
 /// The ViewModel every searchable list in this app is, minus the one thing that differs.
 ///

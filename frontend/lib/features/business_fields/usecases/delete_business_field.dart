@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/business_fields/repositories/business_field_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/business_fields/repositories/business_field_repository.dart';
 
 /// Removes a trade from the list for good.
 ///

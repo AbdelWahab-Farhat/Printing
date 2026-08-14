@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
 
 /// Reading and curating معدلات تكلفة التصنيع, stated without saying how.
 abstract interface class ManufacturingCostRateRepository {

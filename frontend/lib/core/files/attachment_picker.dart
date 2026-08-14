@@ -1,4 +1,4 @@
-import 'package:printing/core/files/picked_file.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 
 /// Where a file is coming from.
 ///

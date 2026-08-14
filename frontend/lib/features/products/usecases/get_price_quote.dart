@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/features/products/models/price_quote.dart';
-import 'package:printing/features/products/repositories/product_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/features/products/models/price_quote.dart';
+import 'package:dayaa/features/products/repositories/product_repository.dart';
 
 /// "What does this many of this size cost?"
 ///

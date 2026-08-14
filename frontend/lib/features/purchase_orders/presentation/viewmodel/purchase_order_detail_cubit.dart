@@ -1,12 +1,12 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
+import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/purchase_orders/models/purchase_order.dart';
-import 'package:printing/features/purchase_orders/usecases/purchase_order_usecases.dart';
 
-part 'purchase_order_detail_state.dart';
 part 'purchase_order_detail_cubit.freezed.dart';
+part 'purchase_order_detail_state.dart';
 
 /// One purchase order, and everything that can be done to it.
 ///
@@ -42,7 +42,8 @@ class PurchaseOrderDetailCubit extends Cubit<PurchaseOrderDetailState> {
 
     emit(
       result.fold(
-        (failure) => PurchaseOrderDetailState.failure(failure, order: state.order),
+        (failure) =>
+            PurchaseOrderDetailState.failure(failure, order: state.order),
         (order) => PurchaseOrderDetailState.ready(order),
       ),
     );
@@ -74,7 +75,9 @@ class PurchaseOrderDetailCubit extends Cubit<PurchaseOrderDetailState> {
   /// The order on screen is left exactly as it was while the write is in flight — `isWorking`
   /// is what the buttons read — so a refusal returns the user to the screen they were looking
   /// at rather than to a spinner.
-  Future<Failure?> _write(Future<Either<Failure, Object?>> Function() write) async {
+  Future<Failure?> _write(
+    Future<Either<Failure, Object?>> Function() write,
+  ) async {
     final order = state.order;
     if (order == null || state.isWorking) return null;
 

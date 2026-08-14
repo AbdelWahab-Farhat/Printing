@@ -1,10 +1,10 @@
+import 'package:dayaa/core/theme/app_tones.dart';
+import 'package:dayaa/features/home/models/home_summary.dart';
+import 'package:dayaa/features/home/presentation/widgets/payment_board.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/theme/app_tones.dart';
-import 'package:printing/features/home/models/home_summary.dart';
-import 'package:printing/features/home/presentation/widgets/payment_board.dart';
 
 /// Where the money stands, on the screen the shop opens on.
 ///

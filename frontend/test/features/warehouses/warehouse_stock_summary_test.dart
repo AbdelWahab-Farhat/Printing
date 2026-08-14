@@ -1,5 +1,5 @@
+import 'package:dayaa/features/warehouses/models/warehouse_stock_summary.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock_summary.dart';
 
 /// The five numbers at the top of the balances screen.
 ///

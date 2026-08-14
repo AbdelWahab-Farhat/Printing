@@ -1,16 +1,16 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/orders/presentation/widgets/product_picker_sheet.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
+import 'package:dayaa/features/products/repositories/product_repository.dart';
+import 'package:dayaa/features/products/usecases/get_products.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/orders/presentation/widgets/product_picker_sheet.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/presentation/widgets/product_gallery.dart';
-import 'package:printing/features/products/repositories/product_repository.dart';
-import 'package:printing/features/products/usecases/get_products.dart';
 
 /// Choosing what goes on an order line — and recognising it by sight.
 ///

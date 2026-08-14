@@ -18,8 +18,10 @@ sealed class PurchaseOrderDetailState with _$PurchaseOrderDetailState {
   const factory PurchaseOrderDetailState.working(PurchaseOrder order) =
       PurchaseOrderDetailWorking;
 
-  const factory PurchaseOrderDetailState.failure(Failure failure, {PurchaseOrder? order}) =
-      PurchaseOrderDetailFailure;
+  const factory PurchaseOrderDetailState.failure(
+    Failure failure, {
+    PurchaseOrder? order,
+  }) = PurchaseOrderDetailFailure;
 }
 
 extension PurchaseOrderDetailStateX on PurchaseOrderDetailState {

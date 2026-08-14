@@ -1,12 +1,12 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/api_endpoints.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/vendors/models/stock_arrival.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/repositories/vendor_repository.dart';
 import 'package:dio/dio.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/api_endpoints.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/network/safe_request.dart';
-import 'package:printing/features/vendors/models/stock_arrival.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
-import 'package:printing/features/vendors/repositories/vendor_repository.dart';
 
 /// Fulfils [VendorRepository] over HTTP.
 class VendorRepositoryImpl implements VendorRepository {
@@ -156,7 +156,8 @@ class VendorRepositoryImpl implements VendorRepository {
           'vendor_id': vendorId,
           'warehouse_id': warehouseId,
           'items': items.map((item) => item.toJson()).toList(growable: false),
-          if (invoiceNumber != null && invoiceNumber.isNotEmpty) 'invoice_number': invoiceNumber,
+          if (invoiceNumber != null && invoiceNumber.isNotEmpty)
+            'invoice_number': invoiceNumber,
           if (notes != null && notes.isNotEmpty) 'notes': notes,
         },
       ),

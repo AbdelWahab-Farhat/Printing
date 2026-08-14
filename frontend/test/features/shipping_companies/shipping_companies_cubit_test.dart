@@ -1,13 +1,13 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/features/shipping_companies/presentation/viewmodel/shipping_companies_cubit.dart';
+import 'package:dayaa/features/shipping_companies/repositories/shipping_company_repository.dart';
+import 'package:dayaa/features/shipping_companies/usecases/get_shipping_companies.dart';
+import 'package:dayaa/features/shipping_companies/usecases/save_shipping_company.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/shipping_companies/models/shipping_company.dart';
-import 'package:printing/features/shipping_companies/presentation/viewmodel/shipping_companies_cubit.dart';
-import 'package:printing/features/shipping_companies/repositories/shipping_company_repository.dart';
-import 'package:printing/features/shipping_companies/usecases/get_shipping_companies.dart';
-import 'package:printing/features/shipping_companies/usecases/save_shipping_company.dart';
 
 class _FakeRepository extends Mock implements ShippingCompanyRepository {}
 

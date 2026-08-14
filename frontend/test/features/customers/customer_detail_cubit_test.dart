@@ -1,13 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
+import 'package:dayaa/features/customers/repositories/customer_repository.dart';
+import 'package:dayaa/features/customers/usecases/get_customer.dart';
+import 'package:dayaa/features/customers/usecases/set_customer_activation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
-import 'package:printing/features/customers/repositories/customer_repository.dart';
-import 'package:printing/features/customers/usecases/get_customer.dart';
-import 'package:printing/features/customers/usecases/set_customer_activation.dart';
 
 /// One customer's screen: reading them, and turning them on or off.
 ///

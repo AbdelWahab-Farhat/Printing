@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/home/models/home_summary.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/home/models/home_summary.dart';
 
 /// What the home screen needs, stated without saying where it comes from.
 ///

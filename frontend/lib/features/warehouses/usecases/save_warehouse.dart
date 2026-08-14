@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/warehouses/models/warehouse.dart';
-import 'package:printing/features/warehouses/repositories/warehouse_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
+import 'package:dayaa/features/warehouses/repositories/warehouse_repository.dart';
 
 /// Adds a warehouse, or edits one that exists.
 ///

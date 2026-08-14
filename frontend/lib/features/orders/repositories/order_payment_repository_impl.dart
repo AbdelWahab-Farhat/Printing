@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/api_endpoints.dart';
+import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
 import 'package:dio/dio.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/api_endpoints.dart';
-import 'package:printing/core/network/safe_request.dart';
-import 'package:printing/features/orders/models/order_payment.dart';
-import 'package:printing/features/orders/repositories/order_payment_repository.dart';
 
 /// Fulfils [OrderPaymentRepository] over HTTP.
 ///

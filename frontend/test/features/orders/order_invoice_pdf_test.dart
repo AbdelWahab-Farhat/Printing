@@ -1,12 +1,12 @@
 import 'dart:typed_data';
 
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_invoice_pdf.dart';
+import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/models/order_invoice_pdf.dart';
-import 'package:printing/features/orders/models/order_status.dart';
 
 /// The invoice as a document — the thing that gets printed, kept and attached to a mail.
 ///

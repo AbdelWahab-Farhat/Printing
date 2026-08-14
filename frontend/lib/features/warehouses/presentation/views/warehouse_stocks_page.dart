@@ -1,23 +1,23 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/theme/app_tones.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/record_movement_sheet.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/stock_row.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/stock_summary_card.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/threshold_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/theme/app_tones.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/paged_list_view.dart';
-import 'package:printing/features/warehouses/models/warehouse.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
-import 'package:printing/features/warehouses/presentation/widgets/record_movement_sheet.dart';
-import 'package:printing/features/warehouses/presentation/widgets/stock_row.dart';
-import 'package:printing/features/warehouses/presentation/widgets/stock_summary_card.dart';
-import 'package:printing/features/warehouses/presentation/widgets/threshold_sheet.dart';
 
 /// What is on one warehouse's shelves.
 ///

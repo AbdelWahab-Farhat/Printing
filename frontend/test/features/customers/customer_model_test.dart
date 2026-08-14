@@ -1,5 +1,5 @@
+import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/customers/models/customer.dart';
 
 /// The seam between Laravel's `snake_case` and this app, tested against the exact body the API
 /// sends — see `CustomerResource` and `backend/tests/Feature/Api/V1/CustomerTest.php`.

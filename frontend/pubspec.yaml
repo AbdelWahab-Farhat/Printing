@@ -1,5 +1,5 @@
-name: printing
-description: "تطبيق Printing — أكياس مطبوعة حسب الطلب."
+name: dayaa
+description: "دعاية Dayaa — إدارة مطبعة أكياس: العملاء، الطلبات، المخزون والحسابات."
 publish_to: "none"
 
 # major.minor.patch+build — the build number is what the stores order releases by.
@@ -162,7 +162,10 @@ flutter_launcher_icons:
   adaptive_icon_foreground: assets/branding/adaptive_foreground.png
   # The same surface the app opens on, so the icon does not flash a different white.
   adaptive_icon_background: "#f4fbfa"
-  min_sdk_android: 21
+  # الأرضية الحقيقية للتطبيق: `flutter.minSdkVersion` في Flutter 3.44 هو 24، لا 21. القيمة هنا
+  # هي ما يقرّر به المولّد أن يكتب أيقونات mipmap القديمة بجانب التكيّفية — ودونها تخرج أجهزة
+  # أندرويد 7 (API 24‑25، وهي دون 26) بأيقونة فارغة، لأن `mipmap-anydpi-v26` لا يراه إلا 26 فأعلى.
+  min_sdk_android: 24
 
   ios: true
   # iOS refuses an icon with transparency — it renders as black. The logo's transparent

@@ -1,5 +1,5 @@
+import 'package:dayaa/features/audit/models/audit_event.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/features/audit/models/audit_event.dart';
 
 part 'activity_log_entry.freezed.dart';
 part 'activity_log_entry.g.dart';

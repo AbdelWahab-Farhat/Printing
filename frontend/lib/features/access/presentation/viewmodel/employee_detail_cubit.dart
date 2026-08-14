@@ -1,14 +1,14 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/access/usecases/get_user.dart';
+import 'package:dayaa/features/access/usecases/set_user_activation.dart';
+import 'package:dayaa/features/access/usecases/set_user_password.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/access/usecases/get_user.dart';
-import 'package:printing/features/access/usecases/set_user_activation.dart';
-import 'package:printing/features/access/usecases/set_user_password.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
 
-part 'employee_detail_state.dart';
 part 'employee_detail_cubit.freezed.dart';
+part 'employee_detail_state.dart';
 
 /// One employee, and the two things this screen changes about them without leaving it.
 ///

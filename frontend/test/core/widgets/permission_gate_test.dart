@@ -1,10 +1,10 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/widgets/permission_gate.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/widgets/permission_gate.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
 
 /// The gate reads the session and nothing else.
 ///

@@ -1,13 +1,13 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/employee_detail_cubit.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/access/presentation/viewmodel/employee_detail_cubit.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
 
 /// Setting a new password for a colleague who has forgotten theirs.
 ///

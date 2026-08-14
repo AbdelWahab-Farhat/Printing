@@ -17,9 +17,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
 import 'package:dio/dio.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
 
 /// Runs [send] and hands the envelope's `data` to [parse].
 ///

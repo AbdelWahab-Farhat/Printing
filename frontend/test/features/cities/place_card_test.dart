@@ -1,11 +1,11 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/features/cities/models/city.dart';
+import 'package:dayaa/features/cities/presentation/widgets/city_card.dart';
+import 'package:dayaa/features/cities/presentation/widgets/region_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/features/cities/models/city.dart';
-import 'package:printing/features/cities/presentation/widgets/city_card.dart';
-import 'package:printing/features/cities/presentation/widgets/region_card.dart';
 
 /// What one row of the delivery map tells somebody quoting a customer, and where it leads.
 ///

@@ -1,7 +1,7 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:flutter/widgets.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/session/session.dart';
 
 /// Shows [child] only to somebody the server says may use it.
 ///

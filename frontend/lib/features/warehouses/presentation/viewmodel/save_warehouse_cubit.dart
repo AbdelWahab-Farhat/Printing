@@ -1,11 +1,11 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
+import 'package:dayaa/features/warehouses/usecases/save_warehouse.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/warehouses/models/warehouse.dart';
-import 'package:printing/features/warehouses/usecases/save_warehouse.dart';
 
-part 'save_warehouse_state.dart';
 part 'save_warehouse_cubit.freezed.dart';
+part 'save_warehouse_state.dart';
 
 /// The ViewModel for the sheet that adds or edits a warehouse.
 class SaveWarehouseCubit extends Cubit<SaveWarehouseState> {

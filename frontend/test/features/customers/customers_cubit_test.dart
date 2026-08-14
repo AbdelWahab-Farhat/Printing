@@ -1,14 +1,14 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/models/customers_filter.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/customers_cubit.dart';
+import 'package:dayaa/features/customers/repositories/customer_repository.dart';
+import 'package:dayaa/features/customers/usecases/get_customers.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/models/customers_filter.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customers_cubit.dart';
-import 'package:printing/features/customers/repositories/customer_repository.dart';
-import 'package:printing/features/customers/usecases/get_customers.dart';
 
 /// Paging itself is proved once in `test/core/pagination/paged_cubit_test.dart`. What is left to
 /// prove here is the part that is about customers: that the screen's search reaches the API as

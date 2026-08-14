@@ -1,7 +1,7 @@
+import 'package:dayaa/features/vendors/repositories/vendor_repository.dart';
+import 'package:dayaa/features/vendors/repositories/vendor_repository_impl.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/vendors/repositories/vendor_repository.dart';
-import 'package:printing/features/vendors/repositories/vendor_repository_impl.dart';
 
 /// What actually leaves the phone for الموردون وشحنات التوريد.
 ///

@@ -1,6 +1,6 @@
+import 'package:dayaa/core/config/app_config.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/config/app_config.dart';
 
 /// Reading configuration, and the one way it goes wrong.
 ///

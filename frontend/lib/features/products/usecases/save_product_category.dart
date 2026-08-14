@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/products/models/product_category.dart';
-import 'package:printing/features/products/repositories/product_category_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/repositories/product_category_repository.dart';
 
 /// Adds a heading to the catalogue, or edits one that is already on it.
 ///

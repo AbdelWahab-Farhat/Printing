@@ -6,6 +6,8 @@ namespace App\Domain\Customer\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
+use App\Domain\Comment\Concerns\HasComments;
+use App\Domain\Comment\Models\Comment;
 use App\Domain\Customer\Actions\AllocateCustomerIdentifier;
 use Database\Factories\CustomerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -31,7 +33,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Customer extends Model implements HasAuditTrail
 {
     /** @use HasFactory<CustomerFactory> */
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, HasComments, HasFactory, SoftDeletes;
 
     /**
      * Everything {@see CustomerShopResource} renders about a shop.
@@ -80,20 +82,6 @@ class Customer extends Model implements HasAuditTrail
     }
 
     /**
-     * What staff have written to each other about this customer.
-     *
-     * Newest first, and by `id` rather than `created_at`: two notes typed in the same second
-     * would otherwise come back in whichever order the database felt like, and the list is read
-     * top-down as a conversation.
-     *
-     * @return HasMany<CustomerComment, $this>
-     */
-    public function comments(): HasMany
-    {
-        return $this->hasMany(CustomerComment::class)->latest('id');
-    }
-
-    /**
      * A customer's history includes their shops', because a shop is not a record anyone opens
      * on its own — it is edited through the customer, and "we moved their شارع الجمهورية branch"
      * is part of that customer's story.
@@ -114,7 +102,7 @@ class Customer extends Model implements HasAuditTrail
             (new CustomerDesign)->getMorphClass() => $this->designs()->withTrashed()->pluck('id')->all(),
             // Same reasoning, and the same `withTrashed`: «من حذف الملاحظة؟» is a question about
             // this customer, and a removed note is the only kind anyone goes looking for.
-            (new CustomerComment)->getMorphClass() => $this->comments()->withTrashed()->pluck('id')->all(),
+            (new Comment)->getMorphClass() => $this->comments()->withTrashed()->pluck('id')->all(),
         ];
     }
 }

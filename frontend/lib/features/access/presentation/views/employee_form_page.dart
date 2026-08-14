@@ -1,21 +1,21 @@
 // `show`, because dartz exports a `State` of its own (its state monad) that collides with
 // Flutter's the moment both are imported into a widget file. Only the option type is wanted.
 import 'package:dartz/dartz.dart' show None, Some;
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/employee_form_cubit.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/access/presentation/viewmodel/employee_form_cubit.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
 
 /// Correcting an employee's details.
 ///
@@ -161,7 +161,7 @@ class _EmployeeFormViewState extends State<_EmployeeFormView> {
                 AppTextField(
                   controller: _email,
                   label: 'البريد الإلكتروني',
-                  hint: 'name@printing.ly',
+                  hint: 'name@dayaa.ly',
                   prefixIcon: AppIcons.email,
                   errorText: state.emailError,
                   keyboardType: TextInputType.emailAddress,

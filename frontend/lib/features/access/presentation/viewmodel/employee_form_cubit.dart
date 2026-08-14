@@ -1,13 +1,13 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/access/usecases/set_user_salary.dart';
+import 'package:dayaa/features/access/usecases/update_user.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/access/usecases/set_user_salary.dart';
-import 'package:printing/features/access/usecases/update_user.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
 
-part 'employee_form_state.dart';
 part 'employee_form_cubit.freezed.dart';
+part 'employee_form_state.dart';
 
 /// Correcting an existing employee's details — a wrong number, a married name, a typo.
 ///

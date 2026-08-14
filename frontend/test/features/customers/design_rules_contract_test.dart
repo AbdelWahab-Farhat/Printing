@@ -1,8 +1,8 @@
 import 'dart:io';
 
+import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/features/customers/models/design_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/files/picked_file.dart';
-import 'package:printing/features/customers/models/design_rules.dart';
 
 /// The guard that makes copying the server's limits into the app defensible.
 ///

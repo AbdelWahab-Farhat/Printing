@@ -1,11 +1,11 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/pagination/paged_cubit.dart';
-import 'package:printing/core/pagination/paged_state.dart';
-import 'package:printing/features/warehouses/models/warehouse.dart';
-import 'package:printing/features/warehouses/usecases/delete_warehouse.dart';
-import 'package:printing/features/warehouses/usecases/get_warehouses.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/pagination/paged_cubit.dart';
+import 'package:dayaa/core/pagination/paged_state.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
+import 'package:dayaa/features/warehouses/usecases/delete_warehouse.dart';
+import 'package:dayaa/features/warehouses/usecases/get_warehouses.dart';
 
 /// المخازن — the list screen's ViewModel.
 ///

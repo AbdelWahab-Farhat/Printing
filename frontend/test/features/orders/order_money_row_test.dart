@@ -1,10 +1,10 @@
+import 'package:dayaa/core/theme/app_tones.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/theme/app_tones.dart';
-import 'package:printing/features/orders/models/order_payment.dart';
-import 'package:printing/features/orders/presentation/widgets/order_money_row.dart';
 
 /// The three numbers at the top of an order: what it costs, what has been paid, what is left.
 ///

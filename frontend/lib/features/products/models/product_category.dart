@@ -30,11 +30,31 @@ abstract class ProductCategory with _$ProductCategory {
     /// Where it sits in the catalogue. The business's own order, not alphabetical.
     @JsonKey(name: 'sort_order') @Default(0) int sortOrder,
 
-    /// How many products sit under this heading.
+    /// The heading this one sits under, or null when it is one in its own right.
     ///
-    /// It is also what says whether deleting will be refused — the server allows a delete only
-    /// while this is zero — so the screen can explain that before the button is pressed.
+    /// The tree is one level deep and this app does not manage it yet — the field exists so a
+    /// child arriving from the API is not silently drawn as a root.
+    @JsonKey(name: 'parent_id') int? parentId,
+
+    /// Products filed directly on this heading. Zero for a parent by construction: a heading
+    /// with subheadings is a heading, not a slot.
     @JsonKey(name: 'products_count') int? productsCount,
+
+    /// How many subheadings it holds. What says this row is a heading rather than something a
+    /// product can be filed under.
+    @JsonKey(name: 'children_count') int? childrenCount,
+
+    /// Everything under it, subheadings included. **This is the number the card shows** — and
+    /// the same one that decides whether a delete will be refused, so the screen can explain
+    /// that before the button is pressed.
+    @JsonKey(name: 'total_products_count') int? totalProductsCount,
+
+    /// The picture the catalogue prints above the heading. Built by the server per request and
+    /// never stored: on a private disk it is a signed link that expires, so a screen holding
+    /// one for an hour must reload rather than reuse it.
+    @JsonKey(name: 'image_url') String? imageUrl,
+    @JsonKey(name: 'image_width_px') int? imageWidthPx,
+    @JsonKey(name: 'image_height_px') int? imageHeightPx,
 
     @JsonKey(name: 'created_at') DateTime? createdAt,
     @JsonKey(name: 'updated_at') DateTime? updatedAt,
@@ -44,8 +64,21 @@ abstract class ProductCategory with _$ProductCategory {
 
   factory ProductCategory.fromJson(Map<String, dynamic> json) => _$ProductCategoryFromJson(json);
 
-  /// Whether any product points at this category. `null` — the count was not asked for — reads
-  /// as "assume it is in use", because refusing a delete wrongly is recoverable and the
-  /// opposite is a confusing 422 the user cannot act on.
-  bool get isInUse => (productsCount ?? 1) > 0;
+  /// Whether anything points at this category — a product, directly or through a subheading.
+  ///
+  /// `null` — the counts were not asked for — reads as "assume it is in use", because refusing
+  /// a delete wrongly is recoverable and the opposite is a confusing 422 the user cannot act on.
+  bool get isInUse => (totalProductsCount ?? productsCount ?? 1) > 0;
+
+  /// Whether it holds subheadings, and is therefore a heading rather than a slot.
+  bool get hasChildren => (childrenCount ?? 0) > 0;
+
+  /// Whether a product may be filed under it. The server refuses the rest with a 422 naming the
+  /// way out — «اختر أحد فروعه» — so this only keeps an impossible choice off a picker.
+  bool get isFileable => !hasChildren;
+
+  /// What a screen counts: everything under the heading, subheadings included.
+  int? get shownProductsCount => totalProductsCount ?? productsCount;
+
+  bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;
 }

@@ -1,9 +1,9 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/product_categories_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/features/products/models/product_category.dart';
-import 'package:printing/features/products/presentation/viewmodel/product_categories_cubit.dart';
 
 /// «التصنيف» on the product form — which heading of the catalogue this product sits under.
 ///

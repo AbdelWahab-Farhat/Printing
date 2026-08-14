@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 
 /// What the app can do about a session, stated without saying how.
 ///

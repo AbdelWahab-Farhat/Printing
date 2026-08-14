@@ -1,8 +1,8 @@
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/utils/app_icons.dart';
 
 /// The icons follow the device: Material on Android, Cupertino on iOS.
 ///

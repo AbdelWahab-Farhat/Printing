@@ -1,12 +1,12 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/orders/models/order.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/orders/models/order.dart';
 
 /// Correcting what is missing from an order — and with it, what the customer pays.
 ///

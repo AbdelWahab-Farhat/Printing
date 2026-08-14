@@ -1,18 +1,18 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
+import 'package:dayaa/features/access/models/role.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/role_detail_cubit.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/roles_cubit.dart';
+import 'package:dayaa/features/access/presentation/widgets/permission_section.dart';
+import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/core/widgets/app_dialog.dart';
-import 'package:printing/features/access/models/role.dart';
-import 'package:printing/features/access/presentation/viewmodel/role_detail_cubit.dart';
-import 'package:printing/features/access/presentation/viewmodel/roles_cubit.dart';
-import 'package:printing/features/access/presentation/widgets/permission_section.dart';
-import 'package:printing/features/audit/models/audit_subject.dart';
 
 /// One role, and **what it actually grants** — the screen this whole feature exists for.
 ///

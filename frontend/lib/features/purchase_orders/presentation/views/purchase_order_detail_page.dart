@@ -1,19 +1,19 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
+import 'package:dayaa/core/widgets/app_speed_dial.dart';
+import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
+import 'package:dayaa/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
+import 'package:dayaa/features/purchase_orders/presentation/widgets/receive_arrival_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/core/widgets/app_dialog.dart';
-import 'package:printing/core/widgets/app_speed_dial.dart';
-import 'package:printing/features/audit/models/audit_subject.dart';
-import 'package:printing/features/purchase_orders/models/purchase_order.dart';
-import 'package:printing/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
-import 'package:printing/features/purchase_orders/presentation/widgets/receive_arrival_sheet.dart';
 
 /// One purchase order: what was asked for, what has turned up, and what is left.
 ///
@@ -26,7 +26,8 @@ class PurchaseOrderDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<PurchaseOrderDetailCubit>(
-      create: (_) => sl<PurchaseOrderDetailCubit>(param1: purchaseOrderId)..load(),
+      create: (_) =>
+          sl<PurchaseOrderDetailCubit>(param1: purchaseOrderId)..load(),
       child: const _PurchaseOrderDetailView(),
     );
   }
@@ -36,7 +37,8 @@ class _PurchaseOrderDetailView extends StatefulWidget {
   const _PurchaseOrderDetailView();
 
   @override
-  State<_PurchaseOrderDetailView> createState() => _PurchaseOrderDetailViewState();
+  State<_PurchaseOrderDetailView> createState() =>
+      _PurchaseOrderDetailViewState();
 }
 
 class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
@@ -47,7 +49,10 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
     final order = cubit.state.order;
     if (order == null) return;
 
-    final saved = await context.push<bool>(Routes.purchaseOrderForm, extra: order);
+    final saved = await context.push<bool>(
+      Routes.purchaseOrderForm,
+      extra: order,
+    );
     if (saved != true || !context.mounted) return;
 
     setState(() => _changed = true);
@@ -102,7 +107,10 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
       return;
     }
 
-    final shipment = await showReceiveArrivalSheet(context: context, order: order);
+    final shipment = await showReceiveArrivalSheet(
+      context: context,
+      order: order,
+    );
     if (shipment == null || !context.mounted) return;
 
     final failure = await cubit.receive(
@@ -136,24 +144,29 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
       child: Scaffold(
         floatingActionButtonLocation: AppSpeedDial.location,
         appBar: AppBar(
-          title: BlocBuilder<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
-            builder: (context, state) =>
-                Text(state.order == null ? 'أمر شراء' : 'أمر شراء #${state.order!.id}'),
-          ),
+          title:
+              BlocBuilder<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
+                builder: (context, state) => Text(
+                  state.order == null
+                      ? 'أمر شراء'
+                      : 'أمر شراء #${state.order!.id}',
+                ),
+              ),
         ),
-        floatingActionButton: BlocBuilder<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
-          builder: (context, state) {
-            final order = state.order;
-            if (order == null) return const SizedBox.shrink();
+        floatingActionButton:
+            BlocBuilder<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
+              builder: (context, state) {
+                final order = state.order;
+                if (order == null) return const SizedBox.shrink();
 
-            return _Actions(
-              order: order,
-              onEdit: _edit,
-              onCancel: _cancel,
-              onReceive: _receive,
-            );
-          },
-        ),
+                return _Actions(
+                  order: order,
+                  onEdit: _edit,
+                  onCancel: _cancel,
+                  onReceive: _receive,
+                );
+              },
+            ),
         body: BlocBuilder<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
           builder: (context, state) {
             final order = state.order;
@@ -231,8 +244,9 @@ class _Actions extends StatelessWidget {
           label: 'سجل التعديلات',
           icon: AppIcons.history,
           permission: AppPermission.viewActivityLogs,
-          onTap: (context) =>
-              context.push(Routes.activityLog(AuditSubject.purchaseOrder, order.id)),
+          onTap: (context) => context.push(
+            Routes.activityLog(AuditSubject.purchaseOrder, order.id),
+          ),
         ),
       ],
     );
@@ -304,7 +318,10 @@ class _Body extends StatelessWidget {
               // raised before cost tracking, and left off entirely rather than shown as zero.
               if (order.totalAmount case final total?) ...[
                 Divider(height: 18.h),
-                _Row(label: 'إجمالي التكلفة', value: '${groupedDecimal(total)} د.ل'),
+                _Row(
+                  label: 'إجمالي التكلفة',
+                  value: '${groupedDecimal(total)} د.ل',
+                ),
               ],
               // **Part of the total above, not on top of it.** Every line's cost already carries
               // its share, so the two must never be added together — this row says how much of
@@ -377,7 +394,9 @@ class _LineRow extends StatelessWidget {
             Expanded(
               child: Text(
                 item.title,
-                style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                style: context.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             if (isDone)
@@ -387,7 +406,9 @@ class _LineRow extends StatelessWidget {
                 // The number that decides whether the next shipment is accepted, printed once
                 // and computed by the server.
                 'متبقٍ ${item.remainingWithUnit}',
-                style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: scheme.error,
+                ),
               ),
           ],
         ),
@@ -396,7 +417,9 @@ class _LineRow extends StatelessWidget {
           // The unit on the *ordered* figure and not repeated on the received one: they are the
           // same unit by construction, and saying it twice in one line is read as two facts.
           'مطلوب ${item.orderedWithUnit} · وصل ${item.receivedLabel}',
-          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          style: context.textTheme.bodySmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
         ),
         // The money on its own line, and only when there is any. A line raised before cost
         // tracking says nothing rather than «0 د.ل», which would read as a free delivery.
@@ -409,7 +432,9 @@ class _LineRow extends StatelessWidget {
             // «للوحدة» named nothing, and named it identically for both units.
             '${item.unitCostLabel} د.ل ${item.perUnitSuffix} · '
             'الإجمالي ${item.totalCostLabel} د.ل',
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            style: context.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
           ),
           // The split, and only when something was actually spread onto this line. Faint,
           // because it explains the figure above rather than competing with it — and absent on
@@ -419,7 +444,9 @@ class _LineRow extends StatelessWidget {
             Text(
               'الأساسي ${item.baseTotalCostLabel} د.ل '
               '+ حصة من التكاليف الإضافية ${item.allocatedCostLabel} د.ل',
-              style: context.textTheme.bodySmall?.copyWith(color: scheme.outline),
+              style: context.textTheme.bodySmall?.copyWith(
+                color: scheme.outline,
+              ),
             ),
           ],
         ],
@@ -455,7 +482,9 @@ class _Section extends StatelessWidget {
           decoration: BoxDecoration(
             color: scheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.6),
+            ),
           ),
           child: child,
         ),
@@ -484,7 +513,9 @@ class _Row extends StatelessWidget {
         Text(
           value,
           textDirection: TextDirection.ltr,
-          style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: context.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );

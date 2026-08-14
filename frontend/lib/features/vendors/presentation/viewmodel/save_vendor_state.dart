@@ -34,7 +34,8 @@ extension SaveVendorStateX on SaveVendorState {
   /// to be said out loud instead. Anything the form renders inline would otherwise be said twice.
   bool get hasUnrenderedErrors => switch (this) {
     SaveVendorFailure(:final failure) => switch (failure) {
-      ServerFailure(:final fieldErrors) when fieldErrors != null && fieldErrors.isNotEmpty =>
+      ServerFailure(:final fieldErrors)
+          when fieldErrors != null && fieldErrors.isNotEmpty =>
         fieldErrors.keys.any((key) => !_rendered.contains(key)),
       // No field errors at all — a 403, a 500, a dropped connection. Nothing is inline, so it
       // all has to be said out loud.

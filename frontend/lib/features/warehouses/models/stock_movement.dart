@@ -1,6 +1,6 @@
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 
 part 'stock_movement.freezed.dart';
 part 'stock_movement.g.dart';

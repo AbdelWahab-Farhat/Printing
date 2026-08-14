@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart' hide Order;
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:flutter/foundation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/repositories/order_repository.dart';
 
 /// One line as the server needs it to re-price the invoice.
 ///

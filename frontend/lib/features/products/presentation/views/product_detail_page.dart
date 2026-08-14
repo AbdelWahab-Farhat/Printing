@@ -1,20 +1,22 @@
 import 'dart:async';
+
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/app_speed_dial.dart';
+import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/product_detail_cubit.dart';
+import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/core/widgets/app_speed_dial.dart';
-import 'package:printing/features/audit/models/audit_subject.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/presentation/viewmodel/product_detail_cubit.dart';
-import 'package:printing/features/products/presentation/widgets/product_gallery.dart';
 
 /// Everything about one bag.
 ///
@@ -701,7 +703,7 @@ class _Meta extends StatelessWidget {
     );
   }
 
-  String _date(DateTime value) => '${value.year}/${value.month}/${value.day}';
+  String _date(DateTime value) => value.dayLabel;
 }
 
 /// The line between two blocks inside a card.

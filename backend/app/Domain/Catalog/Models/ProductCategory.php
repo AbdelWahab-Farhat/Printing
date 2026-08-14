@@ -7,11 +7,11 @@ namespace App\Domain\Catalog\Models;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use Database\Factories\ProductCategoryFactory;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -98,24 +98,6 @@ class ProductCategory extends Model implements HasAuditTrail
     public function isRoot(): bool
     {
         return $this->parent_id === null;
-    }
-
-    /**
-     * The ones a picker may offer: still on offer, and not hidden behind a stopped parent.
-     *
-     * A live child under a stopped root is not offerable — the root was stopped precisely to
-     * take that part of the catalogue out of circulation, and honouring only the child's own
-     * flag would leave half the decision applied.
-     *
-     * @param  Builder<ProductCategory>  $query
-     */
-    #[Scope]
-    protected function offerable(Builder $query): void
-    {
-        $query->where('is_active', true)
-            ->where(fn (Builder $query) => $query
-                ->whereNull('parent_id')
-                ->orWhereHas('parent', fn (Builder $parent) => $parent->where('is_active', true)));
     }
 
     public function hasImage(): bool

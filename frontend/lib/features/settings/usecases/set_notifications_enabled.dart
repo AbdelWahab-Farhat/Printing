@@ -1,4 +1,4 @@
-import 'package:printing/features/settings/repositories/settings_repository.dart';
+import 'package:dayaa/features/settings/repositories/settings_repository.dart';
 
 /// Turn notifications on or off for this device.
 ///

@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/models/order_payment.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
 
 /// What the app can ask about an order's money, stated without saying how.
 ///

@@ -1,5 +1,5 @@
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
 
 /// The seam between Laravel's `snake_case` and this app, for the two fields the employee screen
 /// was built around — tested against the exact body `UserResource` sends.

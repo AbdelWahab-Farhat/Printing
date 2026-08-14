@@ -1,14 +1,14 @@
 import 'dart:async';
 
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
+import 'package:dayaa/features/products/models/product.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/orders/presentation/viewmodel/line_quote_cubit.dart';
-import 'package:printing/features/products/models/product.dart';
 
 /// One line of an order being taken, as the form holds it.
 ///

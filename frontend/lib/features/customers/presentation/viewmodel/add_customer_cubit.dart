@@ -1,12 +1,12 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/usecases/create_customer.dart';
+import 'package:dayaa/features/customers/usecases/update_customer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/usecases/create_customer.dart';
-import 'package:printing/features/customers/usecases/update_customer.dart';
 
-part 'add_customer_state.dart';
 part 'add_customer_cubit.freezed.dart';
+part 'add_customer_state.dart';
 
 /// The ViewModel for the "add a customer" screen.
 ///

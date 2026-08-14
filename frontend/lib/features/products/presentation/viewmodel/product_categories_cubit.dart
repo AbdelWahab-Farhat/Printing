@@ -1,12 +1,13 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/pagination/paged_cubit.dart';
-import 'package:printing/core/pagination/paged_state.dart';
-import 'package:printing/features/products/models/product_category.dart';
-import 'package:printing/features/products/usecases/delete_product_category.dart';
-import 'package:printing/features/products/usecases/get_product_categories.dart';
-import 'package:printing/features/products/usecases/set_product_category_activation.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/pagination/paged_cubit.dart';
+import 'package:dayaa/core/pagination/paged_state.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/usecases/delete_product_category.dart';
+import 'package:dayaa/features/products/usecases/get_product_categories.dart';
+import 'package:dayaa/features/products/usecases/reorder_product_categories.dart';
+import 'package:dayaa/features/products/usecases/set_product_category_activation.dart';
 
 /// التصنيفات — the management screen's ViewModel.
 ///
@@ -23,17 +24,27 @@ class ProductCategoriesCubit extends PagedCubit<ProductCategory> {
     required GetProductCategories getCategories,
     required SetProductCategoryActivation setActivation,
     required DeleteProductCategory deleteCategory,
+    required ReorderProductCategories reorderCategories,
   }) : _getCategories = getCategories,
        _setActivation = setActivation,
-       _deleteCategory = deleteCategory;
+       _deleteCategory = deleteCategory,
+       _reorderCategories = reorderCategories;
 
   final GetProductCategories _getCategories;
   final SetProductCategoryActivation _setActivation;
   final DeleteProductCategory _deleteCategory;
+  final ReorderProductCategories _reorderCategories;
 
   /// Which categories the list is narrowed to. `null` — the default — shows the stopped ones
   /// too, which is what a screen for *curating* the list has to do.
   bool? isActive;
+
+  /// Whether to leave out the headings that hold subheadings.
+  ///
+  /// True for the picker on the product form: a heading with children is a heading, not a slot,
+  /// and offering one would be offering a choice the server refuses. False for the management
+  /// screen, which has to show the whole catalogue to curate it.
+  bool leafOnly = false;
 
   @override
   Future<Either<Failure, Paginated<ProductCategory>>> fetchPage({
@@ -41,7 +52,12 @@ class ProductCategoriesCubit extends PagedCubit<ProductCategory> {
     required int page,
   }) {
     // The filter rides along with every page, including the ones `loadMore` asks for.
-    return _getCategories(search: search, isActive: isActive, page: page);
+    return _getCategories(
+      search: search,
+      isActive: isActive,
+      leafOnly: leafOnly,
+      page: page,
+    );
   }
 
   /// Narrows the list to the offered categories, or widens it back.
@@ -60,6 +76,25 @@ class ProductCategoriesCubit extends PagedCubit<ProductCategory> {
   /// Answers with the failure so the screen can say why nothing changed; `null` means it did.
   Future<Failure?> setActivation(ProductCategory category, {required bool isActive}) async {
     final result = await _setActivation(category.id, isActive: isActive);
+
+    if (isClosed) return null;
+
+    final failure = result.fold<Failure?>((failure) => failure, (_) => null);
+    if (failure == null) await refresh();
+
+    return failure;
+  }
+
+  /// Saves the order the cards were dragged into, and re-reads the list from the server.
+  ///
+  /// **The list is not patched locally first.** A drag is cheap to redo and a wrong order is
+  /// invisible until somebody notices it; re-reading is what guarantees the screen shows the
+  /// order that was actually saved. The screen keeps its own optimistic copy for the frame the
+  /// request takes — that is a rendering detail, and it belongs there rather than here.
+  ///
+  /// Answers with the failure so the screen can put the list back; `null` means it landed.
+  Future<Failure?> reorder(List<int> orderedIds) async {
+    final result = await _reorderCategories(orderedIds);
 
     if (isClosed) return null;
 

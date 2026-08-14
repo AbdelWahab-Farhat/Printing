@@ -1,17 +1,17 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock_summary.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
+import 'package:dayaa/features/warehouses/repositories/warehouse_repository.dart';
+import 'package:dayaa/features/warehouses/usecases/get_stock_summary.dart';
+import 'package:dayaa/features/warehouses/usecases/get_warehouse_stocks.dart';
+import 'package:dayaa/features/warehouses/usecases/set_low_stock_threshold.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock_summary.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
-import 'package:printing/features/warehouses/repositories/warehouse_repository.dart';
-import 'package:printing/features/warehouses/usecases/get_stock_summary.dart';
-import 'package:printing/features/warehouses/usecases/get_warehouse_stocks.dart';
-import 'package:printing/features/warehouses/usecases/set_low_stock_threshold.dart';
 
 /// The shelves screen's two ViewModels: the list, and the numbers above it.
 ///

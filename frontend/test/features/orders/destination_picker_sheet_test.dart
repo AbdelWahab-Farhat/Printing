@@ -1,16 +1,16 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/cities/models/city.dart';
+import 'package:dayaa/features/cities/presentation/viewmodel/cities_cubit.dart';
+import 'package:dayaa/features/cities/repositories/city_repository.dart';
+import 'package:dayaa/features/cities/usecases/get_cities.dart';
+import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/cities/models/city.dart';
-import 'package:printing/features/cities/presentation/viewmodel/cities_cubit.dart';
-import 'package:printing/features/cities/repositories/city_repository.dart';
-import 'package:printing/features/cities/usecases/get_cities.dart';
-import 'package:printing/features/orders/presentation/widgets/destination_picker_sheet.dart';
 
 /// Choosing a place off the delivery map.
 ///

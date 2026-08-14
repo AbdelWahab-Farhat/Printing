@@ -1,11 +1,11 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/usecases/take_order.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/usecases/take_order.dart';
 
-part 'take_order_state.dart';
 part 'take_order_cubit.freezed.dart';
+part 'take_order_state.dart';
 
 /// The ViewModel behind «طلبية جديدة».
 ///

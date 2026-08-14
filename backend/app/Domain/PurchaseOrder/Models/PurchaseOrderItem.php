@@ -7,8 +7,6 @@ namespace App\Domain\PurchaseOrder\Models;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\ProductVariant;
-use App\Domain\PurchaseOrder\Actions\CreatePurchaseOrder;
-use App\Domain\PurchaseOrder\Actions\UpdatePurchaseOrder;
 use Database\Factories\PurchaseOrderItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;

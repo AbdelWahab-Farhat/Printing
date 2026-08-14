@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/access/models/role.dart';
-import 'package:printing/features/access/repositories/access_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/access/models/role.dart';
+import 'package:dayaa/features/access/repositories/access_repository.dart';
 
 /// One role, freshly read — what the screen after an edit shows.
 class GetRole {

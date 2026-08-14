@@ -7,7 +7,8 @@ part of 'vendor_detail_cubit.dart';
 /// arrives with no row behind it — starts with nothing to show.
 @freezed
 sealed class VendorDetailState with _$VendorDetailState {
-  const factory VendorDetailState.loading({Vendor? vendor}) = VendorDetailLoading;
+  const factory VendorDetailState.loading({Vendor? vendor}) =
+      VendorDetailLoading;
 
   const factory VendorDetailState.ready(Vendor vendor) = VendorDetailReady;
 

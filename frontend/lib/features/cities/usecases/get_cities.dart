@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/cities/models/city.dart';
-import 'package:printing/features/cities/repositories/city_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/cities/models/city.dart';
+import 'package:dayaa/features/cities/repositories/city_repository.dart';
 
 /// One page of the delivery map.
 ///

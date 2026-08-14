@@ -1,11 +1,11 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/purchase_orders/models/purchase_order.dart';
 
 /// What a shipment brought.
 typedef ReceivedShipment = ({
@@ -55,7 +55,8 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
   /// One controller per outstanding line, keyed by product variant — which is what the API
   /// addresses a received line by, not by the line's own id.
   late final Map<int, TextEditingController> _quantities = {
-    for (final item in widget.order.outstanding) item.productVariantId: TextEditingController(),
+    for (final item in widget.order.outstanding)
+      item.productVariantId: TextEditingController(),
   };
 
   @override
@@ -109,7 +110,9 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
             padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 4.h),
             child: Text(
               'تسجيل شحنة واردة',
-              style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              style: context.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           Padding(
@@ -118,7 +121,9 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
               // Said out loud, because it is the part that surprises people: this writes to the
               // stock ledger the moment it is sent.
               'ما تكتبه هنا يدخل المخزن فوراً — اكتب ما وصل فعلاً، لا ما كان مطلوباً',
-              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              style: context.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
           ),
           Expanded(
@@ -126,7 +131,10 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
               padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
               children: [
                 for (final item in outstanding) ...[
-                  _LineBox(item: item, controller: _quantities[item.productVariantId]!),
+                  _LineBox(
+                    item: item,
+                    controller: _quantities[item.productVariantId]!,
+                  ),
                   SizedBox(height: 10.h),
                 ],
                 SizedBox(height: 6.h),
@@ -185,7 +193,9 @@ class _LineBox extends StatelessWidget {
         children: [
           Text(
             item.title,
-            style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            style: context.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           SizedBox(height: 4.h),
           Text(
@@ -194,7 +204,9 @@ class _LineBox extends StatelessWidget {
             //
             // The unit lands once, on the figure the two are measured against.
             'المتبقي ${item.remainingLabel} من ${item.orderedWithUnit}',
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            style: context.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
           ),
           SizedBox(height: 8.h),
           AppTextField(

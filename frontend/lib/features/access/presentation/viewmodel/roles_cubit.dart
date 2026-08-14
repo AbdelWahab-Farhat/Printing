@@ -1,13 +1,13 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/access/models/role.dart';
+import 'package:dayaa/features/access/usecases/delete_role.dart';
+import 'package:dayaa/features/access/usecases/get_roles.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/access/models/role.dart';
-import 'package:printing/features/access/usecases/delete_role.dart';
-import 'package:printing/features/access/usecases/get_roles.dart';
 
-part 'roles_state.dart';
 part 'roles_cubit.freezed.dart';
+part 'roles_state.dart';
 
 /// The roles screen's ViewModel.
 ///

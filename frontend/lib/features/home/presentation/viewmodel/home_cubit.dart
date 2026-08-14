@@ -1,13 +1,13 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/auth/usecases/get_current_user.dart';
+import 'package:dayaa/features/home/models/home_summary.dart';
+import 'package:dayaa/features/home/usecases/get_home_summary.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
-import 'package:printing/features/auth/usecases/get_current_user.dart';
-import 'package:printing/features/home/models/home_summary.dart';
-import 'package:printing/features/home/usecases/get_home_summary.dart';
 
-part 'home_state.dart';
 part 'home_cubit.freezed.dart';
+part 'home_state.dart';
 
 /// The ViewModel behind the home screen: who is signed in, and what the numbers say.
 class HomeCubit extends Cubit<HomeState> {

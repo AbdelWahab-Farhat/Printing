@@ -1,10 +1,10 @@
+import 'package:dayaa/core/config/app_config.dart';
+import 'package:dayaa/core/network/auth_interceptor.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/storage/token_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
-import 'package:printing/core/config/app_config.dart';
-import 'package:printing/core/network/auth_interceptor.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/storage/token_storage.dart';
 
 /// Builds the one `Dio` the whole app shares.
 ///

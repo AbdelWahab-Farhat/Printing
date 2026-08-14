@@ -1,11 +1,11 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
+import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/purchase_orders/models/purchase_order.dart';
-import 'package:printing/features/purchase_orders/usecases/purchase_order_usecases.dart';
 
-part 'save_purchase_order_state.dart';
 part 'save_purchase_order_cubit.freezed.dart';
+part 'save_purchase_order_state.dart';
 
 /// The ViewModel behind the purchase-order form.
 ///
@@ -48,7 +48,12 @@ class SavePurchaseOrderCubit extends Cubit<SavePurchaseOrderState> {
 
     if (isClosed) return;
 
-    emit(result.fold(SavePurchaseOrderState.failure, SavePurchaseOrderState.success));
+    emit(
+      result.fold(
+        SavePurchaseOrderState.failure,
+        SavePurchaseOrderState.success,
+      ),
+    );
   }
 
   void clearFailure() {

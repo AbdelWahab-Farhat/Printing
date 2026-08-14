@@ -1,16 +1,16 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/reports/models/profit_and_loss_summary.dart';
+import 'package:dayaa/features/reports/presentation/viewmodel/profit_and_loss_cubit.dart';
+import 'package:dayaa/features/reports/presentation/views/profit_and_loss_page.dart';
+import 'package:dayaa/features/reports/repositories/report_repository.dart';
+import 'package:dayaa/features/reports/usecases/get_profit_and_loss.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/reports/models/profit_and_loss_summary.dart';
-import 'package:printing/features/reports/presentation/viewmodel/profit_and_loss_cubit.dart';
-import 'package:printing/features/reports/presentation/views/profit_and_loss_page.dart';
-import 'package:printing/features/reports/repositories/report_repository.dart';
-import 'package:printing/features/reports/usecases/get_profit_and_loss.dart';
 
 /// الأرباح والخسائر, as it is seen.
 ///

@@ -1,11 +1,11 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/warehouses/models/stock_movement.dart';
+import 'package:dayaa/features/warehouses/usecases/record_stock_movement.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/warehouses/models/stock_movement.dart';
-import 'package:printing/features/warehouses/usecases/record_stock_movement.dart';
 
-part 'record_movement_state.dart';
 part 'record_movement_cubit.freezed.dart';
+part 'record_movement_state.dart';
 
 /// The ViewModel for the sheet that writes a line into the ledger.
 ///

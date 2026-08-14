@@ -1,17 +1,17 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/audit/models/activity_log_entry.dart';
+import 'package:dayaa/features/audit/models/audit_event.dart';
+import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/audit/presentation/views/activity_log_page.dart';
+import 'package:dayaa/features/audit/repositories/audit_repository.dart';
+import 'package:dayaa/features/audit/usecases/get_activity_log.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/audit/models/activity_log_entry.dart';
-import 'package:printing/features/audit/models/audit_event.dart';
-import 'package:printing/features/audit/models/audit_subject.dart';
-import 'package:printing/features/audit/presentation/views/activity_log_page.dart';
-import 'package:printing/features/audit/repositories/audit_repository.dart';
-import 'package:printing/features/audit/usecases/get_activity_log.dart';
 
 /// The one history screen every model shares.
 ///
@@ -34,7 +34,14 @@ void main() {
     subjectType: 'customer_shop',
     causer: const AuditCauser(id: 1, name: 'المدير'),
     changes: const AuditChanges(
-      attributes: {'name': 'فرع الظهرة', 'page_url': null, 'latitude': 32.8701},
+      attributes: {
+        'name': 'فرع الظهرة',
+        'page_url': 'fb.com/dhahra',
+        // Never filled in. Present in the payload and absent from the screen — see the test
+        // about values that say nothing.
+        'notes': null,
+        'latitude': 32.8701,
+      },
     ),
     attributeLabels: const {
       'name': 'اسم المحل',
@@ -140,16 +147,52 @@ void main() {
     expect(find.text('latitude'), findsNothing);
   });
 
-  testWidgets('a value that was never set reads as a dash, not as a blank', (tester) async {
-    // Arrange — an empty cell beside a label looks like a rendering fault.
+  testWidgets('a value that was never set gets no row at all', (tester) async {
+    // Arrange — a creation that lists «ملاحظات —» buries the facts worth reading under the
+    // columns that happened to be null.
     whenAsking(null, page([creation()]));
 
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
-    expect(find.text('—'), findsOneWidget);
+    // Assert — neither the dash nor the label that would have sat beside it.
+    expect(find.text('—'), findsNothing);
+    expect(find.text('ملاحظات'), findsNothing);
+    // And the columns that *were* filled in are all still there.
+    expect(find.text('اسم المحل'), findsOneWidget);
+  });
+
+  testWidgets('a field somebody cleared still shows what it held', (tester) async {
+    // Arrange — the mirror of the test above, and the reason it is not «hide every null»: on a
+    // *change*, «نص ← —» is somebody emptying a field, which is exactly what a trail records.
+    whenAsking(
+      null,
+      page([
+        ActivityLogEntry(
+          id: 9,
+          event: 'updated',
+          eventLabel: 'تعديل',
+          subjectType: 'customer_shop',
+          causer: const AuditCauser(id: 1, name: 'المدير'),
+          changes: const AuditChanges(
+            old: {'page_url': 'fb.com/dhahra'},
+            attributes: {'page_url': null},
+          ),
+          attributeLabels: const {'page_url': 'رابط الصفحة'},
+          createdAt: DateTime(2026, 1, 15, 9),
+        ),
+      ]),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — the two halves live in one RichText, so the finder has to look inside it.
+    expect(find.text('رابط الصفحة'), findsOneWidget);
+    expect(find.textContaining('fb.com/dhahra', findRichText: true), findsOneWidget);
+    expect(find.textContaining('—', findRichText: true), findsOneWidget);
   });
 
   testWidgets('an edit shows what it replaced, struck through, beside what it became', (
@@ -172,7 +215,7 @@ void main() {
   });
 
   testWidgets('entries are gathered under the day they happened', (tester) async {
-    // Arrange — a flat run of cards each stamped `2026/1/15 — 21:09` makes the reader do the
+    // Arrange — a flat run of cards each stamped `15 يناير 2026 · 9:09 م` makes the reader do the
     // grouping in their head.
     whenAsking(null, page([creation(), edit()]));
 
@@ -181,7 +224,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert — one heading for the two of them, and Arabic counts its own way.
-    expect(find.text('2026/1/15'), findsOneWidget);
+    // The heading a person reads, not the key the entries are grouped by — see `AppDates`.
+    expect(find.text('15 يناير 2026'), findsOneWidget);
     expect(find.text('حدثان'), findsOneWidget);
   });
 
@@ -323,7 +367,8 @@ void main() {
   });
 
   testWidgets('a timestamp is read as a date, not as the line the server stored', (tester) async {
-    // Arrange — `2026-01-15T08:30:00+00:00` is a full line of ISO inside a two-line box.
+    // Arrange — `2026-01-15T08:30:00+00:00` is a full line of ISO inside a two-line box, and
+    // «15 يناير 2026» is what somebody would say out loud.
     whenAsking(null, page([statusChange()]));
 
     // Act
@@ -332,7 +377,7 @@ void main() {
 
     // Assert — formatted on the device, because only the device knows its time zone.
     expect(find.textContaining('T08:30:00'), findsNothing);
-    expect(find.textContaining('2026-01-15'), findsWidgets);
+    expect(find.textContaining('15 يناير 2026'), findsWidgets);
   });
 
   testWidgets('a value the server did not translate is still drawn', (tester) async {

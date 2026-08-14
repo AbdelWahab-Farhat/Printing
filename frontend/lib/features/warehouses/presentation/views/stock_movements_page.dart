@@ -1,16 +1,16 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/features/warehouses/models/stock_movement.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/movement_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/paged_list_view.dart';
-import 'package:printing/features/warehouses/models/stock_movement.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
-import 'package:printing/features/warehouses/presentation/widgets/movement_row.dart';
 
 /// The ledger — every movement, newest first.
 ///

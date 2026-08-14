@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/pagination/paged_cubit.dart';
+import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/pagination/paged_cubit.dart';
-import 'package:printing/core/pagination/paged_state.dart';
 
 /// The five behaviours every list screen inherits, tested once here rather than re-tested in
 /// each feature: the debounce, the out-of-order guard, appending pages, surviving a failed extra

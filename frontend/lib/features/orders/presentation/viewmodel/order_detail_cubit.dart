@@ -1,12 +1,12 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/usecases/get_order.dart';
+import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/usecases/get_order.dart';
-import 'package:printing/features/orders/usecases/manage_order_designs.dart';
 
-part 'order_detail_state.dart';
 part 'order_detail_cubit.freezed.dart';
+part 'order_detail_state.dart';
 
 /// One order: what it says, and the artwork conversation on it.
 ///

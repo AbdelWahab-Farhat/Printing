@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/repositories/product_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/repositories/product_repository.dart';
 
 /// One page of the catalogue.
 class GetProducts {

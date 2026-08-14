@@ -1,16 +1,16 @@
 // dartz exports an `Order` of its own (its ordering typeclass, which this app never
 // uses). Hidden rather than prefixed, so the model keeps the name the domain calls it.
 import 'package:dartz/dartz.dart' hide Order;
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/pagination/paged_state.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/models/orders_filter.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
+import 'package:dayaa/features/orders/repositories/order_repository.dart';
+import 'package:dayaa/features/orders/usecases/get_orders.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/pagination/paged_state.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/models/order_status.dart';
-import 'package:printing/features/orders/models/orders_filter.dart';
-import 'package:printing/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
-import 'package:printing/features/orders/repositories/order_repository.dart';
-import 'package:printing/features/orders/usecases/get_orders.dart';
 
 class _MockOrderRepository extends Mock implements OrderRepository {}
 

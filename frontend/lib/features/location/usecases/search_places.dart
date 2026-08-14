@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/features/location/models/place.dart';
-import 'package:printing/features/location/repositories/geocoding_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/features/location/models/place.dart';
+import 'package:dayaa/features/location/repositories/geocoding_repository.dart';
 
 /// Look up a place by name.
 ///

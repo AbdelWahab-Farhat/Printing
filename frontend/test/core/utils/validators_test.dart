@@ -1,5 +1,5 @@
+import 'package:dayaa/core/utils/validators.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/utils/validators.dart';
 
 /// Validators are pure functions, so they are tested directly — no widget, no pump.
 ///

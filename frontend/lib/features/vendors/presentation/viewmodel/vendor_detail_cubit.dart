@@ -1,12 +1,12 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/repositories/vendor_repository.dart';
+import 'package:dayaa/features/vendors/usecases/save_vendor.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
-import 'package:printing/features/vendors/repositories/vendor_repository.dart';
-import 'package:printing/features/vendors/usecases/save_vendor.dart';
 
-part 'vendor_detail_state.dart';
 part 'vendor_detail_cubit.freezed.dart';
+part 'vendor_detail_state.dart';
 
 /// One supplier, and the two things the screen does to it.
 ///

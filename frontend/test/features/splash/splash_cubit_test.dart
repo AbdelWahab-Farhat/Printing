@@ -1,14 +1,14 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/auth/repositories/auth_repository.dart';
+import 'package:dayaa/features/auth/usecases/get_current_user.dart';
+import 'package:dayaa/features/auth/usecases/has_stored_session.dart';
+import 'package:dayaa/features/auth/usecases/logout.dart';
+import 'package:dayaa/features/splash/presentation/viewmodel/splash_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
-import 'package:printing/features/auth/repositories/auth_repository.dart';
-import 'package:printing/features/auth/usecases/get_current_user.dart';
-import 'package:printing/features/auth/usecases/has_stored_session.dart';
-import 'package:printing/features/auth/usecases/logout.dart';
-import 'package:printing/features/splash/presentation/viewmodel/splash_cubit.dart';
 
 /// Where the app opens, and — the reason this file exists — where it refuses to open.
 ///

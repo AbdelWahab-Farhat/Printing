@@ -1,5 +1,5 @@
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/utils/digits.dart';
 
 /// Three functions with three jobs, and the whole point of testing them together is that the
 /// boundaries between the jobs stay where they are: [GroupedDigits.grouped] and

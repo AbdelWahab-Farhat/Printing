@@ -1,9 +1,9 @@
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_timeline.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/presentation/widgets/order_timeline.dart';
 
 /// The order's own story: what happened, when, and — the part this file is about — who did it.
 ///
@@ -65,7 +65,7 @@ void main() {
 
     // Assert — one line, because the time and the person are one fact.
     expect(find.textContaining('بواسطة عبدالوهاب'), findsOneWidget);
-    expect(find.textContaining('2026-08-0'), findsOneWidget);
+    expect(find.textContaining('أغسطس 2026'), findsOneWidget);
   });
 
   testWidgets('the note and the name are on the same entry', (tester) async {
@@ -98,7 +98,7 @@ void main() {
 
     // Assert — the stamp is still there; no name is invented for it.
     expect(find.textContaining('بواسطة'), findsNothing);
-    expect(find.textContaining('2026-08-0'), findsOneWidget);
+    expect(find.textContaining('أغسطس 2026'), findsOneWidget);
   });
 
   testWidgets('the opening row reads as an event, not as a move out of nothing', (tester) async {

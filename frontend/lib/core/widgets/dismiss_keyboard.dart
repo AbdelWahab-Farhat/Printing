@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Puts the keyboard away when the user taps anywhere that is not a field.
 ///
-/// Wrapped once around the whole app in [PrintingApp], so it is a property of the app rather
+/// Wrapped once around the whole app in [DayaaApp], so it is a property of the app rather
 /// than something every screen has to remember. A form that only closes its keyboard on some
 /// screens is worse than one that never does: the user stops trusting the gesture and starts
 /// reaching for the system back button, which on Android also pops the route.

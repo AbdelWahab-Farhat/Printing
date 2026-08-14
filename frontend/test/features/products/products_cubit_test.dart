@@ -1,13 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/products_cubit.dart';
+import 'package:dayaa/features/products/repositories/product_repository.dart';
+import 'package:dayaa/features/products/usecases/get_products.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
-import 'package:printing/features/products/repositories/product_repository.dart';
-import 'package:printing/features/products/usecases/get_products.dart';
 
 /// The repository contract is faked, so nothing here touches Dio or the network.
 ///

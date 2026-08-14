@@ -47,16 +47,39 @@ class PurchaseOrderController extends Controller
     /**
      * List purchase orders
      *
-     * Newest first. Filter with `vendor_id`, `warehouse_id` and `status`.
+     * Newest first. Filter with `vendor_id`, `warehouse_id` and `status`, and narrow with
+     * `search` — the vendor's name, the warehouse's name, or the order's own id.
      */
     public function index(Request $request): JsonResponse
     {
-        $filters = PurchaseOrderFilters::fromArray($request->only(['vendor_id', 'warehouse_id', 'status']));
+        $filters = PurchaseOrderFilters::fromArray($request->only(['vendor_id', 'warehouse_id', 'status', 'search']));
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
         return $this->successWithPagination(
             PurchaseOrderResource::collection($this->purchaseOrders->paginate($filters, $perPage)),
         );
+    }
+
+    /**
+     * Purchase orders by status
+     *
+     * How many orders stand in each status, under the same `vendor_id`, `warehouse_id` and
+     * `search` filters the list takes. What a supplier's screen draws «الجارية ٣ · المكتملة ٩» from —
+     * one call rather than one per group, with the grouping done by whoever asked.
+     *
+     * Every status is present, zeros included: a missing key would leave the caller choosing
+     * between a blank and a zero, and the two mean different things.
+     *
+     * `status` is accepted and ignored, so a screen may hand its whole filter over without
+     * having to strip it: counts narrowed to the status already chosen would every one of them
+     * equal the list's own length.
+     */
+    public function statusCounts(Request $request): JsonResponse
+    {
+        $filters = PurchaseOrderFilters::fromArray($request->only(['vendor_id', 'warehouse_id', 'search']));
+        $counts = $this->purchaseOrders->statusCounts($filters);
+
+        return $this->success(['counts' => $counts, 'total' => array_sum($counts)]);
     }
 
     /**

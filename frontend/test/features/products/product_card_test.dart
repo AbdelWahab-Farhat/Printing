@@ -1,11 +1,11 @@
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/presentation/widgets/product_card.dart';
+import 'package:dayaa/features/products/presentation/widgets/product_category_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/models/product_category.dart';
-import 'package:printing/features/products/presentation/widgets/product_card.dart';
-import 'package:printing/features/products/presentation/widgets/product_category_badge.dart';
 
 /// What one product row tells somebody quoting a customer over the phone.
 ///

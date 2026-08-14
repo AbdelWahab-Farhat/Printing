@@ -1,10 +1,10 @@
+import 'package:dayaa/features/settings/usecases/get_settings.dart';
+import 'package:dayaa/features/settings/usecases/set_notifications_enabled.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/features/settings/usecases/get_settings.dart';
-import 'package:printing/features/settings/usecases/set_notifications_enabled.dart';
 
-part 'settings_state.dart';
 part 'settings_cubit.freezed.dart';
+part 'settings_state.dart';
 
 /// The settings screen's ViewModel.
 ///

@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/pagination/paged_cubit.dart';
-import 'package:printing/core/pagination/paged_state.dart';
-import 'package:printing/features/shipping_companies/models/shipping_company.dart';
-import 'package:printing/features/shipping_companies/usecases/get_shipping_companies.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/pagination/paged_cubit.dart';
+import 'package:dayaa/core/pagination/paged_state.dart';
+import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/features/shipping_companies/usecases/get_shipping_companies.dart';
 
 /// The carriers list.
 ///

@@ -6,16 +6,28 @@
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
+		<!--
+		الاسم تحت الأيقونة على الشاشة الرئيسية، وفي مبدّل التطبيقات، وفي الإعدادات.
+
+		بالعربية ومكتوب هنا مباشرةً لا في `InfoPlist.strings`: التطبيق بلغة واحدة، وملف ترجمة
+		للغة وحيدة ملفٌّ يُنسى تحديثه ولا يفيد أحداً. `CFBundleDevelopmentRegion` لا يغيّر هذا —
+		القيمة واحدة لكل الأجهزة مهما كانت لغة النظام، وهو المقصود.
+	-->
 		<key>CFBundleDisplayName</key>
-		<string>Printing</string>
+		<string>دعاية</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
+		<!--
+		الاسم القصير الذي يستعمله النظام حيث لا يتّسع `CFBundleDisplayName` — وبعض أدوات
+		التوقيع والتقارير تقرأه. لاتيني هنا عن قصد: هذه خانة تقنية تظهر في سجلات ومسارات
+		ملفات، لا على شاشة المستخدم. حدّها خمسة عشر حرفاً.
+	-->
 		<key>CFBundleName</key>
-		<string>printing</string>
+		<string>Dayaa</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>

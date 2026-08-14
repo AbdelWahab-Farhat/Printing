@@ -1,10 +1,10 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/auth/usecases/logout.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/auth/usecases/logout.dart';
 
-part 'logout_state.dart';
 part 'logout_cubit.freezed.dart';
+part 'logout_state.dart';
 
 /// Signing out, from wherever the button lives.
 ///

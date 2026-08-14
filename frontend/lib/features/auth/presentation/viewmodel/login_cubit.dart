@@ -1,11 +1,11 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/auth/usecases/login.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
-import 'package:printing/features/auth/usecases/login.dart';
 
-part 'login_state.dart';
 part 'login_cubit.freezed.dart';
+part 'login_state.dart';
 
 /// The ViewModel for the login screen.
 ///

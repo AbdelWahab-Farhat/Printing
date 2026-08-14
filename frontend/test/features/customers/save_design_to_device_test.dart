@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
+import 'package:dayaa/features/customers/usecases/save_design_to_device.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
-import 'package:printing/features/customers/repositories/customer_design_repository.dart';
-import 'package:printing/features/customers/usecases/save_design_to_device.dart';
 
 /// «تحميل» — what the file is called when it lands on the phone, and what happens when it
 /// cannot be fetched at all.

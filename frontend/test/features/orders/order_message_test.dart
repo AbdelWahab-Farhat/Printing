@@ -1,9 +1,9 @@
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_message.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/models/order_message.dart';
-import 'package:printing/features/orders/models/order_payment.dart';
-import 'package:printing/features/orders/models/order_status.dart';
 
 /// The order, written out as the message a customer actually receives.
 ///
@@ -252,7 +252,8 @@ void main() {
     final message = OrderMessage.of(order);
 
     // Assert — «منذ ٣ أيام» would be a different sentence tomorrow.
-    expect(message, contains('التاريخ: 2026-08-12'));
+    // The same words the app draws everywhere else — see `AppDates`.
+    expect(message, contains('التاريخ: 12 أغسطس 2026'));
     expect(message, contains('الحالة: جديدة'));
   });
 

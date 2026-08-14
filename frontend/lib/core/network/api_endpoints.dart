@@ -115,6 +115,10 @@ abstract final class VendorEndpoints {
   static String show(int vendorId) => '/vendors/$vendorId';
 
   static String activation(int vendorId) => '/vendors/$vendorId/activation';
+
+  /// What staff have written to each other about this supplier. Nested and scoped exactly as the
+  /// customer's notes are — another supplier's comment id is a 404 by construction.
+  static String comments(int vendorId) => '/vendors/$vendorId/comments';
 }
 
 /// شحنات التوريد — a document from a vendor: one warehouse, one or more lines.
@@ -132,6 +136,12 @@ abstract final class StockArrivalEndpoints {
 /// The paperwork raised against a supplier.
 abstract final class PurchaseOrderEndpoints {
   static const String index = '/purchase-orders';
+
+  /// How many orders stand in each status — what a supplier's screen draws its numbers from.
+  ///
+  /// Declared on the server *before* `/purchase-orders/{id}`, or the word «summary» would be
+  /// read as an id. Nothing here depends on that; it is why the path is safe to call.
+  static const String summary = '/purchase-orders/summary';
 
   static String show(int purchaseOrderId) => '/purchase-orders/$purchaseOrderId';
 
@@ -168,6 +178,13 @@ abstract final class ProductCategoryEndpoints {
   static String show(int categoryId) => '/product-categories/$categoryId';
 
   static String activation(int categoryId) => '/product-categories/$categoryId/activation';
+
+  /// The whole order in one call — a drag moves one card and renumbers everything after it.
+  static const String order = '/product-categories/order';
+
+  /// The picture the catalogue prints above a heading. `POST` to set or replace it, `DELETE` to
+  /// take it off — the same address either way.
+  static String image(int categoryId) => '/product-categories/$categoryId/image';
 }
 
 abstract final class ProductEndpoints {

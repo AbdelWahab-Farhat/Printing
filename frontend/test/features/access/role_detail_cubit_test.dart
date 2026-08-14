@@ -1,12 +1,12 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/access/models/role.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/role_detail_cubit.dart';
+import 'package:dayaa/features/access/repositories/access_repository.dart';
+import 'package:dayaa/features/access/usecases/get_permissions.dart';
+import 'package:dayaa/features/access/usecases/get_role.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/access/models/role.dart';
-import 'package:printing/features/access/presentation/viewmodel/role_detail_cubit.dart';
-import 'package:printing/features/access/repositories/access_repository.dart';
-import 'package:printing/features/access/usecases/get_permissions.dart';
-import 'package:printing/features/access/usecases/get_role.dart';
 
 /// The role screen: the role, the catalogue, and the grouping that turns one into the other.
 ///

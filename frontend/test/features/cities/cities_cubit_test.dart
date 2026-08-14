@@ -1,13 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/cities/models/city.dart';
+import 'package:dayaa/features/cities/presentation/viewmodel/cities_cubit.dart';
+import 'package:dayaa/features/cities/repositories/city_repository.dart';
+import 'package:dayaa/features/cities/usecases/get_cities.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/cities/models/city.dart';
-import 'package:printing/features/cities/presentation/viewmodel/cities_cubit.dart';
-import 'package:printing/features/cities/repositories/city_repository.dart';
-import 'package:printing/features/cities/usecases/get_cities.dart';
 
 /// How a ViewModel is tested here: the repository is faked, nothing touches Dio, and the
 /// assertions are on the sequence of states the screen would have rendered.

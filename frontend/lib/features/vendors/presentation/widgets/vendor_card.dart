@@ -1,7 +1,7 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/features/cities/presentation/widgets/place_card.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:flutter/material.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/features/cities/presentation/widgets/place_card.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
 
 /// One supplier, drawn like every other reference row in the app.
 ///

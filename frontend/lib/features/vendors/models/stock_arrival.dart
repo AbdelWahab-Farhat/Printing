@@ -1,6 +1,6 @@
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 
 part 'stock_arrival.freezed.dart';
 part 'stock_arrival.g.dart';
@@ -48,7 +48,8 @@ abstract class StockArrival with _$StockArrival {
 
   const StockArrival._();
 
-  factory StockArrival.fromJson(Map<String, dynamic> json) => _$StockArrivalFromJson(json);
+  factory StockArrival.fromJson(Map<String, dynamic> json) =>
+      _$StockArrivalFromJson(json);
 
   /// «فاتورة INV-1001», or the document's own number when the supplier sent none.
   String get title => invoiceNumber == null || invoiceNumber!.isEmpty
@@ -93,13 +94,15 @@ abstract class StockArrivalItem with _$StockArrivalItem {
 
   const StockArrivalItem._();
 
-  factory StockArrivalItem.fromJson(Map<String, dynamic> json) => _$StockArrivalItemFromJson(json);
+  factory StockArrivalItem.fromJson(Map<String, dynamic> json) =>
+      _$StockArrivalItemFromJson(json);
 
   /// `'200.000'` reads as a quantity to a database and as noise to a storekeeper: `'200'`.
   String get quantityLabel => groupedDecimal(quantity);
 
-  String get title =>
-      variant == null ? 'مقاس #$productVariantId' : '${variant!.productName} · ${variant!.label}';
+  String get title => variant == null
+      ? 'مقاس #$productVariantId'
+      : '${variant!.productName} · ${variant!.label}';
 }
 
 /// An id and the name it had — the shape the server flattens the vendor, the warehouse and the
@@ -110,7 +113,9 @@ abstract class StockArrivalItem with _$StockArrivalItem {
 /// be three files to change the day the server adds a third field to any of them.
 @freezed
 abstract class ArrivalRef with _$ArrivalRef {
-  const factory ArrivalRef({required int id, required String name}) = _ArrivalRef;
+  const factory ArrivalRef({required int id, required String name}) =
+      _ArrivalRef;
 
-  factory ArrivalRef.fromJson(Map<String, dynamic> json) => _$ArrivalRefFromJson(json);
+  factory ArrivalRef.fromJson(Map<String, dynamic> json) =>
+      _$ArrivalRefFromJson(json);
 }

@@ -1,19 +1,19 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/features/auth/presentation/viewmodel/logout_cubit.dart';
+import 'package:dayaa/features/auth/repositories/auth_repository.dart';
+import 'package:dayaa/features/auth/usecases/logout.dart';
+import 'package:dayaa/features/settings/presentation/viewmodel/settings_cubit.dart';
+import 'package:dayaa/features/settings/presentation/views/settings_page.dart';
+import 'package:dayaa/features/settings/repositories/settings_repository.dart';
+import 'package:dayaa/features/settings/usecases/get_settings.dart';
+import 'package:dayaa/features/settings/usecases/set_notifications_enabled.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/features/auth/presentation/viewmodel/logout_cubit.dart';
-import 'package:printing/features/auth/repositories/auth_repository.dart';
-import 'package:printing/features/auth/usecases/logout.dart';
-import 'package:printing/features/settings/presentation/viewmodel/settings_cubit.dart';
-import 'package:printing/features/settings/presentation/views/settings_page.dart';
-import 'package:printing/features/settings/repositories/settings_repository.dart';
-import 'package:printing/features/settings/usecases/get_settings.dart';
-import 'package:printing/features/settings/usecases/set_notifications_enabled.dart';
 
 /// **A row that responds to a tap has to look like it did.**
 ///

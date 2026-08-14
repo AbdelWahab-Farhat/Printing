@@ -1,10 +1,10 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/filter_option_chip.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/filter_option_chip.dart';
-import 'package:printing/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
 
 /// Both axes of the rates filter, answered together.
 typedef RateFilterChoice = ({ManufacturingCostType? costType, bool? isActive});

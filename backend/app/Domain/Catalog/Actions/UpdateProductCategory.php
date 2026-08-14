@@ -20,11 +20,12 @@ final class UpdateProductCategory
     {
         $category->update([
             'name' => $data->name,
+            'parent_id' => $data->parentId,
             'description' => $data->description,
             'is_active' => $data->isActive,
             'sort_order' => $data->sortOrder,
         ]);
 
-        return $category->loadCount('products');
+        return $category->loadCount(['products', 'children']);
     }
 }

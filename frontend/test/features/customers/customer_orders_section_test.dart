@@ -1,12 +1,12 @@
+import 'package:dayaa/features/customers/presentation/viewmodel/customer_order_counts_cubit.dart';
+import 'package:dayaa/features/customers/presentation/widgets/customer_orders_section.dart';
+import 'package:dayaa/features/orders/models/order_counts.dart';
+import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customer_order_counts_cubit.dart';
-import 'package:printing/features/customers/presentation/widgets/customer_orders_section.dart';
-import 'package:printing/features/orders/models/order_counts.dart';
-import 'package:printing/features/orders/models/order_status.dart';
-import 'package:printing/features/orders/models/orders_filter.dart';
 
 /// «إدارة الطلبات» on the customer screen — three ways into one person's orders.
 ///
@@ -48,7 +48,7 @@ void main() {
     ),
   );
 
-  testWidgets('it offers the three ways in', (tester) async {
+  testWidgets('it offers the four ways in', (tester) async {
     // Arrange & Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
@@ -57,6 +57,7 @@ void main() {
     expect(find.text('كل طلبات العميل'), findsOneWidget);
     expect(find.text('الطلبات الجارية'), findsOneWidget);
     expect(find.text('الطلبات المستلمة'), findsOneWidget);
+    expect(find.text('الطلبات الملغاة'), findsOneWidget);
   });
 
   testWidgets('each row carries its own number', (tester) async {
@@ -64,10 +65,13 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — 22 in total, 5 still moving (2 new + 3 out for delivery), 13 arrived.
+    // Assert — 22 in total, 5 still moving (2 new + 3 out for delivery), 13 arrived, 4 written
+    // off. The three groups add up to the total, which is what makes the four rows a partition
+    // rather than four overlapping questions.
     expect(find.text('22'), findsOneWidget);
     expect(find.text('5'), findsOneWidget);
     expect(find.text('13'), findsOneWidget);
+    expect(find.text('4'), findsOneWidget);
   });
 
   testWidgets('«كل طلبات العميل» asks for this customer and no status', (tester) async {
@@ -111,6 +115,20 @@ void main() {
     // Assert
     expect(opened.single.customerId, 7);
     expect(opened.single.statuses, ['delivered', 'settled']);
+  });
+
+  testWidgets('«الطلبات الملغاة» asks for the cancellations alone', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('الطلبات الملغاة'));
+    await tester.pumpAndSettle();
+
+    // Assert — its own box, not something to be dug out of «الكل» by filtering.
+    expect(opened.single.customerId, 7);
+    expect(opened.single.statuses, ['cancelled']);
   });
 
   testWidgets('the screen each row opens says whose orders it is showing', (tester) async {

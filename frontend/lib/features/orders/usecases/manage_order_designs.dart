@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart' hide Order;
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/repositories/order_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/repositories/order_repository.dart';
 
 /// Proposing the next version of the artwork.
 ///

@@ -1,6 +1,6 @@
-# Printing — Frontend (Flutter)
+# دعاية (Dayaa) — Frontend (Flutter)
 
-تطبيق Printing. **البنية: MVVM-Clean** — الطبقات من Clean Architecture، والـ ViewModel هو الـ Cubit.
+تطبيق **دعاية** (`ly.dayaa.app`). **البنية: MVVM-Clean** — الطبقات من Clean Architecture، والـ ViewModel هو الـ Cubit.
 
 > 📐 **[RULES.md](RULES.md) هو المعيار الملزم.** اقرأه قبل كتابة أي كود.
 

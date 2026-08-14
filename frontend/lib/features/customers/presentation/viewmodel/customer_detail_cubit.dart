@@ -1,12 +1,12 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/usecases/get_customer.dart';
+import 'package:dayaa/features/customers/usecases/set_customer_activation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/usecases/get_customer.dart';
-import 'package:printing/features/customers/usecases/set_customer_activation.dart';
 
-part 'customer_detail_state.dart';
 part 'customer_detail_cubit.freezed.dart';
+part 'customer_detail_state.dart';
 
 /// One customer, and the two things this screen can do to them.
 ///

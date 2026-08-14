@@ -12,6 +12,7 @@ use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -379,5 +380,365 @@ class ProductCategoryTest extends TestCase
         // Assert — the project rule: every model soft-deletes and every model has a `/logs`.
         $response->assertOk();
         $this->assertNotEmpty($response->json('data'));
+    }
+
+    // ─────────────────────────── the tree ───────────────────────────
+
+    public function test_a_heading_can_be_filed_under_another(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+        $bags = ProductCategory::factory()->create(['name' => 'أكياس']);
+
+        // Act
+        $response = $this->postJson('/api/v1/product-categories', [
+            'name' => 'أكياس ورقية',
+            'parent_id' => $bags->id,
+        ], $headers);
+
+        // Assert
+        $response->assertCreated()->assertJsonPath('data.parent_id', $bags->id);
+    }
+
+    public function test_the_tree_stops_at_one_level(): void
+    {
+        // Arrange — nothing in the catalogue is three deep, and a tree of arbitrary depth costs
+        // every screen a recursive render for a shape nobody asked for.
+        $headers = $this->auth();
+        $bags = ProductCategory::factory()->create(['name' => 'أكياس']);
+        $paper = ProductCategory::factory()->create([
+            'name' => 'أكياس ورقية',
+            'parent_id' => $bags->id,
+        ]);
+
+        // Act
+        $response = $this->postJson('/api/v1/product-categories', [
+            'name' => 'أكياس ورقية مقواة',
+            'parent_id' => $paper->id,
+        ], $headers);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('parent_id');
+    }
+
+    public function test_a_heading_cannot_be_filed_under_itself(): void
+    {
+        // Arrange — `exists` would happily accept its own id; only the row knows better.
+        $headers = $this->auth();
+        $bags = ProductCategory::factory()->create(['name' => 'أكياس']);
+
+        // Act
+        $response = $this->putJson("/api/v1/product-categories/{$bags->id}", [
+            'name' => 'أكياس',
+            'parent_id' => $bags->id,
+        ], $headers);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('parent_id');
+    }
+
+    public function test_a_heading_holding_children_cannot_become_a_child(): void
+    {
+        // Arrange — it would make its children grandchildren of a root, quietly breaking the
+        // one-level rule the rest of the codebase relies on.
+        $headers = $this->auth();
+        $bags = ProductCategory::factory()->create(['name' => 'أكياس']);
+        ProductCategory::factory()->create(['name' => 'أكياس ورقية', 'parent_id' => $bags->id]);
+        $boxes = ProductCategory::factory()->create(['name' => 'علب']);
+
+        // Act
+        $response = $this->putJson("/api/v1/product-categories/{$bags->id}", [
+            'name' => 'أكياس',
+            'parent_id' => $boxes->id,
+        ], $headers);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('parent_id');
+    }
+
+    public function test_a_product_cannot_be_filed_under_a_heading_that_has_children(): void
+    {
+        // Arrange — a heading with subheadings is a heading, not a slot.
+        $headers = $this->auth();
+        $bags = ProductCategory::factory()->create(['name' => 'أكياس']);
+        ProductCategory::factory()->create(['name' => 'أكياس ورقية', 'parent_id' => $bags->id]);
+
+        // Act
+        $response = $this->post('/api/v1/products', [
+            'name' => 'كيس',
+            'product_category_id' => $bags->id,
+            'pricing_unit' => 'piece',
+            'pricing_mode' => 'tiered',
+            'min_order_quantity' => 100,
+            'image' => UploadedFile::fake()->image('bag.jpg'),
+        ], $headers);
+
+        // Assert — and the message names the way out rather than merely refusing.
+        $response->assertStatus(422)->assertJsonValidationErrors('product_category_id');
+        $this->assertStringContainsString(
+            'اختر أحد فروعه',
+            (string) $response->json('errors.product_category_id.0'),
+        );
+    }
+
+    public function test_a_parent_counts_what_is_under_its_children(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+        $bags = ProductCategory::factory()->create(['name' => 'أكياس']);
+        $paper = ProductCategory::factory()->create([
+            'name' => 'أكياس ورقية',
+            'parent_id' => $bags->id,
+        ]);
+        Product::factory()->count(3)->create(['product_category_id' => $paper->id]);
+
+        // Act
+        $response = $this->getJson('/api/v1/product-categories', $headers);
+
+        // Assert — «أكياس · ٣ منتجات» is what a screen shows; the row holds none of its own.
+        $parent = collect($response->json('data'))->firstWhere('name', 'أكياس');
+        $this->assertSame(0, $parent['products_count']);
+        $this->assertSame(1, $parent['children_count']);
+        $this->assertSame(3, $parent['total_products_count']);
+    }
+
+    public function test_filtering_products_by_a_parent_returns_what_is_under_its_children(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+        $bags = ProductCategory::factory()->create(['name' => 'أكياس']);
+        $paper = ProductCategory::factory()->create([
+            'name' => 'أكياس ورقية',
+            'parent_id' => $bags->id,
+        ]);
+        Product::factory()->create(['name' => 'كيس ورقي', 'product_category_id' => $paper->id]);
+        Product::factory()->create(['name' => 'كرتونة']);
+
+        // Act
+        $response = $this->getJson("/api/v1/products?product_category_id={$bags->id}", $headers);
+
+        // Assert — matching only the row itself would answer «لا منتجات» for a full heading.
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'كيس ورقي');
+    }
+
+    public function test_a_picker_asks_for_the_headings_a_product_may_be_filed_under(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+        $bags = ProductCategory::factory()->create(['name' => 'أكياس']);
+        ProductCategory::factory()->create(['name' => 'أكياس ورقية', 'parent_id' => $bags->id]);
+        ProductCategory::factory()->create(['name' => 'ستيكرات']);
+
+        // Act
+        $response = $this->getJson('/api/v1/product-categories?leaf_only=1', $headers);
+
+        // Assert — the parent is absent; its child and the childless heading are not.
+        $names = collect($response->json('data'))->pluck('name')->all();
+        $this->assertNotContains('أكياس', $names);
+        $this->assertContains('أكياس ورقية', $names);
+        $this->assertContains('ستيكرات', $names);
+    }
+
+    public function test_a_child_behind_a_stopped_parent_is_not_offered(): void
+    {
+        // Arrange — the root was stopped precisely to take that part of the catalogue out of
+        // circulation; honouring only the child's own flag would apply half the decision.
+        $headers = $this->auth();
+        $bags = ProductCategory::factory()->inactive()->create(['name' => 'أكياس']);
+        ProductCategory::factory()->create(['name' => 'أكياس ورقية', 'parent_id' => $bags->id]);
+
+        // Act
+        $response = $this->getJson('/api/v1/product-categories?is_active=1&leaf_only=1', $headers);
+
+        // Assert
+        $response->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_a_heading_holding_children_is_not_deletable(): void
+    {
+        // Arrange — deleting is soft, so a parent removed from under its children would leave
+        // them pointing at a row the API no longer returns.
+        $headers = $this->auth();
+        $bags = ProductCategory::factory()->create(['name' => 'أكياس']);
+        ProductCategory::factory()->create(['name' => 'أكياس ورقية', 'parent_id' => $bags->id]);
+
+        // Act
+        $response = $this->deleteJson("/api/v1/product-categories/{$bags->id}", [], $headers);
+
+        // Assert
+        $response->assertStatus(422);
+        $this->assertStringContainsString('التصنيفات الفرعية', (string) $response->json('message'));
+    }
+
+    // ─────────────────────────── the order ───────────────────────────
+
+    public function test_the_whole_order_is_saved_in_one_call(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+        $first = ProductCategory::factory()->create(['name' => 'أكياس', 'sort_order' => 1]);
+        $second = ProductCategory::factory()->create(['name' => 'علب', 'sort_order' => 2]);
+        $third = ProductCategory::factory()->create(['name' => 'ستيكرات', 'sort_order' => 3]);
+
+        // Act — dragged into the reverse order.
+        $response = $this->patchJson('/api/v1/product-categories/order', [
+            'ids' => [$third->id, $second->id, $first->id],
+        ], $headers);
+
+        // Assert
+        $response->assertOk();
+        $this->getJson('/api/v1/product-categories', $headers)
+            ->assertJsonPath('data.0.name', 'ستيكرات')
+            ->assertJsonPath('data.1.name', 'علب')
+            ->assertJsonPath('data.2.name', 'أكياس');
+    }
+
+    public function test_a_heading_left_out_of_the_order_keeps_its_place(): void
+    {
+        // Arrange — a screen showing one page must be able to reorder that page without
+        // claiming anything about the rest.
+        $headers = $this->auth();
+        $untouched = ProductCategory::factory()->create(['name' => 'ستيكرات', 'sort_order' => 900]);
+        $first = ProductCategory::factory()->create(['name' => 'أكياس', 'sort_order' => 1]);
+        $second = ProductCategory::factory()->create(['name' => 'علب', 'sort_order' => 2]);
+
+        // Act
+        $this->patchJson('/api/v1/product-categories/order', [
+            'ids' => [$second->id, $first->id],
+        ], $headers)->assertOk();
+
+        // Assert
+        $this->assertSame(900, $untouched->fresh()->sort_order);
+    }
+
+    public function test_the_same_heading_twice_in_an_order_is_refused(): void
+    {
+        // Arrange — the second write would decide the row's position, and a list that came back
+        // in an order nobody dragged reads as the drag having failed.
+        $headers = $this->auth();
+        $category = ProductCategory::factory()->create(['name' => 'أكياس']);
+
+        // Act
+        $response = $this->patchJson('/api/v1/product-categories/order', [
+            'ids' => [$category->id, $category->id],
+        ], $headers);
+
+        // Assert
+        $response->assertStatus(422);
+    }
+
+    public function test_reordering_needs_the_permission_that_changes_the_catalogue(): void
+    {
+        // Arrange
+        $headers = $this->readerHeaders();
+        $category = ProductCategory::factory()->create(['name' => 'أكياس']);
+
+        // Act
+        $response = $this->patchJson(
+            '/api/v1/product-categories/order',
+            ['ids' => [$category->id]],
+            $headers,
+        );
+
+        // Assert
+        $response->assertForbidden();
+    }
+
+    // ─────────────────────────── the picture ───────────────────────────
+
+    public function test_a_heading_can_be_given_a_picture(): void
+    {
+        // Arrange
+        Storage::fake('public');
+        $headers = $this->auth();
+        $category = ProductCategory::factory()->create(['name' => 'أكياس']);
+
+        // Act
+        $response = $this->post(
+            "/api/v1/product-categories/{$category->id}/image",
+            ['image' => UploadedFile::fake()->image('bags.jpg', 800, 600)],
+            $headers,
+        );
+
+        // Assert — the URL is built from the disk the file went to, never stored.
+        $response->assertOk()
+            ->assertJsonPath('data.image_width_px', 800)
+            ->assertJsonPath('data.image_height_px', 600);
+        $this->assertNotNull($response->json('data.image_url'));
+
+        Storage::disk('public')->assertExists((string) $category->fresh()->image_path);
+    }
+
+    public function test_replacing_a_picture_removes_the_one_it_replaced(): void
+    {
+        // Arrange — nothing points at a heading's picture the way an order points at a design,
+        // so keeping every replaced one would grow without bound for no reader.
+        Storage::fake('public');
+        $headers = $this->auth();
+        $category = ProductCategory::factory()->create(['name' => 'أكياس']);
+
+        $this->post(
+            "/api/v1/product-categories/{$category->id}/image",
+            ['image' => UploadedFile::fake()->image('first.jpg')],
+            $headers,
+        )->assertOk();
+        $first = (string) $category->fresh()->image_path;
+
+        // Act
+        $this->post(
+            "/api/v1/product-categories/{$category->id}/image",
+            ['image' => UploadedFile::fake()->image('second.jpg')],
+            $headers,
+        )->assertOk();
+
+        // Assert
+        $second = (string) $category->fresh()->image_path;
+        $this->assertNotSame($first, $second);
+        Storage::disk('public')->assertMissing($first);
+        Storage::disk('public')->assertExists($second);
+    }
+
+    public function test_a_file_that_is_not_an_image_is_refused(): void
+    {
+        // Arrange
+        Storage::fake('public');
+        $headers = $this->auth();
+        $category = ProductCategory::factory()->create(['name' => 'أكياس']);
+
+        // Act
+        $response = $this->post(
+            "/api/v1/product-categories/{$category->id}/image",
+            ['image' => UploadedFile::fake()->create('notes.pdf', 10, 'application/pdf')],
+            $headers,
+        );
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('image');
+    }
+
+    public function test_removing_a_picture_twice_is_not_an_error(): void
+    {
+        // Arrange — a second tap after a dropped connection must not be a failure.
+        Storage::fake('public');
+        $headers = $this->auth();
+        $category = ProductCategory::factory()->create(['name' => 'أكياس']);
+
+        $this->post(
+            "/api/v1/product-categories/{$category->id}/image",
+            ['image' => UploadedFile::fake()->image('bags.jpg')],
+            $headers,
+        )->assertOk();
+        $path = (string) $category->fresh()->image_path;
+
+        // Act
+        $this->deleteJson("/api/v1/product-categories/{$category->id}/image", [], $headers)
+            ->assertOk();
+        $response = $this->deleteJson("/api/v1/product-categories/{$category->id}/image", [], $headers);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.image_url', null);
+        Storage::disk('public')->assertMissing($path);
     }
 }

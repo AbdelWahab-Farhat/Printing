@@ -1,12 +1,13 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/api_endpoints.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order_counts.dart';
+import 'package:dayaa/features/purchase_orders/repositories/purchase_order_repository.dart';
+import 'package:dayaa/features/vendors/models/stock_arrival.dart';
 import 'package:dio/dio.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/api_endpoints.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/network/safe_request.dart';
-import 'package:printing/features/purchase_orders/models/purchase_order.dart';
-import 'package:printing/features/purchase_orders/repositories/purchase_order_repository.dart';
-import 'package:printing/features/vendors/models/stock_arrival.dart';
 
 /// Fulfils [PurchaseOrderRepository] over HTTP.
 ///
@@ -21,7 +22,8 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
   Future<Either<Failure, Paginated<PurchaseOrder>>> purchaseOrders({
     int? vendorId,
     int? warehouseId,
-    String? status,
+    List<String> statuses = const <String>[],
+    String? search,
     int page = 1,
     int perPage = 20,
   }) {
@@ -32,14 +34,38 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
           'page': page,
           'per_page': perPage,
           // Omitted rather than sent as null: the list endpoint reads its filters without
-          // validating them, and a literal "null" reaching `PurchaseOrderStatus::from()` is a
-          // 500 rather than an empty page.
+          // validating them, and a literal "null" reaching the enum is a 500 rather than an
+          // empty page.
           'vendor_id': ?vendorId,
           'warehouse_id': ?warehouseId,
-          'status': ?status,
+          // A list, sent as `status[]=new&status[]=arrived` by the client's `multiCompatible`
+          // format — which is what the server reads a group from. One status travels the same
+          // way and is read the same way.
+          if (statuses.isNotEmpty) 'status': statuses,
+          // Omitted rather than sent blank for the same reason: the server reads an empty
+          // `search` as «no term», and saying it explicitly only makes the URL longer.
+          'search': ?search,
         },
       ),
       parseItem: PurchaseOrder.fromJson,
+    );
+  }
+
+  @override
+  Future<Either<Failure, PurchaseOrderCounts>> statusCounts({
+    int? vendorId,
+    String? search,
+  }) {
+    return safeRequest<PurchaseOrderCounts>(
+      () => _dio.get(
+        PurchaseOrderEndpoints.summary,
+        queryParameters: <String, dynamic>{
+          'vendor_id': ?vendorId,
+          'search': ?search,
+        },
+      ),
+      parse: (data) =>
+          PurchaseOrderCounts.fromJson(data as Map<String, dynamic>),
     );
   }
 
@@ -158,7 +184,8 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
       'vendor_id': vendorId,
       'warehouse_id': warehouseId,
       'order_date': orderDate,
-      if (expectedDate != null && expectedDate.isNotEmpty) 'expected_date': expectedDate,
+      if (expectedDate != null && expectedDate.isNotEmpty)
+        'expected_date': expectedDate,
       if (notes != null && notes.isNotEmpty) 'notes': notes,
       'items': items.map((line) => line.toJson()).toList(growable: false),
       // Sent even when empty, unlike the optional dates above. An absent `additional_costs` on a

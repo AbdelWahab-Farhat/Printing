@@ -1,9 +1,9 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/location/models/place.dart';
+import 'package:dayaa/features/location/repositories/geocoding_repository.dart';
 import 'package:dio/dio.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/safe_request.dart';
-import 'package:printing/features/location/models/place.dart';
-import 'package:printing/features/location/repositories/geocoding_repository.dart';
 
 /// Fulfils [GeocodingRepository] against a Nominatim-compatible geocoder.
 ///

@@ -1,9 +1,9 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/models/new_customer.dart';
-import 'package:printing/features/customers/repositories/customer_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/models/new_customer.dart';
+import 'package:dayaa/features/customers/repositories/customer_repository.dart';
 
 /// One shop exactly as it was typed — the boxes of text, nothing converted yet.
 ///

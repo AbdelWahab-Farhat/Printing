@@ -37,6 +37,7 @@ abstract class Vendor with _$Vendor {
   factory Vendor.fromJson(Map<String, dynamic> json) => _$VendorFromJson(json);
 
   /// «محمد علي · 0912345678», or just the number for a vendor with nobody named.
-  String get contactLine =>
-      contactPerson == null || contactPerson!.isEmpty ? phone : '$contactPerson · $phone';
+  String get contactLine => contactPerson == null || contactPerson!.isEmpty
+      ? phone
+      : '$contactPerson · $phone';
 }

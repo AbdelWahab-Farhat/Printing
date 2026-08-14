@@ -1,15 +1,15 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/auth/repositories/auth_repository.dart';
+import 'package:dayaa/features/auth/usecases/get_current_user.dart';
+import 'package:dayaa/features/home/models/home_summary.dart';
+import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
+import 'package:dayaa/features/home/repositories/home_repository.dart';
+import 'package:dayaa/features/home/usecases/get_home_summary.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
-import 'package:printing/features/auth/repositories/auth_repository.dart';
-import 'package:printing/features/auth/usecases/get_current_user.dart';
-import 'package:printing/features/home/models/home_summary.dart';
-import 'package:printing/features/home/presentation/viewmodel/home_cubit.dart';
-import 'package:printing/features/home/repositories/home_repository.dart';
-import 'package:printing/features/home/usecases/get_home_summary.dart';
 
 /// Both contracts are faked, so nothing here touches Dio, the Keychain or a placeholder
 /// implementation that will be deleted the day the endpoint lands.

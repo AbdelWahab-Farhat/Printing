@@ -1,5 +1,5 @@
+import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
 
 /// The seam between `CustomerDesignResource` and this app.
 ///

@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
-import 'package:printing/features/vendors/repositories/vendor_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/repositories/vendor_repository.dart';
 
 /// The suppliers, for the management screen and for the purchase-order picker.
 ///

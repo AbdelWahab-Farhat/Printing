@@ -1,12 +1,12 @@
+import 'package:dayaa/core/theme/app_tones.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/appear.dart';
+import 'package:dayaa/features/home/models/home_summary.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/theme/app_tones.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/core/widgets/appear.dart';
-import 'package:printing/features/home/models/home_summary.dart';
-import 'package:printing/features/orders/models/order_payment.dart';
 
 /// Where the money stands, one card per payment state.
 ///

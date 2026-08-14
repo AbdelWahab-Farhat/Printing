@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/access/repositories/access_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/access/repositories/access_repository.dart';
 
 /// Removes a role the code does not reference and nobody currently holds.
 ///

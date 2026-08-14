@@ -1,18 +1,18 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
+import 'package:dayaa/features/orders/models/transition_field.dart';
+import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/shipping_company_picker_sheet.dart';
+import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
-import 'package:printing/features/customers/presentation/widgets/design_thumbnail.dart';
-import 'package:printing/features/orders/models/transition_field.dart';
-import 'package:printing/features/orders/presentation/widgets/design_picker_sheet.dart';
-import 'package:printing/features/orders/presentation/widgets/shipping_company_picker_sheet.dart';
-import 'package:printing/features/shipping_companies/models/shipping_company.dart';
-import 'package:printing/features/warehouses/models/warehouse.dart';
-import 'package:printing/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
 
 /// One field of a move, drawn from the description the server sent with it.
 ///

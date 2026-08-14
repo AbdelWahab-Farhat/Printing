@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/products/repositories/product_repository_impl.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/products/repositories/product_repository_impl.dart';
 
 /// Asking the catalogue what a quantity costs.
 ///

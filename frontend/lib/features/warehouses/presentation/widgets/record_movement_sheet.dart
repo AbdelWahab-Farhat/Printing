@@ -1,18 +1,18 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/warehouses/models/stock_movement.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/variant_picker_sheet.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
+import 'package:dayaa/features/warehouses/usecases/record_stock_movement.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/warehouses/models/stock_movement.dart';
-import 'package:printing/features/warehouses/models/warehouse.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
-import 'package:printing/features/warehouses/presentation/widgets/variant_picker_sheet.dart';
-import 'package:printing/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
-import 'package:printing/features/warehouses/usecases/record_stock_movement.dart';
 
 /// Writing one line into the ledger — a delivery arriving, stock moving between our own places,
 /// or a count that disagreed with the record.

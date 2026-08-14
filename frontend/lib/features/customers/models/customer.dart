@@ -1,6 +1,6 @@
+import 'package:dayaa/features/business_fields/models/business_field.dart';
+import 'package:dayaa/features/cities/models/city.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/features/business_fields/models/business_field.dart';
-import 'package:printing/features/cities/models/city.dart';
 
 part 'customer.freezed.dart';
 part 'customer.g.dart';

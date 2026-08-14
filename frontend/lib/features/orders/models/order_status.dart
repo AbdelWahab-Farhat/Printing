@@ -109,6 +109,20 @@ enum OrderStatus {
       .where((status) => status.isFinished && status != OrderStatus.cancelled)
       .toList(growable: false);
 
+  /// What was written off — «الطلبات الملغاة».
+  ///
+  /// **Its own box, beside the other two rather than folded into either.** It is not in
+  /// progress — nobody will work on it — and not received — it reached nobody. Left without an
+  /// entry it was reachable only by opening «كل الطلبات» and filtering, which is a search for
+  /// something people ask about directly: «كم طلبية ألغينا لهذا العميل؟».
+  ///
+  /// Written as a filter over the cancellations rather than as `[cancelled]`, so a second kind
+  /// of cancellation added later lands here instead of quietly falling out of all three groups.
+  /// See VENDOR-PURCHASE-ORDERS-SECTION.md §١.
+  static List<OrderStatus> get cancellations => filterable
+      .where((status) => status == OrderStatus.cancelled)
+      .toList(growable: false);
+
   /// Which family of colours the chip draws from.
   ///
   /// Grouped rather than one colour per status: twelve distinct colours is not a legend anyone

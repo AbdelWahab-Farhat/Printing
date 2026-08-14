@@ -1,10 +1,10 @@
+import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_status_bar.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/orders/models/order_status.dart';
-import 'package:printing/features/orders/presentation/widgets/order_status_bar.dart';
-import 'package:printing/features/orders/presentation/widgets/order_status_chip.dart';
 
 /// Where the order is, said once and said loudly.
 ///

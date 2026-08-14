@@ -1,12 +1,12 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/auth/usecases/get_current_user.dart';
+import 'package:dayaa/features/auth/usecases/has_stored_session.dart';
+import 'package:dayaa/features/auth/usecases/logout.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/auth/usecases/get_current_user.dart';
-import 'package:printing/features/auth/usecases/has_stored_session.dart';
-import 'package:printing/features/auth/usecases/logout.dart';
 
-part 'splash_state.dart';
 part 'splash_cubit.freezed.dart';
+part 'splash_state.dart';
 
 /// Decides where the app opens, and — the part that matters — refuses to guess.
 ///

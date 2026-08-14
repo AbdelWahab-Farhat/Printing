@@ -1,10 +1,10 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/features/business_fields/models/business_field.dart';
+import 'package:dayaa/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/features/business_fields/models/business_field.dart';
-import 'package:printing/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
 
 /// «مجال العمل» on a shop row — pick a trade, or leave it unanswered.
 ///

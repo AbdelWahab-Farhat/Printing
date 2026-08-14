@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
 
 /// What the app can ask and tell about the carriers, stated without saying how.
 abstract interface class ShippingCompanyRepository {

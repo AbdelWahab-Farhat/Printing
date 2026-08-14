@@ -1,22 +1,22 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
+import 'package:dayaa/core/widgets/app_speed_dial.dart';
+import 'package:dayaa/core/widgets/copy_text.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/employee_detail_cubit.dart';
+import 'package:dayaa/features/access/presentation/widgets/assign_roles_sheet.dart';
+import 'package:dayaa/features/access/presentation/widgets/set_password_sheet.dart';
+import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/core/widgets/app_dialog.dart';
-import 'package:printing/core/widgets/app_speed_dial.dart';
-import 'package:printing/core/widgets/copy_text.dart';
-import 'package:printing/features/access/presentation/viewmodel/employee_detail_cubit.dart';
-import 'package:printing/features/access/presentation/widgets/assign_roles_sheet.dart';
-import 'package:printing/features/access/presentation/widgets/set_password_sheet.dart';
-import 'package:printing/features/audit/models/audit_subject.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
 
 /// Everything about one member of staff, and the things done to their account.
 ///

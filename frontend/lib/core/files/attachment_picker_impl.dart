@@ -1,10 +1,10 @@
+import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:file_picker/file_picker.dart';
 // `image_picker` still exports a deprecated class of its own called `PickedFile`. Hidden rather
 // than prefixed: ours is the one every other file in the app means, and an import prefix here
 // would be the only place in the codebase where it needed one.
 import 'package:image_picker/image_picker.dart' hide PickedFile;
-import 'package:printing/core/files/attachment_picker.dart';
-import 'package:printing/core/files/picked_file.dart';
 
 /// Fulfils [AttachmentPicker] with the two packages that actually open the pickers.
 ///

@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:dayaa/features/customers/models/customers_filter.dart';
+import 'package:dayaa/features/customers/models/new_customer.dart';
+import 'package:dayaa/features/customers/repositories/customer_repository_impl.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/customers/models/customers_filter.dart';
-import 'package:printing/features/customers/models/new_customer.dart';
-import 'package:printing/features/customers/repositories/customer_repository_impl.dart';
 
 /// What actually goes down the wire when a customer is created.
 ///

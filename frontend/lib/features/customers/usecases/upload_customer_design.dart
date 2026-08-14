@@ -1,9 +1,9 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/files/picked_file.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
-import 'package:printing/features/customers/models/design_rules.dart';
-import 'package:printing/features/customers/repositories/customer_design_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/models/design_rules.dart';
+import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
 
 /// Puts one file into a customer's library.
 ///

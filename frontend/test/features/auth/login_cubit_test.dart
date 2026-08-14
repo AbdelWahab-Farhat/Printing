@@ -1,12 +1,12 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/auth/presentation/viewmodel/login_cubit.dart';
+import 'package:dayaa/features/auth/repositories/auth_repository.dart';
+import 'package:dayaa/features/auth/usecases/login.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
-import 'package:printing/features/auth/presentation/viewmodel/login_cubit.dart';
-import 'package:printing/features/auth/repositories/auth_repository.dart';
-import 'package:printing/features/auth/usecases/login.dart';
 
 /// The repository is faked, nothing touches Dio or the Keychain, and the assertions are on the
 /// sequence of states the screen would have rendered.

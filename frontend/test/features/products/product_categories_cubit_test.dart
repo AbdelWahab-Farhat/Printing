@@ -1,14 +1,15 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/product_categories_cubit.dart';
+import 'package:dayaa/features/products/repositories/product_category_repository.dart';
+import 'package:dayaa/features/products/usecases/delete_product_category.dart';
+import 'package:dayaa/features/products/usecases/get_product_categories.dart';
+import 'package:dayaa/features/products/usecases/reorder_product_categories.dart';
+import 'package:dayaa/features/products/usecases/set_product_category_activation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/products/models/product_category.dart';
-import 'package:printing/features/products/presentation/viewmodel/product_categories_cubit.dart';
-import 'package:printing/features/products/repositories/product_category_repository.dart';
-import 'package:printing/features/products/usecases/delete_product_category.dart';
-import 'package:printing/features/products/usecases/get_product_categories.dart';
-import 'package:printing/features/products/usecases/set_product_category_activation.dart';
 
 /// التصنيفات — the headings the catalogue is organised under, and the two things the list can
 /// do to a row.
@@ -37,6 +38,7 @@ void main() {
       () => repository.categories(
         search: any(named: 'search'),
         isActive: any(named: 'isActive'),
+        leafOnly: any(named: 'leafOnly'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
       ),
@@ -49,6 +51,7 @@ void main() {
       getCategories: GetProductCategories(repository),
       setActivation: SetProductCategoryActivation(repository),
       deleteCategory: DeleteProductCategory(repository),
+      reorderCategories: ReorderProductCategories(repository),
     );
   });
 
@@ -69,6 +72,7 @@ void main() {
       () => repository.categories(
         search: any(named: 'search'),
         isActive: null,
+        leafOnly: any(named: 'leafOnly'),
         page: 1,
         perPage: any(named: 'perPage'),
       ),
@@ -89,6 +93,7 @@ void main() {
       () => repository.categories(
         search: any(named: 'search'),
         isActive: true,
+        leafOnly: any(named: 'leafOnly'),
         page: 1,
         perPage: any(named: 'perPage'),
       ),
@@ -195,9 +200,106 @@ void main() {
       () => repository.categories(
         search: 'أكي',
         isActive: true,
+        leafOnly: any(named: 'leafOnly'),
         page: 1,
         perPage: any(named: 'perPage'),
       ),
     ).called(1);
+  });
+
+  // ───────────────────────────── the order ─────────────────────────────
+
+  test('a drag sends the whole order, then re-reads the list', () async {
+    // Arrange — a drag renumbers everything after the card it moved, so the moved row alone
+    // would leave the server guessing what the rest now means.
+    arrangeList([bags, boxes]);
+    await cubit.load();
+
+    when(() => repository.reorder(any()))
+        .thenAnswer((_) async => const Right('تم حفظ ترتيب التصنيفات'));
+
+    // Act
+    final failure = await cubit.reorder([boxes.id, bags.id]);
+
+    // Assert
+    expect(failure, isNull);
+    verify(() => repository.reorder([2, 1])).called(1);
+    verify(
+      () => repository.categories(
+        search: any(named: 'search'),
+        isActive: any(named: 'isActive'),
+        leafOnly: any(named: 'leafOnly'),
+        page: 1,
+        perPage: any(named: 'perPage'),
+      ),
+    ).called(2);
+  });
+
+  test('a refused order is handed back and costs no refresh', () async {
+    // Arrange
+    arrangeList([bags, boxes]);
+    await cubit.load();
+
+    when(() => repository.reorder(any()))
+        .thenAnswer((_) async => const Left(Failure.server(message: 'تعذّر حفظ الترتيب')));
+
+    // Act
+    final failure = await cubit.reorder([boxes.id, bags.id]);
+
+    // Assert — the screen puts its own list back; nothing here pretends the order changed.
+    expect(failure, isNotNull);
+    verify(
+      () => repository.categories(
+        search: any(named: 'search'),
+        isActive: any(named: 'isActive'),
+        leafOnly: any(named: 'leafOnly'),
+        page: 1,
+        perPage: any(named: 'perPage'),
+      ),
+    ).called(1);
+  });
+
+  // ───────────────────────────── the tree, as the app sees it ─────────────────────────────
+
+  test('the product form asks only for the headings it may file under', () async {
+    // Arrange — a heading holding subheadings is a heading, not a slot, and offering one would
+    // be offering a choice the server refuses with «اختر أحد فروعه».
+    arrangeList([bags]);
+    cubit
+      ..isActive = true
+      ..leafOnly = true;
+
+    // Act
+    await cubit.load();
+
+    // Assert
+    verify(
+      () => repository.categories(
+        search: any(named: 'search'),
+        isActive: true,
+        leafOnly: true,
+        page: 1,
+        perPage: any(named: 'perPage'),
+      ),
+    ).called(1);
+  });
+
+  test('a heading holding subheadings reads as one, and counts the whole subtree', () {
+    // Arrange — «أكياس» holds none of its own; three sit under its children.
+    const parent = ProductCategory(
+      id: 1,
+      name: 'أكياس',
+      productsCount: 0,
+      childrenCount: 2,
+      totalProductsCount: 3,
+    );
+
+    // Act - Assert
+    expect(parent.hasChildren, isTrue);
+    // The picker leaves it out; the card says «٣ منتجات» because that is what a customer finds.
+    expect(parent.isFileable, isFalse);
+    expect(parent.shownProductsCount, 3);
+    // And the delete button will refuse: the subtree is not empty.
+    expect(parent.isInUse, isTrue);
   });
 }

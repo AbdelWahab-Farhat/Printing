@@ -1,5 +1,5 @@
+import 'package:dayaa/features/products/models/product.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/products/models/product.dart';
 
 /// What the detail screen reads off the model, and nothing a widget is allowed to work out for
 /// itself: the measured size of a variant, the order of a price ladder, and what a photograph

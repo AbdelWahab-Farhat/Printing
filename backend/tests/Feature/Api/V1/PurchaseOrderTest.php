@@ -223,6 +223,99 @@ class PurchaseOrderTest extends TestCase
         $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.warehouse_id', $warehouse->id);
     }
 
+    public function test_the_list_can_be_searched_by_vendor_name(): void
+    {
+        // Arrange — the name is the biggest thing on a purchase-order card, so it is the thing
+        // somebody types when they are looking for one.
+        $vendor = Vendor::factory()->create(['name' => 'شركة محمد بن عبد العزيز للأوراق']);
+        PurchaseOrder::factory()->from($vendor)->create();
+        PurchaseOrder::factory()->from(Vendor::factory()->create(['name' => 'مطابع طرابلس']))->create();
+        $headers = $this->viewer();
+
+        // Act — a fragment from the middle, which is how people actually search.
+        $response = $this->withHeaders($headers)->getJson('/api/v1/purchase-orders?search='.urlencode('عبد العزيز'));
+
+        // Assert
+        $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.vendor_id', $vendor->id);
+    }
+
+    public function test_the_list_can_be_searched_by_warehouse_name(): void
+    {
+        // Arrange — the other name on the card.
+        $warehouse = Warehouse::factory()->create(['name' => 'مخزن ولي العهد']);
+        PurchaseOrder::factory()->into($warehouse)->create();
+        PurchaseOrder::factory()->into(Warehouse::factory()->create(['name' => 'المخزن الرئيسي']))->create();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/purchase-orders?search='.urlencode('ولي العهد'));
+
+        // Assert
+        $response->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.warehouse_id', $warehouse->id);
+    }
+
+    public function test_a_number_is_searched_as_the_orders_own_id(): void
+    {
+        // Arrange — the detail screen calls it «أمر شراء #12», so «12» has to find it.
+        $order = PurchaseOrder::factory()->create();
+        PurchaseOrder::factory()->count(2)->create();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/purchase-orders?search={$order->id}");
+
+        // Assert
+        $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $order->id);
+    }
+
+    public function test_the_search_narrows_the_status_filter_rather_than_replacing_it(): void
+    {
+        // Arrange — the filter sheet and the search box are two questions about one list, and a
+        // screen showing a cancelled order under «جديد» would be answering only the last one asked.
+        $vendor = Vendor::factory()->create(['name' => 'مطابع الجنوب']);
+        PurchaseOrder::factory()->from($vendor)->create();
+        PurchaseOrder::factory()->from($vendor)->cancelled()->create();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson('/api/v1/purchase-orders?status=cancelled&search='.urlencode('الجنوب'));
+
+        // Assert
+        $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.status', 'cancelled');
+    }
+
+    public function test_a_blank_search_is_not_a_filter(): void
+    {
+        // Arrange — clearing the box sends `search=`, which means «show me everything» and must
+        // not be read as «find the orders whose vendor is called nothing».
+        PurchaseOrder::factory()->count(2)->create();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/purchase-orders?search=');
+
+        // Assert
+        $response->assertOk()->assertJsonCount(2, 'data');
+    }
+
+    public function test_the_summary_counts_only_what_the_search_left_on_screen(): void
+    {
+        // Arrange — the counts sit on the same filters the list uses, so a sheet reading «جديد ٩»
+        // over a searched list of one would be a number that disagrees with the screen it opens.
+        $vendor = Vendor::factory()->create(['name' => 'مطابع الزاوية']);
+        PurchaseOrder::factory()->from($vendor)->create();
+        PurchaseOrder::factory()->create();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/purchase-orders/summary?search='.urlencode('الزاوية'));
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.counts.new', 1)->assertJsonPath('data.total', 1);
+    }
+
     public function test_the_list_can_be_filtered_by_status(): void
     {
         // Arrange
@@ -235,6 +328,154 @@ class PurchaseOrderTest extends TestCase
 
         // Assert
         $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.status', 'cancelled');
+    }
+
+    public function test_the_list_can_be_filtered_by_more_than_one_status(): void
+    {
+        // Arrange
+        PurchaseOrder::factory()->create();
+        PurchaseOrder::factory()->arrived()->create();
+        PurchaseOrder::factory()->completed()->create();
+        PurchaseOrder::factory()->cancelled()->create();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson('/api/v1/purchase-orders?status[]=new&status[]=arrived');
+
+        // Assert
+        $response->assertOk()->assertJsonCount(2, 'data');
+        $this->assertEqualsCanonicalizing(
+            ['new', 'arrived'],
+            array_column($response->json('data'), 'status'),
+        );
+    }
+
+    public function test_a_status_the_machine_does_not_know_is_ignored_rather_than_refused(): void
+    {
+        // Arrange
+        PurchaseOrder::factory()->create();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/purchase-orders?status=whatever');
+
+        // Assert
+        // Dropped, not obeyed: a filter nobody can satisfy would answer with an empty page and
+        // read as «no purchase orders» rather than «you asked for something that does not exist».
+        $response->assertOk()->assertJsonCount(1, 'data');
+    }
+
+    // ──────────────────────────────── the summary ────────────────────────────────
+
+    public function test_the_summary_counts_purchase_orders_in_every_status(): void
+    {
+        // Arrange
+        PurchaseOrder::factory()->count(2)->create();
+        PurchaseOrder::factory()->arrived()->create();
+        PurchaseOrder::factory()->completed()->count(3)->create();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/purchase-orders/summary');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.counts.new', 2)
+            ->assertJsonPath('data.counts.arrived', 1)
+            ->assertJsonPath('data.counts.completed', 3)
+            // Present as a zero rather than absent: zero is an answer, a missing key is «we did
+            // not ask».
+            ->assertJsonPath('data.counts.cancelled', 0)
+            ->assertJsonPath('data.total', 6);
+    }
+
+    public function test_the_summary_can_be_narrowed_to_one_vendor(): void
+    {
+        // Arrange
+        $vendor = Vendor::factory()->create();
+        PurchaseOrder::factory()->from($vendor)->create();
+        PurchaseOrder::factory()->from($vendor)->completed()->create();
+        PurchaseOrder::factory()->completed()->create();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/purchase-orders/summary?vendor_id={$vendor->id}");
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.counts.new', 1)
+            ->assertJsonPath('data.counts.completed', 1)
+            ->assertJsonPath('data.total', 2);
+    }
+
+    public function test_the_summary_ignores_the_status_filter_it_is_counting(): void
+    {
+        // Arrange
+        PurchaseOrder::factory()->create();
+        PurchaseOrder::factory()->cancelled()->create();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson('/api/v1/purchase-orders/summary?status=cancelled');
+
+        // Assert
+        // Counts narrowed by the status being counted would every one of them equal the list's
+        // own length — the same reasoning `OrderStatusCountsQuery` documents.
+        $response->assertOk()->assertJsonPath('data.total', 2)->assertJsonPath('data.counts.new', 1);
+    }
+
+    public function test_a_soft_deleted_purchase_order_is_absent_from_the_summary(): void
+    {
+        // Arrange
+        PurchaseOrder::factory()->create();
+        PurchaseOrder::factory()->create()->delete();
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/purchase-orders/summary');
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.counts.new', 1)->assertJsonPath('data.total', 1);
+    }
+
+    public function test_the_summary_is_not_read_as_a_purchase_order_id(): void
+    {
+        // Arrange
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/purchase-orders/summary');
+
+        // Assert
+        // The route has to be declared before `{purchase_order}`, or implicit binding tries to
+        // resolve the word «summary» as an id and answers 404 — the same trap `orders/summary`
+        // carries a comment about in `api.php`.
+        $response->assertOk();
+    }
+
+    public function test_a_user_granted_nothing_may_not_read_the_summary(): void
+    {
+        // Arrange
+        PurchaseOrder::factory()->create();
+        $headers = $this->outsider();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/purchase-orders/summary');
+
+        // Assert
+        $response->assertForbidden()->assertJsonPath('status', false);
+    }
+
+    public function test_reading_the_summary_needs_authentication(): void
+    {
+        // Act
+        $response = $this->getJson('/api/v1/purchase-orders/summary');
+
+        // Assert
+        $response->assertUnauthorized()->assertJsonPath('status', false);
     }
 
     public function test_a_soft_deleted_purchase_order_is_absent_from_the_list(): void

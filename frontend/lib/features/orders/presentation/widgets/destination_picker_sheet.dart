@@ -1,14 +1,14 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/core/widgets/search_field.dart';
+import 'package:dayaa/features/cities/models/city.dart';
+import 'package:dayaa/features/cities/presentation/viewmodel/cities_cubit.dart';
+import 'package:dayaa/features/cities/presentation/viewmodel/city_regions_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/paged_list_view.dart';
-import 'package:printing/core/widgets/search_field.dart';
-import 'package:printing/features/cities/models/city.dart';
-import 'package:printing/features/cities/presentation/viewmodel/cities_cubit.dart';
-import 'package:printing/features/cities/presentation/viewmodel/city_regions_cubit.dart';
 
 /// Choosing where an order goes.
 ///

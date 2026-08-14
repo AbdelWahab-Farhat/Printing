@@ -1,24 +1,25 @@
 import 'dart:io';
+
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/core/widgets/attachment_sheet.dart';
+import 'package:dayaa/features/products/models/pricing_unit.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/product_categories_cubit.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/save_product_cubit.dart';
+import 'package:dayaa/features/products/presentation/widgets/product_category_picker.dart';
+import 'package:dayaa/features/products/usecases/save_product.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/files/attachment_picker.dart';
-import 'package:printing/core/files/picked_file.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/core/widgets/attachment_sheet.dart';
-import 'package:printing/features/products/models/pricing_unit.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/presentation/viewmodel/product_categories_cubit.dart';
-import 'package:printing/features/products/presentation/viewmodel/save_product_cubit.dart';
-import 'package:printing/features/products/presentation/widgets/product_category_picker.dart';
-import 'package:printing/features/products/usecases/save_product.dart';
 
 /// Add a bag to the catalogue.
 ///

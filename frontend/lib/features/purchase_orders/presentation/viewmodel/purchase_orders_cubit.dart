@@ -1,18 +1,20 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/pagination/paged_cubit.dart';
-import 'package:printing/core/pagination/paged_state.dart';
-import 'package:printing/features/purchase_orders/models/purchase_order.dart';
-import 'package:printing/features/purchase_orders/usecases/purchase_order_usecases.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/pagination/paged_cubit.dart';
+import 'package:dayaa/core/pagination/paged_state.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
+import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
 
-/// The purchase orders list, narrowed by status.
+/// The purchase orders list, narrowed by a status and by what was typed.
 ///
-/// **No search box, and that is the API rather than a choice.** The list endpoint accepts
-/// `vendor_id`, `warehouse_id` and `status` — and nothing to type into. Offering a search field
-/// that filtered nothing would be worse than not offering one.
+/// **The two narrow together, on one request.** The status lives here rather than in
+/// [PagedCubit] because only this screen has one; the term is [PagedCubit]'s, debounced there.
+/// Both ride on every page [fetchPage] asks for, including the ones `loadMore` fetches — a screen
+/// that sent them separately would show the list narrowed by whichever landed last.
 class PurchaseOrdersCubit extends PagedCubit<PurchaseOrder> {
-  PurchaseOrdersCubit({required GetPurchaseOrders getOrders}) : _getOrders = getOrders;
+  PurchaseOrdersCubit({required GetPurchaseOrders getOrders})
+    : _getOrders = getOrders;
 
   final GetPurchaseOrders _getOrders;
 
@@ -24,8 +26,8 @@ class PurchaseOrdersCubit extends PagedCubit<PurchaseOrder> {
     String? search,
     required int page,
   }) {
-    // The filter rides along with every page, including the ones `loadMore` asks for.
-    return _getOrders(status: status, page: page);
+    // Both filters ride along with every page, including the ones `loadMore` asks for.
+    return _getOrders(status: status, search: search, page: page);
   }
 
   /// Shows one state, or all of them.

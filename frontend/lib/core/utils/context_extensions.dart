@@ -1,6 +1,6 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/widgets/app_snackbar.dart';
 import 'package:flutter/material.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/widgets/app_snackbar.dart';
 
 /// Shortcuts onto `Theme.of(this)` and friends.
 ///

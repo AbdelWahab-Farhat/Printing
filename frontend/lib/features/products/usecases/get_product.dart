@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/repositories/product_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/repositories/product_repository.dart';
 
 /// One product with everything on it — every size, every price break, every photo.
 ///

@@ -1,9 +1,9 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/models/customers_filter.dart';
-import 'package:printing/features/customers/repositories/customer_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/models/customers_filter.dart';
+import 'package:dayaa/features/customers/repositories/customer_repository.dart';
 
 /// One page of customers.
 class GetCustomers {

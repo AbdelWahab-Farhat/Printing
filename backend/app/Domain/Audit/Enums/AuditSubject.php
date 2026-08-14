@@ -9,9 +9,9 @@ use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Comment\Models\Comment;
 use App\Domain\Customer\Models\BusinessField;
 use App\Domain\Customer\Models\Customer;
-use App\Domain\Customer\Models\CustomerComment;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Models\City;
@@ -68,7 +68,7 @@ enum AuditSubject: string
     case Customer = 'customer';
     case CustomerShop = 'customer_shop';
     case CustomerDesign = 'customer_design';
-    case CustomerComment = 'customer_comment';
+    case Comment = 'comment';
     case BusinessField = 'business_field';
 
     // Catalogue
@@ -120,7 +120,7 @@ enum AuditSubject: string
             self::Customer => Customer::class,
             self::CustomerShop => CustomerShop::class,
             self::CustomerDesign => CustomerDesign::class,
-            self::CustomerComment => CustomerComment::class,
+            self::Comment => Comment::class,
             self::BusinessField => BusinessField::class,
             self::Product => Product::class,
             self::ProductCategory => ProductCategory::class,
@@ -162,7 +162,7 @@ enum AuditSubject: string
             self::Customer => 'عميل',
             self::CustomerShop => 'محل عميل',
             self::CustomerDesign => 'تصميم عميل',
-            self::CustomerComment => 'ملاحظة عميل',
+            self::Comment => 'ملاحظة',
             self::BusinessField => 'مجال عمل',
             self::Product => 'منتج',
             self::ProductCategory => 'تصنيف منتجات',

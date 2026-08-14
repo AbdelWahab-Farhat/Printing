@@ -1,5 +1,5 @@
+import 'package:dayaa/features/home/models/home_summary.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/home/models/home_summary.dart';
 
 /// Reading the home screen's numbers off the wire.
 ///

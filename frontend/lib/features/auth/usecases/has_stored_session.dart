@@ -1,4 +1,4 @@
-import 'package:printing/features/auth/repositories/auth_repository.dart';
+import 'package:dayaa/features/auth/repositories/auth_repository.dart';
 
 /// Whether this device is carrying a token at all.
 ///

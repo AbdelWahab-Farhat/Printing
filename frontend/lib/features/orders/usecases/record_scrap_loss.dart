@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/models/production_cost_entry.dart';
-import 'package:printing/features/orders/repositories/order_repository.dart';
-import 'package:printing/features/orders/usecases/manage_order_payments.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/production_cost_entry.dart';
+import 'package:dayaa/features/orders/repositories/order_repository.dart';
+import 'package:dayaa/features/orders/usecases/manage_order_payments.dart';
 
 /// Writing off bags that were spoiled producing a line.
 ///

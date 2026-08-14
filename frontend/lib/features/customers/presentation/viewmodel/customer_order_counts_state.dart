@@ -30,4 +30,8 @@ extension CustomerOrderCountsLoadedX on CustomerOrderCountsLoaded {
 
   /// «الطلبات المستلمة» — what reached the customer, settled or not.
   int get received => counts.forStatuses(OrderStatus.received);
+
+  /// «الطلبات الملغاة» — written off. Its own number beside the other two rather than folded
+  /// into either, because it belongs to neither: nobody is working on it and it reached nobody.
+  int get cancelled => counts.forStatuses(OrderStatus.cancellations);
 }

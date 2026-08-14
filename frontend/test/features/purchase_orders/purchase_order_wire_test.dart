@@ -1,9 +1,9 @@
+import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
+import 'package:dayaa/features/purchase_orders/repositories/purchase_order_repository.dart';
+import 'package:dayaa/features/purchase_orders/repositories/purchase_order_repository_impl.dart';
+import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/purchase_orders/models/purchase_order.dart';
-import 'package:printing/features/purchase_orders/repositories/purchase_order_repository.dart';
-import 'package:printing/features/purchase_orders/repositories/purchase_order_repository_impl.dart';
-import 'package:printing/features/purchase_orders/usecases/purchase_order_usecases.dart';
 
 /// What actually goes on the wire for a purchase order.
 ///
@@ -37,12 +37,13 @@ void main() {
   group('the list', () {
     test('asks for one status and omits the filters nobody set', () async {
       // Act
-      await repository.purchaseOrders(status: 'arrived');
+      await repository.purchaseOrders(statuses: const ['arrived']);
 
       // Assert — a null in a query string becomes the literal "null", and this endpoint reads
       // its filters without validating them: `PurchaseOrderStatus::from('null')` is a 500.
+      // One status travels as a one-item group, the same way «الجارية» travels as two.
       expect(captured.path, '/purchase-orders');
-      expect(captured.queryParameters['status'], 'arrived');
+      expect(captured.queryParameters['status'], ['arrived']);
       expect(captured.queryParameters.containsKey('vendor_id'), isFalse);
       expect(captured.queryParameters.containsKey('warehouse_id'), isFalse);
     });
@@ -53,6 +54,31 @@ void main() {
 
       // Assert
       expect(captured.queryParameters.containsKey('status'), isFalse);
+      expect(captured.queryParameters.containsKey('search'), isFalse);
+    });
+
+    test('carries the search term, and drops it when the box is cleared', () async {
+      // Act
+      await repository.purchaseOrders(search: 'ولي العهد');
+
+      // Assert
+      expect(captured.queryParameters['search'], 'ولي العهد');
+
+      // Act — the box cleared. `PagedCubit` hands an empty term down as null.
+      await repository.purchaseOrders();
+
+      // Assert — omitted rather than sent blank, like every other filter on this endpoint.
+      expect(captured.queryParameters.containsKey('search'), isFalse);
+    });
+
+    test('searching and filtering are one question, not two', () async {
+      // Act
+      await repository.purchaseOrders(statuses: const ['cancelled'], search: 'الجنوب');
+
+      // Assert — both ride on the same request; a screen that sent them separately would show
+      // the list narrowed by whichever landed last.
+      expect(captured.queryParameters['status'], ['cancelled']);
+      expect(captured.queryParameters['search'], 'الجنوب');
     });
   });
 

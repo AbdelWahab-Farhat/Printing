@@ -1,10 +1,10 @@
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 
 /// «نبّهني تحت هذا الرقم» — the one thing a balance line accepts a write for.
 ///

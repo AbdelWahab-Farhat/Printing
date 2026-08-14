@@ -24,6 +24,7 @@ use App\Application\Api\V1\Controllers\ShippingCompanyController;
 use App\Application\Api\V1\Controllers\StockArrivalController;
 use App\Application\Api\V1\Controllers\StockMovementController;
 use App\Application\Api\V1\Controllers\UserController;
+use App\Application\Api\V1\Controllers\VendorCommentController;
 use App\Application\Api\V1\Controllers\VendorController;
 use App\Application\Api\V1\Controllers\WarehouseController;
 use App\Application\Api\V1\Controllers\WarehouseStockController;
@@ -196,6 +197,14 @@ Route::prefix('v1')->group(function (): void {
             ->middleware('can:products.view')
             ->parameters(['product-categories' => 'product_category']);
 
+        // The whole order in one call — see ProductCategoryController::reorder().
+        //
+        // **Declared before the resource routes, and that is load-bearing.** Laravel matches in
+        // registration order, so `product-categories/{product_category}` would take «order» as
+        // an id and hand the binding a string the database refuses to cast.
+        Route::patch('product-categories/order', [ProductCategoryController::class, 'reorder'])
+            ->middleware('can:products.manage')->name('product-categories.reorder');
+
         // A destroy route exists, unlike products themselves, because this is a curated list and
         // a typo in it should be removable. The action refuses once any product points at the
         // category; deactivation is what retires one in use.
@@ -206,6 +215,14 @@ Route::prefix('v1')->group(function (): void {
 
         Route::patch('product-categories/{product_category}/activation', [ProductCategoryController::class, 'setActivation'])
             ->middleware('can:products.manage')->name('product-categories.activation');
+
+        // The picture the catalogue prints above a heading. `POST` rather than `PUT` because it
+        // is multipart, exactly as the product image endpoints are.
+        Route::post('product-categories/{product_category}/image', [ProductCategoryController::class, 'setImage'])
+            ->middleware('can:products.manage')->name('product-categories.image.set');
+
+        Route::delete('product-categories/{product_category}/image', [ProductCategoryController::class, 'removeImage'])
+            ->middleware('can:products.manage')->name('product-categories.image.remove');
 
         // Reading the catalogue and pricing a quantity are everyday work; changing what things
         // cost is not. Hence two permissions rather than one.
@@ -387,6 +404,18 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('vendors/{vendor}/activation', [VendorController::class, 'setActivation'])
             ->middleware('can:vendors.manage')->name('vendors.activation');
 
+        // A supplier's notes — «لا يسلّم قبل الظهر», «المندوب الجديد اسمه سالم».
+        //
+        // The whole set sits behind `vendors.view`, writes included, exactly as the customer's
+        // notes sit behind `customers.view`: a note is a working tool, not a privilege. Who may
+        // change *this* note is a per-row question — its author, or somebody holding
+        // `comments.moderate` — so it is answered in the controller rather than by a middleware
+        // that can only see the route.
+        Route::apiResource('vendors.comments', VendorCommentController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->middleware('can:vendors.view')
+            ->scoped();
+
         // ── purchase orders ─────────────────────────────────────────────────────────────
         // Stock ordered ahead of it arriving: new → arrived → completed, with cancelled
         // reachable from either open status. Drafting, editing, sending and cancelling sit
@@ -395,6 +424,13 @@ Route::prefix('v1')->group(function (): void {
         // beside the resource routes below rather than here, because posting a shipment is
         // squarely part of that area regardless of which door it came in through. See
         // PurchaseOrderController's own docblock.
+        //
+        // Declared before the resource, so «summary» is read as the word it is: after it,
+        // implicit binding would try to resolve it as a purchase order id and 404 — the same
+        // trap `orders/summary` above carries a comment about.
+        Route::get('purchase-orders/summary', [PurchaseOrderController::class, 'statusCounts'])
+            ->middleware('can:purchase_orders.view')->name('purchase-orders.summary');
+
         Route::apiResource('purchase-orders', PurchaseOrderController::class)
             ->only(['index', 'show'])
             ->middleware('can:purchase_orders.view');
@@ -511,6 +547,8 @@ Route::prefix('v1')->group(function (): void {
             Route::get('warehouses/{warehouse}/logs', [WarehouseController::class, 'logs'])->name('warehouses.logs');
 
             Route::get('vendors/{vendor}/logs', [VendorController::class, 'logs'])->name('vendors.logs');
+            Route::get('vendors/{vendor}/comments/{comment}/logs', [VendorCommentController::class, 'logs'])
+                ->scopeBindings()->name('vendors.comments.logs');
 
             Route::get('stock-arrivals/{stock_arrival}/logs', [StockArrivalController::class, 'logs'])
                 ->name('stock-arrivals.logs');

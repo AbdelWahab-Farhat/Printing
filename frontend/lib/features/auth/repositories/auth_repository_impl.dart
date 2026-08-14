@@ -1,15 +1,15 @@
 import 'dart:io' show Platform;
 
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/api_endpoints.dart';
+import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/storage/token_storage.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/auth/repositories/auth_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/api_endpoints.dart';
-import 'package:printing/core/network/safe_request.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/storage/token_storage.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
-import 'package:printing/features/auth/repositories/auth_repository.dart';
 
 /// Fulfils [AuthRepository] over HTTP, and owns where the token is kept.
 ///

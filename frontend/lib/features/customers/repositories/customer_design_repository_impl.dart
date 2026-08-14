@@ -1,12 +1,12 @@
 import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/api_endpoints.dart';
+import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
 import 'package:dio/dio.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/api_endpoints.dart';
-import 'package:printing/core/network/safe_request.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
-import 'package:printing/features/customers/repositories/customer_design_repository.dart';
 
 /// Fulfils [CustomerDesignRepository] over HTTP.
 class CustomerDesignRepositoryImpl implements CustomerDesignRepository {

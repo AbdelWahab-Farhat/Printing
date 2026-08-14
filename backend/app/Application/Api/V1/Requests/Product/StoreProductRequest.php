@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Product;
 
+use App\Application\Rules\CategoryMustBeALeaf;
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
 use Illuminate\Foundation\Http\FormRequest;
@@ -86,13 +87,15 @@ class StoreProductRequest extends FormRequest
             'features' => ['nullable', 'array', 'max:12'],
             'features.*' => ['required', 'string', 'max:255'],
 
-            // **The catalogue heading, and it is required from today on.** The column is
-            // nullable because the products recorded before this feature existed have to stay
-            // valid; nothing saved through this request may be. `exists` refuses a category that
-            // was deleted — a product pointing at a hidden row is worse than one with none.
+            // **The heading a product is filed under must be a leaf.** A category holding
+            // subheadings is a heading, not a slot — filing under both would make «كم منتجاً تحت
+            // أكياس؟» two different questions. The check is a rule object so the refusal lands
+            // on the field it is about, beside the picker that produced it, rather than as a
+            // sentence from a controller about the request as a whole.
             'product_category_id' => [
                 'required', 'integer',
                 Rule::exists('product_categories', 'id')->whereNull('deleted_at'),
+                new CategoryMustBeALeaf,
             ],
             'pricing_unit' => ['required', Rule::enum(PricingUnit::class)],
             'pricing_mode' => ['required', Rule::enum(PricingMode::class)],

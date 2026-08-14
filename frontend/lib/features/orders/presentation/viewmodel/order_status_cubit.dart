@@ -1,16 +1,16 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/transition_field.dart';
+import 'package:dayaa/features/orders/usecases/change_order_status.dart';
+import 'package:dayaa/features/orders/usecases/get_order.dart';
+import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/models/transition_field.dart';
-import 'package:printing/features/orders/usecases/change_order_status.dart';
-import 'package:printing/features/orders/usecases/get_order.dart';
-import 'package:printing/features/shipping_companies/models/shipping_company.dart';
-import 'package:printing/features/warehouses/models/warehouse.dart';
 
-part 'order_status_state.dart';
 part 'order_status_cubit.freezed.dart';
+part 'order_status_state.dart';
 
 /// Moving one order: which way, and whatever that way asks for.
 ///

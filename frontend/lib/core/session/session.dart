@@ -1,6 +1,6 @@
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter/foundation.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
 
 /// Who is signed in, and what the server says they may do.
 ///

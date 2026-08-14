@@ -1,11 +1,11 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/business_fields/models/business_field.dart';
+import 'package:dayaa/features/business_fields/usecases/save_business_field.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/business_fields/models/business_field.dart';
-import 'package:printing/features/business_fields/usecases/save_business_field.dart';
 
-part 'save_business_field_state.dart';
 part 'save_business_field_cubit.freezed.dart';
+part 'save_business_field_state.dart';
 
 /// The ViewModel for the sheet that adds or renames a trade.
 ///

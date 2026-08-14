@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/location/models/place.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/location/models/place.dart';
 
 /// Turning a typed place name into points on a map.
 ///

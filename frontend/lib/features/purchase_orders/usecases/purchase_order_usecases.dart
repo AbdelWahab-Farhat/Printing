@@ -1,10 +1,11 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/features/purchase_orders/models/purchase_order.dart';
-import 'package:printing/features/purchase_orders/repositories/purchase_order_repository.dart';
-import 'package:printing/features/vendors/models/stock_arrival.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order_counts.dart';
+import 'package:dayaa/features/purchase_orders/repositories/purchase_order_repository.dart';
+import 'package:dayaa/features/vendors/models/stock_arrival.dart';
 
 /// One page of the purchase orders list.
 class GetPurchaseOrders {
@@ -12,21 +13,43 @@ class GetPurchaseOrders {
 
   final PurchaseOrderRepository _repository;
 
+  /// [status] is the one chip somebody tapped; [statuses] is a whole group — «الجارية» — asked
+  /// for by a screen that already knows which one it wants. Passing both narrows to the
+  /// intersection the server computes, which no caller has a reason to want, so callers pass one.
   Future<Either<Failure, Paginated<PurchaseOrder>>> call({
     int? vendorId,
     int? warehouseId,
     PurchaseOrderStatus? status,
+    List<PurchaseOrderStatus> statuses = const <PurchaseOrderStatus>[],
+    String? search,
     int page = 1,
   }) {
     return _repository.purchaseOrders(
       vendorId: vendorId,
       warehouseId: warehouseId,
-      // The wire value, and never [PurchaseOrderStatus.unknown]: its wire is the empty string,
+      search: search,
+      // Wire values, and never [PurchaseOrderStatus.unknown]: its wire is the empty string,
       // which the server would read as a status it cannot parse.
-      status: status == null || status == PurchaseOrderStatus.unknown ? null : status.wire,
+      statuses: [
+        for (final wanted in [status, ...statuses])
+          if (wanted != null && wanted != PurchaseOrderStatus.unknown)
+            wanted.wire,
+      ],
       page: page,
     );
   }
+}
+
+/// How many purchase orders stand in each status — the numbers on a supplier's screen.
+class GetPurchaseOrderCounts {
+  const GetPurchaseOrderCounts(this._repository);
+
+  final PurchaseOrderRepository _repository;
+
+  Future<Either<Failure, PurchaseOrderCounts>> call({
+    int? vendorId,
+    String? search,
+  }) => _repository.statusCounts(vendorId: vendorId, search: search);
 }
 
 /// One purchase order, with its lines.
@@ -64,7 +87,11 @@ class DraftLine {
 
 /// One order-level cost as the form holds it — delivery, unloading, customs.
 class DraftAdditionalCost {
-  const DraftAdditionalCost({required this.name, required this.amount, this.id});
+  const DraftAdditionalCost({
+    required this.name,
+    required this.amount,
+    this.id,
+  });
 
   /// Absent on a cost being added; present on one being corrected.
   final int? id;
@@ -181,7 +208,10 @@ class ReceivePurchaseOrderArrival {
     final lines = [
       for (final entry in quantities.entries)
         if (_isPositive(entry.value))
-          ReceivedLine(productVariantId: entry.key, quantity: _number(entry.value)),
+          ReceivedLine(
+            productVariantId: entry.key,
+            quantity: _number(entry.value),
+          ),
     ];
 
     return _repository.receiveArrival(

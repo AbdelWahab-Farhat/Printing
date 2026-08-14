@@ -1,5 +1,6 @@
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/orders/models/order.dart';
+import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/orders/models/order.dart';
 
 /// The order written out as a message, for a reader who does not have the app.
 ///
@@ -169,11 +170,8 @@ class OrderMessage {
   /// Not [Order.placedAgo]: «منذ ٣ أيام» is true when it is copied and wrong by the time the
   /// customer scrolls back to it, and a message is read long after it is sent.
   static String? _dayOf(Order order) {
-    final at = (order.placedAt ?? order.createdAt)?.toLocal();
-    if (at == null) return null;
-
-    String two(int value) => value.toString().padLeft(2, '0');
-
-    return '${at.year}-${two(at.month)}-${two(at.day)}';
+    // The same words the app draws everywhere else. A customer reading «14 أغسطس 2026» in a
+    // WhatsApp message does not have to work out which half of `2026-08-14` is the month.
+    return (order.placedAt ?? order.createdAt)?.dayLabel;
   }
 }

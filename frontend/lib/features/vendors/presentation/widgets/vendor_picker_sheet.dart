@@ -1,12 +1,12 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/core/widgets/search_field.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/presentation/viewmodel/vendors_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/paged_list_view.dart';
-import 'package:printing/core/widgets/search_field.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
-import 'package:printing/features/vendors/presentation/viewmodel/vendors_cubit.dart';
 
 /// Choosing who an order is raised against.
 ///
@@ -24,7 +24,8 @@ Future<Vendor?> showVendorPicker({required BuildContext context}) {
       borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
     ),
     builder: (_) => BlocProvider<VendorsCubit>(
-      create: (_) => sl<VendorsCubit>(instanceName: Injector.activeVendorsCubit)..load(),
+      create: (_) =>
+          sl<VendorsCubit>(instanceName: Injector.activeVendorsCubit)..load(),
       child: const _VendorPicker(),
     ),
   );
@@ -55,7 +56,9 @@ class _VendorPicker extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 8.h),
             child: Text(
               'اختيار المورد',
-              style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              style: context.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           Padding(

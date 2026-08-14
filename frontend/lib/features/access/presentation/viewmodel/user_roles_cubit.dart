@@ -1,13 +1,13 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/access/models/role.dart';
+import 'package:dayaa/features/access/usecases/get_roles.dart';
+import 'package:dayaa/features/access/usecases/sync_user_roles.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/access/models/role.dart';
-import 'package:printing/features/access/usecases/get_roles.dart';
-import 'package:printing/features/access/usecases/sync_user_roles.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
 
-part 'user_roles_state.dart';
 part 'user_roles_cubit.freezed.dart';
+part 'user_roles_state.dart';
 
 /// Choosing which jobs one person holds.
 ///

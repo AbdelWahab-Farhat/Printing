@@ -1,9 +1,9 @@
+import 'package:dayaa/features/access/models/role.dart';
+import 'package:dayaa/features/access/presentation/widgets/permission_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/access/models/role.dart';
-import 'package:printing/features/access/presentation/widgets/permission_section.dart';
 
 /// One section of permissions, in both the shapes it has to be: chosen, and read.
 ///

@@ -1,14 +1,14 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/features/splash/presentation/viewmodel/splash_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/features/splash/presentation/viewmodel/splash_cubit.dart';
 
 /// The first screen: the brand, and the decision about where to go next.
 ///
@@ -93,10 +93,10 @@ class _Brand extends StatelessWidget {
         Image.asset('assets/images/logo.png', height: 96.w, width: 96.w),
         SizedBox(height: 20.h),
         Text(
-          'PrintX',
-          // Latin brand mark inside a right-to-left app: forced LTR so the letters are never
-          // reordered by the surrounding direction.
-          textDirection: TextDirection.ltr,
+          // اسم التطبيق كما يُنطق ويُكتب — عربي، فلا `textDirection` هنا. كانت العلامة لاتينية
+          // («PrintX») وكانت تُجبَر على LTR كي لا يعكس الاتجاه المحيط حروفها؛ إجبار نصّ عربي على
+          // LTR يفعل بالضبط ما كان ذلك السطر يمنعه.
+          'دعاية',
           style: context.textTheme.displaySmall?.copyWith(
             fontWeight: FontWeight.w800,
             color: context.colorScheme.primary,

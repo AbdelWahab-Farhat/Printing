@@ -1,7 +1,7 @@
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
 
 /// What the app believes the signed-in person may do.
 ///

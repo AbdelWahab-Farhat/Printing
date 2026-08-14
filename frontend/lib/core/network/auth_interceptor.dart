@@ -1,8 +1,8 @@
 import 'dart:async';
 
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/storage/token_storage.dart';
 import 'package:dio/dio.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/storage/token_storage.dart';
 
 /// Attaches the bearer token, and reacts to the server saying it is no longer good.
 ///

@@ -1,19 +1,19 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
+import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/presentation/viewmodel/manufacturing_cost_rates_cubit.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/presentation/widgets/manufacturing_cost_rate_card.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/presentation/widgets/manufacturing_cost_rate_filter_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_dialog.dart';
-import 'package:printing/core/widgets/paged_list_view.dart';
-import 'package:printing/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
-import 'package:printing/features/manufacturing_cost_rates/presentation/viewmodel/manufacturing_cost_rates_cubit.dart';
-import 'package:printing/features/manufacturing_cost_rates/presentation/widgets/manufacturing_cost_rate_card.dart';
-import 'package:printing/features/manufacturing_cost_rates/presentation/widgets/manufacturing_cost_rate_filter_button.dart';
 
 /// معدلات تكلفة التصنيع — what the workshop charges itself per unit of work.
 ///

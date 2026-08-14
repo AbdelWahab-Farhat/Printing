@@ -1,23 +1,23 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dropdown.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/core/widgets/permission_gate.dart';
+import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/presentation/viewmodel/save_manufacturing_cost_rate_cubit.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/presentation/widgets/rate_product_picker_sheet.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/variant_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_dropdown.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/core/widgets/permission_gate.dart';
-import 'package:printing/features/audit/models/audit_subject.dart';
-import 'package:printing/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
-import 'package:printing/features/manufacturing_cost_rates/presentation/viewmodel/save_manufacturing_cost_rate_cubit.dart';
-import 'package:printing/features/manufacturing_cost_rates/presentation/widgets/rate_product_picker_sheet.dart';
-import 'package:printing/features/warehouses/presentation/widgets/variant_picker_sheet.dart';
 
 /// Adding a manufacturing cost rate, or correcting one.
 ///

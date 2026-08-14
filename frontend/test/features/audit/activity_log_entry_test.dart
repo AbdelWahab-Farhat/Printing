@@ -1,6 +1,6 @@
+import 'package:dayaa/features/audit/models/activity_log_entry.dart';
+import 'package:dayaa/features/audit/models/audit_event.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/audit/models/activity_log_entry.dart';
-import 'package:printing/features/audit/models/audit_event.dart';
 
 /// The seam between `ActivityLogResource` and the history screen.
 ///

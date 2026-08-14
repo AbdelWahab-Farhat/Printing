@@ -1,25 +1,25 @@
 import 'package:dartz/dartz.dart' hide Order;
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
+import 'package:dayaa/features/customers/repositories/customer_repository.dart';
+import 'package:dayaa/features/customers/usecases/get_customer.dart';
+import 'package:dayaa/features/customers/usecases/set_customer_activation.dart';
+import 'package:dayaa/features/orders/models/new_order.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
+import 'package:dayaa/features/orders/presentation/views/new_order_page.dart';
+import 'package:dayaa/features/orders/repositories/order_repository.dart';
+import 'package:dayaa/features/orders/usecases/take_order.dart';
+import 'package:dayaa/features/products/repositories/product_repository.dart';
+import 'package:dayaa/features/products/usecases/get_price_quote.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
-import 'package:printing/features/customers/repositories/customer_repository.dart';
-import 'package:printing/features/customers/usecases/get_customer.dart';
-import 'package:printing/features/customers/usecases/set_customer_activation.dart';
-import 'package:printing/features/orders/models/new_order.dart';
-import 'package:printing/features/orders/presentation/viewmodel/line_quote_cubit.dart';
-import 'package:printing/features/orders/presentation/viewmodel/take_order_cubit.dart';
-import 'package:printing/features/orders/presentation/views/new_order_page.dart';
-import 'package:printing/features/orders/repositories/order_repository.dart';
-import 'package:printing/features/orders/usecases/take_order.dart';
-import 'package:printing/features/products/repositories/product_repository.dart';
-import 'package:printing/features/products/usecases/get_price_quote.dart';
 
 /// طلبية جديدة, as it is seen.
 ///

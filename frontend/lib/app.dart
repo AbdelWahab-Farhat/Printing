@@ -1,17 +1,17 @@
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/theme/text_theme.dart';
+import 'package:dayaa/core/theme/theme.dart';
+import 'package:dayaa/core/widgets/dismiss_keyboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/theme/text_theme.dart';
-import 'package:printing/core/theme/theme.dart';
-import 'package:printing/core/widgets/dismiss_keyboard.dart';
 
 /// The root widget: theme, locale, direction, router.
 ///
 /// Kept out of `main.dart` so `main` stays a list of start-up steps and this stays a widget —
 /// the two change for entirely different reasons.
-class PrintingApp extends StatelessWidget {
-  const PrintingApp({super.key});
+class DayaaApp extends StatelessWidget {
+  const DayaaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +24,7 @@ class PrintingApp extends StatelessWidget {
         final theme = MaterialTheme(createTextTheme(context, 'Cairo', 'Cairo'));
 
         return MaterialApp.router(
-          title: 'Printing',
+          title: 'دعاية',
           debugShowCheckedModeBanner: false,
           theme: theme.light(),
           darkTheme: theme.dark(),

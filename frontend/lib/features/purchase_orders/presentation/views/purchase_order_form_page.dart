@@ -1,21 +1,21 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/orders/presentation/widgets/product_picker_sheet.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
+import 'package:dayaa/features/purchase_orders/presentation/viewmodel/save_purchase_order_cubit.dart';
+import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/presentation/widgets/vendor_picker_sheet.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/orders/presentation/widgets/product_picker_sheet.dart';
-import 'package:printing/features/purchase_orders/models/purchase_order.dart';
-import 'package:printing/features/purchase_orders/presentation/viewmodel/save_purchase_order_cubit.dart';
-import 'package:printing/features/purchase_orders/usecases/purchase_order_usecases.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
-import 'package:printing/features/vendors/presentation/widgets/vendor_picker_sheet.dart';
-import 'package:printing/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
 
 /// Raising a purchase order, or correcting one.
 ///
@@ -95,7 +95,9 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
         // The *base* total, not the landed one: this box is the figure the buyer typed, and
         // seeding it with the line's share of delivery folded in would add that share again on
         // every save.
-        baseTotalCost: item.baseTotalCost == null ? '' : trimDecimals(item.baseTotalCost!),
+        baseTotalCost: item.baseTotalCost == null
+            ? ''
+            : trimDecimals(item.baseTotalCost!),
       ),
   ];
 
@@ -105,7 +107,9 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
   /// wholesale, so a cost left out of this list is deleted — which is exactly what removing a
   /// row on screen should mean, and exactly what must not happen by accident.
   late final List<_AdditionalCostDraft> _additionalCosts = [
-    for (final cost in widget.order?.additionalCosts ?? const <PurchaseOrderAdditionalCost>[])
+    for (final cost
+        in widget.order?.additionalCosts ??
+            const <PurchaseOrderAdditionalCost>[])
       _AdditionalCostDraft(
         id: cost.id,
         name: cost.name,
@@ -119,7 +123,9 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
   bool get _mayPickVendor => !_isEditing;
 
   ({int id, String name})? _seedVendor() {
-    if (widget.vendor case final vendor?) return (id: vendor.id, name: vendor.name);
+    if (widget.vendor case final vendor?) {
+      return (id: vendor.id, name: vendor.name);
+    }
 
     final order = widget.order;
     if (order == null) return null;
@@ -184,7 +190,8 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
 
     if (picked == null) return;
 
-    final value = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-'
+    final value =
+        '${picked.year}-${picked.month.toString().padLeft(2, '0')}-'
         '${picked.day.toString().padLeft(2, '0')}';
 
     setState(() {
@@ -233,7 +240,9 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
   /// A blank row, rather than a dialog: there is nothing to pick from — the name is whatever the
   /// supplier called it on the invoice — so a sheet would be one more tap around an empty box.
   void _addAdditionalCost() {
-    setState(() => _additionalCosts.add(_AdditionalCostDraft(name: '', amount: '')));
+    setState(
+      () => _additionalCosts.add(_AdditionalCostDraft(name: '', amount: '')),
+    );
   }
 
   void _removeAdditionalCost(_AdditionalCostDraft cost) {
@@ -293,8 +302,11 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
         switch (state) {
           case SavePurchaseOrderSuccess():
             Navigator.of(context).pop(true);
-            context.showSuccess(_isEditing ? 'تم حفظ أمر الشراء' : 'تم إنشاء أمر الشراء');
-          case SavePurchaseOrderFailure(:final failure) when state.hasUnrenderedErrors:
+            context.showSuccess(
+              _isEditing ? 'تم حفظ أمر الشراء' : 'تم إنشاء أمر الشراء',
+            );
+          case SavePurchaseOrderFailure(:final failure)
+              when state.hasUnrenderedErrors:
             context.showFailure(failure);
           case _:
             break;
@@ -304,7 +316,9 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
         final cubit = context.read<SavePurchaseOrderCubit>();
 
         return Scaffold(
-          appBar: AppBar(title: Text(_isEditing ? 'تعديل أمر الشراء' : 'أمر شراء جديد')),
+          appBar: AppBar(
+            title: Text(_isEditing ? 'تعديل أمر الشراء' : 'أمر شراء جديد'),
+          ),
           body: SafeArea(
             child: Form(
               key: _formKey,
@@ -536,7 +550,9 @@ class _ListHeader extends StatelessWidget {
             const Spacer(),
             Text(
               count == 0 ? emptyLabel : count.grouped,
-              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              style: context.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -613,7 +629,9 @@ class _LineRow extends StatelessWidget {
                 (value ?? '').replaceAll(',', '.').trim(),
               );
 
-              return parsed == null || parsed <= 0 ? 'أدخل كمية أكبر من صفر' : null;
+              return parsed == null || parsed <= 0
+                  ? 'أدخل كمية أكبر من صفر'
+                  : null;
             },
             onChanged: onChanged,
           ),
@@ -631,7 +649,9 @@ class _LineRow extends StatelessWidget {
             ],
             validator: (value) {
               final parsed = double.tryParse(
-                Validators.toWesternDigits(value ?? '').replaceAll(',', '.').trim(),
+                Validators.toWesternDigits(
+                  value ?? '',
+                ).replaceAll(',', '.').trim(),
               );
 
               // **Zero passes.** A vendor replacing a bad batch for nothing is a real cost of
@@ -716,7 +736,9 @@ class _AdditionalCostRow extends StatelessWidget {
               if (cost.isBlank) return null;
 
               final parsed = double.tryParse(
-                Validators.toWesternDigits(value ?? '').replaceAll(',', '.').trim(),
+                Validators.toWesternDigits(
+                  value ?? '',
+                ).replaceAll(',', '.').trim(),
               );
 
               if (parsed == null) return 'أدخل القيمة';
@@ -813,7 +835,9 @@ class _PickerTile extends StatelessWidget {
           SizedBox(height: 4.h),
           Text(
             note,
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            style: context.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
           ),
         ],
         if (error case final message?) ...[

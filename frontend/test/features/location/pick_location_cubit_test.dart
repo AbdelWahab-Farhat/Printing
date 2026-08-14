@@ -1,13 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/location/models/place.dart';
+import 'package:dayaa/features/location/presentation/viewmodel/pick_location_cubit.dart';
+import 'package:dayaa/features/location/repositories/geocoding_repository.dart';
+import 'package:dayaa/features/location/usecases/search_places.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/location/models/place.dart';
-import 'package:printing/features/location/presentation/viewmodel/pick_location_cubit.dart';
-import 'package:printing/features/location/repositories/geocoding_repository.dart';
-import 'package:printing/features/location/usecases/search_places.dart';
 
 /// The search box on the map screen.
 ///

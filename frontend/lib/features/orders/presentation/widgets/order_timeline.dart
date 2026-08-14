@@ -1,7 +1,8 @@
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/features/orders/models/order.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/features/orders/models/order.dart';
 
 /// Every move the order made, oldest first.
 ///
@@ -113,20 +114,11 @@ class _Entry extends StatelessWidget {
   /// on purpose — a seeder or a console command moves an order without a signed-in user — and
   /// attributing that to whoever happens to be reading the screen would be worse than the gap.
   String _meta(OrderTransitionRecord record) => [
-    if (record.createdAt case final at?) _stamp(at),
+    if (record.createdAt case final at?) at.stampLabel,
     if (record.user?.name case final name?) 'بواسطة $name',
   ].join(' · ');
 
-  /// `2026-08-02 · 14:30`, in the device's own local time.
-  ///
-  /// Written out rather than pulled from `intl`: the app has no other formatted date yet, and
-  /// one that reads the same in every locale is the honest choice for a workshop log where the
-  /// question is "in what order, and how long apart".
-  String _stamp(DateTime at) {
-    final local = at.toLocal();
-    String two(int value) => value.toString().padLeft(2, '0');
-
-    return '${local.year}-${two(local.month)}-${two(local.day)} · '
-        '${two(local.hour)}:${two(local.minute)}';
-  }
+  /// «2 أغسطس 2026 · 2:30 م», in the device's own local time — [AppDates], like every other
+  /// date this app draws. A timeline is read as "in what order, and how long apart", and the
+  /// month said in words is what makes two rows a week apart look a week apart.
 }

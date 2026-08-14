@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/access/models/role.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/access/models/role.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 
 /// Everything about who works here and what they may do.
 ///

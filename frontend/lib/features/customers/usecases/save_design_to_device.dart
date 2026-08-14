@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
-import 'package:printing/features/customers/repositories/customer_design_repository.dart';
 
 /// Fetches a design and writes it somewhere the phone can hand to its own share sheet.
 ///

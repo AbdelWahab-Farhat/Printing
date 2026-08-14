@@ -1,8 +1,8 @@
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/features/orders/models/order_status.dart';
-import 'package:printing/features/orders/presentation/widgets/order_status_chip.dart';
 
 /// Where the order is — the answer the detail screen is opened for, given the width to say it.
 ///

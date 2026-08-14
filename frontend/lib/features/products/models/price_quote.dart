@@ -1,5 +1,5 @@
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/utils/digits.dart';
 
 part 'price_quote.freezed.dart';
 part 'price_quote.g.dart';

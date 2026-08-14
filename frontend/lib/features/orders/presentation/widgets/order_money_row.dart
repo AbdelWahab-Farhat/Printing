@@ -1,9 +1,9 @@
+import 'package:dayaa/core/theme/app_tones.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/theme/app_tones.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/orders/models/order_payment.dart';
 
 /// What the order costs, what has been paid, and what is left — read in one glance.
 ///

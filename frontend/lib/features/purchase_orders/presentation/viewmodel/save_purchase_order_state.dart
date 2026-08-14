@@ -5,13 +5,15 @@ part of 'save_purchase_order_cubit.dart';
 sealed class SavePurchaseOrderState with _$SavePurchaseOrderState {
   const factory SavePurchaseOrderState.initial() = SavePurchaseOrderInitial;
 
-  const factory SavePurchaseOrderState.submitting() = SavePurchaseOrderSubmitting;
+  const factory SavePurchaseOrderState.submitting() =
+      SavePurchaseOrderSubmitting;
 
   /// Written. Carries what the server stored — including the lines' ids, which an edit needs.
   const factory SavePurchaseOrderState.success(PurchaseOrder order) =
       SavePurchaseOrderSuccess;
 
-  const factory SavePurchaseOrderState.failure(Failure failure) = SavePurchaseOrderFailure;
+  const factory SavePurchaseOrderState.failure(Failure failure) =
+      SavePurchaseOrderFailure;
 }
 
 extension SavePurchaseOrderStateX on SavePurchaseOrderState {
@@ -37,11 +39,13 @@ extension SavePurchaseOrderStateX on SavePurchaseOrderState {
   /// The same, for the order-level costs. Sits above that list for the same reason: an
   /// `additional_costs.1.amount` complaint has no box on screen that key can be matched to.
   String? get additionalCostsError =>
-      _fieldError('additional_costs') ?? _firstMatching(RegExp(r'^additional_costs\.\d+\.'));
+      _fieldError('additional_costs') ??
+      _firstMatching(RegExp(r'^additional_costs\.\d+\.'));
 
   bool get hasUnrenderedErrors => switch (this) {
     SavePurchaseOrderFailure(:final failure) => switch (failure) {
-      ServerFailure(:final fieldErrors) when fieldErrors != null && fieldErrors.isNotEmpty =>
+      ServerFailure(:final fieldErrors)
+          when fieldErrors != null && fieldErrors.isNotEmpty =>
         fieldErrors.keys.any(
           (key) =>
               !_rendered.contains(key) &&

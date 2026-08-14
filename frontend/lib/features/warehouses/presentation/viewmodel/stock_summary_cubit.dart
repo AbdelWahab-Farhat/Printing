@@ -1,7 +1,7 @@
+import 'package:dayaa/features/warehouses/models/warehouse_stock_summary.dart';
+import 'package:dayaa/features/warehouses/usecases/get_stock_summary.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock_summary.dart';
-import 'package:printing/features/warehouses/usecases/get_stock_summary.dart';
 
 part 'stock_summary_cubit.freezed.dart';
 part 'stock_summary_state.dart';

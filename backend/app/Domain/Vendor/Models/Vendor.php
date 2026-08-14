@@ -6,6 +6,8 @@ namespace App\Domain\Vendor\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
+use App\Domain\Comment\Concerns\HasComments;
+use App\Domain\Comment\Models\Comment;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Inventory\Models\Warehouse;
 use Database\Factories\VendorFactory;
@@ -28,7 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Vendor extends Model implements HasAuditTrail
 {
     /** @use HasFactory<VendorFactory> */
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, HasComments, HasFactory, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -62,6 +64,13 @@ class Vendor extends Model implements HasAuditTrail
      */
     public function auditTrailSubjects(): array
     {
-        return [$this->getMorphClass() => [$this->getKey()]];
+        return [
+            $this->getMorphClass() => [$this->getKey()],
+            // The notes, unlike the arrivals: a supplier accumulates a handful of sentences and
+            // an unbounded number of shipments. `withTrashed` deliberately — «من حذف الملاحظة؟»
+            // is a question about this supplier, and a removed note is the only kind anyone goes
+            // looking for.
+            (new Comment)->getMorphClass() => $this->comments()->withTrashed()->pluck('id')->all(),
+        ];
     }
 }

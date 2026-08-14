@@ -1,9 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
-import 'package:printing/features/customers/presentation/widgets/design_thumbnail.dart';
 
 /// What a design looks like before anybody opens it.
 ///

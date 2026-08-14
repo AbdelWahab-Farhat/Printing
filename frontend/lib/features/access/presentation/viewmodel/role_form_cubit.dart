@@ -1,13 +1,13 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/access/models/role.dart';
+import 'package:dayaa/features/access/usecases/create_role.dart';
+import 'package:dayaa/features/access/usecases/get_permissions.dart';
+import 'package:dayaa/features/access/usecases/update_role.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/access/models/role.dart';
-import 'package:printing/features/access/usecases/create_role.dart';
-import 'package:printing/features/access/usecases/get_permissions.dart';
-import 'package:printing/features/access/usecases/update_role.dart';
 
-part 'role_form_state.dart';
 part 'role_form_cubit.freezed.dart';
+part 'role_form_state.dart';
 
 /// Creating a role, and editing one. The same screen, because it is the same two questions:
 /// what is it called, and what may it do.

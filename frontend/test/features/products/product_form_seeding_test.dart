@@ -1,22 +1,23 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/product_categories_cubit.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/save_product_cubit.dart';
+import 'package:dayaa/features/products/presentation/views/product_form_page.dart';
+import 'package:dayaa/features/products/repositories/product_category_repository.dart';
+import 'package:dayaa/features/products/repositories/product_repository.dart';
+import 'package:dayaa/features/products/usecases/delete_product_category.dart';
+import 'package:dayaa/features/products/usecases/get_product_categories.dart';
+import 'package:dayaa/features/products/usecases/reorder_product_categories.dart';
+import 'package:dayaa/features/products/usecases/save_product.dart';
+import 'package:dayaa/features/products/usecases/set_product_category_activation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/models/product_category.dart';
-import 'package:printing/features/products/presentation/viewmodel/product_categories_cubit.dart';
-import 'package:printing/features/products/presentation/viewmodel/save_product_cubit.dart';
-import 'package:printing/features/products/presentation/views/product_form_page.dart';
-import 'package:printing/features/products/repositories/product_category_repository.dart';
-import 'package:printing/features/products/repositories/product_repository.dart';
-import 'package:printing/features/products/usecases/delete_product_category.dart';
-import 'package:printing/features/products/usecases/get_product_categories.dart';
-import 'package:printing/features/products/usecases/save_product.dart';
-import 'package:printing/features/products/usecases/set_product_category_activation.dart';
 
 class _StubRepository implements ProductRepository {
   @override
@@ -32,6 +33,7 @@ class _StubCategoryRepository implements ProductCategoryRepository {
   Future<Either<Failure, Paginated<ProductCategory>>> categories({
     String? search,
     bool? isActive,
+    bool leafOnly = false,
     int page = 1,
     int perPage = 20,
   }) async => const Right(
@@ -66,6 +68,7 @@ void main() {
         getCategories: GetProductCategories(categories),
         setActivation: SetProductCategoryActivation(categories),
         deleteCategory: DeleteProductCategory(categories),
+        reorderCategories: ReorderProductCategories(categories),
       ),
       instanceName: Injector.activeProductCategoriesCubit,
     );

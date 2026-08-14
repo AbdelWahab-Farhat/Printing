@@ -1,7 +1,7 @@
+import 'package:dayaa/core/theme/app_tones.dart';
+import 'package:dayaa/core/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/core/theme/app_tones.dart';
-import 'package:printing/core/theme/theme.dart';
 
 /// «مدفوعة بالكامل» — الأخضر، وكم يبعد عن تيركواز التطبيق.
 ///

@@ -15,6 +15,7 @@ use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderData;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Queries\PurchaseOrderFilters;
 use App\Domain\PurchaseOrder\Queries\PurchaseOrderListQuery;
+use App\Domain\PurchaseOrder\Queries\PurchaseOrderStatusCountsQuery;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\VendorService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -37,6 +38,7 @@ class PurchaseOrderService
         private readonly CancelPurchaseOrder $cancelPurchaseOrder,
         private readonly ReceivePurchaseOrder $receivePurchaseOrder,
         private readonly PurchaseOrderListQuery $purchaseOrderListQuery,
+        private readonly PurchaseOrderStatusCountsQuery $statusCountsQuery,
     ) {}
 
     /**
@@ -45,6 +47,19 @@ class PurchaseOrderService
     public function paginate(PurchaseOrderFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return ($this->purchaseOrderListQuery)($filters, $perPage);
+    }
+
+    /**
+     * How many orders stand in each status under the same filters the list uses.
+     *
+     * What a supplier's screen reads its three numbers from in one call — see
+     * {@see PurchaseOrderStatusCountsQuery} for why the status filter itself is ignored.
+     *
+     * @return array<string, int>
+     */
+    public function statusCounts(PurchaseOrderFilters $filters): array
+    {
+        return ($this->statusCountsQuery)($filters);
     }
 
     public function find(int $id): PurchaseOrder

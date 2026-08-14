@@ -1,10 +1,10 @@
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/presentation/widgets/product_category_badge.dart';
+import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/presentation/widgets/product_category_badge.dart';
-import 'package:printing/features/products/presentation/widgets/product_gallery.dart';
 
 /// One product in the catalogue, priced in full.
 ///

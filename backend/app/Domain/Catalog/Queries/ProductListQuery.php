@@ -30,9 +30,15 @@ final class ProductListQuery
                         ->orWhere('slug', 'ilike', $term);
                 });
             })
+            // **A heading matches what is under its subheadings too.** A parent holds no
+            // products of its own, so matching only the row itself would answer «لا منتجات» for
+            // «أكياس» while «أكياس ورقية» underneath it is full.
             ->when(
                 $filters->productCategoryId !== null,
-                fn ($q) => $q->where('product_category_id', $filters->productCategoryId),
+                fn ($q) => $q->whereIn(
+                    'product_category_id',
+                    ProductCategoryListQuery::idsUnder($filters->productCategoryId),
+                ),
             )
             ->when($filters->pricingUnit !== null, fn ($q) => $q->where('pricing_unit', $filters->pricingUnit))
             ->when($filters->pricingMode !== null, fn ($q) => $q->where('pricing_mode', $filters->pricingMode))

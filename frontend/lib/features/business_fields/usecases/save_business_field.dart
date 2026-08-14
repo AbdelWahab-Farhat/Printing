@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/business_fields/models/business_field.dart';
-import 'package:printing/features/business_fields/repositories/business_field_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/business_fields/models/business_field.dart';
+import 'package:dayaa/features/business_fields/repositories/business_field_repository.dart';
 
 /// Adds a trade to the list, or edits one that is already on it.
 ///

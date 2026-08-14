@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/reports/models/profit_and_loss_summary.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/reports/models/profit_and_loss_summary.dart';
 
 /// The figures the business is read by, stated without saying where they come from.
 ///

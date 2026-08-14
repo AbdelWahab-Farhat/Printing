@@ -1,19 +1,20 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
+import 'package:dayaa/features/orders/presentation/widgets/record_payment_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/orders/models/order_payment.dart';
-import 'package:printing/features/orders/presentation/viewmodel/order_payments_cubit.dart';
-import 'package:printing/features/orders/presentation/widgets/order_money_row.dart';
-import 'package:printing/features/orders/presentation/widgets/record_payment_sheet.dart';
 
 /// One order's money, on a screen of its own.
 ///
@@ -442,11 +443,7 @@ class _Entry extends StatelessWidget {
     return parts.join(' · ');
   }
 
-  String _date(DateTime value) {
-    final local = value.toLocal();
-
-    return '${local.year}/${local.month}/${local.day}';
-  }
+  String _date(DateTime value) => value.dayLabel;
 }
 
 class _ReceiptChip extends StatelessWidget {

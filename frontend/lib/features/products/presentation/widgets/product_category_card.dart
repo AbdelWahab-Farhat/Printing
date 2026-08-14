@@ -1,9 +1,9 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/products/models/product_category.dart';
 
 /// One heading in the catalogue: what it is called, how many products are under it, and whether
 /// it is still offered.
@@ -51,7 +51,7 @@ class ProductCategoryCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              _Glyph(isActive: category.isActive),
+              _Thumbnail(category: category),
               SizedBox(width: 12.w),
               Expanded(
                 child: Column(
@@ -91,15 +91,27 @@ class ProductCategoryCard extends StatelessWidget {
 
 /// «١٢ منتجاً» — and the reason the delete button will refuse.
 ///
+/// Counts the whole heading, subheadings included: «أكياس · ١٢ منتجاً» is true of what a
+/// customer finds under it, and a parent's own count is zero by construction.
+///
 /// Arabic counts its nouns differently at one, two, and beyond ten, and a screen that says «1
 /// منتجات» reads as a bug in front of the person using it every day.
 String _subtitle(ProductCategory category) {
-  final count = category.productsCount;
   final stopped = category.isActive ? '' : ' · موقوف';
 
-  if (count == null) return 'تصنيف$stopped';
+  // A heading holding subheadings says so first: it is why no product can be filed on it, and
+  // why the delete button will refuse.
+  final children = switch (category.childrenCount ?? 0) {
+    0 => null,
+    1 => 'تصنيف فرعي',
+    2 => 'تصنيفان فرعيان',
+    final int many when many <= 10 => '$many تصنيفات فرعية',
+    final int many => '$many تصنيفاً فرعياً',
+  };
 
+  final count = category.shownProductsCount;
   final products = switch (count) {
+    null => children == null ? 'تصنيف' : null,
     0 => 'لا منتجات بعد',
     1 => 'منتج واحد',
     2 => 'منتجان',
@@ -107,7 +119,45 @@ String _subtitle(ProductCategory category) {
     _ => '${count.grouped} منتجاً',
   };
 
-  return '$products$stopped';
+  return [?children, ?products].join(' · ') + stopped;
+}
+
+/// The heading's picture, or the glyph that stands in for one.
+///
+/// **The same square either way**, so a list of headings — some pictured, some not — stays a
+/// column of rows rather than a ragged edge.
+class _Thumbnail extends StatelessWidget {
+  const _Thumbnail({required this.category});
+
+  final ProductCategory category;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final isActive = category.isActive;
+    final corner = BorderRadius.circular(10.r);
+
+    return ClipRRect(
+      borderRadius: corner,
+      child: Container(
+        height: 36.w,
+        width: 36.w,
+        // The tint is the only thing that changes when a category is stopped: enough to scan
+        // the list by, not enough to make the row read as broken.
+        color: isActive ? scheme.secondaryContainer : scheme.surfaceContainerHighest,
+        child: category.hasImage
+            ? Image.network(
+                category.imageUrl!,
+                fit: BoxFit.cover,
+                // A signed link that has expired, or a phone with no connection. The glyph is
+                // what this row looks like without a picture anyway, so a broken-image icon
+                // would only say «شيء ما تعطّل» about something that reads fine.
+                errorBuilder: (context, _, _) => _Glyph(isActive: isActive),
+              )
+            : _Glyph(isActive: isActive),
+      ),
+    );
+  }
 }
 
 class _Glyph extends StatelessWidget {
@@ -119,20 +169,10 @@ class _Glyph extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
-    return Container(
-      height: 36.w,
-      width: 36.w,
-      decoration: BoxDecoration(
-        // The tint is the only thing that changes when a category is stopped: enough to scan
-        // the list by, not enough to make the row read as broken.
-        color: isActive ? scheme.secondaryContainer : scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      child: Icon(
-        AppIcons.productCategory,
-        size: 19.sp,
-        color: isActive ? scheme.onSecondaryContainer : scheme.onSurfaceVariant,
-      ),
+    return Icon(
+      AppIcons.productCategory,
+      size: 19.sp,
+      color: isActive ? scheme.onSecondaryContainer : scheme.onSurfaceVariant,
     );
   }
 }

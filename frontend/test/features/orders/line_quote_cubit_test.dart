@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
+import 'package:dayaa/features/products/models/price_quote.dart';
+import 'package:dayaa/features/products/repositories/product_repository.dart';
+import 'package:dayaa/features/products/usecases/get_price_quote.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/presentation/viewmodel/line_quote_cubit.dart';
-import 'package:printing/features/products/models/price_quote.dart';
-import 'package:printing/features/products/repositories/product_repository.dart';
-import 'package:printing/features/products/usecases/get_price_quote.dart';
 
 /// The price under the quantity box, as it is typed.
 ///

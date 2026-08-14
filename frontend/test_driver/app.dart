@@ -1,5 +1,5 @@
+import 'package:dayaa/main.dart' as app;
 import 'package:flutter_driver/driver_extension.dart';
-import 'package:printing/main.dart' as app;
 
 /// The app, with the Flutter Driver extension switched on.
 ///

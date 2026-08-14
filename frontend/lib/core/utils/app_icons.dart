@@ -235,6 +235,14 @@ abstract final class AppIcons {
   static IconData get ordersReceived =>
       _pick(Icons.task_alt_rounded, CupertinoIcons.checkmark_seal_fill);
 
+  /// Orders nobody will work on and nobody received — «الطلبات الملغاة».
+  ///
+  /// A struck-through circle rather than a bin: nothing was deleted. The order is on record,
+  /// with everything it cost up to the moment it was called off, and a bin over a row that is
+  /// still there and still counted would be the wrong promise entirely.
+  static IconData get ordersCancelled =>
+      _pick(Icons.cancel_outlined, CupertinoIcons.xmark_circle);
+
   /// How long since a customer last ordered — «منذ شهرين» on a card in the call sheet.
   ///
   /// A bare clock, and deliberately none of the three above it: [orders] would make an elapsed
@@ -267,6 +275,11 @@ abstract final class AppIcons {
   /// machine-readable slug on a single product.
   static IconData get productCategory =>
       _pick(Icons.folder_copy_outlined, CupertinoIcons.folder);
+
+  /// The handle a row is dragged by. Stacked lines, which is what every list on both platforms
+  /// uses for «امسك هنا واسحب» — not [menu]'s three lines, which open a drawer.
+  static IconData get reorder =>
+      _pick(Icons.drag_indicator_rounded, CupertinoIcons.line_horizontal_3_decrease);
 
   /// A branch the customer walks into and collects from.
   ///

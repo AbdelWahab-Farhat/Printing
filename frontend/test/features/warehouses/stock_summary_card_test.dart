@@ -1,9 +1,9 @@
+import 'package:dayaa/features/warehouses/models/warehouse_stock_summary.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/stock_summary_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock_summary.dart';
-import 'package:printing/features/warehouses/presentation/widgets/stock_summary_card.dart';
 
 /// The card that answers «كم عندي في هذا المخزن؟» before anybody scrolls.
 ///

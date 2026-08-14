@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
-import 'package:printing/features/vendors/repositories/vendor_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/repositories/vendor_repository.dart';
 
 /// Adds a supplier, or corrects one.
 ///
@@ -75,6 +75,8 @@ class SetVendorActive {
 
   final VendorRepository _repository;
 
-  Future<Either<Failure, Vendor>> call(int vendorId, {required bool isActive}) =>
-      _repository.setActive(vendorId, isActive);
+  Future<Either<Failure, Vendor>> call(
+    int vendorId, {
+    required bool isActive,
+  }) => _repository.setActive(vendorId, isActive);
 }

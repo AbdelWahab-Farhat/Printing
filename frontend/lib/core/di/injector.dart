@@ -1,189 +1,195 @@
+import 'package:dayaa/core/config/app_config.dart';
+import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/attachment_picker_impl.dart';
+import 'package:dayaa/core/network/dio_client.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/storage/token_storage.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/add_employee_cubit.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/employee_detail_cubit.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/employee_form_cubit.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/role_detail_cubit.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/role_form_cubit.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/roles_cubit.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/user_roles_cubit.dart';
+import 'package:dayaa/features/access/presentation/viewmodel/users_cubit.dart';
+import 'package:dayaa/features/access/repositories/access_repository.dart';
+import 'package:dayaa/features/access/repositories/access_repository_impl.dart';
+import 'package:dayaa/features/access/usecases/create_role.dart';
+import 'package:dayaa/features/access/usecases/create_user.dart';
+import 'package:dayaa/features/access/usecases/delete_role.dart';
+import 'package:dayaa/features/access/usecases/get_permissions.dart';
+import 'package:dayaa/features/access/usecases/get_role.dart';
+import 'package:dayaa/features/access/usecases/get_roles.dart';
+import 'package:dayaa/features/access/usecases/get_user.dart';
+import 'package:dayaa/features/access/usecases/get_users.dart';
+import 'package:dayaa/features/access/usecases/set_user_activation.dart';
+import 'package:dayaa/features/access/usecases/set_user_password.dart';
+import 'package:dayaa/features/access/usecases/set_user_salary.dart';
+import 'package:dayaa/features/access/usecases/sync_user_roles.dart';
+import 'package:dayaa/features/access/usecases/update_role.dart';
+import 'package:dayaa/features/access/usecases/update_user.dart';
+import 'package:dayaa/features/audit/repositories/audit_repository.dart';
+import 'package:dayaa/features/audit/repositories/audit_repository_impl.dart';
+import 'package:dayaa/features/audit/usecases/get_activity_log.dart';
+import 'package:dayaa/features/auth/presentation/viewmodel/login_cubit.dart';
+import 'package:dayaa/features/auth/presentation/viewmodel/logout_cubit.dart';
+import 'package:dayaa/features/auth/repositories/auth_repository.dart';
+import 'package:dayaa/features/auth/repositories/auth_repository_impl.dart';
+import 'package:dayaa/features/auth/usecases/get_current_user.dart';
+import 'package:dayaa/features/auth/usecases/has_stored_session.dart';
+import 'package:dayaa/features/auth/usecases/login.dart';
+import 'package:dayaa/features/auth/usecases/logout.dart';
+import 'package:dayaa/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
+import 'package:dayaa/features/business_fields/presentation/viewmodel/save_business_field_cubit.dart';
+import 'package:dayaa/features/business_fields/repositories/business_field_repository.dart';
+import 'package:dayaa/features/business_fields/repositories/business_field_repository_impl.dart';
+import 'package:dayaa/features/business_fields/usecases/delete_business_field.dart';
+import 'package:dayaa/features/business_fields/usecases/get_business_fields.dart';
+import 'package:dayaa/features/business_fields/usecases/save_business_field.dart';
+import 'package:dayaa/features/business_fields/usecases/set_business_field_activation.dart';
+import 'package:dayaa/features/cities/presentation/viewmodel/cities_cubit.dart';
+import 'package:dayaa/features/cities/presentation/viewmodel/city_regions_cubit.dart';
+import 'package:dayaa/features/cities/repositories/city_repository.dart';
+import 'package:dayaa/features/cities/repositories/city_repository_impl.dart';
+import 'package:dayaa/features/cities/usecases/get_cities.dart';
+import 'package:dayaa/features/cities/usecases/get_city_regions.dart';
+import 'package:dayaa/features/comments/models/comment_subject.dart';
+import 'package:dayaa/features/comments/presentation/viewmodel/comments_cubit.dart';
+import 'package:dayaa/features/comments/repositories/comment_repository.dart';
+import 'package:dayaa/features/comments/repositories/comment_repository_impl.dart';
+import 'package:dayaa/features/comments/usecases/add_comment.dart';
+import 'package:dayaa/features/comments/usecases/delete_comment.dart';
+import 'package:dayaa/features/comments/usecases/edit_comment.dart';
+import 'package:dayaa/features/comments/usecases/get_comments.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/add_customer_cubit.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/customer_order_counts_cubit.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/customers_cubit.dart';
+import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
+import 'package:dayaa/features/customers/repositories/customer_design_repository_impl.dart';
+import 'package:dayaa/features/customers/repositories/customer_repository.dart';
+import 'package:dayaa/features/customers/repositories/customer_repository_impl.dart';
+import 'package:dayaa/features/customers/usecases/create_customer.dart';
+import 'package:dayaa/features/customers/usecases/delete_customer_design.dart';
+import 'package:dayaa/features/customers/usecases/get_customer.dart';
+import 'package:dayaa/features/customers/usecases/get_customer_designs.dart';
+import 'package:dayaa/features/customers/usecases/get_customers.dart';
+import 'package:dayaa/features/customers/usecases/rename_customer_design.dart';
+import 'package:dayaa/features/customers/usecases/save_design_to_device.dart';
+import 'package:dayaa/features/customers/usecases/set_customer_activation.dart';
+import 'package:dayaa/features/customers/usecases/update_customer.dart';
+import 'package:dayaa/features/customers/usecases/upload_customer_design.dart';
+import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
+import 'package:dayaa/features/home/repositories/home_repository.dart';
+import 'package:dayaa/features/home/repositories/home_repository_impl.dart';
+import 'package:dayaa/features/home/usecases/get_home_summary.dart';
+import 'package:dayaa/features/location/presentation/viewmodel/pick_location_cubit.dart';
+import 'package:dayaa/features/location/repositories/geocoding_repository.dart';
+import 'package:dayaa/features/location/repositories/geocoding_repository_impl.dart';
+import 'package:dayaa/features/location/usecases/search_places.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/presentation/viewmodel/manufacturing_cost_rates_cubit.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/presentation/viewmodel/save_manufacturing_cost_rate_cubit.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository_impl.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/usecases/manufacturing_cost_rate_usecases.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/orders_filter.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_status_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/orders_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
+import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
+import 'package:dayaa/features/orders/repositories/order_payment_repository_impl.dart';
+import 'package:dayaa/features/orders/repositories/order_repository.dart';
+import 'package:dayaa/features/orders/repositories/order_repository_impl.dart';
+import 'package:dayaa/features/orders/usecases/change_order_status.dart';
+import 'package:dayaa/features/orders/usecases/get_order.dart';
+import 'package:dayaa/features/orders/usecases/get_order_counts.dart';
+import 'package:dayaa/features/orders/usecases/get_orders.dart';
+import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
+import 'package:dayaa/features/orders/usecases/manage_order_payments.dart';
+import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
+import 'package:dayaa/features/orders/usecases/save_order_invoice_pdf.dart';
+import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
+import 'package:dayaa/features/orders/usecases/take_order.dart';
+import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/product_categories_cubit.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/product_detail_cubit.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/products_cubit.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/save_product_category_cubit.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/save_product_cubit.dart';
+import 'package:dayaa/features/products/repositories/product_category_repository.dart';
+import 'package:dayaa/features/products/repositories/product_category_repository_impl.dart';
+import 'package:dayaa/features/products/repositories/product_repository.dart';
+import 'package:dayaa/features/products/repositories/product_repository_impl.dart';
+import 'package:dayaa/features/products/usecases/delete_product_category.dart';
+import 'package:dayaa/features/products/usecases/get_price_quote.dart';
+import 'package:dayaa/features/products/usecases/get_product.dart';
+import 'package:dayaa/features/products/usecases/get_product_categories.dart';
+import 'package:dayaa/features/products/usecases/get_products.dart';
+import 'package:dayaa/features/products/usecases/reorder_product_categories.dart';
+import 'package:dayaa/features/products/usecases/save_product.dart';
+import 'package:dayaa/features/products/usecases/save_product_category.dart';
+import 'package:dayaa/features/products/usecases/set_product_category_activation.dart';
+import 'package:dayaa/features/products/usecases/set_product_category_image.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_orders_filter.dart';
+import 'package:dayaa/features/purchase_orders/presentation/viewmodel/filtered_purchase_orders_cubit.dart';
+import 'package:dayaa/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
+import 'package:dayaa/features/purchase_orders/presentation/viewmodel/purchase_orders_cubit.dart';
+import 'package:dayaa/features/purchase_orders/presentation/viewmodel/save_purchase_order_cubit.dart';
+import 'package:dayaa/features/purchase_orders/repositories/purchase_order_repository.dart';
+import 'package:dayaa/features/purchase_orders/repositories/purchase_order_repository_impl.dart';
+import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
+import 'package:dayaa/features/reports/presentation/viewmodel/profit_and_loss_cubit.dart';
+import 'package:dayaa/features/reports/repositories/report_repository.dart';
+import 'package:dayaa/features/reports/repositories/report_repository_impl.dart';
+import 'package:dayaa/features/reports/usecases/get_profit_and_loss.dart';
+import 'package:dayaa/features/settings/presentation/viewmodel/settings_cubit.dart';
+import 'package:dayaa/features/settings/repositories/settings_repository.dart';
+import 'package:dayaa/features/settings/repositories/settings_repository_impl.dart';
+import 'package:dayaa/features/settings/usecases/get_settings.dart';
+import 'package:dayaa/features/settings/usecases/set_notifications_enabled.dart';
+import 'package:dayaa/features/shipping_companies/presentation/viewmodel/save_shipping_company_cubit.dart';
+import 'package:dayaa/features/shipping_companies/presentation/viewmodel/shipping_companies_cubit.dart';
+import 'package:dayaa/features/shipping_companies/repositories/shipping_company_repository.dart';
+import 'package:dayaa/features/shipping_companies/repositories/shipping_company_repository_impl.dart';
+import 'package:dayaa/features/shipping_companies/usecases/get_shipping_companies.dart';
+import 'package:dayaa/features/shipping_companies/usecases/save_shipping_company.dart';
+import 'package:dayaa/features/splash/presentation/viewmodel/splash_cubit.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/presentation/viewmodel/save_vendor_cubit.dart';
+import 'package:dayaa/features/vendors/presentation/viewmodel/vendor_detail_cubit.dart';
+import 'package:dayaa/features/vendors/presentation/viewmodel/vendor_purchase_order_counts_cubit.dart';
+import 'package:dayaa/features/vendors/presentation/viewmodel/vendors_cubit.dart';
+import 'package:dayaa/features/vendors/repositories/vendor_repository.dart';
+import 'package:dayaa/features/vendors/repositories/vendor_repository_impl.dart';
+import 'package:dayaa/features/vendors/usecases/get_vendors.dart';
+import 'package:dayaa/features/vendors/usecases/save_vendor.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/save_warehouse_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/warehouses_cubit.dart';
+import 'package:dayaa/features/warehouses/repositories/warehouse_repository.dart';
+import 'package:dayaa/features/warehouses/repositories/warehouse_repository_impl.dart';
+import 'package:dayaa/features/warehouses/usecases/delete_warehouse.dart';
+import 'package:dayaa/features/warehouses/usecases/get_stock_movements.dart';
+import 'package:dayaa/features/warehouses/usecases/get_stock_summary.dart';
+import 'package:dayaa/features/warehouses/usecases/get_warehouse_stocks.dart';
+import 'package:dayaa/features/warehouses/usecases/get_warehouses.dart';
+import 'package:dayaa/features/warehouses/usecases/record_stock_movement.dart';
+import 'package:dayaa/features/warehouses/usecases/save_warehouse.dart';
+import 'package:dayaa/features/warehouses/usecases/set_low_stock_threshold.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
-import 'package:printing/core/config/app_config.dart';
-import 'package:printing/core/files/attachment_picker.dart';
-import 'package:printing/core/files/attachment_picker_impl.dart';
-import 'package:printing/core/network/dio_client.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/storage/token_storage.dart';
-import 'package:printing/features/access/presentation/viewmodel/add_employee_cubit.dart';
-import 'package:printing/features/access/presentation/viewmodel/employee_detail_cubit.dart';
-import 'package:printing/features/access/presentation/viewmodel/employee_form_cubit.dart';
-import 'package:printing/features/access/presentation/viewmodel/role_detail_cubit.dart';
-import 'package:printing/features/access/presentation/viewmodel/role_form_cubit.dart';
-import 'package:printing/features/access/presentation/viewmodel/roles_cubit.dart';
-import 'package:printing/features/access/presentation/viewmodel/user_roles_cubit.dart';
-import 'package:printing/features/access/presentation/viewmodel/users_cubit.dart';
-import 'package:printing/features/access/repositories/access_repository.dart';
-import 'package:printing/features/access/repositories/access_repository_impl.dart';
-import 'package:printing/features/access/usecases/create_role.dart';
-import 'package:printing/features/access/usecases/create_user.dart';
-import 'package:printing/features/access/usecases/delete_role.dart';
-import 'package:printing/features/access/usecases/get_permissions.dart';
-import 'package:printing/features/access/usecases/get_role.dart';
-import 'package:printing/features/access/usecases/get_roles.dart';
-import 'package:printing/features/access/usecases/get_user.dart';
-import 'package:printing/features/access/usecases/get_users.dart';
-import 'package:printing/features/access/usecases/set_user_activation.dart';
-import 'package:printing/features/access/usecases/set_user_password.dart';
-import 'package:printing/features/access/usecases/set_user_salary.dart';
-import 'package:printing/features/access/usecases/sync_user_roles.dart';
-import 'package:printing/features/access/usecases/update_role.dart';
-import 'package:printing/features/access/usecases/update_user.dart';
-import 'package:printing/features/audit/repositories/audit_repository.dart';
-import 'package:printing/features/audit/repositories/audit_repository_impl.dart';
-import 'package:printing/features/audit/usecases/get_activity_log.dart';
-import 'package:printing/features/auth/presentation/viewmodel/login_cubit.dart';
-import 'package:printing/features/auth/presentation/viewmodel/logout_cubit.dart';
-import 'package:printing/features/auth/repositories/auth_repository.dart';
-import 'package:printing/features/auth/repositories/auth_repository_impl.dart';
-import 'package:printing/features/auth/usecases/get_current_user.dart';
-import 'package:printing/features/auth/usecases/has_stored_session.dart';
-import 'package:printing/features/auth/usecases/login.dart';
-import 'package:printing/features/auth/usecases/logout.dart';
-import 'package:printing/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
-import 'package:printing/features/business_fields/presentation/viewmodel/save_business_field_cubit.dart';
-import 'package:printing/features/business_fields/repositories/business_field_repository.dart';
-import 'package:printing/features/business_fields/repositories/business_field_repository_impl.dart';
-import 'package:printing/features/business_fields/usecases/delete_business_field.dart';
-import 'package:printing/features/business_fields/usecases/get_business_fields.dart';
-import 'package:printing/features/business_fields/usecases/save_business_field.dart';
-import 'package:printing/features/business_fields/usecases/set_business_field_activation.dart';
-import 'package:printing/features/cities/presentation/viewmodel/cities_cubit.dart';
-import 'package:printing/features/cities/presentation/viewmodel/city_regions_cubit.dart';
-import 'package:printing/features/cities/repositories/city_repository.dart';
-import 'package:printing/features/cities/repositories/city_repository_impl.dart';
-import 'package:printing/features/cities/usecases/get_cities.dart';
-import 'package:printing/features/cities/usecases/get_city_regions.dart';
-import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customer_comments_cubit.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customer_order_counts_cubit.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customers_cubit.dart';
-import 'package:printing/features/customers/repositories/customer_comment_repository.dart';
-import 'package:printing/features/customers/repositories/customer_comment_repository_impl.dart';
-import 'package:printing/features/customers/repositories/customer_design_repository.dart';
-import 'package:printing/features/customers/repositories/customer_design_repository_impl.dart';
-import 'package:printing/features/customers/repositories/customer_repository.dart';
-import 'package:printing/features/customers/repositories/customer_repository_impl.dart';
-import 'package:printing/features/customers/usecases/add_customer_comment.dart';
-import 'package:printing/features/customers/usecases/create_customer.dart';
-import 'package:printing/features/customers/usecases/delete_customer_comment.dart';
-import 'package:printing/features/customers/usecases/delete_customer_design.dart';
-import 'package:printing/features/customers/usecases/edit_customer_comment.dart';
-import 'package:printing/features/customers/usecases/get_customer.dart';
-import 'package:printing/features/customers/usecases/get_customer_comments.dart';
-import 'package:printing/features/customers/usecases/get_customer_designs.dart';
-import 'package:printing/features/customers/usecases/get_customers.dart';
-import 'package:printing/features/customers/usecases/rename_customer_design.dart';
-import 'package:printing/features/customers/usecases/save_design_to_device.dart';
-import 'package:printing/features/customers/usecases/set_customer_activation.dart';
-import 'package:printing/features/customers/usecases/update_customer.dart';
-import 'package:printing/features/customers/usecases/upload_customer_design.dart';
-import 'package:printing/features/home/presentation/viewmodel/home_cubit.dart';
-import 'package:printing/features/home/repositories/home_repository.dart';
-import 'package:printing/features/home/repositories/home_repository_impl.dart';
-import 'package:printing/features/home/usecases/get_home_summary.dart';
-import 'package:printing/features/location/presentation/viewmodel/pick_location_cubit.dart';
-import 'package:printing/features/location/repositories/geocoding_repository.dart';
-import 'package:printing/features/location/repositories/geocoding_repository_impl.dart';
-import 'package:printing/features/location/usecases/search_places.dart';
-import 'package:printing/features/manufacturing_cost_rates/presentation/viewmodel/manufacturing_cost_rates_cubit.dart';
-import 'package:printing/features/manufacturing_cost_rates/presentation/viewmodel/save_manufacturing_cost_rate_cubit.dart';
-import 'package:printing/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository.dart';
-import 'package:printing/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository_impl.dart';
-import 'package:printing/features/manufacturing_cost_rates/usecases/manufacturing_cost_rate_usecases.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/models/orders_filter.dart';
-import 'package:printing/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
-import 'package:printing/features/orders/presentation/viewmodel/line_quote_cubit.dart';
-import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
-import 'package:printing/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
-import 'package:printing/features/orders/presentation/viewmodel/order_payments_cubit.dart';
-import 'package:printing/features/orders/presentation/viewmodel/order_status_cubit.dart';
-import 'package:printing/features/orders/presentation/viewmodel/orders_cubit.dart';
-import 'package:printing/features/orders/presentation/viewmodel/take_order_cubit.dart';
-import 'package:printing/features/orders/repositories/order_payment_repository.dart';
-import 'package:printing/features/orders/repositories/order_payment_repository_impl.dart';
-import 'package:printing/features/orders/repositories/order_repository.dart';
-import 'package:printing/features/orders/repositories/order_repository_impl.dart';
-import 'package:printing/features/orders/usecases/change_order_status.dart';
-import 'package:printing/features/orders/usecases/get_order.dart';
-import 'package:printing/features/orders/usecases/get_order_counts.dart';
-import 'package:printing/features/orders/usecases/get_orders.dart';
-import 'package:printing/features/orders/usecases/manage_order_designs.dart';
-import 'package:printing/features/orders/usecases/manage_order_payments.dart';
-import 'package:printing/features/orders/usecases/record_scrap_loss.dart';
-import 'package:printing/features/orders/usecases/save_order_invoice_pdf.dart';
-import 'package:printing/features/orders/usecases/set_order_shortages.dart';
-import 'package:printing/features/orders/usecases/take_order.dart';
-import 'package:printing/features/orders/usecases/update_order_invoice.dart';
-import 'package:printing/features/products/presentation/viewmodel/product_categories_cubit.dart';
-import 'package:printing/features/products/presentation/viewmodel/product_detail_cubit.dart';
-import 'package:printing/features/products/presentation/viewmodel/products_cubit.dart';
-import 'package:printing/features/products/presentation/viewmodel/save_product_category_cubit.dart';
-import 'package:printing/features/products/presentation/viewmodel/save_product_cubit.dart';
-import 'package:printing/features/products/repositories/product_category_repository.dart';
-import 'package:printing/features/products/repositories/product_category_repository_impl.dart';
-import 'package:printing/features/products/repositories/product_repository.dart';
-import 'package:printing/features/products/repositories/product_repository_impl.dart';
-import 'package:printing/features/products/usecases/delete_product_category.dart';
-import 'package:printing/features/products/usecases/get_price_quote.dart';
-import 'package:printing/features/products/usecases/get_product.dart';
-import 'package:printing/features/products/usecases/get_product_categories.dart';
-import 'package:printing/features/products/usecases/get_products.dart';
-import 'package:printing/features/products/usecases/save_product.dart';
-import 'package:printing/features/products/usecases/save_product_category.dart';
-import 'package:printing/features/products/usecases/set_product_category_activation.dart';
-import 'package:printing/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
-import 'package:printing/features/purchase_orders/presentation/viewmodel/purchase_orders_cubit.dart';
-import 'package:printing/features/purchase_orders/presentation/viewmodel/save_purchase_order_cubit.dart';
-import 'package:printing/features/purchase_orders/repositories/purchase_order_repository.dart';
-import 'package:printing/features/purchase_orders/repositories/purchase_order_repository_impl.dart';
-import 'package:printing/features/purchase_orders/usecases/purchase_order_usecases.dart';
-import 'package:printing/features/reports/presentation/viewmodel/profit_and_loss_cubit.dart';
-import 'package:printing/features/reports/repositories/report_repository.dart';
-import 'package:printing/features/reports/repositories/report_repository_impl.dart';
-import 'package:printing/features/reports/usecases/get_profit_and_loss.dart';
-import 'package:printing/features/settings/presentation/viewmodel/settings_cubit.dart';
-import 'package:printing/features/settings/repositories/settings_repository.dart';
-import 'package:printing/features/settings/repositories/settings_repository_impl.dart';
-import 'package:printing/features/settings/usecases/get_settings.dart';
-import 'package:printing/features/settings/usecases/set_notifications_enabled.dart';
-import 'package:printing/features/shipping_companies/presentation/viewmodel/save_shipping_company_cubit.dart';
-import 'package:printing/features/shipping_companies/presentation/viewmodel/shipping_companies_cubit.dart';
-import 'package:printing/features/shipping_companies/repositories/shipping_company_repository.dart';
-import 'package:printing/features/shipping_companies/repositories/shipping_company_repository_impl.dart';
-import 'package:printing/features/shipping_companies/usecases/get_shipping_companies.dart';
-import 'package:printing/features/shipping_companies/usecases/save_shipping_company.dart';
-import 'package:printing/features/splash/presentation/viewmodel/splash_cubit.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
-import 'package:printing/features/vendors/presentation/viewmodel/save_vendor_cubit.dart';
-import 'package:printing/features/vendors/presentation/viewmodel/vendor_detail_cubit.dart';
-import 'package:printing/features/vendors/presentation/viewmodel/vendors_cubit.dart';
-import 'package:printing/features/vendors/repositories/vendor_repository.dart';
-import 'package:printing/features/vendors/repositories/vendor_repository_impl.dart';
-import 'package:printing/features/vendors/usecases/get_vendors.dart';
-import 'package:printing/features/vendors/usecases/save_vendor.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/save_warehouse_cubit.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
-import 'package:printing/features/warehouses/presentation/viewmodel/warehouses_cubit.dart';
-import 'package:printing/features/warehouses/repositories/warehouse_repository.dart';
-import 'package:printing/features/warehouses/repositories/warehouse_repository_impl.dart';
-import 'package:printing/features/warehouses/usecases/delete_warehouse.dart';
-import 'package:printing/features/warehouses/usecases/get_stock_movements.dart';
-import 'package:printing/features/warehouses/usecases/get_stock_summary.dart';
-import 'package:printing/features/warehouses/usecases/get_warehouse_stocks.dart';
-import 'package:printing/features/warehouses/usecases/get_warehouses.dart';
-import 'package:printing/features/warehouses/usecases/record_stock_movement.dart';
-import 'package:printing/features/warehouses/usecases/save_warehouse.dart';
-import 'package:printing/features/warehouses/usecases/set_low_stock_threshold.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt sl = GetIt.instance;
@@ -209,7 +215,9 @@ const String geocoderDio = 'geocoder';
 abstract final class Injector {
   static bool _isInitialized = false;
 
-  static Future<void> init({required Future<void> Function() onUnauthorized}) async {
+  static Future<void> init({
+    required Future<void> Function() onUnauthorized,
+  }) async {
     if (_isInitialized) {
       debugPrint('⚠️ Injector already initialised — skipping');
 
@@ -287,30 +295,56 @@ abstract final class Injector {
   /// which roles they hold.
   static void _registerAccess() {
     sl
-      ..registerLazySingleton<AccessRepository>(() => AccessRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<AccessRepository>(
+        () => AccessRepositoryImpl(sl<Dio>()),
+      )
       ..registerLazySingleton<GetUsers>(() => GetUsers(sl<AccessRepository>()))
-      ..registerLazySingleton<CreateUser>(() => CreateUser(sl<AccessRepository>()))
+      ..registerLazySingleton<CreateUser>(
+        () => CreateUser(sl<AccessRepository>()),
+      )
       ..registerLazySingleton<GetUser>(() => GetUser(sl<AccessRepository>()))
-      ..registerLazySingleton<UpdateUser>(() => UpdateUser(sl<AccessRepository>()))
-      ..registerLazySingleton<SetUserPassword>(() => SetUserPassword(sl<AccessRepository>()))
-      ..registerLazySingleton<SetUserSalary>(() => SetUserSalary(sl<AccessRepository>()))
-      ..registerLazySingleton<SetUserActivation>(() => SetUserActivation(sl<AccessRepository>()))
-      ..registerLazySingleton<SyncUserRoles>(() => SyncUserRoles(sl<AccessRepository>()))
+      ..registerLazySingleton<UpdateUser>(
+        () => UpdateUser(sl<AccessRepository>()),
+      )
+      ..registerLazySingleton<SetUserPassword>(
+        () => SetUserPassword(sl<AccessRepository>()),
+      )
+      ..registerLazySingleton<SetUserSalary>(
+        () => SetUserSalary(sl<AccessRepository>()),
+      )
+      ..registerLazySingleton<SetUserActivation>(
+        () => SetUserActivation(sl<AccessRepository>()),
+      )
+      ..registerLazySingleton<SyncUserRoles>(
+        () => SyncUserRoles(sl<AccessRepository>()),
+      )
       ..registerLazySingleton<GetRoles>(() => GetRoles(sl<AccessRepository>()))
       ..registerLazySingleton<GetRole>(() => GetRole(sl<AccessRepository>()))
-      ..registerLazySingleton<CreateRole>(() => CreateRole(sl<AccessRepository>()))
-      ..registerLazySingleton<UpdateRole>(() => UpdateRole(sl<AccessRepository>()))
-      ..registerLazySingleton<DeleteRole>(() => DeleteRole(sl<AccessRepository>()))
-      ..registerLazySingleton<GetPermissions>(() => GetPermissions(sl<AccessRepository>()))
+      ..registerLazySingleton<CreateRole>(
+        () => CreateRole(sl<AccessRepository>()),
+      )
+      ..registerLazySingleton<UpdateRole>(
+        () => UpdateRole(sl<AccessRepository>()),
+      )
+      ..registerLazySingleton<DeleteRole>(
+        () => DeleteRole(sl<AccessRepository>()),
+      )
+      ..registerLazySingleton<GetPermissions>(
+        () => GetPermissions(sl<AccessRepository>()),
+      )
       // Factories: each screen owns its Cubit and closes it on dispose.
       ..registerFactory<UsersCubit>(() => UsersCubit(getUsers: sl<GetUsers>()))
       // Factory: the form owns its Cubit and closes it on dispose. A singleton here would hand
       // the second employee the closed Cubit of the first.
       ..registerFactory<AddEmployeeCubit>(
-        () => AddEmployeeCubit(getRoles: sl<GetRoles>(), createUser: sl<CreateUser>()),
+        () => AddEmployeeCubit(
+          getRoles: sl<GetRoles>(),
+          createUser: sl<CreateUser>(),
+        ),
       )
       ..registerFactory<RolesCubit>(
-        () => RolesCubit(getRoles: sl<GetRoles>(), deleteRole: sl<DeleteRole>()),
+        () =>
+            RolesCubit(getRoles: sl<GetRoles>(), deleteRole: sl<DeleteRole>()),
       )
       ..registerFactory<RoleFormCubit>(
         () => RoleFormCubit(
@@ -362,8 +396,12 @@ abstract final class Injector {
   /// record and a factory taking two parameters is a worse way to say that than a constructor.
   static void _registerAudit() {
     sl
-      ..registerLazySingleton<AuditRepository>(() => AuditRepositoryImpl(sl<Dio>()))
-      ..registerLazySingleton<GetActivityLog>(() => GetActivityLog(sl<AuditRepository>()));
+      ..registerLazySingleton<AuditRepository>(
+        () => AuditRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetActivityLog>(
+        () => GetActivityLog(sl<AuditRepository>()),
+      );
   }
 
   /// Signing in, and the stored session behind it.
@@ -375,9 +413,13 @@ abstract final class Injector {
         () => AuthRepositoryImpl(sl<Dio>(), sl<TokenStorage>(), sl<Session>()),
       )
       ..registerLazySingleton<Login>(() => Login(sl<AuthRepository>()))
-      ..registerLazySingleton<GetCurrentUser>(() => GetCurrentUser(sl<AuthRepository>()))
+      ..registerLazySingleton<GetCurrentUser>(
+        () => GetCurrentUser(sl<AuthRepository>()),
+      )
       ..registerLazySingleton<Logout>(() => Logout(sl<AuthRepository>()))
-      ..registerLazySingleton<HasStoredSession>(() => HasStoredSession(sl<AuthRepository>()))
+      ..registerLazySingleton<HasStoredSession>(
+        () => HasStoredSession(sl<AuthRepository>()),
+      )
       // Factory: the splash screen owns its Cubit. A singleton would keep the result of the
       // first check for the life of the process, which is exactly wrong for a screen whose
       // whole job is to check again.
@@ -412,7 +454,10 @@ abstract final class Injector {
             baseUrl: AppConfig.geocoderBaseUrl,
             connectTimeout: AppConfig.connectTimeout,
             receiveTimeout: AppConfig.receiveTimeout,
-            headers: {'User-Agent': AppConfig.mapUserAgent, 'Accept': 'application/json'},
+            headers: {
+              'User-Agent': AppConfig.mapUserAgent,
+              'Accept': 'application/json',
+            },
           ),
         ),
         instanceName: geocoderDio,
@@ -420,7 +465,9 @@ abstract final class Injector {
       ..registerLazySingleton<GeocodingRepository>(
         () => GeocodingRepositoryImpl(sl<Dio>(instanceName: geocoderDio)),
       )
-      ..registerLazySingleton<SearchPlaces>(() => SearchPlaces(sl<GeocodingRepository>()))
+      ..registerLazySingleton<SearchPlaces>(
+        () => SearchPlaces(sl<GeocodingRepository>()),
+      )
       // Factory: the picker owns its Cubit and closes it on pop.
       ..registerFactory<PickLocationCubit>(
         () => PickLocationCubit(searchPlaces: sl<SearchPlaces>()),
@@ -432,8 +479,12 @@ abstract final class Injector {
     sl
       // The endpoint landed, and this line is the only one that changed: the contract above it
       // and everything above that never knew the numbers were stand-ins.
-      ..registerLazySingleton<HomeRepository>(() => HomeRepositoryImpl(sl<Dio>()))
-      ..registerLazySingleton<GetHomeSummary>(() => GetHomeSummary(sl<HomeRepository>()))
+      ..registerLazySingleton<HomeRepository>(
+        () => HomeRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetHomeSummary>(
+        () => GetHomeSummary(sl<HomeRepository>()),
+      )
       // Factory: the home screen owns its Cubit and closes it on dispose.
       ..registerFactory<HomeCubit>(
         () => HomeCubit(
@@ -446,22 +497,36 @@ abstract final class Injector {
   /// The catalogue — products, their sizes and their price breaks.
   static void _registerProducts() {
     sl
-      ..registerLazySingleton<ProductRepository>(() => ProductRepositoryImpl(sl<Dio>()))
-      ..registerLazySingleton<GetProducts>(() => GetProducts(sl<ProductRepository>()))
-      ..registerLazySingleton<GetProduct>(() => GetProduct(sl<ProductRepository>()))
-      ..registerLazySingleton<SaveProduct>(() => SaveProduct(sl<ProductRepository>()))
+      ..registerLazySingleton<ProductRepository>(
+        () => ProductRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetProducts>(
+        () => GetProducts(sl<ProductRepository>()),
+      )
+      ..registerLazySingleton<GetProduct>(
+        () => GetProduct(sl<ProductRepository>()),
+      )
+      ..registerLazySingleton<SaveProduct>(
+        () => SaveProduct(sl<ProductRepository>()),
+      )
       // Registered with the catalogue rather than with orders, where its only caller lives: it
       // asks the *product* what a quantity costs, and an order is simply the first screen to
       // need the answer.
-      ..registerLazySingleton<GetPriceQuote>(() => GetPriceQuote(sl<ProductRepository>()))
+      ..registerLazySingleton<GetPriceQuote>(
+        () => GetPriceQuote(sl<ProductRepository>()),
+      )
       // Factory: the catalogue screen owns its Cubit and closes it on dispose.
-      ..registerFactory<ProductsCubit>(() => ProductsCubit(getProducts: sl<GetProducts>()))
+      ..registerFactory<ProductsCubit>(
+        () => ProductsCubit(getProducts: sl<GetProducts>()),
+      )
       // Parameterised, like the customer's and the order's: the detail screen is *about* one
       // product, so the id is a construction argument rather than something the Cubit is told
       // afterwards and might be asked for twice with two different answers.
       ..registerFactoryParam<ProductDetailCubit, int, void>(
-        (productId, _) =>
-            ProductDetailCubit(productId: productId, getProduct: sl<GetProduct>()),
+        (productId, _) => ProductDetailCubit(
+          productId: productId,
+          getProduct: sl<GetProduct>(),
+        ),
       )
       ..registerFactory<SaveProductCubit>(
         () => SaveProductCubit(saveProduct: sl<SaveProduct>()),
@@ -476,9 +541,13 @@ abstract final class Injector {
   /// nothing keeps honest.
   static void _registerOrders() {
     sl
-      ..registerLazySingleton<OrderRepository>(() => OrderRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<OrderRepository>(
+        () => OrderRepositoryImpl(sl<Dio>()),
+      )
       ..registerLazySingleton<GetOrders>(() => GetOrders(sl<OrderRepository>()))
-      ..registerLazySingleton<GetOrderCounts>(() => GetOrderCounts(sl<OrderRepository>()))
+      ..registerLazySingleton<GetOrderCounts>(
+        () => GetOrderCounts(sl<OrderRepository>()),
+      )
       ..registerLazySingleton<GetOrder>(() => GetOrder(sl<OrderRepository>()))
       // No repository: the invoice is the order the screen already has, drawn. Registered all
       // the same so it is one object per app — it caches the two parsed TrueType faces the PDF
@@ -527,13 +596,14 @@ abstract final class Injector {
       // Parameterised on the question it answers: this screen is *about* one filter, so it is
       // a construction argument rather than something the Cubit is told afterwards.
       ..registerFactoryParam<FilteredOrdersCubit, OrdersFilter, void>(
-        (filter, _) => FilteredOrdersCubit(
-          getOrders: sl<GetOrders>(),
-          filter: filter,
-        ),
+        (filter, _) =>
+            FilteredOrdersCubit(getOrders: sl<GetOrders>(), filter: filter),
       )
       ..registerFactory<OrdersCubit>(
-        () => OrdersCubit(getOrders: sl<GetOrders>(), getCounts: sl<GetOrderCounts>()),
+        () => OrdersCubit(
+          getOrders: sl<GetOrders>(),
+          getCounts: sl<GetOrderCounts>(),
+        ),
       )
       // Parameterised, like the customer's: the detail screen is *about* one order, so the id
       // is a construction argument rather than something the Cubit is told afterwards.
@@ -596,8 +666,12 @@ abstract final class Injector {
   /// no page to ask for.
   static void _registerReports() {
     sl
-      ..registerLazySingleton<ReportRepository>(() => ReportRepositoryImpl(sl<Dio>()))
-      ..registerLazySingleton<GetProfitAndLoss>(() => GetProfitAndLoss(sl<ReportRepository>()))
+      ..registerLazySingleton<ReportRepository>(
+        () => ReportRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetProfitAndLoss>(
+        () => GetProfitAndLoss(sl<ReportRepository>()),
+      )
       // Factory: the screen owns its Cubit — the chosen period lives on it — and closes it on
       // dispose.
       ..registerFactory<ProfitAndLossCubit>(
@@ -620,12 +694,22 @@ abstract final class Injector {
   /// front door every other feature does rather than building its own `Dio` call.
   static void _registerVendors() {
     sl
-      ..registerLazySingleton<VendorRepository>(() => VendorRepositoryImpl(sl<Dio>()))
-      ..registerLazySingleton<GetVendors>(() => GetVendors(sl<VendorRepository>()))
-      ..registerLazySingleton<SaveVendor>(() => SaveVendor(sl<VendorRepository>()))
-      ..registerLazySingleton<SetVendorActive>(() => SetVendorActive(sl<VendorRepository>()))
+      ..registerLazySingleton<VendorRepository>(
+        () => VendorRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetVendors>(
+        () => GetVendors(sl<VendorRepository>()),
+      )
+      ..registerLazySingleton<SaveVendor>(
+        () => SaveVendor(sl<VendorRepository>()),
+      )
+      ..registerLazySingleton<SetVendorActive>(
+        () => SetVendorActive(sl<VendorRepository>()),
+      )
       // Screen-scoped: the list owns its Cubit and closes it on dispose.
-      ..registerFactory<VendorsCubit>(() => VendorsCubit(getVendors: sl<GetVendors>()))
+      ..registerFactory<VendorsCubit>(
+        () => VendorsCubit(getVendors: sl<GetVendors>()),
+      )
       // The picker's own instance, narrowed to the suppliers an order may still be raised
       // against. A named registration rather than a parameter, because a picker asking the
       // same question as the management screen is what it must never do.
@@ -641,6 +725,14 @@ abstract final class Injector {
           repository: sl<VendorRepository>(),
           setActive: sl<SetVendorActive>(),
           initial: initial,
+        ),
+      )
+      // The numbers on a supplier's screen. Its own Cubit, so a summary that failed leaves the
+      // contact details standing — see VendorPurchaseOrderCountsCubit.
+      ..registerFactoryParam<VendorPurchaseOrderCountsCubit, int, void>(
+        (vendorId, _) => VendorPurchaseOrderCountsCubit(
+          vendorId: vendorId,
+          getCounts: sl<GetPurchaseOrderCounts>(),
         ),
       )
       ..registerFactory<SaveVendorCubit>(
@@ -665,6 +757,9 @@ abstract final class Injector {
       ..registerLazySingleton<GetPurchaseOrder>(
         () => GetPurchaseOrder(sl<PurchaseOrderRepository>()),
       )
+      ..registerLazySingleton<GetPurchaseOrderCounts>(
+        () => GetPurchaseOrderCounts(sl<PurchaseOrderRepository>()),
+      )
       ..registerLazySingleton<SavePurchaseOrder>(
         () => SavePurchaseOrder(sl<PurchaseOrderRepository>()),
       )
@@ -688,6 +783,18 @@ abstract final class Injector {
       )
       ..registerFactory<SavePurchaseOrderCubit>(
         () => SavePurchaseOrderCubit(saveOrder: sl<SavePurchaseOrder>()),
+      )
+      // One fixed question, asked from a supplier's screen. Parameterised on the filter for the
+      // same reason the orders one is: the question is settled before the screen opens.
+      ..registerFactoryParam<
+        FilteredPurchaseOrdersCubit,
+        PurchaseOrdersFilter,
+        void
+      >(
+        (filter, _) => FilteredPurchaseOrdersCubit(
+          getOrders: sl<GetPurchaseOrders>(),
+          filter: filter,
+        ),
       );
   }
 
@@ -714,10 +821,13 @@ abstract final class Injector {
         () => SaveManufacturingCostRate(sl<ManufacturingCostRateRepository>()),
       )
       ..registerLazySingleton<SetManufacturingCostRateActivation>(
-        () => SetManufacturingCostRateActivation(sl<ManufacturingCostRateRepository>()),
+        () => SetManufacturingCostRateActivation(
+          sl<ManufacturingCostRateRepository>(),
+        ),
       )
       ..registerLazySingleton<DeleteManufacturingCostRate>(
-        () => DeleteManufacturingCostRate(sl<ManufacturingCostRateRepository>()),
+        () =>
+            DeleteManufacturingCostRate(sl<ManufacturingCostRateRepository>()),
       )
       ..registerFactory<ManufacturingCostRatesCubit>(
         () => ManufacturingCostRatesCubit(
@@ -727,7 +837,9 @@ abstract final class Injector {
         ),
       )
       ..registerFactory<SaveManufacturingCostRateCubit>(
-        () => SaveManufacturingCostRateCubit(saveRate: sl<SaveManufacturingCostRate>()),
+        () => SaveManufacturingCostRateCubit(
+          saveRate: sl<SaveManufacturingCostRate>(),
+        ),
       );
   }
 
@@ -800,7 +912,8 @@ abstract final class Injector {
         instanceName: 'active-only',
       )
       ..registerFactory<SaveBusinessFieldCubit>(
-        () => SaveBusinessFieldCubit(saveBusinessField: sl<SaveBusinessField>()),
+        () =>
+            SaveBusinessFieldCubit(saveBusinessField: sl<SaveBusinessField>()),
       );
   }
 
@@ -825,12 +938,21 @@ abstract final class Injector {
       ..registerLazySingleton<DeleteProductCategory>(
         () => DeleteProductCategory(sl<ProductCategoryRepository>()),
       )
+      ..registerLazySingleton<ReorderProductCategories>(
+        () => ReorderProductCategories(sl<ProductCategoryRepository>()),
+      )
+      // Not owned by the list's Cubit: setting a picture is the *sheet's* operation, and the
+      // sheet is the only thing that knows which file was picked.
+      ..registerLazySingleton<SetProductCategoryImage>(
+        () => SetProductCategoryImage(sl<ProductCategoryRepository>()),
+      )
       // Factory: the list screen owns its Cubit and closes it on dispose.
       ..registerFactory<ProductCategoriesCubit>(
         () => ProductCategoriesCubit(
           getCategories: sl<GetProductCategories>(),
           setActivation: sl<SetProductCategoryActivation>(),
           deleteCategory: sl<DeleteProductCategory>(),
+          reorderCategories: sl<ReorderProductCategories>(),
         ),
       )
       // The product form's picker and the catalogue's filter both ask for the offered ones
@@ -838,15 +960,24 @@ abstract final class Injector {
       // management screen must still see it. A named registration rather than a parameter, so
       // the caller asks for what it means.
       ..registerFactory<ProductCategoriesCubit>(
-        () => ProductCategoriesCubit(
-          getCategories: sl<GetProductCategories>(),
-          setActivation: sl<SetProductCategoryActivation>(),
-          deleteCategory: sl<DeleteProductCategory>(),
-        )..isActive = true,
+        () =>
+            ProductCategoriesCubit(
+                getCategories: sl<GetProductCategories>(),
+                setActivation: sl<SetProductCategoryActivation>(),
+                deleteCategory: sl<DeleteProductCategory>(),
+                reorderCategories: sl<ReorderProductCategories>(),
+              )
+              ..isActive = true
+              // A heading holding subheadings is a heading, not a slot: offering one here would be
+              // offering a choice the server refuses with «اختر أحد فروعه».
+              ..leafOnly = true,
         instanceName: activeProductCategoriesCubit,
       )
       ..registerFactory<SaveProductCategoryCubit>(
-        () => SaveProductCategoryCubit(saveCategory: sl<SaveProductCategory>()),
+        () => SaveProductCategoryCubit(
+          saveCategory: sl<SaveProductCategory>(),
+          setImage: sl<SetProductCategoryImage>(),
+        ),
       );
   }
 
@@ -860,8 +991,12 @@ abstract final class Injector {
       ..registerLazySingleton<WarehouseRepository>(
         () => WarehouseRepositoryImpl(sl<Dio>()),
       )
-      ..registerLazySingleton<GetWarehouses>(() => GetWarehouses(sl<WarehouseRepository>()))
-      ..registerLazySingleton<SaveWarehouse>(() => SaveWarehouse(sl<WarehouseRepository>()))
+      ..registerLazySingleton<GetWarehouses>(
+        () => GetWarehouses(sl<WarehouseRepository>()),
+      )
+      ..registerLazySingleton<SaveWarehouse>(
+        () => SaveWarehouse(sl<WarehouseRepository>()),
+      )
       ..registerLazySingleton<DeleteWarehouse>(
         () => DeleteWarehouse(sl<WarehouseRepository>()),
       )
@@ -924,11 +1059,17 @@ abstract final class Injector {
 
   static void _registerCities() {
     sl
-      ..registerLazySingleton<CityRepository>(() => CityRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<CityRepository>(
+        () => CityRepositoryImpl(sl<Dio>()),
+      )
       ..registerLazySingleton<GetCities>(() => GetCities(sl<CityRepository>()))
-      ..registerLazySingleton<GetCityRegions>(() => GetCityRegions(sl<CityRepository>()))
+      ..registerLazySingleton<GetCityRegions>(
+        () => GetCityRegions(sl<CityRepository>()),
+      )
       // Factory: the list screen owns its Cubit and closes it on dispose.
-      ..registerFactory<CitiesCubit>(() => CitiesCubit(getCities: sl<GetCities>()))
+      ..registerFactory<CitiesCubit>(
+        () => CitiesCubit(getCities: sl<GetCities>()),
+      )
       // Parameterised, like the customer's and the order's: the regions screen is *about* one
       // city, so the id is a construction argument rather than something the Cubit is told
       // afterwards.
@@ -944,8 +1085,12 @@ abstract final class Injector {
   /// the edit screen land on this same block.
   static void _registerCustomers() {
     sl
-      ..registerLazySingleton<CustomerRepository>(() => CustomerRepositoryImpl(sl<Dio>()))
-      ..registerLazySingleton<GetCustomers>(() => GetCustomers(sl<CustomerRepository>()))
+      ..registerLazySingleton<CustomerRepository>(
+        () => CustomerRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetCustomers>(
+        () => GetCustomers(sl<CustomerRepository>()),
+      )
       // Factory: the list screen owns its Cubit and closes it on dispose.
       ..registerFactory<CustomersCubit>(
         () => CustomersCubit(getCustomers: sl<GetCustomers>()),
@@ -954,12 +1099,19 @@ abstract final class Injector {
       // العملاء tab is the record and shows everyone, an order is only ever taken for a customer
       // the shop still sells to. Named rather than a second class, exactly like the vendors pair.
       ..registerFactory<CustomersCubit>(
-        () => CustomersCubit(getCustomers: sl<GetCustomers>(), onlyActive: true),
+        () =>
+            CustomersCubit(getCustomers: sl<GetCustomers>(), onlyActive: true),
         instanceName: activeCustomersCubit,
       )
-      ..registerLazySingleton<CreateCustomer>(() => CreateCustomer(sl<CustomerRepository>()))
-      ..registerLazySingleton<UpdateCustomer>(() => UpdateCustomer(sl<CustomerRepository>()))
-      ..registerLazySingleton<GetCustomer>(() => GetCustomer(sl<CustomerRepository>()))
+      ..registerLazySingleton<CreateCustomer>(
+        () => CreateCustomer(sl<CustomerRepository>()),
+      )
+      ..registerLazySingleton<UpdateCustomer>(
+        () => UpdateCustomer(sl<CustomerRepository>()),
+      )
+      ..registerLazySingleton<GetCustomer>(
+        () => GetCustomer(sl<CustomerRepository>()),
+      )
       ..registerLazySingleton<SetCustomerActivation>(
         () => SetCustomerActivation(sl<CustomerRepository>()),
       )
@@ -1031,35 +1183,30 @@ abstract final class Injector {
       // ── what staff say to each other about the customer ──────────────────────
       // Its own repository for the same reason the design library has one: everything here is
       // scoped to a single customer and none of it paginates.
-      ..registerLazySingleton<CustomerCommentRepository>(
-        () => CustomerCommentRepositoryImpl(sl<Dio>()),
+      ..registerLazySingleton<CommentRepository>(
+        () => CommentRepositoryImpl(sl<Dio>()),
       )
-      ..registerLazySingleton<GetCustomerComments>(
-        () => GetCustomerComments(sl<CustomerCommentRepository>()),
-      )
-      ..registerLazySingleton<AddCustomerComment>(
-        () => AddCustomerComment(sl<CustomerCommentRepository>()),
-      )
-      ..registerLazySingleton<EditCustomerComment>(
-        () => EditCustomerComment(sl<CustomerCommentRepository>()),
-      )
-      ..registerLazySingleton<DeleteCustomerComment>(
-        () => DeleteCustomerComment(sl<CustomerCommentRepository>()),
-      )
-      ..registerFactoryParam<CustomerCommentsCubit, int, void>(
-        (customerId, _) => CustomerCommentsCubit(
-          customerId: customerId,
-          getComments: sl<GetCustomerComments>(),
-          addComment: sl<AddCustomerComment>(),
-          editComment: sl<EditCustomerComment>(),
-          deleteComment: sl<DeleteCustomerComment>(),
+      ..registerLazySingleton<GetComments>(() => GetComments(sl<CommentRepository>()))
+      ..registerLazySingleton<AddComment>(() => AddComment(sl<CommentRepository>()))
+      ..registerLazySingleton<EditComment>(() => EditComment(sl<CommentRepository>()))
+      ..registerLazySingleton<DeleteComment>(() => DeleteComment(sl<CommentRepository>()))
+      // Parameterised on the subject rather than an id: the notes screen is about one record,
+      // and *which kind* of record is half of what identifies it.
+      ..registerFactoryParam<CommentsCubit, CommentSubject, void>(
+        (subject, _) => CommentsCubit(
+          subject: subject,
+          getComments: sl<GetComments>(),
+          addComment: sl<AddComment>(),
+          editComment: sl<EditComment>(),
+          deleteComment: sl<DeleteComment>(),
         ),
       );
   }
 
   /// The categories a product may actually be filed under today — the stopped ones are absent.
   /// Asked for by the product form's picker and by the catalogue's filter row.
-  static const String activeProductCategoriesCubit = 'product-categories:active';
+  static const String activeProductCategoriesCubit =
+      'product-categories:active';
 
   /// The customers list narrowed to the ones still being sold to. See `showCustomerPicker`.
   static const String activeCustomersCubit = 'customers:active';
@@ -1070,7 +1217,9 @@ abstract final class Injector {
       ..registerLazySingleton<SettingsRepository>(
         () => SettingsRepositoryImpl(sl<SharedPreferences>()),
       )
-      ..registerLazySingleton<GetSettings>(() => GetSettings(sl<SettingsRepository>()))
+      ..registerLazySingleton<GetSettings>(
+        () => GetSettings(sl<SettingsRepository>()),
+      )
       ..registerLazySingleton<SetNotificationsEnabled>(
         () => SetNotificationsEnabled(sl<SettingsRepository>()),
       )

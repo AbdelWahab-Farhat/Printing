@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/access/repositories/access_repository.dart';
-import 'package:printing/features/auth/models/auth_user.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/access/repositories/access_repository.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 
 /// Sets what an employee is paid a month, or clears it back to «لم يُحدَّد».
 ///

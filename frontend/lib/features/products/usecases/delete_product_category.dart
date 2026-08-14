@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/products/repositories/product_category_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/products/repositories/product_category_repository.dart';
 
 /// Removes a heading from the catalogue for good.
 ///

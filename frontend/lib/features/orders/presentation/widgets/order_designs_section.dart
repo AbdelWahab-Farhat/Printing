@@ -1,14 +1,14 @@
 import 'dart:async';
 
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
+import 'package:dayaa/features/customers/presentation/widgets/design_viewer.dart';
+import 'package:dayaa/features/orders/models/order.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/customers/presentation/widgets/design_thumbnail.dart';
-import 'package:printing/features/customers/presentation/widgets/design_viewer.dart';
-import 'package:printing/features/orders/models/order.dart';
 
 /// The artwork conversation, version by version — and the three things staff do to it.
 ///

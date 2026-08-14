@@ -1,12 +1,12 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/access/models/role.dart';
+import 'package:dayaa/features/access/usecases/get_permissions.dart';
+import 'package:dayaa/features/access/usecases/get_role.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/access/models/role.dart';
-import 'package:printing/features/access/usecases/get_permissions.dart';
-import 'package:printing/features/access/usecases/get_role.dart';
 
-part 'role_detail_state.dart';
 part 'role_detail_cubit.freezed.dart';
+part 'role_detail_state.dart';
 
 /// One role: what it is, who holds it, and — the point of the screen — **what it actually
 /// grants, in sections somebody can read.**

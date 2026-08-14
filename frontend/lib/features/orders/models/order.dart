@@ -1,9 +1,10 @@
+import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/models/transition_field.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
-import 'package:printing/features/orders/models/order_payment.dart';
-import 'package:printing/features/orders/models/order_status.dart';
-import 'package:printing/features/orders/models/transition_field.dart';
 
 part 'order.freezed.dart';
 part 'order.g.dart';
@@ -239,9 +240,9 @@ abstract class Order with _$Order {
     if (elapsed.inDays == 1) return 'أمس';
     if (elapsed.inDays < 7) return 'قبل ${elapsed.inDays} أيام';
 
-    String two(int value) => value.toString().padLeft(2, '0');
-
-    return '${at.year}-${two(at.month)}-${two(at.day)}';
+    // Past a week «منذ» stops helping — nobody counts in twelfths of a month — so the date
+    // itself takes over, in the one shape this app writes dates in.
+    return at.dayLabel;
   }
 }
 

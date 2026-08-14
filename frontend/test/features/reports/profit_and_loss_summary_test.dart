@@ -1,5 +1,5 @@
+import 'package:dayaa/features/reports/models/profit_and_loss_summary.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/reports/models/profit_and_loss_summary.dart';
 
 /// The report as it arrives: three nested blocks and three loose figures.
 ///

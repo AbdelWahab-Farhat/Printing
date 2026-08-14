@@ -108,8 +108,9 @@ final class AuditAttributeLabels
             'kind' => 'نوع التصميم',
             'label' => 'اسم التصميم',
         ],
-        'customer_comment' => [
-            'customer_id' => 'العميل',
+        'comment' => [
+            'commentable_type' => 'نوع السجل',
+            'commentable_id' => 'السجل',
             'user_id' => 'المستخدم',
             'body' => 'نص الملاحظة',
             'edited_at' => 'تاريخ التعديل',
@@ -131,6 +132,14 @@ final class AuditAttributeLabels
         'product_category' => [
             'name' => 'اسم التصنيف',
             'description' => 'الوصف',
+            'parent_id' => 'التصنيف الرئيسي',
+            // Four columns for one picture, and all four are read the same way by somebody
+            // scanning a history: «تغيّرت الصورة». Naming them separately is what stops the
+            // screen printing `image_path` at them.
+            'image_disk' => 'قرص صورة التصنيف',
+            'image_path' => 'مسار صورة التصنيف',
+            'image_width_px' => 'عرض الصورة (بكسل)',
+            'image_height_px' => 'ارتفاع الصورة (بكسل)',
         ],
         'product_variant' => [
             'product_id' => 'المنتج',
@@ -306,11 +315,28 @@ final class AuditAttributeLabels
             'order_date' => 'تاريخ الأمر',
             'expected_date' => 'التاريخ المتوقع',
             'total_amount' => 'الإجمالي',
+            // Part of `total_amount`, not on top of it: every line's final cost already carries
+            // its share. The wording says «منها» for that reason, as the detail screen does.
+            'total_additional_cost' => 'منها تكاليف إضافية',
         ],
         'purchase_order_item' => [
             'purchase_order_id' => 'أمر الشراء',
             'quantity_ordered' => 'الكمية المطلوبة',
             'quantity_received' => 'الكمية المستلمة',
+            // «الأساسية» is what the vendor invoiced; «النهائية» is what the goods landed at
+            // once delivery and customs were spread over the lines. A history screen that
+            // called both «التكلفة» would show a cost changing for no visible reason.
+            'base_total_cost' => 'التكلفة الأساسية',
+            'base_unit_cost' => 'تكلفة الوحدة الأساسية',
+            'allocated_additional_cost' => 'حصة التكاليف الإضافية',
+            'final_unit_cost' => 'تكلفة الوحدة النهائية',
+            'final_total_cost' => 'التكلفة النهائية',
+        ],
+        'purchase_order_additional_cost' => [
+            'purchase_order_id' => 'أمر الشراء',
+            // Not the shared «الاسم»: this names what the charge was for — التوصيل، الجمارك —
+            // which is what the form asks for and what the invoice calls it.
+            'name' => 'البيان',
         ],
     ];
 

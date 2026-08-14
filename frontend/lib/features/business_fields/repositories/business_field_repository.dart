@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/business_fields/models/business_field.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/business_fields/models/business_field.dart';
 
 /// Reading and curating مجالات العمل, stated without saying how.
 abstract interface class BusinessFieldRepository {

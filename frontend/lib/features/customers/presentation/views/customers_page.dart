@@ -1,21 +1,21 @@
 import 'dart:async';
 
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/core/widgets/search_field.dart';
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/models/customers_filter.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/customers_cubit.dart';
+import 'package:dayaa/features/customers/presentation/widgets/customer_card.dart';
+import 'package:dayaa/features/customers/presentation/widgets/customers_filter_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/widgets/paged_list_view.dart';
-import 'package:printing/core/widgets/search_field.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/models/customers_filter.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customers_cubit.dart';
-import 'package:printing/features/customers/presentation/widgets/customer_card.dart';
-import 'package:printing/features/customers/presentation/widgets/customers_filter_button.dart';
 
 /// العملاء — the customer list, searchable by name, code or phone.
 ///

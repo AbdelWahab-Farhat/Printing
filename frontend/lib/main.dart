@@ -1,8 +1,8 @@
+import 'package:dayaa/app.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:printing/app.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/router/app_router.dart';
 
 /// Start-up, in order, and nothing else.
 ///
@@ -33,7 +33,7 @@ Future<void> main() async {
     },
   );
 
-  runApp(const PrintingApp());
+  runApp(const DayaaApp());
 
   // Taken down only now, with the app built and its first frame on the way. Removing it any
   // earlier — before `runApp` — would uncover a blank window; leaving it to the package's own

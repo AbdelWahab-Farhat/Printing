@@ -84,13 +84,16 @@ abstract final class AppConfig {
   /// user agent is answered with a 403 whose body is HTML. Because the envelope parser
   /// correctly refuses to show HTML as a message, that presents as "search silently finds
   /// nothing" — which is why this has a test of its own.
-  static const String mapUserAgent = 'PrintX/1.0 (printing-bags; support@printx.ly)';
+  static const String mapUserAgent = 'Dayaa/1.0 (ly.dayaa.app; support@dayaa.ly)';
 
   /// What `flutter_map` needs for the tile server: a package name, not a full agent string.
   ///
   /// It composes its own — `flutter_map (<this>)` — so handing it [mapUserAgent] would nest one
   /// agent string inside another.
-  static const String mapPackageName = 'ly.printx.app';
+  /// نفس `applicationId` على أندرويد و`PRODUCT_BUNDLE_IDENTIFIER` على iOS، حرفاً بحرف: هذا ما
+  /// يقرؤه مشغّل خادم البلاطات في سجلّاته حين يقرّر من يحجب، وقيمة لا تطابق التطبيق المنشور
+  /// تجعل الحجب يقع على اسم لا يملكه أحد.
+  static const String mapPackageName = 'ly.dayaa.app';
 
   /// Long enough for a slow Libyan mobile connection, short enough that a dead server does not
   /// leave a spinner running for a minute.

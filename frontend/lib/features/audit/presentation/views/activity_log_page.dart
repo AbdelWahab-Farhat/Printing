@@ -1,17 +1,19 @@
 import 'dart:async';
+
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/pagination/paged_state.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/features/audit/models/activity_log_entry.dart';
+import 'package:dayaa/features/audit/models/audit_event.dart';
+import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/audit/presentation/viewmodel/activity_log_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/pagination/paged_state.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/core/widgets/paged_list_view.dart';
-import 'package:printing/features/audit/models/activity_log_entry.dart';
-import 'package:printing/features/audit/models/audit_event.dart';
-import 'package:printing/features/audit/models/audit_subject.dart';
-import 'package:printing/features/audit/presentation/viewmodel/activity_log_cubit.dart';
 
 /// The history of one record — **any** record.
 ///
@@ -295,22 +297,11 @@ class _Day {
   final DateTime at;
   final int count;
 
+  /// What groups two entries under one heading — not what either of them *says*.
   static String keyOf(DateTime at) => '${at.year}/${at.month}/${at.day}';
 
-  /// «اليوم», «أمس», or the date. The two words are worth the special case: on the screen
-  /// somebody opens after making a change, the top heading is the one they are looking for.
-  String get label {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final day = DateTime(at.year, at.month, at.day);
-    final difference = today.difference(day).inDays;
-
-    return switch (difference) {
-      0 => 'اليوم',
-      1 => 'أمس',
-      _ => keyOf(at),
-    };
-  }
+  /// «اليوم», «أمس», or «14 أغسطس 2026» — see [AppDates.relativeDay].
+  String get label => at.relativeDayLabel;
 
   /// Arabic counts its own way: one, two, a few, and many are four different words.
   String get countLabel => switch (count) {
@@ -459,8 +450,7 @@ class _Card extends StatelessWidget {
                   style: context.textTheme.bodySmall?.copyWith(color: scheme.outline),
                 ),
                 Text(
-                  '${at.hour.toString().padLeft(2, '0')}:'
-                  '${at.minute.toString().padLeft(2, '0')}',
+                  at.timeLabel,
                   // A clock reads left to right even here. The date is in the heading above,
                   // so the row carries only the time.
                   textDirection: TextDirection.ltr,
@@ -492,17 +482,27 @@ class _Card extends StatelessWidget {
                           ),
                       ]
                     : [
+                        // **A value that was never filled in is not history.** A creation that
+                        // lists «ملاحظات —» and «الإجمالي —» buries the four facts worth
+                        // reading under the twelve columns that happened to be null. A *change*
+                        // is different and keeps both halves — see [_Movement]: «نص ← —» is
+                        // somebody clearing a field, which is exactly the kind of thing a trail
+                        // exists to record.
                         for (final (field, value) in changes.statedValues)
-                          _Stated(
-                            label: entry.labelFor(field),
-                            value: value,
-                            // A deletion states its values from `old`, a creation from
-                            // `attributes` — the same half `statedValues` read them from.
-                            valueLabel: entry.valueLabelFor(
-                              field,
-                              old: changes.attributes?.isEmpty ?? true,
+                          if (_saysSomething(value, entry.valueLabelFor(
+                            field,
+                            old: changes.attributes?.isEmpty ?? true,
+                          )))
+                            _Stated(
+                              label: entry.labelFor(field),
+                              value: value,
+                              // A deletion states its values from `old`, a creation from
+                              // `attributes` — the same half `statedValues` read them from.
+                              valueLabel: entry.valueLabelFor(
+                                field,
+                                old: changes.attributes?.isEmpty ?? true,
+                              ),
                             ),
-                          ),
                       ],
               ),
             ),
@@ -660,12 +660,23 @@ String _show(Object? value, [String? label]) => switch (value) {
   null => '—',
   true => 'نعم',
   false => 'لا',
-  String() when _asDate(value) != null => _stamp(_asDate(value)!),
+  String() when _asDate(value) != null => _asDate(value)!.stampLabel,
   // An empty string is a field that was cleared, and «فارغ» says that where a blank would look
   // like a rendering fault.
   '' => 'فارغ',
   _ => '$value',
 };
+
+/// Whether a stated value is worth a row of its own.
+///
+/// Null and the empty string are columns nobody filled in — on a creation they say only «هذا
+/// العمود موجود», which the reader knew. A `0`, a `false` and an empty *label* are all real
+/// answers and stay.
+bool _saysSomething(Object? value, String? label) {
+  if (label != null && label.isNotEmpty) return true;
+
+  return value != null && value != '';
+}
 
 /// A timestamp the trail stored, or null for a string that merely looks numeric.
 ///
@@ -673,22 +684,6 @@ String _show(Object? value, [String? label]) => switch (value) {
 /// generous enough to read a bare year out of something that was never a date.
 DateTime? _asDate(String value) =>
     RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(value) ? DateTime.tryParse(value) : null;
-
-/// `2026-08-02 · 14:30`, in the device's own local time — and the date alone when that is all
-/// the column held.
-///
-/// The same shape the order timeline draws, and written out for the same reason: one that reads
-/// identically in every locale is the honest choice for a workshop log, where the question is
-/// "in what order, and how long apart". Latin digits, like every other number this app draws.
-String _stamp(DateTime at) {
-  final local = at.toLocal();
-  String two(int value) => value.toString().padLeft(2, '0');
-
-  final day = '${local.year}-${two(local.month)}-${two(local.day)}';
-  final midnight = local.hour == 0 && local.minute == 0 && local.second == 0;
-
-  return midnight ? day : '$day · ${two(local.hour)}:${two(local.minute)}';
-}
 
 /// (strong, on-strong) for an event — the dot, and the active chip.
 (Color, Color) _toneOf(BuildContext context, AuditEvent? event) {

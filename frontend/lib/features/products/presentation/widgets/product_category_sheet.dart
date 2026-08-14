@@ -1,13 +1,20 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/core/widgets/attachment_sheet.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/save_product_category_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/products/models/product_category.dart';
-import 'package:printing/features/products/presentation/viewmodel/save_product_category_cubit.dart';
 
 /// Adds a heading to the catalogue, or renames one already on it.
 ///
@@ -69,7 +76,33 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
     text: widget.category?.description ?? '',
   );
 
+  /// A file chosen on this sheet and not yet sent. Null means «اترك الصورة كما هي».
+  PickedFile? _image;
+
+  /// True once somebody taps «حذف الصورة» — distinct from [_image] being null, which only says
+  /// nothing new was picked.
+  bool _removeImage = false;
+
   bool get _isEditing => widget.category != null;
+
+  /// What the row should look like right now: the file just picked, else what the server has,
+  /// unless it has been asked to go.
+  bool get _showsExistingImage =>
+      _image == null && !_removeImage && (widget.category?.hasImage ?? false);
+
+  Future<void> _pickImage() async {
+    final source = await showAttachmentSheet(context: context, title: 'صورة التصنيف');
+    if (source == null || !mounted) return;
+
+    final files = await sl<AttachmentPicker>().pick(source);
+    // Cancelling a picker is not a failure and nothing is said about it.
+    if (files.isEmpty || !mounted) return;
+
+    setState(() {
+      _image = files.first;
+      _removeImage = false;
+    });
+  }
 
   @override
   void dispose() {
@@ -89,6 +122,8 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
       // the catalogue: both travel back exactly as they were.
       sortOrder: widget.category?.sortOrder ?? widget.nextSortOrder,
       isActive: widget.category?.isActive ?? true,
+      image: _image,
+      removeImage: _removeImage,
     );
   }
 
@@ -158,6 +193,18 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _submit(),
                 ),
+                SizedBox(height: 12.h),
+                _ImageRow(
+                  picked: _image,
+                  existingUrl: _showsExistingImage ? widget.category!.imageUrl : null,
+                  onPick: () => unawaited(_pickImage()),
+                  onClear: () => setState(() {
+                    _image = null;
+                    // Only a picture the *server* holds needs removing; discarding one picked a
+                    // moment ago is just putting the sheet back where it was.
+                    _removeImage = widget.category?.hasImage ?? false;
+                  }),
+                ),
                 SizedBox(height: 20.h),
                 AppButton(
                   label: _isEditing ? 'حفظ' : 'إضافة',
@@ -173,6 +220,121 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
           ),
         );
       },
+    );
+  }
+}
+
+/// The picture the catalogue prints above the heading — pick one, replace it, or take it off.
+///
+/// **Optional, and it says so.** A heading is useful the moment it has a name; the picture is
+/// for the catalogue page, and a required one would stop somebody adding «ستيكرات» at speed
+/// because they have no artwork to hand.
+class _ImageRow extends StatelessWidget {
+  const _ImageRow({
+    required this.picked,
+    required this.existingUrl,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  /// Chosen on this sheet and not yet sent.
+  final PickedFile? picked;
+
+  /// What the server already holds, unless it has been asked to go.
+  final String? existingUrl;
+
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+
+  bool get _hasSomething => picked != null || existingUrl != null;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final corner = BorderRadius.circular(12.r);
+
+    return InkWell(
+      onTap: onPick,
+      borderRadius: corner,
+      child: Container(
+        padding: EdgeInsets.all(12.w),
+        decoration: BoxDecoration(
+          borderRadius: corner,
+          border: Border.all(color: scheme.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            _Preview(picked: picked, existingUrl: existingUrl, corner: corner),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    picked?.name ?? 'صورة التصنيف',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    _hasSomething ? 'اضغط للاستبدال' : 'اختيارية — اضغط للاختيار',
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Absent until there is something to take off: a clear button over an empty slot is
+            // a control that does nothing.
+            if (_hasSomething)
+              IconButton(
+                onPressed: onClear,
+                icon: Icon(AppIcons.clear, color: scheme.onSurfaceVariant),
+                tooltip: 'حذف الصورة',
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The thumbnail, or the glyph that stands in for one.
+class _Preview extends StatelessWidget {
+  const _Preview({required this.picked, required this.existingUrl, required this.corner});
+
+  final PickedFile? picked;
+  final String? existingUrl;
+  final BorderRadius corner;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final size = 52.w;
+
+    final child = switch ((picked, existingUrl)) {
+      (final PickedFile file, _) => Image.file(File(file.path), fit: BoxFit.cover),
+      (_, final String url) => Image.network(
+        url,
+        fit: BoxFit.cover,
+        // A signed link that has expired, or a phone with no connection: the glyph is what the
+        // row looks like anyway, so a broken-image icon would say nothing extra.
+        errorBuilder: (context, _, _) => Icon(AppIcons.productCategory, color: scheme.outline),
+      ),
+      _ => Icon(AppIcons.productCategory, color: scheme.outline),
+    };
+
+    return ClipRRect(
+      borderRadius: corner,
+      child: Container(
+        height: size,
+        width: size,
+        color: scheme.surfaceContainerHighest,
+        child: child,
+      ),
     );
   }
 }

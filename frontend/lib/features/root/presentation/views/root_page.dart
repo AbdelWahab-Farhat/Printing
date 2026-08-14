@@ -1,11 +1,11 @@
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/permission_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/permission_gate.dart';
 
 /// Whether معدلات تكلفة التصنيع appears in the drawer.
 ///
@@ -159,8 +159,7 @@ class _RootDrawer extends StatelessWidget {
                   Image.asset('assets/images/logo.png', height: 44.w, width: 44.w),
                   SizedBox(width: 12.w),
                   Text(
-                    'PrintX',
-                    textDirection: TextDirection.ltr,
+                    'دعاية',
                     style: context.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                       color: context.colorScheme.primary,

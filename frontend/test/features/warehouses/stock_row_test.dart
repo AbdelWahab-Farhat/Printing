@@ -1,10 +1,10 @@
+import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/stock_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/products/presentation/widgets/product_gallery.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
-import 'package:printing/features/warehouses/presentation/widgets/stock_row.dart';
 
 /// One shelf: a picture, a size, how much of it is here, and whether that is too little.
 ///

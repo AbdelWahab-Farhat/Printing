@@ -1,25 +1,25 @@
 import 'dart:async';
 
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
+import 'package:dayaa/core/widgets/app_speed_dial.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/core/widgets/attachment_sheet.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/models/design_rules.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
+import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
+import 'package:dayaa/features/customers/presentation/widgets/design_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/files/attachment_picker.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_dialog.dart';
-import 'package:printing/core/widgets/app_speed_dial.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/core/widgets/attachment_sheet.dart';
-import 'package:printing/features/customers/models/customer_design.dart';
-import 'package:printing/features/customers/models/design_rules.dart';
-import 'package:printing/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
-import 'package:printing/features/customers/presentation/widgets/design_thumbnail.dart';
-import 'package:printing/features/customers/presentation/widgets/design_viewer.dart';
 
 /// A customer's library of artwork.
 ///

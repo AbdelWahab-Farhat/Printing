@@ -1,11 +1,11 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/reports/models/profit_and_loss_summary.dart';
+import 'package:dayaa/features/reports/usecases/get_profit_and_loss.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/reports/models/profit_and_loss_summary.dart';
-import 'package:printing/features/reports/usecases/get_profit_and_loss.dart';
 
-part 'profit_and_loss_state.dart';
 part 'profit_and_loss_cubit.freezed.dart';
+part 'profit_and_loss_state.dart';
 
 /// The ViewModel behind الأرباح والخسائر: which days are being asked about, and what came back.
 ///

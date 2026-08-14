@@ -1,12 +1,12 @@
+import 'package:dayaa/core/theme/app_tones.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
+import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/theme/app_tones.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/presentation/widgets/product_gallery.dart';
-import 'package:printing/features/warehouses/models/warehouse_stock.dart';
 
 /// One shelf: the bag, its size, how much of it is here, and whether that is too little.
 ///

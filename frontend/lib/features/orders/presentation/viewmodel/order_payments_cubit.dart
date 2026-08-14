@@ -1,13 +1,13 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
+import 'package:dayaa/features/orders/usecases/manage_order_payments.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/models/order_payment.dart';
-import 'package:printing/features/orders/repositories/order_payment_repository.dart';
-import 'package:printing/features/orders/usecases/manage_order_payments.dart';
 
-part 'order_payments_state.dart';
 part 'order_payments_cubit.freezed.dart';
+part 'order_payments_state.dart';
 
 /// One order's money: the ledger, and the three ways of writing to it.
 ///

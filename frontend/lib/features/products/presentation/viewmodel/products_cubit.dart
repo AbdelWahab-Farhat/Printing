@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/pagination/paged_cubit.dart';
-import 'package:printing/core/pagination/paged_state.dart';
-import 'package:printing/features/products/models/product.dart';
-import 'package:printing/features/products/usecases/get_products.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/pagination/paged_cubit.dart';
+import 'package:dayaa/core/pagination/paged_state.dart';
+import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/usecases/get_products.dart';
 
 /// The catalogue screen's ViewModel.
 ///

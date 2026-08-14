@@ -1,7 +1,7 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
 
 /// The catalogue heading, as the one thing on a product row that is a *kind* rather than a
 /// number — أكياس, علب وكراتين, مطبوعة, سادة.

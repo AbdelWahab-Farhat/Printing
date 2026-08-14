@@ -1,11 +1,11 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/location/models/place.dart';
+import 'package:dayaa/features/location/usecases/search_places.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/location/models/place.dart';
-import 'package:printing/features/location/usecases/search_places.dart';
 
-part 'pick_location_state.dart';
 part 'pick_location_cubit.freezed.dart';
+part 'pick_location_state.dart';
 
 /// The search box on the map screen. It knows nothing about the map itself.
 ///

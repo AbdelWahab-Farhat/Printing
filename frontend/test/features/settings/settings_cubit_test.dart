@@ -1,9 +1,9 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dayaa/features/settings/presentation/viewmodel/settings_cubit.dart';
+import 'package:dayaa/features/settings/repositories/settings_repository.dart';
+import 'package:dayaa/features/settings/usecases/get_settings.dart';
+import 'package:dayaa/features/settings/usecases/set_notifications_enabled.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/settings/presentation/viewmodel/settings_cubit.dart';
-import 'package:printing/features/settings/repositories/settings_repository.dart';
-import 'package:printing/features/settings/usecases/get_settings.dart';
-import 'package:printing/features/settings/usecases/set_notifications_enabled.dart';
 
 /// A preference that has to survive the app being closed — which is the only thing about it
 /// worth testing, and the thing a `Switch` alone would not do.

@@ -1,10 +1,10 @@
+import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
+import 'package:dayaa/features/manufacturing_cost_rates/presentation/widgets/manufacturing_cost_rate_card.dart';
+import 'package:dayaa/features/vendors/models/stock_arrival.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
-import 'package:printing/features/manufacturing_cost_rates/presentation/widgets/manufacturing_cost_rate_card.dart';
-import 'package:printing/features/vendors/models/stock_arrival.dart';
 
 /// One rate on the list: what kind of cost, what it applies to, and how much.
 ///

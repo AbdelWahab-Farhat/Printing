@@ -1,5 +1,5 @@
+import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
 
 /// معدل تكلفة تصنيع, as it arrives and as the screens read it.
 ///

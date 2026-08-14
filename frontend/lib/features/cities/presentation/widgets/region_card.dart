@@ -1,7 +1,7 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/features/cities/models/city.dart';
+import 'package:dayaa/features/cities/presentation/widgets/place_card.dart';
 import 'package:flutter/material.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/features/cities/models/city.dart';
-import 'package:printing/features/cities/presentation/widgets/place_card.dart';
 
 /// One neighbourhood inside a city — the same card as a city's, one level down.
 ///

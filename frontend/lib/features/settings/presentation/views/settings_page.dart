@@ -1,18 +1,18 @@
 import 'dart:async';
 
+import 'package:dayaa/core/config/app_config.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
+import 'package:dayaa/features/auth/presentation/viewmodel/logout_cubit.dart';
+import 'package:dayaa/features/settings/presentation/viewmodel/settings_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/config/app_config.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_dialog.dart';
-import 'package:printing/features/auth/presentation/viewmodel/logout_cubit.dart';
-import 'package:printing/features/settings/presentation/viewmodel/settings_cubit.dart';
 
 /// الإعدادات — the device's preferences, what this app is, and the way out.
 ///
@@ -197,8 +197,7 @@ class _AboutCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'PrintX',
-                        textDirection: TextDirection.ltr,
+                        'دعاية',
                         style: context.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: context.colorScheme.primary,

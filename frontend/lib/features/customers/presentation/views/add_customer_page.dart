@@ -1,24 +1,24 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/business_fields/models/business_field.dart';
+import 'package:dayaa/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
+import 'package:dayaa/features/business_fields/presentation/widgets/business_field_picker.dart';
+import 'package:dayaa/features/cities/models/city.dart';
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/add_customer_cubit.dart';
+import 'package:dayaa/features/customers/usecases/create_customer.dart';
+import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/business_fields/models/business_field.dart';
-import 'package:printing/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
-import 'package:printing/features/business_fields/presentation/widgets/business_field_picker.dart';
-import 'package:printing/features/cities/models/city.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/presentation/viewmodel/add_customer_cubit.dart';
-import 'package:printing/features/customers/usecases/create_customer.dart';
-import 'package:printing/features/orders/presentation/widgets/destination_picker_sheet.dart';
-import 'package:printing/features/orders/presentation/widgets/place_picker_tile.dart';
 
 /// Register a customer: who they are, how to reach them, and where they sell from.
 ///

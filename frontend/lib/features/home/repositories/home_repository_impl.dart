@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/api_endpoints.dart';
+import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/home/models/home_summary.dart';
+import 'package:dayaa/features/home/repositories/home_repository.dart';
 import 'package:dio/dio.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/api_endpoints.dart';
-import 'package:printing/core/network/safe_request.dart';
-import 'package:printing/features/home/models/home_summary.dart';
-import 'package:printing/features/home/repositories/home_repository.dart';
 
 /// Fulfils [HomeRepository] over HTTP.
 ///

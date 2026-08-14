@@ -1,8 +1,9 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/purchase_orders/models/purchase_order.dart';
-import 'package:printing/features/vendors/models/stock_arrival.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
+import 'package:dayaa/features/purchase_orders/models/purchase_order_counts.dart';
+import 'package:dayaa/features/vendors/models/stock_arrival.dart';
 
 /// One line of an order as the server needs it.
 ///
@@ -87,13 +88,30 @@ class ReceivedLine {
 
 /// What the app can ask and tell about the paperwork raised against suppliers.
 abstract interface class PurchaseOrderRepository {
-  /// [status] is a wire value; null asks for every state.
+  /// One page of the list.
+  ///
+  /// [statuses] holds wire values and takes a **group** rather than one status, because the
+  /// queues a supplier's screen offers are groups: «الجارية» is `new` and `arrived` together.
+  /// Empty asks for every state.
+  ///
+  /// [search] matches the vendor's name, the warehouse's name, or — for a number — the order's
+  /// own id. Null asks for all of them; the two narrow together rather than replacing each other.
   Future<Either<Failure, Paginated<PurchaseOrder>>> purchaseOrders({
     int? vendorId,
     int? warehouseId,
-    String? status,
+    List<String> statuses,
+    String? search,
     int page,
     int perPage,
+  });
+
+  /// How many orders stand in each status, under the same filters the list takes.
+  ///
+  /// Deliberately takes the vendor but not the statuses: counts narrowed to the group already
+  /// chosen would every one of them equal the list's own length.
+  Future<Either<Failure, PurchaseOrderCounts>> statusCounts({
+    int? vendorId,
+    String? search,
   });
 
   Future<Either<Failure, PurchaseOrder>> purchaseOrder(int purchaseOrderId);

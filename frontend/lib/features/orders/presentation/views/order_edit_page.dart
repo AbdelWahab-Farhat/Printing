@@ -1,24 +1,24 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/cities/models/city.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
+import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/cities/models/city.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/presentation/viewmodel/order_detail_cubit.dart';
-import 'package:printing/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
-import 'package:printing/features/orders/presentation/widgets/design_picker_sheet.dart';
-import 'package:printing/features/orders/presentation/widgets/destination_picker_sheet.dart';
-import 'package:printing/features/orders/presentation/widgets/order_designs_section.dart';
-import 'package:printing/features/orders/presentation/widgets/place_picker_tile.dart';
 
 /// Everything about one order that can be changed: its lines, its discount, and its artwork.
 ///

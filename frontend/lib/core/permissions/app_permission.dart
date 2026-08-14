@@ -47,13 +47,16 @@ enum AppPermission {
   // Rewriting or removing a note somebody else wrote about a customer. Its own permission
   // rather than part of `customers.manage`: correcting a phone number is bookkeeping, while
   // editing a colleague's sentence under their name is a claim about what they said. Writing a
-  // note and changing your own needs no grant at all — `customers.view` covers it.
+  // note and changing your own needs no grant at all — reading the record covers it.
+  //
+  // **One permission for notes on every kind of record** — a customer, a supplier — because the
+  // question it answers is one question. See GENERAL-COMMENTS.md.
   //
   // Nothing in the app gates on this. The server computes «صاحبه أو مشرف» per reader and sends
   // the answer as `can_edit` on each note, so the buttons are drawn from the row rather than
   // from a rule this side re-derives. The case exists because `permission_contract_test`
   // requires the two catalogues to match, and because a role screen has to be able to tick it.
-  moderateCustomerComments('customers.comments.moderate', 'تعديل وحذف ملاحظات الآخرين على العملاء'),
+  moderateComments('comments.moderate', 'تعديل وحذف ملاحظات الآخرين'),
 
   // مجالات العمل — what a customer's shop sells. Reading is granted to every role, because
   // the customer form cannot be filled in without the list; curating the list is the rare job.

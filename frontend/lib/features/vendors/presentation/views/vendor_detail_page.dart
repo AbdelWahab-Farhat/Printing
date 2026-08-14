@@ -1,18 +1,22 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
+import 'package:dayaa/core/widgets/app_speed_dial.dart';
+import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/presentation/viewmodel/vendor_detail_cubit.dart';
+import 'package:dayaa/features/vendors/presentation/viewmodel/vendor_purchase_order_counts_cubit.dart';
+import 'package:dayaa/features/vendors/presentation/widgets/vendor_purchase_orders_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/router/app_router.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_dialog.dart';
-import 'package:printing/core/widgets/app_speed_dial.dart';
-import 'package:printing/features/audit/models/audit_subject.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
-import 'package:printing/features/vendors/presentation/viewmodel/vendor_detail_cubit.dart';
 
 /// One supplier: who they are, how to reach them, and what can be done about them.
 ///
@@ -34,8 +38,20 @@ class VendorDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<VendorDetailCubit>(
-      create: (_) => sl<VendorDetailCubit>(param1: vendorId, param2: vendor)..load(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<VendorDetailCubit>(
+          create: (_) =>
+              sl<VendorDetailCubit>(param1: vendorId, param2: vendor)..load(),
+        ),
+        // Provided even when the reader may not see purchase orders: a Cubit nobody reads costs
+        // nothing, while a provider that appears and disappears with a permission is a
+        // `ProviderNotFound` waiting for the first screen that forgets to check. The *request*
+        // is what is guarded — see [_Body].
+        BlocProvider<VendorPurchaseOrderCountsCubit>(
+          create: (_) => sl<VendorPurchaseOrderCountsCubit>(param1: vendorId),
+        ),
+      ],
       child: const _VendorDetailView(),
     );
   }
@@ -52,6 +68,33 @@ class _VendorDetailView extends StatefulWidget {
 /// list behind whether to re-read. That is screen lifecycle, not business state.
 class _VendorDetailViewState extends State<_VendorDetailView> {
   bool _changed = false;
+
+  /// Whether this reader may see purchase orders at all. Read once: it cannot change while the
+  /// screen is open, and it decides both whether the numbers are asked for and whether the
+  /// section is drawn — one answer, so the two can never disagree.
+  final bool _maySeePurchaseOrders = sl<Session>().can(
+    AppPermission.viewPurchaseOrders,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Not asked for at all without the permission: the server answers 403, and a request whose
+    // only possible outcome is a refusal is a request nobody should send.
+    if (_maySeePurchaseOrders) {
+      context.read<VendorPurchaseOrderCountsCubit>().load();
+    }
+  }
+
+  /// Both readers, on one pull. The counts are as stale as the record beside them.
+  Future<void> _reload(BuildContext context) async {
+    await Future.wait([
+      context.read<VendorDetailCubit>().load(),
+      if (_maySeePurchaseOrders)
+        context.read<VendorPurchaseOrderCountsCubit>().load(),
+    ]);
+  }
 
   Future<void> _edit(BuildContext context) async {
     final cubit = context.read<VendorDetailCubit>();
@@ -102,7 +145,9 @@ class _VendorDetailViewState extends State<_VendorDetailView> {
 
     setState(() => _changed = true);
     context.showSuccess(
-      vendor.isActive ? 'تم تعطيل «${vendor.name}»' : 'تم تنشيط «${vendor.name}»',
+      vendor.isActive
+          ? 'تم تعطيل «${vendor.name}»'
+          : 'تم تنشيط «${vendor.name}»',
     );
   }
 
@@ -123,7 +168,8 @@ class _VendorDetailViewState extends State<_VendorDetailView> {
           title: BlocBuilder<VendorDetailCubit, VendorDetailState>(
             // The name once it is known, so the bar stops saying something generic the moment
             // it can say something useful.
-            builder: (context, state) => Text(state.vendor?.name ?? 'تفاصيل المورد'),
+            builder: (context, state) =>
+                Text(state.vendor?.name ?? 'تفاصيل المورد'),
           ),
         ),
         floatingActionButton: BlocBuilder<VendorDetailCubit, VendorDetailState>(
@@ -153,8 +199,11 @@ class _VendorDetailViewState extends State<_VendorDetailView> {
             }
 
             return RefreshIndicator(
-              onRefresh: cubit.load,
-              child: _Body(vendor: vendor),
+              onRefresh: () => _reload(context),
+              child: _Body(
+                vendor: vendor,
+                showPurchaseOrders: _maySeePurchaseOrders,
+              ),
             );
           },
         ),
@@ -195,8 +244,10 @@ class _Actions extends StatelessWidget {
             icon: AppIcons.purchaseOrders,
             tone: AppActionTone.primary,
             permission: AppPermission.managePurchaseOrders,
-            onTap: (context) =>
-                context.push(Routes.newVendorPurchaseOrder(vendor.id), extra: vendor),
+            onTap: (context) => context.push(
+              Routes.newVendorPurchaseOrder(vendor.id),
+              extra: vendor,
+            ),
           ),
         AppAction(
           label: 'تعديل المورد',
@@ -212,6 +263,20 @@ class _Actions extends StatelessWidget {
           tone: vendor.isActive ? AppActionTone.warning : AppActionTone.neutral,
           permission: AppPermission.manageVendors,
           onTap: onToggleActive,
+        ),
+        // Same place it sits on a customer's screen, and for the same reason: a note is not a
+        // field on this record, so it belongs behind the button that lists what can be *done*
+        // rather than in the body that says what the supplier *is*.
+        AppAction(
+          label: 'الملاحظات',
+          icon: AppIcons.comments,
+          // `vendors.view` — the permission that opened this screen. Writing a note about
+          // somebody you may read about is not a further privilege.
+          permission: AppPermission.viewVendors,
+          onTap: (context) => context.push(
+            Routes.vendorComments(vendor.id),
+            extra: vendor.name,
+          ),
         ),
         AppAction(
           label: 'سجل التعديلات',
@@ -230,9 +295,14 @@ class _Actions extends StatelessWidget {
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.vendor});
+  const _Body({required this.vendor, required this.showPurchaseOrders});
 
   final Vendor vendor;
+
+  /// Absent, not disabled, for a reader without `purchase_orders.view` — a way in that opens a
+  /// screen the server refuses is worse than no way in, which is what «أمر شراء جديد» already
+  /// does in the actions menu.
+  final bool showPurchaseOrders;
 
   @override
   Widget build(BuildContext context) {
@@ -243,6 +313,23 @@ class _Body extends StatelessWidget {
       children: [
         _Identity(vendor: vendor),
         SizedBox(height: 14.h),
+        // Above the contact details, because somebody opening a supplier in working hours asks
+        // «أين طلبيتنا؟» more often than they ask for the phone number — which is one swipe away.
+        if (showPurchaseOrders) ...[
+          BlocBuilder<
+            VendorPurchaseOrderCountsCubit,
+            VendorPurchaseOrderCountsState
+          >(
+            builder: (context, state) => VendorPurchaseOrdersSection(
+              vendorId: vendor.id,
+              vendorName: vendor.name,
+              state: state,
+              onOpen: (filter) =>
+                  context.push(Routes.purchaseOrdersFiltered, extra: filter),
+            ),
+          ),
+          SizedBox(height: 14.h),
+        ],
         _Section(
           title: 'معلومات الاتصال',
           child: Column(
@@ -255,7 +342,11 @@ class _Body extends StatelessWidget {
               ),
               if (vendor.contactPerson case final person?) ...[
                 Divider(height: 18.h),
-                _Row(icon: AppIcons.person, label: 'الشخص المسؤول', value: person),
+                _Row(
+                  icon: AppIcons.person,
+                  label: 'الشخص المسؤول',
+                  value: person,
+                ),
               ],
               if (vendor.email case final email?) ...[
                 Divider(height: 18.h),
@@ -297,14 +388,7 @@ class _Body extends StatelessWidget {
   }
 
   /// The day, in the reader's own zone. A supplier's record is read by date, never by minute.
-  static String? _day(DateTime? at) {
-    if (at == null) return null;
-
-    final local = at.toLocal();
-
-    return '${local.year}-${local.month.toString().padLeft(2, '0')}-'
-        '${local.day.toString().padLeft(2, '0')}';
-  }
+  static String? _day(DateTime? at) => at?.dayLabel;
 }
 
 /// The name, and whether we still deal with them.
@@ -333,7 +417,11 @@ class _Identity extends StatelessWidget {
               color: scheme.primaryContainer,
               borderRadius: BorderRadius.circular(16.r),
             ),
-            child: Icon(AppIcons.vendors, color: scheme.onPrimaryContainer, size: 26.sp),
+            child: Icon(
+              AppIcons.vendors,
+              color: scheme.onPrimaryContainer,
+              size: 26.sp,
+            ),
           ),
           SizedBox(width: 12.w),
           Expanded(
@@ -348,7 +436,10 @@ class _Identity extends StatelessWidget {
                 ),
                 SizedBox(height: 6.h),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 4.h,
+                  ),
                   decoration: BoxDecoration(
                     color: isActive
                         ? scheme.secondaryContainer
@@ -403,7 +494,9 @@ class _Section extends StatelessWidget {
           decoration: BoxDecoration(
             color: scheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.6),
+            ),
           ),
           child: child,
         ),
@@ -430,14 +523,18 @@ class _Row extends StatelessWidget {
         SizedBox(width: 10.w),
         Text(
           label,
-          style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+          style: context.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
         ),
         SizedBox(width: 12.w),
         Expanded(
           child: Text(
             value,
             textAlign: TextAlign.end,
-            style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            style: context.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -477,14 +574,18 @@ class _CopyRow extends StatelessWidget {
             SizedBox(width: 10.w),
             Text(
               label,
-              style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
             const Spacer(),
             Text(
               value,
               // Latin either way — a phone number and an email both read left to right.
               textDirection: TextDirection.ltr,
-              style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: context.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             SizedBox(width: 8.w),
             Icon(AppIcons.copy, size: 16.sp, color: scheme.outline),

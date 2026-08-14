@@ -1,12 +1,12 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/reports/models/profit_and_loss_summary.dart';
+import 'package:dayaa/features/reports/presentation/viewmodel/profit_and_loss_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/reports/models/profit_and_loss_summary.dart';
-import 'package:printing/features/reports/presentation/viewmodel/profit_and_loss_cubit.dart';
 
 /// الأرباح والخسائر — the shop's period read in one screen.
 ///

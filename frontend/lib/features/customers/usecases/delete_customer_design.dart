@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/customers/repositories/customer_design_repository.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
 
 /// Takes a design out of the customer's library.
 ///

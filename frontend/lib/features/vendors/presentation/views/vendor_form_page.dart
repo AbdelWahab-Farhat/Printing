@@ -1,14 +1,14 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/presentation/viewmodel/save_vendor_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/utils/validators.dart';
-import 'package:printing/core/widgets/app_button.dart';
-import 'package:printing/core/widgets/app_text_field.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
-import 'package:printing/features/vendors/presentation/viewmodel/save_vendor_cubit.dart';
 
 /// Adding a supplier, or correcting one.
 ///
@@ -49,9 +49,13 @@ class _VendorFormViewState extends State<_VendorFormView> {
 
   late final _name = TextEditingController(text: widget.vendor?.name ?? '');
   late final _phone = TextEditingController(text: widget.vendor?.phone ?? '');
-  late final _contact = TextEditingController(text: widget.vendor?.contactPerson ?? '');
+  late final _contact = TextEditingController(
+    text: widget.vendor?.contactPerson ?? '',
+  );
   late final _email = TextEditingController(text: widget.vendor?.email ?? '');
-  late final _address = TextEditingController(text: widget.vendor?.address ?? '');
+  late final _address = TextEditingController(
+    text: widget.vendor?.address ?? '',
+  );
 
   /// The vendor as it now stands — replaced whenever the server answers, so the switch below
   /// reflects what was actually written rather than what was tapped.
@@ -90,13 +94,16 @@ class _VendorFormViewState extends State<_VendorFormView> {
           case SaveVendorSuccess(:final vendor):
             // An activation stays on the screen — the switch has just moved and the user is
             // looking at it — while a save is the end of the errand and leaves.
-            final wasActivation = _isEditing && vendor.isActive != _vendor!.isActive;
+            final wasActivation =
+                _isEditing && vendor.isActive != _vendor!.isActive;
 
             setState(() => _vendor = vendor);
 
             if (wasActivation) {
               context.showSuccess(
-                vendor.isActive ? 'تم تنشيط «${vendor.name}»' : 'تم إيقاف التعامل مع «${vendor.name}»',
+                vendor.isActive
+                    ? 'تم تنشيط «${vendor.name}»'
+                    : 'تم إيقاف التعامل مع «${vendor.name}»',
               );
 
               return;
@@ -105,7 +112,9 @@ class _VendorFormViewState extends State<_VendorFormView> {
             // True says the list behind should refresh; a dismissed form returns nothing.
             Navigator.of(context).pop(true);
             context.showSuccess(
-              _isEditing ? 'تم تحديث «${vendor.name}»' : 'تمت إضافة «${vendor.name}»',
+              _isEditing
+                  ? 'تم تحديث «${vendor.name}»'
+                  : 'تمت إضافة «${vendor.name}»',
             );
 
           case SaveVendorFailure(:final failure) when state.hasUnrenderedErrors:
@@ -119,7 +128,9 @@ class _VendorFormViewState extends State<_VendorFormView> {
         final cubit = context.read<SaveVendorCubit>();
 
         return Scaffold(
-          appBar: AppBar(title: Text(_isEditing ? 'تعديل المورد' : 'مورد جديد')),
+          appBar: AppBar(
+            title: Text(_isEditing ? 'تعديل المورد' : 'مورد جديد'),
+          ),
           body: SafeArea(
             child: Form(
               key: _formKey,
@@ -194,7 +205,8 @@ class _VendorFormViewState extends State<_VendorFormView> {
                       // twice into a race whose loser wins.
                       onChanged: state.isSubmitting
                           ? null
-                          : (value) => cubit.setActive(vendor.id, isActive: value),
+                          : (value) =>
+                                cubit.setActive(vendor.id, isActive: value),
                       title: const Text('نتعامل معه'),
                       // Said out loud, because "off" is not "deleted" — and this switch takes
                       // effect at once rather than on «حفظ», which is worth knowing before

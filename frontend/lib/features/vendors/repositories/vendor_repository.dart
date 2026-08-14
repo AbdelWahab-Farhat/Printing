@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/vendors/models/stock_arrival.dart';
-import 'package:printing/features/vendors/models/vendor.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/vendors/models/stock_arrival.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
 
 /// الموردون وشحناتهم, stated without saying how.
 ///
@@ -88,7 +88,10 @@ abstract interface class VendorRepository {
 /// record's shape out in full, and all three would have to be edited the day a line grows a
 /// third field.
 class StockArrivalLine {
-  const StockArrivalLine({required this.productVariantId, required this.quantity});
+  const StockArrivalLine({
+    required this.productVariantId,
+    required this.quantity,
+  });
 
   final int productVariantId;
 

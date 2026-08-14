@@ -1,18 +1,18 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
+import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/core/widgets/search_field.dart';
+import 'package:dayaa/features/business_fields/models/business_field.dart';
+import 'package:dayaa/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
+import 'package:dayaa/features/business_fields/presentation/widgets/business_field_card.dart';
+import 'package:dayaa/features/business_fields/presentation/widgets/business_field_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:printing/core/di/injector.dart';
-import 'package:printing/core/permissions/app_permission.dart';
-import 'package:printing/core/session/session.dart';
-import 'package:printing/core/utils/app_icons.dart';
-import 'package:printing/core/utils/context_extensions.dart';
-import 'package:printing/core/widgets/app_dialog.dart';
-import 'package:printing/core/widgets/paged_list_view.dart';
-import 'package:printing/core/widgets/search_field.dart';
-import 'package:printing/features/business_fields/models/business_field.dart';
-import 'package:printing/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
-import 'package:printing/features/business_fields/presentation/widgets/business_field_card.dart';
-import 'package:printing/features/business_fields/presentation/widgets/business_field_sheet.dart';
 
 /// مجالات العمل — the list of trades a customer's shop can be in.
 ///

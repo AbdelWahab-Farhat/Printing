@@ -71,7 +71,7 @@ final class AllocatePurchaseOrderAdditionalCosts
 
     /**
      * @param  Collection<int, PurchaseOrderItem>  $items
-     * @return array<int, string>  Cents allocated per item id.
+     * @return array<int, string> Cents allocated per item id.
      */
     private function allocateCents(string $totalCents, Collection $items): array
     {

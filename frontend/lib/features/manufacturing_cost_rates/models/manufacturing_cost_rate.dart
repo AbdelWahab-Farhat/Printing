@@ -1,6 +1,6 @@
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/vendors/models/stock_arrival.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/utils/digits.dart';
-import 'package:printing/features/vendors/models/stock_arrival.dart';
 
 part 'manufacturing_cost_rate.freezed.dart';
 part 'manufacturing_cost_rate.g.dart';

@@ -1,17 +1,17 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart' hide Order;
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_counts.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/orders_cubit.dart';
+import 'package:dayaa/features/orders/repositories/order_repository.dart';
+import 'package:dayaa/features/orders/usecases/get_order_counts.dart';
+import 'package:dayaa/features/orders/usecases/get_orders.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/features/orders/models/order.dart';
-import 'package:printing/features/orders/models/order_counts.dart';
-import 'package:printing/features/orders/models/order_payment.dart';
-import 'package:printing/features/orders/models/order_status.dart';
-import 'package:printing/features/orders/presentation/viewmodel/orders_cubit.dart';
-import 'package:printing/features/orders/repositories/order_repository.dart';
-import 'package:printing/features/orders/usecases/get_order_counts.dart';
-import 'package:printing/features/orders/usecases/get_orders.dart';
 
 /// The orders list's ViewModel. The repository is faked, nothing touches Dio, and the
 /// assertions are on the sequence of states the screen would have rendered.

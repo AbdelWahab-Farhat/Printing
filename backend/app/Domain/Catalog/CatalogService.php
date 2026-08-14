@@ -8,6 +8,9 @@ use App\Domain\Catalog\Actions\CreateProduct;
 use App\Domain\Catalog\Actions\CreateProductCategory;
 use App\Domain\Catalog\Actions\DeleteProductCategory;
 use App\Domain\Catalog\Actions\QuoteProductPrice;
+use App\Domain\Catalog\Actions\RemoveProductCategoryImage;
+use App\Domain\Catalog\Actions\ReorderProductCategories;
+use App\Domain\Catalog\Actions\SetProductCategoryImage;
 use App\Domain\Catalog\Actions\UpdateProduct;
 use App\Domain\Catalog\Actions\UpdateProductCategory;
 use App\Domain\Catalog\DTOs\PriceQuote;
@@ -50,6 +53,9 @@ class CatalogService
         private readonly UpdateProductCategory $updateCategory,
         private readonly DeleteProductCategory $deleteCategory,
         private readonly ProductCategoryListQuery $categoryListQuery,
+        private readonly ReorderProductCategories $reorderCategories,
+        private readonly SetProductCategoryImage $setCategoryImage,
+        private readonly RemoveProductCategoryImage $removeCategoryImage,
     ) {}
 
     // ── التصنيفات ────────────────────────────────────────────────────────────────
@@ -93,6 +99,26 @@ class CatalogService
     public function deleteCategory(ProductCategory $category): void
     {
         ($this->deleteCategory)($category);
+    }
+
+    /**
+     * Puts the headings in the order they were dragged into — the whole list in one call.
+     *
+     * @param  list<int>  $orderedIds
+     */
+    public function reorderCategories(array $orderedIds): void
+    {
+        ($this->reorderCategories)($orderedIds);
+    }
+
+    public function setCategoryImage(ProductCategory $category, UploadedFile $image): ProductCategory
+    {
+        return ($this->setCategoryImage)($category, $image);
+    }
+
+    public function removeCategoryImage(ProductCategory $category): ProductCategory
+    {
+        return ($this->removeCategoryImage)($category);
     }
 
     /**

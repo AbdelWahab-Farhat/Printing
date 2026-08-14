@@ -1,11 +1,11 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/products/models/price_quote.dart';
+import 'package:dayaa/features/products/usecases/get_price_quote.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/products/models/price_quote.dart';
-import 'package:printing/features/products/usecases/get_price_quote.dart';
 
-part 'line_quote_state.dart';
 part 'line_quote_cubit.freezed.dart';
+part 'line_quote_state.dart';
 
 /// The price under the quantity box, as it is typed.
 ///

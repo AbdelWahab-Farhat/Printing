@@ -13,6 +13,7 @@ final class CreateProductCategory
     {
         $category = ProductCategory::create([
             'name' => $data->name,
+            'parent_id' => $data->parentId,
             'description' => $data->description,
             'is_active' => $data->isActive,
             'sort_order' => $data->sortOrder,
@@ -20,6 +21,6 @@ final class CreateProductCategory
 
         // A brand-new category has none, but the count must still be present: the resource
         // renders it, and strict mode turns a missing attribute into an exception, not a null.
-        return $category->loadCount('products');
+        return $category->loadCount(['products', 'children']);
     }
 }

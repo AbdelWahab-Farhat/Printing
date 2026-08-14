@@ -1,12 +1,12 @@
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/order_counts.dart';
+import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/usecases/get_order_counts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/models/order_counts.dart';
-import 'package:printing/features/orders/models/order_status.dart';
-import 'package:printing/features/orders/usecases/get_order_counts.dart';
 
-part 'customer_order_counts_state.dart';
 part 'customer_order_counts_cubit.freezed.dart';
+part 'customer_order_counts_state.dart';
 
 /// How many orders this customer has, in the three groups their screen offers.
 ///

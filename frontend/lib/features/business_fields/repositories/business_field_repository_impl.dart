@@ -1,11 +1,11 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/api_endpoints.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/business_fields/models/business_field.dart';
+import 'package:dayaa/features/business_fields/repositories/business_field_repository.dart';
 import 'package:dio/dio.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/core/network/api_endpoints.dart';
-import 'package:printing/core/network/paginated.dart';
-import 'package:printing/core/network/safe_request.dart';
-import 'package:printing/features/business_fields/models/business_field.dart';
-import 'package:printing/features/business_fields/repositories/business_field_repository.dart';
 
 /// Fulfils [BusinessFieldRepository] over HTTP.
 class BusinessFieldRepositoryImpl implements BusinessFieldRepository {

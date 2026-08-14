@@ -1,9 +1,9 @@
+import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/presentation/widgets/customer_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:printing/features/customers/models/customer.dart';
-import 'package:printing/features/customers/presentation/widgets/customer_card.dart';
 
 /// What one customer row tells somebody looking a customer up.
 ///

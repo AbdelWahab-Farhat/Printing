@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart' hide Order;
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/production_cost_entry.dart';
+import 'package:dayaa/features/orders/repositories/order_repository.dart';
+import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:printing/core/error/failure.dart';
-import 'package:printing/features/orders/models/production_cost_entry.dart';
-import 'package:printing/features/orders/repositories/order_repository.dart';
-import 'package:printing/features/orders/usecases/record_scrap_loss.dart';
 
 /// Writing off bags that were ruined making a line.
 ///
