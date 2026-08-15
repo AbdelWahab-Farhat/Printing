@@ -82,6 +82,8 @@ void main() {
           : ProductCategory(id: 1, name: categoryName),
       pricingUnit: 'piece',
       pricingUnitLabel: pricingUnitLabel,
+      stockUnit: 'piece',
+      stockUnitLabel: pricingUnitLabel,
       pricingMode: 'tiered',
       pricingModeLabel: 'حسب الكمية',
       hasListedPrices: hasListedPrices,

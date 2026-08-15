@@ -6,9 +6,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// What the order cost to make, and what is left of the invoice after it.
 ///
-/// **Null is «لم يُحتسب بعد» and never «٠٫٠٠».** Nothing is costed until the order enters «قيد
-/// الطباعة» and stock leaves a shelf; a zero drawn in that gap would read as «هذه الطلبية لم
-/// تكلّفنا شيئاً», which is a different — and false — statement about a job nobody has started.
+/// **Null is «لم يُحتسب بعد» and never «٠٫٠٠».** Nothing is costed until the order reaches
+/// «جاهزة» and stock leaves a shelf; a zero drawn in that gap would read as «هذه الطلبية لم
+/// تكلّفنا شيئاً», which is a different — and false — statement about a job still on the press.
 /// So the two figures are absent together and the section says why.
 ///
 /// **Both numbers are the server's, including the subtraction.** `gross_profit` is
@@ -33,7 +33,7 @@ class OrderCostSection extends StatelessWidget {
 
     if (cogs == null && profit == null) {
       return Text(
-        'لم تُحتسب التكلفة بعد — تُحتسب عند دخول الطلبية «قيد الطباعة»',
+        'لم تُحتسب التكلفة بعد — تُحتسب عند وصول الطلبية إلى «جاهزة»',
         style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
       );
     }

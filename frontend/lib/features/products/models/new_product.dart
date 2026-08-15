@@ -41,6 +41,17 @@ abstract class NewProduct with _$NewProduct {
     @JsonKey(name: 'product_category_id') required int productCategoryId,
 
     @JsonKey(name: 'pricing_unit') required String pricingUnit,
+
+    /// What the warehouse will count this in. **Optional, and omitted from the body when it is
+    /// not set** — the server then defaults it to [pricingUnit], which is the common case where
+    /// what is stocked and what is sold agree. Sending the same value again would be this app
+    /// repeating the server's own rule back at it, and the first place the two could drift.
+    ///
+    /// Accepted on create only. `PUT /products/{id}` carries no rule for it and ignores the key;
+    /// correcting it afterwards is `PATCH /products/{id}/stock-unit`, because it cascades to
+    /// every warehouse balance and cost batch the product's variants have.
+    @JsonKey(name: 'stock_unit', includeIfNull: false) String? stockUnit,
+
     @JsonKey(name: 'pricing_mode') required String pricingMode,
 
     /// A decimal string like `'100'`, already normalised out of whatever the keyboard produced.

@@ -77,14 +77,15 @@ mixin _$Order {
 @JsonKey(name: 'items_count') int? get itemsCount;/// Present when one order was fetched.
  List<OrderItem>? get items; List<OrderDesign>? get designs; List<OrderTransitionRecord>? get transitions;/// What this order cost to produce, and what is left of the invoice after it.
 ///
-/// **Both null until the order has reached «قيد الطباعة»** — nothing is costed before stock
+/// **Both null until the order has reached «جاهزة»** — nothing is costed before stock
 /// leaves a shelf, and «لم يُحتسب بعد» is not «صفر». [grossProfit] is derived by the server
 /// from the two figures beside it and never stored, so the app reads it rather than
 /// subtracting: which total the margin is taken against is a rule, and rules live in one
 /// place.
-@JsonKey(name: 'total_cogs') String? get totalCogs;@JsonKey(name: 'gross_profit') String? get grossProfit;/// Which shelf this run came off, and when — both null until the order first reaches «قيد
-/// الطباعة», and never rewritten after. A reprint reads the *first* deduction here, which is
-/// what makes «هل خُصم المخزون؟» answerable without counting movements.
+@JsonKey(name: 'total_cogs') String? get totalCogs;@JsonKey(name: 'gross_profit') String? get grossProfit;/// Which shelf this run came off, and when — both null until the order reaches «جاهزة», and
+/// never rewritten after. That is later than it used to be, and deliberately: an order's
+/// lines are frozen by «جاهزة» but still editable through «قيد الطباعة», so stock now leaves
+/// the warehouse against quantities nobody can still change underneath it.
 @JsonKey(name: 'fulfillment_warehouse_id') int? get fulfillmentWarehouseId;@JsonKey(name: 'stock_deducted_at') DateTime? get stockDeductedAt;@JsonKey(name: 'placed_at') DateTime? get placedAt;@JsonKey(name: 'delivered_at') DateTime? get deliveredAt;@JsonKey(name: 'settled_at') DateTime? get settledAt;@JsonKey(name: 'created_at') DateTime? get createdAt;
 /// Create a copy of Order
 /// with the given fields replaced by the non-null parameter values.
@@ -500,16 +501,17 @@ class _Order extends Order {
 
 /// What this order cost to produce, and what is left of the invoice after it.
 ///
-/// **Both null until the order has reached «قيد الطباعة»** — nothing is costed before stock
+/// **Both null until the order has reached «جاهزة»** — nothing is costed before stock
 /// leaves a shelf, and «لم يُحتسب بعد» is not «صفر». [grossProfit] is derived by the server
 /// from the two figures beside it and never stored, so the app reads it rather than
 /// subtracting: which total the margin is taken against is a rule, and rules live in one
 /// place.
 @override@JsonKey(name: 'total_cogs') final  String? totalCogs;
 @override@JsonKey(name: 'gross_profit') final  String? grossProfit;
-/// Which shelf this run came off, and when — both null until the order first reaches «قيد
-/// الطباعة», and never rewritten after. A reprint reads the *first* deduction here, which is
-/// what makes «هل خُصم المخزون؟» answerable without counting movements.
+/// Which shelf this run came off, and when — both null until the order reaches «جاهزة», and
+/// never rewritten after. That is later than it used to be, and deliberately: an order's
+/// lines are frozen by «جاهزة» but still editable through «قيد الطباعة», so stock now leaves
+/// the warehouse against quantities nobody can still change underneath it.
 @override@JsonKey(name: 'fulfillment_warehouse_id') final  int? fulfillmentWarehouseId;
 @override@JsonKey(name: 'stock_deducted_at') final  DateTime? stockDeductedAt;
 @override@JsonKey(name: 'placed_at') final  DateTime? placedAt;
@@ -1520,8 +1522,8 @@ mixin _$OrderItem {
 /// whole line, read off a scale, not a per-piece factor — a batch is weighed together, not
 /// counted.
 @JsonKey(name: 'warehouse_quantity') String? get warehouseQuantity;@JsonKey(name: 'unit_price') String get unitPrice;@JsonKey(name: 'line_total') String get lineTotal;/// The accrual side of [lineTotal]: what this line cost to make, split three ways and
-/// summed. **All four null until the line has reached «قيد الطباعة»** — a line nobody has
-/// started has no cost, which is not a cost of zero.
+/// summed. **All four null until the line has reached «جاهزة»** — a line nobody has
+/// finished has no cost, which is not a cost of zero.
 @JsonKey(name: 'material_cost') String? get materialCost;@JsonKey(name: 'labor_cost') String? get laborCost;@JsonKey(name: 'overhead_cost') String? get overheadCost;/// The three above, added up by the server. Read rather than summed here for the same reason
 /// [billableQuantity] is.
  String? get cogs; String? get notes;
@@ -1765,8 +1767,8 @@ class _OrderItem extends OrderItem {
 @override@JsonKey(name: 'unit_price') final  String unitPrice;
 @override@JsonKey(name: 'line_total') final  String lineTotal;
 /// The accrual side of [lineTotal]: what this line cost to make, split three ways and
-/// summed. **All four null until the line has reached «قيد الطباعة»** — a line nobody has
-/// started has no cost, which is not a cost of zero.
+/// summed. **All four null until the line has reached «جاهزة»** — a line nobody has
+/// finished has no cost, which is not a cost of zero.
 @override@JsonKey(name: 'material_cost') final  String? materialCost;
 @override@JsonKey(name: 'labor_cost') final  String? laborCost;
 @override@JsonKey(name: 'overhead_cost') final  String? overheadCost;

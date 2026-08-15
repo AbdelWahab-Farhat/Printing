@@ -42,6 +42,8 @@ void main() {
     name: 'أكياس الشحن',
     pricingUnit: 'piece',
     pricingUnitLabel: 'قطعة',
+    stockUnit: 'piece',
+    stockUnitLabel: 'قطعة',
     pricingMode: 'tiered',
     pricingModeLabel: 'حسب الكمية',
     minOrderQuantity: '100.000',
@@ -81,6 +83,7 @@ void main() {
     String? description,
     List<String> features = const [],
     String pricingUnit = 'piece',
+    String? stockUnit,
     String pricingMode = 'tiered',
     String minOrderQuantity = '100',
     List<DraftVariant> variants = const [],
@@ -94,6 +97,7 @@ void main() {
       // Required by the API from today on — see PRODUCT-CATEGORIES.md.
       productCategoryId: 3,
       pricingUnit: pricingUnit,
+      stockUnit: stockUnit,
       pricingMode: pricingMode,
       minOrderQuantity: minOrderQuantity,
       variants: variants,
@@ -257,6 +261,33 @@ void main() {
         });
       },
     );
+
+    test('no stock unit chosen is a key the request never mentions', () async {
+      // Arrange — the server defaults `stock_unit` to whatever `pricing_unit` was sent, which is
+      // nine bags in ten. Sending the same value again would be the app repeating the server's
+      // own rule back at it, and the first place the two could drift.
+      // Act
+      await submit(pricingUnit: 'piece');
+
+      // Assert
+      final draft = sent();
+
+      expect(draft.stockUnit, isNull);
+      expect(draft.toJson().containsKey('stock_unit'), isFalse);
+    });
+
+    test('a shelf counted in something else is sent, and sent apart', () async {
+      // Arrange — bought in by the kilo, sold by the piece. `min_order_quantity` is still
+      // governed by the *pricing* unit, so the two travel as two fields.
+      // Act
+      await submit(pricingUnit: 'piece', stockUnit: 'kilogram');
+
+      // Assert
+      final body = sent().toJson();
+
+      expect(body['pricing_unit'], 'piece');
+      expect(body['stock_unit'], 'kilogram');
+    });
 
     test('a quote-only product carries no prices at all', () async {
       // Arrange — the server refuses the whole list if it does, and that refusal has no field

@@ -99,6 +99,8 @@ void main() {
     name: 'أكياس الشحن',
     pricingUnit: 'piece',
     pricingUnitLabel: 'بالقطعة',
+    stockUnit: 'piece',
+    stockUnitLabel: 'بالقطعة',
     pricingMode: 'tiered',
     pricingModeLabel: 'أسعار مدرجة',
     minOrderQuantity: '100.000',
@@ -247,6 +249,50 @@ void main() {
     expect(find.text('اختر تصنيف المنتج'), findsOneWidget);
   });
 
+  // ─────────────────────────── the two units ───────────────────────────
+
+  /// **Two pickers on every product would be two identical dropdowns on nine bags in ten.**
+  ///
+  /// The server defaults `stock_unit` to whatever `pricing_unit` was sent, so the common case —
+  /// what is sold and what is counted are the same thing — has to stay a zero-extra-tap flow.
+  /// The second picker is revealed by a switch, and only somebody who has a bag bought in by the
+  /// kilo and sold by the piece ever sees it.
+  testWidgets('the storage unit is asked for only when somebody says it differs', (
+    tester,
+  ) async {
+    // Arrange
+    await tester.pumpWidget(host(const ProductFormPage()));
+    await tester.pumpAndSettle();
+
+    // Assert — the selling unit is always there; the storage one is not.
+    expect(find.text('وحدة التسعير'), findsOneWidget);
+    expect(find.text('وحدة المخزون'), findsNothing);
+
+    // Act
+    final toggle = find.text('وحدة المخزون تختلف عن وحدة البيع');
+    await tester.ensureVisible(toggle);
+    await tester.pump();
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+
+    // Assert — a second row of chips, its own question.
+    expect(find.text('وحدة المخزون'), findsOneWidget);
+  });
+
+  testWidgets('correcting a product never offers to change what the shelf counts in', (
+    tester,
+  ) async {
+    // Arrange — `PUT /products/{id}` carries no `stock_unit` rule and ignores the key entirely.
+    // A switch on this form that silently did nothing would be worse than no switch.
+    // Act
+    await tester.pumpWidget(host(const ProductFormPage(product: product)));
+    await tester.pumpAndSettle();
+
+    // Assert — the correction lives on the detail screen, behind `inventory.manage`.
+    expect(find.text('وحدة المخزون تختلف عن وحدة البيع'), findsNothing);
+    expect(find.text('وحدة المخزون'), findsNothing);
+  });
+
   testWidgets('a product being corrected opens on the heading it already has', (
     tester,
   ) async {
@@ -261,6 +307,8 @@ void main() {
       productCategoryId: 3,
       pricingUnit: 'piece',
       pricingUnitLabel: 'بالقطعة',
+      stockUnit: 'piece',
+      stockUnitLabel: 'بالقطعة',
       pricingMode: 'tiered',
       pricingModeLabel: 'أسعار مدرجة',
       minOrderQuantity: '100.000',

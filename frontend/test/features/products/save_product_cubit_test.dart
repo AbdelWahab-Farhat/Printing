@@ -39,6 +39,8 @@ void main() {
     name: 'أكياس الشحن',
     pricingUnit: 'piece',
     pricingUnitLabel: 'قطعة',
+    stockUnit: 'piece',
+    stockUnitLabel: 'قطعة',
     pricingMode: 'tiered',
     pricingModeLabel: 'حسب الكمية',
     minOrderQuantity: '100.000',

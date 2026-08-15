@@ -33,9 +33,13 @@ enum TransitionFieldType {
   /// Which store the run's stock comes out of.
   ///
   /// Like the carrier, no options arrive with it — the app manages the list of warehouses, so
-  /// the picker fetches them itself and only the id travels back. Asked on the way into «قيد
-  /// الطباعة», and required exactly once: a reprint that has already emptied a shelf is offered
-  /// the field but not made to answer it again.
+  /// the picker fetches them itself and only the id travels back. Asked on the way into
+  /// «جاهزة», which is where stock leaves the shelf, and required exactly once: an order whose
+  /// stock has already gone is offered the field but not made to answer it again.
+  ///
+  /// **Which move asks for it is the server's to decide, and this comment is not load-bearing.**
+  /// It used to be «قيد الطباعة»; the screen followed the change without a line of Dart, because
+  /// it renders `available_transitions[].fields` as sent and holds no map of its own.
   @JsonValue('warehouse')
   warehouse,
 

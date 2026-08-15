@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 /// What one line cost to make, under what it is being charged for.
 ///
 /// **Absent, not zero, and absent rather than «لم يُحتسب بعد».** All four figures are null until
-/// the line reaches «قيد الطباعة», and a `0.00` there would say the bags cost nothing to make.
-/// The order's own cost section says «لم تُحتسب بعد» once, in words; repeating it on every line
-/// of an order nobody has started would be the same sentence four times over a screen whose
-/// subject is what the customer pays.
+/// the line reaches «جاهزة», and a `0.00` there would say the bags cost nothing to make. The
+/// order's own cost section says «لم تُحتسب بعد» once, in words; repeating it on every line of an
+/// order still on the press would be the same sentence four times over a screen whose subject is
+/// what the customer pays.
 ///
 /// **A part missing is a part left out.** The rates are resolved one cost type at a time, and a
 /// type with no applicable rate is skipped rather than posted as zero — so an order costed with

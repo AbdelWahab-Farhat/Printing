@@ -48,6 +48,8 @@ void main() {
       name: name,
       pricingUnit: 'piece',
       pricingUnitLabel: 'قطعة',
+      stockUnit: 'piece',
+      stockUnitLabel: 'قطعة',
       pricingMode: 'listed',
       pricingModeLabel: 'حسب القائمة',
       hasListedPrices: true,

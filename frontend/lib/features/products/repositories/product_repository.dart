@@ -4,6 +4,7 @@ import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/products/models/new_product.dart';
 import 'package:dayaa/features/products/models/price_quote.dart';
+import 'package:dayaa/features/products/models/pricing_unit.dart';
 import 'package:dayaa/features/products/models/product.dart';
 
 /// Reading the catalogue, stated without saying how.
@@ -70,4 +71,16 @@ abstract interface class ProductRepository {
   /// shows has to be in it: a size left out is removed, and one sent without its id is treated
   /// as new. See [NewProductVariant.id].
   Future<Either<Failure, Product>> update(int productId, NewProduct product);
+
+  /// Declares what a product's stock is counted in, and answers with the product refreshed.
+  ///
+  /// **Not part of [update], and that is the server's own split.** `PUT /products/{id}` carries
+  /// no `stock_unit` rule and ignores the key; this call cascades the unit to every warehouse
+  /// balance and every cost batch for the product's variants, in one transaction, and is guarded
+  /// by `inventory.manage` rather than `products.manage`.
+  ///
+  /// **Nothing is converted.** The figures on the shelves were correct in their own unit before
+  /// the call and stay correct after it — what changes is what that unit is called from here on.
+  /// So there is nothing for the caller to reconcile beyond the product handed back.
+  Future<Either<Failure, Product>> setStockUnit(int productId, PricingUnit unit);
 }

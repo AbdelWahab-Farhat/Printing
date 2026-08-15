@@ -7,8 +7,10 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/products/models/pricing_unit.dart';
 import 'package:dayaa/features/products/models/product.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/product_detail_cubit.dart';
 import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
@@ -35,7 +37,11 @@ import 'package:go_router/go_router.dart';
 /// has to. With a page to scroll there is room to say it in full: «١٠٠ فأكثر ← 0.850 د.ل
 /// للقطعة», a sentence that cannot be misread, next to the size's real dimensions.
 ///
-/// Read-only. Editing a product and stopping one are endpoints the app does not call yet.
+/// Almost read-only. Two things can be changed from here and both are their own action rather
+/// than a field on a form: correcting the product itself, which opens the form, and declaring
+/// what the warehouse counts it in — a different endpoint behind a different grant, because it
+/// relabels every balance and cost batch the product's variants have. Stopping a product is
+/// still an endpoint the app does not call.
 class ProductDetailPage extends StatelessWidget {
   const ProductDetailPage({required this.productId, super.key});
 
@@ -85,6 +91,8 @@ class _ProductDetailView extends StatelessWidget {
 
               if (saved ?? false) await cubit.load();
             },
+            onChangeStockUnit: (context) =>
+                _changeStockUnit(context, cubit: cubit, product: product),
           );
         },
       ),
@@ -105,16 +113,131 @@ class _ProductDetailView extends StatelessWidget {
   }
 }
 
+/// Declares what the warehouse counts this product in.
+///
+/// **Two steps, and the second is not ceremony.** The pick is a sheet; the confirmation says what
+/// the pick actually does, which is more than the product row: the server rewrites the unit on
+/// every warehouse balance and every cost batch the product's variants have. Nothing is
+/// converted — the figures were correct in their own unit and stay correct — but somebody
+/// choosing «كيلوغرام» because they misread the question should be told what they are about to
+/// relabel before it happens.
+Future<void> _changeStockUnit(
+  BuildContext context, {
+  required ProductDetailCubit cubit,
+  required Product product,
+}) async {
+  final current = PricingUnit.fromWire(product.stockUnit);
+
+  final chosen = await showModalBottomSheet<PricingUnit>(
+    context: context,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+    ),
+    builder: (sheetContext) => _StockUnitSheet(current: current),
+  );
+
+  // Backing out is an ordinary ending, and so is picking what it already says.
+  if (chosen == null || chosen == current || !context.mounted) return;
+
+  final confirmed = await showCustomDialog(
+    context: context,
+    title: 'تغيير وحدة المخزون',
+    description:
+        'ستُحتسب حركات المخزون لهذا المنتج ${chosen.label} من الآن، وسيُعاد وسم كل أرصدة '
+        'المخازن ودفعات التكلفة الحالية بالوحدة نفسها. الكميات المسجَّلة لا تتغير.',
+    confirmLabel: 'تغيير',
+    severity: DialogSeverity.warning,
+  );
+  if (!(confirmed ?? false) || !context.mounted) return;
+
+  final failure = await cubit.setStockUnit(chosen);
+  if (!context.mounted) return;
+
+  // The server's own Arabic when it refuses — `inventory.manage` is the grant, and somebody who
+  // may edit the catalogue does not necessarily hold it.
+  if (failure != null) {
+    context.showFailure(failure);
+
+    return;
+  }
+
+  context.showSuccess('وحدة المخزون الآن ${chosen.label}');
+}
+
+/// The two units, with the one in force already marked.
+class _StockUnitSheet extends StatelessWidget {
+  const _StockUnitSheet({required this.current});
+
+  final PricingUnit current;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 42.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: context.colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'وحدة المخزون',
+              style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              // Said here rather than only in the confirmation: somebody opening this sheet by
+              // mistake should be able to close it knowing they were not on the pricing screen.
+              'ما يُعدّ به هذا المنتج في المخازن — مستقل عن وحدة التسعير',
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            for (final unit in PricingUnit.choices)
+              ListTile(
+                title: Text(unit.label),
+                contentPadding: EdgeInsets.zero,
+                // A tick beside the one in force rather than a radio group: the sheet closes on
+                // the tap, so there is no moment where a selection sits waiting to be submitted.
+                trailing: unit == current
+                    ? Icon(AppIcons.activate, color: context.colorScheme.primary, size: 20.sp)
+                    : null,
+                onTap: () => Navigator.of(context).pop(unit),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// What this screen can do, as data.
 ///
 /// [AppSpeedDial] collapses to a plain button when only one action survives the permission
 /// filter, so a reader who may look at the catalogue and not change it sees exactly one button
 /// rather than a dial with a single arm.
 class _Actions extends StatelessWidget {
-  const _Actions({required this.product, required this.onEdit});
+  const _Actions({
+    required this.product,
+    required this.onEdit,
+    required this.onChangeStockUnit,
+  });
 
   final Product product;
   final Future<void> Function(BuildContext context) onEdit;
+  final Future<void> Function(BuildContext context) onChangeStockUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -128,6 +251,15 @@ class _Actions extends StatelessWidget {
           // courtesy; the other two are the boundary.
           permission: AppPermission.manageProducts,
           onTap: onEdit,
+        ),
+        AppAction(
+          label: 'وحدة المخزون',
+          icon: AppIcons.warehouse,
+          // `inventory.manage`, not `products.manage`, and that is the server's own line: this
+          // rewrites the unit on every warehouse balance and cost batch the product's variants
+          // have. Somebody who may correct a price is not therefore in charge of the shelves.
+          permission: AppPermission.manageInventory,
+          onTap: onChangeStockUnit,
         ),
         AppAction(
           label: 'سجل التعديلات',
@@ -567,6 +699,13 @@ class _Identifiers extends StatelessWidget {
         _FactRow(label: 'التصنيف', value: product.productCategory?.name ?? 'بلا تصنيف'),
         SizedBox(height: 8.h),
         _FactRow(label: 'وحدة التسعير', value: product.pricingUnitLabel),
+        // Only when the shelf counts this in something else. The server defaults the two to the
+        // same value, so printing both on every product would be the same word twice on nine
+        // bags in ten — and the tenth, the one worth noticing, would read like the rest.
+        if (product.stocksInAnotherUnit) ...[
+          SizedBox(height: 8.h),
+          _FactRow(label: 'وحدة المخزون', value: product.stockUnitLabel),
+        ],
         SizedBox(height: 8.h),
         _FactRow(
           label: 'المقاسات',

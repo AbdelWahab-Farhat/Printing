@@ -159,7 +159,7 @@ abstract class Order with _$Order {
 
     /// What this order cost to produce, and what is left of the invoice after it.
     ///
-    /// **Both null until the order has reached «قيد الطباعة»** — nothing is costed before stock
+    /// **Both null until the order has reached «جاهزة»** — nothing is costed before stock
     /// leaves a shelf, and «لم يُحتسب بعد» is not «صفر». [grossProfit] is derived by the server
     /// from the two figures beside it and never stored, so the app reads it rather than
     /// subtracting: which total the margin is taken against is a rule, and rules live in one
@@ -167,9 +167,10 @@ abstract class Order with _$Order {
     @JsonKey(name: 'total_cogs') String? totalCogs,
     @JsonKey(name: 'gross_profit') String? grossProfit,
 
-    /// Which shelf this run came off, and when — both null until the order first reaches «قيد
-    /// الطباعة», and never rewritten after. A reprint reads the *first* deduction here, which is
-    /// what makes «هل خُصم المخزون؟» answerable without counting movements.
+    /// Which shelf this run came off, and when — both null until the order reaches «جاهزة», and
+    /// never rewritten after. That is later than it used to be, and deliberately: an order's
+    /// lines are frozen by «جاهزة» but still editable through «قيد الطباعة», so stock now leaves
+    /// the warehouse against quantities nobody can still change underneath it.
     @JsonKey(name: 'fulfillment_warehouse_id') int? fulfillmentWarehouseId,
     @JsonKey(name: 'stock_deducted_at') DateTime? stockDeductedAt,
 
@@ -357,8 +358,8 @@ abstract class OrderItem with _$OrderItem {
     @JsonKey(name: 'line_total') required String lineTotal,
 
     /// The accrual side of [lineTotal]: what this line cost to make, split three ways and
-    /// summed. **All four null until the line has reached «قيد الطباعة»** — a line nobody has
-    /// started has no cost, which is not a cost of zero.
+    /// summed. **All four null until the line has reached «جاهزة»** — a line nobody has
+    /// finished has no cost, which is not a cost of zero.
     @JsonKey(name: 'material_cost') String? materialCost,
     @JsonKey(name: 'labor_cost') String? laborCost,
     @JsonKey(name: 'overhead_cost') String? overheadCost,

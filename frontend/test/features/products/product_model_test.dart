@@ -14,6 +14,9 @@ void main() {
     'name': 'كيس شحن',
     'pricing_unit': 'piece',
     'pricing_unit_label': 'قطعة',
+    // Sent on every product, and equal to `pricing_unit` until somebody says otherwise.
+    'stock_unit': 'piece',
+    'stock_unit_label': 'قطعة',
     'pricing_mode': 'listed',
     'pricing_mode_label': 'سعر معلن',
     'has_listed_prices': true,
@@ -47,6 +50,34 @@ void main() {
       expect(created, isNotNull);
       expect(created!.year, 2026);
       expect(product.updatedAt, isNotNull);
+    });
+  });
+
+  group('stock unit', () {
+    test('is read beside the pricing unit, not instead of it', () {
+      // Arrange — a bag bought in by the kilo and sold by the piece. One product, two units:
+      // `pricing_unit` is what the customer is charged by, `stock_unit` what the shelf counts.
+      final product = Product.fromJson(
+        productJson({'stock_unit': 'kilogram', 'stock_unit_label': 'كيلوغرام'}),
+      );
+
+      // Act & Assert — both survive; neither is derived from the other.
+      expect(product.pricingUnit, 'piece');
+      expect(product.stockUnit, 'kilogram');
+      expect(product.stockUnitLabel, 'كيلوغرام');
+    });
+
+    test('is worth saying only when it differs from what is charged', () {
+      // Arrange — nine products in ten. The server defaults `stock_unit` to `pricing_unit`, so
+      // printing both on the detail screen would be the same word twice on almost every bag.
+      final agreed = Product.fromJson(productJson({}));
+      final split = Product.fromJson(
+        productJson({'stock_unit': 'kilogram', 'stock_unit_label': 'كيلوغرام'}),
+      );
+
+      // Act & Assert
+      expect(agreed.stocksInAnotherUnit, isFalse);
+      expect(split.stocksInAnotherUnit, isTrue);
     });
   });
 

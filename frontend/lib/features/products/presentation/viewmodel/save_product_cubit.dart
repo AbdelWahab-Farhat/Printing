@@ -41,6 +41,10 @@ class SaveProductCubit extends Cubit<SaveProductState> {
     List<String> features = const [],
     required int productCategoryId,
     required String pricingUnit,
+
+    /// What the warehouse counts this in, when the form was told it differs from what is sold.
+    /// Null lets the server default it to [pricingUnit] — see [SaveProduct].
+    String? stockUnit,
     required String pricingMode,
     required String minOrderQuantity,
     List<DraftVariant> variants = const [],
@@ -62,6 +66,7 @@ class SaveProductCubit extends Cubit<SaveProductState> {
       features: features,
       productCategoryId: productCategoryId,
       pricingUnit: pricingUnit,
+      stockUnit: stockUnit,
       pricingMode: pricingMode,
       minOrderQuantity: minOrderQuantity,
       variants: variants,

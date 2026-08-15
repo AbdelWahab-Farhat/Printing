@@ -334,10 +334,11 @@ class _Body extends StatelessWidget {
 
   /// Whether spoiling a bag is even possible yet.
   ///
-  /// **The warehouse is the condition, not the status.** An order that has never entered «قيد
-  /// الطباعة» has no shelf to draw from, and the server refuses with «لا يمكن تسجيل تلف لطلبية لم
-  /// تدخل مرحلة الطباعة بعد» — a refusal worth never reaching, because the action would be
-  /// offered on every order in the shop to no purpose.
+  /// **The warehouse is the condition, not the status.** An order whose stock has not left a
+  /// shelf has nothing to draw a spoiled bag from, and the server refuses with «لم يُخصَم مخزونها
+  /// بعد» — a refusal worth never reaching, because the action would be offered on every order in
+  /// the shop to no purpose. Reading the warehouse rather than the status is also what let the
+  /// deduction move from «قيد الطباعة» to «جاهزة» without touching this line.
   bool get _mayScrap => onScrap != null && order.fulfillmentWarehouseId != null;
 
   @override
