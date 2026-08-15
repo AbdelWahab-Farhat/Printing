@@ -38,22 +38,6 @@ final class TransitionFields
 
         $fields = [];
 
-        // Where the stock this order consumes comes out of, asked exactly once per order — see
-        // {@see \App\Domain\Order\Actions\DeductOrderStock}. `printing` is re-enterable (a
-        // reprint goes `ready`/`shortage` back to `printing`), and a reprint that has already
-        // taken stock out of a warehouse is not asked to name one again — nothing here would do
-        // anything with a second answer.
-        if ($target === OrderStatus::Printing) {
-            $fields[] = TransitionField::warehouse(
-                key: 'warehouse_id',
-                label: 'المخزن',
-                required: $order->stock_deducted_at === null,
-                hint: $order->stock_deducted_at === null
-                    ? 'يُخصم منه ما تستهلكه هذه الطلبية من المخزون'
-                    : 'خُصم المخزون بالفعل من هذه الطلبية',
-            );
-        }
-
         // **A move carries artwork when the order stands in a status that accepts it, on one
         // side of the move or the other.** Two statuses do — «جديدة» and «قيد التصميم», see
         // {@see Order::designsAreEditable()} — and {@see ChangeOrderStatus} attaches while the
@@ -115,13 +99,28 @@ final class TransitionFields
             );
         }
 
-        // What came off the press, weighed once for the whole parcel.
-        //
-        // **Required only when the scale is the invoice.** A run priced by the kilo cannot be
-        // shelved without a weight — there would be no answer to what was sold — while for bags
-        // sold by the piece the number is for the courier, and a run can be finished before
-        // anybody has put it on a scale.
         if ($target === OrderStatus::Ready) {
+            // Where the stock this order consumes comes out of, asked exactly once per order —
+            // see {@see \App\Domain\Order\Actions\DeductOrderStock}. `ready` is reached at most
+            // once per order (see `OrderStatus::allowedNext()`), so unlike `printing` this never
+            // needs a re-entry guard of its own — `stock_deducted_at` still gates `required`
+            // rather than `$fields` itself, so a caller that lands here after a stray retry sees
+            // the field, just not required.
+            $fields[] = TransitionField::warehouse(
+                key: 'warehouse_id',
+                label: 'المخزن',
+                required: $order->stock_deducted_at === null,
+                hint: $order->stock_deducted_at === null
+                    ? 'يُخصم منه ما تستهلكه هذه الطلبية من المخزون'
+                    : 'خُصم المخزون بالفعل من هذه الطلبية',
+            );
+
+            // What came off the press, weighed once for the whole parcel.
+            //
+            // **Required only when the scale is the invoice.** A run priced by the kilo cannot be
+            // shelved without a weight — there would be no answer to what was sold — while for
+            // bags sold by the piece the number is for the courier, and a run can be finished
+            // before anybody has put it on a scale.
             $byWeight = $order->isPricedByWeight();
 
             $fields[] = TransitionField::number(

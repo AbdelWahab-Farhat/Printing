@@ -29,6 +29,9 @@ class ProductFactory extends Factory
             'description' => fake()->sentence(),
             'features' => ['مقاوم للماء', 'إمكانية طباعة الشعار'],
             'pricing_unit' => PricingUnit::Piece,
+            // Equal to `pricing_unit` by default, same as every product the migration backfilled
+            // — a test that wants them to differ overrides this explicitly.
+            'stock_unit' => PricingUnit::Piece,
             'pricing_mode' => PricingMode::Tiered,
             'min_order_quantity' => 100,
             'is_active' => true,
@@ -41,6 +44,7 @@ class ProductFactory extends Factory
     {
         return $this->state(fn () => [
             'pricing_unit' => PricingUnit::Kilogram,
+            'stock_unit' => PricingUnit::Kilogram,
             'min_order_quantity' => 5,
         ]);
     }

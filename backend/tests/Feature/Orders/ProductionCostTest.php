@@ -20,7 +20,7 @@ use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
- * What entering `printing` costs an order's lines: the FIFO material draw, plus whatever
+ * What entering `ready` costs an order's lines: the FIFO material draw, plus whatever
  * manufacturing rates apply — and what happens when one of those inputs is missing.
  *
  * Arrange - Act - Assert throughout.
@@ -46,6 +46,7 @@ class ProductionCostTest extends TestCase
             PermissionName::ViewOrders->value,
             PermissionName::ManageOrders->value,
             PermissionName::MoveOrderToPrinting->value,
+            PermissionName::MoveOrderToReady->value,
             // The way back into printing: a correction goes to the designer and forward again.
             PermissionName::MoveOrderToDesigning->value,
             PermissionName::ViewInventory->value,
@@ -55,10 +56,19 @@ class ProductionCostTest extends TestCase
         return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
     }
 
-    private function enterPrinting(array $headers, Order $order, Warehouse $warehouse): void
+    /**
+     * Walks an order from wherever it starts to `ready` — printing first (no fields required to
+     * get there from `new`), then ready, which is where stock now leaves the warehouse and
+     * production cost is applied.
+     */
+    private function enterReady(array $headers, Order $order, Warehouse $warehouse): void
     {
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Printing->value,
+        ])->assertOk();
+
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Ready->value,
             'fields' => ['warehouse_id' => $warehouse->id],
         ])->assertOk();
     }
@@ -89,7 +99,7 @@ class ProductionCostTest extends TestCase
         ]);
 
         // Act
-        $this->enterPrinting($headers, $order, $warehouse);
+        $this->enterReady($headers, $order, $warehouse);
 
         // Assert — material: 100 @ 4 = 400.00; labor: 100 @ 2 = 200.00; overhead: 100 @ 0.5 = 50.00
         $item->refresh();
@@ -140,7 +150,7 @@ class ProductionCostTest extends TestCase
         ]);
 
         // Act
-        $this->enterPrinting($headers, $order, $warehouse);
+        $this->enterReady($headers, $order, $warehouse);
 
         // Assert — overhead was never computed, not computed as 0
         $item->refresh();
@@ -175,7 +185,7 @@ class ProductionCostTest extends TestCase
         ]);
 
         // Act
-        $this->enterPrinting($headers, $order, $warehouse);
+        $this->enterReady($headers, $order, $warehouse);
 
         // Assert — 20 @ 0.75 = 15.00
         $this->assertSame('15.00', (string) $item->refresh()->labor_cost);
@@ -207,7 +217,7 @@ class ProductionCostTest extends TestCase
         ]);
 
         // Act
-        $this->enterPrinting($headers, $order, $warehouse);
+        $this->enterReady($headers, $order, $warehouse);
 
         // Assert — 10 @ 2, not 10 @ 9
         $this->assertSame('20.00', (string) $item->refresh()->labor_cost);
@@ -241,51 +251,44 @@ class ProductionCostTest extends TestCase
         ]);
 
         // Act
-        $this->enterPrinting($headers, $order, $warehouse);
+        $this->enterReady($headers, $order, $warehouse);
 
         // Assert — 10 @ 3, not 10 @ 5 and not 10 @ 9
         $this->assertSame('30.00', (string) $item->refresh()->labor_cost);
     }
 
-    public function test_a_reprint_does_not_reapply_manufacturing_rates(): void
+    public function test_stock_already_deducted_does_not_reapply_manufacturing_rates(): void
     {
-        // Arrange — already printed once, with a labor rate in place
+        // Arrange — `ready` has no way back to `printing`/`designing` (see
+        // `OrderStatus::allowedNext()`), so unlike the old `printing`-triggered guard this cannot
+        // be exercised by a real reprint any more: an order that has reached `ready` never sees
+        // this transition fire again through legitimate use. What is left to test is the guard
+        // itself — `stock_deducted_at !== null` — by putting the order in the state a second
+        // `ready` entry would otherwise find it in.
         $product = Product::factory()->create();
         $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
         $warehouse = Warehouse::factory()->create();
         $headers = $this->foreman();
 
-        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
-            'to_warehouse_id' => $warehouse->id,
-            'quantity' => 100,
-            'unit_cost' => 1,
-        ])->assertCreated();
-
         ManufacturingCostRate::factory()->forProduct($product)->type(ManufacturingCostType::Labor)->rate('1.000')->create();
 
-        $order = Order::factory()->create();
+        $order = Order::factory()->status(OrderStatus::Printing)->create([
+            'stock_deducted_at' => now(),
+            'fulfillment_warehouse_id' => $warehouse->id,
+        ]);
         $item = OrderItem::factory()->for($order)->create([
             'product_id' => $product->id,
             'product_variant_id' => $variant->id,
             'quantity' => '40',
         ]);
 
-        $this->enterPrinting($headers, $order, $warehouse);
-        $order->refresh();
-
-        // A correction sends it back to the designer, which is the way an order re-enters
-        // printing — «قيد الطباعة» no longer leads to «نواقص».
+        // Act
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Designing->value,
+            'status' => OrderStatus::Ready->value,
         ])->assertOk();
 
-        // Act — the reprint
-        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
-        ])->assertOk();
-
-        // Assert — still only the first application
-        $this->assertSame(1, ProductionCostEntry::query()->where('order_item_id', $item->id)->count());
+        // Assert — the guard refuses to cost it, since `stock_deducted_at` already said stock
+        // had already left the warehouse for this order.
+        $this->assertSame(0, ProductionCostEntry::query()->where('order_item_id', $item->id)->count());
     }
 }

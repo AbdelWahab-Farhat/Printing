@@ -13,7 +13,7 @@ use App\Support\Exceptions\DomainException;
  * `ChangeOrderStatus` accepts a nullable `?User $actor` — a console command or an importer may
  * move an order with nobody behind it — but {@see StockMovementData}
  * requires a real employee id for every movement, the same way `StockMovement::employee_id` is
- * never nullable. In practice every HTTP request that can reach `printing` carries an
+ * never nullable. In practice every HTTP request that can reach `ready` carries an
  * authenticated user; this exists so the rare exception fails with a readable message instead of
  * a `TypeError` on a null passed where an id was expected.
  */

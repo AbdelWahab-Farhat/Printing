@@ -11,7 +11,7 @@ use App\Domain\Order\Models\ProductionCostEntry;
  *
  * `Labor` and `MachineRuntime` and `Overhead` are rate-driven — see `ApplyManufacturingRates`,
  * which looks up a {@see \App\Domain\Order\Models\ManufacturingCostRate} for each and applies it
- * automatically the moment an order enters printing. `ScrapLoss` is different in kind: its amount
+ * automatically the moment an order enters ready. `ScrapLoss` is different in kind: its amount
  * is derived from FIFO batch cost when spoiled stock is written off, never from a rate — see the
  * plan's Inventory section for the endpoint that produces it (not part of this change).
  */

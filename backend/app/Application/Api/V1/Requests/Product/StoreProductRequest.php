@@ -98,6 +98,14 @@ class StoreProductRequest extends FormRequest
                 new CategoryMustBeALeaf,
             ],
             'pricing_unit' => ['required', Rule::enum(PricingUnit::class)],
+
+            // What the warehouse counts this in, if it differs from `pricing_unit` — a product
+            // bought in by weight and sold by the piece needs both. Left out entirely on the
+            // common path, where the two agree; see {@see ProductData::fromArray()} for the
+            // default. Never on `UpdateProductRequest`: past creation, only
+            // `PATCH products/{product}/stock-unit` may change it.
+            'stock_unit' => ['nullable', Rule::enum(PricingUnit::class)],
+
             'pricing_mode' => ['required', Rule::enum(PricingMode::class)],
 
             'min_order_quantity' => ['required', 'numeric', 'min:0.001'],
@@ -177,6 +185,7 @@ class StoreProductRequest extends FormRequest
             'slug.unique' => 'المعرف مستخدم مسبقاً',
             'name.required' => 'اسم المنتج مطلوب',
             'pricing_unit.required' => 'وحدة التسعير مطلوبة',
+            'stock_unit.enum' => 'وحدة التخزين غير صحيحة',
             'pricing_mode.required' => 'طريقة التسعير مطلوبة',
             'min_order_quantity.required' => 'الحد الأدنى للطلب مطلوب',
             'min_order_quantity.min' => 'الحد الأدنى للطلب يجب أن يكون أكبر من صفر',
@@ -201,6 +210,7 @@ class StoreProductRequest extends FormRequest
             'features' => 'المميزات',
             'product_category_id' => 'التصنيف',
             'pricing_unit' => 'وحدة التسعير',
+            'stock_unit' => 'وحدة التخزين',
             'pricing_mode' => 'طريقة التسعير',
             'min_order_quantity' => 'الحد الأدنى للطلب',
             'variants' => 'المقاسات',

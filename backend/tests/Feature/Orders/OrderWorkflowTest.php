@@ -85,13 +85,13 @@ class OrderWorkflowTest extends TestCase
             array_filter([
                 'status' => $to->value,
                 'reason' => $reason,
-                // Sending a parcel out names the carrier, and entering `printing` names the
+                // Sending a parcel out names the carrier, and entering `ready` names the
                 // warehouse stock leaves — every test that does either would otherwise be a test
                 // about that rather than about what it is checking. Both rules are pinned by
                 // their own tests, in OrderTransitionFieldsTest and below.
                 'fields' => match (true) {
                     $to->isDispatch() && ! $order->fulfilment_type->isOfficePickup() => ['shipping_company_id' => $this->carrier()->id],
-                    $to === OrderStatus::Printing => ['warehouse_id' => $this->warehouse()->id],
+                    $to === OrderStatus::Ready => ['warehouse_id' => $this->warehouse()->id],
                     default => null,
                 },
             ]),
@@ -954,7 +954,7 @@ class OrderWorkflowTest extends TestCase
         return (string) ($stock?->quantity ?? '0.000');
     }
 
-    public function test_entering_printing_deducts_every_lines_quantity_with_no_warehouse_quantity_entered(): void
+    public function test_entering_ready_deducts_every_lines_quantity_with_no_warehouse_quantity_entered(): void
     {
         // Arrange
         $order = Order::factory()->create();
@@ -965,10 +965,13 @@ class OrderWorkflowTest extends TestCase
             'product_variant_id' => $item->product_variant_id,
         ]);
         $headers = $this->foreman();
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+        ])->assertOk();
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+            'status' => OrderStatus::Ready->value,
             'fields' => ['warehouse_id' => $warehouse->id],
         ]);
 
@@ -986,7 +989,7 @@ class OrderWorkflowTest extends TestCase
         $this->assertNotNull($order->fresh()->stock_deducted_at);
     }
 
-    public function test_entering_printing_uses_the_employees_entered_warehouse_quantity(): void
+    public function test_entering_ready_uses_the_employees_entered_warehouse_quantity(): void
     {
         // Arrange — 40 bags sold, but they're weighed together on a scale, not counted piece by
         // piece: the employee read 10 kg off the scale and typed that, not a per-piece factor.
@@ -1001,10 +1004,13 @@ class OrderWorkflowTest extends TestCase
             'product_variant_id' => $item->product_variant_id,
         ]);
         $headers = $this->foreman();
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+        ])->assertOk();
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+            'status' => OrderStatus::Ready->value,
             'fields' => ['warehouse_id' => $warehouse->id],
         ]);
 
@@ -1018,37 +1024,36 @@ class OrderWorkflowTest extends TestCase
         ]);
     }
 
-    public function test_a_reprint_does_not_deduct_stock_a_second_time(): void
+    public function test_stock_already_deducted_does_not_deduct_stock_a_second_time(): void
     {
-        // Arrange — already printed once
-        $order = Order::factory()->create();
-        $item = OrderItem::factory()->for($order)->create(['quantity' => '40']);
+        // Arrange — `ready` has no way back to `printing`/`designing` (see
+        // `OrderStatus::allowedNext()`), so unlike the old `printing`-triggered guard this cannot
+        // be exercised by a real reprint any more: an order that has reached `ready` never sees
+        // this transition fire again through legitimate use. What is left to test is the guard
+        // itself — `stock_deducted_at !== null` — by constructing the order in the state a second
+        // `ready` entry would otherwise find it in.
         $warehouse = Warehouse::factory()->create();
+        $order = Order::factory()->status(OrderStatus::Printing)->create([
+            'stock_deducted_at' => now(),
+            'fulfillment_warehouse_id' => $warehouse->id,
+        ]);
+        $item = OrderItem::factory()->for($order)->create(['quantity' => '40']);
         WarehouseStock::factory()->quantity('100')->create([
             'warehouse_id' => $warehouse->id,
             'product_variant_id' => $item->product_variant_id,
         ]);
         $headers = $this->foreman();
-        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
-            'fields' => ['warehouse_id' => $warehouse->id],
-        ])->assertOk();
-
-        // A correction sends it back to the designer, then forward into printing again
-        $order->refresh();
-        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Designing->value,
-        ])->assertOk();
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+            'status' => OrderStatus::Ready->value,
         ]);
 
-        // Assert — still only the first deduction
+        // Assert — the guard refuses to deduct a second time: the shelf and the movement count
+        // are exactly as this synthetic "already deducted" setup left them.
         $response->assertOk();
-        $this->assertSame('60.000', $this->stockOf($warehouse, $item->product_variant_id));
-        $this->assertDatabaseCount('stock_movements', 1);
+        $this->assertSame('100.000', $this->stockOf($warehouse, $item->product_variant_id));
+        $this->assertDatabaseCount('stock_movements', 0);
     }
 
     public function test_insufficient_stock_refuses_the_whole_transition(): void
@@ -1062,10 +1067,13 @@ class OrderWorkflowTest extends TestCase
             'product_variant_id' => $item->product_variant_id,
         ]);
         $headers = $this->foreman();
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+        ])->assertOk();
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+            'status' => OrderStatus::Ready->value,
             'fields' => ['warehouse_id' => $warehouse->id],
         ]);
 
@@ -1073,7 +1081,7 @@ class OrderWorkflowTest extends TestCase
         $response->assertStatus(422);
         $this->assertSame('5.000', $this->stockOf($warehouse, $item->product_variant_id));
         $this->assertDatabaseCount('stock_movements', 0);
-        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+        $this->assertSame(OrderStatus::Printing, $order->fresh()->status);
         $this->assertNull($order->fresh()->stock_deducted_at);
     }
 
@@ -1093,10 +1101,13 @@ class OrderWorkflowTest extends TestCase
             'product_variant_id' => $item->product_variant_id,
         ]);
         $headers = $this->foreman();
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+        ])->assertOk();
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+            'status' => OrderStatus::Ready->value,
             'fields' => ['warehouse_id' => $warehouse->id],
         ]);
 
@@ -1131,10 +1142,13 @@ class OrderWorkflowTest extends TestCase
             'product_variant_id' => $first->product_variant_id,
         ]);
         $headers = $this->foreman();
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+        ])->assertOk();
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+            'status' => OrderStatus::Ready->value,
             'fields' => ['warehouse_id' => $warehouse->id],
         ]);
 
@@ -1146,7 +1160,7 @@ class OrderWorkflowTest extends TestCase
             '«كيس نايلون — 30*40»: المتوفر (0.000) والمطلوب (80.000)',
         ], $response->json('errors')['fields.warehouse_id']);
         $this->assertDatabaseCount('stock_movements', 0);
-        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+        $this->assertSame(OrderStatus::Printing, $order->fresh()->status);
     }
 
     public function test_two_lines_of_the_same_size_are_weighed_against_the_shelf_together(): void
@@ -1174,10 +1188,13 @@ class OrderWorkflowTest extends TestCase
             'product_variant_id' => $first->product_variant_id,
         ]);
         $headers = $this->foreman();
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+        ])->assertOk();
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+            'status' => OrderStatus::Ready->value,
             'fields' => ['warehouse_id' => $warehouse->id],
         ]);
 
@@ -1190,15 +1207,15 @@ class OrderWorkflowTest extends TestCase
         $this->assertDatabaseCount('stock_movements', 0);
     }
 
-    public function test_entering_printing_without_a_warehouse_is_refused(): void
+    public function test_entering_ready_without_a_warehouse_is_refused(): void
     {
         // Arrange
-        $order = Order::factory()->create();
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
         $headers = $this->foreman();
 
-        // Act — the first entry into printing, with no warehouse named
+        // Act — the first entry into ready, with no warehouse named
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+            'status' => OrderStatus::Ready->value,
         ]);
 
         // Assert

@@ -34,6 +34,7 @@ final class CreateProduct
                 'features' => $data->features,
                 'product_category_id' => $data->productCategoryId,
                 'pricing_unit' => $data->pricingUnit,
+                'stock_unit' => $data->stockUnit,
                 'pricing_mode' => $data->pricingMode,
                 'min_order_quantity' => $data->minOrderQuantity,
                 'is_active' => $data->isActive ?? true,

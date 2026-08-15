@@ -105,8 +105,8 @@ class Order extends Model implements HasAuditTrail
             'placed_at' => 'datetime',
             'design_started_at' => 'datetime',
             'printing_started_at' => 'datetime',
-            // Stamped once by ChangeOrderStatus, on the first entry into `printing` — see
-            // DeductOrderStock. Unlike printing_started_at, never overwritten by a later visit:
+            // Stamped once by ChangeOrderStatus, on the first entry into `ready` — see
+            // DeductOrderStock. Unlike ready_at, never overwritten by a later visit:
             // its whole job is to remember whether stock has already left the warehouse.
             'stock_deducted_at' => 'datetime',
             'ready_at' => 'datetime',

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\Inventory;
 
+use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Models\Product;
 use App\Domain\Inventory\Actions\CreateWarehouse;
 use App\Domain\Inventory\Actions\DeleteWarehouse;
 use App\Domain\Inventory\Actions\RecordStockMovement;
 use App\Domain\Inventory\Actions\SetLowStockThreshold;
+use App\Domain\Inventory\Actions\SetStockUnit;
 use App\Domain\Inventory\Actions\UpdateWarehouse;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\DTOs\StockSummary;
@@ -49,6 +52,7 @@ class InventoryService
         private readonly DeleteWarehouse $deleteWarehouse,
         private readonly RecordStockMovement $recordStockMovement,
         private readonly SetLowStockThreshold $setLowStockThreshold,
+        private readonly SetStockUnit $setStockUnit,
         private readonly WarehouseListQuery $warehouseListQuery,
         private readonly StockListQuery $stockListQuery,
         private readonly StockSummaryQuery $stockSummaryQuery,
@@ -132,6 +136,15 @@ class InventoryService
     public function setLowStockThreshold(WarehouseStock $stock, ?string $threshold): WarehouseStock
     {
         return ($this->setLowStockThreshold)($stock, $threshold);
+    }
+
+    /**
+     * Declares what a product's stock is counted in, cascading it to every existing balance and
+     * batch for the product's variants — see {@see SetStockUnit}.
+     */
+    public function setStockUnit(Product $product, PricingUnit $unit): Product
+    {
+        return ($this->setStockUnit)($product, $unit);
     }
 
     // ── the ledger ──────────────────────────────────────────────────────────────────────
