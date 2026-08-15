@@ -225,7 +225,7 @@ class OrderService
     }
 
     /**
-     * The ordinary way to retire a rate — it stops applying to orders entering printing from
+     * The ordinary way to retire a rate — it stops applying to orders entering ready from
      * this point on, and every entry it already produced keeps its own snapshotted value.
      */
     public function setManufacturingCostRateActive(ManufacturingCostRate $rate, bool $isActive): ManufacturingCostRate
@@ -250,7 +250,7 @@ class OrderService
 
     /**
      * Bags spoiled producing one line — see {@see RecordScrapLoss}. Only possible once the order
-     * has reached printing.
+     * has reached ready.
      */
     public function recordScrapLoss(
         Order $order,

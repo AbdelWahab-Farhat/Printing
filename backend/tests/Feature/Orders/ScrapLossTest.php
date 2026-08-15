@@ -44,6 +44,7 @@ class ScrapLossTest extends TestCase
             PermissionName::ViewOrders->value,
             PermissionName::ManageOrders->value,
             PermissionName::MoveOrderToPrinting->value,
+            PermissionName::MoveOrderToReady->value,
             PermissionName::ViewInventory->value,
             PermissionName::ManageInventory->value,
         ]);
@@ -59,7 +60,12 @@ class ScrapLossTest extends TestCase
             ->first()?->quantity ?? '0.000');
     }
 
-    private function printedOrder(array $headers): array
+    /**
+     * An order that has actually reached «جاهزة» — real stock deducted for real, from a real
+     * warehouse — which is where `fulfillment_warehouse_id` is now set, and so where there is
+     * anything at all for a scrap loss to draw from. See {@see RecordScrapLoss}.
+     */
+    private function readyOrder(array $headers): array
     {
         $product = Product::factory()->create();
         $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
@@ -77,6 +83,10 @@ class ScrapLossTest extends TestCase
 
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Printing->value,
+        ])->assertOk();
+
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Ready->value,
             'fields' => ['warehouse_id' => $warehouse->id],
         ])->assertOk();
 
@@ -85,9 +95,9 @@ class ScrapLossTest extends TestCase
 
     public function test_scrap_draws_stock_and_records_its_fifo_cost(): void
     {
-        // Arrange — 40 drawn on entering printing, 60 left at 4 each
+        // Arrange — 40 drawn on entering ready, 60 left at 4 each
         $headers = $this->foreman();
-        [$order, $item, $warehouse, $variant] = $this->printedOrder($headers);
+        [$order, $item, $warehouse, $variant] = $this->readyOrder($headers);
         $this->assertSame('60.000', $this->balanceOf($warehouse, $variant));
 
         // Act
@@ -117,7 +127,7 @@ class ScrapLossTest extends TestCase
     {
         // Arrange
         $headers = $this->foreman();
-        [$order, $item] = $this->printedOrder($headers);
+        [$order, $item] = $this->readyOrder($headers);
         $originalMaterialCost = $item->material_cost;
         $originalCogs = $item->cogs;
 
@@ -133,11 +143,12 @@ class ScrapLossTest extends TestCase
         $this->assertSame((string) $originalCogs, (string) $item->cogs);
     }
 
-    public function test_scrap_is_refused_before_the_order_has_reached_printing(): void
+    public function test_scrap_is_refused_before_the_order_has_reached_ready(): void
     {
-        // Arrange
+        // Arrange — `fulfillment_warehouse_id` is only set on entering «جاهزة» now, so an order
+        // still in `printing` has just as little to draw a scrap loss from as one still designing.
         $headers = $this->foreman();
-        $order = Order::factory()->status(OrderStatus::Designing)->create();
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
         $item = OrderItem::factory()->for($order)->create();
 
         // Act
@@ -156,7 +167,7 @@ class ScrapLossTest extends TestCase
     {
         // Arrange
         $headers = $this->foreman();
-        [$order, $item, $warehouse, $variant] = $this->printedOrder($headers);
+        [$order, $item, $warehouse, $variant] = $this->readyOrder($headers);
 
         // Act — more than the 60 remaining
         $response = $this->withHeaders($headers)->postJson(
@@ -173,7 +184,7 @@ class ScrapLossTest extends TestCase
     {
         // Arrange
         $headers = $this->foreman();
-        [$order] = $this->printedOrder($headers);
+        [$order] = $this->readyOrder($headers);
         $otherOrder = Order::factory()->create();
         $foreignItem = OrderItem::factory()->for($otherOrder)->create();
 
@@ -191,7 +202,7 @@ class ScrapLossTest extends TestCase
     {
         // Arrange
         $headers = $this->foreman();
-        [$order, $item] = $this->printedOrder($headers);
+        [$order, $item] = $this->readyOrder($headers);
         $user = User::factory()->create();
         $user->givePermissionTo([PermissionName::ViewOrders->value, PermissionName::ManageOrders->value]);
         $viewerHeaders = ['Authorization' => 'Bearer '.$user->createToken('t')->plainTextToken];
@@ -214,7 +225,7 @@ class ScrapLossTest extends TestCase
     {
         // Arrange
         $headers = $this->foreman();
-        [$order, $item] = $this->printedOrder($headers);
+        [$order, $item] = $this->readyOrder($headers);
 
         // Act
         $response = $this->withHeaders($headers)->postJson(

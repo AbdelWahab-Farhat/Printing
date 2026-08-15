@@ -94,10 +94,13 @@ final class ChangeOrderStatus
         }
 
         return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields): Order {
-            // Decided before anything below touches the row: `printing` is re-enterable (a
-            // reprint goes `ready`/`shortage` back to `printing`), and stock may leave the
-            // warehouse exactly once per order — see DeductOrderStock.
-            $deductStock = $target === OrderStatus::Printing && $order->stock_deducted_at === null;
+            // Decided before anything below touches the row: `ready` is reachable only from
+            // `printing` and never revisited once left — see `OrderStatus::allowedNext()` — so an
+            // order reaches it at most once, and stock may leave the warehouse exactly once per
+            // order — see DeductOrderStock. Deducting here rather than on entry to `printing`
+            // also means the lines are already frozen (`Order::itemsAreEditable()` excludes
+            // `ready`), so what gets deducted can no longer be edited out from under it.
+            $deductStock = $target === OrderStatus::Ready && $order->stock_deducted_at === null;
 
             // The mirror image: a cancellation only has anything to undo if stock genuinely left
             // — `stock_deducted_at` is never cleared by a reversal, so this reads the same fact

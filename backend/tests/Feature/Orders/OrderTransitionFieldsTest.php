@@ -9,6 +9,7 @@ use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\DesignSource;
@@ -61,6 +62,9 @@ class OrderTransitionFieldsTest extends TestCase
             PermissionName::MoveOrderToReady->value,
             PermissionName::MoveOrderToShortage->value,
             PermissionName::CancelOrders->value,
+            // `ready` now deducts stock for real, so a foreman occasionally needs to seed a
+            // balance to test against — see test_the_weight_lands_on_the_order_with_the_move.
+            PermissionName::ManageInventory->value,
         ]);
 
         return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
@@ -268,7 +272,7 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertTrue($cancelled['fields'][0]['required']);
     }
 
-    public function test_printing_straight_from_new_carries_the_artwork_and_asks_for_a_warehouse(): void
+    public function test_printing_straight_from_new_carries_the_artwork(): void
     {
         // Arrange — still «جديدة»: the order never entered the design conversation, and does not
         // need to. The customer brought the file with them.
@@ -280,14 +284,11 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert — «جديدة» accepts a version, so the move that leaves it may carry one. This is
         // the whole short path: an agreed file goes on the order and the press starts, without
-        // a detour through a status naming work nobody did. And the same move is the one that
-        // empties a warehouse, so it names the warehouse too — required, because stock has never
-        // left one for this order yet.
-        $this->assertSame(['warehouse_id', 'design_ids', 'reason'], array_column($printing['fields'], 'key'));
-        $this->assertSame('warehouse', $printing['fields'][0]['type']);
-        $this->assertTrue($printing['fields'][0]['required']);
+        // a detour through a status naming work nobody did. The warehouse is not named here —
+        // stock leaves on the way to «جاهزة», not on the way into printing.
+        $this->assertSame(['design_ids', 'reason'], array_column($printing['fields'], 'key'));
+        $this->assertFalse($printing['fields'][0]['required']);
         $this->assertFalse($printing['fields'][1]['required']);
-        $this->assertFalse($printing['fields'][2]['required']);
     }
 
     public function test_leaving_design_for_the_press_offers_the_artwork_one_last_time(): void
@@ -302,26 +303,43 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert — this is the move the finished artwork arrives with: «قيد التصميم» is the one
         // status that accepts a version, and this is the last moment the order stands in it.
-        $this->assertSame(['warehouse_id', 'design_ids', 'reason'], array_column($printing['fields'], 'key'));
-        $this->assertFalse($printing['fields'][1]['required']);
+        $this->assertSame(['design_ids', 'reason'], array_column($printing['fields'], 'key'));
+        $this->assertFalse($printing['fields'][0]['required']);
     }
 
-    public function test_a_reprint_entering_printing_again_is_not_asked_for_a_warehouse(): void
+    public function test_reaching_ready_asks_for_a_warehouse(): void
     {
-        // Arrange — stock already left a warehouse for this order once; the run went back to the
-        // designer for a correction, which is the surviving way an order re-enters printing.
-        $order = Order::factory()->status(OrderStatus::Designing)->create([
+        // Arrange — a run about to be shelved, stock never yet deducted for it.
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+
+        // Assert — the same move that empties a warehouse names it, required because stock has
+        // never left one for this order yet.
+        $this->assertSame('warehouse_id', $ready['fields'][0]['key']);
+        $this->assertSame('warehouse', $ready['fields'][0]['type']);
+        $this->assertTrue($ready['fields'][0]['required']);
+    }
+
+    public function test_stock_already_deducted_is_not_asked_for_a_warehouse_again(): void
+    {
+        // Arrange — stock already left a warehouse for this order once. `ready` cannot itself be
+        // re-entered (see `OrderStatus::allowedNext()`), but the field's `required` computation
+        // still reads `stock_deducted_at` defensively, the same way it always has.
+        $order = Order::factory()->status(OrderStatus::Printing)->create([
             'stock_deducted_at' => now(),
         ]);
         $headers = $this->foreman();
 
-        // Act — the correction path: designing back to printing for a reprint
-        $printing = $this->transition($this->show($headers, $order), OrderStatus::Printing);
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
 
         // Assert — nothing here would do anything with a second warehouse, so it is offered but
         // not demanded.
-        $this->assertSame(['warehouse_id', 'design_ids', 'reason'], array_column($printing['fields'], 'key'));
-        $this->assertFalse($printing['fields'][0]['required']);
+        $this->assertSame('warehouse_id', $ready['fields'][0]['key']);
+        $this->assertFalse($ready['fields'][0]['required']);
     }
 
     // ──────────────────────── what «جاري التوصيل» asks for ────────────────────────
@@ -655,8 +673,9 @@ class OrderTransitionFieldsTest extends TestCase
 
     public function test_a_note_left_with_an_ordinary_move_is_kept_on_the_timeline(): void
     {
-        // Arrange
-        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        // Arrange — stock already deducted, so `warehouse_id` is not demanded here too; this
+        // test is about the note, not fulfillment.
+        $order = Order::factory()->status(OrderStatus::Printing)->create(['stock_deducted_at' => now()]);
         $headers = $this->foreman();
 
         // Act
@@ -856,6 +875,18 @@ class OrderTransitionFieldsTest extends TestCase
         return $order;
     }
 
+    /**
+     * `weight_kg` shares this move with `warehouse_id` now, so field-order is not to be relied
+     * on — looked up by key instead.
+     *
+     * @param  array<int, array<string, mixed>>  $fields
+     * @return array<string, mixed>
+     */
+    private function weightField(array $fields): array
+    {
+        return collect($fields)->firstWhere('key', 'weight_kg');
+    }
+
     public function test_finishing_a_run_asks_for_its_weight(): void
     {
         // Arrange
@@ -867,8 +898,7 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert — a number, and the app draws a numeric field for it because the description
         // says `number` and not because anybody wrote «الوزن» into a screen.
-        $this->assertSame('weight_kg', $ready['fields'][0]['key']);
-        $this->assertSame('number', $ready['fields'][0]['type']);
+        $this->assertSame('number', $this->weightField($ready['fields'])['type']);
     }
 
     public function test_bags_sold_by_the_piece_may_be_weighed_or_not(): void
@@ -882,7 +912,7 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert — the weight is for the courier, and a run can be shelved before anybody has
         // put it on the scale.
-        $this->assertFalse($ready['fields'][0]['required']);
+        $this->assertFalse($this->weightField($ready['fields'])['required']);
     }
 
     public function test_bags_sold_by_the_kilo_cannot_be_shelved_unweighed(): void
@@ -896,7 +926,7 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert — the scale is the invoice for these: without a weight there is no answer to
         // what was sold.
-        $this->assertTrue($ready['fields'][0]['required']);
+        $this->assertTrue($this->weightField($ready['fields'])['required']);
     }
 
     public function test_a_kilo_order_is_refused_without_a_weight(): void
@@ -915,13 +945,24 @@ class OrderTransitionFieldsTest extends TestCase
 
     public function test_the_weight_lands_on_the_order_with_the_move(): void
     {
-        // Arrange
+        // Arrange — a real balance to draw from: reaching `ready` now deducts stock for real,
+        // where under the old `printing`-triggered rule this particular move (already standing
+        // in `printing`) never touched the warehouse at all.
         $order = $this->orderBeingPrinted(PricingUnit::Kilogram);
+        $item = $order->items()->first();
+        $warehouse = Warehouse::factory()->create();
         $headers = $this->foreman();
+
+        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
+            'product_variant_id' => $item->product_variant_id,
+            'to_warehouse_id' => $warehouse->id,
+            'quantity' => $item->quantity,
+            'unit_cost' => 1,
+        ])->assertCreated();
 
         // Act
         $response = $this->move($headers, $order, OrderStatus::Ready, [
-            'fields' => ['weight_kg' => 12.5],
+            'fields' => ['weight_kg' => 12.5, 'warehouse_id' => $warehouse->id],
         ]);
 
         // Assert — one request, and the number is on the order rather than in a note somebody

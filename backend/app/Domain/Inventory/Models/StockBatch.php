@@ -31,6 +31,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * reason: a payload that could move cost without leaving a `stock_batch_consumptions` row behind
  * would be exactly the gap this design exists to close.
  *
+ * `unit` is the one column with a second writer: a snapshot of `product.stock_unit` on the way
+ * in, like every other column here, but also changed — alongside every other batch and balance
+ * for the same product's variants, in one transaction — by
+ * {@see \App\Domain\Inventory\Actions\SetStockUnit}. Still never reachable from a payload; the
+ * one endpoint that writes it validates against {@see \App\Domain\Catalog\Enums\PricingUnit} and
+ * nothing else.
+ *
  * `quantity_remaining` for a given (warehouse, variant) must always sum to that pair's
  * `WarehouseStock::quantity`. See `StockBatchLedgerTest`.
  */

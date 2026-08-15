@@ -71,7 +71,7 @@ final class RecordStockMovement
             // _trace_at_all` holds exactly as before.
             $movement->save();
 
-            $this->moveBalances($movement->id, $data, $variant->product->pricing_unit);
+            $this->moveBalances($movement->id, $data, $variant->product->stock_unit);
 
             return $movement->load(['productVariant.product', 'fromWarehouse', 'toWarehouse', 'employee']);
         });
@@ -172,9 +172,12 @@ final class RecordStockMovement
     /**
      * Half a shipping bag is a typo, half a kilo is Tuesday.
      *
-     * Asked of Catalog rather than answered here: the same rule already stops an order for 2.5
-     * bags, and two copies of it would eventually disagree about a product whose pricing unit
-     * changed.
+     * Asked of Catalog rather than answered here: this is the warehouse-movement half of the
+     * rule, keyed off `stock_unit` — see {@see \App\Domain\Catalog\CatalogService::requiresWholeQuantities()}.
+     * Deliberately not the same check `QuoteProductRequest` makes for an order quantity, which is
+     * keyed off `pricing_unit` instead: a product bought in by weight and sold by the piece needs
+     * whole numbers on the way out to a customer and may still take fractional amounts on the way
+     * off a shelf.
      */
     private function guardWholeQuantity(StockMovementData $data, ProductVariant $variant): void
     {

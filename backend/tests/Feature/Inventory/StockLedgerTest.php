@@ -359,8 +359,11 @@ class StockLedgerTest extends TestCase
             'quantity' => 10,
         ])->assertCreated();
 
-        // The product is switched to kilograms after the fact — the balance still says "piece"
-        $variant->product()->update(['pricing_unit' => PricingUnit::Kilogram]);
+        // The product's stock_unit is switched to kilograms after the fact — the balance still
+        // says "piece". Movements resolve their unit from `stock_unit`, not `pricing_unit`
+        // (selling unit and warehouse unit are allowed to differ on purpose), so this is the
+        // column that has to move for the mismatch to fire.
+        $variant->product()->update(['stock_unit' => PricingUnit::Kilogram]);
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [

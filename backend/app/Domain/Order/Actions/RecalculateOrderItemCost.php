@@ -14,9 +14,9 @@ use App\Domain\Order\Support\Money;
  * **Null until there is a material cost to build on.** `material_cost` is the fact that a line
  * has actually been produced at all — {@see DeductOrderStock} force-fills it the moment stock
  * leaves the warehouse — so `cogs` staying null until then is the honest answer for a line that
- * has not reached printing yet, not a zero pretending to be a real cost.
+ * has not reached ready yet, not a zero pretending to be a real cost.
  *
- * Called twice in the ordinary flow at printing — once by `DeductOrderStock` right after
+ * Called twice in the ordinary flow at ready — once by `DeductOrderStock` right after
  * `material_cost` is known, and again by `ApplyManufacturingRates` once `labor_cost`/
  * `overhead_cost` land moments later in the same transaction — which is fine: this is a pure
  * function of the three columns, not an accumulator.

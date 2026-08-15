@@ -28,9 +28,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * `low_stock_threshold` *is* fillable, because it is the opposite kind of thing: a preference
  * someone sets, not a fact the business observed.
  *
- * `unit` is not fillable: a snapshot of `productVariant->product->pricing_unit`, written once by
+ * `unit` is not fillable: a snapshot of `productVariant->product->stock_unit`, written once by
  * {@see ApplyStockChange::increase()} the first time this (warehouse, variant) pair gets a
- * balance, and never touched again — the same treatment `purchase_order_items.unit` gets.
+ * balance. Changed after that only by {@see \App\Domain\Inventory\Actions\SetStockUnit}, which is
+ * what keeps every balance and batch for a product's variants agreeing with each other and with
+ * `products.stock_unit` — the same treatment `purchase_order_items.unit` gets on arrival, with one
+ * further write path added deliberately for this one column.
  */
 #[UseFactory(WarehouseStockFactory::class)]
 #[Fillable(['low_stock_threshold'])]

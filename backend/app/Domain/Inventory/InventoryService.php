@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\Inventory;
 
+use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Models\Product;
 use App\Domain\Inventory\Actions\CreateWarehouse;
 use App\Domain\Inventory\Actions\DeleteWarehouse;
 use App\Domain\Inventory\Actions\RecordStockMovement;
 use App\Domain\Inventory\Actions\SetLowStockThreshold;
+use App\Domain\Inventory\Actions\SetStockUnit;
 use App\Domain\Inventory\Actions\UpdateWarehouse;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\DTOs\StockSummary;
@@ -20,6 +23,7 @@ use App\Domain\Inventory\Queries\MovementListQuery;
 use App\Domain\Inventory\Queries\StockFilters;
 use App\Domain\Inventory\Queries\StockListQuery;
 use App\Domain\Inventory\Queries\StockSummaryQuery;
+use App\Domain\Inventory\Queries\WarehouseBalancesQuery;
 use App\Domain\Inventory\Queries\WarehouseFilters;
 use App\Domain\Inventory\Queries\WarehouseListQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -48,9 +52,11 @@ class InventoryService
         private readonly DeleteWarehouse $deleteWarehouse,
         private readonly RecordStockMovement $recordStockMovement,
         private readonly SetLowStockThreshold $setLowStockThreshold,
+        private readonly SetStockUnit $setStockUnit,
         private readonly WarehouseListQuery $warehouseListQuery,
         private readonly StockListQuery $stockListQuery,
         private readonly StockSummaryQuery $stockSummaryQuery,
+        private readonly WarehouseBalancesQuery $warehouseBalancesQuery,
         private readonly MovementListQuery $movementListQuery,
     ) {}
 
@@ -109,11 +115,36 @@ class InventoryService
     }
 
     /**
+     * How much of each named size one warehouse holds, in one query.
+     *
+     * The read another context uses to *say* something about stock — an order naming every size
+     * it is short of before it tries to take any. It is not permission to take it: only
+     * `recordMovement()` decides that, under a lock. Sizes with no balance line here are absent
+     * from the map rather than zero.
+     *
+     * @param  list<int>  $productVariantIds
+     * @return array<int, string>
+     */
+    public function balancesFor(int $warehouseId, array $productVariantIds): array
+    {
+        return ($this->warehouseBalancesQuery)($warehouseId, $productVariantIds);
+    }
+
+    /**
      * Set or clear the level someone wants to be warned at. Null clears it.
      */
     public function setLowStockThreshold(WarehouseStock $stock, ?string $threshold): WarehouseStock
     {
         return ($this->setLowStockThreshold)($stock, $threshold);
+    }
+
+    /**
+     * Declares what a product's stock is counted in, cascading it to every existing balance and
+     * batch for the product's variants — see {@see SetStockUnit}.
+     */
+    public function setStockUnit(Product $product, PricingUnit $unit): Product
+    {
+        return ($this->setStockUnit)($product, $unit);
     }
 
     // ── the ledger ──────────────────────────────────────────────────────────────────────

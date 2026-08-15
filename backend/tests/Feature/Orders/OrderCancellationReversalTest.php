@@ -55,6 +55,7 @@ class OrderCancellationReversalTest extends TestCase
             PermissionName::ViewOrders->value,
             PermissionName::ManageOrders->value,
             PermissionName::MoveOrderToPrinting->value,
+            PermissionName::MoveOrderToReady->value,
             PermissionName::CancelOrders->value,
             PermissionName::ViewInventory->value,
             PermissionName::ManageInventory->value,
@@ -71,7 +72,7 @@ class OrderCancellationReversalTest extends TestCase
             ->first()?->quantity ?? '0.000');
     }
 
-    public function test_cancelling_after_printing_credits_back_the_exact_batches_it_drew_from(): void
+    public function test_cancelling_after_ready_credits_back_the_exact_batches_it_drew_from(): void
     {
         // Arrange — two cost layers, so the fulfillment must span both
         $product = Product::factory()->create();
@@ -96,6 +97,10 @@ class OrderCancellationReversalTest extends TestCase
 
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Printing->value,
+        ])->assertOk();
+
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Ready->value,
             'fields' => ['warehouse_id' => $warehouse->id],
         ])->assertOk();
 
@@ -136,7 +141,7 @@ class OrderCancellationReversalTest extends TestCase
         $this->assertSame('540.00', (string) $item->material_cost); // 60@5 + 30@8 = 300 + 240
     }
 
-    public function test_cancelling_after_printing_reverses_every_production_cost_entry(): void
+    public function test_cancelling_after_ready_reverses_every_production_cost_entry(): void
     {
         // Arrange
         $product = Product::factory()->create();
@@ -158,6 +163,10 @@ class OrderCancellationReversalTest extends TestCase
 
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Printing->value,
+        ])->assertOk();
+
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Ready->value,
             'fields' => ['warehouse_id' => $warehouse->id],
         ])->assertOk();
 
@@ -186,9 +195,9 @@ class OrderCancellationReversalTest extends TestCase
         $this->assertSame((string) $originalCogs, (string) $order->refresh()->total_cogs);
     }
 
-    public function test_cancelling_an_order_that_never_reached_printing_moves_no_stock(): void
+    public function test_cancelling_an_order_that_never_reached_ready_moves_no_stock(): void
     {
-        // Arrange — Designing is reachable from New and, unlike Printing, deducts nothing; a
+        // Arrange — Designing is reachable from New and, unlike Ready, deducts nothing; a
         // factory-built order starts there directly rather than walking guardDesigning's own
         // artwork requirement, which is not what this test is about.
         $order = Order::factory()->status(OrderStatus::Designing)->create();
@@ -206,9 +215,9 @@ class OrderCancellationReversalTest extends TestCase
         $this->assertDatabaseCount('stock_movements', 0);
     }
 
-    public function test_a_reversal_credits_back_only_lines_that_actually_reached_printing(): void
+    public function test_a_reversal_credits_back_only_lines_that_actually_reached_ready(): void
     {
-        // Arrange — a line that never reached printing carries no fulfillment_stock_movement_id;
+        // Arrange — a line that never reached ready carries no fulfillment_stock_movement_id;
         // the guard is expected to skip it rather than refuse the cancellation.
         $order = Order::factory()->status(OrderStatus::Designing)->create();
         $item = OrderItem::factory()->for($order)->create();

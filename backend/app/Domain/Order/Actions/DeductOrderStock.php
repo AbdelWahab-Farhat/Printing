@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Actions;
 
+use App\Domain\Inventory\Actions\ApplyStockChange;
 use App\Domain\Inventory\DTOs\StockMovementData;
+use App\Domain\Inventory\Exceptions\InsufficientStock;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Models\StockBatchConsumption;
+use App\Domain\Order\DTOs\StockShortfall;
+use App\Domain\Order\Exceptions\OrderStockShortfall;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Support\Money;
@@ -14,7 +18,7 @@ use App\Domain\Order\Support\Money;
 /**
  * Takes an order's lines out of a warehouse, once — the first real link between `Order` and
  * `Inventory`. Called by {@see ChangeOrderStatus}, inside its own transaction, the moment an
- * order first enters `printing`.
+ * order first enters `ready`.
  *
  * **This class never writes a balance or a ledger row itself.**
  * {@see InventoryService::recordMovement()} — the same call every other stock movement in this
@@ -44,8 +48,13 @@ final class DeductOrderStock
         private readonly RecalculateOrderItemCost $recalculateItemCost,
     ) {}
 
+    /**
+     * @throws OrderStockShortfall
+     */
     public function __invoke(Order $order, int $warehouseId, int $employeeId): void
     {
+        $this->guardTheWarehouseHasItAll($order, $warehouseId);
+
         foreach ($order->items as $item) {
             $movement = $this->inventory->recordMovement(StockMovementData::fulfillment([
                 'product_variant_id' => $item->product_variant_id,
@@ -66,6 +75,62 @@ final class DeductOrderStock
             ])->save();
 
             ($this->recalculateItemCost)($item);
+        }
+    }
+
+    /**
+     * Weighs every line against the warehouse before a single one is taken out of it.
+     *
+     * **This is about the message, not the safety.** {@see ApplyStockChange} already refuses a
+     * movement that would overdraw a shelf, under a lock, and it stays the only thing standing
+     * between two foremen printing the same stock at once — a balance read here is stale the
+     * moment it is read, so nothing below is treated as permission. What the loop above cannot
+     * do is *report*: it fails on the first short line with {@see InsufficientStock}, which
+     * carries two numbers and no name, and never reaches the lines after it. So an order with
+     * three sizes short said «not enough» once, about a size it did not name, and revealed the
+     * other two one restock at a time.
+     *
+     * **A size on two lines is weighed once, against both.** Two lines of 30 against a shelf of
+     * 50 each fit on their own; the order does not, and checking them separately would let it
+     * through here only to fail unnamed in the loop above.
+     *
+     * @throws OrderStockShortfall
+     */
+    private function guardTheWarehouseHasItAll(Order $order, int $warehouseId): void
+    {
+        $available = $this->inventory->balancesFor(
+            $warehouseId,
+            $order->items->pluck('product_variant_id')->map(intval(...))->unique()->values()->all(),
+        );
+
+        /** @var array<int, string> $required */
+        $required = [];
+        /** @var array<int, StockShortfall> $shortfalls */
+        $shortfalls = [];
+
+        foreach ($order->items as $item) {
+            $variantId = (int) $item->product_variant_id;
+
+            // Absent from the map means this size has never been in this warehouse, which is the
+            // same answer as an empty shelf — and the same number the storekeeper needs either way.
+            $onShelf = $available[$variantId] ?? '0.000';
+            $required[$variantId] = bcadd($required[$variantId] ?? '0', $item->producedQuantity(), 3);
+
+            if (bccomp($onShelf, $required[$variantId], 3) >= 0) {
+                continue;
+            }
+
+            // Keyed by size rather than appended, so a second line of a size already short
+            // replaces its entry with the larger total instead of naming it twice.
+            $shortfalls[$variantId] = new StockShortfall(
+                name: trim("{$item->product_name} — {$item->variant_label}"),
+                available: $onShelf,
+                required: $required[$variantId],
+            );
+        }
+
+        if ($shortfalls !== []) {
+            throw OrderStockShortfall::make(array_values($shortfalls));
         }
     }
 }

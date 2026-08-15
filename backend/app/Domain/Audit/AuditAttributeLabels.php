@@ -124,6 +124,7 @@ final class AuditAttributeLabels
             'slug' => 'المعرّف',
             'description' => 'الوصف',
             'features' => 'المزايا',
+            'stock_unit' => 'وحدة التخزين',
             'pricing_mode' => 'طريقة التسعير',
             'min_order_quantity' => 'أقل كمية للطلب',
             // «تصنيف المنتج» while a `category` column stood beside it; the word is free now.

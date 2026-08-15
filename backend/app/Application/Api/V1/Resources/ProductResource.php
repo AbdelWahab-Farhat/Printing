@@ -48,6 +48,12 @@ class ProductResource extends JsonResource
             'product_category_id' => $this->product_category_id,
             'pricing_unit' => $this->pricing_unit->value,
             'pricing_unit_label' => $this->pricing_unit->label(),
+
+            // What the warehouse counts this in — only equal to `pricing_unit` until someone
+            // calls `PATCH products/{product}/stock-unit` to say otherwise.
+            'stock_unit' => $this->stock_unit->value,
+            'stock_unit_label' => $this->stock_unit->label(),
+
             'pricing_mode' => $this->pricing_mode->value,
             'pricing_mode_label' => $this->pricing_mode->label(),
 

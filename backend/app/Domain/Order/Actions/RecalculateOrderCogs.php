@@ -15,7 +15,7 @@ use App\Domain\Order\Support\Money;
  * **The one place `orders.total_cogs` is ever written.** Null until at least one line has a
  * `cogs` of its own; a mixed order is not expected in the ordinary flow — `DeductOrderStock` and
  * `ApplyManufacturingRates` both process every line together, in the same transaction, the
- * moment an order enters printing — but summing whatever *is* known rather than refusing the
+ * moment an order enters ready — but summing whatever *is* known rather than refusing the
  * whole total is the more useful answer if that invariant is ever bent.
  *
  * Gross profit itself is never stored: it is `grand_total - total_cogs`, computed at report time

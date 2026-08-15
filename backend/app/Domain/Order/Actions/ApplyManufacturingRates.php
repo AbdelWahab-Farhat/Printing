@@ -12,11 +12,11 @@ use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\Order\Support\Money;
 
 /**
- * Costs an order's labour, machine runtime and overhead the moment it enters printing —
+ * Costs an order's labour, machine runtime and overhead the moment it enters ready —
  * standard-costed from {@see ManufacturingCostRate}, never typed per job.
  *
  * Called by {@see ChangeOrderStatus} inside its own transaction, alongside
- * {@see DeductOrderStock}, guarded by the same first-entry-into-printing condition — a reprint
+ * {@see DeductOrderStock}, guarded by the same first-entry-into-ready condition — a reprint
  * does not re-cost, exactly as it does not re-deduct material. See the plan's "known limitation"
  * note: extra labour or press time from a reprint is not captured automatically.
  *
