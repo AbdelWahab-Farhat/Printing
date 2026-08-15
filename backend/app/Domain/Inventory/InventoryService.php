@@ -20,6 +20,7 @@ use App\Domain\Inventory\Queries\MovementListQuery;
 use App\Domain\Inventory\Queries\StockFilters;
 use App\Domain\Inventory\Queries\StockListQuery;
 use App\Domain\Inventory\Queries\StockSummaryQuery;
+use App\Domain\Inventory\Queries\WarehouseBalancesQuery;
 use App\Domain\Inventory\Queries\WarehouseFilters;
 use App\Domain\Inventory\Queries\WarehouseListQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -51,6 +52,7 @@ class InventoryService
         private readonly WarehouseListQuery $warehouseListQuery,
         private readonly StockListQuery $stockListQuery,
         private readonly StockSummaryQuery $stockSummaryQuery,
+        private readonly WarehouseBalancesQuery $warehouseBalancesQuery,
         private readonly MovementListQuery $movementListQuery,
     ) {}
 
@@ -106,6 +108,22 @@ class InventoryService
     public function summariseStocks(Warehouse $warehouse): StockSummary
     {
         return ($this->stockSummaryQuery)($warehouse);
+    }
+
+    /**
+     * How much of each named size one warehouse holds, in one query.
+     *
+     * The read another context uses to *say* something about stock — an order naming every size
+     * it is short of before it tries to take any. It is not permission to take it: only
+     * `recordMovement()` decides that, under a lock. Sizes with no balance line here are absent
+     * from the map rather than zero.
+     *
+     * @param  list<int>  $productVariantIds
+     * @return array<int, string>
+     */
+    public function balancesFor(int $warehouseId, array $productVariantIds): array
+    {
+        return ($this->warehouseBalancesQuery)($warehouseId, $productVariantIds);
     }
 
     /**

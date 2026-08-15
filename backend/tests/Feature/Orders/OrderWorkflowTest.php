@@ -1077,6 +1077,119 @@ class OrderWorkflowTest extends TestCase
         $this->assertNull($order->fresh()->stock_deducted_at);
     }
 
+    public function test_a_shortfall_names_the_size_it_is_short_of(): void
+    {
+        // Arrange — two numbers and no name sent the storekeeper looking for which of the
+        // order's sizes the refusal was about
+        $order = Order::factory()->create();
+        $item = OrderItem::factory()->for($order)->create([
+            'quantity' => '40',
+            'product_name' => 'كيس شحن',
+            'variant_label' => '25*35',
+        ]);
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('5')->create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $item->product_variant_id,
+        ]);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ]);
+
+        // Assert
+        $response->assertStatus(422);
+        $this->assertSame(
+            'الكمية المتوفرة من «كيس شحن — 25*35» في المخزن (5.000) لا تكفي للكمية المطلوبة (40.000)',
+            $response->json('message'),
+        );
+    }
+
+    public function test_every_short_size_is_listed_not_only_the_first_one_reached(): void
+    {
+        // Arrange — one size short on the shelf, a second with no balance there at all. Deducting
+        // line by line would have refused on the first and never looked at the second.
+        $order = Order::factory()->create();
+        $first = OrderItem::factory()->for($order)->create([
+            'quantity' => '40',
+            'product_name' => 'كيس شحن',
+            'variant_label' => '25*35',
+            'sort_order' => 0,
+        ]);
+        OrderItem::factory()->for($order)->create([
+            'quantity' => '80',
+            'product_name' => 'كيس نايلون',
+            'variant_label' => '30*40',
+            'sort_order' => 1,
+        ]);
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('5')->create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $first->product_variant_id,
+        ]);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ]);
+
+        // Assert — both sizes named, in the order the lines read, and still nothing landed
+        $response->assertStatus(422);
+        $this->assertSame('لا يوجد رصيد كافٍ في المخزن للأصناف التالية', $response->json('message'));
+        $this->assertSame([
+            '«كيس شحن — 25*35»: المتوفر (5.000) والمطلوب (40.000)',
+            '«كيس نايلون — 30*40»: المتوفر (0.000) والمطلوب (80.000)',
+        ], $response->json('errors')['fields.warehouse_id']);
+        $this->assertDatabaseCount('stock_movements', 0);
+        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+    }
+
+    public function test_two_lines_of_the_same_size_are_weighed_against_the_shelf_together(): void
+    {
+        // Arrange — 50 on the shelf and two lines of 30 of the same size. Either line alone fits;
+        // the order does not.
+        $order = Order::factory()->create();
+        $first = OrderItem::factory()->for($order)->create([
+            'quantity' => '30',
+            'product_name' => 'كيس شحن',
+            'variant_label' => '25*35',
+            'sort_order' => 0,
+        ]);
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $first->product_id,
+            'product_variant_id' => $first->product_variant_id,
+            'quantity' => '30',
+            'product_name' => 'كيس شحن',
+            'variant_label' => '25*35',
+            'sort_order' => 1,
+        ]);
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity('50')->create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $first->product_variant_id,
+        ]);
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ]);
+
+        // Assert — the size is named once, against everything the order asks of it
+        $response->assertStatus(422);
+        $this->assertSame(
+            'الكمية المتوفرة من «كيس شحن — 25*35» في المخزن (50.000) لا تكفي للكمية المطلوبة (60.000)',
+            $response->json('message'),
+        );
+        $this->assertDatabaseCount('stock_movements', 0);
+    }
+
     public function test_entering_printing_without_a_warehouse_is_refused(): void
     {
         // Arrange
