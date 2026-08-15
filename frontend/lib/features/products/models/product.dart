@@ -40,6 +40,19 @@ abstract class Product with _$Product {
 
     @JsonKey(name: 'pricing_unit') required String pricingUnit,
     @JsonKey(name: 'pricing_unit_label') required String pricingUnitLabel,
+
+    /// **What the warehouse counts this in, which is not always what the customer is charged
+    /// by.** A bag bought in by the kilo and sold by the piece has two units, and one column
+    /// could only ever hold one of them: [pricingUnit] governs the price and the order-quantity
+    /// granularity, this one governs every stock movement and the balances they leave behind.
+    ///
+    /// Sent on every product and never null — the server defaults it to [pricingUnit] until
+    /// somebody declares otherwise, which is nine bags in ten. Changing it after creation is
+    /// its own endpoint, not a field on the edit form: it cascades to every warehouse balance
+    /// and cost batch for the product's variants. See [stocksInAnotherUnit].
+    @JsonKey(name: 'stock_unit') required String stockUnit,
+    @JsonKey(name: 'stock_unit_label') required String stockUnitLabel,
+
     @JsonKey(name: 'pricing_mode') required String pricingMode,
     @JsonKey(name: 'pricing_mode_label') required String pricingModeLabel,
 
@@ -91,6 +104,13 @@ abstract class Product with _$Product {
 
   /// `'100.000'` reads as a quantity to a database and as noise to a person: `'100'`.
   String get minOrderQuantityLabel => groupedDecimal(minOrderQuantity);
+
+  /// Whether the shelf counts this in something other than what the invoice charges by.
+  ///
+  /// False for nine bags in ten, and that is what this is for: the two labels are the same word
+  /// on almost every product, so a screen that printed both unconditionally would be repeating
+  /// itself everywhere to be informative in one place.
+  bool get stocksInAnotherUnit => stockUnit != pricingUnit;
 
   bool get hasDescription => description != null && description!.trim().isNotEmpty;
 

@@ -6,6 +6,7 @@ import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/features/products/models/new_product.dart';
 import 'package:dayaa/features/products/models/price_quote.dart';
+import 'package:dayaa/features/products/models/pricing_unit.dart';
 import 'package:dayaa/features/products/models/product.dart';
 import 'package:dayaa/features/products/repositories/product_repository.dart';
 import 'package:dio/dio.dart';
@@ -106,6 +107,21 @@ class ProductRepositoryImpl implements ProductRepository {
   Future<Either<Failure, Product>> update(int productId, NewProduct product) {
     return safeRequest<Product>(
       () => _dio.put(ProductEndpoints.show(productId), data: product.toJson()),
+      parse: (data) => Product.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Product>> setStockUnit(int productId, PricingUnit unit) {
+    return safeRequest<Product>(
+      // The wire value, never the Arabic label: the label is the server's to send back, and this
+      // app keeps no translation table for either unit.
+      () => _dio.patch(
+        ProductEndpoints.stockUnit(productId),
+        data: <String, dynamic>{'unit': unit.wire},
+      ),
+      // The same resource `update` reads, refreshed — so a screen that got an answer here needs
+      // no second request to show the change.
       parse: (data) => Product.fromJson(data as Map<String, dynamic>),
     );
   }

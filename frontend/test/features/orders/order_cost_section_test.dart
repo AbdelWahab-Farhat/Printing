@@ -63,12 +63,15 @@ void main() {
     grossProfit: grossProfit,
   );
 
-  testWidgets('an order the press has not reached says so in words', (tester) async {
-    // Arrange — both figures null, which is every order before «قيد الطباعة».
+  testWidgets('an order the press has not finished says so in words', (tester) async {
+    // Arrange — both figures null, which is every order before «جاهزة».
     await tester.pumpWidget(host(OrderCostSection(order: orderWith())));
 
-    // Act - Assert
+    // Act - Assert — and it names the step it is waiting for. Stock leaves the shelf at «جاهزة»
+    // now, not on the way into «قيد الطباعة», so copy that still says the old one sends whoever
+    // reads it looking for a figure that will not be there yet.
     expect(find.textContaining('لم تُحتسب التكلفة بعد'), findsOneWidget);
+    expect(find.textContaining('جاهزة'), findsOneWidget);
   });
 
   testWidgets('a cost nobody has worked out is never drawn as zero', (tester) async {

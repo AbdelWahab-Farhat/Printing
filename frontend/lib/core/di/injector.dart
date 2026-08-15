@@ -137,6 +137,7 @@ import 'package:dayaa/features/products/usecases/save_product.dart';
 import 'package:dayaa/features/products/usecases/save_product_category.dart';
 import 'package:dayaa/features/products/usecases/set_product_category_activation.dart';
 import 'package:dayaa/features/products/usecases/set_product_category_image.dart';
+import 'package:dayaa/features/products/usecases/set_product_stock_unit.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_orders_filter.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/filtered_purchase_orders_cubit.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
@@ -509,6 +510,12 @@ abstract final class Injector {
       ..registerLazySingleton<SaveProduct>(
         () => SaveProduct(sl<ProductRepository>()),
       )
+      // Registered with the catalogue because it is addressed by product id, though the grant it
+      // needs is `inventory.manage`: what the shelves count in is an inventory fact about the
+      // product rather than a catalogue one.
+      ..registerLazySingleton<SetProductStockUnit>(
+        () => SetProductStockUnit(sl<ProductRepository>()),
+      )
       // Registered with the catalogue rather than with orders, where its only caller lives: it
       // asks the *product* what a quantity costs, and an order is simply the first screen to
       // need the answer.
@@ -526,6 +533,7 @@ abstract final class Injector {
         (productId, _) => ProductDetailCubit(
           productId: productId,
           getProduct: sl<GetProduct>(),
+          setStockUnit: sl<SetProductStockUnit>(),
         ),
       )
       ..registerFactory<SaveProductCubit>(

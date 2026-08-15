@@ -15,6 +15,7 @@ _NewProduct _$NewProductFromJson(Map<String, dynamic> json) => _NewProduct(
       .toList(),
   productCategoryId: (json['product_category_id'] as num).toInt(),
   pricingUnit: json['pricing_unit'] as String,
+  stockUnit: json['stock_unit'] as String?,
   pricingMode: json['pricing_mode'] as String,
   minOrderQuantity: json['min_order_quantity'] as String,
   variants:
@@ -32,6 +33,7 @@ Map<String, dynamic> _$NewProductToJson(_NewProduct instance) =>
       'features': ?instance.features,
       'product_category_id': instance.productCategoryId,
       'pricing_unit': instance.pricingUnit,
+      'stock_unit': ?instance.stockUnit,
       'pricing_mode': instance.pricingMode,
       'min_order_quantity': instance.minOrderQuantity,
       'variants': instance.variants.map((e) => e.toJson()).toList(),

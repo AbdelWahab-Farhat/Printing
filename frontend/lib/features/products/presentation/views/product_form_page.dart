@@ -96,6 +96,19 @@ class _ProductFormViewState extends State<_ProductFormView> {
   String? _categoryError;
   late PricingUnit _unit = PricingUnit.fromWire(_editing?.pricingUnit);
 
+  /// What the warehouse will count this in, and whether anybody said it differs.
+  ///
+  /// **Asked only when adding, and only when the switch is on.** The server defaults `stock_unit`
+  /// to whatever `pricing_unit` was sent, which is right for nine bags in ten — so the common
+  /// case stays a zero-extra-tap flow and [_stockUnit] is left null, omitting the key entirely.
+  /// A bag bought in by the kilo and sold by the piece is the exception the switch is for.
+  ///
+  /// Never shown while correcting: `PUT /products/{id}` carries no rule for it and ignores the
+  /// key, so a control here would silently do nothing. That correction is its own action on the
+  /// detail screen, behind `inventory.manage`.
+  bool _stocksInAnotherUnit = false;
+  late PricingUnit _stockUnit = _unit;
+
   /// Priced by the piece with a published list, which is nine bags in ten.
   late bool _isQuoteOnly = _editing?.pricingMode == 'quote_on_request';
 
@@ -324,6 +337,10 @@ class _ProductFormViewState extends State<_ProductFormView> {
       // Non-null by the guard above: nothing reaches here without a heading picked.
       productCategoryId: _productCategoryId!,
       pricingUnit: _unit.wire,
+      // Omitted unless somebody said the shelf counts this in something else — the server
+      // defaults it to `pricing_unit`, and repeating that here is the first place the two
+      // could drift. Ignored on an update anyway: the API has no rule for it there.
+      stockUnit: _stocksInAnotherUnit ? _stockUnit.wire : null,
       pricingMode: _isQuoteOnly ? 'quote_on_request' : 'tiered',
       minOrderQuantity: _minimum.text,
       variants: [
@@ -455,8 +472,44 @@ class _ProductFormViewState extends State<_ProductFormView> {
                         values: PricingUnit.choices,
                         selected: _unit,
                         labelOf: (value) => value.label,
-                        onSelected: (value) => setState(() => _unit = value),
+                        onSelected: (value) => setState(() {
+                          _unit = value;
+                          // Mirrors, so long as nobody has said the two differ. Changing the
+                          // selling unit on a form where the storage picker is hidden must not
+                          // leave a stale storage unit behind it.
+                          if (!_stocksInAnotherUnit) _stockUnit = value;
+                        }),
                       ),
+                      SizedBox(height: 4.h),
+
+                      // Only while adding — see [_stocksInAnotherUnit].
+                      if (_needsImage) ...[
+                        SwitchListTile.adaptive(
+                          value: _stocksInAnotherUnit,
+                          onChanged: (value) => setState(() {
+                            _stocksInAnotherUnit = value;
+                            // Back to mirroring when switched off, so turning it on again opens
+                            // on the selling unit rather than on an abandoned answer.
+                            if (!value) _stockUnit = _unit;
+                          }),
+                          title: const Text('وحدة المخزون تختلف عن وحدة البيع'),
+                          subtitle: const Text(
+                            'مثل كيس يُشترى بالكيلوغرام ويُباع بالقطعة',
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        if (_stocksInAnotherUnit) ...[
+                          SizedBox(height: 4.h),
+                          _ChoiceRow<PricingUnit>(
+                            label: 'وحدة المخزون',
+                            values: PricingUnit.choices,
+                            selected: _stockUnit,
+                            labelOf: (value) => value.label,
+                            onSelected: (value) =>
+                                setState(() => _stockUnit = value),
+                          ),
+                        ],
+                      ],
                       SizedBox(height: 16.h),
 
                       AppTextField(
@@ -469,6 +522,11 @@ class _ProductFormViewState extends State<_ProductFormView> {
                         textDirection: TextDirection.ltr,
                         // Whole pieces, but a weight can be fractional — the API draws the same
                         // line and this asks earlier so the user is not told by a round trip.
+                        //
+                        // **[_unit] and never [_stockUnit].** A minimum order is what the
+                        // customer buys, so it is governed by the selling unit; the server splits
+                        // it the same way, and a per-kilo *shelf* does not make a per-piece bag
+                        // orderable by the half.
                         validator: _unit == PricingUnit.piece
                             ? Validators.integer(allowZero: false)
                             : Validators.decimal(allowZero: false),

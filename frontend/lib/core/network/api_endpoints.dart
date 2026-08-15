@@ -193,6 +193,14 @@ abstract final class ProductEndpoints {
   static String show(int productId) => '/products/$productId';
 
   static String quote(int productId) => '/products/$productId/quote';
+
+  /// What the warehouse counts this product in.
+  ///
+  /// Its own PATCH rather than a field on [show]'s PUT, and guarded by `inventory.manage` rather
+  /// than `products.manage`: the server cascades the unit to every warehouse balance and cost
+  /// batch for the product's variants, which is an inventory fact addressed by product id and
+  /// not a catalogue edit.
+  static String stockUnit(int productId) => '/products/$productId/stock-unit';
 }
 
 abstract final class OrderEndpoints {

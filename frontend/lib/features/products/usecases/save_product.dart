@@ -43,6 +43,11 @@ class SaveProduct {
     List<String> features = const [],
     required int productCategoryId,
     required String pricingUnit,
+
+    /// What the warehouse will count this in, when the form was told it differs from what is
+    /// sold. Null — the common case — omits the key and lets the server default it to
+    /// [pricingUnit]. Ignored on an update: the API has no rule for it there.
+    String? stockUnit,
     required String pricingMode,
     required String minOrderQuantity,
     List<DraftVariant> variants = const [],
@@ -76,6 +81,7 @@ class SaveProduct {
       features: kept.isEmpty ? null : kept,
       productCategoryId: productCategoryId,
       pricingUnit: pricingUnit,
+      stockUnit: stockUnit,
       pricingMode: pricingMode,
       minOrderQuantity: _number(minOrderQuantity),
       variants: [

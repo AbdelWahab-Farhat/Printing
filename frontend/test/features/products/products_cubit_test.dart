@@ -25,6 +25,8 @@ void main() {
     name: name,
     pricingUnit: 'piece',
     pricingUnitLabel: 'قطعة',
+    stockUnit: 'piece',
+    stockUnitLabel: 'قطعة',
     pricingMode: 'tiered',
     pricingModeLabel: 'أسعار مدرجة',
     hasListedPrices: true,
