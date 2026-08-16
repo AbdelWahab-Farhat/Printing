@@ -25,3 +25,9 @@ Docs/*.tmp.json
 
 # NOTE: backend/ and frontend/ each carry their own .gitignore
 # (vendor/, node_modules/, build/, .dart_tool/, storage/ …).
+
+# ── Customer personal data (never commit; this repository is public) ──────────
+# The customer book is 574 real names and telephone numbers. It is copied to each
+# server out of band and read by CustomerSeeder, which says so when it is absent.
+backend/storage/*.xlsx
+backend/database/seeders/data/customers.php
