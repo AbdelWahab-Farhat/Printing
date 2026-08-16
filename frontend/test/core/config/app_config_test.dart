@@ -12,6 +12,45 @@ void main() {
 
   tearDown(() => dotenv.env.clear());
 
+  group('flavours', () {
+    test('each one reads its own env file, and they are all distinct', () {
+      // Arrange — the file is what decides which API a build talks to, so two flavours sharing
+      // one would be a «user» build silently pointed at wherever «prod» happens to point.
+      // Act
+      final files = [for (final flavor in Flavor.values) flavor.envFile];
+
+      // Assert
+      expect(files.toSet(), hasLength(Flavor.values.length));
+      expect(Flavor.dev.envFile, '.env.dev');
+      expect(Flavor.user.envFile, '.env.user');
+      expect(Flavor.prod.envFile, '.env');
+    });
+
+    test('an unknown FLAVOR falls back to prod, never to a development API', () {
+      // Arrange — `Flavor.current` reads a compile-time constant this test cannot set, so what
+      // is pinned here is the *default* it resolves to. A typo in a build command must not
+      // produce a release pointed at 127.0.0.1.
+      // Act
+      final resolved = Flavor.values.firstWhere(
+        (flavor) => flavor.name == 'typo',
+        orElse: () => Flavor.prod,
+      );
+
+      // Assert
+      expect(resolved, Flavor.prod);
+      expect(Flavor.current, isNot(Flavor.dev));
+    });
+
+    test('only the development flavour is treated as development', () {
+      // Arrange — `isDev` gates the Android emulator's 10.0.2.2 rewrite. A «user» build that
+      // answered true to it would rewrite its host and reach nothing at all.
+      // Act & Assert
+      expect(Flavor.dev.isDevelopment, isTrue);
+      expect(Flavor.user.isDevelopment, isFalse);
+      expect(Flavor.prod.isDevelopment, isFalse);
+    });
+  });
+
   group('a key that is present but blank', () {
     test('the map falls back to a real tile server', () {
       // Arrange — `MAP_TILE_URL=` with nothing after it is what "optional" invites somebody to

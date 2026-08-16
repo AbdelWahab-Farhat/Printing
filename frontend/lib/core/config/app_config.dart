@@ -5,20 +5,46 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Which build this is. Chosen at compile time with `--dart-define=FLAVOR=dev`, so a release
 /// build cannot be talked into pointing at the development API by anything at runtime.
+///
+/// **One file each, and no two share one.** The env file is the only thing deciding which API a
+/// build talks to, so a flavour without its own would be a build silently pointed at whichever
+/// server its neighbour uses — the kind of mistake that is invisible until real data lands
+/// somewhere it should not.
 enum Flavor {
-  dev,
-  prod;
+  /// The machine the developer is sitting at. See `BASE_URL_ANDROID`.
+  dev('.env.dev'),
+
+  /// The build handed to the people who actually use the app.
+  ///
+  /// Separate from [prod] so the two can be pointed at different servers without a release: what
+  /// «production» means to whoever runs the store and what the staff build talks to have not
+  /// always been the same host, and every time they diverged it was resolved by editing a file
+  /// that both builds read.
+  user('.env.user'),
+
+  prod('.env');
+
+  const Flavor(this.envFile);
+
+  /// Which file [AppConfig.load] reads. Bundled as an asset — a flavour added here and not
+  /// listed under `assets:` in `pubspec.yaml` fails at launch, not at build.
+  final String envFile;
+
+  /// **Only [dev].** This gates the Android emulator's `10.0.2.2` rewrite, so any other flavour
+  /// answering true would rewrite its host to an address that exists solely inside an emulator
+  /// and reach nothing at all.
+  bool get isDevelopment => this == Flavor.dev;
 
   static Flavor get current {
     const name = String.fromEnvironment('FLAVOR', defaultValue: 'prod');
 
+    // Falls back to `prod` rather than throwing: a typo in a build command must not produce a
+    // release pointed at a developer's laptop.
     return Flavor.values.firstWhere(
       (flavor) => flavor.name == name,
       orElse: () => Flavor.prod,
     );
   }
-
-  String get envFile => this == Flavor.dev ? '.env.dev' : '.env';
 }
 
 /// Everything the app needs to know about *where* it is running.
@@ -29,7 +55,7 @@ enum Flavor {
 abstract final class AppConfig {
   static Flavor get flavor => Flavor.current;
 
-  static bool get isDev => flavor == Flavor.dev;
+  static bool get isDev => flavor.isDevelopment;
 
   static Future<void> load() => dotenv.load(fileName: flavor.envFile);
 
