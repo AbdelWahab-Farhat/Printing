@@ -5,7 +5,6 @@ import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
-import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/products/models/product.dart';
@@ -13,6 +12,7 @@ import 'package:dayaa/features/products/models/product_category.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/product_categories_cubit.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:dayaa/features/products/presentation/widgets/product_card.dart';
+import 'package:dayaa/features/products/presentation/widgets/product_category_filter_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -41,8 +41,22 @@ class ProductsPage extends StatelessWidget {
   }
 }
 
-class _ProductsView extends StatelessWidget {
+class _ProductsView extends StatefulWidget {
   const _ProductsView();
+
+  @override
+  State<_ProductsView> createState() => _ProductsViewState();
+}
+
+class _ProductsViewState extends State<_ProductsView> {
+  /// The heading the sheet last answered with, held here rather than read off the Cubit.
+  ///
+  /// **Screen state, not list state.** `PagedState` is the answer to a question; this is the
+  /// question, and it has to survive the skeleton that replaces the answer while the narrowed
+  /// page is in flight — the button must not flick back to neutral for the length of a request.
+  /// The Cubit holds it too, because it is what the *request* is made of; this copy is what the
+  /// button is drawn from. The same split the customers tab makes.
+  int? _categoryId;
 
   @override
   Widget build(BuildContext context) {
@@ -77,28 +91,44 @@ class _ProductsView extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
-            child: SearchField(hint: 'ابحث عن منتج', onChanged: cubit.search),
-          ),
-          // Above the type row, because it is the broader question — «أين أبحث؟» before
-          // «مطبوعة أم سادة؟» — and the same order the product form asks them in.
-          //
-          // Absent entirely until there is more than one heading to choose between: a single
-          // chip beside «الكل» is a control that cannot change anything.
-          BlocBuilder<ProductCategoriesCubit, ProductCategoriesState>(
-            builder: (context, state) => _ProductCategoryFilterBar(
-              categories: switch (state) {
-                ProductCategoriesLoaded(:final page) => page.items,
-                _ => const <ProductCategory>[],
-              },
-              selected: cubit.productCategoryId,
-              onSelected: cubit.filterByProductCategory,
+            child: Row(
+              children: [
+                Expanded(
+                  child: SearchField(hint: 'ابحث عن منتج', onChanged: cubit.search),
+                ),
+                SizedBox(width: 8.w),
+                // Beside the search box rather than in a chip row under it — the shape the
+                // customers tab already uses, and it gives the catalogue back the band the
+                // headings were eating whether or not anybody was filtering.
+                //
+                // The button draws itself out of the tree entirely until there is more than one
+                // heading to choose between: a sheet offering «الكل» and one heading is a
+                // control that cannot change anything.
+                BlocBuilder<ProductCategoriesCubit, ProductCategoriesState>(
+                  builder: (context, state) => ProductCategoryFilterButton(
+                    categories: switch (state) {
+                      ProductCategoriesLoaded(:final page) => page.items,
+                      _ => const <ProductCategory>[],
+                    },
+                    selected: _categoryId,
+                    onApplied: (id) {
+                      setState(() => _categoryId = id);
+                      unawaited(cubit.filterByProductCategory(id));
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
             child: BlocBuilder<ProductsCubit, ProductsState>(
               builder: (context, state) => PagedListView<Product>(
                 state: state,
-                emptyMessage: 'لا توجد منتجات بعد',
+                // «لا توجد منتجات بعد» about a *narrowed* catalogue would say the shop makes
+                // nothing when it is the heading that came back empty.
+                emptyMessage: _categoryId == null
+                    ? 'لا توجد منتجات بعد'
+                    : 'لا توجد منتجات بهذا التصنيف',
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
                 // A product card carries its whole price grid, so it is about twice the default
@@ -120,70 +150,3 @@ class _ProductsView extends StatelessWidget {
     );
   }
 }
-
-/// «التصنيف» — أكياس, علب وكراتين, ستيكرات. The catalogue's own headings, as chips.
-///
-/// **Built from the server's list rather than from an enum**, because the headings are rows the
-/// business curates: a chip row spelled out in code would go stale the first time somebody adds
-/// one from «تصنيفات المنتجات».
-///
-/// It takes no room at all while there is nothing to choose between — one heading and «الكل»
-/// filter to the same list, and a control that cannot change anything is worse than none.
-class _ProductCategoryFilterBar extends StatelessWidget {
-  const _ProductCategoryFilterBar({
-    required this.categories,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final List<ProductCategory> categories;
-
-  /// The id being filtered on, or null for «الكل».
-  final int? selected;
-
-  final ValueChanged<int?> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    if (categories.length < 2) return const SizedBox.shrink();
-
-    final scheme = context.colorScheme;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8.h),
-      child: SizedBox(
-        height: 42.h,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-          // One more than the headings: «الكل» leads, and is what clears the filter.
-          itemCount: categories.length + 1,
-          separatorBuilder: (context, index) => SizedBox(width: 8.w),
-          itemBuilder: (context, index) {
-            final category = index == 0 ? null : categories[index - 1];
-            final isSelected = category?.id == selected;
-
-            return ChoiceChip(
-              label: Text(category?.name ?? 'الكل'),
-              selected: isSelected,
-              // Tapping the chip that is already on is not a way to clear it: «الكل» is, and it
-              // is right there. Toggling off would leave two ways to mean the same thing.
-              onSelected: (_) => onSelected(category?.id),
-              showCheckmark: false,
-              backgroundColor: scheme.surfaceContainerLowest,
-              selectedColor: scheme.primaryContainer,
-              labelStyle: context.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isSelected ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
-              ),
-              side: BorderSide(
-                color: isSelected ? Colors.transparent : scheme.outlineVariant,
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-

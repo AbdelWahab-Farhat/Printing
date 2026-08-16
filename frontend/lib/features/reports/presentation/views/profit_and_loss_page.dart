@@ -10,9 +10,20 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// الأرباح والخسائر — the shop's period read in one screen.
 ///
-/// **The chain is read downwards and it is one chain: الإيراد ← التكلفة ← الربح.** Everything in
+/// **The chain is read downwards and it is one chain: الإيراد ← الربح.** Everything in
 /// it belongs to the same arithmetic, in the same column, so a reader can follow it without
-/// being told how. **[_CashCollected] is deliberately not in it** — it is separated by a divider
+/// being told how.
+///
+/// **تكلفة البضاعة المباعة is not printed, and that is a decision rather than an omission.** The
+/// server computes all four figures and `ProfitAndLossSummary` still carries them — الربح
+/// الإجمالي on this screen is the server's own number, revenue *minus* that cost, and it is
+/// wrong to read it as the revenue drawn a second time. The block was asked for out of the way
+/// until the cost tracking behind it is worth showing; see BACKLOG.md.
+///
+/// **Nor is anything said above the figures.** The pickers name the period, and the rule about
+/// which orders are counted was a paragraph nobody was asking for.
+///
+/// **[_CashCollected] is deliberately not in it** — it is separated by a divider
 /// and its own words, because the money that came in over these days has nothing to do with the
 /// orders above: it is every payment in the business whose day fell inside the window, whichever
 /// order it was against and whatever stage that order is at. Pairing it with a cost would imply
@@ -141,14 +152,10 @@ class _Report extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final revenue = summary.revenue;
-    final cost = summary.costOfGoodsSold;
 
     return ListView(
       padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 32.h),
       children: [
-        _Recognition(summary: summary),
-        SizedBox(height: 20.h),
-
         _Section(
           title: 'الإيراد',
           // Said out loud because the number invites the wrong reading: this is not what the
@@ -166,25 +173,6 @@ class _Report extends StatelessWidget {
         ),
         SizedBox(height: 20.h),
 
-        _Section(
-          title: 'تكلفة البضاعة المباعة',
-          // There is no third column for machine time, so a reader looking for «تشغيل آلة»
-          // needs to be told where it went rather than left to conclude it was dropped.
-          note: 'تشغيل الآلة يدخل ضمن المصاريف العامة.',
-          child: Column(
-            children: [
-              _MoneyRow(label: 'المواد', value: cost.material),
-              SizedBox(height: 10.h),
-              _MoneyRow(label: 'العمالة', value: cost.labor),
-              SizedBox(height: 10.h),
-              _MoneyRow(label: 'المصاريف العامة', value: cost.overhead),
-              const _TotalDivider(),
-              _MoneyRow(label: 'إجمالي التكلفة', value: cost.total, isTotal: true),
-            ],
-          ),
-        ),
-        SizedBox(height: 20.h),
-
         _GrossProfit(summary: summary),
 
         // The break in the page. Everything above is one arithmetic; what follows is not part
@@ -194,48 +182,6 @@ class _Report extends StatelessWidget {
         SizedBox(height: 24.h),
 
         _CashCollected(summary: summary),
-      ],
-    );
-  }
-}
-
-/// What the figures above are about — and, when there is nothing, why.
-///
-/// **The count comes first.** An all-zero report has two meanings — nothing was delivered, or
-/// the period is wrong — and this line is the only thing on the screen that tells them apart.
-class _Recognition extends StatelessWidget {
-  const _Recognition({required this.summary});
-
-  final ProfitAndLossSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          summary.hasRecognisedOrders
-              ? '${summary.ordersRecognized.grouped} طلبية محتسبة'
-              : 'لا طلبيات مسلَّمة أو مصفّاة في هذه الفترة',
-          style: context.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: scheme.onSurface,
-          ),
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          // The server's own window, not the one on the pickers: it is the normalised one, and
-          // it is what these figures were counted over.
-          summary.period.label,
-          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-        ),
-        SizedBox(height: 2.h),
-        Text(
-          'يُحتسب الإيراد على الطلبيات المسلَّمة والمصفّاة وحدها، بتاريخ التسليم أو التصفية.',
-          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-        ),
       ],
     );
   }
@@ -586,11 +532,7 @@ class _ReportSkeleton extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 32.h),
       children: [
-        _SkeletonBox(height: 56.h, radius: 12.r),
-        SizedBox(height: 20.h),
         _SkeletonBox(height: 120.h, radius: 16.r),
-        SizedBox(height: 20.h),
-        _SkeletonBox(height: 150.h, radius: 16.r),
         SizedBox(height: 20.h),
         _SkeletonBox(height: 92.h, radius: 20.r),
       ],

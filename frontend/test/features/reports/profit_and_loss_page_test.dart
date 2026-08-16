@@ -110,35 +110,56 @@ void main() {
     expect(find.text('12,750'), findsOneWidget);
   });
 
-  testWidgets('the cost is broken into its three parts and its own total', (tester) async {
-    // Arrange
-    stub();
-
-    // Act
-    await openTheReport(tester);
-
-    // Assert — all four as they arrived: the parts come from a different table than the total
-    // and are allowed to disagree with it
-    expect(find.text('تكلفة البضاعة المباعة'), findsOneWidget);
-    expect(find.text('4,000'), findsOneWidget);
-    expect(find.text('900'), findsOneWidget);
-    expect(find.text('350'), findsOneWidget);
-    expect(find.text('5,250'), findsOneWidget);
-  });
-
-  testWidgets('the period says how many orders it is actually about', (tester) async {
-    // Arrange — an all-zero report has two meanings, and this line is what tells them apart
+  testWidgets('the cost is not on the screen, whole block and parts alike', (tester) async {
+    // Arrange — the server still sends all four; the report is what stops printing them
     stub();
 
     // Act
     await openTheReport(tester);
 
     // Assert
-    expect(find.text('12 طلبية محتسبة'), findsOneWidget);
-    expect(find.text('من 2026-03-01 إلى 2026-03-31'), findsOneWidget);
+    expect(find.text('تكلفة البضاعة المباعة'), findsNothing);
+    expect(find.text('المواد'), findsNothing);
+    expect(find.text('العمالة'), findsNothing);
+    expect(find.text('المصاريف العامة'), findsNothing);
+    expect(find.text('إجمالي التكلفة'), findsNothing);
+    expect(find.text('4,000'), findsNothing);
+    expect(find.text('5,250'), findsNothing);
   });
 
-  testWidgets('a period nothing was delivered in says so rather than showing bare zeros', (
+  testWidgets('the profit is still the server\'s own, not the revenue drawn twice', (
+    tester,
+  ) async {
+    // Arrange — 12,750 in and 5,250 out: a profit computed on this screen from what is left
+    // visible would read 12,750, and be wrong by the whole cost
+    stub();
+
+    // Act
+    await openTheReport(tester);
+
+    // Assert
+    expect(find.text('الربح الإجمالي'), findsOneWidget);
+    expect(find.text('7,500'), findsOneWidget);
+  });
+
+  testWidgets('the report opens on its figures, with nothing said above them', (tester) async {
+    // Arrange — the pickers already say which period this is, and the rule about which orders
+    // count is not something the reader was asking to be told every time
+    stub();
+
+    // Act
+    await openTheReport(tester);
+
+    // Assert
+    expect(find.text('12 طلبية محتسبة'), findsNothing);
+    expect(find.text('من 2026-03-01 إلى 2026-03-31'), findsNothing);
+    expect(
+      find.textContaining('يُحتسب الإيراد على الطلبيات المسلَّمة والمصفّاة'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('a period nothing was delivered in still reports the cash that came in', (
     tester,
   ) async {
     // Arrange
@@ -161,9 +182,10 @@ void main() {
     // Act
     await openTheReport(tester);
 
-    // Assert — and the deposit taken against work not yet delivered is still reported
-    expect(find.text('لا طلبيات مسلَّمة أو مصفّاة في هذه الفترة'), findsOneWidget);
+    // Assert — the deposit taken against work not yet delivered, and no sentence explaining
+    // away the zeros above it
     expect(find.text('150'), findsOneWidget);
+    expect(find.text('لا طلبيات مسلَّمة أو مصفّاة في هذه الفترة'), findsNothing);
   });
 
   testWidgets('a losing period is said in a sentence, not only in a colour', (tester) async {
