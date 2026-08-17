@@ -391,8 +391,14 @@ flutter test      # All tests passed!
 
 - **التوكن في `flutter_secure_storage`** (Keychain / Keystore) — **لا** في `SharedPreferences`، فهي ملف XML نصي على جهاز مكسور الحماية.
 - **`.env` و `.env.dev` في `.gitignore`.** أي مفتاح جديد يُضاف إلى `.env.example`.
-- **`PrettyDioLogger` في `dev` فقط ومع `!kReleaseMode`** — الأجسام تحوي بيانات عملاء والتوكن.
-- **`debugPrint` لا `print`** — `print` يبقى في بناء الإنتاج (`avoid_print` مفعّل).
+- **`PrettyDioLogger` في أوضاع الـ debug فقط — لا علاقة للـ flavour بالأمر.** الأجسام تحوي بيانات
+  عملاء والتوكن. القرار في [`DioClient.logsTraffic`](lib/core/network/dio_client.dart) وحدها،
+  و`kDebugMode` كاذب في release **و** في profile. القاعدة كانت `dev` + `!kReleaseMode`، وكانت
+  خاطئة في الاتجاهين: بناء debug موجّه إلى خادم الإنتاج — وهو أسلوب العمل المعتاد — لا يطبع شيئاً،
+  وبناء `dev` في وضع profile يطبع. مثبّتة في `test/core/network/dio_client_test.dart`.
+- **`debugPrint` لا `print`** — `print` يبقى في بناء الإنتاج (`avoid_print` مفعّل). و`debugPrint`
+  نفسه **يطبع في release أيضاً** (هو متغيّر يشير إلى `debugPrintThrottled`، لا يُحذف عند الترجمة)،
+  فأي سطر قد يحمل بيانات يُغلَّف بـ `if (kDebugMode)` كما في `session.dart`.
 - **403 لا يسجّل الخروج.** إخراج مستخدم لأنه فتح شاشة لا يملك صلاحيتها خطأ يبدو كانهيار.
 
 ---

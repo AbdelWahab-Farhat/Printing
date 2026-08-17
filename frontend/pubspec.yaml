@@ -22,7 +22,9 @@ dependencies:
 
   # ── network ──────────────────────────────────────────────────────────────────
   dio: ^5.8.0+1
-  pretty_dio_logger: ^1.4.0 # dev flavor only
+  # Debug builds only, whatever the flavour — see DioClient.logsTraffic. Bodies carry the
+  # bearer token and real customer records, so a shipped build must never attach it.
+  pretty_dio_logger: ^1.4.0
 
   # ── navigation ───────────────────────────────────────────────────────────────
   go_router: ^15.1.1
