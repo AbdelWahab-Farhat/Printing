@@ -15,14 +15,17 @@ void main() {
   group('flavours', () {
     test('each one reads its own env file, and they are all distinct', () {
       // Arrange — the file is what decides which API a build talks to, so two flavours sharing
-      // one would be a «user» build silently pointed at wherever «prod» happens to point.
+      // one would be a build silently pointed at wherever its neighbour happens to point.
+      //
+      // **Two, and only two.** A third that named a different file but the same server was
+      // exactly that: two builds nobody could tell apart, and a picker on the build command
+      // that changed nothing. One production API means one production flavour.
       // Act
       final files = [for (final flavor in Flavor.values) flavor.envFile];
 
       // Assert
       expect(files.toSet(), hasLength(Flavor.values.length));
       expect(Flavor.dev.envFile, '.env.dev');
-      expect(Flavor.user.envFile, '.env.user');
       expect(Flavor.prod.envFile, '.env');
     });
 
@@ -42,11 +45,10 @@ void main() {
     });
 
     test('only the development flavour is treated as development', () {
-      // Arrange — `isDev` gates the Android emulator's 10.0.2.2 rewrite. A «user» build that
-      // answered true to it would rewrite its host and reach nothing at all.
+      // Arrange — `isDev` gates the Android emulator's 10.0.2.2 rewrite, an address that exists
+      // only inside an emulator. A release build answering true to it would reach nothing.
       // Act & Assert
       expect(Flavor.dev.isDevelopment, isTrue);
-      expect(Flavor.user.isDevelopment, isFalse);
       expect(Flavor.prod.isDevelopment, isFalse);
     });
   });

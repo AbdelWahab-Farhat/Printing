@@ -10,18 +10,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 /// build talks to, so a flavour without its own would be a build silently pointed at whichever
 /// server its neighbour uses — the kind of mistake that is invisible until real data lands
 /// somewhere it should not.
+/// **Two, and a third was tried and removed.** A `user` flavour existed briefly so the build
+/// handed to customers could point somewhere of its own — but there is one production API, so
+/// its env file named a different path to the same server and the two builds were
+/// indistinguishable. A flavour is worth its keep only when it points somewhere else; until a
+/// second server actually answers, adding one back would recreate that.
 enum Flavor {
   /// The machine the developer is sitting at. See `BASE_URL_ANDROID`.
   dev('.env.dev'),
 
-  /// The build handed to the people who actually use the app.
-  ///
-  /// Separate from [prod] so the two can be pointed at different servers without a release: what
-  /// «production» means to whoever runs the store and what the staff build talks to have not
-  /// always been the same host, and every time they diverged it was resolved by editing a file
-  /// that both builds read.
-  user('.env.user'),
-
+  /// Everything that is not a developer's laptop — the build that ships.
   prod('.env');
 
   const Flavor(this.envFile);

@@ -47,4 +47,3 @@ app.*.map.json
 # Environment — secrets and per-machine hosts. .env.example documents the keys.
 .env
 .env.dev
-.env.user
