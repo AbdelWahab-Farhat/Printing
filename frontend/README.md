@@ -10,8 +10,59 @@ Flutter 3.44.6 · Dart 3.12.2
 
 ```bash
 flutter pub get
-dart run build_runner build          # يولّد ملفات Freezed / JSON
-flutter run --dart-define=FLAVOR=dev # تطوير
+dart run build_runner build --delete-conflicting-outputs  # يولّد ملفات Freezed / JSON
+flutter run --dart-define=FLAVOR=dev                      # تطوير
+```
+
+## البيئات (Flavours)
+
+نكهتان فقط، ولكل واحدة ملف بيئة خاص بها. الاختيار يتم **وقت الترجمة** عبر `--dart-define`، فنسخة
+release لا يمكن توجيهها إلى خادم التطوير بأي شيء وقت التشغيل:
+
+| النكهة | الملف | الأمر |
+|---|---|---|
+| `prod` | `.env` | الافتراضي — بدون أي `--dart-define` |
+| `dev` | `.env.dev` | `--dart-define=FLAVOR=dev` |
+
+`.env.example` وحده مرفوع في git ويوثّق المفاتيح؛ الملفان الآخران مستثنيان لأن فيهما عناوين خوادم.
+وكل ملف **يجب** أن يكون مُدرجاً تحت `assets:` في [pubspec.yaml](pubspec.yaml) — نكهة ملفها غير
+محزوم تنهار عند الإقلاع لا عند البناء.
+
+`.env.dev` يحمل مفتاحاً إضافياً `BASE_URL_ANDROID`: محاكي أندرويد لا يصل `127.0.0.1` — ذلك العنوان
+هو المحاكي نفسه — فيمرّ عبر `10.0.2.2`. يُقرأ فقط في نكهة `dev`.
+
+> نكهة ثالثة باسم `user` جُرّبت وأُزيلت: كانت تشير إلى نفس خادم `prod`، فكان البناءان لا يُفرَّق
+> بينهما. النكهة تستحق وجودها حين تشير إلى مكان آخر فعلاً.
+
+## البناء للنشر
+
+```bash
+flutter build apk --release        # ملف APK واحد للتوزيع المباشر
+flutter build appbundle --release  # للنشر على Google Play
+```
+
+يخرج الـ APK في `build/app/outputs/flutter-apk/app-release.apk`.
+
+**تحقّق من الخادم داخل الحزمة قبل التوزيع** — الرابط يُحرَق داخل البناء، ونسخة موجّهة إلى خادم غير
+موجود تُثبَّت وتعمل ثم تفشل عند أول طلب، بلا أي رسالة تدلّ على السبب:
+
+```bash
+unzip -p build/app/outputs/flutter-apk/app-release.apk assets/flutter_assets/.env | grep BASE_URL
+```
+
+### التثبيت على الجهاز
+
+```bash
+adb devices                                                    # تأكد أن الجهاز متصل
+adb install -r build/app/outputs/flutter-apk/app-release.apk   # -r يستبدل نسخة قائمة
+```
+
+أو انسخ ملف الـ APK إلى الهاتف وافتحه (يتطلّب السماح بالتثبيت من مصادر غير المتجر).
+
+ولتشغيل نسخة release موصولة بالحاسوب مباشرة:
+
+```bash
+flutter run --release
 ```
 
 ## الشعار

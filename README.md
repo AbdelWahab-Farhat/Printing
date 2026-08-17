@@ -4,7 +4,7 @@ Monorepo for the **Printing** product — a Laravel API with a Flutter client.
 
 ```
 backend/    Laravel 13 API  ·  PostgreSQL  ·  Sanctum  ·  OpenAPI 3.1 via Scramble
-frontend/   Flutter app     ·  not scaffolded yet (see frontend/README.md)
+frontend/   Flutter app     ·  MVVM-Clean, Cubit as the ViewModel (see frontend/README.md)
 Docs/       generated openapi.json
 ```
 
@@ -41,10 +41,49 @@ php artisan serve
 
 Seeded admin (local only): `admin@printing.ly` / `0910000000`, password `password`.
 
+**Local only, and the seeder is the reason it can say so.** On a deployed box that password is
+rotated by hand after seeding, and `AdminSeeder`'s second account — the demo employee — is
+removed. A seeded credential is a starting point for a laptop, never a login left standing on a
+server that holds customer records.
+
+## Quick start (frontend)
+
+```bash
+cd frontend
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs   # Freezed / JSON
+flutter run --dart-define=FLAVOR=dev                       # against localhost
+```
+
+Two flavours, one env file each — see [frontend/README.md](frontend/README.md#البيئات-flavours).
+`dev` reads `.env.dev`; everything else reads `.env` and is what ships.
+
+## Deploying
+
+Each server carries a `printing-deploy` script that pulls `main`, installs without dev
+dependencies, migrates, re-caches and reloads PHP-FPM — under `set -euo pipefail` with a trap
+that brings the app back out of maintenance mode if any step fails:
+
+```bash
+ssh <server> printing-deploy
+```
+
+**Hostnames, addresses and credentials are deliberately not written down here** — this repository
+is public, and a deployment map is reconnaissance. They live in the operator's own notes.
+
+Two things do not travel with a deploy, both on purpose:
+
+- **`backend/database/seeders/data/customers.php`** — the customer book is real names and phone
+  numbers, so it is git-ignored and copied to a server out of band. `CustomerSeeder` says so
+  plainly when it is absent rather than failing inside a `require`.
+- **`backend/.env`** — written once per box. Re-generating `APP_KEY` would strand every
+  encrypted value and signed URL already in that database.
+
 ## Project conventions
 
 - **[backend/RULES.md](backend/RULES.md)** — the binding Laravel API standard. Read it before
   writing any PHP.
 - **[backend/CLAUDE.md](backend/CLAUDE.md)** — general engineering rules that apply to any
   repository; `RULES.md` wins where the two overlap.
-- A Flutter standard will be written when the app is scaffolded.
+- **[frontend/RULES.md](frontend/RULES.md)** — the binding Flutter standard. Read it before
+  writing any Dart.
