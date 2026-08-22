@@ -28,6 +28,20 @@ final class Money
         return bcadd(bcadd($value, $half, 8), '0', self::SCALE);
     }
 
+    /**
+     * A money amount as it arrived from a request, turned into a decimal string at two places.
+     *
+     * **Cast through a float and straight back out of it.** That looks like the mistake this
+     * whole file exists to prevent, and it is the one moment it is right: what arrives from JSON
+     * is already a float or a string of unknown shape — `"5"`, `5.5`, `"1e3"` — and bcmath
+     * refuses the last of those outright. One cast at the boundary normalises every form; from
+     * here on the number is a string and stays one, which is the rule that matters.
+     */
+    public static function normalize(mixed $value): string
+    {
+        return number_format((float) $value, self::SCALE, '.', '');
+    }
+
     /** Adds a list of decimal strings at full precision, then rounds once at the end. */
     public static function sum(string ...$values): string
     {

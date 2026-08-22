@@ -80,12 +80,17 @@ final class RecordOrderPayment
      * Floored rather than left negative so that an order already overpaid — which happens when a
      * discount lands after payment, not because anyone erred — refuses further payments with
      * «المتبقي ٠.٠٠» instead of an amount below zero that reads like a system fault.
+     *
+     * **Asked of the order rather than subtracted here**, so that what may be collected and what
+     * is displayed as owed are the same number. They parted company the day a debt could also be
+     * closed by writing it off: an order of 110 with 5 forgiven owes 105, and a private
+     * `grand_total - paid_amount` here would have gone on accepting 110.
      */
     private function remaining(Order $order): string
     {
-        $remaining = bcsub((string) $order->grand_total, (string) $order->paid_amount, 8);
+        $remaining = $order->remainingAmount();
 
-        return bccomp($remaining, '0', Money::SCALE) < 0 ? '0.00' : Money::round($remaining);
+        return bccomp($remaining, '0', Money::SCALE) < 0 ? '0.00' : $remaining;
     }
 
     /**

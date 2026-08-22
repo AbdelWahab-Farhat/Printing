@@ -71,13 +71,30 @@ ssh <server> printing-deploy
 **Hostnames, addresses and credentials are deliberately not written down here** — this repository
 is public, and a deployment map is reconnaissance. They live in the operator's own notes.
 
-Two things do not travel with a deploy, both on purpose:
+Three things do not travel with a deploy, all on purpose:
 
 - **`backend/database/seeders/data/customers.php`** — the customer book is real names and phone
   numbers, so it is git-ignored and copied to a server out of band. `CustomerSeeder` says so
   plainly when it is absent rather than failing inside a `require`.
 - **`backend/.env`** — written once per box. Re-generating `APP_KEY` would strand every
   encrypted value and signed URL already in that database.
+- **`public/storage`** — the symlink to `storage/app/public`, where product photos are written
+  while `MEDIA_DISK=public`. Git cannot carry it and `printing-deploy` does not create it, so
+  it is one command per box:
+
+  ```bash
+  php artisan storage:link
+  ```
+
+  **Its absence is silent on the server and only visible in the app.** Every API response stays
+  perfectly healthy — `image_url` is built from `APP_URL` and returned as always — and only the
+  file behind it 404s, so the app draws its broken-image placeholder on a payload that looks
+  correct in a log. This shipped to production once, and the symptom was two shelves that
+  looked like they were missing photos when in fact they were missing a symlink.
+
+  `APP_URL` in that box's `.env` is the other half: the URL is built from it, so a value left at
+  `http://localhost:8000` produces links no phone can reach even once the symlink exists. Config
+  is cached on a deployed box, so changing it means `php artisan config:cache` afterwards.
 
 ## Project conventions
 

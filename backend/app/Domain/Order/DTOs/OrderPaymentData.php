@@ -63,10 +63,14 @@ final readonly class OrderPaymentData
      * The same rule the rest of this domain's money follows: this number is compared against a
      * remaining balance and added to a running total, and a total that picks up binary drift is
      * a discrepancy nobody will ever be able to explain to a customer.
+     *
+     * The cast itself lives in {@see Money::normalize()}, so the write-off endpoint — which has
+     * no DTO of its own, having neither a method nor a date to carry — reads an amount off a
+     * request exactly the way this does.
      */
     private static function amount(mixed $value): string
     {
-        return number_format((float) $value, Money::SCALE, '.', '');
+        return Money::normalize($value);
     }
 
     /**

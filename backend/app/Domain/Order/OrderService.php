@@ -17,6 +17,7 @@ use App\Domain\Order\Actions\ReviewOrderDesign;
 use App\Domain\Order\Actions\SetOrderShortages;
 use App\Domain\Order\Actions\UpdateManufacturingCostRate;
 use App\Domain\Order\Actions\UpdateOrder;
+use App\Domain\Order\Actions\WriteOffOrderBalance;
 use App\Domain\Order\DTOs\ManufacturingCostRateData;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderPaymentData;
@@ -59,6 +60,7 @@ class OrderService
         private readonly RecordOrderPayment $recordPayment,
         private readonly RefundOrderPayment $refundPayment,
         private readonly ReverseOrderPayment $reversePayment,
+        private readonly WriteOffOrderBalance $writeOffBalance,
         private readonly CreateManufacturingCostRate $createManufacturingCostRate,
         private readonly UpdateManufacturingCostRate $updateManufacturingCostRate,
         private readonly RecordScrapLoss $recordScrapLoss,
@@ -198,6 +200,19 @@ class OrderService
         ?User $actor = null,
     ): OrderPayment {
         return ($this->reversePayment)($order, $payment, $reason, $actor);
+    }
+
+    /**
+     * Closes what is left of an order's debt without any money moving — see
+     * {@see WriteOffOrderBalance}. The reason is required, as it is for a reversal.
+     */
+    public function writeOffBalance(
+        Order $order,
+        string $amount,
+        string $reason,
+        ?User $actor = null,
+    ): OrderPayment {
+        return ($this->writeOffBalance)($order, $amount, $reason, $actor);
     }
 
     // ── manufacturing cost rates ────────────────────────────────────────────────────────

@@ -11,10 +11,10 @@ use App\Domain\Order\Support\Money;
  * Where an order stands on the money.
  *
  * **Derived, never stored, and that is a deliberate difference from `status`.** An order's
- * workflow status is a decision somebody made and a column is the only honest home for it. How
- * much has been paid is arithmetic over two numbers, and both of them move: `grand_total`
- * changes whenever the lines change or a discount is granted, and `paid_amount` whenever the
- * ledger gains a row.
+ * workflow status is a decision somebody made and a column is the only honest home for it. Where
+ * it stands on its money is arithmetic over three numbers, and all of them move: `grand_total`
+ * changes whenever the lines change or a discount is granted, and `paid_amount` and
+ * `written_off_amount` whenever the ledger gains a row.
  *
  * A stored column would have to be rewritten by both of those paths, and the first one that
  * forgot would leave an order reading «مدفوعة بالكامل» after its total went up — a wrong answer
@@ -43,6 +43,16 @@ enum PaymentStatus: string
      */
     case Overpaid = 'overpaid';
 
+    /**
+     * Nothing is owed any more, and part of what closed it was never collected.
+     *
+     * **Its own state rather than «مدفوعة بالكامل», because the two are different facts.** An
+     * order of 110 that took 105 and had the difference written off owes nothing — so it belongs
+     * nowhere near the queue somebody is meant to chase — but saying it was paid in full would
+     * be the exact lie the write-off was built to avoid telling. See {@see OrderPaymentType::WriteOff}.
+     */
+    case WrittenOff = 'written_off';
+
     public function label(): string
     {
         return match ($this) {
@@ -50,10 +60,17 @@ enum PaymentStatus: string
             self::PartiallyPaid => 'مدفوعة جزئياً',
             self::Paid => 'مدفوعة بالكامل',
             self::Overpaid => 'مدفوعة بالزيادة',
+            self::WrittenOff => 'مشطوب فرقها',
         };
     }
 
-    /** Whether anything is still owed on it. */
+    /**
+     * Whether anything is still owed on it.
+     *
+     * **A written-off order is not outstanding.** The debt was closed by a decision somebody
+     * made and signed, which is a worse outcome than being paid but is not an open balance —
+     * and this is the question the settlement guard asks.
+     */
     public function isOutstanding(): bool
     {
         return $this === self::Unpaid || $this === self::PartiallyPaid;
@@ -68,21 +85,33 @@ enum PaymentStatus: string
      */
     public static function for(Order $order): self
     {
-        return self::between((string) $order->paid_amount, (string) $order->grand_total);
+        return self::between(
+            (string) $order->paid_amount,
+            (string) $order->grand_total,
+            (string) $order->written_off_amount,
+        );
     }
 
     /**
+     * **What closes a debt is cash plus what was forgiven**, so both are weighed against the
+     * total — an order is no longer owed once the two together reach it. They stay two numbers
+     * rather than one because the difference between them is the whole point: see
+     * {@see WrittenOff}.
+     *
      * The comparison against the total comes *before* the one against zero, so an order that
      * costs nothing — an office pickup with no lines yet — reads «مدفوعة بالكامل» rather than
      * «غير مدفوعة». Nothing is owed on it, and «غير مدفوعة» would put it in the list of orders
      * somebody is meant to chase.
      */
-    public static function between(string $paid, string $grandTotal): self
+    public static function between(string $paid, string $grandTotal, string $writtenOff = '0'): self
     {
+        $covered = bcadd($paid, $writtenOff, Money::SCALE);
+        $forgiven = bccomp($writtenOff, '0', Money::SCALE) > 0;
+
         return match (true) {
-            bccomp($paid, $grandTotal, Money::SCALE) > 0 => self::Overpaid,
-            bccomp($paid, $grandTotal, Money::SCALE) === 0 => self::Paid,
-            bccomp($paid, '0', Money::SCALE) <= 0 => self::Unpaid,
+            bccomp($covered, $grandTotal, Money::SCALE) > 0 => self::Overpaid,
+            bccomp($covered, $grandTotal, Money::SCALE) === 0 => $forgiven ? self::WrittenOff : self::Paid,
+            bccomp($covered, '0', Money::SCALE) <= 0 => self::Unpaid,
             default => self::PartiallyPaid,
         };
     }

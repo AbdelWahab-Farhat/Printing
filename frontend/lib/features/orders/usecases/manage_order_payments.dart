@@ -91,6 +91,23 @@ class ReverseOrderPayment {
   }) => _repository.reverse(orderId, paymentId, reason: reason.trim());
 }
 
+/// Closing what is left of a debt nobody is going to collect.
+///
+/// The amount is normalised like every other one on this screen, and the reason is trimmed for
+/// the reason a reversal's is: a sentence of spaces satisfies a required check and tells the
+/// next reader nothing.
+class WriteOffOrderBalance {
+  const WriteOffOrderBalance(this._repository);
+
+  final OrderPaymentRepository _repository;
+
+  Future<Either<Failure, PaymentResult>> call(
+    int orderId, {
+    required String amount,
+    required String reason,
+  }) => _repository.writeOff(orderId, amount: normaliseAmount(amount), reason: reason.trim());
+}
+
 /// Turns what somebody typed into the decimal string the API takes.
 ///
 /// Two things happen, both for the same reason — the number that leaves this phone must be the

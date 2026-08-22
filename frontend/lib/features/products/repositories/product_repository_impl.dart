@@ -125,4 +125,45 @@ class ProductRepositoryImpl implements ProductRepository {
       parse: (data) => Product.fromJson(data as Map<String, dynamic>),
     );
   }
+
+  @override
+  Future<Either<Failure, ProductImage>> uploadImage(
+    int productId, {
+    required PickedFile image,
+    void Function(int sent, int total)? onProgress,
+  }) {
+    return safeRequest<ProductImage>(
+      // `fromFile` streams from disk. `fromBytes` would hold the whole picture in memory for the
+      // length of the upload, which a mid-range phone kills the app for.
+      () async => _dio.post(
+        ProductEndpoints.images(productId),
+        data: FormData.fromMap(<String, dynamic>{
+          'image': await MultipartFile.fromFile(image.path, filename: image.name),
+        }),
+        onSendProgress: onProgress,
+      ),
+      parse: (data) => ProductImage.fromJson(data! as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, ProductImage>> makeImagePrimary(int productId, int imageId) {
+    return safeRequest<ProductImage>(
+      // `true` and nothing else: the rule is `accepted`, so `false` is a validation error rather
+      // than a demotion. Sending the flag at all is what this call means.
+      () => _dio.patch(
+        ProductEndpoints.image(productId, imageId),
+        data: <String, dynamic>{'is_primary': true},
+      ),
+      parse: (data) => ProductImage.fromJson(data! as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, String>> deleteImage(int productId, int imageId) {
+    // `safeCommand`, because the answer is a message rather than a record — and the message is
+    // the server's own Arabic when it refuses, which is what the screen shows for the one
+    // refusal that matters: the last photograph.
+    return safeCommand(() => _dio.delete(ProductEndpoints.image(productId, imageId)));
+  }
 }

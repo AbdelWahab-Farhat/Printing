@@ -7,8 +7,10 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
+import 'package:dayaa/core/widgets/permission_gate.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/products/models/pricing_unit.dart';
 import 'package:dayaa/features/products/models/product.dart';
@@ -298,8 +300,31 @@ class _Body extends StatelessWidget {
       children: [
         if (product.images.isNotEmpty) ...[
           ProductGallery(images: product.images),
-          SizedBox(height: 16.h),
+          SizedBox(height: 12.h),
         ],
+
+        // **Offered whether or not there are photographs, and that is the point.** A product
+        // made before a photo was required carries none, so the gallery above draws nothing —
+        // and hiding this with it would leave exactly those products with no way to get one.
+        //
+        // Under the gallery rather than in the speed dial: the photographs are what it is about,
+        // and a door reads better beside the thing it leads to than in a list of verbs.
+        PermissionGate(
+          permission: AppPermission.manageProducts,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: 16.h),
+            child: AppButton.tonal(
+              label: product.images.isEmpty ? 'إضافة صورة' : 'إدارة الصور',
+              icon: AppIcons.photos,
+              // The name travels so the images screen can say whose they are without asking
+              // for a product this screen already holds.
+              onPressed: () => context.push(
+                Routes.productImages(product.id),
+                extra: product.name,
+              ),
+            ),
+          ),
+        ),
 
         _Identity(product: product),
         SizedBox(height: 14.h),

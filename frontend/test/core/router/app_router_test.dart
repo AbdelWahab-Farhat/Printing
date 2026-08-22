@@ -121,6 +121,7 @@ void main() {
       'الإعدادات': Routes.settings,
       'المخزن': Routes.warehouse,
       'المنتجات': Routes.products,
+      'صور المنتج': Routes.productImages(7),
       'رفوف المخزن': Routes.warehouseStocks(5),
       'حركات المخزن': Routes.warehouseMovements(5),
       'سجل الحركات': Routes.stockMovements,
@@ -348,6 +349,24 @@ void main() {
     // Assert
     expect(matches.whereType<GoRoute>().last.path, Routes.orderEditPath);
     expect(matches.whereType<ShellRouteBase>(), isEmpty);
+  });
+
+  test('«/products/7/images» is the photographs screen, not the product reading «images»', () {
+    // Arrange — a second child of `/products/:id`, declared beside `edit`. Neither may answer
+    // for the other, and `:id` must not swallow the literal word.
+    final location = Routes.productImages(7);
+
+    // Act
+    final matches = matchedRoutes(location);
+
+    // Assert
+    expect(location, '/products/7/images');
+    expect(matches.whereType<GoRoute>().last.path, Routes.productImagesPath);
+    expect(
+      matches.whereType<ShellRouteBase>(),
+      isEmpty,
+      reason: 'managing photographs is a task the user is in, not a tab they are browsing',
+    );
   });
 
   test('«/products/7/edit» is the form, not the detail screen reading «edit» as a size', () {

@@ -81,6 +81,26 @@ final class ProfitAndLossSummaryQuery
             ->whereBetween('paid_at', [$filters->from, $filters->to])
             ->sum('amount');
 
+        // **Money the business decided it will never collect** — the difference on an order that
+        // came back short, closed on the record rather than typed in as a payment nobody
+        // received. See OrderPaymentType::WriteOff.
+        //
+        // Reported beside `cash_collected` and deliberately *not* subtracted from gross profit:
+        // this statement recognises revenue when the order is delivered, and carries no expense
+        // side at all — there is no opex line here to put a bad debt on. Netting it off the
+        // gross would quietly mix an accrual figure with a collection one and leave neither
+        // readable. It is the same reconciliation shelf `cash_collected` already sits on.
+        //
+        // A write-off that was undone is not a loss, so the reversed ones are left out. Note the
+        // difference from `cash_collected` above, which counts every `payment` row in the period
+        // whether or not it was later cancelled — that figure answers «كم دخل الدرج» and is left
+        // exactly as it was rather than quietly redefined here.
+        $writeOffs = (string) OrderPayment::query()
+            ->where('type', OrderPaymentType::WriteOff->value)
+            ->whereBetween('paid_at', [$filters->from, $filters->to])
+            ->whereDoesntHave('reversal')
+            ->sum('amount');
+
         $revenueTotal = Money::sum($productRevenue, $serviceRevenue);
 
         return [
@@ -101,6 +121,7 @@ final class ProfitAndLossSummaryQuery
             ],
             'gross_profit' => Money::round(bcsub($revenueTotal, $cogs, 8)),
             'cash_collected' => Money::round($cashCollected),
+            'write_offs' => Money::round($writeOffs),
             'orders_recognized' => $orderIds->count(),
         ];
     }

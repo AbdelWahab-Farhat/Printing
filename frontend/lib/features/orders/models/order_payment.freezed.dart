@@ -974,7 +974,12 @@ as String?,
 /// @nodoc
 mixin _$PaymentSummary {
 
-@JsonKey(name: 'grand_total') String get grandTotal;@JsonKey(name: 'paid_amount') String get paidAmount;/// What is still owed. **Negative when the order is overpaid**, so the screen can say
+@JsonKey(name: 'grand_total') String get grandTotal;@JsonKey(name: 'paid_amount') String get paidAmount;/// What was closed without being collected — the five dinars that never came back.
+///
+/// **Beside «المدفوع» and never inside it**, so that number goes on meaning cash. Defaulted
+/// rather than required: an app talking to a server from before this existed reads a zero,
+/// which is exactly what such a server means.
+@JsonKey(name: 'written_off_amount') String get writtenOffAmount;/// What is still owed. **Negative when the order is overpaid**, so the screen can say
 /// «زائد ٥٠» rather than flooring the fact away.
 @JsonKey(name: 'remaining_amount') String get remainingAmount;@JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) PaymentStatus get paymentStatus;@JsonKey(name: 'payment_status_label') String get paymentStatusLabel;/// An order that finished without its money accounted for.
 ///
@@ -994,16 +999,16 @@ $PaymentSummaryCopyWith<PaymentSummary> get copyWith => _$PaymentSummaryCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentSummary&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.remainingAmount, remainingAmount) || other.remainingAmount == remainingAmount)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentStatusLabel, paymentStatusLabel) || other.paymentStatusLabel == paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, hasUnrecordedMoney) || other.hasUnrecordedMoney == hasUnrecordedMoney));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentSummary&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.writtenOffAmount, writtenOffAmount) || other.writtenOffAmount == writtenOffAmount)&&(identical(other.remainingAmount, remainingAmount) || other.remainingAmount == remainingAmount)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentStatusLabel, paymentStatusLabel) || other.paymentStatusLabel == paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, hasUnrecordedMoney) || other.hasUnrecordedMoney == hasUnrecordedMoney));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,grandTotal,paidAmount,remainingAmount,paymentStatus,paymentStatusLabel,hasUnrecordedMoney);
+int get hashCode => Object.hash(runtimeType,grandTotal,paidAmount,writtenOffAmount,remainingAmount,paymentStatus,paymentStatusLabel,hasUnrecordedMoney);
 
 @override
 String toString() {
-  return 'PaymentSummary(grandTotal: $grandTotal, paidAmount: $paidAmount, remainingAmount: $remainingAmount, paymentStatus: $paymentStatus, paymentStatusLabel: $paymentStatusLabel, hasUnrecordedMoney: $hasUnrecordedMoney)';
+  return 'PaymentSummary(grandTotal: $grandTotal, paidAmount: $paidAmount, writtenOffAmount: $writtenOffAmount, remainingAmount: $remainingAmount, paymentStatus: $paymentStatus, paymentStatusLabel: $paymentStatusLabel, hasUnrecordedMoney: $hasUnrecordedMoney)';
 }
 
 
@@ -1014,7 +1019,7 @@ abstract mixin class $PaymentSummaryCopyWith<$Res>  {
   factory $PaymentSummaryCopyWith(PaymentSummary value, $Res Function(PaymentSummary) _then) = _$PaymentSummaryCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'paid_amount') String paidAmount,@JsonKey(name: 'remaining_amount') String remainingAmount,@JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) PaymentStatus paymentStatus,@JsonKey(name: 'payment_status_label') String paymentStatusLabel,@JsonKey(name: 'has_unrecorded_money') bool hasUnrecordedMoney
+@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'paid_amount') String paidAmount,@JsonKey(name: 'written_off_amount') String writtenOffAmount,@JsonKey(name: 'remaining_amount') String remainingAmount,@JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) PaymentStatus paymentStatus,@JsonKey(name: 'payment_status_label') String paymentStatusLabel,@JsonKey(name: 'has_unrecorded_money') bool hasUnrecordedMoney
 });
 
 
@@ -1031,10 +1036,11 @@ class _$PaymentSummaryCopyWithImpl<$Res>
 
 /// Create a copy of PaymentSummary
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? grandTotal = null,Object? paidAmount = null,Object? remainingAmount = null,Object? paymentStatus = null,Object? paymentStatusLabel = null,Object? hasUnrecordedMoney = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? grandTotal = null,Object? paidAmount = null,Object? writtenOffAmount = null,Object? remainingAmount = null,Object? paymentStatus = null,Object? paymentStatusLabel = null,Object? hasUnrecordedMoney = null,}) {
   return _then(_self.copyWith(
 grandTotal: null == grandTotal ? _self.grandTotal : grandTotal // ignore: cast_nullable_to_non_nullable
 as String,paidAmount: null == paidAmount ? _self.paidAmount : paidAmount // ignore: cast_nullable_to_non_nullable
+as String,writtenOffAmount: null == writtenOffAmount ? _self.writtenOffAmount : writtenOffAmount // ignore: cast_nullable_to_non_nullable
 as String,remainingAmount: null == remainingAmount ? _self.remainingAmount : remainingAmount // ignore: cast_nullable_to_non_nullable
 as String,paymentStatus: null == paymentStatus ? _self.paymentStatus : paymentStatus // ignore: cast_nullable_to_non_nullable
 as PaymentStatus,paymentStatusLabel: null == paymentStatusLabel ? _self.paymentStatusLabel : paymentStatusLabel // ignore: cast_nullable_to_non_nullable
@@ -1124,10 +1130,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'written_off_amount')  String writtenOffAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PaymentSummary() when $default != null:
-return $default(_that.grandTotal,_that.paidAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
+return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
   return orElse();
 
 }
@@ -1145,10 +1151,10 @@ return $default(_that.grandTotal,_that.paidAmount,_that.remainingAmount,_that.pa
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'written_off_amount')  String writtenOffAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)  $default,) {final _that = this;
 switch (_that) {
 case _PaymentSummary():
-return $default(_that.grandTotal,_that.paidAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
+return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1165,10 +1171,10 @@ return $default(_that.grandTotal,_that.paidAmount,_that.remainingAmount,_that.pa
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'written_off_amount')  String writtenOffAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)?  $default,) {final _that = this;
 switch (_that) {
 case _PaymentSummary() when $default != null:
-return $default(_that.grandTotal,_that.paidAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
+return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
   return null;
 
 }
@@ -1180,11 +1186,17 @@ return $default(_that.grandTotal,_that.paidAmount,_that.remainingAmount,_that.pa
 @JsonSerializable()
 
 class _PaymentSummary extends PaymentSummary {
-  const _PaymentSummary({@JsonKey(name: 'grand_total') required this.grandTotal, @JsonKey(name: 'paid_amount') required this.paidAmount, @JsonKey(name: 'remaining_amount') required this.remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) required this.paymentStatus, @JsonKey(name: 'payment_status_label') required this.paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money') this.hasUnrecordedMoney = false}): super._();
+  const _PaymentSummary({@JsonKey(name: 'grand_total') required this.grandTotal, @JsonKey(name: 'paid_amount') required this.paidAmount, @JsonKey(name: 'written_off_amount') this.writtenOffAmount = '0.00', @JsonKey(name: 'remaining_amount') required this.remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) required this.paymentStatus, @JsonKey(name: 'payment_status_label') required this.paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money') this.hasUnrecordedMoney = false}): super._();
   factory _PaymentSummary.fromJson(Map<String, dynamic> json) => _$PaymentSummaryFromJson(json);
 
 @override@JsonKey(name: 'grand_total') final  String grandTotal;
 @override@JsonKey(name: 'paid_amount') final  String paidAmount;
+/// What was closed without being collected — the five dinars that never came back.
+///
+/// **Beside «المدفوع» and never inside it**, so that number goes on meaning cash. Defaulted
+/// rather than required: an app talking to a server from before this existed reads a zero,
+/// which is exactly what such a server means.
+@override@JsonKey(name: 'written_off_amount') final  String writtenOffAmount;
 /// What is still owed. **Negative when the order is overpaid**, so the screen can say
 /// «زائد ٥٠» rather than flooring the fact away.
 @override@JsonKey(name: 'remaining_amount') final  String remainingAmount;
@@ -1210,16 +1222,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentSummary&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.remainingAmount, remainingAmount) || other.remainingAmount == remainingAmount)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentStatusLabel, paymentStatusLabel) || other.paymentStatusLabel == paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, hasUnrecordedMoney) || other.hasUnrecordedMoney == hasUnrecordedMoney));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentSummary&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.writtenOffAmount, writtenOffAmount) || other.writtenOffAmount == writtenOffAmount)&&(identical(other.remainingAmount, remainingAmount) || other.remainingAmount == remainingAmount)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentStatusLabel, paymentStatusLabel) || other.paymentStatusLabel == paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, hasUnrecordedMoney) || other.hasUnrecordedMoney == hasUnrecordedMoney));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,grandTotal,paidAmount,remainingAmount,paymentStatus,paymentStatusLabel,hasUnrecordedMoney);
+int get hashCode => Object.hash(runtimeType,grandTotal,paidAmount,writtenOffAmount,remainingAmount,paymentStatus,paymentStatusLabel,hasUnrecordedMoney);
 
 @override
 String toString() {
-  return 'PaymentSummary(grandTotal: $grandTotal, paidAmount: $paidAmount, remainingAmount: $remainingAmount, paymentStatus: $paymentStatus, paymentStatusLabel: $paymentStatusLabel, hasUnrecordedMoney: $hasUnrecordedMoney)';
+  return 'PaymentSummary(grandTotal: $grandTotal, paidAmount: $paidAmount, writtenOffAmount: $writtenOffAmount, remainingAmount: $remainingAmount, paymentStatus: $paymentStatus, paymentStatusLabel: $paymentStatusLabel, hasUnrecordedMoney: $hasUnrecordedMoney)';
 }
 
 
@@ -1230,7 +1242,7 @@ abstract mixin class _$PaymentSummaryCopyWith<$Res> implements $PaymentSummaryCo
   factory _$PaymentSummaryCopyWith(_PaymentSummary value, $Res Function(_PaymentSummary) _then) = __$PaymentSummaryCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'paid_amount') String paidAmount,@JsonKey(name: 'remaining_amount') String remainingAmount,@JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) PaymentStatus paymentStatus,@JsonKey(name: 'payment_status_label') String paymentStatusLabel,@JsonKey(name: 'has_unrecorded_money') bool hasUnrecordedMoney
+@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'paid_amount') String paidAmount,@JsonKey(name: 'written_off_amount') String writtenOffAmount,@JsonKey(name: 'remaining_amount') String remainingAmount,@JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) PaymentStatus paymentStatus,@JsonKey(name: 'payment_status_label') String paymentStatusLabel,@JsonKey(name: 'has_unrecorded_money') bool hasUnrecordedMoney
 });
 
 
@@ -1247,10 +1259,11 @@ class __$PaymentSummaryCopyWithImpl<$Res>
 
 /// Create a copy of PaymentSummary
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? grandTotal = null,Object? paidAmount = null,Object? remainingAmount = null,Object? paymentStatus = null,Object? paymentStatusLabel = null,Object? hasUnrecordedMoney = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? grandTotal = null,Object? paidAmount = null,Object? writtenOffAmount = null,Object? remainingAmount = null,Object? paymentStatus = null,Object? paymentStatusLabel = null,Object? hasUnrecordedMoney = null,}) {
   return _then(_PaymentSummary(
 grandTotal: null == grandTotal ? _self.grandTotal : grandTotal // ignore: cast_nullable_to_non_nullable
 as String,paidAmount: null == paidAmount ? _self.paidAmount : paidAmount // ignore: cast_nullable_to_non_nullable
+as String,writtenOffAmount: null == writtenOffAmount ? _self.writtenOffAmount : writtenOffAmount // ignore: cast_nullable_to_non_nullable
 as String,remainingAmount: null == remainingAmount ? _self.remainingAmount : remainingAmount // ignore: cast_nullable_to_non_nullable
 as String,paymentStatus: null == paymentStatus ? _self.paymentStatus : paymentStatus // ignore: cast_nullable_to_non_nullable
 as PaymentStatus,paymentStatusLabel: null == paymentStatusLabel ? _self.paymentStatusLabel : paymentStatusLabel // ignore: cast_nullable_to_non_nullable

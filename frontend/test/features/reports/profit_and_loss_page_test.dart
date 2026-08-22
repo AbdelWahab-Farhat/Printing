@@ -110,21 +110,114 @@ void main() {
     expect(find.text('12,750'), findsOneWidget);
   });
 
-  testWidgets('the cost is not on the screen, whole block and parts alike', (tester) async {
-    // Arrange — the server still sends all four; the report is what stops printing them
+  testWidgets('the cost block prints all four figures, parts and total alike', (tester) async {
+    // Arrange
     stub();
 
     // Act
     await openTheReport(tester);
 
+    // Assert — the three parts come off the order lines and the total off the orders, so all
+    // four are printed as they arrived rather than one of them being added up here
+    expect(find.text('تكلفة البضاعة المباعة'), findsOneWidget);
+    expect(find.text('المواد'), findsOneWidget);
+    expect(find.text('4,000'), findsOneWidget);
+    expect(find.text('العمالة'), findsOneWidget);
+    expect(find.text('900'), findsOneWidget);
+    expect(find.text('المصاريف العامة'), findsOneWidget);
+    expect(find.text('350'), findsOneWidget);
+    expect(find.text('إجمالي التكلفة'), findsOneWidget);
+    expect(find.text('5,250'), findsOneWidget);
+  });
+
+  testWidgets('the cost mix is drawn at the width its part actually is', (tester) async {
+    // Arrange — 4,000 of 5,250 is the material, so its segment takes most of the strip
+    stub();
+
+    // Act
+    await openTheReport(tester);
+
+    // Assert — a strip whose segments lay out to nothing is a strip that is not there, and it
+    // fails silently: every figure around it still reads correctly
+    final material = tester.getSize(find.byKey(const ValueKey('cost-mix-0')));
+    final overhead = tester.getSize(find.byKey(const ValueKey('cost-mix-2')));
+
+    expect(material.height, greaterThan(0));
+    expect(material.width, greaterThan(overhead.width));
+    expect(overhead.width, greaterThan(0));
+  });
+
+  testWidgets('the donut says where the revenue went, with the margin in the middle', (
+    tester,
+  ) async {
+    // Arrange — 7,500 kept out of 12,750 earned
+    stub();
+
+    // Act
+    await openTheReport(tester);
+
+    // Assert — the one figure on this screen that is a share rather than an amount, and the two
+    // arcs named in words beside it so the split is never carried by colour alone
+    expect(find.text('أين ذهب الإيراد'), findsOneWidget);
+    expect(find.text('59%'), findsOneWidget);
+    expect(find.text('هامش الربح'), findsOneWidget);
+    expect(find.text('الربح'), findsOneWidget);
+    expect(find.text('التكلفة'), findsOneWidget);
+  });
+
+  testWidgets('a losing period is drawn as two bars, never as a negative arc', (tester) async {
+    // Arrange — 75 earned against 120 spent: there is no share of the revenue left to draw
+    stub(
+      report: const ProfitAndLossSummary(
+        period: PnlPeriod(from: '2026-03-01', to: '2026-03-31'),
+        revenue: PnlRevenue(product: '75.00', service: '0.00', total: '75.00'),
+        costOfGoodsSold: PnlCostOfGoodsSold(
+          material: '120.00',
+          labor: '0.00',
+          overhead: '0.00',
+          total: '120.00',
+        ),
+        grossProfit: '-45.00',
+        cashCollected: '0.00',
+        ordersRecognized: 1,
+      ),
+    );
+
+    // Act
+    await openTheReport(tester);
+
     // Assert
-    expect(find.text('تكلفة البضاعة المباعة'), findsNothing);
-    expect(find.text('المواد'), findsNothing);
-    expect(find.text('العمالة'), findsNothing);
-    expect(find.text('المصاريف العامة'), findsNothing);
-    expect(find.text('إجمالي التكلفة'), findsNothing);
-    expect(find.text('4,000'), findsNothing);
-    expect(find.text('5,250'), findsNothing);
+    expect(find.text('الإيراد مقابل التكلفة'), findsOneWidget);
+    expect(find.text('أين ذهب الإيراد'), findsNothing);
+    expect(find.text('-60%'), findsNothing);
+  });
+
+  testWidgets('a period that earned nothing is not charted at all', (tester) async {
+    // Arrange — nothing delivered and nothing spent: a donut of zero is a shape that says
+    // something the period does not
+    stub(
+      report: const ProfitAndLossSummary(
+        period: PnlPeriod(from: '2026-04-01', to: '2026-04-30'),
+        revenue: PnlRevenue(product: '0.00', service: '0.00', total: '0.00'),
+        costOfGoodsSold: PnlCostOfGoodsSold(
+          material: '0.00',
+          labor: '0.00',
+          overhead: '0.00',
+          total: '0.00',
+        ),
+        grossProfit: '0.00',
+        cashCollected: '150.00',
+        ordersRecognized: 0,
+      ),
+    );
+
+    // Act
+    await openTheReport(tester);
+
+    // Assert
+    expect(find.text('أين ذهب الإيراد'), findsNothing);
+    expect(find.text('الإيراد مقابل التكلفة'), findsNothing);
+    expect(find.text('هامش الربح'), findsNothing);
   });
 
   testWidgets('the profit is still the server\'s own, not the revenue drawn twice', (

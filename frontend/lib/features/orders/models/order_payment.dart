@@ -5,9 +5,13 @@ part 'order_payment.g.dart';
 
 /// What a ledger entry *is*.
 ///
-/// Three, not two, and the third is the point: money going back out is either a **refund** — cash
-/// genuinely handed over — or a **reversal**, which says a row was a mistake and describes
-/// nothing that happened. They subtract the same figure and mean entirely different things.
+/// Four, and each is a different sentence about the same amount. Money going back out is either a
+/// **refund** — cash genuinely handed over — or a **reversal**, which says a row was a mistake and
+/// describes nothing that happened. They subtract the same figure and mean entirely different
+/// things.
+///
+/// The fourth says money is not coming at all: a **write-off** closes what is left of a debt
+/// without any cash moving, which is why it never touches «المدفوع».
 enum OrderPaymentType {
   @JsonValue('payment')
   payment,
@@ -17,6 +21,10 @@ enum OrderPaymentType {
 
   @JsonValue('refund')
   refund,
+
+  /// The difference the business decided not to chase — see [OrderPayment.isIncoming].
+  @JsonValue('write_off')
+  writeOff,
 
   /// A type this build has not been taught. The server's own `type_label` is what gets drawn,
   /// so an entry added after this release still reads correctly — see [OrderPayment.typeLabel].
@@ -82,6 +90,15 @@ enum PaymentStatus {
   /// the money did — and it is shown so somebody can refund the difference.
   @JsonValue('overpaid')
   overpaid('overpaid', 'مدفوعة بالزيادة'),
+
+  /// Nothing is owed any more, and part of what closed it was never collected.
+  ///
+  /// Its own state rather than «مدفوعة بالكامل», because the two are different facts: an order
+  /// of 110 that took 105 and had the difference written off owes nothing — so it belongs
+  /// nowhere near the queue somebody chases — but it was not paid in full, and saying so would
+  /// be the lie the write-off exists to avoid telling.
+  @JsonValue('written_off')
+  writtenOff('written_off', 'مشطوب فرقها'),
 
   unknown('', 'غير معروفة');
 
@@ -185,7 +202,12 @@ abstract class OrderPayment with _$OrderPayment {
   factory OrderPayment.fromJson(Map<String, dynamic> json) => _$OrderPaymentFromJson(json);
 
   /// Whether this entry added to what the order has been paid.
+  ///
+  /// A write-off is deliberately not incoming: it closes a debt, and no money arrived.
   bool get isIncoming => type == OrderPaymentType.payment;
+
+  /// Whether this entry closed part of the debt without any money moving.
+  bool get isWriteOff => type == OrderPaymentType.writeOff;
 
   /// Whether this entry counts for nothing any more — struck through on screen.
   bool get isVoid => isReversed || type == OrderPaymentType.reversal;
@@ -230,6 +252,13 @@ abstract class PaymentSummary with _$PaymentSummary {
     @JsonKey(name: 'grand_total') required String grandTotal,
     @JsonKey(name: 'paid_amount') required String paidAmount,
 
+    /// What was closed without being collected — the five dinars that never came back.
+    ///
+    /// **Beside «المدفوع» and never inside it**, so that number goes on meaning cash. Defaulted
+    /// rather than required: an app talking to a server from before this existed reads a zero,
+    /// which is exactly what such a server means.
+    @JsonKey(name: 'written_off_amount') @Default('0.00') String writtenOffAmount,
+
     /// What is still owed. **Negative when the order is overpaid**, so the screen can say
     /// «زائد ٥٠» rather than flooring the fact away.
     @JsonKey(name: 'remaining_amount') required String remainingAmount,
@@ -252,8 +281,18 @@ abstract class PaymentSummary with _$PaymentSummary {
   factory PaymentSummary.fromJson(Map<String, dynamic> json) => _$PaymentSummaryFromJson(json);
 
   /// Whether anything is still owed — the one question the colour of «المتبقي» answers.
+  ///
+  /// A written-off order is **not** outstanding: the debt was closed by a decision somebody made
+  /// and signed. A worse outcome than being paid, but not an open balance.
   bool get isOutstanding =>
       paymentStatus == PaymentStatus.unpaid || paymentStatus == PaymentStatus.partiallyPaid;
+
+  /// Whether any of this order's debt was forgiven rather than collected.
+  ///
+  /// Asked of the *number* rather than of [paymentStatus], because a partial write-off leaves
+  /// the order still owing — «مدفوعة جزئياً» with five already written off is a real state, and
+  /// the screen still owes the reader that line.
+  bool get hasWriteOff => writtenOffAmount != '0.00' && writtenOffAmount.isNotEmpty;
 }
 
 /// What the ledger endpoint answers with: the entries, and where the order stands after them.

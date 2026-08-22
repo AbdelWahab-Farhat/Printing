@@ -42,6 +42,7 @@ import 'package:dayaa/features/products/models/product.dart';
 import 'package:dayaa/features/products/presentation/views/product_categories_page.dart';
 import 'package:dayaa/features/products/presentation/views/product_detail_page.dart';
 import 'package:dayaa/features/products/presentation/views/product_form_page.dart';
+import 'package:dayaa/features/products/presentation/views/product_images_page.dart';
 import 'package:dayaa/features/products/presentation/views/products_page.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_orders_filter.dart';
@@ -265,6 +266,15 @@ abstract final class Routes {
   /// The same form, opened on a product that exists. A child of the detail route, because that
   /// is what it is: correcting *this* product.
   static const String editProductPath = 'edit';
+
+  /// A product's photographs — the only place they can be changed after it is created.
+  ///
+  /// A child of the product for the reason the edit form is: it is about *this* product. The
+  /// name travels as `extra` so the bar can say whose photos these are without a second
+  /// request; a cold deep link carries none and the heading stands alone.
+  static const String productImagesPath = 'images';
+
+  static String productImages(int productId) => '/products/$productId/images';
 
   static String editProduct(int productId) => '/products/$productId/edit';
 
@@ -866,6 +876,20 @@ abstract final class AppRouter {
               : ProductDetailPage(productId: id);
         },
         routes: [
+          // Guarded on *reading* the catalogue, not on managing it: somebody who may see a
+          // product may see its photographs. The three buttons inside are what `products.manage`
+          // gates, and the API refuses either way.
+          GoRoute(
+            path: Routes.productImagesPath,
+            redirect: (context, state) =>
+                sl<Session>().can(AppPermission.viewProducts) ? null : Routes.home,
+            builder: (context, state) => ProductImagesPage(
+              productId: int.parse(state.pathParameters['id']!),
+              // The name, so the bar can say whose photographs these are without a second
+              // request. Null on a cold deep link, where the heading stands alone.
+              productName: state.extra as String?,
+            ),
+          ),
           GoRoute(
             path: Routes.editProductPath,
             redirect: (context, state) =>

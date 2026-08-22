@@ -120,6 +120,7 @@ import 'package:dayaa/features/orders/usecases/take_order.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/product_categories_cubit.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/product_detail_cubit.dart';
+import 'package:dayaa/features/products/presentation/viewmodel/product_images_cubit.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/products_cubit.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/save_product_category_cubit.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/save_product_cubit.dart';
@@ -128,6 +129,7 @@ import 'package:dayaa/features/products/repositories/product_category_repository
 import 'package:dayaa/features/products/repositories/product_repository.dart';
 import 'package:dayaa/features/products/repositories/product_repository_impl.dart';
 import 'package:dayaa/features/products/usecases/delete_product_category.dart';
+import 'package:dayaa/features/products/usecases/delete_product_image.dart';
 import 'package:dayaa/features/products/usecases/get_price_quote.dart';
 import 'package:dayaa/features/products/usecases/get_product.dart';
 import 'package:dayaa/features/products/usecases/get_product_categories.dart';
@@ -135,9 +137,11 @@ import 'package:dayaa/features/products/usecases/get_products.dart';
 import 'package:dayaa/features/products/usecases/reorder_product_categories.dart';
 import 'package:dayaa/features/products/usecases/save_product.dart';
 import 'package:dayaa/features/products/usecases/save_product_category.dart';
+import 'package:dayaa/features/products/usecases/set_primary_product_image.dart';
 import 'package:dayaa/features/products/usecases/set_product_category_activation.dart';
 import 'package:dayaa/features/products/usecases/set_product_category_image.dart';
 import 'package:dayaa/features/products/usecases/set_product_stock_unit.dart';
+import 'package:dayaa/features/products/usecases/upload_product_image.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_orders_filter.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/filtered_purchase_orders_cubit.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
@@ -536,6 +540,27 @@ abstract final class Injector {
           setStockUnit: sl<SetProductStockUnit>(),
         ),
       )
+      ..registerLazySingleton<UploadProductImage>(
+        () => UploadProductImage(sl<ProductRepository>()),
+      )
+      ..registerLazySingleton<SetPrimaryProductImage>(
+        () => SetPrimaryProductImage(sl<ProductRepository>()),
+      )
+      ..registerLazySingleton<DeleteProductImage>(
+        () => DeleteProductImage(sl<ProductRepository>()),
+      )
+      // Parameterised for the reason the detail Cubit is: the screen is about one product's
+      // photographs. It reads through `GetProduct` because the API registers no listing
+      // endpoint for images — they travel inside the product.
+      ..registerFactoryParam<ProductImagesCubit, int, void>(
+        (productId, _) => ProductImagesCubit(
+          productId: productId,
+          getProduct: sl<GetProduct>(),
+          uploadImage: sl<UploadProductImage>(),
+          setPrimary: sl<SetPrimaryProductImage>(),
+          deleteImage: sl<DeleteProductImage>(),
+        ),
+      )
       ..registerFactory<SaveProductCubit>(
         () => SaveProductCubit(saveProduct: sl<SaveProduct>()),
       );
@@ -600,6 +625,9 @@ abstract final class Injector {
       ..registerLazySingleton<ReverseOrderPayment>(
         () => ReverseOrderPayment(sl<OrderPaymentRepository>()),
       )
+      ..registerLazySingleton<WriteOffOrderBalance>(
+        () => WriteOffOrderBalance(sl<OrderPaymentRepository>()),
+      )
       // Factory: the list screen owns its Cubit and closes it on dispose.
       // Parameterised on the question it answers: this screen is *about* one filter, so it is
       // a construction argument rather than something the Cubit is told afterwards.
@@ -633,6 +661,7 @@ abstract final class Injector {
           recordPayment: sl<RecordOrderPayment>(),
           refundPayment: sl<RefundOrderPayment>(),
           reversePayment: sl<ReverseOrderPayment>(),
+          writeOffBalance: sl<WriteOffOrderBalance>(),
         ),
       )
       ..registerFactoryParam<OrderDetailCubit, int, void>(

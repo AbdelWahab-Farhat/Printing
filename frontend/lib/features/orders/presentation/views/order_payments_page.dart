@@ -14,6 +14,7 @@ import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubi
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:dayaa/features/orders/presentation/widgets/receipt_viewer.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_payment_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/write_off_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -101,6 +102,7 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
                 isWorking: state.isWorking,
                 onRecord: () => _write(PaymentDirection.incoming),
                 onRefund: () => _write(PaymentDirection.outgoing),
+                onWriteOff: _writeOff,
                 onReverse: _reverse,
               ),
             ),
@@ -155,6 +157,34 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
     context.showSuccess(
       direction == PaymentDirection.incoming ? 'تم تسجيل الدفعة' : 'تم تسجيل الردّ',
     );
+  }
+
+  /// Closes what is left of the debt without recording a payment.
+  ///
+  /// **The five dinars that never came back.** The order keeps its price, «المدفوع» keeps
+  /// meaning cash, and «تم التسوية» stops being refused — see the server's `WriteOffOrderBalance`
+  /// for why that is three separate facts and not one.
+  Future<void> _writeOff() async {
+    final cubit = context.read<OrderPaymentsCubit>();
+    final summary = cubit.state.summary;
+    if (summary == null) return;
+
+    final draft = await showWriteOffDialog(context: context, summary: summary);
+
+    if (draft == null || !mounted) return;
+
+    final failure = await cubit.writeOff(amount: draft.amount, reason: draft.reason);
+
+    if (!mounted) return;
+
+    if (failure != null) {
+      context.showFailure(failure);
+
+      return;
+    }
+
+    setState(() => _changed = true);
+    context.showSuccess('تم شطب الفرق');
   }
 
   /// Cancels an entry, behind a confirmation and a required reason.
@@ -241,6 +271,7 @@ class _Body extends StatelessWidget {
     required this.isWorking,
     required this.onRecord,
     required this.onRefund,
+    required this.onWriteOff,
     required this.onReverse,
   });
 
@@ -249,6 +280,7 @@ class _Body extends StatelessWidget {
   final bool isWorking;
   final Future<void> Function() onRecord;
   final Future<void> Function() onRefund;
+  final Future<void> Function() onWriteOff;
   final Future<void> Function(OrderPayment payment) onReverse;
 
   @override
@@ -264,7 +296,13 @@ class _Body extends StatelessWidget {
         _Card(child: OrderMoneyRow(summary: summary)),
         SizedBox(height: 16.h),
 
-        _Actions(isWorking: isWorking, summary: summary, onRecord: onRecord, onRefund: onRefund),
+        _Actions(
+          isWorking: isWorking,
+          summary: summary,
+          onRecord: onRecord,
+          onRefund: onRefund,
+          onWriteOff: onWriteOff,
+        ),
         SizedBox(height: 16.h),
 
         _Card(
@@ -334,6 +372,10 @@ class _Entry extends StatelessWidget {
     final tone = switch (payment) {
       final p when p.isVoid => scheme.onSurfaceVariant,
       final p when p.isIncoming => scheme.primary,
+      // Neutral, not the red of money leaving: a write-off closes a debt, and nothing left the
+      // drawer for it. Painting it like a refund would put a cash event on screen that never
+      // happened — the same confusion `paid_amount` is kept clean of.
+      final p when p.isWriteOff => scheme.onSurfaceVariant,
       _ => scheme.error,
     };
 
@@ -345,11 +387,7 @@ class _Entry extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                payment.isIncoming ? AppIcons.payment : AppIcons.refund,
-                size: 18.sp,
-                color: tone,
-              ),
+              Icon(_glyph(payment), size: 18.sp, color: tone),
               SizedBox(width: 10.w),
               Expanded(
                 child: Column(
@@ -377,7 +415,12 @@ class _Entry extends StatelessWidget {
               Text(
                 // The sign is the direction, stated once and never stored: the API keeps every
                 // amount positive precisely so a sum cannot be wrong by a stray minus.
-                '${payment.isIncoming ? '+' : '−'} ${payment.amount.grouped}',
+                //
+                // **A write-off carries no sign at all**, because it moved in neither direction.
+                // A minus here would read as money going out to somebody scanning the column.
+                payment.isWriteOff
+                    ? payment.amount.grouped
+                    : '${payment.isIncoming ? '+' : '−'} ${payment.amount.grouped}',
                 style: context.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: tone,
@@ -422,7 +465,10 @@ class _Entry extends StatelessWidget {
                   TextButton.icon(
                     onPressed: isBusy ? null : onReverse,
                     icon: Icon(AppIcons.reversePayment, size: 16.sp),
-                    label: const Text('إلغاء الدفعة'),
+                    // «القيد», not «الدفعة»: the same button now cancels a write-off, and
+                    // calling that a payment would name the row wrongly on the one screen where
+                    // the names are the point.
+                    label: Text(payment.isWriteOff ? 'إلغاء القيد' : 'إلغاء الدفعة'),
                     style: TextButton.styleFrom(foregroundColor: scheme.error),
                   ),
               ],
@@ -431,6 +477,16 @@ class _Entry extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Which glyph the row wears.
+  ///
+  /// Three, for the three things a row can be: money in, money out, and money written off. The
+  /// last is its own because it is neither of the other two — see [AppIcons.writeOff].
+  IconData _glyph(OrderPayment payment) {
+    if (payment.isWriteOff) return AppIcons.writeOff;
+
+    return payment.isIncoming ? AppIcons.payment : AppIcons.refund;
   }
 
   /// The method, the reference, when the money moved and who took it — the four facts somebody
@@ -498,12 +554,14 @@ class _Actions extends StatelessWidget {
     required this.summary,
     required this.onRecord,
     required this.onRefund,
+    required this.onWriteOff,
   });
 
   final bool isWorking;
   final PaymentSummary summary;
   final Future<void> Function() onRecord;
   final Future<void> Function() onRefund;
+  final Future<void> Function() onWriteOff;
 
   @override
   Widget build(BuildContext context) {
@@ -513,34 +571,58 @@ class _Actions extends StatelessWidget {
     // paid nothing is refused by the server, and a button that can only fail is worse than none.
     final mayRefund =
         session.can(AppPermission.reverseOrderPayments) && summary.paidAmount != '0.00';
+    // And only when there is a debt to close. On an order that owes nothing the server refuses
+    // it, and the button would be a door onto a 422.
+    final mayWriteOff = session.can(AppPermission.writeOffOrderPayments) && summary.isOutstanding;
 
-    // Nothing to offer, so nothing is drawn. A disabled pair would advertise two doors that
-    // open onto a 403.
-    if (!mayRecord && !mayRefund) return const SizedBox.shrink();
+    // Nothing to offer, so nothing is drawn. A disabled row would advertise doors that open
+    // onto a 403.
+    if (!mayRecord && !mayRefund && !mayWriteOff) return const SizedBox.shrink();
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (mayRecord)
-          Expanded(
-            child: AppButton(
-              label: 'تسجيل دفعة',
-              icon: AppIcons.payment,
-              isLoading: isWorking,
-              height: 46.h,
-              onPressed: onRecord,
-            ),
+        if (mayRecord || mayRefund)
+          Row(
+            children: [
+              if (mayRecord)
+                Expanded(
+                  child: AppButton(
+                    label: 'تسجيل دفعة',
+                    icon: AppIcons.payment,
+                    isLoading: isWorking,
+                    height: 46.h,
+                    onPressed: onRecord,
+                  ),
+                ),
+              if (mayRecord && mayRefund) SizedBox(width: 10.w),
+              if (mayRefund)
+                Expanded(
+                  child: AppButton.outlined(
+                    label: 'ردّ مبلغ',
+                    icon: AppIcons.refund,
+                    isLoading: isWorking,
+                    height: 46.h,
+                    onPressed: onRefund,
+                  ),
+                ),
+            ],
           ),
-        if (mayRecord && mayRefund) SizedBox(width: 10.w),
-        if (mayRefund)
-          Expanded(
-            child: AppButton.outlined(
-              label: 'ردّ مبلغ',
-              icon: AppIcons.refund,
-              isLoading: isWorking,
-              height: 46.h,
-              onPressed: onRefund,
-            ),
+
+        // **On its own line, the full width of the screen**, rather than squeezed in as a third
+        // Expanded beside the two above. It is the rarest of the three and the only one that
+        // decides money will never arrive; three labels sharing one narrow row would shrink all
+        // of them for it.
+        if (mayWriteOff) ...[
+          if (mayRecord || mayRefund) SizedBox(height: 10.h),
+          AppButton.outlined(
+            label: 'شطب الفرق',
+            icon: AppIcons.writeOff,
+            isLoading: isWorking,
+            height: 46.h,
+            onPressed: onWriteOff,
           ),
+        ],
       ],
     );
   }

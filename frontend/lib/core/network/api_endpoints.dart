@@ -201,6 +201,22 @@ abstract final class ProductEndpoints {
   /// batch for the product's variants, which is an inventory fact addressed by product id and
   /// not a catalogue edit.
   static String stockUnit(int productId) => '/products/$productId/stock-unit';
+
+  /// A product's photographs — where one is added.
+  ///
+  /// **There is deliberately no listing endpoint here, and that shapes the screen.** The server
+  /// registers `store`, `update` and `destroy` only; the images themselves travel inside [show].
+  /// So the screen that manages them reads the *product*, and reads it again after every write —
+  /// which is also the only way to learn which photo the server made primary once one was
+  /// promoted or the primary one deleted.
+  static String images(int productId) => '/products/$productId/images';
+
+  /// One photograph: promoting it to primary, or removing it.
+  ///
+  /// The file is never replaced through this path — the API refuses to swap the bytes behind an
+  /// id, so a URL already handed out cannot start pointing at different content. Changing a
+  /// picture is an upload followed by a delete.
+  static String image(int productId, int imageId) => '/products/$productId/images/$imageId';
 }
 
 abstract final class OrderEndpoints {
@@ -242,6 +258,11 @@ abstract final class OrderEndpoints {
   /// because the API models them as two different acts — a refund is a cash event a report
   /// should count, and a cancelled entry is not.
   static String refundPayment(int orderId) => '/orders/$orderId/payments/refunds';
+
+  /// Closing what is left of a debt without any money moving — the five dinars that never came
+  /// back. Its own path and its own permission: a refund hands back money the business holds,
+  /// while this decides that money it is owed will never arrive.
+  static String writeOffPayment(int orderId) => '/orders/$orderId/payments/write-offs';
 
   /// Cancelling an entry that should never have been written.
   static String reversePayment(int orderId, int paymentId) =>

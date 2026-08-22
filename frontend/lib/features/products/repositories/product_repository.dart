@@ -83,4 +83,40 @@ abstract interface class ProductRepository {
   /// the call and stay correct after it — what changes is what that unit is called from here on.
   /// So there is nothing for the caller to reconcile beyond the product handed back.
   Future<Either<Failure, Product>> setStockUnit(int productId, PricingUnit unit);
+
+  /// Adds one photograph to a product that already exists.
+  ///
+  /// **Separate from [create], which carries the first one.** A product is born with a picture;
+  /// this is every picture after that, and the server caps how many — see
+  /// `ProductImageRules.maxPerProduct`, which the screen checks before opening a picker so the
+  /// refusal does not cost an upload.
+  ///
+  /// `is_primary` is never sent: a photo arrives as an ordinary one, and promoting it is a
+  /// separate decision the user takes afterwards with [makeImagePrimary].
+  Future<Either<Failure, ProductImage>> uploadImage(
+    int productId, {
+    required PickedFile image,
+    void Function(int sent, int total)? onProgress,
+  });
+
+  /// Makes one of a product's photographs the one every other screen draws.
+  ///
+  /// **Promotion only — there is no demotion.** A product needs exactly one primary, so the way
+  /// to stop this being it is to promote another; the API refuses `is_primary: false` outright.
+  ///
+  /// Answers with the promoted image alone, which is why the caller reloads: the photograph that
+  /// *lost* the badge is not in this response, and drawing two primaries is worse than a second
+  /// request.
+  Future<Either<Failure, ProductImage>> makeImagePrimary(int productId, int imageId);
+
+  /// Removes one photograph, and its file.
+  ///
+  /// **Refused by the server when it is the last one**, so a product is never left without a
+  /// picture — the same rule that makes a photo mandatory at creation, enforced at the other end
+  /// of the life cycle. Deleting the primary promotes the next in line, which is the second
+  /// reason the caller reloads rather than striking a row out of a list it holds.
+  ///
+  /// The stored file is deleted for real, unlike a customer's design: there is no `deleted_at`
+  /// on object storage, so this cannot be undone from here or anywhere else.
+  Future<Either<Failure, String>> deleteImage(int productId, int imageId);
 }

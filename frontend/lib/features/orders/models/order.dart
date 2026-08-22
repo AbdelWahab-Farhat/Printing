@@ -63,7 +63,7 @@ abstract class Order with _$Order {
     required String discount,
     @JsonKey(name: 'grand_total') required String grandTotal,
 
-    /// **The three numbers the screen puts side by side**, all three the server's arithmetic —
+    /// **The numbers the screen puts side by side**, every one the server's arithmetic —
     /// including the subtraction. `remainingAmount` is not `grandTotal - paidAmount` computed
     /// here: that would be a second answer to one question, and this one is made of doubles.
     ///
@@ -74,8 +74,15 @@ abstract class Order with _$Order {
     /// parses — the honest value for it is zero.
     @JsonKey(name: 'paid_amount') @Default('0.00') String paidAmount,
 
-    /// What is still owed. **Negative on an overpaid order**, so «زائد ٥٠» can be said rather
-    /// than floored away.
+    /// What was closed without being collected — the difference somebody decided not to chase.
+    ///
+    /// **Beside `paidAmount`, never inside it**, so that number goes on meaning cash. Defaulted
+    /// for the same reason its neighbour is: an order from a server that predates write-offs has
+    /// had nothing written off, and zero is exactly what such a server means.
+    @JsonKey(name: 'written_off_amount') @Default('0.00') String writtenOffAmount,
+
+    /// What is still owed — the invoice less what was collected **and** what was forgiven.
+    /// **Negative on an overpaid order**, so «زائد ٥٠» can be said rather than floored away.
     @JsonKey(name: 'remaining_amount') @Default('0.00') String remainingAmount,
 
     @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)

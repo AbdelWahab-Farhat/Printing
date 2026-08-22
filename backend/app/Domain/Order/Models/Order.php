@@ -17,6 +17,7 @@ use App\Domain\Order\Actions\AllocateOrderIdentifier;
 use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Enums\DesignSource;
+use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentStatus;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
@@ -98,6 +99,10 @@ class Order extends Model implements HasAuditTrail
             // from the fillable list for the same reason `grand_total` is: a request that could
             // set it could tell us it had been paid.
             'paid_amount' => 'decimal:2',
+            // The other half of what closes a debt: what the business decided not to collect.
+            // Same writer, same reason for staying out of the fillable list — and kept apart
+            // from `paid_amount` so that column never stops meaning cash.
+            'written_off_amount' => 'decimal:2',
             // Three places, like a quantity: an order priced by the kilo is invoiced from this.
             'weight_kg' => 'decimal:3',
             // Null unless what came back differed from what was invoiced.
@@ -206,6 +211,12 @@ class Order extends Model implements HasAuditTrail
     /**
      * What is still owed on this order.
      *
+     * **Two things close a debt: money collected, and money the business decided not to
+     * collect.** Both are subtracted here, which is what lets an order of 110 that took 105 and
+     * wrote off the difference reach «تم التسوية» — see {@see OrderPaymentType::WriteOff}. They
+     * remain two columns rather than one running total precisely so this method is the only
+     * place they are added together, and `paid_amount` never has to mean anything but cash.
+     *
      * **Negative when the order is overpaid, and deliberately not floored here.** A screen wants
      * to say «زائد ٥٠» so somebody refunds it; the *payment* path floors it at zero separately,
      * because "you may pay -50 more" is not a sentence. Two readers, two right answers, and the
@@ -213,7 +224,9 @@ class Order extends Model implements HasAuditTrail
      */
     public function remainingAmount(): string
     {
-        return Money::round(bcsub((string) $this->grand_total, (string) $this->paid_amount, 8));
+        $covered = bcadd((string) $this->paid_amount, (string) $this->written_off_amount, 8);
+
+        return Money::round(bcsub((string) $this->grand_total, $covered, 8));
     }
 
     public function paymentStatus(): PaymentStatus

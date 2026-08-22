@@ -247,7 +247,12 @@ class _PaymentChip extends StatelessWidget {
       PaymentStatus.paid => scheme.paid,
       PaymentStatus.overpaid => scheme.tertiary,
       PaymentStatus.unpaid => scheme.error,
-      PaymentStatus.partiallyPaid || PaymentStatus.unknown => scheme.onSurfaceVariant,
+      // Nothing is owed, but not because it was all collected — so not the green that means
+      // «paid» at a glance, and not the red of a debt either. Neutral is the honest colour for
+      // a closed order somebody had to make a decision about.
+      PaymentStatus.writtenOff ||
+      PaymentStatus.partiallyPaid ||
+      PaymentStatus.unknown => scheme.onSurfaceVariant,
     };
 
     return Container(

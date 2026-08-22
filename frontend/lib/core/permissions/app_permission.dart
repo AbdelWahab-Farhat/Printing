@@ -147,6 +147,7 @@ enum AppPermission {
   viewOrderPayments('orders.payments.view', 'عرض دفعات الطلبية'),
   recordOrderPayments('orders.payments.record', 'تسجيل دفعة على الطلبية'),
   reverseOrderPayments('orders.payments.reverse', 'إلغاء دفعة أو ردّ مبلغ'),
+  writeOffOrderPayments('orders.payments.write_off', 'شطب فرق مبلغ الطلبية'),
 
   // What a unit of production standard-costs at. The rates are applied automatically the moment
   // an order enters printing, so this pair guards only the table that maintains them — the same

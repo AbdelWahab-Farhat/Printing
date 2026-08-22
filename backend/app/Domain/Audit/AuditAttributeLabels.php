@@ -202,6 +202,7 @@ final class AuditAttributeLabels
             'created_by' => 'أنشأها',
             'weight_kg' => 'الوزن (كجم)',
             'paid_amount' => 'المدفوع',
+            'written_off_amount' => 'المشطوب',
             'collected_amount' => 'المبلغ المحصّل',
             'settled_at' => 'تاريخ التسوية',
             // «شركة التوصيل» beside the older free-text `shipping_company`، وهما لا يجتمعان في

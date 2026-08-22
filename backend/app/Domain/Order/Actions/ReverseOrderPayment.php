@@ -6,7 +6,7 @@ namespace App\Domain\Order\Actions;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderPaymentType;
-use App\Domain\Order\Exceptions\OnlyPaymentsCanBeReversed;
+use App\Domain\Order\Exceptions\EntryCannotBeReversed;
 use App\Domain\Order\Exceptions\PaymentAlreadyReversed;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
@@ -29,6 +29,13 @@ use Illuminate\Support\Facades\DB;
  * codebase already makes exactly one status transition justify itself — cancelling an order —
  * on the grounds that an action which erases work owes an explanation. Taking money back off an
  * order clears that bar.
+ *
+ * **It undoes a write-off as readily as a payment**, and lands the amount back on whichever of
+ * the order's two totals the original moved — that routing is
+ * {@see OrderPayment::affectsWriteOff()}'s, not this action's. A difference forgiven on the
+ * wrong order is the same kind of mistake as a figure mistyped at the counter, and the debt it
+ * closed comes back exactly as it stood: the order returns to «مدفوعة جزئياً» and «تم التسوية»
+ * refuses it again, which is the correct outcome and not a regression.
  */
 final class ReverseOrderPayment
 {
@@ -42,8 +49,8 @@ final class ReverseOrderPayment
     ): OrderPayment {
         // Read before the transaction: the type is immutable, so nothing can change it under us,
         // and refusing a refund or a reversal here costs no lock at all.
-        if ($payment->type !== OrderPaymentType::Payment) {
-            throw OnlyPaymentsCanBeReversed::make($payment->type);
+        if (! $payment->type->isCredit()) {
+            throw EntryCannotBeReversed::make($payment->type);
         }
 
         return DB::transaction(function () use ($order, $payment, $reason, $actor): OrderPayment {

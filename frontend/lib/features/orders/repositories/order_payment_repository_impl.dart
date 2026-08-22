@@ -88,6 +88,23 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     );
   }
 
+  @override
+  Future<Either<Failure, PaymentResult>> writeOff(
+    int orderId, {
+    required String amount,
+    required String reason,
+  }) {
+    return safeRequest<PaymentResult>(
+      () => _dio.post(
+        OrderEndpoints.writeOffPayment(orderId),
+        // Plain JSON rather than the `FormData` the two above use: there is no file here, and
+        // no method or date either — nothing moved to have one.
+        data: <String, dynamic>{'amount': amount, 'reason': reason.trim()},
+      ),
+      parse: _result,
+    );
+  }
+
   /// The two write paths differ only in their URL, so they share everything below it.
   ///
   /// **Always `FormData`, receipt or not.** A body that changed shape depending on whether a

@@ -334,6 +334,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('orders/{order}/payments/refunds', [OrderPaymentController::class, 'refund'])
             ->middleware('can:orders.payments.reverse')->name('orders.payments.refund');
 
+        // In front of `{payment}` for the same reason "refunds" is. **And behind its own
+        // permission rather than `payments.reverse`:** a refund hands back money the business
+        // is holding, while this decides that money it is owed will never arrive — the only
+        // entry of the four that turns a shortfall into a loss.
+        Route::post('orders/{order}/payments/write-offs', [OrderPaymentController::class, 'writeOff'])
+            ->middleware('can:orders.payments.write_off')->name('orders.payments.write-off');
+
         // scopeBindings(): another order's payment id is a 404 by construction rather than by a
         // check somebody has to remember — the same shape orders.designs already uses.
         Route::post('orders/{order}/payments/{payment}/reverse', [OrderPaymentController::class, 'reverse'])

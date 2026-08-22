@@ -90,16 +90,23 @@ enum PermissionName: string
     case ResendOrders = 'orders.status.resend';
     case CancelOrders = 'orders.status.cancelled';
 
-    // The money ledger on an order. Three, and the split that matters is the third: money going
-    // *out* — a refund to the customer, or an entry cancelled as a mistake — is a different
-    // decision from money coming in. Taking a deposit is a receptionist's daily work; putting a
-    // hand back into the drawer belongs to whoever answers for it.
+    // The money ledger on an order. Four, and the splits that matter are the last two: money
+    // going *out* — a refund to the customer, or an entry cancelled as a mistake — is a
+    // different decision from money coming in. Taking a deposit is a receptionist's daily work;
+    // putting a hand back into the drawer belongs to whoever answers for it.
+    //
+    // **And forgiving a debt is a third decision again**, which is why it is not folded into the
+    // one above it: a refund hands back money the business already holds, while a write-off
+    // decides that money it is owed will never arrive. The second is the only one of the four
+    // that turns a shortfall into a loss, and it belongs to whoever answers for the books rather
+    // than to everyone who may open the drawer.
     //
     // Viewing is separate from `orders.view` on purpose: the person printing the bags sees the
     // order and has no business with what the customer has paid.
     case ViewOrderPayments = 'orders.payments.view';
     case RecordOrderPayments = 'orders.payments.record';
     case ReverseOrderPayments = 'orders.payments.reverse';
+    case WriteOffOrderPayments = 'orders.payments.write_off';
 
     // What a unit of production standard-costs at — labour, machine runtime, overhead. Applied
     // automatically when an order enters printing (see ApplyManufacturingRates), so this pair
@@ -180,6 +187,7 @@ enum PermissionName: string
             self::ViewOrderPayments => 'عرض دفعات الطلبية',
             self::RecordOrderPayments => 'تسجيل دفعة على الطلبية',
             self::ReverseOrderPayments => 'إلغاء دفعة أو ردّ مبلغ',
+            self::WriteOffOrderPayments => 'شطب فرق مبلغ الطلبية',
             self::ViewManufacturingCostRates => 'عرض معدلات تكلفة التصنيع',
             self::ManageManufacturingCostRates => 'إدارة معدلات تكلفة التصنيع',
 
@@ -217,7 +225,7 @@ enum PermissionName: string
             self::CancelOrders => 'حالات الطلبيات',
 
             self::ViewOrderPayments, self::RecordOrderPayments,
-            self::ReverseOrderPayments => 'مدفوعات الطلبيات',
+            self::ReverseOrderPayments, self::WriteOffOrderPayments => 'مدفوعات الطلبيات',
 
             self::ViewManufacturingCostRates,
             self::ManageManufacturingCostRates => 'معدلات تكلفة التصنيع',

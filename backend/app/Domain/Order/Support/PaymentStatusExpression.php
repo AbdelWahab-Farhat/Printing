@@ -31,14 +31,19 @@ final class PaymentStatusExpression
     {
         $overpaid = PaymentStatus::Overpaid->value;
         $paid = PaymentStatus::Paid->value;
+        $writtenOff = PaymentStatus::WrittenOff->value;
         $unpaid = PaymentStatus::Unpaid->value;
         $partial = PaymentStatus::PartiallyPaid->value;
 
+        // What closes a debt is cash plus what was forgiven, so the comparison is against their
+        // sum — and the two are still told apart afterwards, which is the branch that keeps an
+        // order whose shortfall was written off out of «مدفوعة بالكامل».
         return <<<SQL
             CASE
-                WHEN paid_amount > grand_total THEN '{$overpaid}'
-                WHEN paid_amount = grand_total THEN '{$paid}'
-                WHEN paid_amount <= 0 THEN '{$unpaid}'
+                WHEN paid_amount + written_off_amount > grand_total THEN '{$overpaid}'
+                WHEN paid_amount + written_off_amount = grand_total AND written_off_amount > 0 THEN '{$writtenOff}'
+                WHEN paid_amount + written_off_amount = grand_total THEN '{$paid}'
+                WHEN paid_amount + written_off_amount <= 0 THEN '{$unpaid}'
                 ELSE '{$partial}'
             END
             SQL;

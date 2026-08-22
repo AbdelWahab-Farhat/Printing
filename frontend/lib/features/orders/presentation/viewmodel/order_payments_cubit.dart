@@ -9,7 +9,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'order_payments_cubit.freezed.dart';
 part 'order_payments_state.dart';
 
-/// One order's money: the ledger, and the three ways of writing to it.
+/// One order's money: the ledger, and the four ways of writing to it.
 ///
 /// **It owns the ledger and nothing else owns it.** The order's own payload deliberately does not
 /// carry the entries — they are behind a permission the order screen's reader may not hold — so
@@ -30,11 +30,13 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
     required RecordOrderPayment recordPayment,
     required RefundOrderPayment refundPayment,
     required ReverseOrderPayment reversePayment,
+    required WriteOffOrderBalance writeOffBalance,
   }) : _orderId = orderId,
        _getLedger = getLedger,
        _recordPayment = recordPayment,
        _refundPayment = refundPayment,
        _reversePayment = reversePayment,
+       _writeOffBalance = writeOffBalance,
        super(const OrderPaymentsState.loading());
 
   final int _orderId;
@@ -42,6 +44,7 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
   final RecordOrderPayment _recordPayment;
   final RefundOrderPayment _refundPayment;
   final ReverseOrderPayment _reversePayment;
+  final WriteOffOrderBalance _writeOffBalance;
 
   Future<void> load() async {
     // Keeps whatever is on screen: this is also the pull-to-refresh path, and blanking the
@@ -115,11 +118,19 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
   Future<Failure?> reverse(int paymentId, {required String reason}) =>
       _write(() => _reversePayment(_orderId, paymentId, reason: reason));
 
+  /// Closes what is left of the debt without any money moving.
+  ///
+  /// Goes through the same path the other three do, so the summary on screen after it is the
+  /// server's arithmetic rather than this app's guess — and the settlement guard on the order
+  /// screen is reading the same number.
+  Future<Failure?> writeOff({required String amount, required String reason}) =>
+      _write(() => _writeOffBalance(_orderId, amount: amount, reason: reason));
+
   /// The shape every write shares: mark the screen busy, run it, re-read, report.
   ///
   /// **Re-read rather than appending what came back.** A payment could be appended safely; a
   /// reversal could not — it strikes through a row it does not return, and the entry above it
-  /// stops being reversible. One path for all three is one fewer place for the ledger on screen
+  /// stops being reversible. One path for all four is one fewer place for the ledger on screen
   /// to differ from the ledger in the database.
   Future<Failure?> _write(Future<Either<Failure, PaymentResult>> Function() write) async {
     final ledger = state.ledger;

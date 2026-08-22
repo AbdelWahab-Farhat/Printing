@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Exceptions;
 
+use App\Domain\Order\Actions\WriteOffOrderBalance;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentStatus;
 use App\Support\Exceptions\DomainException;
@@ -22,6 +23,12 @@ use App\Support\Exceptions\DomainException;
  * owed and the button stays where the accountant expects it. A move that quietly disappeared
  * would leave them looking for it.
  *
+ * **And it names both doors, because there are now two.** The five dinars that came back short
+ * used to leave an order stuck here for ever: the invoice is frozen once the customer has the
+ * bags, so there was nothing to do but type a payment nobody received. Writing the difference
+ * off closes the debt honestly — see {@see WriteOffOrderBalance} — and an accountant reading
+ * this message should not have to already know that.
+ *
  * @see PaymentStatus::isOutstanding()
  */
 final class SettlementRequiresFullPayment extends DomainException
@@ -30,6 +37,9 @@ final class SettlementRequiresFullPayment extends DomainException
     {
         $settled = OrderStatus::Settled->label();
 
-        return new self("لا يمكن نقل الطلبية إلى «{$settled}» قبل تحصيل قيمتها — المتبقي {$remaining}");
+        return new self(
+            "لا يمكن نقل الطلبية إلى «{$settled}» قبل تحصيل قيمتها — المتبقي {$remaining}. "
+            .'سجّل ما قُبض، أو اشطب الفرق إن كان لن يُحصَّل',
+        );
     }
 }

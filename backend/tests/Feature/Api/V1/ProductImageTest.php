@@ -179,6 +179,73 @@ class ProductImageTest extends TestCase
         $this->assertDatabaseCount('product_images', 0);
     }
 
+    public function test_upload_refuses_a_product_that_is_already_full(): void
+    {
+        // Arrange — a product carrying exactly the cap. The number is read from config rather
+        // than typed, so raising the cap does not turn this into a test of a stale figure.
+        $cap = (int) config('media.product_images.max_per_product');
+        $product = Product::factory()->create();
+        ProductImage::factory()->count($cap)->for($product)->create();
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->post(
+            "/api/v1/products/{$product->id}/images",
+            ['image' => $this->jpeg()],
+        );
+
+        // Assert — refused, and the cap said in the message: "احذف صورة" is only actionable
+        // advice if the reader knows how many they are allowed.
+        $response->assertStatus(422)->assertJsonValidationErrors('image');
+        $this->assertStringContainsString(
+            (string) $cap,
+            $response->json('errors.image.0'),
+        );
+        $this->assertSame($cap, $product->images()->count());
+    }
+
+    public function test_upload_accepts_the_last_slot_before_the_cap(): void
+    {
+        // Arrange — one below the cap, which must still be allowed. Guards the off-by-one that
+        // would refuse the fifth photo on a limit of five.
+        $cap = (int) config('media.product_images.max_per_product');
+        $product = Product::factory()->create();
+        ProductImage::factory()->count($cap - 1)->for($product)->create();
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->post(
+            "/api/v1/products/{$product->id}/images",
+            ['image' => $this->jpeg()],
+        );
+
+        // Assert
+        $response->assertCreated();
+        $this->assertSame($cap, $product->images()->count());
+    }
+
+    public function test_the_cap_counts_only_this_product(): void
+    {
+        // Arrange — a full *other* product must not spend this one's allowance. The scoped()
+        // route makes cross-product ids a 404; this is the matching rule for the count.
+        $cap = (int) config('media.product_images.max_per_product');
+        $other = Product::factory()->create();
+        ProductImage::factory()->count($cap)->for($other)->create();
+
+        $product = Product::factory()->create();
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->post(
+            "/api/v1/products/{$product->id}/images",
+            ['image' => $this->jpeg()],
+        );
+
+        // Assert
+        $response->assertCreated();
+        $this->assertSame(1, $product->images()->count());
+    }
+
     /**
      * @return array<string, array{string}>
      */

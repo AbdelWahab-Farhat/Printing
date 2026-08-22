@@ -45,6 +45,17 @@ dependencies:
   google_fonts: ^7.0.0 # the generated theme's util.dart needs it
   cached_network_image: ^3.4.1
 
+  # The one chart on the الأرباح والخسائر screen — a donut splitting the period's revenue into
+  # what it cost and what was left. Taken over the alternatives on licence and weight: the two
+  # Syncfusion chart packages are the most capable by far and are published under Syncfusion's
+  # own community licence rather than an OSI one, which is a legal review we are not doing for
+  # one donut; `community_charts_flutter` is the abandoned google/charts fork, dragging in its
+  # own layout engine; `pie_chart` and `mrx_charts` each draw exactly one family and would be a
+  # second dependency the day a second shape is asked for. fl_chart is MIT, pure Dart with no
+  # platform channels, and already draws every shape this report could grow into — a bar pair
+  # for a losing period is in it too.
+  fl_chart: ^1.2.0
+
   # ── misc ─────────────────────────────────────────────────────────────────────
   flutter_dotenv: ^5.2.1
   intl: ^0.20.2

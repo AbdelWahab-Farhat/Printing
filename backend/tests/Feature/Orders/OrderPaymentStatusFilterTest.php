@@ -50,24 +50,29 @@ class OrderPaymentStatusFilterTest extends TestCase
     }
 
     /**
-     * `paid_amount` is written directly here rather than through the endpoints, because these
-     * are tests about the *filter*, not about the ledger — and one of the four states cannot be
-     * reached through the write path at all: `RecordOrderPayment` refuses a payment larger than
-     * what is outstanding, so an overpaid order only ever arises from a total that dropped
-     * afterwards.
+     * The two money columns are written directly here rather than through the endpoints, because
+     * these are tests about the *filter*, not about the ledger — and one of the five states
+     * cannot be reached through the write path at all: `RecordOrderPayment` refuses a payment
+     * larger than what is outstanding, so an overpaid order only ever arises from a total that
+     * dropped afterwards.
      */
-    private function order(string $grandTotal, string $paid): Order
+    private function order(string $grandTotal, string $paid, string $writtenOff = '0.00'): Order
     {
         return Order::factory()->create([
             'items_total' => $grandTotal,
             'delivery_price' => '0.00',
             'grand_total' => $grandTotal,
             'paid_amount' => $paid,
+            'written_off_amount' => $writtenOff,
         ]);
     }
 
     /**
-     * One order in each of the four states, keyed by the state the enum says they are in.
+     * One order in each of the five states, keyed by the state the enum says they are in.
+     *
+     * The last of them is the pair this file is really about: 400 collected and 50 forgiven adds
+     * up to the same 450 as the order above it, and the two must not come out of SQL wearing the
+     * same badge.
      *
      * @return array<string, Order>
      */
@@ -78,6 +83,7 @@ class OrderPaymentStatusFilterTest extends TestCase
             PaymentStatus::PartiallyPaid->value => $this->order('450.00', '150.00'),
             PaymentStatus::Paid->value => $this->order('450.00', '450.00'),
             PaymentStatus::Overpaid->value => $this->order('400.00', '450.00'),
+            PaymentStatus::WrittenOff->value => $this->order('450.00', '400.00', '50.00'),
         ];
 
         // The guard that makes this whole file meaningful: if the enum ever disagrees with the
@@ -174,7 +180,7 @@ class OrderPaymentStatusFilterTest extends TestCase
         $response = $this->withHeaders($headers)->getJson('/api/v1/orders?payment_status=nonsense');
 
         // Assert
-        $response->assertOk()->assertJsonCount(4, 'data');
+        $response->assertOk()->assertJsonCount(count(PaymentStatus::cases()), 'data');
     }
 
     // ── the counts beside the filter ────────────────────────────────────────────────────

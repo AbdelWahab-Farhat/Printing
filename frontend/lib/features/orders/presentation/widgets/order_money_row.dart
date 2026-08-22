@@ -65,6 +65,22 @@ class OrderMoneyRow extends StatelessWidget {
           ),
         ],
 
+        // What was forgiven, on its own line and only when there is any.
+        //
+        // **Not a fourth cell in the row above.** Three money figures already share one line on
+        // a narrow phone; a fourth would shrink all of them for a number that is zero on almost
+        // every order. Said in a sentence instead, where it can say what it means.
+        if (summary.hasWriteOff) ...[
+          SizedBox(height: 10.h),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'منه مشطوب ${summary.writtenOffAmount.grouped} — لن يُحصَّل',
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ),
+        ],
+
         // An order that finished with money the ledger never saw.
         //
         // **Settling an order writes no entry**, on purpose: nothing records a payment except
@@ -146,6 +162,9 @@ class _StatusChip extends StatelessWidget {
       // recognising before it is read, and the teal container is already the app's ordinary fill.
       PaymentStatus.paid => (scheme.paidContainer, scheme.onPaidContainer),
       PaymentStatus.overpaid => (scheme.tertiaryContainer, scheme.onTertiaryContainer),
+      // Deliberately not the pale green above: this order is closed, but it was closed by
+      // somebody deciding to stop chasing it rather than by the money arriving.
+      PaymentStatus.writtenOff ||
       PaymentStatus.unpaid ||
       PaymentStatus.partiallyPaid ||
       PaymentStatus.unknown => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),

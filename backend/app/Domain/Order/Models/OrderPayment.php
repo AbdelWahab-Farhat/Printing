@@ -166,29 +166,58 @@ class OrderPayment extends Model
     /**
      * Whether this entry may be undone at all.
      *
-     * **Only a payment, and only once.** Reversing a reversal is a maze with no floor: the
-     * second one would have to mean "the correction was wrong", which is the same statement as
-     * a new payment and reads far worse in a ledger. Somebody who reversed by mistake records
-     * the payment again.
+     * **A payment or a write-off, and each only once.** Both are claims that can simply be
+     * wrong — a figure mistyped at the counter, a difference forgiven on the wrong order — and
+     * neither moved cash that would have to be fetched back to undo it.
+     *
+     * Reversing a reversal is a maze with no floor: the second one would have to mean "the
+     * correction was wrong", which is the same statement as a new payment and reads far worse in
+     * a ledger. Somebody who reversed by mistake records the payment again.
      *
      * A refund is money that genuinely left the drawer. Undoing it is a *payment* — the customer
      * gave it back — not a claim that it never happened.
      */
     public function isReversible(): bool
     {
-        return $this->type === OrderPaymentType::Payment && ! $this->isReversed();
+        return $this->type->isCredit() && ! $this->isReversed();
     }
 
     /**
-     * What this entry does to the order's paid total, signed.
+     * Which of the order's two totals this entry moves: what was forgiven, or what was paid.
+     *
+     * **A reversal answers for the row it undoes**, and this is the only place that lookup
+     * happens. A reversal of a write-off must come back off `written_off_amount` — taking it off
+     * `paid_amount` instead would leave an order claiming cash it never had, which is the exact
+     * confusion the second column exists to prevent.
+     *
+     * Reads what was loaded before it asks the database, like {@see isReversed()}: the recalculate
+     * pass walks a whole ledger, and a query per row is how a save becomes slow.
+     */
+    public function affectsWriteOff(): bool
+    {
+        if ($this->type->isWriteOff()) {
+            return true;
+        }
+
+        if ($this->type !== OrderPaymentType::Reversal) {
+            return false;
+        }
+
+        return $this->reversedPayment?->type->isWriteOff() ?? false;
+    }
+
+    /**
+     * What this entry does to the total it belongs to, signed.
      *
      * The one place the direction of a row is turned into arithmetic, so no caller has to
-     * remember which of the three types subtracts.
+     * remember which of the four types subtracts. **Which total it lands in is a separate
+     * question** — see {@see affectsWriteOff()} — and keeping the two apart is what let a fourth
+     * entry type arrive without a single caller re-deriving the sign rule.
      */
     public function signedAmount(): string
     {
         $amount = (string) $this->amount;
 
-        return $this->type->isIncoming() ? $amount : '-'.$amount;
+        return $this->type->isCredit() ? $amount : '-'.$amount;
     }
 }

@@ -60,6 +60,22 @@ abstract interface class OrderPaymentRepository {
     int paymentId, {
     required String reason,
   });
+
+  /// Closes what is left of the order's debt without any money moving.
+  ///
+  /// **Not a payment and not a discount.** The order goes on saying what the customer was
+  /// billed; the difference is recorded as a difference, so it stays countable later as a loss.
+  ///
+  /// No method and no date: nothing moved to have a method, and the decision is dated when it is
+  /// taken. [reason] is required, as it is for [reverse], and the server bounds [amount] by what
+  /// the order actually still owes.
+  ///
+  /// A write-off decided in error is undone by [reverse], which puts the debt back where it was.
+  Future<Either<Failure, PaymentResult>> writeOff(
+    int orderId, {
+    required String amount,
+    required String reason,
+  });
 }
 
 /// What a write to the ledger answers with: the entry, and the order's money after it.

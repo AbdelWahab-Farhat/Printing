@@ -137,6 +137,15 @@ abstract final class AppIcons {
   static IconData get refund =>
       _pick(Icons.undo_rounded, CupertinoIcons.arrow_uturn_left);
 
+  /// Closing a debt nobody is going to collect — «شطب الفرق».
+  ///
+  /// Money with a line struck through it: the amount was real and is being crossed out, which is
+  /// exactly what the entry says. Deliberately neither of its two neighbours — [refund]'s
+  /// turning arrow says money went back to the customer, and [reversePayment]'s no-entry sign
+  /// says a row was never true. This one says the row is true and the money is not coming.
+  static IconData get writeOff =>
+      _pick(Icons.money_off_rounded, CupertinoIcons.minus_circle);
+
   /// Cancelling a ledger entry that should never have been written.
   ///
   /// **Deliberately not [delete].** Nothing is removed — a second entry is written beside the
@@ -174,6 +183,14 @@ abstract final class AppIcons {
 
   static IconData get camera =>
       _pick(Icons.photo_camera_outlined, CupertinoIcons.camera);
+
+  /// Promotes a photograph to be the one every other screen draws — «اجعلها الرئيسية».
+  ///
+  /// An outlined star, because the button is only ever offered on a picture that is *not* the
+  /// primary: a filled one would read as a state the tile already has rather than an action.
+  /// The primary itself says so in a word, not with a glyph — see the badge on its tile.
+  static IconData get makePrimary =>
+      _pick(Icons.star_outline_rounded, CupertinoIcons.star);
 
   /// One design that this app cannot draw itself, so its tile shows this instead of a
   /// thumbnail. Distinct from [document], which is a place to pick *from*.

@@ -105,6 +105,21 @@ return [
     'product_images' => [
         'max_kilobytes' => (int) env('MEDIA_MAX_KILOBYTES', 5120),
         'mimes' => ['jpeg', 'jpg', 'png', 'webp'],
+
+        /*
+        | How many photographs one product may carry.
+        |
+        | A cap rather than none, for the reason customer designs have one: the images travel
+        | inside every `GET /products/{id}`, so an unbounded product makes its own detail
+        | response heavier for everybody who opens it — including the catalogue screens that
+        | only ever draw the primary.
+        |
+        | Five was the business's own figure (2026-08-23): enough for the bag from each side
+        | plus a colour or two, and few enough that the grid on a phone stays one screen.
+        | Raising it is this number and nothing else — the app reads the same cap through
+        | `ProductImageRules`, and a contract test fails when the two drift apart.
+        */
+        'max_per_product' => (int) env('MEDIA_MAX_IMAGES_PER_PRODUCT', 5),
     ],
 
 ];

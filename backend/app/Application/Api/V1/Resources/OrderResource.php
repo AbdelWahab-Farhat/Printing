@@ -112,13 +112,19 @@ class OrderResource extends JsonResource
 
             // **The three numbers a screen puts side by side**, all three computed here. A
             // client subtracting `grand_total - paid_amount` itself would be a second answer to
-            // one question, and its answer is the one made of doubles.
+            // one question, and its answer is the one made of doubles — and since a debt can
+            // also be closed by writing it off, that subtraction is no longer even the right
+            // one. `remainingAmount()` is.
             //
             // `paid_amount` is the ledger's running total — see the `order_payments` migration
             // for why the entries are the truth and this is their sum. `remaining_amount` goes
             // negative on an overpaid order rather than flooring, so a screen can say «زائد ٥٠»
             // and somebody can refund it.
             'paid_amount' => (string) $this->paid_amount,
+            // The fourth number, and usually zero: what was closed without being collected. It
+            // stays out of `paid_amount` so that column never stops meaning cash — see
+            // OrderPaymentType::WriteOff.
+            'written_off_amount' => (string) $this->written_off_amount,
             'remaining_amount' => $this->remainingAmount(),
             'payment_status' => $this->paymentStatus()->value,
             'payment_status_label' => $this->paymentStatus()->label(),

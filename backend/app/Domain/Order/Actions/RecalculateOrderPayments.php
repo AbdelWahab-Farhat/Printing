@@ -9,15 +9,21 @@ use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
 
 /**
- * Adds the ledger up and writes the answer onto the order.
+ * Adds the ledger up and writes the answers onto the order.
  *
- * **The one place `orders.paid_amount` is ever written**, which is why the column is absent from
- * the model's fillable list. Everything else records an entry; this totals them. Exactly the
- * arrangement {@see RecalculateOrderTotals} has with the lines, and
- * `ApplyStockChange` has with a shelf balance.
+ * **The one place `orders.paid_amount` and `orders.written_off_amount` are ever written**, which
+ * is why both columns are absent from the model's fillable list. Everything else records an
+ * entry; this totals them. Exactly the arrangement {@see RecalculateOrderTotals} has with the
+ * lines, and `ApplyStockChange` has with a shelf balance.
+ *
+ * **Two totals out of one walk, because the ledger holds two different kinds of closing.** Cash
+ * lands in the first, forgiven money in the second — see {@see OrderPayment::affectsWriteOff()},
+ * which is also what routes a *reversal* to whichever total its original belonged to. Summing
+ * both here rather than in two passes is what makes it impossible for one to be written without
+ * the other.
  *
  * Must run inside the transaction that wrote the entry — otherwise a reader can catch the ledger
- * and its total disagreeing, which is the one thing a cached total must never do.
+ * and its totals disagreeing, which is the one thing a cached total must never do.
  *
  * **The rows are loaded rather than summed in SQL.** An order's ledger is a handful of entries,
  * `SUM(CASE WHEN …)` states the direction rule a second time in a second language, and
@@ -28,15 +34,29 @@ final class RecalculateOrderPayments
 {
     public function __invoke(Order $order): Order
     {
-        $total = '0';
+        $paid = '0';
+        $writtenOff = '0';
 
-        foreach ($order->payments()->get() as $entry) {
-            $total = bcadd($total, $entry->signedAmount(), 8);
+        // `reversedPayment` eagerly, because a reversal is asked what it undoes: strict mode
+        // would refuse the lazy load, and even without it this is the N+1 that turns saving one
+        // payment into a query per row of the ledger.
+        foreach ($order->payments()->with('reversedPayment')->get() as $entry) {
+            if ($entry->affectsWriteOff()) {
+                $writtenOff = bcadd($writtenOff, $entry->signedAmount(), 8);
+
+                continue;
+            }
+
+            $paid = bcadd($paid, $entry->signedAmount(), 8);
         }
 
-        // forceFill, because `paid_amount` is deliberately not fillable: a request that could
-        // set it could tell us it had been paid.
-        $order->forceFill(['paid_amount' => Money::round($total)])->save();
+        // forceFill, because neither column is fillable: a request that could set `paid_amount`
+        // could tell us it had been paid, and one that could set `written_off_amount` could
+        // forgive a debt without anybody deciding to.
+        $order->forceFill([
+            'paid_amount' => Money::round($paid),
+            'written_off_amount' => Money::round($writtenOff),
+        ])->save();
 
         return $order;
     }

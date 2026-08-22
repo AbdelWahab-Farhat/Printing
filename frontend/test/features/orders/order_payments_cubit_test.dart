@@ -64,6 +64,7 @@ void main() {
       recordPayment: RecordOrderPayment(repository),
       refundPayment: RefundOrderPayment(repository),
       reversePayment: ReverseOrderPayment(repository),
+      writeOffBalance: WriteOffOrderBalance(repository),
     );
   });
 

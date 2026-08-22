@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Requests\Order\RefundOrderPaymentRequest;
 use App\Application\Api\V1\Requests\Order\ReverseOrderPaymentRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderPaymentRequest;
+use App\Application\Api\V1\Requests\Order\WriteOffOrderBalanceRequest;
 use App\Application\Api\V1\Resources\OrderPaymentResource;
 use App\Application\Controller;
 use App\Domain\Identity\Models\User;
@@ -14,6 +15,7 @@ use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\OrderService;
+use App\Domain\Order\Support\Money;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,9 +32,10 @@ use Illuminate\Http\Request;
  * `POST /payments/{payment}/reverse`, which writes a second entry beside the wrong one and
  * leaves both readable.
  *
- * **Three write endpoints rather than one carrying a `type`.** A payment names a method, a
- * reversal names only a reason, and a refund sits between them — one route with a discriminator
- * and four optional fields would document a shape none of the three actually has.
+ * **Four write endpoints rather than one carrying a `type`.** A payment names a method, a
+ * reversal names only a reason, a refund sits between them, and a write-off names an amount and
+ * a reason and nothing else — one route with a discriminator and four optional fields would
+ * document a shape none of them actually has.
  *
  * Money is never trusted from the client beyond the amount itself: `paid_amount` on the order is
  * derived from these rows, and the signed-in user is stamped onto every entry, so no payload can
@@ -145,6 +148,36 @@ class OrderPaymentController extends Controller
     }
 
     /**
+     * Write off the difference
+     *
+     * The five dinars that never came back. Closes what is left of an order's debt **without
+     * recording a payment**, so an order that took 105 of 110 can reach «تم التسوية» without
+     * anybody typing five into the ledger that nobody collected.
+     *
+     * It leaves `grand_total` untouched — the customer really was billed 110 — and moves
+     * `written_off_amount` instead of `paid_amount`, so «كم قبضنا؟» keeps meaning cash and the
+     * gap stays countable later as what it is: a loss.
+     *
+     * Bounded by what the order still owes, refused on a cancelled order, and `reason` is
+     * required. A write-off decided in error is undone by `reverse` above, which puts the debt
+     * back exactly where it stood.
+     */
+    public function writeOff(WriteOffOrderBalanceRequest $request, Order $order): JsonResponse
+    {
+        $entry = $this->orders->writeOffBalance(
+            $order,
+            Money::normalize($request->validated('amount')),
+            (string) $request->validated('reason'),
+            $this->actor($request),
+        );
+
+        return $this->created(
+            $this->entry($entry, $order),
+            'تم شطب الفرق',
+        );
+    }
+
+    /**
      * One entry, with the order's money as it stands after it.
      *
      * The summary travels back with every write so a screen never has to re-fetch the order to
@@ -171,6 +204,10 @@ class OrderPaymentController extends Controller
         return [
             'grand_total' => (string) $order->grand_total,
             'paid_amount' => (string) $order->paid_amount,
+            // What was closed without being collected. Published beside the paid total rather
+            // than folded into it, because a screen that showed one number could not tell a
+            // customer who paid in full from one whose shortfall was forgiven.
+            'written_off_amount' => (string) $order->written_off_amount,
             'remaining_amount' => $order->remainingAmount(),
             'payment_status' => $order->paymentStatus()->value,
             'payment_status_label' => $order->paymentStatus()->label(),

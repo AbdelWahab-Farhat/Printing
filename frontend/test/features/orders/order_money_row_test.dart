@@ -39,6 +39,7 @@ void main() {
   PaymentSummary summary({
     String paid = '150.00',
     String remaining = '300.00',
+    String writtenOff = '0.00',
     PaymentStatus status = PaymentStatus.partiallyPaid,
     String label = 'مدفوعة جزئياً',
     bool unrecorded = false,
@@ -46,6 +47,7 @@ void main() {
     return PaymentSummary(
       grandTotal: '450.00',
       paidAmount: paid,
+      writtenOffAmount: writtenOff,
       remainingAmount: remaining,
       paymentStatus: status,
       paymentStatusLabel: label,
@@ -172,5 +174,46 @@ void main() {
     // Assert — the pale fill, with its own readable ink on top.
     expect(chip.style?.color, scheme.onPaidContainer);
     expect(scheme.paidContainer, isNot(scheme.primaryContainer));
+  });
+
+  // ── what was forgiven ──────────────────────────────────────────────────────────────────
+
+  testWidgets('an order whose difference was written off says so, under the numbers', (
+    tester,
+  ) async {
+    // Arrange — 450 invoiced, 400 collected, 50 the business decided not to chase
+    await tester.pumpWidget(
+      host(
+        OrderMoneyRow(
+          summary: summary(
+            paid: '400.00',
+            writtenOff: '50.00',
+            remaining: '0.00',
+            status: PaymentStatus.writtenOff,
+            label: 'مشطوب فرقها',
+          ),
+        ),
+      ),
+    );
+
+    // Act
+    final line = find.textContaining('منه مشطوب');
+
+    // Assert — the amount is named, and «المدفوع» still says only what was collected
+    expect(line, findsOneWidget);
+    expect(find.textContaining('50.00'), findsWidgets);
+    expect(find.text('400.00'), findsOneWidget);
+    expect(find.text('مشطوب فرقها'), findsOneWidget);
+  });
+
+  testWidgets('an order with nothing forgiven carries no such line', (tester) async {
+    // Arrange — the ordinary order, which is nearly all of them
+    await tester.pumpWidget(host(OrderMoneyRow(summary: summary())));
+
+    // Act
+    final line = find.textContaining('منه مشطوب');
+
+    // Assert — a zero on every screen would be a sentence nobody needs to read
+    expect(line, findsNothing);
   });
 }
