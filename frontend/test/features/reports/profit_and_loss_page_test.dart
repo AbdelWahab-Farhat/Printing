@@ -93,41 +93,56 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('the revenue block says what was earned, in grouped digits', (tester) async {
+  testWidgets('the three totals are read first, side by side', (tester) async {
     // Arrange
     stub();
 
     // Act
     await openTheReport(tester);
 
-    // Assert — the server's decimals are dropped and the digits grouped; nothing is added up here
+    // Assert — earned, spent, left: the whole period in one row, each the server's own figure
     expect(find.text('الإيراد'), findsOneWidget);
+    expect(find.text('12,750'), findsOneWidget);
+    expect(find.text('التكلفة'), findsOneWidget);
+    expect(find.text('5,250'), findsOneWidget);
+    expect(find.text('الربح'), findsOneWidget);
+    expect(find.text('7,500'), findsOneWidget);
+  });
+
+  testWidgets('the revenue breaks down under its total, without repeating it', (tester) async {
+    // Arrange
+    stub();
+
+    // Act
+    await openTheReport(tester);
+
+    // Assert — the server's decimals are dropped and the digits grouped; nothing is added up
+    // here, and إجمالي الإيراد is a tile above rather than a second copy at the foot of a column
+    expect(find.text('تفاصيل الإيراد'), findsOneWidget);
     expect(find.text('المنتجات'), findsOneWidget);
     expect(find.text('12,450'), findsOneWidget);
     expect(find.text('التصميم'), findsOneWidget);
     expect(find.text('300'), findsOneWidget);
-    expect(find.text('إجمالي الإيراد'), findsOneWidget);
-    expect(find.text('12,750'), findsOneWidget);
+    expect(find.text('إجمالي الإيراد'), findsNothing);
   });
 
-  testWidgets('the cost block prints all four figures, parts and total alike', (tester) async {
+  testWidgets('the cost breaks down into its three parts, without a fourth', (tester) async {
     // Arrange
     stub();
 
     // Act
     await openTheReport(tester);
 
-    // Assert — the three parts come off the order lines and the total off the orders, so all
-    // four are printed as they arrived rather than one of them being added up here
-    expect(find.text('تكلفة البضاعة المباعة'), findsOneWidget);
+    // Assert — the three come off the order lines and the total off the orders themselves, so
+    // the block prints the three it was given and never sums them into a fourth
+    expect(find.text('تفاصيل التكلفة'), findsOneWidget);
     expect(find.text('المواد'), findsOneWidget);
     expect(find.text('4,000'), findsOneWidget);
     expect(find.text('العمالة'), findsOneWidget);
     expect(find.text('900'), findsOneWidget);
     expect(find.text('المصاريف العامة'), findsOneWidget);
     expect(find.text('350'), findsOneWidget);
-    expect(find.text('إجمالي التكلفة'), findsOneWidget);
-    expect(find.text('5,250'), findsOneWidget);
+    expect(find.text('إجمالي التكلفة'), findsNothing);
   });
 
   testWidgets('the cost mix is drawn at the width its part actually is', (tester) async {
@@ -147,91 +162,33 @@ void main() {
     expect(overhead.width, greaterThan(0));
   });
 
-  testWidgets('the donut says where the revenue went, with the margin in the middle', (
-    tester,
-  ) async {
-    // Arrange — 7,500 kept out of 12,750 earned
+  testWidgets('nothing is charted, and nothing is explained in small print', (tester) async {
+    // Arrange — the donut and the two caveats were asked off this screen: three totals a reader
+    // can compare in a glance are what the space is for
     stub();
 
     // Act
     await openTheReport(tester);
 
-    // Assert — the one figure on this screen that is a share rather than an amount, and the two
-    // arcs named in words beside it so the split is never carried by colour alone
-    expect(find.text('أين ذهب الإيراد'), findsOneWidget);
-    expect(find.text('59%'), findsOneWidget);
-    expect(find.text('هامش الربح'), findsOneWidget);
-    expect(find.text('الربح'), findsOneWidget);
-    expect(find.text('التكلفة'), findsOneWidget);
-  });
-
-  testWidgets('a losing period is drawn as two bars, never as a negative arc', (tester) async {
-    // Arrange — 75 earned against 120 spent: there is no share of the revenue left to draw
-    stub(
-      report: const ProfitAndLossSummary(
-        period: PnlPeriod(from: '2026-03-01', to: '2026-03-31'),
-        revenue: PnlRevenue(product: '75.00', service: '0.00', total: '75.00'),
-        costOfGoodsSold: PnlCostOfGoodsSold(
-          material: '120.00',
-          labor: '0.00',
-          overhead: '0.00',
-          total: '120.00',
-        ),
-        grossProfit: '-45.00',
-        cashCollected: '0.00',
-        ordersRecognized: 1,
-      ),
-    );
-
-    // Act
-    await openTheReport(tester);
-
-    // Assert
-    expect(find.text('الإيراد مقابل التكلفة'), findsOneWidget);
-    expect(find.text('أين ذهب الإيراد'), findsNothing);
-    expect(find.text('-60%'), findsNothing);
-  });
-
-  testWidgets('a period that earned nothing is not charted at all', (tester) async {
-    // Arrange — nothing delivered and nothing spent: a donut of zero is a shape that says
-    // something the period does not
-    stub(
-      report: const ProfitAndLossSummary(
-        period: PnlPeriod(from: '2026-04-01', to: '2026-04-30'),
-        revenue: PnlRevenue(product: '0.00', service: '0.00', total: '0.00'),
-        costOfGoodsSold: PnlCostOfGoodsSold(
-          material: '0.00',
-          labor: '0.00',
-          overhead: '0.00',
-          total: '0.00',
-        ),
-        grossProfit: '0.00',
-        cashCollected: '150.00',
-        ordersRecognized: 0,
-      ),
-    );
-
-    // Act
-    await openTheReport(tester);
-
     // Assert
     expect(find.text('أين ذهب الإيراد'), findsNothing);
-    expect(find.text('الإيراد مقابل التكلفة'), findsNothing);
     expect(find.text('هامش الربح'), findsNothing);
+    expect(find.textContaining('لا يشمل سعر التوصيل'), findsNothing);
+    expect(find.textContaining('من بنود الطلبيات'), findsNothing);
   });
 
   testWidgets('the profit is still the server\'s own, not the revenue drawn twice', (
     tester,
   ) async {
-    // Arrange — 12,750 in and 5,250 out: a profit computed on this screen from what is left
-    // visible would read 12,750, and be wrong by the whole cost
+    // Arrange — 12,750 in and 5,250 out: a profit the screen worked out for itself from the two
+    // tiles beside it could land a قرش away from the one the server rounded once
     stub();
 
     // Act
     await openTheReport(tester);
 
     // Assert
-    expect(find.text('الربح الإجمالي'), findsOneWidget);
+    expect(find.text('الربح'), findsOneWidget);
     expect(find.text('7,500'), findsOneWidget);
   });
 
@@ -317,7 +274,7 @@ void main() {
     await openTheReport(tester);
 
     // Assert — two different headings over two different figures
-    expect(find.text('الربح الإجمالي'), findsOneWidget);
+    expect(find.text('الربح'), findsOneWidget);
     expect(find.text('7,500'), findsOneWidget);
     expect(find.text('النقد المحصَّل'), findsOneWidget);
     expect(find.text('9,100'), findsOneWidget);

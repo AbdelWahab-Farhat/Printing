@@ -4,7 +4,6 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/reports/models/profit_and_loss_summary.dart';
 import 'package:dayaa/features/reports/presentation/viewmodel/profit_and_loss_cubit.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -15,12 +14,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// it belongs to the same arithmetic, in the same column, so a reader can follow it without
 /// being told how.
 ///
-/// **تكلفة البضاعة المباعة is printed in full — all four figures, none of them added up here.**
-/// The three parts are summed from the order *lines* and the total from a cached column on the
-/// orders themselves, two different tables with two different scopes, so they are allowed to
-/// disagree and the block says so in a line underneath rather than quietly reconciling them.
-/// الربح الإجمالي below is still the server's own number, revenue *minus* that cost — never the
-/// revenue drawn a second time.
+/// **The three totals are read first, in [_Totals], and everything under them is a breakdown.**
+/// الإيراد، التكلفة، الربح in one row of tiles: the whole period in a phone-width glance, with
+/// the parts of each underneath for whoever wants them. الربح is the server's own figure —
+/// revenue *minus* cost, never the revenue drawn a second time — and the cost total it was
+/// computed against is a cached column on the orders, while المواد, العمالة and المصاريف العامة
+/// under it are summed from the order *lines*: two different tables, allowed to disagree, so
+/// neither is ever derived from the other here.
 ///
 /// **Nor is anything said above the figures.** The pickers name the period, and the rule about
 /// which orders are counted was a paragraph nobody was asking for.
@@ -33,17 +33,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// through purchase orders — so it is never subtracted from anything and never sits in the same
 /// column.
 ///
-/// **One chart, and it draws the one thing the figures do not say: a share.** There is no series
-/// behind any of this — every figure is a period total — so a bar per total would be four
-/// numbers redrawn. [_RevenueSplit] instead divides the revenue into what it cost and what was
-/// left, and puts هامش الربح in the middle of it: a percent that appears nowhere else on the
-/// screen and cannot be read off the amounts at a glance.
-///
-/// **A losing period is not a donut.** A negative arc is not a shape, and «-60%» in the middle of
-/// a ring is a figure that invites the wrong reading — so [_RevenueAgainstCost] takes over and
-/// draws the two amounts side by side, which is the whole story of a period that spent more than
-/// it earned. A period that earned nothing at all is not charted either: there is no revenue to
-/// divide, and the rows underneath say the period plainly enough on their own.
+/// **Nothing is charted, and no figure is explained in a sentence under it.** A donut of the
+/// revenue split was drawn here and taken out again: every figure on this screen is a period
+/// total with no series behind it, and a picture of three amounts that are already printed is a
+/// picture that only costs a screenful. The small print under the blocks went the same way — a
+/// caveat nobody was reading, under numbers that had to be scrolled to.
 class ProfitAndLossPage extends StatelessWidget {
   const ProfitAndLossPage({super.key});
 
@@ -167,37 +161,22 @@ class _Report extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 32.h),
       children: [
+        _Totals(summary: summary),
+        SizedBox(height: 24.h),
+
         _Section(
-          title: 'الإيراد',
-          // Said out loud because the number invites the wrong reading: this is not what the
-          // customers were billed.
-          note: 'لا يشمل سعر التوصيل، ولا يُطرح منه الخصم.',
+          title: 'تفاصيل الإيراد',
           child: Column(
             children: [
               _MoneyRow(label: 'المنتجات', value: revenue.product),
               SizedBox(height: 10.h),
               _MoneyRow(label: 'التصميم', value: revenue.service),
-              const _TotalDivider(),
-              _MoneyRow(label: 'إجمالي الإيراد', value: revenue.total, isTotal: true),
             ],
           ),
         ),
         SizedBox(height: 20.h),
 
         _CostOfGoodsSold(cost: summary.costOfGoodsSold),
-        SizedBox(height: 20.h),
-
-        _GrossProfit(summary: summary),
-
-        // Drawn from the two figures above it and never from a third: the arcs are the cost and
-        // the profit the server sent, so the picture cannot disagree with the rows.
-        if (summary.hasRevenue) ...[
-          SizedBox(height: 20.h),
-          if (summary.isLoss)
-            _RevenueAgainstCost(summary: summary)
-          else
-            _RevenueSplit(summary: summary),
-        ],
 
         // The break in the page. Everything above is one arithmetic; what follows is not part
         // of it, and the gap plus the rule are what say so before a word is read.
@@ -211,86 +190,139 @@ class _Report extends StatelessWidget {
   }
 }
 
-/// The one loud number on the screen.
+/// The period in one row: الإيراد، التكلفة، الربح.
 ///
-/// **Coloured only when it is a loss.** The payment board learned this: a mark that appears in
-/// every state is a mark nobody reads, so a profit is drawn in plain ink — it is already the
-/// biggest thing here — and the error tone is kept for the period that has to be acted on. The
-/// colour is never alone either: a losing period says so in a sentence underneath.
-class _GrossProfit extends StatelessWidget {
-  const _GrossProfit({required this.summary});
+/// **Three tiles rather than three cards down a page.** They are the same three figures the
+/// blocks underneath break down, and they were each taking a block of their own — one of them a
+/// card the height of a hand — for a number that is read in a second. Side by side they are also
+/// *compared* rather than merely listed, which is the one thing a reader wants from them and the
+/// reason they are in the order of the arithmetic: earned, spent, left.
+///
+/// **الربح is coloured only when it is a loss.** The payment board learned this: a mark that
+/// appears in every state is a mark nobody reads, so a profit is drawn in the same ink as the two
+/// beside it and the error tone is kept for the period that has to be acted on — never alone, a
+/// losing period says so in a sentence under the row.
+class _Totals extends StatelessWidget {
+  const _Totals({required this.summary});
 
   final ProfitAndLossSummary summary;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final tone = summary.isLoss ? scheme.error : scheme.onSurface;
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 16.h),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(
-          color: summary.isLoss
-              ? scheme.error.withValues(alpha: 0.6)
-              : scheme.outlineVariant.withValues(alpha: 0.7),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'الربح الإجمالي',
-            style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-          SizedBox(height: 4.h),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // `IntrinsicHeight` so the three are one band rather than three boxes of whatever height
+        // their own number happened to need: a figure long enough to be scaled down would
+        // otherwise leave its tile shorter than the two beside it. `stretch` alone cannot do it
+        // inside a `ListView`, where the height is unbounded.
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Flexible(
-                child: Text(
-                  summary.grossProfitLabel,
-                  // A Latin run: `12,450` renders as `450,12` without this, which is a
-                  // different number rather than a rendering glitch.
-                  textDirection: TextDirection.ltr,
-                  maxLines: 1,
-                  style: context.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: tone,
-                  ),
-                ),
+              Expanded(
+                child: _TotalTile(label: 'الإيراد', value: summary.revenue.total),
               ),
-              SizedBox(width: 6.w),
-              Text(
-                'د.ل',
-                style: context.textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: _TotalTile(label: 'التكلفة', value: summary.costOfGoodsSold.total),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: _TotalTile(
+                  label: 'الربح',
+                  // Already carries its own `-`; the tile prints the server's string as it came.
+                  value: summary.grossProfit,
+                  tone: summary.isLoss ? scheme.error : null,
+                ),
               ),
             ],
           ),
-          if (summary.isLoss) ...[
-            SizedBox(height: 6.h),
-            Text(
-              'الفترة خاسرة — التكلفة أكبر من الإيراد.',
-              style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
+        ),
+        if (summary.isLoss) ...[
+          SizedBox(height: 8.h),
+          Text(
+            'الفترة خاسرة — التكلفة أكبر من الإيراد.',
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// One of the three: what it is, and what it came to.
+///
+/// The currency is inside each tile rather than once above the row — three tiles side by side
+/// have no heading between them to hang a single «د.ل» off, and a bare `1,615` at the top of a
+/// money screen is the one number a reader should never have to assume the unit of.
+class _TotalTile extends StatelessWidget {
+  const _TotalTile({required this.label, required this.value, this.tone});
+
+  final String label;
+  final String value;
+
+  /// Overrides the ink of the amount — the loss tone, and nothing else.
+  final Color? tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+          SizedBox(height: 6.h),
+          // A third of a phone is not much room for `12,450`, and a figure that overflows its
+          // tile is worse than a figure drawn a point smaller.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  groupedDecimal(value),
+                  // A Latin run: `12,450` renders as `450,12` without this, which is a different
+                  // number rather than a rendering glitch.
+                  textDirection: TextDirection.ltr,
+                  style: context.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: tone ?? scheme.onSurface,
+                  ),
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  'د.ل',
+                  style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 }
 
-/// تكلفة البضاعة المباعة — the three parts and the total the orders themselves carry.
+/// تفاصيل التكلفة — what the period's cost was made of.
 ///
-/// **All four are printed as they arrived.** [PnlCostOfGoodsSold.total] is a cached column on the
-/// orders; المواد, العمالة and المصاريف العامة are summed from the order *lines*. The two come
-/// from different tables with different scopes and are allowed to disagree, so the note under the
-/// block says so rather than the screen quietly adding three numbers up and printing a fourth it
-/// was never given.
+/// **The three parts as they arrived, and no fourth number computed from them.** إجمالي التكلفة
+/// is a tile above, and it is a cached column on the orders while these three are summed from the
+/// order *lines* — two tables with two scopes, allowed to disagree. Adding the three up here to
+/// check the tile would be the screen inventing a figure the server never gave it.
 class _CostOfGoodsSold extends StatelessWidget {
   const _CostOfGoodsSold({required this.cost});
 
@@ -301,8 +333,7 @@ class _CostOfGoodsSold extends StatelessWidget {
     final tones = _costTones(context.colorScheme);
 
     return _Section(
-      title: 'تكلفة البضاعة المباعة',
-      note: 'المواد والعمالة والمصاريف من بنود الطلبيات، والإجمالي من الطلبيات نفسها.',
+      title: 'تفاصيل التكلفة',
       child: Column(
         children: [
           _MoneyRow(label: 'المواد', value: cost.material, dot: tones[0]),
@@ -312,8 +343,6 @@ class _CostOfGoodsSold extends StatelessWidget {
           _MoneyRow(label: 'المصاريف العامة', value: cost.overhead, dot: tones[2]),
           SizedBox(height: 12.h),
           _CostMix(cost: cost),
-          const _TotalDivider(),
-          _MoneyRow(label: 'إجمالي التكلفة', value: cost.total, isTotal: true),
         ],
       ),
     );
@@ -338,9 +367,11 @@ class _CostMix extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tones = _costTones(context.colorScheme);
-    final parts = [cost.material, cost.labor, cost.overhead]
-        .map((value) => num.tryParse(value)?.toDouble() ?? 0)
-        .toList();
+    final parts = [
+      cost.material,
+      cost.labor,
+      cost.overhead,
+    ].map((value) => num.tryParse(value)?.toDouble() ?? 0).toList();
 
     // A period whose cost was never recorded is a row of zeros, and a strip of nothing is worse
     // than no strip: an empty bar reads as a bar that failed to draw.
@@ -372,263 +403,6 @@ class _CostMix extends StatelessWidget {
             ],
         ],
       ),
-    );
-  }
-}
-
-/// أين ذهب الإيراد — the period's revenue divided into what it cost and what was left.
-///
-/// **Two arcs and a percent, and the percent is the reason the chart exists.** The amounts are
-/// already printed above in full; what the rows cannot say at a glance is the *share*, and هامش
-/// الربح in the middle of the ring is a figure that appears nowhere else on the screen.
-///
-/// **The arcs are the cost and the profit, not the revenue.** Those two are what the server sent
-/// and what the rows above print, so the ring can never disagree with them — measuring the arcs
-/// against إجمالي الإيراد instead would let a قرش of rounding open a sliver of unexplained gap.
-///
-/// The two tones are the app's own `primary` and the neutral beside it rather than two accents:
-/// the generated Material palette is a single teal family, and its accents sit close enough that
-/// a colourblind reader — and, checked rather than guessed, a reader with full colour vision too
-/// — cannot tell `primary` from `tertiary` in two arcs. A strong colour against a recessive
-/// neutral separates for everyone, and says the right thing besides: the teal is the part the
-/// shop kept. Neither arc is identified by its colour alone — each is named in the legend.
-class _RevenueSplit extends StatelessWidget {
-  const _RevenueSplit({required this.summary});
-
-  final ProfitAndLossSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final margin = summary.grossMarginLabel;
-
-    // Geometry, and only geometry: these two are never printed. Every amount on this screen is
-    // the server's own string, and a `double` is not allowed anywhere near one.
-    final kept = num.tryParse(summary.grossProfit)?.toDouble() ?? 0;
-    final spent = num.tryParse(summary.costOfGoodsSold.total)?.toDouble() ?? 0;
-
-    return _Section(
-      title: 'أين ذهب الإيراد',
-      showsCurrency: false,
-      child: Row(
-        children: [
-          SizedBox(
-            height: 132.h,
-            width: 132.h,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                PieChart(
-                  PieChartData(
-                    // Nothing here responds to a finger: a two-arc ring has no detail a tooltip
-                    // could add that the rows above do not already print.
-                    pieTouchData: PieTouchData(enabled: false),
-                    borderData: FlBorderData(show: false),
-                    startDegreeOffset: -90,
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 40.r,
-                    sections: [
-                      PieChartSectionData(
-                        value: kept,
-                        color: scheme.primary,
-                        radius: 16.r,
-                        showTitle: false,
-                      ),
-                      PieChartSectionData(
-                        value: spent,
-                        color: _spentTone(scheme),
-                        radius: 16.r,
-                        showTitle: false,
-                      ),
-                    ],
-                  ),
-                ),
-                if (margin case final share?)
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        share,
-                        // `59%` renders as `%59` without this — a percent sign is a Latin run.
-                        textDirection: TextDirection.ltr,
-                        style: context.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: scheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        'هامش الربح',
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(width: 16.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _LegendEntry(tone: scheme.primary, label: 'الربح'),
-                SizedBox(height: 10.h),
-                _LegendEntry(tone: _spentTone(scheme), label: 'التكلفة'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// What a losing period gets instead of a donut: the two amounts, side by side.
-///
-/// **A negative arc is not a shape.** A ring can only divide something into parts of itself, and
-/// a period that spent more than it earned has no share of its revenue left to divide — so the
-/// two figures are drawn against each other, which is the whole story: the cost bar is taller
-/// than the revenue bar, and the sentence on الربح الإجمالي above already says why in words.
-///
-/// The cost wears the error tone here and nowhere else on this screen — it is the figure that has
-/// to be acted on — and it is never the colour alone that says so: both bars are named, and the
-/// card sits under a card that says «الفترة خاسرة» in a sentence.
-class _RevenueAgainstCost extends StatelessWidget {
-  const _RevenueAgainstCost({required this.summary});
-
-  final ProfitAndLossSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    // Geometry only, exactly as in [_RevenueSplit]; the labels under the bars print the server's
-    // own strings.
-    final earned = num.tryParse(summary.revenue.total)?.toDouble() ?? 0;
-    final spent = num.tryParse(summary.costOfGoodsSold.total)?.toDouble() ?? 0;
-
-    return _Section(
-      title: 'الإيراد مقابل التكلفة',
-      showsCurrency: false,
-      child: SizedBox(
-        height: 150.h,
-        child: BarChart(
-          BarChartData(
-            alignment: BarChartAlignment.spaceEvenly,
-            minY: 0,
-            // Headroom, so the taller bar stops short of the card's own edge rather than
-            // touching it and reading as clipped.
-            maxY: (earned > spent ? earned : spent) * 1.15,
-            gridData: const FlGridData(show: false),
-            borderData: FlBorderData(show: false),
-            barTouchData: const BarTouchData(enabled: false),
-            titlesData: FlTitlesData(
-              // No y-axis: the amounts are printed under the bars and again in the blocks above,
-              // and a scale of five interpolated numbers is a ruler nobody asked for.
-              leftTitles: const AxisTitles(),
-              rightTitles: const AxisTitles(),
-              topTitles: const AxisTitles(),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: 44.h,
-                  getTitlesWidget: (value, meta) => _BarLabel(
-                    label: value == 0 ? 'تكلفة' : 'إيراد',
-                    amount: value == 0 ? summary.costOfGoodsSold.total : summary.revenue.total,
-                  ),
-                ),
-              ),
-            ),
-            // `fl_chart` lays its groups out left to right whatever the `Directionality` around
-            // it, so the pair is ordered backwards here to be read forwards: إيراد lands on the
-            // right, where an Arabic reader starts.
-            barGroups: [
-              _bar(x: 0, value: spent, tone: scheme.error),
-              _bar(x: 1, value: earned, tone: scheme.primary),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  BarChartGroupData _bar({required int x, required double value, required Color tone}) {
-    return BarChartGroupData(
-      x: x,
-      barRods: [
-        BarChartRodData(
-          toY: value,
-          color: tone,
-          width: 40.w,
-          // Rounded at the top and square on the baseline: a bar that curves where it meets the
-          // axis reads as floating above it.
-          borderRadius: BorderRadius.vertical(top: Radius.circular(4.r)),
-        ),
-      ],
-    );
-  }
-}
-
-/// What a bar is called and what it is worth, under it.
-class _BarLabel extends StatelessWidget {
-  const _BarLabel({required this.label, required this.amount});
-
-  final String label;
-  final String amount;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return Padding(
-      padding: EdgeInsets.only(top: 8.h),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-          SizedBox(height: 2.h),
-          Text(
-            groupedDecimal(amount),
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: scheme.onSurface,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A mark and the word for it — what keeps an arc from being identified by its colour alone.
-class _LegendEntry extends StatelessWidget {
-  const _LegendEntry({required this.tone, required this.label});
-
-  final Color tone;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _Dot(tone: tone),
-        SizedBox(width: 8.w),
-        Text(
-          label,
-          // The word wears the ink of every other word on the screen; the mark beside it is what
-          // carries the colour. A label painted in its own series colour is a legend that reads
-          // as a status.
-          style: context.textTheme.bodyMedium?.copyWith(
-            color: context.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -668,14 +442,6 @@ List<Color> _costTones(ColorScheme scheme) => [
   scheme.tertiary.withValues(alpha: 0.40),
 ];
 
-/// The recessive half of [_RevenueSplit] — the part of the revenue that left.
-///
-/// Each brightness takes the neutral that actually separates on it: `outlineVariant` disappears
-/// into a dark card, and `outline` on a light one sits close enough to `primary` that the two
-/// arcs stop being two. Both pairs were measured, not eyeballed.
-Color _spentTone(ColorScheme scheme) =>
-    scheme.brightness == Brightness.dark ? scheme.outline : scheme.outlineVariant;
-
 /// Money that came in, reported beside the report and never inside it.
 ///
 /// **Not netted against anything, and said so in words.** It is every payment whose day fell in
@@ -710,12 +476,21 @@ class _CashCollected extends StatelessWidget {
                 style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
               ),
               const Spacer(),
-              Text(
-                groupedDecimal(summary.cashCollected),
-                textDirection: TextDirection.ltr,
-                style: context.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: scheme.onSurface,
+              // A year's takings is a long number, and `titleLarge` beside a label and an icon
+              // runs out of phone before it runs out of digits — scaled down rather than
+              // overflowed, because a clipped amount is a wrong amount.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: Text(
+                    groupedDecimal(summary.cashCollected),
+                    textDirection: TextDirection.ltr,
+                    style: context.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: scheme.onSurface,
+                    ),
+                  ),
                 ),
               ),
               SizedBox(width: 6.w),
@@ -743,22 +518,10 @@ class _CashCollected extends StatelessWidget {
 /// the same trick the price grid on a product uses, and for the same reason: «د.ل» repeated
 /// down a column is four words competing with the four numbers they qualify.
 class _Section extends StatelessWidget {
-  const _Section({
-    required this.title,
-    required this.child,
-    this.note,
-    this.showsCurrency = true,
-  });
+  const _Section({required this.title, required this.child});
 
   final String title;
   final Widget child;
-  final String? note;
-
-  /// Whether «د.ل» belongs beside the heading.
-  ///
-  /// It does over a column of amounts, and it does not over a chart: the two figures a chart
-  /// carries are a share and a shape, and a currency printed over them qualifies neither.
-  final bool showsCurrency;
 
   @override
   Widget build(BuildContext context) {
@@ -777,11 +540,7 @@ class _Section extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            if (showsCurrency)
-              Text(
-                'د.ل',
-                style: context.textTheme.bodySmall?.copyWith(color: scheme.outline),
-              ),
+            Text('د.ل', style: context.textTheme.bodySmall?.copyWith(color: scheme.outline)),
           ],
         ),
         SizedBox(height: 8.h),
@@ -795,13 +554,6 @@ class _Section extends StatelessWidget {
           ),
           child: child,
         ),
-        if (note case final line?) ...[
-          SizedBox(height: 6.h),
-          Text(
-            line,
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-        ],
       ],
     );
   }
@@ -813,18 +565,10 @@ class _Section extends StatelessWidget {
 /// parsed. `'0.00'` is a real answer here, so a zero row is drawn like any other rather than
 /// hidden: a cost of nothing is a fact about the period.
 class _MoneyRow extends StatelessWidget {
-  const _MoneyRow({
-    required this.label,
-    required this.value,
-    this.isTotal = false,
-    this.dot,
-  });
+  const _MoneyRow({required this.label, required this.value, this.dot});
 
   final String label;
   final String value;
-
-  /// The line the block adds up to — the server's own total, never a sum computed here.
-  final bool isTotal;
 
   /// The colour this row wears in [_CostMix], if it is drawn there.
   ///
@@ -838,43 +582,18 @@ class _MoneyRow extends StatelessWidget {
 
     return Row(
       children: [
-        if (dot case final tone?) ...[
-          _Dot(tone: tone),
-          SizedBox(width: 8.w),
-        ],
-        Text(
-          label,
-          style: context.textTheme.bodyMedium?.copyWith(
-            fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400,
-            color: isTotal ? scheme.onSurface : scheme.onSurfaceVariant,
-          ),
-        ),
+        if (dot case final tone?) ...[_Dot(tone: tone), SizedBox(width: 8.w)],
+        Text(label, style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
         const Spacer(),
         Text(
           groupedDecimal(value),
           textDirection: TextDirection.ltr,
           style: context.textTheme.bodyMedium?.copyWith(
-            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
+            fontWeight: FontWeight.w600,
             color: scheme.onSurface,
           ),
         ),
       ],
-    );
-  }
-}
-
-/// The rule above a block's total.
-class _TotalDivider extends StatelessWidget {
-  const _TotalDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 10.h),
-      child: Divider(
-        height: 1,
-        color: context.colorScheme.outlineVariant.withValues(alpha: 0.8),
-      ),
     );
   }
 }
@@ -953,10 +672,7 @@ class _PickerTile extends StatelessWidget {
         ),
         if (error case final message?) ...[
           SizedBox(height: 4.h),
-          Text(
-            message,
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
-          ),
+          Text(message, style: context.textTheme.bodySmall?.copyWith(color: scheme.error)),
         ],
       ],
     );
@@ -975,13 +691,25 @@ class _ReportSkeleton extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 32.h),
       children: [
-        _SkeletonBox(height: 120.h, radius: 16.r),
+        Row(
+          children: [
+            Expanded(
+              child: _SkeletonBox(height: 68.h, radius: 16.r),
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: _SkeletonBox(height: 68.h, radius: 16.r),
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: _SkeletonBox(height: 68.h, radius: 16.r),
+            ),
+          ],
+        ),
+        SizedBox(height: 24.h),
+        _SkeletonBox(height: 96.h, radius: 16.r),
         SizedBox(height: 20.h),
-        _SkeletonBox(height: 150.h, radius: 16.r),
-        SizedBox(height: 20.h),
-        _SkeletonBox(height: 92.h, radius: 20.r),
-        SizedBox(height: 20.h),
-        _SkeletonBox(height: 190.h, radius: 16.r),
+        _SkeletonBox(height: 140.h, radius: 16.r),
       ],
     );
   }
@@ -1017,9 +745,7 @@ class _CorrectThePeriod extends StatelessWidget {
         child: Text(
           'صحّح الفترة أعلاه لعرض التقرير',
           textAlign: TextAlign.center,
-          style: context.textTheme.bodyLarge?.copyWith(
-            color: context.colorScheme.onSurfaceVariant,
-          ),
+          style: context.textTheme.bodyLarge?.copyWith(color: context.colorScheme.onSurfaceVariant),
         ),
       ),
     );

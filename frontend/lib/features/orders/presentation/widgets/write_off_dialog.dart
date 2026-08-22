@@ -22,17 +22,80 @@ Future<WriteOffDraft?> showWriteOffDialog({
   required BuildContext context,
   required PaymentSummary summary,
 }) {
-  final amount = TextEditingController(text: _defaultAmount(summary));
-  final reason = TextEditingController();
-  final formKey = GlobalKey<FormState>();
-
   return showDialog<WriteOffDraft>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
+    builder: (_) => _WriteOffDialog(summary: summary),
+  );
+}
+
+/// Stateful because it owns two `TextEditingController`s — and **that ownership is the whole
+/// reason this is a widget rather than a function holding them in a closure.**
+///
+/// The first version created them beside `showDialog` and disposed them in `.whenComplete()`,
+/// which reads as the obvious place and is the wrong one: that future completes the instant the
+/// route is popped, while the dialog is still on screen fading out. The fields it still contains
+/// then rebuild against controllers that no longer exist — «A TextEditingController was used
+/// after being disposed», then `_dependents.isEmpty`, then a red screen over the whole app. The
+/// keyboard closing on the way out makes that rebuild certain rather than likely, which is why
+/// it failed on the very first real write-off.
+///
+/// A `State` disposes when its element leaves the tree, which is *after* the animation. The
+/// `GlobalKey` moves in here for the same reason: one per State, so two dialogs — the one
+/// leaving and the one arriving — can never hold the same key at once.
+class _WriteOffDialog extends StatefulWidget {
+  const _WriteOffDialog({required this.summary});
+
+  final PaymentSummary summary;
+
+  @override
+  State<_WriteOffDialog> createState() => _WriteOffDialogState();
+}
+
+class _WriteOffDialogState extends State<_WriteOffDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _reason = TextEditingController();
+  late final TextEditingController _amount;
+
+  /// The whole outstanding balance, which is the ceiling the server enforces anyway.
+  ///
+  /// An overpaid order has a negative remainder and nothing sensible to suggest, so it opens
+  /// blank — and the server refuses a write-off there in any case: that order needs a refund.
+  String get _defaultAmount {
+    final remaining = widget.summary.remainingAmount;
+
+    return remaining.startsWith('-') || remaining == '0.00' ? '' : remaining;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _amount = TextEditingController(text: _defaultAmount);
+  }
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _reason.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    Navigator.of(
+      context,
+    ).pop((amount: _amount.text.trim(), reason: _reason.text.trim()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = widget.summary;
+
+    return AlertDialog(
       title: const Text('شطب الفرق'),
       content: SingleChildScrollView(
         child: Form(
-          key: formKey,
+          key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,66 +106,57 @@ Future<WriteOffDraft?> showWriteOffDialog({
               Text(
                 'يُقفل المتبقي دون تسجيل أي قبض — سعر الطلبية يبقى '
                 '${summary.grandTotal.grouped} والفرق يُقيَّد في السجل خسارةً.',
-                style: dialogContext.textTheme.bodyMedium?.copyWith(
-                  color: dialogContext.colorScheme.onSurfaceVariant,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
               ),
               SizedBox(height: 16.h),
 
               AppTextField(
-                controller: amount,
+                controller: _amount,
                 label: 'المبلغ',
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 // The same formatter the payment sheet uses, and for the same reason: a comma
                 // is fifteen hundred to most people and one and a half to some, so it never
                 // gets typed. Arabic-Indic digits are allowed and converted on the way out.
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]')),
+                ],
                 helperText: 'المتبقي ${summary.remainingAmount.grouped}',
                 validator: _validateAmount,
               ),
               SizedBox(height: 16.h),
 
               AppTextField(
-                controller: reason,
+                controller: _reason,
                 label: 'السبب',
                 maxLines: 2,
                 // Required by the server too. This is the row an auditor stops at, and «تم
                 // الشطب» with a blank beside it is not an answer.
-                validator: (value) => (value ?? '').trim().length < 3 ? 'السبب مطلوب' : null,
+                validator: (value) =>
+                    (value ?? '').trim().length < 3 ? 'السبب مطلوب' : null,
               ),
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('تراجع')),
         TextButton(
-          onPressed: () {
-            if (!(formKey.currentState?.validate() ?? false)) return;
-
-            Navigator.of(
-              dialogContext,
-            ).pop((amount: amount.text.trim(), reason: reason.text.trim()));
-          },
-          child: Text('شطب الفرق', style: TextStyle(color: dialogContext.colorScheme.error)),
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('تراجع'),
+        ),
+        TextButton(
+          onPressed: _submit,
+          child: Text(
+            'شطب الفرق',
+            style: TextStyle(color: context.colorScheme.error),
+          ),
         ),
       ],
-    ),
-  ).whenComplete(() {
-    amount.dispose();
-    reason.dispose();
-  });
-}
-
-/// The whole outstanding balance, which is the ceiling the server enforces anyway.
-///
-/// An overpaid order has a negative remainder and nothing sensible to suggest, so it opens
-/// blank — and the server refuses a write-off there in any case: that order needs a refund.
-String _defaultAmount(PaymentSummary summary) {
-  final remaining = summary.remainingAmount;
-
-  return remaining.startsWith('-') || remaining == '0.00' ? '' : remaining;
+    );
+  }
 }
 
 /// Only the shape is checked here.

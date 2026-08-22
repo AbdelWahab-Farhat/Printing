@@ -16,10 +16,6 @@ part 'profit_and_loss_summary.g.dart';
 ///     not add up. See its own note.
 ///   * [cashCollected] belongs to none of the rows above it at all. See its own note.
 ///
-/// **The single exception is [grossMarginPercent]**, and it is one because it is not money: a
-/// ratio cannot be added to a figure the server sent, so it cannot disagree with one. Every
-/// amount here is still read, never computed.
-///
 /// Money is a `String` end to end, at exactly two decimals, and [grossProfit] carries a leading
 /// `-` when the period lost money. The server builds this as a plain array rather than a
 /// Resource, so there is no `whenLoaded` anywhere in it: **every key is always present**, which
@@ -61,45 +57,6 @@ abstract class ProfitAndLossSummary with _$ProfitAndLossSummary {
   /// cannot read counts as a profit, because painting «خسارة» over a figure nobody could parse
   /// is the worse of the two mistakes.
   bool get isLoss => (num.tryParse(grossProfit) ?? 0) < 0;
-
-  /// The share of the revenue that survived the cost, as a whole percent — `59`.
-  ///
-  /// **The one figure on this screen the server does not send, and the only one allowed to be
-  /// derived here.** It is a *ratio*, not money: it is never added to anything, never printed
-  /// beside an amount as though it were one, and cannot drift a قرش away from a figure the
-  /// server also computed — which is the whole reason the money above it is read and never
-  /// re-derived.
-  ///
-  /// `null` when the question has no answer rather than a zero one: a period that earned
-  /// nothing has no revenue to take a share *of*, and a figure `num.tryParse` cannot read is
-  /// not answered with a made-up percent — the same rule [isLoss] already follows.
-  ///
-  /// **Negative in a losing period**, deliberately. The model states the arithmetic; deciding
-  /// that «-60%» is a number nobody should be shown is the screen's call, not this file's.
-  int? get grossMarginPercent {
-    final revenueTotal = num.tryParse(revenue.total);
-    final profit = num.tryParse(grossProfit);
-
-    if (revenueTotal == null || profit == null || revenueTotal <= 0) return null;
-
-    return (profit / revenueTotal * 100).round();
-  }
-
-  /// `'59%'` — the middle of the donut, or `null` when there is no share to state.
-  ///
-  /// Latin digits and a Latin `%`, like every other number in this app: the shop reads these on
-  /// a phone at arm's length, and `٪` on an Arabic-Indic digit is a different alphabet.
-  String? get grossMarginLabel {
-    final percent = grossMarginPercent;
-
-    return percent == null ? null : '$percent%';
-  }
-
-  /// Whether the period earned anything at all — the question the chart is drawn on.
-  ///
-  /// A donut needs something to divide. Zero revenue is not a slice of nothing, it is no
-  /// picture, and the figures underneath say the period plainly enough on their own.
-  bool get hasRevenue => (num.tryParse(revenue.total) ?? 0) > 0;
 
   /// Whether the block of figures is about anything at all.
   ///
