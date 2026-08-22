@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Orders;
 
 use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Delivery\Models\ShippingCompany;
@@ -340,6 +342,96 @@ class OrderTransitionFieldsTest extends TestCase
         // not demanded.
         $this->assertSame('warehouse_id', $ready['fields'][0]['key']);
         $this->assertFalse($ready['fields'][0]['required']);
+    }
+
+    /**
+     * **«يُخصم منه ما تستهلكه» does not say how much, and the person tapping it cannot know.**
+     *
+     * What leaves the shelf is `warehouse_quantity ?? quantity` per line, in the *product's*
+     * stock unit — which since `stock_unit` landed need not be the unit the line is sold in. A
+     * foreman moving an order to «جاهزة» was being asked to name a warehouse without being told
+     * what was about to come out of it, and the two numbers can differ both in size and in kind:
+     * 300 bags sold, 12.5 kilograms taken.
+     *
+     * Said in the hint rather than as a new field, because it is not an input — and because the
+     * app draws whatever the server hands it, so this costs the client nothing.
+     */
+    public function test_the_warehouse_hint_names_what_will_actually_be_deducted(): void
+    {
+        // Arrange — sold by the piece, stocked by the kilo, and weighed onto the order at intake.
+        $product = Product::factory()->create([
+            'pricing_unit' => PricingUnit::Piece,
+            'stock_unit' => PricingUnit::Kilogram,
+        ]);
+        $variant = ProductVariant::factory()->for($product)->create(['label' => '25*35']);
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'variant_label' => '25*35',
+            'quantity' => '300',
+            'warehouse_quantity' => '12.5',
+            'pricing_unit' => PricingUnit::Piece,
+        ]);
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+
+        // Assert — the size, the figure that will leave, and the unit it leaves in. Not 300.
+        $hint = $ready['fields'][0]['hint'];
+
+        $this->assertStringContainsString('25*35', $hint);
+        $this->assertStringContainsString('12.500', $hint);
+        $this->assertStringContainsString(PricingUnit::Kilogram->label(), $hint);
+        $this->assertStringNotContainsString('300', $hint);
+    }
+
+    public function test_a_line_never_weighed_is_named_at_its_ordered_quantity(): void
+    {
+        // Arrange — no `warehouse_quantity`, which is nine lines in ten: what is sold is what
+        // leaves, and `producedQuantity()` falls back to the ordered figure.
+        $product = Product::factory()->create([
+            'pricing_unit' => PricingUnit::Piece,
+            'stock_unit' => PricingUnit::Piece,
+        ]);
+        $variant = ProductVariant::factory()->for($product)->create(['label' => '45*50']);
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'variant_label' => '45*50',
+            'quantity' => '200',
+            'warehouse_quantity' => null,
+            'pricing_unit' => PricingUnit::Piece,
+        ]);
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+
+        // Assert
+        $hint = $ready['fields'][0]['hint'];
+
+        $this->assertStringContainsString('45*50', $hint);
+        $this->assertStringContainsString('200.000', $hint);
+        $this->assertStringContainsString(PricingUnit::Piece->label(), $hint);
+    }
+
+    public function test_an_order_whose_stock_already_left_is_told_that_instead_of_a_list(): void
+    {
+        // Arrange — listing what "will" be deducted for an order that already deducted would be
+        // describing an event in the future tense after it happened.
+        $order = Order::factory()->status(OrderStatus::Printing)->create([
+            'stock_deducted_at' => now(),
+        ]);
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+
+        // Assert
+        $this->assertStringContainsString('خُصم المخزون بالفعل', $ready['fields'][0]['hint']);
     }
 
     // ──────────────────────── what «جاري التوصيل» asks for ────────────────────────

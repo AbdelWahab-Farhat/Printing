@@ -7,6 +7,7 @@ namespace App\Domain\Order\Support;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderItem;
 
 /**
  * What a particular order owes for a particular move.
@@ -111,7 +112,7 @@ final class TransitionFields
                 label: 'المخزن',
                 required: $order->stock_deducted_at === null,
                 hint: $order->stock_deducted_at === null
-                    ? 'يُخصم منه ما تستهلكه هذه الطلبية من المخزون'
+                    ? self::deductionPreview($order)
                     : 'خُصم المخزون بالفعل من هذه الطلبية',
             );
 
@@ -209,5 +210,45 @@ final class TransitionFields
         );
 
         return $fields;
+    }
+
+    /**
+     * «يُخصم منه…» said with the actual figures, one line per size.
+     *
+     * **The person naming the warehouse could not see what was about to leave it.** What is
+     * deducted is {@see OrderItem::producedQuantity()} — `warehouse_quantity ?? quantity` — in
+     * the *product's* `stock_unit`, and since that unit became settable it need not be the unit
+     * the line is sold in. So an order for 300 bags can take 12.5 kilograms off the shelf, and
+     * neither number nor unit was anywhere on the screen that asked which shelf.
+     *
+     * **A hint rather than a field, because it is not an input.** The app renders whatever the
+     * server hands it — see {@see \App\Application\Api\V1\Resources\OrderResource} — so this
+     * reaches every client with no release, and cannot drift from what `DeductOrderStock` will
+     * actually do because both read the same accessor.
+     *
+     * Falls back to the bare sentence for an order with no lines: a heading introducing an empty
+     * list reads as a bug.
+     */
+    private static function deductionPreview(Order $order): string
+    {
+        // `items.product` is not in the list query's eager set, and this runs once per order on
+        // a screen that also renders every other transition — without it the preview would cost
+        // a query per line.
+        $order->loadMissing('items.product');
+
+        $lines = $order->items
+            ->map(fn (OrderItem $item): string => sprintf(
+                '• %s — %s %s',
+                $item->variant_label,
+                $item->producedQuantity(),
+                $item->product?->stock_unit->label() ?? $item->pricing_unit->label(),
+            ))
+            ->all();
+
+        if ($lines === []) {
+            return 'يُخصم منه ما تستهلكه هذه الطلبية من المخزون';
+        }
+
+        return "يُخصم منه ما تستهلكه هذه الطلبية من المخزون:\n".implode("\n", $lines);
     }
 }
