@@ -18,12 +18,14 @@ import 'package:go_router/go_router.dart';
 
 /// المخزن — the places stock sits, and the way into everything else in this context.
 ///
-/// Tapping a warehouse opens its shelves; the ledger for *all* of them hangs off the app bar,
-/// because «ماذا حدث اليوم؟» is a question about the whole workshop rather than about one room.
+/// A body, not a screen: since it traded places with المنتجات this is the المخزون tab, and the
+/// app bar belongs to the shell above — including the «سجل الحركات» door, which the shell hangs
+/// off its bar because «ماذا حدث اليوم؟» is a question about the whole workshop rather than
+/// about one room.
 ///
-/// Reading needs `inventory.view`; adding, editing and removing need `inventory.manage`. The
-/// screen hides what the second permission would allow rather than greying it out — the server
-/// refuses either way.
+/// Reading needs `inventory.view` — the branch's redirect enforces it and the shell hides the
+/// tab without it. Adding, editing and removing need `inventory.manage`; the screen hides what
+/// that permission would allow rather than greying it out — the server refuses either way.
 class WarehousesPage extends StatelessWidget {
   const WarehousesPage({super.key});
 
@@ -45,16 +47,9 @@ class _WarehousesView extends StatelessWidget {
     final canManage = sl<Session>().can(AppPermission.manageInventory);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('المخزن'),
-        actions: [
-          IconButton(
-            tooltip: 'سجل الحركات',
-            onPressed: () => context.push(Routes.stockMovements),
-            icon: Icon(AppIcons.history),
-          ),
-        ],
-      ),
+      // Transparent: the shell above owns the real Scaffold, and this one exists only to hang
+      // a floating button off. The same shape the customers tab uses.
+      backgroundColor: Colors.transparent,
       floatingActionButton: canManage
           ? FloatingActionButton.extended(
               // Unique per screen, because the shell keeps every tab alive in an IndexedStack:

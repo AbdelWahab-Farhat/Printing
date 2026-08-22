@@ -20,6 +20,7 @@ _OrderPayment _$OrderPaymentFromJson(Map<String, dynamic> json) =>
       isReversed: json['is_reversed'] as bool? ?? false,
       isReversible: json['is_reversible'] as bool? ?? false,
       hasReceipt: json['has_receipt'] as bool? ?? false,
+      receiptIsImage: json['receipt_is_image'] as bool? ?? false,
       method: $enumDecodeNullable(
         _$PaymentMethodEnumMap,
         json['method'],
@@ -58,6 +59,7 @@ Map<String, dynamic> _$OrderPaymentToJson(_OrderPayment instance) =>
       'is_reversed': instance.isReversed,
       'is_reversible': instance.isReversible,
       'has_receipt': instance.hasReceipt,
+      'receipt_is_image': instance.receiptIsImage,
       'method': _$PaymentMethodEnumMap[instance.method],
       'method_label': instance.methodLabel,
       'reference': instance.reference,

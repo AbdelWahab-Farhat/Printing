@@ -117,11 +117,13 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
           // would otherwise have every «الآن» rejected as a payment that has not happened yet,
           // which is why this is only sent when a date was deliberately chosen.
           if (paidAt != null) 'paid_at': paidAt.toUtc().toIso8601String(),
-          // `fromFile` streams from disk rather than holding the PDF in memory.
+          // `fromFile` streams from disk rather than holding the file in memory. The fallback
+          // name claims no extension on purpose: the server sniffs the bytes and would record
+          // a made-up `.pdf` as the original name of what might be a photograph.
           if (receiptPath != null)
             'receipt': await MultipartFile.fromFile(
               receiptPath,
-              filename: receiptFilename ?? 'receipt.pdf',
+              filename: receiptFilename ?? 'receipt',
             ),
         }),
       ),

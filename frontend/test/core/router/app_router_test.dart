@@ -120,6 +120,10 @@ void main() {
       'اختيار موقع': Routes.pickLocation,
       'الإعدادات': Routes.settings,
       'المخزن': Routes.warehouse,
+      'المنتجات': Routes.products,
+      'رفوف المخزن': Routes.warehouseStocks(5),
+      'حركات المخزن': Routes.warehouseMovements(5),
+      'سجل الحركات': Routes.stockMovements,
     };
 
     // Act & Assert
@@ -182,8 +186,10 @@ void main() {
     );
   });
 
-  test('the المنتجات tab still resolves, and still inside the shell', () {
-    // Arrange — the sibling paths above must not have shadowed it.
+  test('المنتجات is a screen of its own, outside the shell', () {
+    // Arrange — المخزن took its tab: the workshop opens the stock every day and the catalogue
+    // once in a while, so the daily thing got the bar and the rare thing went to the drawer.
+    // The wrong answer is silent: the drawer row would light up a tab instead of covering it.
     const location = Routes.products;
 
     // Act
@@ -191,7 +197,55 @@ void main() {
 
     // Assert
     expect(matches.whereType<GoRoute>().last.path, Routes.products);
+    expect(
+      matches.whereType<ShellRouteBase>(),
+      isEmpty,
+      reason: 'the catalogue is reached from the drawer now, so it must cover the tabs',
+    );
+  });
+
+  test('the المخزون tab resolves inside the shell', () {
+    // Arrange — the other half of the same swap: `/warehouse` is a branch now, not a route the
+    // drawer pushes over everything.
+    const location = Routes.warehouse;
+
+    // Act
+    final matches = matchedRoutes(location);
+
+    // Assert
+    expect(matches.whereType<GoRoute>().last.path, Routes.warehouse);
     expect(matches.whereType<ShellRouteBase>(), isNotEmpty);
+  });
+
+  test("a warehouse's shelves resolve outside the shell, not swallowed by its tab", () {
+    // Arrange — `/warehouse` is a shell branch with no sub-routes, so this path can only be
+    // served by the top-level route declared beside it — the same proof `/customers/new` needs.
+    final location = Routes.warehouseStocks(5);
+
+    // Act
+    final matches = matchedRoutes(location);
+
+    // Assert
+    expect(location, '/warehouse/5/stocks');
+    expect(matches.whereType<GoRoute>().last.path, Routes.warehouseStocksPath);
+    expect(
+      matches.whereType<ShellRouteBase>(),
+      isEmpty,
+      reason: 'a room of shelves is a place the user goes to, not a tab they browse between',
+    );
+  });
+
+  test('the ledger of one warehouse resolves outside the shell too', () {
+    // Arrange — the second child the tab must not swallow.
+    final location = Routes.warehouseMovements(5);
+
+    // Act
+    final matches = matchedRoutes(location);
+
+    // Assert
+    expect(location, '/warehouse/5/movements');
+    expect(matches.whereType<GoRoute>().last.path, Routes.warehouseMovementsPath);
+    expect(matches.whereType<ShellRouteBase>(), isEmpty);
   });
 
   test('registering an employee is its own route, not the list reading a sub-path', () {

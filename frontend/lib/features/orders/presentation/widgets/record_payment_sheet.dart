@@ -7,7 +7,9 @@ import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/models/receipt_rules.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -47,7 +49,7 @@ class PaymentDraft {
   final String? reference;
   final String? notes;
 
-  /// The receipt PDF, when one was attached.
+  /// The receipt file — a PDF or a photograph — when one was attached.
   final PickedFile? receipt;
 }
 
@@ -58,9 +60,9 @@ class PaymentDraft {
 /// over a selected field. A blank box made the commonest entry the one that cost the most work.
 ///
 /// **The receipt field appears the moment «حوالة» is chosen, not when the server refuses.** A
-/// transfer cannot be recorded without its PDF — that is the rule on the API and a constraint in
-/// the database — and being told at the counter that the paper is missing is the point of it.
-/// Finding out after pressing save is a second trip for the customer.
+/// transfer cannot be recorded without its receipt — that is the rule on the API and a
+/// constraint in the database — and being told at the counter that the paper is missing is the
+/// point of it. Finding out after pressing save is a second trip for the customer.
 Future<PaymentDraft?> showRecordPaymentSheet({
   required BuildContext context,
   required PaymentDirection direction,
@@ -299,23 +301,30 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
     return buffer.toString();
   }
 
-  /// The document browser only, and filtered to PDF.
+  /// Any of the three sources, the same sheet a design arrives through.
   ///
-  /// **No photo library and no camera**, unlike a customer's artwork. A receipt is a document a
-  /// bank produces, and offering the camera would invite a blurred phone picture as proof of
-  /// payment — which is the thing this file exists to prevent. The server accepts nothing but a
-  /// PDF anyway, so the other two rows would be taps that end in a 422.
+  /// The photo library and the camera sit beside the document browser because the receipt that
+  /// actually arrives is a banking-app screenshot or a photograph sent over WhatsApp — which on
+  /// iOS lands in the photo library, a place the Files app cannot see at all. The server
+  /// accepts images now (see `media.payment_receipts`), so no row here ends in a 422.
   Future<void> _pickReceipt() async {
-    final picked = await sl<AttachmentPicker>().pick(AttachmentSource.documents);
+    final source = await showAttachmentSheet(context: context, title: 'إرفاق الواصل');
+
+    if (source == null || !mounted) return;
+
+    final picked = await sl<AttachmentPicker>().pick(source);
 
     if (!mounted || picked.isEmpty) return;
 
     final file = picked.first;
 
-    // The picker is filtered to PDF, but a filter is a courtesy and this is money: a file that
-    // is not one is refused here rather than after an upload the person waited through.
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      context.showError('الواصل يجب أن يكون ملف PDF');
+    // The picker filters are a courtesy and this is money: a file the server would refuse is
+    // refused here, in the server's words, rather than after an upload the person waited
+    // through.
+    final refusal = ReceiptRules.reject(file);
+
+    if (refusal != null) {
+      context.showError(refusal);
 
       return;
     }
@@ -366,6 +375,11 @@ class _ReceiptField extends StatelessWidget {
     final scheme = context.colorScheme;
     final file = receipt;
 
+    // Which glyph sits beside the name: the photo one for a picked image, the PDF one for a
+    // document or for the empty slot. The name is only the client's claim, but so is the file
+    // itself at this point — the server sniffs the bytes either way.
+    final isImage = file != null && !file.name.toLowerCase().endsWith('.pdf');
+
     return Container(
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
@@ -378,11 +392,15 @@ class _ReceiptField extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(AppIcons.pdf, size: 18.sp, color: scheme.onSurfaceVariant),
+              Icon(
+                isImage ? AppIcons.photos : AppIcons.pdf,
+                size: 18.sp,
+                color: scheme.onSurfaceVariant,
+              ),
               SizedBox(width: 8.w),
               Expanded(
                 child: Text(
-                  file?.name ?? 'الواصل (PDF) — مطلوب مع الحوالة',
+                  file?.name ?? 'الواصل — مطلوب مع الحوالة',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.textTheme.bodyMedium?.copyWith(

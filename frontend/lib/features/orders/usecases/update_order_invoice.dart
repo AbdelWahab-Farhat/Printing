@@ -15,16 +15,31 @@ class InvoiceLineUpdate {
     required this.productId,
     required this.variantId,
     required this.quantity,
+    this.warehouseQuantity,
   });
 
   final int productId;
   final int variantId;
   final String quantity;
 
+  /// What actually leaves the shelf for this line, when that is not the quantity sold.
+  ///
+  /// **Carried through an edit rather than edited here, and it has to be.** `PUT /orders/{id}`
+  /// replaces the whole item set — `SyncOrderItems` deletes every row and rebuilds it — so a key
+  /// this payload leaves out is not "unchanged", it is *erased*. And this is the number
+  /// `producedQuantity()` takes off the warehouse at «جاهزة», so dropping it means the order
+  /// quietly deducts the quantity sold instead of the weight somebody measured. Nothing on any
+  /// screen would say so.
+  ///
+  /// Null on nine lines in ten, and then absent from the body rather than sent as null: the
+  /// API's rule is `nullable|numeric|gt:0`, and «no value» is said by not mentioning the key.
+  final String? warehouseQuantity;
+
   Map<String, dynamic> toJson() => <String, dynamic>{
     'product_id': productId,
     'product_variant_id': variantId,
     'quantity': quantity,
+    if (warehouseQuantity != null) 'warehouse_quantity': warehouseQuantity,
   };
 }
 

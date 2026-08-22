@@ -20,8 +20,10 @@ import 'package:go_router/go_router.dart';
 
 /// المنتجات — the catalogue, straight from the API.
 ///
-/// A body, not a screen: the app bar and the tabs belong to the shell above it. The search box
-/// and the list are the same two widgets the customers tab uses; only the card differs.
+/// A screen of its own, reached from the drawer: it was a tab until المخزن traded places with
+/// it — the workshop opens the stock every day and the catalogue once in a while — so it now
+/// owns its app bar and covers the shell. The search box and the list are the same two widgets
+/// the customers tab uses; only the card differs.
 class ProductsPage extends StatelessWidget {
   const ProductsPage({super.key});
 
@@ -63,9 +65,7 @@ class _ProductsViewState extends State<_ProductsView> {
     final cubit = context.read<ProductsCubit>();
 
     return Scaffold(
-      // Transparent: the shell above owns the real Scaffold, and this one exists only to hang
-      // a floating button off. The same shape the customers tab uses.
-      backgroundColor: Colors.transparent,
+      appBar: AppBar(title: const Text('المنتجات')),
       floatingActionButton: sl<Session>().can(AppPermission.manageProducts)
           // A ternary rather than `PermissionGate`, and deliberately: a `SizedBox.shrink()` in
           // the FAB slot still occupies it and shifts the Scaffold's bottom inset. The grep of

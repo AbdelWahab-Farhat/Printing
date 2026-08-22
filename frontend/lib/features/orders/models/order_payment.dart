@@ -55,7 +55,7 @@ enum PaymentMethod {
   static List<PaymentMethod> get selectable =>
       values.where((method) => method != PaymentMethod.unknown).toList(growable: false);
 
-  /// Whether an entry paid this way must carry its receipt (الواصل), as a PDF.
+  /// Whether an entry paid this way must carry its receipt (الواصل).
   ///
   /// **A courtesy, never the boundary.** The server refuses a transfer without one, and a
   /// database CHECK refuses it underneath that. This copy exists so the form can put the file
@@ -141,6 +141,11 @@ abstract class OrderPayment with _$OrderPayment {
     /// Whether the receipt (الواصل) is on file. Always true on a transfer, which is the one
     /// method that cannot be recorded without one.
     @JsonKey(name: 'has_receipt') @Default(false) bool hasReceipt,
+
+    /// Whether the receipt is a picture this app can draw full screen, as opposed to a PDF it
+    /// hands to the phone. **Decided by the server** from the file it actually stored, so no
+    /// copy of the format list lives in Dart.
+    @JsonKey(name: 'receipt_is_image') @Default(false) bool receiptIsImage,
 
     /// Null on a reversal alone: no money moved, so there is no method to name.
     @JsonKey(unknownEnumValue: PaymentMethod.unknown) PaymentMethod? method,

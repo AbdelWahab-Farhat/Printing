@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/session/session.dart';
@@ -10,6 +12,7 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
+import 'package:dayaa/features/orders/presentation/widgets/receipt_viewer.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_payment_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -411,7 +414,7 @@ class _Entry extends StatelessWidget {
             padding: EdgeInsetsDirectional.only(start: 28.w, top: 6.h),
             child: Row(
               children: [
-                if (payment.hasReceipt) const _ReceiptChip(),
+                if (payment.hasReceipt) _ReceiptChip(payment: payment),
                 const Spacer(),
                 // Only when the server says so. A refund and a reversal are never candidates,
                 // and neither is an entry already cancelled — none of which this screen decides.
@@ -446,29 +449,44 @@ class _Entry extends StatelessWidget {
   String _date(DateTime value) => value.dayLabel;
 }
 
+/// «الواصل مرفق» — and pressing it shows the paper itself.
+///
+/// On most rows this is a fact to skim past; for the person checking a disputed transfer it is
+/// the proof, so the fact opens it: an image full screen in the app, a PDF handed to the phone
+/// — see [showReceipt]. Which glyph it wears is the server's `receipt_is_image` answer.
 class _ReceiptChip extends StatelessWidget {
-  const _ReceiptChip();
+  const _ReceiptChip({required this.payment});
+
+  final OrderPayment payment;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(999.r),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(AppIcons.pdf, size: 14.sp, color: scheme.onSurfaceVariant),
-          SizedBox(width: 6.w),
-          Text(
-            'الواصل مرفق',
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-        ],
+    return InkWell(
+      onTap: () => unawaited(showReceipt(context, payment)),
+      borderRadius: BorderRadius.circular(999.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(999.r),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              payment.receiptIsImage ? AppIcons.photos : AppIcons.pdf,
+              size: 14.sp,
+              color: scheme.onSurfaceVariant,
+            ),
+            SizedBox(width: 6.w),
+            Text(
+              'الواصل مرفق',
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ],
+        ),
       ),
     );
   }

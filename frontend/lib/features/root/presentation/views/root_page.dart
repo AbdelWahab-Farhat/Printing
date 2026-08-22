@@ -1,5 +1,7 @@
+import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/permission_gate.dart';
@@ -34,16 +36,27 @@ class RootPage extends StatelessWidget {
 
   /// The destinations, in the order they appear in the bar — and in the same order as the
   /// branches in [AppRouter], which is what `navigationShell.currentIndex` indexes into.
+  ///
+  /// المخزون sits where المنتجات used to: the workshop opens the stock every day and the
+  /// catalogue once in a while, so the daily thing gets the bar and the rare thing moved to
+  /// the drawer. It is also the one tab that carries a permission — the other three are
+  /// readable by every role, so gating them would be rows of `null`.
   static const List<_Destination> _destinations = [
     _Destination(title: 'الرئيسية', label: 'الرئيسية', icon: _IconOf.home),
     _Destination(title: 'قائمة الطلبات', label: 'الطلبات', icon: _IconOf.orders),
-    _Destination(title: 'المنتجات', label: 'المنتجات', icon: _IconOf.products),
+    _Destination(
+      title: 'المخزن',
+      label: 'المخزون',
+      icon: _IconOf.warehouse,
+      permission: AppPermission.viewInventory,
+    ),
     _Destination(title: 'العملاء', label: 'العملاء', icon: _IconOf.customers),
   ];
 
   @override
   Widget build(BuildContext context) {
     final current = _destinations[navigationShell.currentIndex];
+    final session = sl<Session>();
 
     return Scaffold(
       backgroundColor: context.colorScheme.surface,
@@ -66,30 +79,61 @@ class RootPage extends StatelessWidget {
             tooltip: 'القائمة',
           ),
         ),
+        actions: [
+          // The workshop-wide ledger — the door [WarehousesPage] hung off its own bar when it
+          // lived behind the drawer. The shell owns the bar now, so the shell offers it, and
+          // only on the tab it is about.
+          if (current.icon == _IconOf.warehouse)
+            IconButton(
+              tooltip: 'سجل الحركات',
+              onPressed: () => context.push(Routes.stockMovements),
+              icon: Icon(AppIcons.history),
+            ),
+        ],
       ),
       drawer: const _RootDrawer(),
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        // `initialLocation: true` only when re-tapping the current tab: that is what pops a
-        // destination back to its first screen, while a tap on a different tab restores
-        // wherever the user last was inside it.
-        onDestinationSelected: (index) => navigationShell.goBranch(
-          index,
-          initialLocation: index == navigationShell.currentIndex,
-        ),
-        backgroundColor: context.colorScheme.surface,
-        indicatorColor: context.colorScheme.primaryContainer,
-        surfaceTintColor: Colors.transparent,
-        height: 72.h,
-        destinations: [
-          for (final destination in _destinations)
-            NavigationDestination(
-              icon: Icon(destination.icon.outlined),
-              selectedIcon: Icon(destination.icon.filled),
-              label: destination.label,
+      // Rebuilt when the session changes, for the same reason [PermissionGate] listens: a
+      // permission set really does change with the tree mounted — pulling to refresh the home
+      // screen re-reads `/auth/me`, and so does the healing refresh after a 403.
+      bottomNavigationBar: ValueListenableBuilder<int>(
+        valueListenable: session.revision,
+        builder: (context, _, _) {
+          // Gated, not greyed, exactly as the drawer's rows are: a tab whose every screen
+          // this account cannot read is a tab to leave out. The branch's own redirect is the
+          // boundary; this is the courtesy. The tab the user is *on* always stays, so a grant
+          // revoked mid-visit cannot leave the bar pointing at nothing.
+          final visible = [
+            for (var i = 0; i < _destinations.length; i++)
+              if (_destinations[i].permission == null ||
+                  session.can(_destinations[i].permission!) ||
+                  i == navigationShell.currentIndex)
+                i,
+          ];
+
+          return NavigationBar(
+            selectedIndex: visible.indexOf(navigationShell.currentIndex),
+            // `initialLocation: true` only when re-tapping the current tab: that is what pops
+            // a destination back to its first screen, while a tap on a different tab restores
+            // wherever the user last was inside it.
+            onDestinationSelected: (index) => navigationShell.goBranch(
+              visible[index],
+              initialLocation: visible[index] == navigationShell.currentIndex,
             ),
-        ],
+            backgroundColor: context.colorScheme.surface,
+            indicatorColor: context.colorScheme.primaryContainer,
+            surfaceTintColor: Colors.transparent,
+            height: 72.h,
+            destinations: [
+              for (final branch in visible)
+                NavigationDestination(
+                  icon: Icon(_destinations[branch].icon.outlined),
+                  selectedIcon: Icon(_destinations[branch].icon.filled),
+                  label: _destinations[branch].label,
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -100,11 +144,20 @@ class RootPage extends StatelessWidget {
 /// Two strings because the two places have different room. "قائمة الطلبات" is the screen's
 /// name and reads correctly at the top; in a four-tab bar it would be squeezed to "قائمة…".
 class _Destination {
-  const _Destination({required this.title, required this.label, required this.icon});
+  const _Destination({
+    required this.title,
+    required this.label,
+    required this.icon,
+    this.permission,
+  });
 
   final String title;
   final String label;
   final _IconOf icon;
+
+  /// What reading the tab's screen needs, when it needs anything: without the grant the tab
+  /// is left out of the bar. Null for the tabs every role may read.
+  final AppPermission? permission;
 }
 
 /// The two states a bar icon has, resolved per platform through [AppIcons].
@@ -114,13 +167,13 @@ class _Destination {
 enum _IconOf {
   home,
   orders,
-  products,
+  warehouse,
   customers;
 
   IconData get filled => switch (this) {
     _IconOf.home => AppIcons.home,
     _IconOf.orders => AppIcons.orders,
-    _IconOf.products => AppIcons.products,
+    _IconOf.warehouse => AppIcons.warehouse,
     _IconOf.customers => AppIcons.customers,
   };
 
@@ -131,7 +184,7 @@ enum _IconOf {
       : switch (this) {
           _IconOf.home => Icons.home_outlined,
           _IconOf.orders => Icons.receipt_long_outlined,
-          _IconOf.products => Icons.shopping_bag_outlined,
+          _IconOf.warehouse => Icons.inventory_2_outlined,
           _IconOf.customers => Icons.people_alt_outlined,
         };
 }
@@ -172,12 +225,15 @@ class _RootDrawer extends StatelessWidget {
             // Gated, not greyed: a link that only ever leads to a screen this account cannot
             // read is a row to leave out. The route guards it again — this is the courtesy,
             // that is the boundary.
+            //
+            // المخزن sat in this slot until it traded places with the المنتجات tab: the
+            // catalogue is opened once in a while, the stock every day.
             PermissionGate(
-              permission: AppPermission.viewInventory,
+              permission: AppPermission.viewProducts,
               child: _DrawerLink(
-                icon: AppIcons.warehouse,
-                label: 'المخزن',
-                onTap: () => context.push(Routes.warehouse),
+                icon: AppIcons.products,
+                label: 'المنتجات',
+                onTap: () => context.push(Routes.products),
               ),
             ),
             _DrawerLink(

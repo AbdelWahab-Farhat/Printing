@@ -17,7 +17,12 @@ class _FakeLine extends Fake implements InvoiceLineUpdate {}
 void main() {
   late _MockOrderRepository repository;
 
-  OrderItem itemWith({int id = 1, String quantity = '300', String price = '1.100'}) {
+  OrderItem itemWith({
+    int id = 1,
+    String quantity = '300',
+    String price = '1.100',
+    String? warehouseQuantity,
+  }) {
     return OrderItem(
       id: id,
       productId: 10,
@@ -28,6 +33,7 @@ void main() {
       quantity: quantity,
       unitPrice: price,
       lineTotal: '330.00',
+      warehouseQuantity: warehouseQuantity,
     );
   }
 
@@ -192,6 +198,64 @@ void main() {
   });
 
   // ───────────────────────────── saving ─────────────────────────────
+
+  /// **The line's shelf quantity must survive an edit that never mentions it.**
+  ///
+  /// `PUT /orders/{id}` replaces the whole item set — `SyncOrderItems` deletes every row and
+  /// rebuilds it — so a key left out of the payload is not "unchanged", it is erased. And
+  /// `warehouse_quantity` is what `producedQuantity()` deducts from the shelf at «جاهزة», so
+  /// losing it means the order silently takes `quantity` off the warehouse instead of the
+  /// weight somebody actually measured. Nothing on screen would say so.
+  test('an edit carries the shelf quantity through untouched', () async {
+    // Arrange — a line sold by the piece but taken off the shelf by weight: 300 bags, 12.5 kg.
+    final cubit = cubitFor(orderWith(items: [itemWith(warehouseQuantity: '12.500')]));
+    stubSave();
+    cubit.setQuantity(1, '400');
+
+    // Act — the sheet offers no control for it; the point is that it survives regardless.
+    await cubit.save();
+
+    // Assert
+    final sent = verify(
+      () => repository.updateInvoice(
+        any(),
+        lines: captureAny(named: 'lines'),
+        discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
+      ),
+    ).captured.last as List<InvoiceLineUpdate>;
+
+    expect(sent.single.toJson()['warehouse_quantity'], '12.500');
+    expect(sent.single.toJson()['quantity'], '400');
+  });
+
+  test('a line that never had one sends no such key', () async {
+    // Arrange — nine lines in ten. Null means «نفس وحدة البيع», and the API's rule is
+    // `nullable|numeric|gt:0` — so a null would be read as a value and rejected, while an
+    // absent key is what actually means "unchanged".
+    final cubit = cubitFor(orderWith(items: [itemWith()]));
+    stubSave();
+    cubit.setQuantity(1, '400');
+
+    // Act
+    await cubit.save();
+
+    // Assert
+    final sent = verify(
+      () => repository.updateInvoice(
+        any(),
+        lines: captureAny(named: 'lines'),
+        discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
+      ),
+    ).captured.last as List<InvoiceLineUpdate>;
+
+    expect(sent.single.toJson().containsKey('warehouse_quantity'), isFalse);
+  });
 
   test('no price is ever sent — the catalogue prices the line', () async {
     // Arrange

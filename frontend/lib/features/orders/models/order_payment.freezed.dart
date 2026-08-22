@@ -24,7 +24,10 @@ mixin _$OrderPayment {
 /// screen keeps no copy of that rule.
 @JsonKey(name: 'is_reversed') bool get isReversed;@JsonKey(name: 'is_reversible') bool get isReversible;/// Whether the receipt (الواصل) is on file. Always true on a transfer, which is the one
 /// method that cannot be recorded without one.
-@JsonKey(name: 'has_receipt') bool get hasReceipt;/// Null on a reversal alone: no money moved, so there is no method to name.
+@JsonKey(name: 'has_receipt') bool get hasReceipt;/// Whether the receipt is a picture this app can draw full screen, as opposed to a PDF it
+/// hands to the phone. **Decided by the server** from the file it actually stored, so no
+/// copy of the format list lives in Dart.
+@JsonKey(name: 'receipt_is_image') bool get receiptIsImage;/// Null on a reversal alone: no money moved, so there is no method to name.
 @JsonKey(unknownEnumValue: PaymentMethod.unknown) PaymentMethod? get method;@JsonKey(name: 'method_label') String? get methodLabel;/// The receipt or transfer number, when there is one.
  String? get reference;/// A link to the receipt PDF, built per request by the server.
 ///
@@ -49,16 +52,16 @@ $OrderPaymentCopyWith<OrderPayment> get copyWith => _$OrderPaymentCopyWithImpl<O
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPayment&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.receiptSizeBytes, receiptSizeBytes) || other.receiptSizeBytes == receiptSizeBytes)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.reversesPaymentId, reversesPaymentId) || other.reversesPaymentId == reversesPaymentId)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPayment&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.receiptSizeBytes, receiptSizeBytes) || other.receiptSizeBytes == receiptSizeBytes)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.reversesPaymentId, reversesPaymentId) || other.reversesPaymentId == reversesPaymentId)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,orderId,type,typeLabel,amount,isReversed,isReversible,hasReceipt,method,methodLabel,reference,receiptUrl,receiptFilename,receiptSizeBytes,notes,reversesPaymentId,reversal,recordedBy,paidAt,createdAt]);
+int get hashCode => Object.hashAll([runtimeType,id,orderId,type,typeLabel,amount,isReversed,isReversible,hasReceipt,receiptIsImage,method,methodLabel,reference,receiptUrl,receiptFilename,receiptSizeBytes,notes,reversesPaymentId,reversal,recordedBy,paidAt,createdAt]);
 
 @override
 String toString() {
-  return 'OrderPayment(id: $id, orderId: $orderId, type: $type, typeLabel: $typeLabel, amount: $amount, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, method: $method, methodLabel: $methodLabel, reference: $reference, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, receiptSizeBytes: $receiptSizeBytes, notes: $notes, reversesPaymentId: $reversesPaymentId, reversal: $reversal, recordedBy: $recordedBy, paidAt: $paidAt, createdAt: $createdAt)';
+  return 'OrderPayment(id: $id, orderId: $orderId, type: $type, typeLabel: $typeLabel, amount: $amount, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, method: $method, methodLabel: $methodLabel, reference: $reference, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, receiptSizeBytes: $receiptSizeBytes, notes: $notes, reversesPaymentId: $reversesPaymentId, reversal: $reversal, recordedBy: $recordedBy, paidAt: $paidAt, createdAt: $createdAt)';
 }
 
 
@@ -69,7 +72,7 @@ abstract mixin class $OrderPaymentCopyWith<$Res>  {
   factory $OrderPaymentCopyWith(OrderPayment value, $Res Function(OrderPayment) _then) = _$OrderPaymentCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'order_id') int orderId,@JsonKey(unknownEnumValue: OrderPaymentType.unknown) OrderPaymentType type,@JsonKey(name: 'type_label') String typeLabel, String amount,@JsonKey(name: 'is_reversed') bool isReversed,@JsonKey(name: 'is_reversible') bool isReversible,@JsonKey(name: 'has_receipt') bool hasReceipt,@JsonKey(unknownEnumValue: PaymentMethod.unknown) PaymentMethod? method,@JsonKey(name: 'method_label') String? methodLabel, String? reference,@JsonKey(name: 'receipt_url') String? receiptUrl,@JsonKey(name: 'receipt_filename') String? receiptFilename,@JsonKey(name: 'receipt_size_bytes') int? receiptSizeBytes, String? notes,@JsonKey(name: 'reverses_payment_id') int? reversesPaymentId, OrderPaymentReversal? reversal,@JsonKey(name: 'recorder') PaymentRecorder? recordedBy,@JsonKey(name: 'paid_at') DateTime? paidAt,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'order_id') int orderId,@JsonKey(unknownEnumValue: OrderPaymentType.unknown) OrderPaymentType type,@JsonKey(name: 'type_label') String typeLabel, String amount,@JsonKey(name: 'is_reversed') bool isReversed,@JsonKey(name: 'is_reversible') bool isReversible,@JsonKey(name: 'has_receipt') bool hasReceipt,@JsonKey(name: 'receipt_is_image') bool receiptIsImage,@JsonKey(unknownEnumValue: PaymentMethod.unknown) PaymentMethod? method,@JsonKey(name: 'method_label') String? methodLabel, String? reference,@JsonKey(name: 'receipt_url') String? receiptUrl,@JsonKey(name: 'receipt_filename') String? receiptFilename,@JsonKey(name: 'receipt_size_bytes') int? receiptSizeBytes, String? notes,@JsonKey(name: 'reverses_payment_id') int? reversesPaymentId, OrderPaymentReversal? reversal,@JsonKey(name: 'recorder') PaymentRecorder? recordedBy,@JsonKey(name: 'paid_at') DateTime? paidAt,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -86,7 +89,7 @@ class _$OrderPaymentCopyWithImpl<$Res>
 
 /// Create a copy of OrderPayment
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? orderId = null,Object? type = null,Object? typeLabel = null,Object? amount = null,Object? isReversed = null,Object? isReversible = null,Object? hasReceipt = null,Object? method = freezed,Object? methodLabel = freezed,Object? reference = freezed,Object? receiptUrl = freezed,Object? receiptFilename = freezed,Object? receiptSizeBytes = freezed,Object? notes = freezed,Object? reversesPaymentId = freezed,Object? reversal = freezed,Object? recordedBy = freezed,Object? paidAt = freezed,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? orderId = null,Object? type = null,Object? typeLabel = null,Object? amount = null,Object? isReversed = null,Object? isReversible = null,Object? hasReceipt = null,Object? receiptIsImage = null,Object? method = freezed,Object? methodLabel = freezed,Object? reference = freezed,Object? receiptUrl = freezed,Object? receiptFilename = freezed,Object? receiptSizeBytes = freezed,Object? notes = freezed,Object? reversesPaymentId = freezed,Object? reversal = freezed,Object? recordedBy = freezed,Object? paidAt = freezed,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,orderId: null == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
@@ -96,6 +99,7 @@ as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullabl
 as String,isReversed: null == isReversed ? _self.isReversed : isReversed // ignore: cast_nullable_to_non_nullable
 as bool,isReversible: null == isReversible ? _self.isReversible : isReversible // ignore: cast_nullable_to_non_nullable
 as bool,hasReceipt: null == hasReceipt ? _self.hasReceipt : hasReceipt // ignore: cast_nullable_to_non_nullable
+as bool,receiptIsImage: null == receiptIsImage ? _self.receiptIsImage : receiptIsImage // ignore: cast_nullable_to_non_nullable
 as bool,method: freezed == method ? _self.method : method // ignore: cast_nullable_to_non_nullable
 as PaymentMethod?,methodLabel: freezed == methodLabel ? _self.methodLabel : methodLabel // ignore: cast_nullable_to_non_nullable
 as String?,reference: freezed == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -217,10 +221,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(name: 'receipt_is_image')  bool receiptIsImage, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OrderPayment() when $default != null:
-return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt);case _:
+return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.receiptIsImage,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt);case _:
   return orElse();
 
 }
@@ -238,10 +242,10 @@ return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(name: 'receipt_is_image')  bool receiptIsImage, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _OrderPayment():
-return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt);case _:
+return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.receiptIsImage,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -258,10 +262,10 @@ return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(name: 'receipt_is_image')  bool receiptIsImage, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _OrderPayment() when $default != null:
-return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt);case _:
+return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.receiptIsImage,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt);case _:
   return null;
 
 }
@@ -273,7 +277,7 @@ return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_
 @JsonSerializable()
 
 class _OrderPayment extends OrderPayment {
-  const _OrderPayment({required this.id, @JsonKey(name: 'order_id') required this.orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown) required this.type, @JsonKey(name: 'type_label') required this.typeLabel, required this.amount, @JsonKey(name: 'is_reversed') this.isReversed = false, @JsonKey(name: 'is_reversible') this.isReversible = false, @JsonKey(name: 'has_receipt') this.hasReceipt = false, @JsonKey(unknownEnumValue: PaymentMethod.unknown) this.method, @JsonKey(name: 'method_label') this.methodLabel, this.reference, @JsonKey(name: 'receipt_url') this.receiptUrl, @JsonKey(name: 'receipt_filename') this.receiptFilename, @JsonKey(name: 'receipt_size_bytes') this.receiptSizeBytes, this.notes, @JsonKey(name: 'reverses_payment_id') this.reversesPaymentId, this.reversal, @JsonKey(name: 'recorder') this.recordedBy, @JsonKey(name: 'paid_at') this.paidAt, @JsonKey(name: 'created_at') this.createdAt}): super._();
+  const _OrderPayment({required this.id, @JsonKey(name: 'order_id') required this.orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown) required this.type, @JsonKey(name: 'type_label') required this.typeLabel, required this.amount, @JsonKey(name: 'is_reversed') this.isReversed = false, @JsonKey(name: 'is_reversible') this.isReversible = false, @JsonKey(name: 'has_receipt') this.hasReceipt = false, @JsonKey(name: 'receipt_is_image') this.receiptIsImage = false, @JsonKey(unknownEnumValue: PaymentMethod.unknown) this.method, @JsonKey(name: 'method_label') this.methodLabel, this.reference, @JsonKey(name: 'receipt_url') this.receiptUrl, @JsonKey(name: 'receipt_filename') this.receiptFilename, @JsonKey(name: 'receipt_size_bytes') this.receiptSizeBytes, this.notes, @JsonKey(name: 'reverses_payment_id') this.reversesPaymentId, this.reversal, @JsonKey(name: 'recorder') this.recordedBy, @JsonKey(name: 'paid_at') this.paidAt, @JsonKey(name: 'created_at') this.createdAt}): super._();
   factory _OrderPayment.fromJson(Map<String, dynamic> json) => _$OrderPaymentFromJson(json);
 
 @override final  int id;
@@ -293,6 +297,10 @@ class _OrderPayment extends OrderPayment {
 /// Whether the receipt (الواصل) is on file. Always true on a transfer, which is the one
 /// method that cannot be recorded without one.
 @override@JsonKey(name: 'has_receipt') final  bool hasReceipt;
+/// Whether the receipt is a picture this app can draw full screen, as opposed to a PDF it
+/// hands to the phone. **Decided by the server** from the file it actually stored, so no
+/// copy of the format list lives in Dart.
+@override@JsonKey(name: 'receipt_is_image') final  bool receiptIsImage;
 /// Null on a reversal alone: no money moved, so there is no method to name.
 @override@JsonKey(unknownEnumValue: PaymentMethod.unknown) final  PaymentMethod? method;
 @override@JsonKey(name: 'method_label') final  String? methodLabel;
@@ -331,16 +339,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderPayment&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.receiptSizeBytes, receiptSizeBytes) || other.receiptSizeBytes == receiptSizeBytes)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.reversesPaymentId, reversesPaymentId) || other.reversesPaymentId == reversesPaymentId)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderPayment&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.receiptSizeBytes, receiptSizeBytes) || other.receiptSizeBytes == receiptSizeBytes)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.reversesPaymentId, reversesPaymentId) || other.reversesPaymentId == reversesPaymentId)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,orderId,type,typeLabel,amount,isReversed,isReversible,hasReceipt,method,methodLabel,reference,receiptUrl,receiptFilename,receiptSizeBytes,notes,reversesPaymentId,reversal,recordedBy,paidAt,createdAt]);
+int get hashCode => Object.hashAll([runtimeType,id,orderId,type,typeLabel,amount,isReversed,isReversible,hasReceipt,receiptIsImage,method,methodLabel,reference,receiptUrl,receiptFilename,receiptSizeBytes,notes,reversesPaymentId,reversal,recordedBy,paidAt,createdAt]);
 
 @override
 String toString() {
-  return 'OrderPayment(id: $id, orderId: $orderId, type: $type, typeLabel: $typeLabel, amount: $amount, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, method: $method, methodLabel: $methodLabel, reference: $reference, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, receiptSizeBytes: $receiptSizeBytes, notes: $notes, reversesPaymentId: $reversesPaymentId, reversal: $reversal, recordedBy: $recordedBy, paidAt: $paidAt, createdAt: $createdAt)';
+  return 'OrderPayment(id: $id, orderId: $orderId, type: $type, typeLabel: $typeLabel, amount: $amount, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, method: $method, methodLabel: $methodLabel, reference: $reference, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, receiptSizeBytes: $receiptSizeBytes, notes: $notes, reversesPaymentId: $reversesPaymentId, reversal: $reversal, recordedBy: $recordedBy, paidAt: $paidAt, createdAt: $createdAt)';
 }
 
 
@@ -351,7 +359,7 @@ abstract mixin class _$OrderPaymentCopyWith<$Res> implements $OrderPaymentCopyWi
   factory _$OrderPaymentCopyWith(_OrderPayment value, $Res Function(_OrderPayment) _then) = __$OrderPaymentCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'order_id') int orderId,@JsonKey(unknownEnumValue: OrderPaymentType.unknown) OrderPaymentType type,@JsonKey(name: 'type_label') String typeLabel, String amount,@JsonKey(name: 'is_reversed') bool isReversed,@JsonKey(name: 'is_reversible') bool isReversible,@JsonKey(name: 'has_receipt') bool hasReceipt,@JsonKey(unknownEnumValue: PaymentMethod.unknown) PaymentMethod? method,@JsonKey(name: 'method_label') String? methodLabel, String? reference,@JsonKey(name: 'receipt_url') String? receiptUrl,@JsonKey(name: 'receipt_filename') String? receiptFilename,@JsonKey(name: 'receipt_size_bytes') int? receiptSizeBytes, String? notes,@JsonKey(name: 'reverses_payment_id') int? reversesPaymentId, OrderPaymentReversal? reversal,@JsonKey(name: 'recorder') PaymentRecorder? recordedBy,@JsonKey(name: 'paid_at') DateTime? paidAt,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'order_id') int orderId,@JsonKey(unknownEnumValue: OrderPaymentType.unknown) OrderPaymentType type,@JsonKey(name: 'type_label') String typeLabel, String amount,@JsonKey(name: 'is_reversed') bool isReversed,@JsonKey(name: 'is_reversible') bool isReversible,@JsonKey(name: 'has_receipt') bool hasReceipt,@JsonKey(name: 'receipt_is_image') bool receiptIsImage,@JsonKey(unknownEnumValue: PaymentMethod.unknown) PaymentMethod? method,@JsonKey(name: 'method_label') String? methodLabel, String? reference,@JsonKey(name: 'receipt_url') String? receiptUrl,@JsonKey(name: 'receipt_filename') String? receiptFilename,@JsonKey(name: 'receipt_size_bytes') int? receiptSizeBytes, String? notes,@JsonKey(name: 'reverses_payment_id') int? reversesPaymentId, OrderPaymentReversal? reversal,@JsonKey(name: 'recorder') PaymentRecorder? recordedBy,@JsonKey(name: 'paid_at') DateTime? paidAt,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -368,7 +376,7 @@ class __$OrderPaymentCopyWithImpl<$Res>
 
 /// Create a copy of OrderPayment
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? orderId = null,Object? type = null,Object? typeLabel = null,Object? amount = null,Object? isReversed = null,Object? isReversible = null,Object? hasReceipt = null,Object? method = freezed,Object? methodLabel = freezed,Object? reference = freezed,Object? receiptUrl = freezed,Object? receiptFilename = freezed,Object? receiptSizeBytes = freezed,Object? notes = freezed,Object? reversesPaymentId = freezed,Object? reversal = freezed,Object? recordedBy = freezed,Object? paidAt = freezed,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? orderId = null,Object? type = null,Object? typeLabel = null,Object? amount = null,Object? isReversed = null,Object? isReversible = null,Object? hasReceipt = null,Object? receiptIsImage = null,Object? method = freezed,Object? methodLabel = freezed,Object? reference = freezed,Object? receiptUrl = freezed,Object? receiptFilename = freezed,Object? receiptSizeBytes = freezed,Object? notes = freezed,Object? reversesPaymentId = freezed,Object? reversal = freezed,Object? recordedBy = freezed,Object? paidAt = freezed,Object? createdAt = freezed,}) {
   return _then(_OrderPayment(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,orderId: null == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
@@ -378,6 +386,7 @@ as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullabl
 as String,isReversed: null == isReversed ? _self.isReversed : isReversed // ignore: cast_nullable_to_non_nullable
 as bool,isReversible: null == isReversible ? _self.isReversible : isReversible // ignore: cast_nullable_to_non_nullable
 as bool,hasReceipt: null == hasReceipt ? _self.hasReceipt : hasReceipt // ignore: cast_nullable_to_non_nullable
+as bool,receiptIsImage: null == receiptIsImage ? _self.receiptIsImage : receiptIsImage // ignore: cast_nullable_to_non_nullable
 as bool,method: freezed == method ? _self.method : method // ignore: cast_nullable_to_non_nullable
 as PaymentMethod?,methodLabel: freezed == methodLabel ? _self.methodLabel : methodLabel // ignore: cast_nullable_to_non_nullable
 as String?,reference: freezed == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable

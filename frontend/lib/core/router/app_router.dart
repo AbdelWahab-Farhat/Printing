@@ -78,30 +78,32 @@ abstract final class Routes {
   static const String login = '/login';
 
   /// The four tabs inside the shell. Each is the first location of its own branch, so
-  /// `context.go(Routes.products)` selects that tab rather than covering the shell.
+  /// `context.go(Routes.warehouse)` selects that tab rather than covering the shell.
   static const String home = '/';
   static const String orders = '/orders';
 
   /// The orders behind one number on the home screen. Takes an [OrdersFilter] as `extra` — the
   /// Arabic title travels with it, because this app deliberately holds no table of status names.
   static const String ordersFiltered = '/orders/filter';
-  static const String products = '/products';
+  static const String warehouse = '/warehouse';
   static const String customers = '/customers';
 
-  /// Reached from the drawer and from the home screen's shortcuts. Outside the shell, so the
-  /// bottom bar never claims the user is on a tab they have left.
-  static const String warehouse = '/warehouse';
+  /// Reached from the drawer. Outside the shell, so the bottom bar never claims the user is on
+  /// a tab they have left. It held the tab المخزن now has, and they traded places for the plain
+  /// reason the workshop gave: the stock is opened every day, the catalogue once in a while.
+  static const String products = '/products';
 
-  /// The shelves of one warehouse, and the ledger narrowed to it. Declared as children of
-  /// `/warehouse`, because that is what they are: a balance has no life outside its place.
+  /// The shelves of one warehouse, and the ledger narrowed to it. Full paths rather than
+  /// children of `/warehouse`: the tab's branch keeps the bottom bar under everything nested in
+  /// it, and a room of shelves is a place the user goes *to*, not a tab they browse between.
   static String warehouseStocks(int warehouseId) =>
       '/warehouse/$warehouseId/stocks';
 
   static String warehouseMovements(int warehouseId) =>
       '/warehouse/$warehouseId/movements';
 
-  static const String warehouseStocksPath = ':id/stocks';
-  static const String warehouseMovementsPath = ':id/movements';
+  static const String warehouseStocksPath = '/warehouse/:id/stocks';
+  static const String warehouseMovementsPath = '/warehouse/:id/movements';
 
   /// Every movement in the workshop, whatever the place.
   static const String stockMovements = '/stock-movements';
@@ -353,8 +355,15 @@ abstract final class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: Routes.products,
-                builder: (context, state) => const ProductsPage(),
+                path: Routes.warehouse,
+                // The tab hides for an account without the grant — see [RootPage] — and this
+                // is the boundary behind that courtesy: a deep link, a notification tap or a
+                // stale back-stack entry cannot select a tab whose every request would 403.
+                redirect: (context, state) =>
+                    sl<Session>().can(AppPermission.viewInventory)
+                    ? null
+                    : Routes.home,
+                builder: (context, state) => const WarehousesPage(),
               ),
             ],
           ),
@@ -369,54 +378,49 @@ abstract final class AppRouter {
         ],
       ),
 
-      // Outside the shell on purpose: these are reached from the drawer and cover the tabs, so
-      // the bottom bar does not claim the user is still on a tab they have left.
-      // Guarded like every other screen whose every request would answer 403 without the
-      // permission: `can()` answers synchronously, so a deep link cannot open it either.
+      // Outside the shell on purpose, even though `/warehouse` itself is a tab now: a room of
+      // shelves is a place the user goes *to*, so it covers the tabs the way `/orders/:id`
+      // does. Guarded each on its own, because there is no guarded parent to inherit from —
+      // `can()` answers synchronously, so a deep link cannot open either.
       GoRoute(
-        path: Routes.warehouse,
+        path: Routes.warehouseStocksPath,
         redirect: (context, state) =>
             sl<Session>().can(AppPermission.viewInventory) ? null : Routes.home,
-        builder: (context, state) => const WarehousesPage(),
-        routes: [
-          GoRoute(
-            path: Routes.warehouseStocksPath,
-            builder: (context, state) {
-              final id = int.tryParse(state.pathParameters['id'] ?? '');
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
 
-              // A deep link is somebody else's text; `extra` is ours and is absent on one. The
-              // screen copes with a missing warehouse — it cannot cope with a missing id.
-              return id == null
-                  ? const _UnknownWarehouse()
-                  : WarehouseStocksPage(
-                      warehouseId: id,
-                      warehouse: state.extra as Warehouse?,
-                    );
-            },
-          ),
-          // The ledger for one place — and, when a shelf hands its own row over as `extra`,
-          // for one size in that place. Both are the same list asked a narrower question, so
-          // they are one route rather than two.
-          GoRoute(
-            path: Routes.warehouseMovementsPath,
-            builder: (context, state) {
-              final id = int.tryParse(state.pathParameters['id'] ?? '');
-              if (id == null) return const _UnknownWarehouse();
+          // A deep link is somebody else's text; `extra` is ours and is absent on one. The
+          // screen copes with a missing warehouse — it cannot cope with a missing id.
+          return id == null
+              ? const _UnknownWarehouse()
+              : WarehouseStocksPage(
+                  warehouseId: id,
+                  warehouse: state.extra as Warehouse?,
+                );
+        },
+      ),
+      // The ledger for one place — and, when a shelf hands its own row over as `extra`,
+      // for one size in that place. Both are the same list asked a narrower question, so
+      // they are one route rather than two.
+      GoRoute(
+        path: Routes.warehouseMovementsPath,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewInventory) ? null : Routes.home,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          if (id == null) return const _UnknownWarehouse();
 
-              // `extra` is ours and is absent on a deep link, which is exactly why the screen
-              // has to work without it: the wider feed is still a correct answer.
-              final shelf =
-                  state.extra
-                      as ({Warehouse? warehouse, WarehouseStock stock})?;
+          // `extra` is ours and is absent on a deep link, which is exactly why the screen
+          // has to work without it: the wider feed is still a correct answer.
+          final shelf =
+              state.extra as ({Warehouse? warehouse, WarehouseStock stock})?;
 
-              return StockMovementsPage(
-                warehouseId: id,
-                warehouseName: shelf?.warehouse?.name,
-                stock: shelf?.stock,
-              );
-            },
-          ),
-        ],
+          return StockMovementsPage(
+            warehouseId: id,
+            warehouseName: shelf?.warehouse?.name,
+            stock: shelf?.stock,
+          );
+        },
       ),
       GoRoute(
         path: Routes.stockMovements,
@@ -826,6 +830,14 @@ abstract final class AppRouter {
         path: Routes.pickLocation,
         builder: (context, state) =>
             PickLocationPage(initial: state.extra as LatLng?),
+      ),
+      // The catalogue itself, reached from the drawer since المخزن took its tab. Guarded on
+      // the permission its every request needs, exactly as its drawer row is gated.
+      GoRoute(
+        path: Routes.products,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewProducts) ? null : Routes.home,
+        builder: (context, state) => const ProductsPage(),
       ),
       GoRoute(
         path: Routes.addProduct,

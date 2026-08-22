@@ -33,6 +33,7 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
                 pricingUnitLabel: item.pricingUnitLabel,
                 unitPrice: item.unitPrice,
                 quantity: item.quantity,
+                warehouseQuantity: item.warehouseQuantity,
               ),
           ],
           discount: order.discount,
@@ -142,6 +143,9 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
                   productId: line.productId,
                   variantId: line.variantId,
                   quantity: _ascii(line.quantity),
+                  // Straight back as it arrived — the server already normalised it, and this
+                  // screen never gave anybody a chance to retype it.
+                  warehouseQuantity: line.warehouseQuantity,
                 ),
             ]
           : null,
