@@ -137,6 +137,9 @@ class ProductController extends Controller
         $updated = $this->inventory->setStockUnit(
             $product,
             PricingUnit::from($request->string('unit')->toString()),
+            // Named on every adjustment this writes: discarding a shelf is an act, and the
+            // ledger records who performed it exactly as it does for any other movement.
+            (int) $request->user()->getKey(),
         );
 
         return $this->success(new ProductResource($updated), 'تم تحديث وحدة التخزين بنجاح');

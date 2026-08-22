@@ -139,12 +139,12 @@ class InventoryService
     }
 
     /**
-     * Declares what a product's stock is counted in, cascading it to every existing balance and
-     * batch for the product's variants — see {@see SetStockUnit}.
+     * Declares what a product's stock is counted in — discarding whatever is on the shelf,
+     * because a quantity counted in one unit means nothing in another. See {@see SetStockUnit}.
      */
-    public function setStockUnit(Product $product, PricingUnit $unit): Product
+    public function setStockUnit(Product $product, PricingUnit $unit, int $actorId): Product
     {
-        return ($this->setStockUnit)($product, $unit);
+        return ($this->setStockUnit)($product, $unit, $actorId);
     }
 
     // ── the ledger ──────────────────────────────────────────────────────────────────────

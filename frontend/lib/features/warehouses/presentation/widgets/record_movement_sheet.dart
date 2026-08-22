@@ -56,6 +56,13 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
   MovementKind _kind = MovementKind.arrival;
   int? _variantId;
   String? _variantLabel;
+
+  /// What the shelf counts this size in — «قطعة» or «كيلوغرام», the server's own word.
+  ///
+  /// Held so the quantity field can say which unit it is asking for. It is the *stock* unit and
+  /// not the pricing one: a bag sold by the piece may still be weighed onto the shelf, and this
+  /// sheet writes to the shelf.
+  String? _stockUnitLabel;
   late Warehouse? _warehouse = widget.warehouse;
   Warehouse? _source;
 
@@ -73,6 +80,7 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
     setState(() {
       _variantId = picked.variant.id;
       _variantLabel = '${picked.product.name} · ${picked.variant.label}';
+      _stockUnitLabel = picked.product.stockUnitLabel;
     });
   }
 
@@ -214,7 +222,15 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                   SizedBox(height: 14.h),
                   AppTextField(
                     controller: _quantity,
-                    label: 'الكمية',
+                    // **Names the unit once a size is chosen.** «الكمية» alone asks for a number
+                    // without saying of what, and the answer differs by product now that a bag
+                    // sold by the piece can be stocked by the kilo — typing 200 meaning bags into
+                    // a field that records kilograms is a mistake the form should not allow to be
+                    // made silently. Plain «الكمية» until something is picked, because until then
+                    // there is no unit to name.
+                    label: _stockUnitLabel == null
+                        ? 'الكمية'
+                        : 'الكمية ($_stockUnitLabel)',
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     textDirection: TextDirection.ltr,
                     validator: Validators.compose([

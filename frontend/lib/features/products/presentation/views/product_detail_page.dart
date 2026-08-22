@@ -139,14 +139,20 @@ Future<void> _changeStockUnit(
   // Backing out is an ordinary ending, and so is picking what it already says.
   if (chosen == null || chosen == current || !context.mounted) return;
 
-  final confirmed = await showCustomDialog(
+  // **Destructive, and said so plainly.** The balances are not relabelled — they are emptied,
+  // because a quantity counted in one unit means nothing in another: 200 bags are not 200 kg.
+  // The old wording promised the opposite («الكميات المسجَّلة لا تتغير»), which would now be a
+  // lie told immediately before the thing it denies.
+  final confirmed = await showDestructiveDialog(
     context: context,
     title: 'تغيير وحدة المخزون',
     description:
-        'ستُحتسب حركات المخزون لهذا المنتج ${chosen.label} من الآن، وسيُعاد وسم كل أرصدة '
-        'المخازن ودفعات التكلفة الحالية بالوحدة نفسها. الكميات المسجَّلة لا تتغير.',
-    confirmLabel: 'تغيير',
-    severity: DialogSeverity.warning,
+        'ستُحتسب حركات المخزون لهذا المنتج ${chosen.label} من الآن.\n\n'
+        '⚠️ الأرصدة الحالية في كل المخازن ستُصفَّر، لأن الكمية المحسوبة بالوحدة القديمة '
+        'لا تُنقل إلى الوحدة الجديدة — ٢٠٠ قطعة ليست ٢٠٠ كيلوغرام.\n\n'
+        'يُسجَّل لكل مخزن قيد تسوية بالنقص يوضّح الكمية التي كانت فيه، فلا يختفي شيء '
+        'من السجل. أعد إدخال الأرصدة بالوحدة الجديدة بعد التغيير.',
+    confirmLabel: 'تصفير وتغيير الوحدة',
   );
   if (!(confirmed ?? false) || !context.mounted) return;
 
