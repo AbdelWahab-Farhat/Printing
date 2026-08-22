@@ -3,8 +3,12 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/write_off_dialog.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_payments.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -269,6 +273,119 @@ void main() {
       // Assert
       expect(returned, isA<ServerFailure>());
       expect((returned! as ServerFailure).fieldErrors?['amount'], isNotNull);
+    });
+  });
+
+  // ── the dialog ────────────────────────────────────────────────────────────────────────
+
+  group('the dialog', () {
+    /// A screen with one button that opens the dialog and keeps what it came back with.
+    Widget host(void Function(WriteOffDraft?) onClosed) => ScreenUtilInit(
+      designSize: const Size(430, 932),
+      builder: (context, _) => MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: const [Locale('ar')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  final draft = await showWriteOffDialog(
+                    context: context,
+                    summary: const PaymentSummary(
+                      grandTotal: '175.00',
+                      paidAmount: '0.00',
+                      remainingAmount: '175.00',
+                      paymentStatus: PaymentStatus.unpaid,
+                      paymentStatusLabel: 'غير مدفوعة',
+                    ),
+                  );
+
+                  onClosed(draft);
+                },
+                child: const Text('افتح'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    testWidgets('it opens on the whole remaining balance and hands back what was typed', (
+      tester,
+    ) async {
+      // Arrange
+      WriteOffDraft? draft;
+      await tester.pumpWidget(host((value) => draft = value));
+      await tester.tap(find.text('افتح'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.enterText(find.widgetWithText(TextFormField, 'السبب'), 'الفرق لا يُطالَب به');
+      await tester.tap(find.widgetWithText(TextButton, 'شطب الفرق'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(draft?.amount, '175.00');
+      expect(draft?.reason, 'الفرق لا يُطالَب به');
+    });
+
+    testWidgets('it survives being rebuilt on its way out, with the keyboard closing', (
+      tester,
+    ) async {
+      // Arrange — the shape of the crash this dialog shipped with, as close as a widget test
+      // gets to it. On a real phone the keyboard closes as the dialog pops, `viewInsets` moves,
+      // and the fields rebuild *while the route is still fading out*. The first version had
+      // disposed its controllers by then — they lived beside `showDialog` and went in
+      // `.whenComplete()`, which fires the instant the route pops — and the rebuild read dead
+      // controllers.
+      //
+      // **This does not fail against that version**, and it is not claimed to: without a real
+      // keyboard nothing re-attaches a listener, which is the operation that actually throws.
+      // What it does pin down is the contract the fix rests on — a dialog that is rebuilt after
+      // being popped is still a live dialog — so the ownership cannot quietly move back out of
+      // the State.
+      WriteOffDraft? draft;
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+
+      await tester.pumpWidget(host((value) => draft = value));
+      await tester.tap(find.text('افتح'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextFormField, 'السبب'), 'فرق التسليم');
+
+      // Act
+      await tester.tap(find.widgetWithText(TextButton, 'شطب الفرق'));
+      await tester.pump();
+      tester.view.viewInsets = FakeViewPadding.zero;
+      tester.element(find.byType(AlertDialog)).markNeedsBuild();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(draft, isNotNull);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a blank reason keeps the dialog open and says so', (tester) async {
+      // Arrange
+      WriteOffDraft? draft;
+      await tester.pumpWidget(host((value) => draft = value));
+      await tester.tap(find.text('افتح'));
+      await tester.pumpAndSettle();
+
+      // Act — the amount is prefilled, so the reason is the only thing missing
+      await tester.tap(find.widgetWithText(TextButton, 'شطب الفرق'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('السبب مطلوب'), findsOneWidget);
+      expect(draft, isNull);
     });
   });
 }

@@ -71,6 +71,30 @@ ssh <server> printing-deploy
 **Hostnames, addresses and credentials are deliberately not written down here** — this repository
 is public, and a deployment map is reconnaissance. They live in the operator's own notes.
 
+### Rebuilding the caches — [`backend/bin/rebuild-caches`](backend/bin/rebuild-caches)
+
+New code on a box does nothing until the framework caches are rebuilt, and **skipping it fails
+silently in a way that looks exactly like a bug in the code**. It happened on 2026-08-23:
+
+- a brand-new endpoint answered `404` while the controller behind it was demonstrably running —
+  the same responses carried a field that only the new code adds. The cached route table had
+  been written before the route existed.
+- a validation rule read a config key as absent and refused every upload with «لا يمكن تجاوز 0
+  صور», while the file it comes from plainly says `5`. The cached config predated the key.
+
+Neither left a line in a log. So the step lives in the repository rather than only inside each
+server's own `printing-deploy` — that script is untracked and there is one copy per box, which
+is how the boxes drifted far enough for one of them to skip it. **Deploy scripts call this
+file**, and it clears before it rebuilds, because `optimize` overwrites the artefacts it still
+knows how to write and leaves the ones it does not:
+
+```bash
+cd /path/to/printing/backend && bin/rebuild-caches
+
+# On the cPanel box the system `php` is not the 8.4 the app runs under:
+PHP_BIN=/opt/cpanel/ea-php84/root/usr/bin/php bin/rebuild-caches
+```
+
 Three things do not travel with a deploy, all on purpose:
 
 - **`backend/database/seeders/data/customers.php`** — the customer book is real names and phone

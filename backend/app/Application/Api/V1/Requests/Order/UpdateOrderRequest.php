@@ -52,7 +52,9 @@ class UpdateOrderRequest extends StoreOrderRequest
             'items.*.notes' => ['nullable', 'string', 'max:500'],
             'items.*.sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
 
-            'items.*.warehouse_quantity' => ['nullable', 'numeric', 'gt:0', 'max:999999999'],
+            // Not accepted here either — see StoreOrderRequest. An edit rebuilds the whole line
+            // set, and the only status that holds a measured quantity («جاهزة») is one where
+            // `Order::itemsAreEditable()` is already false, so there is nothing here to preserve.
         ];
     }
 }

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Orders;
 
+use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Delivery\Models\City;
@@ -1022,6 +1025,82 @@ class OrderWorkflowTest extends TestCase
             'from_warehouse_id' => $warehouse->id,
             'quantity' => '10.000',
         ]);
+    }
+
+    /**
+     * A run sold by the piece off a shelf counted in kilograms, printed and waiting to be
+     * weighed.
+     *
+     * @return array{0: Order, 1: OrderItem, 2: Warehouse}
+     */
+    private function runWeighedOffTheShelf(string $onTheShelf = '100.000'): array
+    {
+        $product = Product::factory()->create([
+            'pricing_unit' => PricingUnit::Piece,
+            'stock_unit' => PricingUnit::Kilogram,
+        ]);
+        $variant = ProductVariant::factory()->for($product)->create(['label' => '25*35']);
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        $item = OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'quantity' => '500',
+            'pricing_unit' => PricingUnit::Piece,
+        ]);
+        $warehouse = Warehouse::factory()->create();
+        WarehouseStock::factory()->quantity($onTheShelf)->unit(PricingUnit::Kilogram)->create([
+            'warehouse_id' => $warehouse->id,
+            'product_variant_id' => $variant->id,
+        ]);
+
+        return [$order, $item, $warehouse];
+    }
+
+    public function test_the_weight_typed_at_ready_is_what_leaves_the_shelf(): void
+    {
+        // Arrange — 500 bags agreed with the customer, and the parcel goes on a scale: 12.5 kg.
+        [$order, $item, $warehouse] = $this->runWeighedOffTheShelf();
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Ready->value,
+            'fields' => [
+                'warehouse_id' => $warehouse->id,
+                "warehouse_quantity_{$item->getKey()}" => '12.5',
+            ],
+        ]);
+
+        // Assert — the shelf loses the weight, not the piece count, and the line keeps the
+        // figure so every cost computed behind it is computed on the same physical amount.
+        $response->assertOk();
+        $this->assertSame('87.500', $this->stockOf($warehouse, $item->product_variant_id));
+        $this->assertSame('12.500', (string) $item->fresh()->warehouse_quantity);
+        $this->assertDatabaseHas('stock_movements', [
+            'product_variant_id' => $item->product_variant_id,
+            'from_warehouse_id' => $warehouse->id,
+            'quantity' => '12.500',
+        ]);
+    }
+
+    public function test_a_run_stocked_in_another_unit_will_not_be_shelved_unweighed(): void
+    {
+        // Arrange — the same run against a shelf deep enough that deducting the *piece* count
+        // would go through unnoticed, which is exactly what used to happen. And nobody weighs it.
+        [$order, $item, $warehouse] = $this->runWeighedOffTheShelf('1000.000');
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Ready->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ]);
+
+        // Assert — refused, and nothing moved: deducting 500 off a kilogram shelf because the
+        // box was left empty is the mistake this whole field exists to prevent.
+        $response->assertStatus(422);
+        $this->assertSame('1000.000', $this->stockOf($warehouse, $item->product_variant_id));
+        $this->assertSame(OrderStatus::Printing, $order->fresh()->status);
     }
 
     public function test_stock_already_deducted_does_not_deduct_stock_a_second_time(): void

@@ -68,10 +68,11 @@ class StoreOrderRequest extends FormRequest
             'items.*.notes' => ['nullable', 'string', 'max:500'],
             'items.*.sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
 
-            // Only when the sales unit and the warehouse unit genuinely differ — see the
-            // docblock on OrderItem::warehouse_quantity. Left null, DeductOrderStock deducts
-            // `quantity` unchanged.
-            'items.*.warehouse_quantity' => ['nullable', 'numeric', 'gt:0', 'max:999999999'],
+            // **No `warehouse_quantity` here, deliberately.** What comes off the shelf is asked
+            // for on the way into «جاهزة» — see {@see \App\Domain\Order\Support\TransitionFields} —
+            // by the person holding the parcel, not by a clerk agreeing a piece count on the
+            // phone before anything has been printed or weighed. One writer, at the one moment
+            // the answer exists.
         ];
     }
 
@@ -116,7 +117,6 @@ class StoreOrderRequest extends FormRequest
             'design_fee' => 'سعر التصميم',
             'discount' => 'الخصم',
             'items' => 'بنود الطلبية',
-            'items.*.warehouse_quantity' => 'الكمية المخصومة من المخزن',
         ];
     }
 }

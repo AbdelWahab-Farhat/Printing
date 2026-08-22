@@ -38,6 +38,9 @@ final class ChangeOrderStatus
         // Through the module's front door, never `ShippingCompany::query()` — the same seam
         // every other cross-context read here goes through.
         private readonly DeliveryService $delivery,
+        // The only writer of `warehouse_quantity`, run immediately before the deduction that
+        // reads it — see its own docblock.
+        private readonly SetOrderStockQuantities $setStockQuantities,
         // The first real link to Inventory — see DeductOrderStock's own docblock for why it is
         // its own class rather than inlined here.
         private readonly DeductOrderStock $deductStock,
@@ -186,6 +189,11 @@ final class ChangeOrderStatus
             $this->guardShortage($order, $target);
 
             if ($deductStock && isset($fields['warehouse_id'])) {
+                // **Before the deduction, never after.** What leaves the shelf is
+                // `warehouse_quantity ?? quantity`, so a figure written afterwards would be a
+                // note about a movement that had already taken the wrong number.
+                ($this->setStockQuantities)($order->loadMissing('items'), $fields);
+
                 $this->deductStockForOrder($order, (int) $fields['warehouse_id'], $actor);
                 $this->costProductionForOrder($order, $actor);
             }
@@ -338,7 +346,7 @@ final class ChangeOrderStatus
             throw FulfillmentRequiresAnActor::make();
         }
 
-        ($this->deductStock)($order->loadMissing('items'), $warehouseId, (int) $actor->getKey());
+        ($this->deductStock)($order->loadMissing('items.product'), $warehouseId, (int) $actor->getKey());
     }
 
     /**

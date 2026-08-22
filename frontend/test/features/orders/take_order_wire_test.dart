@@ -204,43 +204,30 @@ void main() {
     });
   });
 
-  test('a weighed line carries its warehouse figure, and an ordinary one omits it', () async {
-    // Arrange — forty bags sold by the piece that weigh ten kilos together, and beside it a
-    // line nobody put on a scale.
-    const weighed = NewOrder(
+  test('no line tells the server what comes off the shelf', () async {
+    // Arrange — a plain two-line order. What leaves the warehouse is asked for on the way into
+    // «جاهزة», by whoever is holding the parcel; the endpoint that takes the order no longer
+    // accepts the key at all.
+    const taken = NewOrder(
       customerId: 3,
       cityId: 1,
       designSource: 'none',
       items: [
-        NewOrderItem(
-          productId: 9,
-          productVariantId: 14,
-          quantity: '40',
-          warehouseQuantity: '10',
-          sortOrder: 0,
-        ),
-        NewOrderItem(
-          productId: 9,
-          productVariantId: 15,
-          quantity: '25',
-          sortOrder: 1,
-        ),
+        NewOrderItem(productId: 9, productVariantId: 14, quantity: '40', sortOrder: 0),
+        NewOrderItem(productId: 9, productVariantId: 15, quantity: '25', sortOrder: 1),
       ],
     );
 
     // Act
-    await repository.create(weighed);
+    await repository.create(taken);
 
-    // Assert — **absent, never zero.** A `0` would tell the press to take nothing off the
-    // shelf; an absent key tells it to deduct the quantity unchanged.
+    // Assert
     final sent = jsonDecode(adapter.body!) as Map<String, dynamic>;
     final items = sent['items'] as List;
 
-    expect((items.first as Map<String, dynamic>)['warehouse_quantity'], '10');
-    expect(
-      (items.last as Map<String, dynamic>).containsKey('warehouse_quantity'),
-      isFalse,
-    );
+    for (final item in items) {
+      expect((item as Map<String, dynamic>).containsKey('warehouse_quantity'), isFalse);
+    }
   });
 
   test('the order that comes back is the server’s, not the one that was sent', () async {

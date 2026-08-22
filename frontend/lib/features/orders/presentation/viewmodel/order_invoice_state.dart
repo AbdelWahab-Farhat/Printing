@@ -15,11 +15,6 @@ abstract class InvoiceLine with _$InvoiceLine {
     required String pricingUnitLabel,
     required String unitPrice,
     required String quantity,
-
-    /// What leaves the shelf for this line. **Held only to be sent back unchanged** — this
-    /// sheet shows no control for it, but an edit that omitted it would erase it server-side.
-    /// See [InvoiceLineUpdate.warehouseQuantity].
-    String? warehouseQuantity,
   }) = _InvoiceLine;
 
   const InvoiceLine._();

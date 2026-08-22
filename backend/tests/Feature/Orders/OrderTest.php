@@ -147,6 +147,23 @@ class OrderTest extends TestCase
         $this->assertDatabaseCount('orders', 1);
     }
 
+    public function test_taking_an_order_no_longer_records_what_leaves_the_shelf(): void
+    {
+        // Arrange — a clerk on the phone agreeing «٣٠٠ قطعة». Nothing has been printed, nothing
+        // has been weighed, and the parcel this figure would describe does not exist yet.
+        $headers = $this->clerk();
+        $payload = $this->payload();
+        $payload['items'][0]['warehouse_quantity'] = '12.5';
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $payload);
+
+        // Assert — taken, and the line holds no measurement: it is asked for on the way into
+        // «جاهزة» instead, by whoever has the parcel and the scale.
+        $response->assertCreated();
+        $this->assertNull(OrderItem::query()->latest('id')->first()->warehouse_quantity);
+    }
+
     public function test_an_order_number_is_plain_digits(): void
     {
         // Arrange

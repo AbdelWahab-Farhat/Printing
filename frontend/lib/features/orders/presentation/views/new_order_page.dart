@@ -246,12 +246,6 @@ class _NewOrderViewState extends State<_NewOrderView> {
             quantity: line.quantity.text,
             // Only for the category the API honours a typed price on; absent everywhere else.
             unitPrice: line.isPricedByHand ? line.unitPrice.text : null,
-            // Left empty on nearly every line, and empty means «نفس وحدة البيع» — the use case
-            // turns a blank into an absent key rather than a zero, which would tell the press
-            // to take nothing off the shelf.
-            warehouseQuantity: line.isWeighedOffTheShelf
-                ? line.warehouseQuantity.text
-                : null,
           ),
       ],
     );
@@ -487,7 +481,6 @@ class _NewOrderViewState extends State<_NewOrderView> {
             line: line,
             quantityError: submission.quantityError(index),
             unitPriceError: submission.unitPriceError(index),
-            warehouseQuantityError: submission.warehouseQuantityError(index),
             onChanged: () {
               context.read<TakeOrderCubit>().clearFailure();
               // The button's «is this complete» reads the controllers directly.

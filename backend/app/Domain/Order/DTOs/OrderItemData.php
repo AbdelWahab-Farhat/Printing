@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\DTOs;
 
-use App\Domain\Order\Actions\DeductOrderStock;
-
 /**
  * One requested line, before it has been priced.
+ *
+ * **No warehouse quantity.** What comes off the shelf is asked for on the way into «جاهزة» by
+ * the person holding the parcel — see {@see \App\Domain\Order\Support\TransitionFields} — not
+ * when the order is taken, where nobody has been near a scale and the parcel does not exist yet.
  *
  * `unitPrice` is the exception that keeps quote-on-request products orderable. The catalogue
  * carries products whose price «حسب الطلب» — the reinforced 3D paper bags — and refusing to
@@ -26,13 +28,6 @@ final readonly class OrderItemData
         public ?string $unitPrice = null,
         public ?string $notes = null,
         public int $sortOrder = 0,
-        /**
-         * The total this line takes out of the warehouse, in the warehouse's own unit, typed by
-         * the employee only when the sales unit and the warehouse unit genuinely differ — read
-         * off a scale for a batch, not derived from `$quantity`. Null is the common case — see
-         * {@see DeductOrderStock}.
-         */
-        public ?string $warehouseQuantity = null,
     ) {}
 
     /**
@@ -41,7 +36,6 @@ final readonly class OrderItemData
     public static function fromArray(array $validated, int $index = 0): self
     {
         $price = $validated['unit_price'] ?? null;
-        $warehouseQuantity = $validated['warehouse_quantity'] ?? null;
 
         return new self(
             productId: (int) $validated['product_id'],
@@ -52,9 +46,6 @@ final readonly class OrderItemData
                 ? (string) $validated['notes']
                 : null,
             sortOrder: (int) ($validated['sort_order'] ?? $index),
-            warehouseQuantity: $warehouseQuantity !== null && $warehouseQuantity !== ''
-                ? (string) $warehouseQuantity
-                : null,
         );
     }
 }

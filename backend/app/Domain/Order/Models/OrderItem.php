@@ -33,6 +33,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * is the common case — see {@see DeductOrderStock}, which deducts `quantity` unchanged when
  * absent.
  *
+ * **It is asked for on the way into «جاهزة», not when the order is taken.** A clerk agreeing
+ * «٥٠٠ قطعة» with a customer on the phone has not been near a scale, and the parcel does not
+ * exist yet; the foreman who shelves it has both. See {@see \App\Domain\Order\Support\TransitionFields}.
+ *
  * Audited; its entries are read through the order that owns it.
  */
 #[UseFactory(OrderItemFactory::class)]
@@ -131,6 +135,36 @@ class OrderItem extends Model
     public function fulfillmentStockMovement(): BelongsTo
     {
         return $this->belongsTo(StockMovement::class);
+    }
+
+    /**
+     * The unit this line's stock is counted in on the shelf.
+     *
+     * **The product's, not the line's.** `stock_unit` is a fact about the product — see
+     * {@see \App\Domain\Inventory\Actions\SetStockUnit} — while `pricing_unit` is what the
+     * customer was billed in, and since `stock_unit` became settable the two need not agree.
+     *
+     * Falls back to the selling unit when the product is not loaded or has been deleted out from
+     * under the line: an invoice keeps its own copy of everything it needs, and guessing that
+     * the units differ would be the worse of the two mistakes.
+     */
+    public function stockUnit(): PricingUnit
+    {
+        return $this->product?->stock_unit ?? $this->pricing_unit;
+    }
+
+    /**
+     * Whether this line leaves the shelf in a unit other than the one it was sold in.
+     *
+     * **The whole reason {@see $warehouse_quantity} has to be asked for.** «٥٠٠ قطعة» sold off a
+     * shelf counted in kilograms has no automatic answer: bags of one size differ in weight,
+     * which is why that shelf is weighed rather than counted, and no factor the catalogue holds
+     * converts the one into the other. A line whose units agree needs nothing typed — what was
+     * sold is what leaves.
+     */
+    public function isStockedInAnotherUnit(): bool
+    {
+        return $this->stockUnit() !== $this->pricing_unit;
     }
 
     /**

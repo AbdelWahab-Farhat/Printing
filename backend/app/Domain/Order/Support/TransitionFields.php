@@ -101,6 +101,12 @@ final class TransitionFields
         }
 
         if ($target === OrderStatus::Ready) {
+            // Read by the preview, by the per-line fields and by `isStockedInAnotherUnit()` on
+            // each of them. `items.product` is not in the list query's eager set and strict mode
+            // turns a forgotten load into an exception rather than a query per line, so it is
+            // asked for once here rather than three times below.
+            $order->loadMissing('items.product');
+
             // Where the stock this order consumes comes out of, asked exactly once per order —
             // see {@see \App\Domain\Order\Actions\DeductOrderStock}. `ready` is reached at most
             // once per order (see `OrderStatus::allowedNext()`), so unlike `printing` this never
@@ -115,6 +121,34 @@ final class TransitionFields
                     ? self::deductionPreview($order)
                     : 'خُصم المخزون بالفعل من هذه الطلبية',
             );
+
+            // **What actually comes off the shelf, for the lines where nobody could work it
+            // out.** A run sold by the piece and stocked by the kilo has two figures and no
+            // conversion between them — see {@see OrderItem::isStockedInAnotherUnit()} — so
+            // the person who has the parcel in front of them is asked, in the shelf's unit,
+            // once per line that needs it. Every other line is silent: what was sold is what
+            // leaves, and a box asking a foreman to retype a number the order already holds can
+            // only ever introduce a difference between the two.
+            //
+            // Gated on `stock_deducted_at` exactly as the warehouse above it is: an order whose
+            // stock has already gone is offered the field and not made to answer it.
+            foreach ($order->items as $item) {
+                if (! $item->isStockedInAnotherUnit()) {
+                    continue;
+                }
+
+                $fields[] = TransitionField::number(
+                    key: self::stockQuantityKey($item),
+                    label: "المخصوم من {$item->variant_label} ({$item->stockUnit()->label()})",
+                    required: $order->stock_deducted_at === null,
+                    hint: "المباع {$item->quantity} {$item->pricing_unit->label()} — والمخزن يُنقص بال{$item->stockUnit()->label()}",
+                    // An answer, not a placeholder, and only where one already exists: an order
+                    // taken while the create form still asked for this carries what was measured
+                    // then, and re-asking from an empty box invites a second figure for a parcel
+                    // that was weighed once.
+                    value: $item->warehouse_quantity !== null ? (string) $item->warehouse_quantity : null,
+                );
+            }
 
             // What came off the press, weighed once for the whole parcel.
             //
@@ -212,6 +246,12 @@ final class TransitionFields
         return $fields;
     }
 
+    /** What the per-line box for one line is called in the payload. */
+    public static function stockQuantityKey(OrderItem $item): string
+    {
+        return "warehouse_quantity_{$item->getKey()}";
+    }
+
     /**
      * «يُخصم منه…» said with the actual figures, one line per size.
      *
@@ -220,6 +260,12 @@ final class TransitionFields
      * the *product's* `stock_unit`, and since that unit became settable it need not be the unit
      * the line is sold in. So an order for 300 bags can take 12.5 kilograms off the shelf, and
      * neither number nor unit was anywhere on the screen that asked which shelf.
+     *
+     * **A line nobody has weighed yet is named, not numbered.** `producedQuantity()` falls back
+     * to the sold quantity, which for a line stocked in another unit is a piece count wearing a
+     * kilogram label — «٥٠٠ كيلوغرام» for five hundred bags. That fallback is the bug the box
+     * below this hint exists to close, and printing it here would be the same lie in the same
+     * breath as the question that fixes it.
      *
      * **A hint rather than a field, because it is not an input.** The app renders whatever the
      * server hands it — see {@see \App\Application\Api\V1\Resources\OrderResource} — so this
@@ -231,17 +277,13 @@ final class TransitionFields
      */
     private static function deductionPreview(Order $order): string
     {
-        // `items.product` is not in the list query's eager set, and this runs once per order on
-        // a screen that also renders every other transition — without it the preview would cost
-        // a query per line.
-        $order->loadMissing('items.product');
-
         $lines = $order->items
             ->map(fn (OrderItem $item): string => sprintf(
-                '• %s — %s %s',
+                '• %s — %s',
                 $item->variant_label,
-                $item->producedQuantity(),
-                $item->product?->stock_unit->label() ?? $item->pricing_unit->label(),
+                $item->isStockedInAnotherUnit() && $item->warehouse_quantity === null
+                    ? "بال{$item->stockUnit()->label()}، حسب ما تُدخله أدناه"
+                    : "{$item->producedQuantity()} {$item->stockUnit()->label()}",
             ))
             ->all();
 

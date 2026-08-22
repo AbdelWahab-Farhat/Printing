@@ -73,9 +73,6 @@ class TakeOrder {
               productVariantId: line.productVariantId,
               quantity: _number(line.quantity) ?? '',
               unitPrice: _number(line.unitPrice),
-              // `_number` answers null for a blank box, and null drops the key from the body —
-              // so an untouched field leaves the server deducting the quantity unchanged.
-              warehouseQuantity: _number(line.warehouseQuantity),
               notes: _text(line.notes),
               // The position on the form, so the invoice reads the way it was written.
               sortOrder: index,
@@ -121,7 +118,6 @@ class DraftOrderLine {
     required this.productVariantId,
     required this.quantity,
     this.unitPrice,
-    this.warehouseQuantity,
     this.notes,
   });
 
@@ -135,13 +131,6 @@ class DraftOrderLine {
   /// where naming a price would be an attempt to undercut the catalogue and the server ignores
   /// it anyway.
   final String? unitPrice;
-
-  /// What leaves the shelf for this line, when that is not what is being sold — a batch total
-  /// read off a scale, as typed.
-  ///
-  /// **A blank is the ordinary answer**, and it means «نفس وحدة البيع»: the key is left out
-  /// entirely rather than sent as zero, which the server would read as «take nothing».
-  final String? warehouseQuantity;
 
   final String? notes;
 }

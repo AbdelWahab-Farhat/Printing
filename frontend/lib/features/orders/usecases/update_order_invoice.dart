@@ -9,37 +9,27 @@ import 'package:flutter/foundation.dart';
 /// **No unit price.** The rate comes from the catalogue when the server prices the line, which
 /// is what stops an edit from quietly undercutting an agreed rate — the same rule that makes
 /// `unit_price` ignored on creation for any product with listed prices.
+///
+/// **And no shelf quantity.** `PUT /orders/{id}` no longer accepts one: what comes off the shelf
+/// is asked for on the way into «جاهزة», and by then `Order.itemsAreEditable` is false — so this
+/// payload can never reach a line that carries a measurement, and there is nothing to preserve
+/// through the rebuild.
 @immutable
 class InvoiceLineUpdate {
   const InvoiceLineUpdate({
     required this.productId,
     required this.variantId,
     required this.quantity,
-    this.warehouseQuantity,
   });
 
   final int productId;
   final int variantId;
   final String quantity;
 
-  /// What actually leaves the shelf for this line, when that is not the quantity sold.
-  ///
-  /// **Carried through an edit rather than edited here, and it has to be.** `PUT /orders/{id}`
-  /// replaces the whole item set — `SyncOrderItems` deletes every row and rebuilds it — so a key
-  /// this payload leaves out is not "unchanged", it is *erased*. And this is the number
-  /// `producedQuantity()` takes off the warehouse at «جاهزة», so dropping it means the order
-  /// quietly deducts the quantity sold instead of the weight somebody measured. Nothing on any
-  /// screen would say so.
-  ///
-  /// Null on nine lines in ten, and then absent from the body rather than sent as null: the
-  /// API's rule is `nullable|numeric|gt:0`, and «no value» is said by not mentioning the key.
-  final String? warehouseQuantity;
-
   Map<String, dynamic> toJson() => <String, dynamic>{
     'product_id': productId,
     'product_variant_id': variantId,
     'quantity': quantity,
-    if (warehouseQuantity != null) 'warehouse_quantity': warehouseQuantity,
   };
 }
 

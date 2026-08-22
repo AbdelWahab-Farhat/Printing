@@ -1,4 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
@@ -6,11 +8,13 @@ import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/features/warehouses/models/stock_group.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/record_movement_sheet.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/stock_product_card.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/stock_row.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/stock_summary_card.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/threshold_sheet.dart';
@@ -131,8 +135,8 @@ class _StocksView extends StatelessWidget {
           ),
           Expanded(
             child: BlocBuilder<WarehouseStocksCubit, WarehouseStocksState>(
-              builder: (context, state) => PagedListView<WarehouseStock>(
-                state: state,
+              builder: (context, state) => PagedListView<StockGroup>(
+                state: _grouped(state),
                 emptyMessage: switch (cubit.filter) {
                   StockShelfFilter.low => 'لا توجد أصناف تحت حد التنبيه',
                   StockShelfFilter.out => 'لا يوجد صنف نافد',
@@ -143,20 +147,37 @@ class _StocksView extends StatelessWidget {
                   // Pulled together, because the reader pulled the screen and not the list.
                   await Future.wait([cubit.refresh(), summary.refresh()]);
                 },
-                skeletonHeight: 66.h,
-                itemBuilder: (context, stock, index) => StockRow(
-                  key: ValueKey(stock.id),
-                  stock: stock,
+                // Between a lone size and a bag held in four of them — the list is now a mix of
+                // both, and a skeleton the height of the shorter one jumps under every card.
+                skeletonHeight: 96.h,
+                itemBuilder: (context, group, index) {
                   // Everyone who may read the shelf may read its history; only a manager sets
                   // the level at which it starts asking to be refilled.
-                  onTap: () => context.push(
+                  void openHistory(WarehouseStock stock) => context.push(
                     Routes.warehouseMovements(warehouseId),
                     extra: (warehouse: warehouse, stock: stock),
-                  ),
-                  onEditThreshold: canManage
-                      ? () => _editThreshold(context, cubit, summary, stock)
-                      : null,
-                ),
+                  );
+
+                  // One size is a row, as it always was: a heading naming a product above a
+                  // single line repeating it is a card that says everything twice.
+                  return group.isSingle
+                      ? StockRow(
+                          key: ValueKey(group.first.id),
+                          stock: group.first,
+                          onTap: () => openHistory(group.first),
+                          onEditThreshold: canManage
+                              ? () => _editThreshold(context, cubit, summary, group.first)
+                              : null,
+                        )
+                      : StockProductCard(
+                          key: ValueKey(group.key),
+                          group: group,
+                          onTapShelf: openHistory,
+                          onEditThreshold: canManage
+                              ? (stock) => _editThreshold(context, cubit, summary, stock)
+                              : null,
+                        );
+                },
               ),
             ),
           ),
@@ -164,6 +185,28 @@ class _StocksView extends StatelessWidget {
       ),
     );
   }
+
+  /// The same page, read as products instead of as sizes.
+  ///
+  /// **The Cubit still pages shelves**, because that is what the endpoint returns and what "the
+  /// next page" means to it. Only the drawing groups, and only here: `meta` is carried through
+  /// untouched, so a page that collapses into two cards still knows there is a third page
+  /// behind it.
+  PagedState<StockGroup> _grouped(WarehouseStocksState state) => switch (state) {
+    PagedLoaded<WarehouseStock>(:final page, :final isLoadingMore, :final search) =>
+      PagedState<StockGroup>.loaded(
+        page: Paginated<StockGroup>(
+          items: StockGroup.from(page.items),
+          meta: page.meta,
+          extraMeta: page.extraMeta,
+        ),
+        isLoadingMore: isLoadingMore,
+        search: search,
+      ),
+    PagedFailure<WarehouseStock>(:final failure) => PagedState<StockGroup>.failure(failure),
+    PagedLoading<WarehouseStock>() => const PagedState<StockGroup>.loading(),
+    PagedInitial<WarehouseStock>() => const PagedState<StockGroup>.initial(),
+  };
 
   Future<void> _editThreshold(
     BuildContext context,

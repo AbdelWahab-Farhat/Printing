@@ -11,8 +11,8 @@ use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Identity\Enums\PermissionName;
-use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderStatus;
@@ -432,6 +432,144 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert
         $this->assertStringContainsString('خُصم المخزون بالفعل', $ready['fields'][0]['hint']);
+    }
+
+    // ────────────── what actually leaves the shelf, asked line by line ──────────────
+
+    /**
+     * One line of a run being printed: sold by the piece, stocked in $stockUnit.
+     *
+     * @return array{0: Order, 1: OrderItem}
+     */
+    private function lineStockedIn(
+        PricingUnit $stockUnit,
+        string $sold = '500',
+        ?string $measured = null,
+    ): array {
+        $product = Product::factory()->create([
+            'pricing_unit' => PricingUnit::Piece,
+            'stock_unit' => $stockUnit,
+        ]);
+        $variant = ProductVariant::factory()->for($product)->create(['label' => '25*35']);
+        $order = Order::factory()->status(OrderStatus::Printing)->create();
+
+        $item = OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'variant_label' => '25*35',
+            'quantity' => $sold,
+            'warehouse_quantity' => $measured,
+            'pricing_unit' => PricingUnit::Piece,
+        ]);
+
+        return [$order, $item];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $fields
+     * @return array<string, mixed>|null
+     */
+    private function fieldNamed(array $fields, string $key): ?array
+    {
+        return collect($fields)->firstWhere('key', $key);
+    }
+
+    /**
+     * **A bag sold by the piece and stocked by the kilo cannot be deducted automatically.**
+     *
+     * «٥٠٠ قطعة» is what the customer agreed and what the invoice is written from; the shelf it
+     * comes off is counted in kilograms, and there is no factor that turns one into the other —
+     * bags of one size vary in weight, which is the whole reason that shelf is weighed instead
+     * of counted. What the code did until now was take the *sold* figure and write it against a
+     * kilogram shelf: five hundred pieces left as five hundred kilograms, and no screen said so.
+     *
+     * So the move that empties the shelf asks — once, per line, in the shelf's own unit — and
+     * will not go through without an answer.
+     */
+    public function test_a_line_stocked_in_another_unit_asks_what_leaves_the_shelf(): void
+    {
+        // Arrange — 500 pieces agreed with the customer, kilograms on the shelf.
+        [$order, $item] = $this->lineStockedIn(PricingUnit::Kilogram, sold: '500');
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+        $field = $this->fieldNamed($ready['fields'], "warehouse_quantity_{$item->getKey()}");
+
+        // Assert — a number, demanded, and **the unit is in the label**: the person typing is
+        // holding two figures and the box has to say which of them it wants.
+        $this->assertSame('number', $field['type']);
+        $this->assertTrue($field['required']);
+        $this->assertStringContainsString('25*35', $field['label']);
+        $this->assertStringContainsString(PricingUnit::Kilogram->label(), $field['label']);
+
+        // …and the hint carries what was sold, because that is what they are converting from.
+        $this->assertStringContainsString('500', $field['hint']);
+        $this->assertStringContainsString(PricingUnit::Piece->label(), $field['hint']);
+    }
+
+    public function test_a_line_stocked_in_its_selling_unit_is_not_asked_at_all(): void
+    {
+        // Arrange — nine lines in ten: pieces sold, pieces on the shelf.
+        [$order, $item] = $this->lineStockedIn(PricingUnit::Piece);
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+
+        // Assert — what was sold is what leaves, and a box asking a foreman to retype a number
+        // the order already holds is a box that can only ever introduce a difference.
+        $this->assertNull($this->fieldNamed($ready['fields'], "warehouse_quantity_{$item->getKey()}"));
+    }
+
+    public function test_a_line_already_weighed_opens_holding_that_figure(): void
+    {
+        // Arrange — an order taken while the create form still asked for this carries the number
+        // somebody measured then.
+        [$order, $item] = $this->lineStockedIn(PricingUnit::Kilogram, measured: '12.5');
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+        $field = $this->fieldNamed($ready['fields'], "warehouse_quantity_{$item->getKey()}");
+
+        // Assert — an answer, not a placeholder: re-asking from an empty box invites a second,
+        // different figure for one parcel that was weighed once.
+        $this->assertSame('12.500', $field['value']);
+    }
+
+    public function test_the_shelf_quantity_is_offered_but_not_demanded_once_stock_has_left(): void
+    {
+        // Arrange — stock already gone, so nothing here would act on a second answer. Read from
+        // `stock_deducted_at`, exactly as `warehouse_id` above it is.
+        [$order, $item] = $this->lineStockedIn(PricingUnit::Kilogram);
+        $order->forceFill(['stock_deducted_at' => now()])->save();
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+        $field = $this->fieldNamed($ready['fields'], "warehouse_quantity_{$item->getKey()}");
+
+        // Assert
+        $this->assertFalse($field['required']);
+    }
+
+    public function test_an_unweighed_line_is_not_previewed_as_a_figure_nobody_measured(): void
+    {
+        // Arrange — 500 pieces, a kilogram shelf, nothing weighed yet. The preview printed
+        // «500.000 كيلوغرام» here, which is precisely the confusion the field below it closes.
+        [$order, $item] = $this->lineStockedIn(PricingUnit::Kilogram, sold: '500');
+        $headers = $this->foreman();
+
+        // Act
+        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+        $hint = $this->fieldNamed($ready['fields'], 'warehouse_id')['hint'];
+
+        // Assert — the size is still named, but the figure is the one being asked for below
+        // rather than a sold quantity wearing a unit it was never measured in.
+        $this->assertStringContainsString('25*35', $hint);
+        $this->assertStringNotContainsString('500.000 '.PricingUnit::Kilogram->label(), $hint);
+        $this->assertStringContainsString('أدناه', $hint);
     }
 
     // ──────────────────────── what «جاري التوصيل» asks for ────────────────────────
@@ -958,11 +1096,25 @@ class OrderTransitionFieldsTest extends TestCase
 
     // ─────────────────────────── the weight «جاهزة» asks for ───────────────────────────
 
-    /** An order priced the way most are: by the piece. */
+    /**
+     * An order priced the way most are: by the piece.
+     *
+     * The product is built to match the line's unit on **both** axes. A line sold by the kilo
+     * whose product is stocked by the piece is not a shape the catalogue produces, and since
+     * «جاهزة» started asking for the deduction of any line whose two units differ, such a
+     * fixture would be answering a different question than the one under test here.
+     */
     private function orderBeingPrinted(PricingUnit $unit = PricingUnit::Piece): Order
     {
+        $product = Product::factory()->create(['pricing_unit' => $unit, 'stock_unit' => $unit]);
+        $variant = ProductVariant::factory()->for($product)->create();
         $order = Order::factory()->status(OrderStatus::Printing)->create();
-        OrderItem::factory()->for($order)->create(['pricing_unit' => $unit]);
+
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'pricing_unit' => $unit,
+        ]);
 
         return $order;
     }

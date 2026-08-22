@@ -199,20 +199,20 @@ void main() {
 
   // ───────────────────────────── saving ─────────────────────────────
 
-  /// **The line's shelf quantity must survive an edit that never mentions it.**
+  /// **An edit never mentions the shelf quantity, and no longer has to.**
   ///
-  /// `PUT /orders/{id}` replaces the whole item set — `SyncOrderItems` deletes every row and
-  /// rebuilds it — so a key left out of the payload is not "unchanged", it is erased. And
-  /// `warehouse_quantity` is what `producedQuantity()` deducts from the shelf at «جاهزة», so
-  /// losing it means the order silently takes `quantity` off the warehouse instead of the
-  /// weight somebody actually measured. Nothing on screen would say so.
-  test('an edit carries the shelf quantity through untouched', () async {
-    // Arrange — a line sold by the piece but taken off the shelf by weight: 300 bags, 12.5 kg.
+  /// It used to have to: `PUT /orders/{id}` replaces the whole item set, so a key left out was
+  /// erased rather than unchanged, and losing it meant the order deducted `quantity` at «جاهزة»
+  /// instead of the weight somebody measured. The endpoint has since stopped accepting the key
+  /// altogether — the figure is asked for on the way into «جاهزة», where the lines are already
+  /// frozen — so there is nothing here for an edit to preserve or to lose.
+  test('an edit says nothing about what comes off the shelf', () async {
+    // Arrange — a line that already carries a measured weight: 300 bags, 12.5 kg.
     final cubit = cubitFor(orderWith(items: [itemWith(warehouseQuantity: '12.500')]));
     stubSave();
     cubit.setQuantity(1, '400');
 
-    // Act — the sheet offers no control for it; the point is that it survives regardless.
+    // Act
     await cubit.save();
 
     // Assert
@@ -227,14 +227,13 @@ void main() {
       ),
     ).captured.last as List<InvoiceLineUpdate>;
 
-    expect(sent.single.toJson()['warehouse_quantity'], '12.500');
+    expect(sent.single.toJson().containsKey('warehouse_quantity'), isFalse);
     expect(sent.single.toJson()['quantity'], '400');
   });
 
-  test('a line that never had one sends no such key', () async {
-    // Arrange — nine lines in ten. Null means «نفس وحدة البيع», and the API's rule is
-    // `nullable|numeric|gt:0` — so a null would be read as a value and rejected, while an
-    // absent key is what actually means "unchanged".
+  test('a line that never had one sends no such key either', () async {
+    // Arrange — nine lines in ten, and the same answer as the line above: the key belongs to a
+    // different endpoint now.
     final cubit = cubitFor(orderWith(items: [itemWith()]));
     stubSave();
     cubit.setQuantity(1, '400');

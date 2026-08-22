@@ -10,6 +10,7 @@ use App\Domain\Inventory\Exceptions\InsufficientStock;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Models\StockBatchConsumption;
 use App\Domain\Order\DTOs\StockShortfall;
+use App\Domain\Order\Exceptions\LineNeedsAMeasuredStockQuantity;
 use App\Domain\Order\Exceptions\OrderStockShortfall;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
@@ -35,6 +36,12 @@ use App\Domain\Order\Support\Money;
  * weight to multiply out, so the employee enters the batch total directly and it is trusted
  * whole. See {@see OrderItem::producedQuantity()}.
  *
+ * **And a line whose two units differ is not deducted at all until somebody has measured it.**
+ * That fallback to the ordered quantity is only safe where the units agree; on a line sold by
+ * the piece and stocked by the kilo it would take the piece count off a kilogram shelf. The move
+ * into «جاهزة» asks for the figure — see {@see \App\Domain\Order\Support\TransitionFields} —
+ * and {@see guardEveryLineIsMeasured()} is the floor under that form.
+ *
  * **Since batch costing landed, this is also the one place `order_items.material_cost` is
  * written.** `InventoryService::recordMovement()` FIFO-consumes cost layers behind the scenes;
  * `stock_batch_consumptions` rows tied to the movement it returns are the only record of what
@@ -49,10 +56,15 @@ final class DeductOrderStock
     ) {}
 
     /**
+     * @throws LineNeedsAMeasuredStockQuantity
      * @throws OrderStockShortfall
      */
     public function __invoke(Order $order, int $warehouseId, int $employeeId): void
     {
+        // Before the balances are even read: a line with no measurement has no figure to weigh
+        // against a shelf, and the number that would stand in for it is the wrong one.
+        $this->guardEveryLineIsMeasured($order);
+
         $this->guardTheWarehouseHasItAll($order, $warehouseId);
 
         foreach ($order->items as $item) {
@@ -75,6 +87,28 @@ final class DeductOrderStock
             ])->save();
 
             ($this->recalculateItemCost)($item);
+        }
+    }
+
+    /**
+     * Refuses an order carrying a line nobody could have deducted automatically.
+     *
+     * **Every such line at once, not the first one.** The same reasoning
+     * {@see guardTheWarehouseHasItAll()} carries: an order with two unweighed sizes on it should
+     * say so once, rather than reveal the second after the first is answered.
+     *
+     * @throws LineNeedsAMeasuredStockQuantity
+     */
+    private function guardEveryLineIsMeasured(Order $order): void
+    {
+        $unmeasured = $order->items
+            ->filter(fn (OrderItem $item): bool => $item->warehouse_quantity === null
+                && $item->isStockedInAnotherUnit())
+            ->values()
+            ->all();
+
+        if ($unmeasured !== []) {
+            throw LineNeedsAMeasuredStockQuantity::make($unmeasured);
         }
     }
 

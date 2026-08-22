@@ -82,9 +82,7 @@ class _WriteOffDialogState extends State<_WriteOffDialog> {
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    Navigator.of(
-      context,
-    ).pop((amount: _amount.text.trim(), reason: _reason.text.trim()));
+    Navigator.of(context).pop((amount: _amount.text.trim(), reason: _reason.text.trim()));
   }
 
   @override
@@ -115,15 +113,11 @@ class _WriteOffDialogState extends State<_WriteOffDialog> {
               AppTextField(
                 controller: _amount,
                 label: 'المبلغ',
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 // The same formatter the payment sheet uses, and for the same reason: a comma
                 // is fifteen hundred to most people and one and a half to some, so it never
                 // gets typed. Arabic-Indic digits are allowed and converted on the way out.
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]')),
-                ],
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
                 helperText: 'المتبقي ${summary.remainingAmount.grouped}',
                 validator: _validateAmount,
               ),
@@ -135,24 +129,17 @@ class _WriteOffDialogState extends State<_WriteOffDialog> {
                 maxLines: 2,
                 // Required by the server too. This is the row an auditor stops at, and «تم
                 // الشطب» with a blank beside it is not an answer.
-                validator: (value) =>
-                    (value ?? '').trim().length < 3 ? 'السبب مطلوب' : null,
+                validator: (value) => (value ?? '').trim().length < 3 ? 'السبب مطلوب' : null,
               ),
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('تراجع'),
-        ),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('تراجع')),
         TextButton(
           onPressed: _submit,
-          child: Text(
-            'شطب الفرق',
-            style: TextStyle(color: context.colorScheme.error),
-          ),
+          child: Text('شطب الفرق', style: TextStyle(color: context.colorScheme.error)),
         ),
       ],
     );

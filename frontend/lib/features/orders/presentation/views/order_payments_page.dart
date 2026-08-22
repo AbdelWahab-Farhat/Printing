@@ -214,53 +214,90 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
   }
 
   Future<String?> _askForReason(OrderPayment payment) {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
     return showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('إلغاء الدفعة'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'الدفعة تبقى في السجل مشطوبة، ويُكتب بجانبها قيدُ إلغائها — '
-                'المبلغ ${payment.amount.grouped}.',
-                style: dialogContext.textTheme.bodyMedium?.copyWith(
-                  color: dialogContext.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              SizedBox(height: 16.h),
-              AppTextField(
-                controller: controller,
-                label: 'السبب',
-                autofocus: true,
-                maxLines: 2,
-                validator: (value) => (value ?? '').trim().length < 3 ? 'السبب مطلوب' : null,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('تراجع'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (!(formKey.currentState?.validate() ?? false)) return;
+      builder: (_) => _ReasonDialog(payment: payment),
+    );
+  }
+}
 
-              Navigator.of(dialogContext).pop(controller.text.trim());
-            },
-            child: Text('إلغاء الدفعة', style: TextStyle(color: dialogContext.colorScheme.error)),
-          ),
-        ],
+/// Why an entry is being cancelled.
+///
+/// **A widget rather than a closure, so its controller has an owner.** It used to be built inline
+/// with `TextEditingController` created beside `showDialog` and disposed in `.whenComplete()` —
+/// which fires the moment the route pops, while the dialog is still on screen fading out and its
+/// field can still be rebuilt. The write-off dialog shipped with that same shape and took the
+/// whole screen down on its first real use; this one had never been caught doing it, which is
+/// luck rather than a difference. A `State` disposes after the element leaves the tree, which is
+/// the only ordering that is safe by construction.
+class _ReasonDialog extends StatefulWidget {
+  const _ReasonDialog({required this.payment});
+
+  final OrderPayment payment;
+
+  @override
+  State<_ReasonDialog> createState() => _ReasonDialogState();
+}
+
+class _ReasonDialogState extends State<_ReasonDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _reason = TextEditingController();
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    Navigator.of(context).pop(_reason.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // «إلغاء القيد» on a write-off, for the reason the row's own action says it: the same
+    // dialog now cancels either, and one of them is not a payment.
+    final title = widget.payment.isWriteOff ? 'إلغاء القيد' : 'إلغاء الدفعة';
+
+    return AlertDialog(
+      title: Text(title),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.payment.isWriteOff
+                  ? 'يعود الدَّين إلى الطلبية كما كان، ويبقى قيد الشطب في السجل مشطوباً — '
+                        'المبلغ ${widget.payment.amount.grouped}.'
+                  : 'الدفعة تبقى في السجل مشطوبة، ويُكتب بجانبها قيدُ إلغائها — '
+                        'المبلغ ${widget.payment.amount.grouped}.',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            AppTextField(
+              controller: _reason,
+              label: 'السبب',
+              autofocus: true,
+              maxLines: 2,
+              validator: (value) => (value ?? '').trim().length < 3 ? 'السبب مطلوب' : null,
+            ),
+          ],
+        ),
       ),
-    ).whenComplete(controller.dispose);
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('تراجع')),
+        TextButton(
+          onPressed: _submit,
+          child: Text(title, style: TextStyle(color: context.colorScheme.error)),
+        ),
+      ],
+    );
   }
 }
 

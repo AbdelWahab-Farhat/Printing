@@ -15,6 +15,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// The two text controllers and the Cubit are widget-lifecycle resources — they belong to the
 /// screen's `State`, which is what disposes them. Held together in one object so a line is
 /// added and removed as a unit rather than as three parallel lists that can fall out of step.
+///
+/// **Nothing here says what comes off the shelf.** A product sold by the piece and stocked by
+/// the kilo has no conversion between the two, so the figure is asked for on the way into
+/// «جاهزة» — by the foreman with the parcel and the scale in front of them, not by a clerk on
+/// the phone agreeing a piece count before anything has been printed.
 class OrderLineDraft {
   OrderLineDraft({required this.product, required this.variant, required this.quote}) {
     // A bag the catalogue prices «حسب الطلب» has no answer to fetch — asking would only ever
@@ -34,29 +39,15 @@ class OrderLineDraft {
   /// a number typed here would be ignored by the server anyway.
   final TextEditingController unitPrice = TextEditingController();
 
-  /// What actually comes off the shelf for this line, when that is not the quantity sold.
-  ///
-  /// Left empty on nearly every line — see [isWeighedOffTheShelf].
-  final TextEditingController warehouseQuantity = TextEditingController();
-
   /// Whether a person names the price on this line.
   ///
   /// `has_listed_prices` is the server's own answer about the product, not a rule re-derived
   /// here from the pricing mode.
   bool get isPricedByHand => !product.hasListedPrices;
 
-  /// Whether this line may leave the warehouse in a unit other than the one it is sold in.
-  ///
-  /// **Only a line sold by the piece.** A run priced by the kilo is already counted the way the
-  /// shelf counts it, so the ordered quantity is exactly what leaves — there is nothing to
-  /// convert and nothing to ask. Bags sold by the piece are the case the scale exists for: forty
-  /// of them are weighed together, and no per-piece factor would give the same answer.
-  bool get isWeighedOffTheShelf => product.pricingUnit == 'piece';
-
   void dispose() {
     quantity.dispose();
     unitPrice.dispose();
-    warehouseQuantity.dispose();
     unawaited(quote.close());
   }
 }
@@ -74,7 +65,6 @@ class OrderLineRow extends StatefulWidget {
     required this.onRemove,
     this.quantityError,
     this.unitPriceError,
-    this.warehouseQuantityError,
     super.key,
   });
 
@@ -89,7 +79,6 @@ class OrderLineRow extends StatefulWidget {
   /// The server's complaint about this line, if the last submit produced one.
   final String? quantityError;
   final String? unitPriceError;
-  final String? warehouseQuantityError;
 
   @override
   State<OrderLineRow> createState() => _OrderLineRowState();
@@ -190,20 +179,6 @@ class _OrderLineRowState extends State<OrderLineRow> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [FilteringTextInputFormatter.deny(RegExp('[-+ ]'))],
               errorText: widget.unitPriceError,
-              onChanged: (_) => widget.onChanged(),
-            ),
-          ],
-          if (line.isWeighedOffTheShelf) ...[
-            SizedBox(height: 8.h),
-            AppTextField(
-              controller: line.warehouseQuantity,
-              label: 'الكمية المخصومة من المخزن (اختياري)',
-              // Beside the box, like the manual price above it, because the reason is about
-              // this line and nothing else on the screen.
-              helperText: 'اتركه فارغاً إن كان المخزن يُنقص بنفس الكمية المباعة',
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [FilteringTextInputFormatter.deny(RegExp('[-+ ]'))],
-              errorText: widget.warehouseQuantityError,
               onChanged: (_) => widget.onChanged(),
             ),
           ],

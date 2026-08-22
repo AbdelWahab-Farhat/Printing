@@ -14,10 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$InvoiceLine {
 
- int get id; int get productId; int get variantId; String get productName; String get variantLabel; String get pricingUnitLabel; String get unitPrice; String get quantity;/// What leaves the shelf for this line. **Held only to be sent back unchanged** — this
-/// sheet shows no control for it, but an edit that omitted it would erase it server-side.
-/// See [InvoiceLineUpdate.warehouseQuantity].
- String? get warehouseQuantity;
+ int get id; int get productId; int get variantId; String get productName; String get variantLabel; String get pricingUnitLabel; String get unitPrice; String get quantity;
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +25,16 @@ $InvoiceLineCopyWith<InvoiceLine> get copyWith => _$InvoiceLineCopyWithImpl<Invo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.warehouseQuantity, warehouseQuantity) || other.warehouseQuantity == warehouseQuantity));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.quantity, quantity) || other.quantity == quantity));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,productId,variantId,productName,variantLabel,pricingUnitLabel,unitPrice,quantity,warehouseQuantity);
+int get hashCode => Object.hash(runtimeType,id,productId,variantId,productName,variantLabel,pricingUnitLabel,unitPrice,quantity);
 
 @override
 String toString() {
-  return 'InvoiceLine(id: $id, productId: $productId, variantId: $variantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, unitPrice: $unitPrice, quantity: $quantity, warehouseQuantity: $warehouseQuantity)';
+  return 'InvoiceLine(id: $id, productId: $productId, variantId: $variantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, unitPrice: $unitPrice, quantity: $quantity)';
 }
 
 
@@ -48,7 +45,7 @@ abstract mixin class $InvoiceLineCopyWith<$Res>  {
   factory $InvoiceLineCopyWith(InvoiceLine value, $Res Function(InvoiceLine) _then) = _$InvoiceLineCopyWithImpl;
 @useResult
 $Res call({
- int id, int productId, int variantId, String productName, String variantLabel, String pricingUnitLabel, String unitPrice, String quantity, String? warehouseQuantity
+ int id, int productId, int variantId, String productName, String variantLabel, String pricingUnitLabel, String unitPrice, String quantity
 });
 
 
@@ -65,7 +62,7 @@ class _$InvoiceLineCopyWithImpl<$Res>
 
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? productId = null,Object? variantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? unitPrice = null,Object? quantity = null,Object? warehouseQuantity = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? productId = null,Object? variantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? unitPrice = null,Object? quantity = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
@@ -75,8 +72,7 @@ as String,variantLabel: null == variantLabel ? _self.variantLabel : variantLabel
 as String,pricingUnitLabel: null == pricingUnitLabel ? _self.pricingUnitLabel : pricingUnitLabel // ignore: cast_nullable_to_non_nullable
 as String,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
-as String,warehouseQuantity: freezed == warehouseQuantity ? _self.warehouseQuantity : warehouseQuantity // ignore: cast_nullable_to_non_nullable
-as String?,
+as String,
   ));
 }
 
@@ -161,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity,  String? warehouseQuantity)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InvoiceLine() when $default != null:
-return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity,_that.warehouseQuantity);case _:
+return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity);case _:
   return orElse();
 
 }
@@ -182,10 +178,10 @@ return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity,  String? warehouseQuantity)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity)  $default,) {final _that = this;
 switch (_that) {
 case _InvoiceLine():
-return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity,_that.warehouseQuantity);case _:
+return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +198,10 @@ return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity,  String? warehouseQuantity)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity)?  $default,) {final _that = this;
 switch (_that) {
 case _InvoiceLine() when $default != null:
-return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity,_that.warehouseQuantity);case _:
+return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity);case _:
   return null;
 
 }
@@ -217,7 +213,7 @@ return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that
 
 
 class _InvoiceLine extends InvoiceLine {
-  const _InvoiceLine({required this.id, required this.productId, required this.variantId, required this.productName, required this.variantLabel, required this.pricingUnitLabel, required this.unitPrice, required this.quantity, this.warehouseQuantity}): super._();
+  const _InvoiceLine({required this.id, required this.productId, required this.variantId, required this.productName, required this.variantLabel, required this.pricingUnitLabel, required this.unitPrice, required this.quantity}): super._();
   
 
 @override final  int id;
@@ -228,10 +224,6 @@ class _InvoiceLine extends InvoiceLine {
 @override final  String pricingUnitLabel;
 @override final  String unitPrice;
 @override final  String quantity;
-/// What leaves the shelf for this line. **Held only to be sent back unchanged** — this
-/// sheet shows no control for it, but an edit that omitted it would erase it server-side.
-/// See [InvoiceLineUpdate.warehouseQuantity].
-@override final  String? warehouseQuantity;
 
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
@@ -243,16 +235,16 @@ _$InvoiceLineCopyWith<_InvoiceLine> get copyWith => __$InvoiceLineCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.warehouseQuantity, warehouseQuantity) || other.warehouseQuantity == warehouseQuantity));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.quantity, quantity) || other.quantity == quantity));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,productId,variantId,productName,variantLabel,pricingUnitLabel,unitPrice,quantity,warehouseQuantity);
+int get hashCode => Object.hash(runtimeType,id,productId,variantId,productName,variantLabel,pricingUnitLabel,unitPrice,quantity);
 
 @override
 String toString() {
-  return 'InvoiceLine(id: $id, productId: $productId, variantId: $variantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, unitPrice: $unitPrice, quantity: $quantity, warehouseQuantity: $warehouseQuantity)';
+  return 'InvoiceLine(id: $id, productId: $productId, variantId: $variantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, unitPrice: $unitPrice, quantity: $quantity)';
 }
 
 
@@ -263,7 +255,7 @@ abstract mixin class _$InvoiceLineCopyWith<$Res> implements $InvoiceLineCopyWith
   factory _$InvoiceLineCopyWith(_InvoiceLine value, $Res Function(_InvoiceLine) _then) = __$InvoiceLineCopyWithImpl;
 @override @useResult
 $Res call({
- int id, int productId, int variantId, String productName, String variantLabel, String pricingUnitLabel, String unitPrice, String quantity, String? warehouseQuantity
+ int id, int productId, int variantId, String productName, String variantLabel, String pricingUnitLabel, String unitPrice, String quantity
 });
 
 
@@ -280,7 +272,7 @@ class __$InvoiceLineCopyWithImpl<$Res>
 
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? productId = null,Object? variantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? unitPrice = null,Object? quantity = null,Object? warehouseQuantity = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? productId = null,Object? variantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? unitPrice = null,Object? quantity = null,}) {
   return _then(_InvoiceLine(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
@@ -290,8 +282,7 @@ as String,variantLabel: null == variantLabel ? _self.variantLabel : variantLabel
 as String,pricingUnitLabel: null == pricingUnitLabel ? _self.pricingUnitLabel : pricingUnitLabel // ignore: cast_nullable_to_non_nullable
 as String,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
-as String,warehouseQuantity: freezed == warehouseQuantity ? _self.warehouseQuantity : warehouseQuantity // ignore: cast_nullable_to_non_nullable
-as String?,
+as String,
   ));
 }
 
