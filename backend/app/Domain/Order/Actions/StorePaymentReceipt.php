@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
  *    with no migration and no rewritten rows.
  * 2. **A generated filename.** Two customers sending `receipt.pdf` must not collide, and nobody
  *    gets to choose a path — a client-supplied name is a directory-traversal attempt waiting to
- *    be tried.
+ *    be tried. Only the extension survives, and it is read off the sniffed bytes.
  * 3. **A sha256 of the bytes**, taken while the temporary copy is still readable. Unlike a
  *    design's, it is not a uniqueness key — one transfer legitimately covers two entries — but
  *    it answers "is this the same paper we were sent last time?" without opening either.
@@ -50,9 +50,15 @@ final class StorePaymentReceipt
 
         $disk = (string) config('media.payment_receipts.disk');
 
+        // The extension the *bytes* answer to, never the one the client's filename claims —
+        // a JPEG called `waseel.pdf` is stored as the JPEG it is. Validation has already
+        // limited the answers to pdf and the image formats, so the fallback is unreachable
+        // in practice and exists so a null could never write an extensionless path.
+        $extension = $file->guessExtension() ?? 'bin';
+
         $path = $file->storeAs(
             "payment-receipts/{$order->getKey()}",
-            Str::uuid()->toString().'.pdf',
+            Str::uuid()->toString().'.'.$extension,
             ['disk' => $disk],
         );
 

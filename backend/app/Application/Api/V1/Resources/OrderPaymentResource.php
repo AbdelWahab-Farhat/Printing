@@ -40,6 +40,9 @@ class OrderPaymentResource extends JsonResource
             // so in production this is a signed link that expires, and a permanent one sitting in
             // a JSON payload would be somebody's bank details left on the table.
             'has_receipt' => $this->hasReceipt(),
+            // Whether it is a picture the app can draw full screen, or a PDF it hands to the
+            // phone. Decided here from the stored file, so the app holds no format list.
+            'receipt_is_image' => $this->receiptIsImage(),
             'receipt_url' => $this->receiptUrl(),
             'receipt_filename' => $this->receipt_original_filename,
             'receipt_size_bytes' => $this->receipt_size_bytes,

@@ -54,7 +54,8 @@ return new class extends Migration
             $table->string('reference', 100)->nullable();
 
             /*
-             * **The scanned receipt — required for a bank transfer, and PDF only.**
+             * **The scanned receipt — required for a bank transfer.** (PDF only at first;
+             * images joined on 2026-08-22, with no schema change — only the media rules moved.)
              *
              * Cash is witnessed at the counter and a card leaves a trail at the bank. A transfer
              * is neither: what proves it happened is a piece of paper the customer sends, and

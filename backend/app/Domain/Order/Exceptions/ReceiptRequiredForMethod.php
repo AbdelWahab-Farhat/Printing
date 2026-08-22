@@ -22,7 +22,7 @@ final class ReceiptRequiredForMethod extends DomainException
 {
     public static function make(PaymentMethod $method): self
     {
-        return new self("الدفع بـ«{$method->label()}» يتطلب إرفاق الواصل بصيغة PDF");
+        return new self("الدفع بـ«{$method->label()}» يتطلب إرفاق الواصل");
     }
 
     /**

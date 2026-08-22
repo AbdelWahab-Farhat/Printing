@@ -79,10 +79,14 @@ return [
     | The scanned receipt (الواصل) proving a bank transfer landed. Required on a transfer
     | and accepted on any other method.
     |
-    | **PDF only, unlike a customer design.** A receipt is a document a bank produces, and
-    | the one shape that arrives is a PDF. Accepting photographs too would mean accepting
-    | a blurred phone picture as proof of payment, which is the thing this file exists to
-    | prevent — so the narrower rule is the feature, not an oversight.
+    | **PDF or an image, the same shapes as a customer design.** This began as PDF-only —
+    | the document a bank produces — but the receipt that actually arrives here is a phone
+    | photograph or a banking-app screenshot sent over WhatsApp, and refusing those meant
+    | refusing the proof the business actually holds. The business asked for images
+    | (2026-08-22), so the photograph is now evidence, not a liability.
+    |
+    | `svg` is absent and must stay absent, exactly as it is for designs: an SVG is an
+    | HTML document, and one served from our own origin is stored XSS.
     |
     | **Private disk, like customer designs and unlike product photos.** A receipt carries
     | somebody's bank details, and the `public` disk hands out permanent unauthenticated
@@ -94,8 +98,8 @@ return [
     'payment_receipts' => [
         'disk' => env('MEDIA_RECEIPTS_DISK', 'local'),
         'max_kilobytes' => (int) env('MEDIA_RECEIPT_MAX_KILOBYTES', 10240),
-        'mimes' => ['pdf'],
-        'mimetypes' => ['application/pdf'],
+        'mimes' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+        'mimetypes' => ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
     ],
 
     'product_images' => [

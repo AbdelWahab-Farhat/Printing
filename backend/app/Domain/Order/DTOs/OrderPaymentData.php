@@ -31,7 +31,7 @@ final readonly class OrderPaymentData
         public Carbon $paidAt,
         public ?string $notes,
         /**
-         * The scanned receipt (الواصل), PDF only.
+         * The scanned receipt (الواصل) — a PDF, or the photograph that actually arrives.
          *
          * Required when the method says so — see {@see PaymentMethod::requiresReceipt()} — and
          * accepted on any other method, because somebody who has the paper should never be told

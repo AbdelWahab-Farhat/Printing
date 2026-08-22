@@ -45,13 +45,16 @@ class StoreOrderPaymentRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:1000'],
 
             /*
-             * **The receipt (الواصل), PDF only, and required for a transfer.**
+             * **The receipt (الواصل), PDF or an image, and required for a transfer.**
              *
              * `required_if` names the one method that demands it, built from the enum case
              * rather than a loose string so renaming the value cannot leave this rule pointing
              * at nothing. `PaymentMethod::requiresReceipt()` states the same rule for the
              * domain, and a database CHECK states it a third time — this copy is the one that
              * produces the friendly field-level 422.
+             *
+             * The accepted shapes come from `media.payment_receipts`, which is the list the
+             * app's contract test reads — a copy typed here would be the one that drifts.
              *
              * `mimetypes` reads the magic bytes with finfo; `mimes` is a second reading of the
              * same bytes kept because it is the rule whose message names an extension, which is
@@ -62,8 +65,8 @@ class StoreOrderPaymentRequest extends FormRequest
                 'required_if:method,'.PaymentMethod::BankTransfer->value,
                 'nullable',
                 'file',
-                'mimetypes:application/pdf',
-                'mimes:pdf',
+                'mimetypes:'.implode(',', (array) config('media.payment_receipts.mimetypes')),
+                'mimes:'.implode(',', (array) config('media.payment_receipts.mimes')),
                 'max:'.config('media.payment_receipts.max_kilobytes'),
             ],
         ];
@@ -85,10 +88,10 @@ class StoreOrderPaymentRequest extends FormRequest
             'paid_at.date' => 'تاريخ الدفع غير صحيح',
             'paid_at.before_or_equal' => 'تاريخ الدفع لا يمكن أن يكون في المستقبل',
             'notes.max' => 'الملاحظات طويلة جداً',
-            'receipt.required_if' => 'الدفع بحوالة يتطلب إرفاق الواصل بصيغة PDF',
+            'receipt.required_if' => 'الدفع بحوالة يتطلب إرفاق الواصل',
             'receipt.file' => 'الواصل يجب أن يكون ملفاً',
-            'receipt.mimetypes' => 'الواصل يجب أن يكون ملف PDF',
-            'receipt.mimes' => 'الواصل يجب أن يكون بصيغة PDF',
+            'receipt.mimetypes' => 'الواصل يجب أن يكون ملف PDF أو صورة',
+            'receipt.mimes' => 'الواصل يجب أن يكون بصيغة PDF أو JPG أو PNG أو WEBP',
             'receipt.max' => 'حجم الواصل يجب ألا يتجاوز '.
                 (int) (config('media.payment_receipts.max_kilobytes') / 1024).' ميجابايت',
         ];

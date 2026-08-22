@@ -317,17 +317,80 @@ class OrderPaymentTest extends TestCase
         // Assert
         $response->assertCreated()
             ->assertJsonPath('data.payment.has_receipt', true)
+            ->assertJsonPath('data.payment.receipt_is_image', false)
             ->assertJsonPath('data.payment.receipt_filename', 'waseel.pdf');
 
         $payment = OrderPayment::query()->firstOrFail();
         $this->assertNotNull($payment->receipt_path);
         Storage::disk('local')->assertExists($payment->receipt_path);
+        $this->assertStringEndsWith('.pdf', $payment->receipt_path);
         // The stored name is generated, never the client's — two customers sending
         // "receipt.pdf" must not collide, and nobody chooses a path.
         $this->assertStringNotContainsString('waseel', $payment->receipt_path);
     }
 
-    public function test_a_receipt_that_is_not_a_pdf_is_refused(): void
+    public function test_a_bank_transfer_with_an_image_receipt_is_stored(): void
+    {
+        // Arrange — a photographed receipt, which is how most of them actually arrive.
+        Storage::fake('local');
+        $order = $this->order();
+        $headers = $this->cashier();
+
+        // Act
+        $response = $this->withHeaders($headers)->post(
+            "/api/v1/orders/{$order->id}/payments",
+            [
+                'amount' => '150.00',
+                'method' => PaymentMethod::BankTransfer->value,
+                'reference' => 'TRF-9910',
+                'receipt' => UploadedFile::fake()->image('waseel.jpg'),
+            ],
+            ['Accept' => 'application/json'],
+        );
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonPath('data.payment.has_receipt', true)
+            ->assertJsonPath('data.payment.receipt_is_image', true)
+            ->assertJsonPath('data.payment.receipt_filename', 'waseel.jpg');
+
+        $payment = OrderPayment::query()->firstOrFail();
+        Storage::disk('local')->assertExists($payment->receipt_path);
+        $this->assertStringEndsWith('.jpg', $payment->receipt_path);
+    }
+
+    public function test_a_stored_receipt_takes_its_extension_from_the_bytes_not_the_name(): void
+    {
+        // Arrange — real JPEG bytes wearing a PDF's name and a PDF's claimed Content-Type.
+        // Not `UploadedFile::fake()`, deliberately: the fake answers mime questions from the
+        // *name*, which is exactly the lie this test needs to see through, so a genuine
+        // temporary file is built for finfo to sniff.
+        Storage::fake('local');
+        $order = $this->order();
+        $headers = $this->cashier();
+
+        $path = (string) tempnam(sys_get_temp_dir(), 'receipt');
+        imagejpeg(imagecreatetruecolor(8, 8), $path);
+        $receipt = new UploadedFile($path, 'waseel.pdf', 'application/pdf', null, true);
+
+        // Act
+        $response = $this->withHeaders($headers)->post(
+            "/api/v1/orders/{$order->id}/payments",
+            [
+                'amount' => '150.00',
+                'method' => PaymentMethod::BankTransfer->value,
+                'receipt' => $receipt,
+            ],
+            ['Accept' => 'application/json'],
+        );
+
+        // Assert — sniffed as an image, stored as one, told apart as one.
+        $response->assertCreated()->assertJsonPath('data.payment.receipt_is_image', true);
+        $this->assertStringEndsWith('.jpg', OrderPayment::query()->firstOrFail()->receipt_path);
+    }
+
+    #[DataProvider('nonDocumentReceipts')]
+    public function test_a_receipt_that_is_neither_pdf_nor_image_is_refused(string $name, string $mime): void
     {
         // Arrange
         Storage::fake('local');
@@ -340,7 +403,7 @@ class OrderPaymentTest extends TestCase
             [
                 'amount' => '150.00',
                 'method' => PaymentMethod::BankTransfer->value,
-                'receipt' => UploadedFile::fake()->image('waseel.jpg'),
+                'receipt' => UploadedFile::fake()->create($name, 10, $mime),
             ],
             ['Accept' => 'application/json'],
         );
@@ -348,6 +411,56 @@ class OrderPaymentTest extends TestCase
         // Assert
         $response->assertStatus(422)->assertJsonStructure(['errors' => ['receipt']]);
         $this->assertDatabaseCount('order_payments', 0);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function nonDocumentReceipts(): array
+    {
+        return [
+            'a Word document' => [
+                'waseel.docx',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ],
+            // An SVG is an HTML document wearing an image's clothes — served from our own
+            // origin it is stored XSS, so it stays out even now that images are in.
+            'an SVG' => ['waseel.svg', 'image/svg+xml'],
+        ];
+    }
+
+    public function test_a_refund_by_transfer_stores_its_image_receipt(): void
+    {
+        // Arrange — money in by cash, some of it going back by transfer with the proof
+        // photographed. The refund request holds its own copy of the receipt rules, so the
+        // refund path is proven separately from the payment path.
+        Storage::fake('local');
+        $order = $this->order();
+        $headers = $this->cashier();
+        $this->pay($headers, $order, ['amount' => '200.00', 'method' => PaymentMethod::Cash->value]);
+
+        // Act
+        $response = $this->withHeaders($headers)->post(
+            "/api/v1/orders/{$order->id}/payments/refunds",
+            [
+                'amount' => '80.00',
+                'method' => PaymentMethod::BankTransfer->value,
+                'receipt' => UploadedFile::fake()->image('back.png'),
+            ],
+            ['Accept' => 'application/json'],
+        );
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonPath('data.payment.type', OrderPaymentType::Refund->value)
+            ->assertJsonPath('data.payment.has_receipt', true)
+            ->assertJsonPath('data.payment.receipt_is_image', true);
+
+        $payment = OrderPayment::query()
+            ->where('type', OrderPaymentType::Refund->value)
+            ->firstOrFail();
+        Storage::disk('local')->assertExists($payment->receipt_path);
+        $this->assertStringEndsWith('.png', $payment->receipt_path);
     }
 
     public function test_cash_needs_no_receipt(): void

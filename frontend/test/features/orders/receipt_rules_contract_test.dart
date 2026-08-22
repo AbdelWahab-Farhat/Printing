@@ -66,22 +66,14 @@ void main() {
 
     // Assert — and `svg` in either list is a stored-XSS hole, so it is named rather than left
     // to the set comparison to describe.
-    expect(
-      backend,
-      isNotEmpty,
-      reason: 'the regex matched nothing — did the block change shape?',
-    );
+    expect(backend, isNotEmpty, reason: 'the regex matched nothing — did the block change shape?');
     expect(backend, isNot(contains('svg')));
     expect(ReceiptRules.extensions.toSet(), backend);
   });
 
   test('a file the server would refuse is refused here, in the same words', () {
     // Arrange
-    const tooBig = PickedFile(
-      path: '/tmp/huge.pdf',
-      name: 'huge.pdf',
-      sizeBytes: 11 * 1024 * 1024,
-    );
+    const tooBig = PickedFile(path: '/tmp/huge.pdf', name: 'huge.pdf', sizeBytes: 11 * 1024 * 1024);
     const wrongKind = PickedFile(path: '/tmp/a.docx', name: 'a.docx', sizeBytes: 1024);
     const photographed = PickedFile(path: '/tmp/waseel.jpg', name: 'waseel.jpg', sizeBytes: 2048);
 

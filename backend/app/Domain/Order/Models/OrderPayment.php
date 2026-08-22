@@ -69,6 +69,25 @@ class OrderPayment extends Model
     }
 
     /**
+     * Whether the receipt is a picture the app can draw itself, as opposed to a PDF it hands
+     * to the phone.
+     *
+     * Answered from the *stored* path, whose extension {@see StorePaymentReceipt} derived from
+     * the sniffed bytes — so a JPEG that arrived calling itself `waseel.pdf` still answers
+     * true. Published on the resource so the app keeps no copy of the format list.
+     */
+    public function receiptIsImage(): bool
+    {
+        if (! $this->hasReceipt()) {
+            return false;
+        }
+
+        $extension = strtolower(pathinfo((string) $this->receipt_path, PATHINFO_EXTENSION));
+
+        return in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true);
+    }
+
+    /**
      * A link to the receipt, built on demand from the disk it actually lives on.
      *
      * **Never stored**, exactly like a customer's design: the row records the disk and the path,
