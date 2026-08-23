@@ -2,6 +2,7 @@
 // uses). Hidden rather than prefixed, so the model keeps the name the domain calls it.
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
@@ -154,20 +155,55 @@ class OrderRepositoryImpl implements OrderRepository {
     String? reason,
     Map<String, Object?> fields = const {},
   }) {
+    final body = <String, dynamic>{
+      'status': status.wire,
+      if (reason != null && reason.isNotEmpty) 'reason': reason,
+      // Sent as the transition described them and no other way. An empty bag is left out
+      // rather than sent as `{}`, so a move that asks for nothing looks exactly as it did
+      // before any of this existed.
+      if (fields.isNotEmpty) 'fields': fields,
+    };
+
     return safeRequest<Order>(
-      () => _dio.post(
+      () async => _dio.post(
         OrderEndpoints.status(orderId),
-        data: <String, dynamic>{
-          'status': status.wire,
-          if (reason != null && reason.isNotEmpty) 'reason': reason,
-          // Sent as the transition described them and no other way. An empty bag is left out
-          // rather than sent as `{}`, so a move that asks for nothing looks exactly as it did
-          // before any of this existed.
-          if (fields.isNotEmpty) 'fields': fields,
-        },
+        data: fields.values.whereType<PickedFile>().isEmpty ? body : await _multipart(body),
       ),
       parse: (data) => Order.fromJson(data as Map<String, dynamic>),
     );
+  }
+
+  /// The same body, in the one format that can carry a file.
+  ///
+  /// **Only when a file is actually attached, which is the opposite of what the payments
+  /// repository does** — and deliberately. That endpoint was new and always took a receipt, so
+  /// one format cost nothing. This one has carried every move in the app since long before
+  /// files existed on it, and switching all of them to multipart would put warehouse ids,
+  /// design ids and quantities through a different encoding to buy tidiness in a branch that
+  /// runs on two statuses. The JSON path below is the one every other move keeps.
+  ///
+  /// `FormData.fromMap` flattens the nested bag into `fields[key]`, which Laravel reads back as
+  /// the same array — and the numbers arrive as strings, which `numeric` and `integer` accept.
+  Future<FormData> _multipart(Map<String, dynamic> body) async {
+    final fields = body['fields'] as Map<String, Object?>? ?? const {};
+
+    return FormData.fromMap(<String, dynamic>{
+      for (final entry in body.entries)
+        if (entry.key != 'fields') entry.key: entry.value,
+      'fields': <String, dynamic>{
+        for (final entry in fields.entries)
+          entry.key: switch (entry.value) {
+            // `fromFile` streams from disk rather than holding the file in memory. The fallback
+            // name claims no extension on purpose: the server sniffs the bytes and would record
+            // a made-up `.pdf` as the original name of what might be a photograph.
+            final PickedFile file => await MultipartFile.fromFile(
+              file.path,
+              filename: file.name,
+            ),
+            final value => value,
+          },
+      },
+    });
   }
 
   @override

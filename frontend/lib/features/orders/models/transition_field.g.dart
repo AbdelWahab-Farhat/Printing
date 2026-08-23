@@ -29,6 +29,17 @@ _TransitionField _$TransitionFieldFromJson(Map<String, dynamic> json) =>
               )
               .toList() ??
           const <TransitionFieldOption>[],
+      requiredIf: json['required_if'] == null
+          ? null
+          : TransitionFieldCondition.fromJson(
+              json['required_if'] as Map<String, dynamic>,
+            ),
+      extensions:
+          (json['extensions'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+      maxKilobytes: (json['max_kilobytes'] as num?)?.toInt(),
       requiredWith: json['required_with'] as String?,
       value: json['value'] as String?,
     );
@@ -45,6 +56,9 @@ Map<String, dynamic> _$TransitionFieldToJson(_TransitionField instance) =>
       'min': instance.min,
       'max': instance.max,
       'options': instance.options.map((e) => e.toJson()).toList(),
+      'required_if': instance.requiredIf?.toJson(),
+      'extensions': instance.extensions,
+      'max_kilobytes': instance.maxKilobytes,
       'required_with': instance.requiredWith,
       'value': instance.value,
     };
@@ -56,8 +70,20 @@ const _$TransitionFieldTypeEnumMap = {
   TransitionFieldType.shippingCompany: 'shipping_company',
   TransitionFieldType.warehouse: 'warehouse',
   TransitionFieldType.paymentMethod: 'payment_method',
+  TransitionFieldType.file: 'file',
   TransitionFieldType.unknown: 'unknown',
 };
+
+_TransitionFieldCondition _$TransitionFieldConditionFromJson(
+  Map<String, dynamic> json,
+) => _TransitionFieldCondition(
+  key: json['key'] as String,
+  value: json['value'] as String,
+);
+
+Map<String, dynamic> _$TransitionFieldConditionToJson(
+  _TransitionFieldCondition instance,
+) => <String, dynamic>{'key': instance.key, 'value': instance.value};
 
 _TransitionFieldOption _$TransitionFieldOptionFromJson(
   Map<String, dynamic> json,

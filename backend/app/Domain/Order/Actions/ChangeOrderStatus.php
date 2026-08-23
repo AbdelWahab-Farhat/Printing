@@ -260,6 +260,11 @@ final class ChangeOrderStatus
             // status changed, and copying it onto a payment row would put «المندوب خصم أجرة
             // التوصيل» beside a figure it does not describe.
             'notes' => "سُجِّلت مع نقل الطلبية إلى «{$target->label()}»",
+            // Stored by the same action that stores one taken on the payments screen, into the
+            // same five columns. Absent unless a file was actually attached — and a file
+            // attached with no amount beside it reaches nothing, because the guard above has
+            // already returned: a receipt with no entry to hang on would be an orphan.
+            'receipt' => $fields[TransitionFields::PAYMENT_RECEIPT] ?? null,
         ]), $actor);
 
         // `RecordOrderPayment` recalculates against its own locked copy, so the instance this

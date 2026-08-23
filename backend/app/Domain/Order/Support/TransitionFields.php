@@ -32,6 +32,8 @@ final class TransitionFields
 
     public const PAYMENT_METHOD = 'payment_method';
 
+    public const PAYMENT_RECEIPT = 'payment_receipt';
+
     /**
      * [$actor] is who is making the move, and it decides one thing only: whether the money box
      * is offered. A driver may hand a parcel over without being trusted with the till, so the
@@ -264,10 +266,10 @@ final class TransitionFields
      *   withholding the field rather than the move is the whole reason [$actor] is passed in.
      * - Only while something is owed. `RecordOrderPayment` refuses anything over the remainder,
      *   so on a settled account every possible answer is a 422.
-     * - Never a method obliging a receipt. «حوالة» must carry its الواصل — see
-     *   {@see PaymentMethod::requiresReceipt()} — and this screen uploads no files, so the
-     *   method is left off the picker instead of offered and then refused. A transfer is
-     *   recorded from the payments screen, which does take one.
+     * All four methods are offered, «حوالة» included. It was left off while this screen could
+     * take no files, which made the counter a worse place to record a payment than the payments
+     * screen for no reason a person could see — so the file field came instead, and with it the
+     * slip from a card machine that nobody had anywhere to put either.
      *
      * @return list<TransitionField>
      */
@@ -293,11 +295,6 @@ final class TransitionFields
         // — the customer may pay all of it, some of it, or none — so nothing is suggested.
         $settling = $target === OrderStatus::Settled;
 
-        $methods = array_values(array_filter(
-            PaymentMethod::cases(),
-            fn (PaymentMethod $method) => ! $method->requiresReceipt(),
-        ));
-
         return [
             TransitionField::number(
                 key: self::PAYMENT_AMOUNT,
@@ -309,22 +306,42 @@ final class TransitionFields
                 // The ceiling is the debt: an overpayment is refused by the ledger anyway, and
                 // being told so at the field beats being told so after the move is attempted.
                 max: (float) $remaining,
-                hint: $settling
-                    ? "المتبقي {$remaining} — يُسجَّل دفعةً في سجل الطلبية"
-                    : "المتبقي {$remaining} — اتركه فارغاً إن لم يُقبض شيء الآن",
+                // The figure and nothing else. «اتركه فارغاً إن لم يُقبض شيء» said out loud what
+                // «(اختياري)» beside the label already says, under a box whose only other line
+                // is the one number the person needs.
+                hint: "المتبقي {$remaining}",
                 value: $settling ? $remaining : null,
             ),
             TransitionField::paymentMethod(
                 key: self::PAYMENT_METHOD,
                 label: 'طريقة الدفع',
-                methods: $methods,
+                methods: PaymentMethod::cases(),
                 // Meaningless without an amount and mandatory with one — the ledger takes no
                 // entry lacking it.
                 requiredWith: self::PAYMENT_AMOUNT,
-                hint: 'الحوالة تُسجَّل من شاشة الدفعات لأنها تتطلّب واصلاً',
                 // Cash, because a counter takes cash. An answer, not a placeholder: agreeing
                 // costs no taps and disagreeing costs one.
                 value: PaymentMethod::Cash->value,
+            ),
+            // **One field, two jobs.** Obligatory for «حوالة», whose only proof is a document
+            // the customer sends — see {@see PaymentMethod::requiresReceipt()} — and offered for
+            // everything else, because the slip out of a card machine is worth keeping and
+            // somebody holding it should never be told we have nowhere to put it.
+            //
+            // The condition travels with the field rather than being restated in Dart, so the
+            // day a fourth method starts obliging one this screen follows with no release.
+            TransitionField::file(
+                key: self::PAYMENT_RECEIPT,
+                label: 'الواصل',
+                // The endpoint's own limits, handed over so the app can refuse a doomed file
+                // before pushing it over a mobile connection.
+                extensions: (array) config('media.payment_receipts.mimes'),
+                maxKilobytes: (int) config('media.payment_receipts.max_kilobytes'),
+                requiredIf: [
+                    'key' => self::PAYMENT_METHOD,
+                    'value' => PaymentMethod::BankTransfer->value,
+                ],
+                hint: 'مطلوب مع الحوالة، ويُقبل مع غيرها',
             ),
         ];
     }

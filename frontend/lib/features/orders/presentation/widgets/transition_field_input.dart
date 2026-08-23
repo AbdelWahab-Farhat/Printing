@@ -1,7 +1,11 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
 import 'package:dayaa/features/orders/models/transition_field.dart';
@@ -64,6 +68,11 @@ class TransitionFieldInput extends StatelessWidget {
         chosen: value is ShippingCompany ? value! as ShippingCompany : null,
         onChanged: onChanged,
       ),
+      TransitionFieldType.file => _File(
+        field: field,
+        picked: value is PickedFile ? value! as PickedFile : null,
+        onChanged: onChanged,
+      ),
       TransitionFieldType.paymentMethod => _Method(
         field: field,
         chosen: value is String ? value! as String : null,
@@ -76,6 +85,108 @@ class TransitionFieldInput extends StatelessWidget {
       ),
       TransitionFieldType.unknown => _Unsupported(field: field),
     };
+  }
+}
+
+/// A document or a photograph the move carries — «الواصل», today.
+///
+/// **The same three sources a design arrives through**, and for the same reason the payments
+/// screen offers them: the receipt that actually turns up is a banking-app screenshot or a
+/// photograph sent over WhatsApp, which on iOS lands in the photo library — a place the Files
+/// app cannot see at all.
+///
+/// **Nothing here knows what a receipt is.** The label, the sentence under it, what may be
+/// attached and how big it may be all arrive with the field, so a second file field on some
+/// other move needs no Dart.
+class _File extends StatelessWidget {
+  const _File({required this.field, required this.picked, required this.onChanged});
+
+  final TransitionField field;
+  final PickedFile? picked;
+  final ValueChanged<Object?> onChanged;
+
+  Future<void> _pick(BuildContext context) async {
+    final source = await showAttachmentSheet(context: context, title: 'إرفاق ${field.label}');
+
+    if (source == null || !context.mounted) return;
+
+    final files = await sl<AttachmentPicker>().pick(source);
+
+    if (!context.mounted || files.isEmpty) return;
+
+    final file = files.first;
+
+    // The picker's own filters are a courtesy and this is money: a file the endpoint would
+    // refuse is refused here, in its words, rather than after an upload somebody waited through.
+    final refusal = field.rejectFile(file.name, file.sizeBytes);
+
+    if (refusal != null) {
+      context.showError(refusal);
+
+      return;
+    }
+
+    onChanged(file);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final file = picked;
+
+    // Which glyph sits beside the name: the photo one for a picked image, the PDF one for a
+    // document or for the empty slot. The name is only the client's claim — but so is the file
+    // itself at this point, and the server sniffs the bytes either way.
+    final isImage = file != null && !file.name.toLowerCase().endsWith('.pdf');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          field.isRequired ? field.label : '${field.label} (اختياري)',
+          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        if (field.hint case final hint?) ...[
+          SizedBox(height: 4.h),
+          Text(
+            hint,
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+        SizedBox(height: 10.h),
+        if (file != null) ...[
+          Row(
+            children: [
+              Icon(
+                isImage ? AppIcons.photos : AppIcons.pdf,
+                size: 18.sp,
+                color: scheme.onSurfaceVariant,
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  file.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              IconButton(
+                icon: Icon(AppIcons.close, size: 18.sp),
+                tooltip: 'إزالة ${field.label}',
+                onPressed: () => onChanged(null),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+        ],
+        AppButton.tonal(
+          label: file == null ? 'اختيار ${field.label}' : 'تغيير ${field.label}',
+          icon: AppIcons.document,
+          onPressed: () => _pick(context),
+        ),
+      ],
+    );
   }
 }
 

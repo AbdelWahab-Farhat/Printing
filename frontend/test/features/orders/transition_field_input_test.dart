@@ -1,3 +1,6 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/features/orders/models/transition_field.dart';
 import 'package:dayaa/features/orders/presentation/widgets/transition_field_input.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +17,22 @@ import 'package:flutter_test/flutter_test.dart';
 /// it took no Dart with it.
 ///
 /// Arrange - Act - Assert throughout.
+/// Hands back whatever it was told to, so the sheet and the picker can be driven from a test
+/// with no platform channel behind them.
+class _FakePicker implements AttachmentPicker {
+  _FakePicker(this.result);
+
+  final List<PickedFile> result;
+
+  @override
+  Future<List<PickedFile>> pick(AttachmentSource source) async => result;
+}
+
 void main() {
+  setUp(() async {
+    await sl.reset();
+  });
+
   Widget host(Widget child) {
     return ScreenUtilInit(
       designSize: const Size(430, 932),
@@ -240,6 +258,86 @@ void main() {
 
     expect(chosen.selected, isTrue);
     expect(other.selected, isFalse);
+  });
+
+  testWidgets('a file field says what it wants and offers something to press', (tester) async {
+    // Arrange — exactly what the server sends beside the money on «تم الاستلام».
+    const receipt = TransitionField(
+      key: 'payment_receipt',
+      type: TransitionFieldType.file,
+      label: 'الواصل',
+      hint: 'مطلوب مع الحوالة، ويُقبل مع غيرها',
+      extensions: ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+      maxKilobytes: 10240,
+    );
+
+    // Act
+    await tester.pumpWidget(host(input(receipt)));
+    await tester.pump();
+
+    // Assert
+    expect(find.text('الواصل (اختياري)'), findsOneWidget);
+    expect(find.text('مطلوب مع الحوالة، ويُقبل مع غيرها'), findsOneWidget);
+    expect(find.text('اختيار الواصل'), findsOneWidget);
+    expect(find.textContaining('يحتاج نسخة أحدث'), findsNothing);
+  });
+
+  testWidgets('a chosen file is named on screen and reported whole', (tester) async {
+    // Arrange
+    const receipt = TransitionField(
+      key: 'payment_receipt',
+      type: TransitionFieldType.file,
+      label: 'الواصل',
+      extensions: ['pdf'],
+      maxKilobytes: 10240,
+    );
+    const file = PickedFile(path: '/tmp/waseel.pdf', name: 'waseel.pdf', sizeBytes: 2048);
+    sl.registerSingleton<AttachmentPicker>(_FakePicker(const [file]));
+
+    Object? reported;
+
+    // Act
+    await tester.pumpWidget(host(input(receipt, onChanged: (value) => reported = value)));
+    await tester.tap(find.text('اختيار الواصل'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('مستندات'));
+    await tester.pumpAndSettle();
+
+    // Assert — the whole [PickedFile], because the repository needs its path to stream from and
+    // its name for what the server records as the original filename.
+    expect(reported, file);
+  });
+
+  testWidgets('a file the endpoint would refuse never leaves the phone', (tester) async {
+    // Arrange — the limits came down with the field, so nothing here restates config/media.php.
+    const receipt = TransitionField(
+      key: 'payment_receipt',
+      type: TransitionFieldType.file,
+      label: 'الواصل',
+      extensions: ['pdf', 'jpg'],
+      maxKilobytes: 10240,
+    );
+    sl.registerSingleton<AttachmentPicker>(
+      _FakePicker(const [PickedFile(path: '/tmp/x.exe', name: 'x.exe', sizeBytes: 2048)]),
+    );
+
+    var reported = 0;
+
+    // Act
+    await tester.pumpWidget(host(input(receipt, onChanged: (_) => reported++)));
+    await tester.tap(find.text('اختيار الواصل'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('مستندات'));
+    await tester.pumpAndSettle();
+
+    // Assert — refused here, in the server's own words, rather than after an upload the person
+    // waited through on a mobile connection.
+    expect(reported, 0);
+    expect(find.textContaining('بصيغة PDF أو JPG'), findsOneWidget);
+
+    // Let the snackbar's own dismiss timer fire, or the binding reports it still pending.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('a kind this build cannot draw says so instead of leaving a hole', (tester) async {

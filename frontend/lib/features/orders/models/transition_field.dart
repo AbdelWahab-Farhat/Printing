@@ -53,6 +53,16 @@ enum TransitionFieldType {
   @JsonValue('payment_method')
   paymentMethod,
 
+  /// A document or a photograph, uploaded with the move.
+  ///
+  /// **The one kind that changes how the move is sent.** A file cannot travel in a JSON body,
+  /// so a transition carrying one goes up as multipart — see `OrderRepositoryImpl.changeStatus`.
+  /// What the endpoint will accept arrives with the field in [TransitionField.extensions] and
+  /// [TransitionField.maxKilobytes], so a doomed file is refused here rather than after an
+  /// upload the person waited through, and this app keeps no copy of `config/media.php`.
+  @JsonValue('file')
+  file,
+
   /// A kind this build has no widget for. Rendered as a note rather than silently skipped: a
   /// field the server thinks is required and the screen never shows is a form that cannot be
   /// submitted with nothing on screen to explain why.
@@ -96,6 +106,19 @@ abstract class TransitionField with _$TransitionField {
     /// [TransitionFieldType.paymentMethod]. Empty for every other kind.
     @Default(<TransitionFieldOption>[]) List<TransitionFieldOption> options,
 
+    /// The field-and-answer that makes this one mandatory — the sibling of [requiredWith], for
+    /// a rule that turns on a *particular* answer rather than on any answer at all.
+    ///
+    /// «الواصل» is optional beside a card and obligatory beside a transfer, and which of the two
+    /// is decided by a chip on the same screen. Sent down so the day a fourth method starts
+    /// obliging one, this app follows with no release.
+    @JsonKey(name: 'required_if') TransitionFieldCondition? requiredIf,
+
+    /// What a [TransitionFieldType.file] will accept — the endpoint's own limits, so nothing
+    /// here restates `config/media.php`.
+    @Default(<String>[]) List<String> extensions,
+    @JsonKey(name: 'max_kilobytes') int? maxKilobytes,
+
     /// The key of the field that makes this one mandatory: empty is fine on its own, and
     /// refused the moment that other field is answered.
     ///
@@ -127,17 +150,55 @@ abstract class TransitionField with _$TransitionField {
   /// so that clearing the amount releases the method again.
   bool isDemandedBy(Map<String, Object?> values) {
     if (isRequired) return true;
-    if (requiredWith case final partner?) {
-      return switch (values[partner]) {
-        null => false,
-        final String text => text.trim().isNotEmpty,
-        final Iterable<Object?> many => many.isNotEmpty,
-        _ => true,
-      };
+
+    if (requiredWith case final partner? when _isAnswered(values[partner])) return true;
+
+    if (requiredIf case final condition?) {
+      return values[condition.key] == condition.value;
     }
 
     return false;
   }
+
+  static bool _isAnswered(Object? value) => switch (value) {
+    null => false,
+    final String text => text.trim().isNotEmpty,
+    final Iterable<Object?> many => many.isNotEmpty,
+    _ => true,
+  };
+
+  /// Why this file cannot be attached, in the words the server would have used — or null.
+  ///
+  /// **The server's own limits, applied before the upload rather than after it.** Pushing a
+  /// doomed file over a Libyan mobile connection to be told it is the wrong kind is a person's
+  /// time and data allowance spent to learn something knowable instantly. Nothing is duplicated
+  /// to do it: [extensions] and [maxKilobytes] came down with the field.
+  String? rejectFile(String filename, int sizeBytes) {
+    final dot = filename.lastIndexOf('.');
+    final extension = dot == -1 ? '' : filename.substring(dot + 1).toLowerCase();
+
+    if (extensions.isNotEmpty && !extensions.contains(extension)) {
+      return '$label يجب أن يكون بصيغة ${extensions.map((e) => e.toUpperCase()).join(' أو ')}';
+    }
+
+    if (maxKilobytes case final limit? when sizeBytes > limit * 1024) {
+      return 'حجم $label يجب ألا يتجاوز ${limit ~/ 1024} ميجابايت';
+    }
+
+    return null;
+  }
+}
+
+/// «هذا الحقل مطلوب حين تكون إجابة ذاك كذا» — a rule the server states and this app applies.
+@freezed
+abstract class TransitionFieldCondition with _$TransitionFieldCondition {
+  const factory TransitionFieldCondition({
+    required String key,
+    required String value,
+  }) = _TransitionFieldCondition;
+
+  factory TransitionFieldCondition.fromJson(Map<String, dynamic> json) =>
+      _$TransitionFieldConditionFromJson(json);
 }
 
 /// One choice on a field that carries its own list.

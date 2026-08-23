@@ -56,6 +56,20 @@ enum TransitionFieldType: string
     case PaymentMethod = 'payment_method';
 
     /**
+     * A document or a photograph, uploaded with the move.
+     *
+     * **The one type that changes how the request is sent.** A file cannot travel in a JSON
+     * body, so a move carrying one goes up as multipart — see the app's `changeStatus`. Every
+     * other value in the bag arrives as a string that way, which the rules already tolerate:
+     * `numeric` and `integer` both accept the string form.
+     *
+     * Carries what the endpoint will accept — `extensions` and `max_kilobytes` — so the app can
+     * refuse a doomed file before pushing it over a mobile connection, without keeping its own
+     * copy of a rule that lives in `config/media.php`.
+     */
+    case File = 'file';
+
+    /**
      * One of the warehouses, chosen from the list the business maintains.
      *
      * Same shape as {@see ShippingCompany}: options are not inlined, and what travels is

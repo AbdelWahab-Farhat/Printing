@@ -50,6 +50,25 @@ final class TransitionField
          * the app can hold the same rule off the same description.
          */
         public readonly ?string $requiredWith = null,
+        /**
+         * The field-and-answer that makes this one mandatory: `['key' => …, 'value' => …]`.
+         *
+         * **The sibling of [$requiredWith], for a rule that turns on a particular answer rather
+         * than on any answer at all.** «الواصل» is optional beside a card and obligatory beside
+         * a transfer, and which of the two is decided by a chip on the same screen — so neither
+         * `required` nor the field's own properties can say it. Maps straight onto Laravel's
+         * `required_if`, and travels to the app so the button greys on the same rule.
+         *
+         * @var array{key: string, value: string}|null
+         */
+        public readonly ?array $requiredIf = null,
+        /**
+         * What a [TransitionFieldType::File] will accept, read off `config/media.php`.
+         *
+         * @var list<string>
+         */
+        public readonly array $extensions = [],
+        public readonly ?int $maxKilobytes = null,
     ) {}
 
     public static function text(
@@ -138,6 +157,38 @@ final class TransitionField
         );
     }
 
+    /**
+     * A document or a photograph the move carries.
+     *
+     * [$extensions] and [$maxKilobytes] are the endpoint's own limits handed to the app, so the
+     * two cannot disagree and the app keeps no copy of `config/media.php`. Never [$required] on
+     * its own so far — what obliges a receipt is the *method* chosen beside it, which is what
+     * [$requiredIf] says.
+     *
+     * @param  list<string>  $extensions
+     * @param  array{key: string, value: string}|null  $requiredIf
+     */
+    public static function file(
+        string $key,
+        string $label,
+        array $extensions,
+        int $maxKilobytes,
+        bool $required = false,
+        ?array $requiredIf = null,
+        ?string $hint = null,
+    ): self {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::File,
+            label: $label,
+            required: $required,
+            hint: $hint,
+            requiredIf: $requiredIf,
+            extensions: $extensions,
+            maxKilobytes: $maxKilobytes,
+        );
+    }
+
     public static function customerDesigns(
         string $key,
         string $label,
@@ -223,6 +274,11 @@ final class TransitionField
             // The key that makes this one mandatory, or null. Sent so the app can grey its own
             // button on the same rule the endpoint enforces, rather than keeping a second copy.
             'required_with' => $this->requiredWith,
+            // The same, for a rule that turns on a particular answer: `{key, value}` or null.
+            'required_if' => $this->requiredIf,
+            // What a file field will accept. Empty and null for every other kind.
+            'extensions' => $this->extensions,
+            'max_kilobytes' => $this->maxKilobytes,
         ];
     }
 
@@ -242,7 +298,17 @@ final class TransitionField
         // Not merged into [$presence]: `nullable` says "an empty answer passes the rules below",
         // and `required_with` is an *implicit* rule Laravel runs whether or not the value came —
         // which is the whole point. The two say different things and both have to be said.
-        $conditional = $this->requiredWith === null ? [] : ["required_with:fields.{$this->requiredWith}"];
+        $conditional = [];
+
+        if ($this->requiredWith !== null) {
+            $conditional[] = "required_with:fields.{$this->requiredWith}";
+        }
+
+        // `required_if:fields.payment_method,bank_transfer` — the exact rule the payments
+        // endpoint already states for the same file, said here about the same two fields.
+        if ($this->requiredIf !== null) {
+            $conditional[] = "required_if:fields.{$this->requiredIf['key']},{$this->requiredIf['value']}";
+        }
 
         return match ($this->type) {
             TransitionFieldType::Text => [
@@ -260,6 +326,21 @@ final class TransitionField
                 "fields.{$this->key}" => [$presence, 'array', ...($this->required ? ['min:1'] : [])],
                 "fields.{$this->key}.*" => ['integer'],
             ],
+            // **Three checks, and the middle one is the only one that matters.** `mimetypes`
+            // reads the bytes; `mimes` reads the name and is a courtesy on top of it. Both come
+            // from `media.payment_receipts`, which is the same list the field advertised — so an
+            // app that pre-checked against it is never refused for a rule it could have seen.
+            TransitionFieldType::File => [
+                "fields.{$this->key}" => array_values(array_filter([
+                    $presence,
+                    ...$conditional,
+                    'file',
+                    'mimetypes:'.implode(',', (array) config('media.payment_receipts.mimetypes')),
+                    $this->extensions === [] ? null : 'mimes:'.implode(',', $this->extensions),
+                    $this->maxKilobytes === null ? null : "max:{$this->maxKilobytes}",
+                ])),
+            ],
+
             // Exactly the list the picker was handed, so a method left off the screen is a
             // method the endpoint has never heard of either.
             TransitionFieldType::PaymentMethod => [
@@ -310,6 +391,16 @@ final class TransitionField
                 "fields.{$this->key}.required" => "{$this->label} مطلوب",
                 "fields.{$this->key}.numeric" => "{$this->label} يجب أن يكون رقماً",
                 "fields.{$this->key}.max" => "{$this->label} أكبر مما في الطلبية",
+            ],
+            TransitionFieldType::File => [
+                "fields.{$this->key}.required" => "{$this->label} مطلوب",
+                "fields.{$this->key}.required_if" => "الدفع بحوالة يتطلب إرفاق {$this->label}",
+                "fields.{$this->key}.file" => "{$this->label} يجب أن يكون ملفاً",
+                "fields.{$this->key}.mimetypes" => "{$this->label} يجب أن يكون ملف PDF أو صورة",
+                "fields.{$this->key}.mimes" => "{$this->label} يجب أن يكون بصيغة ".
+                    implode(' أو ', array_map(mb_strtoupper(...), $this->extensions)),
+                "fields.{$this->key}.max" => "حجم {$this->label} يجب ألا يتجاوز ".
+                    (int) (($this->maxKilobytes ?? 0) / 1024).' ميجابايت',
             ],
             TransitionFieldType::PaymentMethod => [
                 "fields.{$this->key}.required" => "{$this->label} مطلوبة",

@@ -12,6 +12,8 @@ use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -90,12 +92,26 @@ class OrderTransitionPaymentTest extends TestCase
         return $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}");
     }
 
+    /**
+     * **`post`, not `postJson`** — the same call either way.
+     *
+     * A move may now carry a file, so the app sends the whole bag as multipart whenever one is
+     * attached. Laravel reads a multipart body exactly as it reads a JSON one, and testing
+     * through the format the app actually uses is what proves the numbers still validate when
+     * they arrive as strings.
+     */
     private function move(array $headers, Order $order, OrderStatus $to, array $fields = []): TestResponse
     {
-        return $this->withHeaders($headers)->postJson(
+        return $this->withHeaders($headers)->post(
             "/api/v1/orders/{$order->id}/status",
             ['status' => $to->value, 'fields' => $fields],
         );
+    }
+
+    /** A believable الواصل: a small PDF, the shape a bank actually sends. */
+    private function receipt(): UploadedFile
+    {
+        return UploadedFile::fake()->create('waseel.pdf', 120, 'application/pdf');
     }
 
     /** An order waiting at the counter for a customer who owes what is left of it. */
@@ -183,7 +199,7 @@ class OrderTransitionPaymentTest extends TestCase
         $this->assertSame('المبلغ المقبوض', $amount['label']);
         $this->assertFalse($amount['required']);
         $this->assertEquals(250.0, $amount['max']);
-        $this->assertStringContainsString('250.00', $amount['hint']);
+        $this->assertSame('المتبقي 250.00', $amount['hint']);
         $this->assertNull($amount['value']);
     }
 
@@ -207,7 +223,7 @@ class OrderTransitionPaymentTest extends TestCase
         $this->assertSame('payment_amount', $method['required_with']);
     }
 
-    public function test_a_method_that_would_need_a_paper_receipt_is_not_offered_here(): void
+    public function test_every_method_the_business_uses_is_offered_here(): void
     {
         // Arrange
         $order = $this->waitingOrder('250.00');
@@ -219,14 +235,170 @@ class OrderTransitionPaymentTest extends TestCase
             'payment_method',
         );
 
-        // Assert — «حوالة» obliges a receipt (الواصل) and this screen has nowhere to upload one,
-        // so it is left off the list rather than offered and then refused. A transfer is
-        // recorded from the payments screen, which does take files.
+        // Assert — all four, «حوالة» included. It was left off while this screen could take no
+        // files, which made the counter a poorer place to record a payment than the payments
+        // screen for no reason a person could see. The file field below it is what let it back.
         $offered = array_column($method['options'], 'value');
 
-        $this->assertSame(['cash', 'bank_card', 'libyana'], $offered);
-        $this->assertNotContains(PaymentMethod::BankTransfer->value, $offered);
+        $this->assertSame(PaymentMethod::values(), $offered);
         $this->assertSame('كاش', $method['options'][0]['label']);
+        $this->assertSame('حوالة', $method['options'][1]['label']);
+    }
+
+    public function test_the_receipt_is_offered_with_the_money_and_demanded_only_by_a_transfer(): void
+    {
+        // Arrange
+        $order = $this->waitingOrder('250.00');
+        $headers = $this->cashier();
+
+        // Act
+        $receipt = $this->field(
+            $this->transition($this->show($headers, $order), OrderStatus::Delivered),
+            'payment_receipt',
+        );
+
+        // Assert — one field, two jobs. Obligatory for «حوالة», whose only proof is a document
+        // the customer sends; offered for everything else, because somebody holding the paper
+        // for a card payment should never be told we have nowhere to put it.
+        //
+        // The condition travels *with* the field, so the app greys its button on the same rule
+        // the endpoint enforces rather than keeping a copy of «حوالة تحتاج واصلاً» in Dart.
+        $this->assertNotNull($receipt);
+        $this->assertSame('file', $receipt['type']);
+        $this->assertFalse($receipt['required']);
+        $this->assertSame(
+            ['key' => 'payment_method', 'value' => PaymentMethod::BankTransfer->value],
+            $receipt['required_if'],
+        );
+    }
+
+    public function test_the_receipt_carries_what_the_server_will_accept(): void
+    {
+        // Arrange
+        $order = $this->waitingOrder('250.00');
+        $headers = $this->cashier();
+
+        // Act
+        $receipt = $this->field(
+            $this->transition($this->show($headers, $order), OrderStatus::Delivered),
+            'payment_receipt',
+        );
+
+        // Assert — read off `media.payment_receipts`, so the app refuses a doomed file before
+        // pushing it over a mobile connection, and cannot drift from what the endpoint takes.
+        $this->assertSame(config('media.payment_receipts.mimes'), $receipt['extensions']);
+        $this->assertSame(
+            (int) config('media.payment_receipts.max_kilobytes'),
+            $receipt['max_kilobytes'],
+        );
+    }
+
+    public function test_a_transfer_without_its_receipt_is_refused_and_nothing_moves(): void
+    {
+        // Arrange
+        Storage::fake('local');
+        $order = $this->waitingOrder('250.00');
+        $headers = $this->cashier();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Delivered, [
+            'payment_amount' => '200.00',
+            'payment_method' => PaymentMethod::BankTransfer->value,
+        ]);
+
+        // Assert — a disputed transfer with no document is one person's word against another's,
+        // which is why this rule exists in three places. This is the readable one.
+        $response->assertStatus(422)->assertJsonValidationErrors('fields.payment_receipt');
+        $this->assertSame(OrderStatus::OfficePickup, $order->fresh()->status);
+        $this->assertSame(0, $this->paymentCount($order));
+    }
+
+    public function test_a_transfer_with_its_receipt_is_recorded_with_the_file_on_it(): void
+    {
+        // Arrange
+        Storage::fake('local');
+        $order = $this->waitingOrder('250.00');
+        $headers = $this->cashier();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Delivered, [
+            'payment_amount' => '200.00',
+            'payment_method' => PaymentMethod::BankTransfer->value,
+            'payment_receipt' => $this->receipt(),
+        ]);
+
+        // Assert — the entry and its الواصل land together, exactly as they do from the payments
+        // screen: the same action stores the file and writes the five columns describing it.
+        $response->assertOk()->assertJsonPath('data.status', 'delivered');
+
+        $payment = OrderPayment::query()->where('order_id', $order->id)->sole();
+
+        $this->assertSame(PaymentMethod::BankTransfer, $payment->method);
+        $this->assertSame('waseel.pdf', $payment->receipt_original_filename);
+        $this->assertNotNull($payment->receipt_path);
+        Storage::disk($payment->receipt_disk)->assertExists($payment->receipt_path);
+    }
+
+    public function test_a_card_payment_may_carry_its_slip_without_being_made_to(): void
+    {
+        // Arrange
+        Storage::fake('local');
+        $order = $this->waitingOrder('250.00');
+        $headers = $this->cashier();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Delivered, [
+            'payment_amount' => '200.00',
+            'payment_method' => PaymentMethod::BankCard->value,
+            'payment_receipt' => UploadedFile::fake()->image('slip.jpg'),
+        ]);
+
+        // Assert — the slip out of the machine is worth keeping and nothing obliges it.
+        $response->assertOk();
+
+        $payment = OrderPayment::query()->where('order_id', $order->id)->sole();
+
+        $this->assertSame(PaymentMethod::BankCard, $payment->method);
+        $this->assertSame('slip.jpg', $payment->receipt_original_filename);
+    }
+
+    public function test_a_file_the_server_will_not_store_is_refused_at_the_field(): void
+    {
+        // Arrange
+        Storage::fake('local');
+        $order = $this->waitingOrder('250.00');
+        $headers = $this->cashier();
+
+        // Act — an executable renamed is still an executable, and the mime is sniffed.
+        $response = $this->move($headers, $order, OrderStatus::Delivered, [
+            'payment_amount' => '200.00',
+            'payment_method' => PaymentMethod::Cash->value,
+            'payment_receipt' => UploadedFile::fake()->create('waseel.exe', 10, 'application/x-msdownload'),
+        ]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('fields.payment_receipt');
+        $this->assertSame(0, $this->paymentCount($order));
+    }
+
+    public function test_a_receipt_with_no_money_beside_it_records_nothing(): void
+    {
+        // Arrange — a file attached and the amount left alone. Nothing was collected, so there
+        // is no entry to hang it on.
+        Storage::fake('local');
+        $order = $this->waitingOrder('250.00');
+        $headers = $this->cashier();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Delivered, [
+            'payment_method' => PaymentMethod::Cash->value,
+            'payment_receipt' => $this->receipt(),
+        ]);
+
+        // Assert — the move goes through and the ledger stays as it was. A file stored against
+        // no entry would be an orphan nothing could ever show.
+        $response->assertOk()->assertJsonPath('data.status', 'delivered');
+        $this->assertSame(0, $this->paymentCount($order));
     }
 
     public function test_an_order_with_nothing_left_to_pay_is_not_asked_for_money(): void
@@ -378,23 +550,6 @@ class OrderTransitionPaymentTest extends TestCase
 
         // Assert — the ledger's own shape rule, said in Arabic at the field rather than as a
         // constraint violation five layers down.
-        $response->assertStatus(422)->assertJsonValidationErrors('fields.payment_method');
-        $this->assertDatabaseCount('order_payments', 0);
-    }
-
-    public function test_a_method_needing_a_receipt_is_refused_even_when_it_is_posted(): void
-    {
-        // Arrange
-        $order = $this->waitingOrder('250.00');
-        $headers = $this->cashier();
-
-        // Act
-        $response = $this->move($headers, $order, OrderStatus::Delivered, [
-            'payment_amount' => '200.00',
-            'payment_method' => PaymentMethod::BankTransfer->value,
-        ]);
-
-        // Assert — what the picker does not offer, the endpoint does not accept.
         $response->assertStatus(422)->assertJsonValidationErrors('fields.payment_method');
         $this->assertDatabaseCount('order_payments', 0);
     }
