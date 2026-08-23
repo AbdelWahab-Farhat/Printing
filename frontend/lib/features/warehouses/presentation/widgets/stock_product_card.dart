@@ -18,12 +18,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// number that could be written here would be a sum this app has no business computing — the
 /// warehouse's own total is on the card above the list, where the server counted it.
 class StockProductCard extends StatelessWidget {
-  const StockProductCard({
-    required this.group,
-    this.onTapShelf,
-    this.onEditThreshold,
-    super.key,
-  });
+  const StockProductCard({required this.group, this.onTapShelf, this.onEditThreshold, super.key});
 
   final StockGroup group;
 
@@ -106,7 +101,7 @@ class StockProductCard extends StatelessWidget {
                 Divider(
                   height: 1,
                   thickness: 1,
-                  indent: 12.w,
+                  indent: 66.w,
                   endIndent: 12.w,
                   color: scheme.outlineVariant.withValues(alpha: 0.4),
                 ),

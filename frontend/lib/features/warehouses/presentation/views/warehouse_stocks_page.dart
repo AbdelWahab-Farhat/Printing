@@ -128,10 +128,8 @@ class _StocksView extends StatelessWidget {
             ),
           ),
           BlocBuilder<WarehouseStocksCubit, WarehouseStocksState>(
-            builder: (context, state) => _ShelfFilter(
-              selected: cubit.filter,
-              onSelected: cubit.filterBy,
-            ),
+            builder: (context, state) =>
+                _ShelfFilter(selected: cubit.filter, onSelected: cubit.filterBy),
           ),
           Expanded(
             child: BlocBuilder<WarehouseStocksCubit, WarehouseStocksState>(

@@ -172,6 +172,9 @@ class ChangeOrderStatusRequest extends FormRequest
             return [];
         }
 
-        return $this->descriptors ??= TransitionFields::for($order, $target);
+        // The same user the resource described the form to, so what the app was offered and
+        // what this endpoint accepts stay one list — a money box withheld from a driver on the
+        // screen is a money box this request has never heard of either.
+        return $this->descriptors ??= TransitionFields::for($order, $target, $this->user());
     }
 }

@@ -660,8 +660,6 @@ class _Destination extends StatelessWidget {
             _Row(icon: AppIcons.tag, label: 'رقم التتبع', value: tracking),
           if (order.shippingCompany case final company?)
             _Row(icon: AppIcons.warehouse, label: 'شركة الشحن', value: company),
-          if (order.weightKg case final weight?)
-            _Row(icon: AppIcons.warehouse, label: 'الوزن', value: '$weight كجم'),
           if (order.notes case final notes?)
             _Row(icon: AppIcons.edit, label: 'ملاحظات', value: notes),
         ],

@@ -65,7 +65,7 @@ class OrderTransitionFieldsTest extends TestCase
             PermissionName::MoveOrderToShortage->value,
             PermissionName::CancelOrders->value,
             // `ready` now deducts stock for real, so a foreman occasionally needs to seed a
-            // balance to test against — see test_the_weight_lands_on_the_order_with_the_move.
+            // balance to test against.
             PermissionName::ManageInventory->value,
         ]);
 
@@ -186,6 +186,8 @@ class OrderTransitionFieldsTest extends TestCase
                 'min' => null,
                 'max' => null,
                 'value' => null,
+                'options' => [],
+                'required_with' => null,
             ],
             [
                 'key' => 'reason',
@@ -198,6 +200,8 @@ class OrderTransitionFieldsTest extends TestCase
                 'min' => null,
                 'max' => null,
                 'value' => null,
+                'options' => [],
+                'required_with' => null,
             ],
         ], $designing['fields']);
     }
@@ -672,7 +676,7 @@ class OrderTransitionFieldsTest extends TestCase
 
     // ──────────────────────── what «تم التسوية» asks for ────────────────────────
 
-    public function test_settling_asks_for_the_money_only_if_it_came_back_different(): void
+    public function test_settling_no_longer_asks_for_a_figure_nothing_adds_up(): void
     {
         // Arrange
         $order = Order::factory()->status(OrderStatus::Delivered)->create(['grand_total' => '250.00']);
@@ -680,17 +684,16 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Act
         $settling = $this->transition($this->show($headers, $order), OrderStatus::Settled);
-        $money = collect($settling['fields'])->firstWhere('key', 'collected_amount');
 
-        // Assert — optional, and the invoice total is on screen beside it so the person agreeing
-        // the money is not asked to remember what it should have been.
-        $this->assertNotNull($money);
-        $this->assertFalse($money['required']);
-        $this->assertSame('المبلغ المستلم', $money['label']);
-        $this->assertStringContainsString('250.00', $money['hint']);
+        // Assert — «المبلغ المستلم» (`collected_amount`) is gone from the form. It asked the
+        // right question and answered none of it: the number went into a column no total read,
+        // so an order could carry «المدفوع ٥٠٠» and «المستلم فعلياً ٤٥٠» at once with nothing
+        // able to say which was true. What replaced it writes a real ledger entry — see
+        // {@see OrderTransitionPaymentTest}. The column stays for the orders written before this.
+        $this->assertNull(collect($settling['fields'])->firstWhere('key', 'collected_amount'));
     }
 
-    public function test_a_settlement_that_matches_the_invoice_records_no_amount(): void
+    public function test_a_settlement_records_no_amount_of_its_own(): void
     {
         // Arrange
         $order = $this->deliveredOrder('250.00', paid: '250.00');
@@ -699,8 +702,7 @@ class OrderTransitionFieldsTest extends TestCase
         // Act — the ordinary case: the money came back and it was the right money.
         $response = $this->move($headers, $order, OrderStatus::Settled);
 
-        // Assert — the column stays null on purpose, so a number in it always means the two
-        // disagreed. Filling it with the total would make agreement and discrepancy look alike.
+        // Assert — nothing writes `collected_amount` any more, and the ledger says what came in.
         $response->assertOk()->assertJsonPath('data.status', 'settled');
 
         $settled = $order->fresh();
@@ -708,26 +710,21 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertNotNull($settled->settled_at);
     }
 
-    public function test_a_short_settlement_is_written_down_as_what_actually_arrived(): void
+    public function test_the_retired_money_field_is_not_accepted_either(): void
     {
-        // Arrange — the invoice is paid off in the ledger; what the courier physically handed
-        // over is the separate fact this field exists to record.
+        // Arrange
         $order = $this->deliveredOrder('250.00', paid: '250.00');
         $headers = $this->accountant();
 
-        // Act
+        // Act — a client written against the old form.
         $response = $this->move($headers, $order, OrderStatus::Settled, [
-            'fields' => ['collected_amount' => '230.50', 'reason' => 'المندوب خصم أجرة التوصيل'],
+            'fields' => ['collected_amount' => '230.50'],
         ]);
 
-        // Assert — the number and the sentence explaining it, kept together.
-        $response->assertOk();
-        $this->assertSame('230.50', $order->fresh()->collected_amount);
-        $this->assertDatabaseHas('order_status_transitions', [
-            'order_id' => $order->id,
-            'to_status' => OrderStatus::Settled->value,
-            'reason' => 'المندوب خصم أجرة التوصيل',
-        ]);
+        // Assert — refused rather than dropped in silence, which is the rule for every key this
+        // move did not offer: swallowing it would teach the client it had been recorded.
+        $response->assertStatus(422)->assertJsonValidationErrors('fields');
+        $this->assertSame(OrderStatus::Delivered, $order->fresh()->status);
     }
 
     public function test_settling_is_its_own_grant(): void
@@ -1094,140 +1091,48 @@ class OrderTransitionFieldsTest extends TestCase
             ->assertJsonPath('data.designs_are_editable', false);
     }
 
-    // ─────────────────────────── the weight «جاهزة» asks for ───────────────────────────
+    // ────────────────────── the weight that used to be asked for ──────────────────────
 
     /**
-     * An order priced the way most are: by the piece.
+     * **«جاهزة» no longer asks for a parcel weight, and there is nothing left that wanted one.**
      *
-     * The product is built to match the line's unit on **both** axes. A line sold by the kilo
-     * whose product is stocked by the piece is not a shape the catalogue produces, and since
-     * «جاهزة» started asking for the deduction of any line whose two units differ, such a
-     * fixture would be answering a different question than the one under test here.
+     * `orders.weight_kg` was written by this move and read by exactly two things: the API
+     * resource that echoed it, and one fact row on the order screen. No invoice, no carrier, no
+     * costing and no report ever computed anything from it — a field that was demanded of every
+     * kilo-priced order on the grounds that «الوزن هو ما تُحاسب عليه» while the invoice was in
+     * fact built from the line quantities, then and now. The column has since been dropped.
+     *
+     * What actually comes off the shelf is asked line by line instead, and only where nobody
+     * could work it out — see the section above.
      */
-    private function orderBeingPrinted(PricingUnit $unit = PricingUnit::Piece): Order
+    public function test_finishing_a_run_does_not_ask_for_a_parcel_weight(): void
     {
-        $product = Product::factory()->create(['pricing_unit' => $unit, 'stock_unit' => $unit]);
+        // Arrange — a run sold by the kilo, which is the case that used to demand one.
+        $product = Product::factory()->create([
+            'pricing_unit' => PricingUnit::Kilogram,
+            'stock_unit' => PricingUnit::Kilogram,
+        ]);
         $variant = ProductVariant::factory()->for($product)->create();
         $order = Order::factory()->status(OrderStatus::Printing)->create();
-
         OrderItem::factory()->for($order)->create([
             'product_id' => $product->id,
             'product_variant_id' => $variant->id,
-            'pricing_unit' => $unit,
+            'pricing_unit' => PricingUnit::Kilogram,
         ]);
-
-        return $order;
-    }
-
-    /**
-     * `weight_kg` shares this move with `warehouse_id` now, so field-order is not to be relied
-     * on — looked up by key instead.
-     *
-     * @param  array<int, array<string, mixed>>  $fields
-     * @return array<string, mixed>
-     */
-    private function weightField(array $fields): array
-    {
-        return collect($fields)->firstWhere('key', 'weight_kg');
-    }
-
-    public function test_finishing_a_run_asks_for_its_weight(): void
-    {
-        // Arrange
-        $order = $this->orderBeingPrinted();
         $headers = $this->foreman();
 
         // Act
         $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
 
-        // Assert — a number, and the app draws a numeric field for it because the description
-        // says `number` and not because anybody wrote «الوزن» into a screen.
-        $this->assertSame('number', $this->weightField($ready['fields'])['type']);
-    }
+        // Assert — not offered, and not accepted either: a key the move never described is
+        // refused by the same list that describes it.
+        $this->assertNull($this->fieldNamed($ready['fields'], 'weight_kg'));
 
-    public function test_bags_sold_by_the_piece_may_be_weighed_or_not(): void
-    {
-        // Arrange
-        $order = $this->orderBeingPrinted();
-        $headers = $this->foreman();
-
-        // Act
-        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
-
-        // Assert — the weight is for the courier, and a run can be shelved before anybody has
-        // put it on the scale.
-        $this->assertFalse($this->weightField($ready['fields'])['required']);
-    }
-
-    public function test_bags_sold_by_the_kilo_cannot_be_shelved_unweighed(): void
-    {
-        // Arrange
-        $order = $this->orderBeingPrinted(PricingUnit::Kilogram);
-        $headers = $this->foreman();
-
-        // Act
-        $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
-
-        // Assert — the scale is the invoice for these: without a weight there is no answer to
-        // what was sold.
-        $this->assertTrue($this->weightField($ready['fields'])['required']);
-    }
-
-    public function test_a_kilo_order_is_refused_without_a_weight(): void
-    {
-        // Arrange
-        $order = $this->orderBeingPrinted(PricingUnit::Kilogram);
-        $headers = $this->foreman();
-
-        // Act
-        $response = $this->move($headers, $order, OrderStatus::Ready);
-
-        // Assert
-        $response->assertStatus(422)->assertJsonValidationErrors('fields.weight_kg');
-        $this->assertSame(OrderStatus::Printing, $order->fresh()->status);
-    }
-
-    public function test_the_weight_lands_on_the_order_with_the_move(): void
-    {
-        // Arrange — a real balance to draw from: reaching `ready` now deducts stock for real,
-        // where under the old `printing`-triggered rule this particular move (already standing
-        // in `printing`) never touched the warehouse at all.
-        $order = $this->orderBeingPrinted(PricingUnit::Kilogram);
-        $item = $order->items()->first();
-        $warehouse = Warehouse::factory()->create();
-        $headers = $this->foreman();
-
-        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $item->product_variant_id,
-            'to_warehouse_id' => $warehouse->id,
-            'quantity' => $item->quantity,
-            'unit_cost' => 1,
-        ])->assertCreated();
-
-        // Act
-        $response = $this->move($headers, $order, OrderStatus::Ready, [
-            'fields' => ['weight_kg' => 12.5, 'warehouse_id' => $warehouse->id],
+        $refused = $this->move($headers, $order, OrderStatus::Ready, [
+            'fields' => ['weight_kg' => 12.5],
         ]);
 
-        // Assert — one request, and the number is on the order rather than in a note somebody
-        // has to read.
-        $response->assertOk()->assertJsonPath('data.status', 'ready');
-        $this->assertSame('12.500', $order->fresh()->weight_kg);
-    }
-
-    public function test_a_weight_that_is_not_a_number_is_refused(): void
-    {
-        // Arrange
-        $order = $this->orderBeingPrinted();
-        $headers = $this->foreman();
-
-        // Act
-        $response = $this->move($headers, $order, OrderStatus::Ready, [
-            'fields' => ['weight_kg' => 'ثقيلة'],
-        ]);
-
-        // Assert
-        $response->assertStatus(422)->assertJsonValidationErrors('fields.weight_kg');
+        $refused->assertStatus(422);
     }
 
     // ────────────────────── what «نواقص» asks for, line by line ──────────────────────

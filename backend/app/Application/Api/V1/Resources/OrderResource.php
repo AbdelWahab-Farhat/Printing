@@ -52,7 +52,10 @@ class OrderResource extends JsonResource
                     'requires_reason' => $target->requiresReason(),
                     'fields' => array_map(
                         fn (TransitionField $field) => $field->toArray(),
-                        TransitionFields::for($this->resource, $target),
+                        // The signed-in user, because one field depends on them: money may only
+                        // be taken by somebody trusted to record it, and the box is withheld
+                        // from a driver rather than the move being withheld.
+                        TransitionFields::for($this->resource, $target, $request->user()),
                     ),
                 ],
                 $this->availableTransitionsFor($request->user()),
@@ -134,10 +137,6 @@ class OrderResource extends JsonResource
             // so this is how that gap is surfaced rather than papered over with an entry nobody
             // made. See Order::hasUnrecordedMoney().
             'has_unrecorded_money' => $this->hasUnrecordedMoney(),
-
-            // What the parcel weighs, recorded on the way into «جاهزة». Null until it has been
-            // on a scale — «not weighed» and «weighs nothing» are different facts.
-            'weight_kg' => $this->weight_kg === null ? null : (string) $this->weight_kg,
 
             // Null on every settlement that went to plan: the order was settled at its own
             // total. A value here is a discrepancy, deliberately.

@@ -43,6 +43,16 @@ enum TransitionFieldType {
   @JsonValue('warehouse')
   warehouse,
 
+  /// How the money taken during the move was handed over.
+  ///
+  /// **The one kind whose choices arrive with it**, in [TransitionField.options]. The carrier
+  /// and warehouse lists are this app's own, so it fetches those itself — but which payment
+  /// methods are usable *on this screen* is the server's call, not the business's: «حوالة»
+  /// obliges a receipt and a status change uploads no files, so it is not among them. Reading
+  /// the app's own `PaymentMethod` here would offer four and be refused on the fourth.
+  @JsonValue('payment_method')
+  paymentMethod,
+
   /// A kind this build has no widget for. Rendered as a note rather than silently skipped: a
   /// field the server thinks is required and the screen never shows is a form that cannot be
   /// submitted with nothing on screen to explain why.
@@ -82,6 +92,18 @@ abstract class TransitionField with _$TransitionField {
     num? min,
     num? max,
 
+    /// The choices, for the one kind that carries its own — see
+    /// [TransitionFieldType.paymentMethod]. Empty for every other kind.
+    @Default(<TransitionFieldOption>[]) List<TransitionFieldOption> options,
+
+    /// The key of the field that makes this one mandatory: empty is fine on its own, and
+    /// refused the moment that other field is answered.
+    ///
+    /// «طريقة الدفع» is meaningless without an amount and obligatory with one, and neither
+    /// [isRequired] nor its absence can say that. Sent down so [canSubmit] can hold the same
+    /// rule the endpoint enforces rather than this app keeping a second copy of it.
+    @JsonKey(name: 'required_with') String? requiredWith,
+
     /// What the box opens holding — **an answer, not a placeholder.**
     ///
     /// Leaving «نواقص» asks how much of the shortage arrived, and nearly always the answer is
@@ -97,4 +119,39 @@ abstract class TransitionField with _$TransitionField {
 
   /// Whether this build can put a control on screen for it.
   bool get isRenderable => type != TransitionFieldType.unknown;
+
+  /// Whether this field has to be answered, given everything else on the form.
+  ///
+  /// [isRequired] alone is not the whole rule: a field may be optional in itself and obligatory
+  /// once its [requiredWith] partner is filled in. Asked of the values rather than of the field
+  /// so that clearing the amount releases the method again.
+  bool isDemandedBy(Map<String, Object?> values) {
+    if (isRequired) return true;
+    if (requiredWith case final partner?) {
+      return switch (values[partner]) {
+        null => false,
+        final String text => text.trim().isNotEmpty,
+        final Iterable<Object?> many => many.isNotEmpty,
+        _ => true,
+      };
+    }
+
+    return false;
+  }
+}
+
+/// One choice on a field that carries its own list.
+///
+/// Both halves come from the server: [value] is what crosses the wire and [label] is the Arabic
+/// drawn on the chip. The app translates neither — the same rule every other label on this
+/// screen follows.
+@freezed
+abstract class TransitionFieldOption with _$TransitionFieldOption {
+  const factory TransitionFieldOption({
+    required String value,
+    required String label,
+  }) = _TransitionFieldOption;
+
+  factory TransitionFieldOption.fromJson(Map<String, dynamic> json) =>
+      _$TransitionFieldOptionFromJson(json);
 }

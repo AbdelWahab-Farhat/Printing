@@ -65,8 +65,10 @@ sealed class OrderStatusState with _$OrderStatusState {
     final transition = selected;
     if (transition == null || isSubmitting) return false;
 
+    // Asked of the whole form rather than of each field alone: «طريقة الدفع» is optional until
+    // an amount is typed beside it and obligatory from then on — see [TransitionField.requiredWith].
     return transition.fields
-        .where((field) => field.isRequired && field.isRenderable)
+        .where((field) => field.isRenderable && field.isDemandedBy(values))
         .every((field) => switch (values[field.key]) {
           null => false,
           final String text => text.trim().isNotEmpty,

@@ -200,7 +200,6 @@ final class AuditAttributeLabels
             'cancelled_at' => 'تاريخ الإلغاء',
             'cancellation_reason' => 'سبب الإلغاء',
             'created_by' => 'أنشأها',
-            'weight_kg' => 'الوزن (كجم)',
             'paid_amount' => 'المدفوع',
             'written_off_amount' => 'المشطوب',
             'collected_amount' => 'المبلغ المحصّل',

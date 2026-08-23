@@ -71,15 +71,13 @@ abstract class WarehouseStock with _$WarehouseStock {
 
   /// The alert level with its padding zeros gone — and **without separators**, because this is
   /// what prefills «حد التنبيه» in the sheet. Whoever draws it groups it there.
-  String? get thresholdLabel =>
-      lowStockThreshold == null ? null : trimDecimals(lowStockThreshold!);
+  String? get thresholdLabel => lowStockThreshold == null ? null : trimDecimals(lowStockThreshold!);
 
   /// «25*35» — the size alone, for a line drawn under a heading that already named the bag.
   String get sizeLabel => variant?.label ?? 'مقاس #$productVariantId';
 
   /// «أكياس شحن · 25*35», or just the size when the row came without its product.
-  String get title =>
-      variant == null ? sizeLabel : '${variant!.productName} · ${variant!.label}';
+  String get title => variant == null ? sizeLabel : '${variant!.productName} · ${variant!.label}';
 }
 
 /// The size a balance line is about, flattened by the server because it is only ever met here.

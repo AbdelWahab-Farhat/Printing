@@ -7,9 +7,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// One field of a move, drawn from what the server said about it.
 ///
-/// **The point of these tests is that nothing here is written per field.** «الوزن (كجم)» and
-/// «الناقص من 30*30 (قطعة)» are the same widget with different words, and the words came down
-/// the wire — so a field added to a path on the backend needs no change in this app.
+/// **The point of these tests is that nothing here is written per field.** «المخصوم من 25*35
+/// (كيلوغرام)» and «الناقص من 30*30 (قطعة)» are the same widget with different words, and the
+/// words came down the wire — so a field added to a path on the backend needs no change in this
+/// app. «الوزن (كجم)» was drawn by this same widget until the day it was deleted, and deleting
+/// it took no Dart with it.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -43,41 +45,43 @@ void main() {
     );
   }
 
-  testWidgets('a required weight is asked for by its own name', (tester) async {
-    // Arrange — exactly what the server sends for «جاهزة» on a kilo-priced order.
-    const weight = TransitionField(
-      key: 'weight_kg',
+  testWidgets('a required quantity is asked for by its own name', (tester) async {
+    // Arrange — exactly what the server sends for «جاهزة» on a line stocked in a unit it is
+    // not sold in. The unit is in the label, because the person typing holds two figures.
+    const measured = TransitionField(
+      key: 'warehouse_quantity_31',
       type: TransitionFieldType.number,
-      label: 'الوزن (كجم)',
+      label: 'المخصوم من 25*35 (كيلوغرام)',
       isRequired: true,
-      hint: 'الطلبية مسعّرة بالكيلوغرام — الوزن هو ما تُحاسب عليه',
+      hint: 'المباع 500.000 قطعة — والمخزن يُنقص بالكيلوغرام',
     );
 
     // Act
-    await tester.pumpWidget(host(input(weight)));
+    await tester.pumpWidget(host(input(measured)));
     await tester.pump();
 
     // Assert — the label is the server's, and the hint under it too.
-    expect(find.text('الوزن (كجم)'), findsOneWidget);
-    expect(find.text('الطلبية مسعّرة بالكيلوغرام — الوزن هو ما تُحاسب عليه'), findsOneWidget);
+    expect(find.text('المخصوم من 25*35 (كيلوغرام)'), findsOneWidget);
+    expect(find.text('المباع 500.000 قطعة — والمخزن يُنقص بالكيلوغرام'), findsOneWidget);
   });
 
   testWidgets('an optional field says so, so nobody hunts for what is blocking them', (
     tester,
   ) async {
-    // Arrange
-    const weight = TransitionField(
-      key: 'weight_kg',
+    // Arrange — the same box on an order whose stock has already left, where a second answer
+    // would do nothing.
+    const measured = TransitionField(
+      key: 'warehouse_quantity_31',
       type: TransitionFieldType.number,
-      label: 'الوزن (كجم)',
+      label: 'المخصوم من 25*35 (كيلوغرام)',
     );
 
     // Act
-    await tester.pumpWidget(host(input(weight)));
+    await tester.pumpWidget(host(input(measured)));
     await tester.pump();
 
     // Assert
-    expect(find.text('الوزن (كجم) (اختياري)'), findsOneWidget);
+    expect(find.text('المخصوم من 25*35 (كيلوغرام) (اختياري)'), findsOneWidget);
   });
 
   testWidgets('what is typed reaches the caller as typed', (tester) async {
@@ -143,6 +147,99 @@ void main() {
     // Assert — «(اختياري)» is how every other optional field says so, so nobody hunts for what
     // is blocking them.
     expect(find.text('المخزن (اختياري)'), findsOneWidget);
+  });
+
+  testWidgets('the way money was handed over is a row of chips, in the server words', (
+    tester,
+  ) async {
+    // Arrange — exactly what the server sends beside «المبلغ المقبوض» on «تم الاستلام». Three
+    // methods, not the four the business uses: «حوالة» needs a receipt and this screen uploads
+    // no files, so it never reaches the app at all.
+    const method = TransitionField(
+      key: 'payment_method',
+      type: TransitionFieldType.paymentMethod,
+      label: 'طريقة الدفع',
+      hint: 'الحوالة تُسجَّل من شاشة الدفعات لأنها تتطلّب واصلاً',
+      options: [
+        TransitionFieldOption(value: 'cash', label: 'كاش'),
+        TransitionFieldOption(value: 'bank_card', label: 'بطاقة مصرفية'),
+        TransitionFieldOption(value: 'libyana', label: 'ليبيانا'),
+      ],
+    );
+
+    // Act
+    await tester.pumpWidget(host(input(method)));
+    await tester.pump();
+
+    // Assert — the labels are the server's, drawn as sent. Nothing here maps a wire value to an
+    // Arabic word, which is why a fourth method needs no release.
+    expect(find.text('كاش'), findsOneWidget);
+    expect(find.text('بطاقة مصرفية'), findsOneWidget);
+    expect(find.text('ليبيانا'), findsOneWidget);
+    expect(find.text('حوالة'), findsNothing);
+    expect(find.text('الحوالة تُسجَّل من شاشة الدفعات لأنها تتطلّب واصلاً'), findsOneWidget);
+    expect(find.textContaining('يحتاج نسخة أحدث'), findsNothing);
+  });
+
+  testWidgets('picking a method reports its wire value, never its label', (tester) async {
+    // Arrange
+    const method = TransitionField(
+      key: 'payment_method',
+      type: TransitionFieldType.paymentMethod,
+      label: 'طريقة الدفع',
+      options: [
+        TransitionFieldOption(value: 'cash', label: 'كاش'),
+        TransitionFieldOption(value: 'libyana', label: 'ليبيانا'),
+      ],
+    );
+
+    Object? reported;
+
+    // Act
+    await tester.pumpWidget(host(input(method, onChanged: (value) => reported = value)));
+    await tester.tap(find.text('ليبيانا'));
+    await tester.pump();
+
+    // Assert — the Arabic is for the person; the endpoint is sent what it named the choice.
+    expect(reported, 'libyana');
+  });
+
+  testWidgets('the method the server filled in opens already chosen', (tester) async {
+    // Arrange — cash, because a counter takes cash: agreeing costs no taps.
+    const method = TransitionField(
+      key: 'payment_method',
+      type: TransitionFieldType.paymentMethod,
+      label: 'طريقة الدفع',
+      value: 'cash',
+      options: [
+        TransitionFieldOption(value: 'cash', label: 'كاش'),
+        TransitionFieldOption(value: 'bank_card', label: 'بطاقة مصرفية'),
+      ],
+    );
+
+    // Act — the value the cubit seeded from `field.value`, handed back in as any other answer.
+    await tester.pumpWidget(
+      host(
+        TransitionFieldInput(
+          field: method,
+          value: 'cash',
+          customerId: 5,
+          onChanged: (_) {},
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // Assert
+    final chosen = tester.widget<ChoiceChip>(
+      find.ancestor(of: find.text('كاش'), matching: find.byType(ChoiceChip)),
+    );
+    final other = tester.widget<ChoiceChip>(
+      find.ancestor(of: find.text('بطاقة مصرفية'), matching: find.byType(ChoiceChip)),
+    );
+
+    expect(chosen.selected, isTrue);
+    expect(other.selected, isFalse);
   });
 
   testWidgets('a kind this build cannot draw says so instead of leaving a hole', (tester) async {

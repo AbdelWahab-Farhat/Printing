@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Support;
 
+use App\Application\Api\V1\Resources\OrderResource;
+use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 
@@ -23,10 +27,20 @@ use App\Domain\Order\Models\OrderItem;
  */
 final class TransitionFields
 {
+    /** What the money box is called in the payload, and the key its method hangs off. */
+    public const PAYMENT_AMOUNT = 'payment_amount';
+
+    public const PAYMENT_METHOD = 'payment_method';
+
     /**
+     * [$actor] is who is making the move, and it decides one thing only: whether the money box
+     * is offered. A driver may hand a parcel over without being trusted with the till, so the
+     * field is withheld rather than the move. Null — a console command, an importer — is treated
+     * as nobody, and gets no box.
+     *
      * @return list<TransitionField>
      */
-    public static function for(Order $order, OrderStatus $target): array
+    public static function for(Order $order, OrderStatus $target, ?User $actor = null): array
     {
         // **Resolved exactly as the move itself resolves it.** A clerk says "it is going out"
         // and the destination decides whether that means «جاري التوصيل» or «استلام مكتب» — see
@@ -100,6 +114,12 @@ final class TransitionFields
             );
         }
 
+        // **No parcel weight is asked for here any more.** `orders.weight_kg` was written by
+        // this move and read by nothing that computed anything: not the invoice, which is built
+        // from the line quantities; not the carrier; not costing. It was demanded of every
+        // kilo-priced order on the grounds that «الوزن هو ما تُحاسب عليه», which was never true
+        // of the code. What comes off the shelf is asked for below instead — per line, and only
+        // where nobody could work it out.
         if ($target === OrderStatus::Ready) {
             // Read by the preview, by the per-line fields and by `isStockedInAnotherUnit()` on
             // each of them. `items.product` is not in the list query's eager set and strict mode
@@ -149,23 +169,6 @@ final class TransitionFields
                     value: $item->warehouse_quantity !== null ? (string) $item->warehouse_quantity : null,
                 );
             }
-
-            // What came off the press, weighed once for the whole parcel.
-            //
-            // **Required only when the scale is the invoice.** A run priced by the kilo cannot be
-            // shelved without a weight — there would be no answer to what was sold — while for
-            // bags sold by the piece the number is for the courier, and a run can be finished
-            // before anybody has put it on a scale.
-            $byWeight = $order->isPricedByWeight();
-
-            $fields[] = TransitionField::number(
-                key: 'weight_kg',
-                label: 'الوزن (كجم)',
-                required: $byWeight,
-                hint: $byWeight
-                    ? 'الطلبية مسعّرة بالكيلوغرام — الوزن هو ما تُحاسب عليه'
-                    : 'اختياري',
-            );
         }
 
         // «كم الناقص» is meaningless asked of an order: it is a question about a *size*. One
@@ -212,19 +215,21 @@ final class TransitionFields
             }
         }
 
-        // What the courier actually handed over.
+        // What was just handed over, and how.
         //
-        // **Left empty when it matches, which is the point.** Every settlement that goes to plan
-        // returns exactly `grand_total`, so a number in this field always means the two differ —
-        // and «الطلبيات التي رجع مالها ناقصاً» becomes a query rather than a reading exercise.
-        // Pre-filling it with the total would have made agreement and discrepancy look alike.
-        if ($target === OrderStatus::Settled) {
-            $fields[] = TransitionField::number(
-                key: 'collected_amount',
-                label: 'المبلغ المستلم',
-                hint: "إجمالي الطلبية {$order->grand_total} — املأه فقط إن اختلف ما استُلم",
-            );
-        }
+        // **The money box, at the two moments money actually appears.** The customer collecting
+        // at the counter pays there; the courier's takings come back at settlement. Until this
+        // existed, the person holding the cash moved the order, left the screen, opened
+        // «الدفعات» and typed the figure a second time — and skipping the second step is how
+        // orders ended up closed with nothing recorded against them.
+        //
+        // It replaced «المبلغ المستلم» (`collected_amount`) on «تم التسوية» rather than sitting
+        // beside it. That field asked this same question and answered none of it: it wrote a
+        // column no total added up, so an order could carry «المدفوع ٥٠٠» and «المستلم فعلياً
+        // ٤٥٠» at once and nothing could say which was true. What it was for — «أيّ الطلبيات رجع
+        // مالها ناقصاً» — the ledger now answers exactly, and the column stays in the database
+        // for the orders written before this.
+        array_push($fields, ...self::money($order, $target, $actor));
 
         // **A note travels with every move, and only a cancellation is made to justify itself.**
         // One field either way: the same input, renamed and made required where an explanation
@@ -244,6 +249,84 @@ final class TransitionFields
         );
 
         return $fields;
+    }
+
+    /**
+     * The pair of fields that turn a status change into a ledger entry, or nothing at all.
+     *
+     * **Four conditions, and each of them removes a box that could only fail.**
+     *
+     * - Only «تم الاستلام» and «تم التسوية». Money changes hands when the parcel does and when
+     *   the driver's takings come back; a box on «قيد الطباعة» would be a money field on a
+     *   screen with no money in it.
+     * - Only for somebody holding `orders.payments.record`. The move itself is a different
+     *   grant, and a driver who may drop a parcel off is not thereby trusted with the till —
+     *   withholding the field rather than the move is the whole reason [$actor] is passed in.
+     * - Only while something is owed. `RecordOrderPayment` refuses anything over the remainder,
+     *   so on a settled account every possible answer is a 422.
+     * - Never a method obliging a receipt. «حوالة» must carry its الواصل — see
+     *   {@see PaymentMethod::requiresReceipt()} — and this screen uploads no files, so the
+     *   method is left off the picker instead of offered and then refused. A transfer is
+     *   recorded from the payments screen, which does take one.
+     *
+     * @return list<TransitionField>
+     */
+    private static function money(Order $order, OrderStatus $target, ?User $actor): array
+    {
+        if ($target !== OrderStatus::Delivered && $target !== OrderStatus::Settled) {
+            return [];
+        }
+
+        if (! $actor?->can(PermissionName::RecordOrderPayments->value)) {
+            return [];
+        }
+
+        $remaining = $order->remainingAmount();
+
+        if (bccomp($remaining, '0', Money::SCALE) <= 0) {
+            return [];
+        }
+
+        // **Pre-filled at settlement and empty at the counter, because the two moments differ.**
+        // Settling *means* the money came back, and nearly always all of it: the box opens
+        // holding the remainder and agreeing costs a tap. Handing bags over means no such thing
+        // — the customer may pay all of it, some of it, or none — so nothing is suggested.
+        $settling = $target === OrderStatus::Settled;
+
+        $methods = array_values(array_filter(
+            PaymentMethod::cases(),
+            fn (PaymentMethod $method) => ! $method->requiresReceipt(),
+        ));
+
+        return [
+            TransitionField::number(
+                key: self::PAYMENT_AMOUNT,
+                label: 'المبلغ المقبوض',
+                // Never required, at either end. An order paid in full when it was taken is
+                // handed over with the box left alone, and one settled after the money was
+                // recorded from the payments screen needs nothing here either.
+                required: false,
+                // The ceiling is the debt: an overpayment is refused by the ledger anyway, and
+                // being told so at the field beats being told so after the move is attempted.
+                max: (float) $remaining,
+                hint: $settling
+                    ? "المتبقي {$remaining} — يُسجَّل دفعةً في سجل الطلبية"
+                    : "المتبقي {$remaining} — اتركه فارغاً إن لم يُقبض شيء الآن",
+                value: $settling ? $remaining : null,
+            ),
+            TransitionField::paymentMethod(
+                key: self::PAYMENT_METHOD,
+                label: 'طريقة الدفع',
+                methods: $methods,
+                // Meaningless without an amount and mandatory with one — the ledger takes no
+                // entry lacking it.
+                requiredWith: self::PAYMENT_AMOUNT,
+                hint: 'الحوالة تُسجَّل من شاشة الدفعات لأنها تتطلّب واصلاً',
+                // Cash, because a counter takes cash. An answer, not a placeholder: agreeing
+                // costs no taps and disagreeing costs one.
+                value: PaymentMethod::Cash->value,
+            ),
+        ];
     }
 
     /** What the per-line box for one line is called in the payload. */
@@ -268,7 +351,7 @@ final class TransitionFields
      * breath as the question that fixes it.
      *
      * **A hint rather than a field, because it is not an input.** The app renders whatever the
-     * server hands it — see {@see \App\Application\Api\V1\Resources\OrderResource} — so this
+     * server hands it — see {@see OrderResource} — so this
      * reaches every client with no release, and cannot drift from what `DeductOrderStock` will
      * actually do because both read the same accessor.
      *

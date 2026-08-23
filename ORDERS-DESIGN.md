@@ -92,7 +92,7 @@
 | --- | --- | --- |
 | ١ | مخرج «نواقص» | نواقص → قيد الطباعة **أو** جاهزة |
 | ٢ | تمييز «استلام مكتب» | عمود `fulfilment_type` على جدول **المدن** (`delivery` \| `office_pickup`) |
-| ٣ | محور الدفع | **مُنفَّذ لاحقاً** كسجل قيود لا كعمود → [PAYMENTS-DESIGN.md](PAYMENTS-DESIGN.md). ويبقى **محوراً مستقلاً** عن آلة الحالات كما قُرِّر هنا: الدفع لا ينقل حالة، والحالة لا تكتب قيداً |
+| ٣ | محور الدفع | **مُنفَّذ لاحقاً** كسجل قيود لا كعمود → [PAYMENTS-DESIGN.md](PAYMENTS-DESIGN.md). ويبقى **محوراً مستقلاً** عن آلة الحالات: الدفع لا ينقل حالة. أما «الحالة لا تكتب قيداً» فصار أدقّ منه: **الخادم لا يخترع قيداً**، وشاشة تغيير الحالة تحمل خانةً يكتب فيها من قبض المال رقمه بيده → [PAYMENT-AT-STATUS-CHANGE.md](PAYMENT-AT-STATUS-CHANGE.md) |
 | ٤ | سجل الانتقالات | جدول مستقل `order_status_transitions` |
 | ٥ | الرجوع من الطباعة للتصميم | **مسموح** — الموظف يخطئ، والمسار يكمل تصميم → طباعة كالمعتاد |
 | ٦ | العميل ما جاء للمكتب | تبقى «استلام مكتب» |
@@ -206,8 +206,7 @@ public function permission(): PermissionName { /* … */ }
 | `address_details` · `notes` | text nullable | |
 | `items_total` · `design_fee` · `delivery_price` · `discount` · `grand_total` | decimal(12,2) | `delivery_price` **لقطة** من المدينة — تعديل التسعيرة لاحقاً يجب ألا يعيد كتابة طلبية قديمة |
 | `paid_amount` | decimal(12,2) | ما دُفع فعلاً — مجموعٌ من دفتر القيود لا رقمٌ يُكتب باليد. [PAYMENTS-DESIGN.md](PAYMENTS-DESIGN.md) |
-| `weight_kg` | decimal(12,3) nullable | يُوزن على «جاهزة». يبقى بعدها: هو ما يزنه الطرد، لا ملاحظة عن لحظة |
-| `collected_amount` | decimal(12,2) nullable | يُملأ على «تم التسوية» **فقط حين يخالف الإجمالي** — فوجود رقم فيه يعني دائماً أن الاثنين اختلفا |
+| `collected_amount` | decimal(12,2) nullable | **متقاعد.** كان يُملأ على «تم التسوية» حين يخالف الإجمالي؛ لا شيء يكتبه اليوم، وسؤاله يجيبه سجل الدفعات → [PAYMENT-AT-STATUS-CHANGE.md](PAYMENT-AT-STATUS-CHANGE.md) |
 | `shipping_company_id` · `shipping_company` | FK nullable · string nullable | مفتاح الناقل، **واسمه لقطةٌ يوم الإرسال** — تماماً كالمدينة |
 | `tracking_number` · `courier_phone` | string nullable | |
 | `courier_name` | string nullable | **عمود ميت** — بقي بعد أن صار الناقل مودلاً. في [BACKLOG.md](BACKLOG.md) |
@@ -311,7 +310,7 @@ public function permission(): PermissionName { /* … */ }
 
 ### شريحة د — ما جاء بعد هذه الوثيقة ✅
 
-حقول الانتقال · شاشة تغيير الحالة · «تم التسوية» و«إعادة إرسال» · مودل شركة التوصيل · تعديل مكان الاستلام · أرقام الشاشة الرئيسية — كلها في [ORDERS-STATUS-FLOW.md](ORDERS-STATUS-FLOW.md). والدفعات في [PAYMENTS-DESIGN.md](PAYMENTS-DESIGN.md).
+حقول الانتقال · شاشة تغيير الحالة · «تم التسوية» و«إعادة إرسال» · مودل شركة التوصيل · تعديل مكان الاستلام · أرقام الشاشة الرئيسية — كلها في [ORDERS-STATUS-FLOW.md](ORDERS-STATUS-FLOW.md). والدفعات في [PAYMENTS-DESIGN.md](PAYMENTS-DESIGN.md)، وخانة المال في شاشة تغيير الحالة في [PAYMENT-AT-STATUS-CHANGE.md](PAYMENT-AT-STATUS-CHANGE.md).
 
 ---
 

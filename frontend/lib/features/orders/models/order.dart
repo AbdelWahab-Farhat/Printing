@@ -98,12 +98,6 @@ abstract class Order with _$Order {
     /// made. The screen warns; somebody records what was collected; the warning goes.
     @JsonKey(name: 'has_unrecorded_money') @Default(false) bool hasUnrecordedMoney,
 
-    /// What the parcel weighs, in kilograms, recorded on the way into «جاهزة».
-    ///
-    /// Null until it has been on a scale — «not weighed» and «weighs nothing» are different
-    /// facts, and only one of them means somebody has done the work.
-    @JsonKey(name: 'weight_kg') String? weightKg,
-
     /// What actually came back for the order, when it was not what the invoice said.
     ///
     /// Null on every settlement that went to plan, deliberately: a number here always means the

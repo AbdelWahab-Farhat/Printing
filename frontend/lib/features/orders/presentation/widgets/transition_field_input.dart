@@ -64,6 +64,11 @@ class TransitionFieldInput extends StatelessWidget {
         chosen: value is ShippingCompany ? value! as ShippingCompany : null,
         onChanged: onChanged,
       ),
+      TransitionFieldType.paymentMethod => _Method(
+        field: field,
+        chosen: value is String ? value! as String : null,
+        onChanged: onChanged,
+      ),
       TransitionFieldType.warehouse => _Store(
         field: field,
         chosen: value is Warehouse ? value! as Warehouse : null,
@@ -71,6 +76,62 @@ class TransitionFieldInput extends StatelessWidget {
       ),
       TransitionFieldType.unknown => _Unsupported(field: field),
     };
+  }
+}
+
+/// How the money just taken was handed over.
+///
+/// **Chips, not a picker sheet.** The carrier and the warehouse are chosen from lists of dozens
+/// that this app fetches; the methods are three, they arrive with the field, and three things
+/// that fit on one line should cost one tap rather than a sheet, a scroll and a dismissal.
+///
+/// **Nothing here knows what a payment method is.** The wire value and the Arabic both come from
+/// the server — see [TransitionFieldType.paymentMethod] — so the day a fourth is usable at a
+/// counter it appears with no release, and the day «حوالة» stops needing a receipt it appears
+/// too. What is reported back is [TransitionFieldOption.value], never the label.
+class _Method extends StatelessWidget {
+  const _Method({required this.field, required this.chosen, required this.onChanged});
+
+  final TransitionField field;
+  final String? chosen;
+  final ValueChanged<Object?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          field.label,
+          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        if (field.hint case final hint?) ...[
+          SizedBox(height: 4.h),
+          Text(
+            hint,
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+        SizedBox(height: 10.h),
+        Wrap(
+          spacing: 8.w,
+          runSpacing: 8.h,
+          children: [
+            for (final option in field.options)
+              ChoiceChip(
+                label: Text(option.label),
+                selected: option.value == chosen,
+                // **Never unselectable.** A method is obligatory the moment an amount is typed,
+                // so a tap that cleared the choice would only ever produce a refusal — and the
+                // server fills one in already, so there is no empty state to return to.
+                onSelected: (_) => onChanged(option.value),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }
 

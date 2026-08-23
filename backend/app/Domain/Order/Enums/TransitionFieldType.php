@@ -45,6 +45,17 @@ enum TransitionFieldType: string
     case ShippingCompany = 'shipping_company';
 
     /**
+     * How money that changed hands during the move was handed over.
+     *
+     * **The one type whose choices do travel with it.** The carrier and the warehouse lists are
+     * the app's own — it manages them — but which payment methods may be used *here* is a fact
+     * about this screen rather than about the business: «حوالة» obliges a receipt (الواصل) and a
+     * status change has nowhere to upload one, so it is left out of the list. An app holding its
+     * own copy of `PaymentMethod` would offer all four and be refused on the fourth.
+     */
+    case PaymentMethod = 'payment_method';
+
+    /**
      * One of the warehouses, chosen from the list the business maintains.
      *
      * Same shape as {@see ShippingCompany}: options are not inlined, and what travels is

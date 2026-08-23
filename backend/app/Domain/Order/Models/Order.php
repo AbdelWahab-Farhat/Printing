@@ -6,7 +6,6 @@ namespace App\Domain\Order\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
-use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Enums\FulfilmentType;
@@ -103,9 +102,11 @@ class Order extends Model implements HasAuditTrail
             // Same writer, same reason for staying out of the fillable list — and kept apart
             // from `paid_amount` so that column never stops meaning cash.
             'written_off_amount' => 'decimal:2',
-            // Three places, like a quantity: an order priced by the kilo is invoiced from this.
-            'weight_kg' => 'decimal:3',
-            // Null unless what came back differed from what was invoiced.
+            // **Retired, and kept for the orders written before it was.** Nothing fills it any
+            // more: settling used to ask «المبلغ المستلم» and write the answer here, a number no
+            // total ever read — so an order could carry «المدفوع ٥٠٠» and «المستلم فعلياً ٤٥٠»
+            // at once with nothing able to say which was true. That question the ledger now
+            // answers exactly. See `TransitionFields::money()`.
             'collected_amount' => 'decimal:2',
             'placed_at' => 'datetime',
             'design_started_at' => 'datetime',
@@ -274,20 +275,6 @@ class Order extends Model implements HasAuditTrail
         return $this->status->isFinal()
             && $this->status !== OrderStatus::Cancelled
             && bccomp($this->remainingAmount(), '0', Money::SCALE) > 0;
-    }
-
-    /**
-     * Whether anything on this order is sold by the kilo.
-     *
-     * **Any line, not every line.** A mixed order still has to be weighed, because one of its
-     * lines is invoiced from the scale — and «some of it needs a weight» is the same practical
-     * instruction as «all of it does».
-     */
-    public function isPricedByWeight(): bool
-    {
-        return $this->items->contains(
-            fn (OrderItem $item) => $item->pricing_unit === PricingUnit::Kilogram,
-        );
     }
 
     /**

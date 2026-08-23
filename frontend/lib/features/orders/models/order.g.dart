@@ -46,7 +46,6 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
       PaymentStatus.unpaid,
   paymentStatusLabel: json['payment_status_label'] as String? ?? '',
   hasUnrecordedMoney: json['has_unrecorded_money'] as bool? ?? false,
-  weightKg: json['weight_kg'] as String?,
   collectedAmount: json['collected_amount'] as String?,
   customer: json['customer'] == null
       ? null
@@ -127,7 +126,6 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'payment_status': _$PaymentStatusEnumMap[instance.paymentStatus]!,
   'payment_status_label': instance.paymentStatusLabel,
   'has_unrecorded_money': instance.hasUnrecordedMoney,
-  'weight_kg': instance.weightKg,
   'collected_amount': instance.collectedAmount,
   'customer': instance.customer?.toJson(),
   'region_id': instance.regionId,

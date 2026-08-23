@@ -33,21 +33,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// the picture, the code and the product's name have already been said once above it — so the
 /// line drops all three and keeps only what differs between sizes.
 class StockRow extends StatelessWidget {
-  const StockRow({
-    required this.stock,
-    this.onTap,
-    this.onEditThreshold,
-    super.key,
-  }) : _standalone = true;
+  const StockRow({required this.stock, this.onTap, this.onEditThreshold, super.key})
+    : _standalone = true;
 
   /// One size under its product's heading: no picture, no code, no product name — the card
   /// above carries them, and a row that repeated them would make one bag read as several.
-  const StockRow.inGroup({
-    required this.stock,
-    this.onTap,
-    this.onEditThreshold,
-    super.key,
-  }) : _standalone = false;
+  const StockRow.inGroup({required this.stock, this.onTap, this.onEditThreshold, super.key})
+    : _standalone = false;
 
   final WarehouseStock stock;
 
@@ -74,7 +66,9 @@ class StockRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: radius,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        // Inside a card the line is indented to where the product's name starts, so the sizes
+        // read as belonging to the heading rather than as three more rows beside it.
+        padding: EdgeInsetsDirectional.fromSTEB(_standalone ? 12.w : 66.w, 10.h, 12.w, 10.h),
         decoration: _standalone
             ? BoxDecoration(
                 borderRadius: radius,
@@ -187,9 +181,7 @@ class StockRow extends StatelessWidget {
                   stock.unitLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+                  style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -237,10 +229,7 @@ class _StateBadge extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(6.r),
-      ),
+      decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(6.r)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

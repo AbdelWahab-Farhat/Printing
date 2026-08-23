@@ -6,14 +6,18 @@ namespace App\Domain\Order\Actions;
 
 use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
 use App\Domain\Order\Exceptions\OrderIsClosed;
+use App\Domain\Order\Exceptions\PaymentRequiresAnActor;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
 use App\Domain\Order\Exceptions\ShortageNeedsAQuantity;
 use App\Domain\Order\Exceptions\TransitionNotAllowed;
 use App\Domain\Order\Exceptions\TransitionRequiresReason;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Support\Money;
+use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -51,6 +55,10 @@ final class ChangeOrderStatus
         // Undoes both of the above when a cancellation follows a deduction — see its own
         // docblock.
         private readonly ReverseOrderStockDeduction $reverseStockDeduction,
+        // The ledger's own front door, used unchanged — see {@see recordPaymentForOrder()}. Money taken
+        // at the counter gets the same lock, the same ceiling and the same row as money taken on
+        // the payments screen, because it *is* the same event.
+        private readonly RecordOrderPayment $recordPayment,
     ) {}
 
     /**
@@ -61,6 +69,7 @@ final class ChangeOrderStatus
      * @throws TransitionRequiresReason
      * @throws SettlementRequiresFullPayment
      * @throws FulfillmentRequiresAnActor
+     * @throws PaymentRequiresAnActor
      */
     public function __invoke(
         Order $order,
@@ -87,16 +96,24 @@ final class ChangeOrderStatus
             throw TransitionRequiresReason::make($target);
         }
 
-        // **The last step on the line is the money, and it may not be skipped.** «تم التسوية» is
-        // the statement that what the order was sent out to collect came back; an order reaching
-        // it while its payment status still reads «غير مدفوعة» closes the order and loses the
-        // debt in the same move. Read from the ledger's cached total rather than taken on trust
-        // from the person pressing the button — see {@see SettlementRequiresFullPayment}.
-        if ($target === OrderStatus::Settled && $order->paymentStatus()->isOutstanding()) {
-            throw SettlementRequiresFullPayment::make($order->remainingAmount());
-        }
-
         return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields): Order {
+            // **Money first, because the guard below reads what this writes.** «تم الاستلام» and
+            // «تم التسوية» each carry a box for what was just handed over, and an accountant who
+            // types the remainder into it is settling the order *with* that payment — so it has
+            // to land before the settlement rule looks at the balance. Everything is one
+            // transaction, so a move that is then refused takes its entry back with it.
+            $this->recordPaymentForOrder($order, $target, $fields, $actor);
+
+            // **The last step on the line is the money, and it may not be skipped.** «تم التسوية»
+            // is the statement that what the order was sent out to collect came back; an order
+            // reaching it while its payment status still reads «غير مدفوعة» closes the order and
+            // loses the debt in the same move. Read from the ledger's cached total rather than
+            // taken on trust from the person pressing the button — see
+            // {@see SettlementRequiresFullPayment}.
+            if ($target === OrderStatus::Settled && $order->paymentStatus()->isOutstanding()) {
+                throw SettlementRequiresFullPayment::make($order->remainingAmount());
+            }
+
             // Decided before anything below touches the row: `ready` is reachable only from
             // `printing` and never revisited once left — see `OrderStatus::allowedNext()` — so an
             // order reaches it at most once, and stock may leave the warehouse exactly once per
@@ -129,12 +146,6 @@ final class ChangeOrderStatus
                 $attributes['shipping_company_id'] = $carrier->getKey();
                 $attributes['shipping_company'] = $carrier->name;
                 $attributes['courier_phone'] = $fields['courier_phone'] ?? null;
-            }
-
-            // Weighed on the way onto the shelf. Kept even when the order later moves on: it is
-            // what the parcel weighs, not a note about one moment.
-            if ($target === OrderStatus::Ready && isset($fields['weight_kg'])) {
-                $attributes['weight_kg'] = $fields['weight_kg'];
             }
 
             // Only when it differs from the invoice — see {@see TransitionFields}. An empty
@@ -206,6 +217,56 @@ final class ChangeOrderStatus
 
             return $order->refresh();
         });
+    }
+
+    /**
+     * The money that came with the move, written into the ledger as an ordinary payment.
+     *
+     * **Nothing is invented here.** The amount is what a person typed and the method is what
+     * they picked; an empty box records nothing, which is the right answer for an order that was
+     * paid weeks ago. That is the whole distinction the payments spec draws — a server that
+     * derives an entry from a settlement is writing a collection nobody made, while a server
+     * that stores what the person holding the cash typed is doing what the ledger is for.
+     *
+     * **Through {@see RecordOrderPayment} rather than a `create()` here**, so this path inherits
+     * every guard the payments screen has: the row lock that makes two clerks collecting at once
+     * safe, the refusal of anything over the remainder, and the receipt rule. A second way to
+     * write a payment would be a second set of rules to keep in step.
+     *
+     * A zero is treated as an empty box rather than refused. Somebody who types it means "none",
+     * and answering that with «المبلغ يجب أن يكون أكبر من صفر» is a form arguing with a person
+     * who has already said what they meant.
+     *
+     * @param  array<string, mixed>  $fields
+     *
+     * @throws PaymentRequiresAnActor
+     */
+    private function recordPaymentForOrder(Order $order, OrderStatus $target, array $fields, ?User $actor): void
+    {
+        $amount = $fields[TransitionFields::PAYMENT_AMOUNT] ?? null;
+
+        if ($amount === null || $amount === '' || bccomp(Money::normalize($amount), '0', Money::SCALE) <= 0) {
+            return;
+        }
+
+        if ($actor === null) {
+            throw PaymentRequiresAnActor::make();
+        }
+
+        ($this->recordPayment)($order, OrderPaymentData::fromArray([
+            'amount' => $amount,
+            'method' => $fields[TransitionFields::PAYMENT_METHOD] ?? null,
+            // The move's own note is the transition's, not the entry's: it explains why the
+            // status changed, and copying it onto a payment row would put «المندوب خصم أجرة
+            // التوصيل» beside a figure it does not describe.
+            'notes' => "سُجِّلت مع نقل الطلبية إلى «{$target->label()}»",
+        ]), $actor);
+
+        // `RecordOrderPayment` recalculates against its own locked copy, so the instance this
+        // action is holding still carries the old `paid_amount` — and the settlement guard three
+        // lines down reads exactly that. Refreshing here rather than there keeps the reason
+        // beside the write that caused it.
+        $order->refresh();
     }
 
     /**

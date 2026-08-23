@@ -17,7 +17,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **What it settles, once:**
 ///   * a skeleton on first load, so the layout does not jump when rows arrive,
 ///   * infinite scroll that asks *early* — 400 logical pixels from the end, so the list rarely
-///     stops at the bottom to wait,
+///     stops at the bottom to wait, **and asks at all** when a page came back too short to fill
+///     the screen, which leaves nothing to scroll and used to end the list there,
 ///   * pull to refresh on every state that has content,
 ///   * an empty message that names the search term, because "nothing found" and "nothing found
 ///     **for this**" tell the user different things,
@@ -82,45 +83,63 @@ class _PagedListViewState<T> extends State<PagedListView<T>> {
     if (remaining < _loadMoreThreshold) unawaited(widget.onLoadMore());
   }
 
+  /// A page that does not fill the screen leaves nothing to scroll — and scrolling is the only
+  /// thing that asks for the next page, so the list stops there with more waiting behind it.
+  ///
+  /// Unreachable while every row was one API row and fifteen of them were taller than a phone.
+  /// A screen that *groups* its rows reaches it easily: fifteen shelves of one bag are two
+  /// cards. Asked once per frame that ends unscrollable, and it stops when the last page lands.
+  void _fillViewport() {
+    if (!mounted || !_controller.hasClients) return;
+    if (_controller.position.maxScrollExtent > 0) return;
+
+    unawaited(widget.onLoadMore());
+  }
+
   @override
   Widget build(BuildContext context) {
     final padding = widget.padding ?? EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h);
 
+    // After the frame, because whether the rows overflow the viewport is not known until they
+    // have been laid out.
+    if (widget.state case PagedLoaded<T>(:final page, isLoadingMore: false) when page.hasMore) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fillViewport());
+    }
+
     return switch (widget.state) {
-      PagedInitial<T>() || PagedLoading<T>() => _Skeleton(
-        padding: padding,
-        rowHeight: widget.skeletonHeight ?? 106.h,
-      ),
+      PagedInitial<T>() ||
+      PagedLoading<T>() => _Skeleton(padding: padding, rowHeight: widget.skeletonHeight ?? 106.h),
       PagedFailure<T>(:final failure) => _FailureView(
         message: failure.message,
         onRetry: widget.onRefresh,
       ),
-      PagedLoaded<T>(:final page, :final isLoadingMore, :final search) => page.isEmpty
-          ? _EmptyView(search: search, message: widget.emptyMessage, onRefresh: widget.onRefresh)
-          : RefreshIndicator(
-              onRefresh: widget.onRefresh,
-              child: ListView.separated(
-                controller: _controller,
-                padding: padding,
-                // One extra row while a page is on its way: the footer is part of the list, so
-                // it scrolls with it instead of floating over the last card.
-                itemCount: page.items.length + (isLoadingMore ? 1 : 0),
-                separatorBuilder: (context, index) => SizedBox(height: 12.h),
-                itemBuilder: (context, index) {
-                  if (index >= page.items.length) {
-                    return Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16.h),
-                      child: const Center(child: CircularProgressIndicator()),
-                    );
-                  }
+      PagedLoaded<T>(:final page, :final isLoadingMore, :final search) =>
+        page.isEmpty
+            ? _EmptyView(search: search, message: widget.emptyMessage, onRefresh: widget.onRefresh)
+            : RefreshIndicator(
+                onRefresh: widget.onRefresh,
+                child: ListView.separated(
+                  controller: _controller,
+                  padding: padding,
+                  // One extra row while a page is on its way: the footer is part of the list, so
+                  // it scrolls with it instead of floating over the last card.
+                  itemCount: page.items.length + (isLoadingMore ? 1 : 0),
+                  separatorBuilder: (context, index) => SizedBox(height: 12.h),
+                  itemBuilder: (context, index) {
+                    if (index >= page.items.length) {
+                      return Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
+                        child: const Center(child: CircularProgressIndicator()),
+                      );
+                    }
 
-                  return Appear(
-                    index: index,
-                    child: widget.itemBuilder(context, page.items[index], index),
-                  );
-                },
+                    return Appear(
+                      index: index,
+                      child: widget.itemBuilder(context, page.items[index], index),
+                    );
+                  },
+                ),
               ),
-            ),
     };
   }
 }

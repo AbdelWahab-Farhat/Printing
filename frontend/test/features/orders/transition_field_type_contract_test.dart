@@ -79,5 +79,6 @@ const Set<String> _wireValues = {
   'number',
   'customer_designs',
   'shipping_company',
+  'payment_method',
   'warehouse',
 };

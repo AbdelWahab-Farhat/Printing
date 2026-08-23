@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\DTOs;
 
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\TransitionFieldType;
 use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Validation\Rule;
@@ -32,6 +33,23 @@ final class TransitionField
         public readonly ?float $min = null,
         public readonly ?float $max = null,
         public readonly ?string $value = null,
+        /**
+         * The choices, for the one type that carries its own — see
+         * {@see TransitionFieldType::PaymentMethod}.
+         *
+         * @var list<array{value: string, label: string}>
+         */
+        public readonly array $options = [],
+        /**
+         * The field this one becomes required by: empty is fine on its own, and refused the
+         * moment [$requiredWith] is answered.
+         *
+         * **A rule with no home anywhere else.** «طريقة الدفع» is meaningless without an amount
+         * and mandatory with one — the ledger will not take an entry lacking it — and neither
+         * `required` nor `nullable` can say that. Written here rather than in the FormRequest so
+         * the app can hold the same rule off the same description.
+         */
+        public readonly ?string $requiredWith = null,
     ) {}
 
     public static function text(
@@ -81,6 +99,42 @@ final class TransitionField
             min: $min,
             max: $max,
             value: $value,
+        );
+    }
+
+    /**
+     * How the money just taken was handed over.
+     *
+     * **The choices are passed in rather than read off `PaymentMethod`**, because the list is
+     * narrower here than the business's: a method obliging a receipt cannot be offered on a
+     * screen that uploads no files. {@see TransitionFields} decides which survive, and both the
+     * picker and the rule below are built from what it decided — so the two cannot disagree.
+     *
+     * @param  list<PaymentMethod>  $methods
+     */
+    public static function paymentMethod(
+        string $key,
+        string $label,
+        array $methods,
+        ?string $requiredWith = null,
+        ?string $hint = null,
+        ?string $value = null,
+    ): self {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::PaymentMethod,
+            label: $label,
+            required: false,
+            hint: $hint,
+            value: $value,
+            options: array_values(array_map(
+                fn (PaymentMethod $method) => [
+                    'value' => $method->value,
+                    'label' => $method->label(),
+                ],
+                $methods,
+            )),
+            requiredWith: $requiredWith,
         );
     }
 
@@ -163,6 +217,12 @@ final class TransitionField
             // What the box opens holding, and null for almost every field. An app too old to
             // know the key simply opens empty, which is what it did before the key existed.
             'value' => $this->value,
+            // Empty for every type that fetches its own list. An app that reads it blindly draws
+            // no picker for those, which is exactly what it drew before the key existed.
+            'options' => $this->options,
+            // The key that makes this one mandatory, or null. Sent so the app can grey its own
+            // button on the same rule the endpoint enforces, rather than keeping a second copy.
+            'required_with' => $this->requiredWith,
         ];
     }
 
@@ -178,6 +238,11 @@ final class TransitionField
     public function rules(): array
     {
         $presence = $this->required ? 'required' : 'nullable';
+
+        // Not merged into [$presence]: `nullable` says "an empty answer passes the rules below",
+        // and `required_with` is an *implicit* rule Laravel runs whether or not the value came —
+        // which is the whole point. The two say different things and both have to be said.
+        $conditional = $this->requiredWith === null ? [] : ["required_with:fields.{$this->requiredWith}"];
 
         return match ($this->type) {
             TransitionFieldType::Text => [
@@ -195,6 +260,17 @@ final class TransitionField
                 "fields.{$this->key}" => [$presence, 'array', ...($this->required ? ['min:1'] : [])],
                 "fields.{$this->key}.*" => ['integer'],
             ],
+            // Exactly the list the picker was handed, so a method left off the screen is a
+            // method the endpoint has never heard of either.
+            TransitionFieldType::PaymentMethod => [
+                "fields.{$this->key}" => [
+                    $presence,
+                    ...$conditional,
+                    'string',
+                    Rule::in(array_column($this->options, 'value')),
+                ],
+            ],
+
             // withoutTrashed: a carrier removed from the list may not be chosen for a new
             // dispatch, which is the same answer the picker gives.
             TransitionFieldType::ShippingCompany => [
@@ -234,6 +310,11 @@ final class TransitionField
                 "fields.{$this->key}.required" => "{$this->label} مطلوب",
                 "fields.{$this->key}.numeric" => "{$this->label} يجب أن يكون رقماً",
                 "fields.{$this->key}.max" => "{$this->label} أكبر مما في الطلبية",
+            ],
+            TransitionFieldType::PaymentMethod => [
+                "fields.{$this->key}.required" => "{$this->label} مطلوبة",
+                "fields.{$this->key}.required_with" => "{$this->label} مطلوبة مع المبلغ",
+                "fields.{$this->key}.in" => "{$this->label} غير متاحة في تغيير الحالة",
             ],
             TransitionFieldType::ShippingCompany => [
                 "fields.{$this->key}.required" => "{$this->label} مطلوبة",
