@@ -94,7 +94,7 @@ void main() {
     // three of them is the list this replaced. The count under it names what the reader is
     // about to see, and each line still carries its own code because each is its own pile.
     expect(find.text('كيس شحن'), findsOneWidget);
-    expect(find.text('3 مقاسات'), findsOneWidget);
+    expect(find.text('3 مواد'), findsOneWidget);
     expect(find.text('S1'), findsOneWidget);
     expect(find.text('S2'), findsOneWidget);
     expect(find.text('S3'), findsOneWidget);
@@ -184,10 +184,10 @@ void main() {
     // Act
     await tester.pump();
 
-    // Assert — «2 مقاسات» is the kind of wrong a reader notices before they read the number.
+    // Assert — «2 مواد» is the kind of wrong a reader notices before they read the number.
     // Arabic counts the pair with its own word, and this card is drawn from two shelves upward,
     // so the pair is the most common card on the screen rather than an edge case.
-    expect(find.text('مقاسان'), findsOneWidget);
-    expect(find.text('2 مقاسات'), findsNothing);
+    expect(find.text('مادتان'), findsOneWidget);
+    expect(find.text('2 مواد'), findsNothing);
   });
 }

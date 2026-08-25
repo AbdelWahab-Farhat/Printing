@@ -198,7 +198,7 @@ void main() {
       ).called(1);
     });
 
-    test('one shelf asks for its مقاس *and* its place', () async {
+    test('one shelf asks for its مادة *and* its place', () async {
       // Arrange — «هذا الصنف، في هذا المخزن»: the two filters combine, which is what makes a
       // shelf's own history different from the item's history everywhere.
       //

@@ -99,8 +99,8 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
       context: context,
       title: 'إعادة تسمية «${group.name}»؟',
       description:
-          'المقاس يحمل اسم مادته، فتغيير الاسم هنا يُعيد تسمية '
-          '${count == null ? 'كل مقاس مسجّل تحتها' : '${count.grouped} مقاساً مسجّلاً تحتها'} '
+          'المادة تحمل اسم تصنيفها، فتغيير الاسم هنا يُعيد تسمية '
+          '${count == null ? 'كل مادة مسجّلة تحته' : '${count.grouped} مادةً مسجّلةً تحته'} '
           'في نفس اللحظة. الأرصدة وطبقات التكلفة لا تتغيّر، لكن الاسم القديم يختفي من كل شاشة.',
       severity: DialogSeverity.warning,
       confirmLabel: 'إعادة التسمية',
@@ -139,7 +139,7 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
         switch (state) {
           case SaveStockItemGroupSuccess(:final group):
             context.showSuccess(
-              _isEditing ? 'تم تحديث المادة' : 'تم إضافة المادة',
+              _isEditing ? 'تم تحديث التصنيف' : 'تم إضافة التصنيف',
             );
             Navigator.of(context).pop(group);
           case SaveStockItemGroupFailure(:final failure):
@@ -183,7 +183,7 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
                   ),
                   SizedBox(height: 12.h),
                   Text(
-                    _isEditing ? 'تعديل المادة' : 'مادة جديدة',
+                    _isEditing ? 'تعديل التصنيف' : 'تصنيف جديد',
                     style: context.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -191,12 +191,12 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
                   SizedBox(height: 16.h),
                   AppTextField(
                     controller: _name,
-                    label: 'اسم المادة',
+                    label: 'اسم التصنيف',
                     hint: 'مثال: كيس شحن',
                     validator: Validators.compose([
                       Validators.required,
-                      Validators.minLength(2, label: 'اسم المادة'),
-                      Validators.maxLength(255, label: 'اسم المادة'),
+                      Validators.minLength(2, label: 'اسم التصنيف'),
+                      Validators.maxLength(255, label: 'اسم التصنيف'),
                     ]),
                     errorText: state.nameError,
                     onChanged: (_) => cubit.clearFailure(),
@@ -212,7 +212,7 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
                   AppTextField(
                     controller: _description,
                     label: 'الوصف (اختياري)',
-                    hint: 'ما يميّز هذه المادة عن غيرها',
+                    hint: 'ما يميّز هذا التصنيف عن غيره',
                     maxLines: 3,
                     validator: Validators.maxLength(500, label: 'الوصف'),
                     errorText: state.descriptionError,
@@ -346,7 +346,7 @@ class _DeleteRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppButton.outlined(
-      label: 'حذف المادة',
+      label: 'حذف التصنيف',
       onPressed: () async {
         final deleted = await onDelete();
 

@@ -107,7 +107,7 @@ class StockItemGroupCard extends StatelessWidget {
                   onPressed: onEdit,
                   icon: Icon(AppIcons.edit, size: 20.sp),
                   color: scheme.onSurfaceVariant,
-                  tooltip: 'تعديل المادة',
+                  tooltip: 'تعديل التصنيف',
                 ),
             ],
           ),
@@ -138,9 +138,9 @@ class _Counts extends StatelessWidget {
       children: [
         if (group.itemsCount case final count?)
           Text(
-            // The server's own noun for a shelf — it is «صنف مخزني» in every refusal this
-            // screen can produce, so the list counts the same thing by the same name.
-            count == 0 ? 'بلا مقاسات' : '${count.grouped} مقاساً',
+            // The server's own noun for a shelf — it is «المادة» in every refusal this screen
+            // can produce, so the list counts the same thing by the same name.
+            _materialsLabel(count),
             style: context.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.w700,
               color: count == 0 ? scheme.onSurfaceVariant : scheme.primary,
@@ -154,4 +154,18 @@ class _Counts extends StatelessWidget {
       ],
     );
   }
+
+  /// «مادتان» for two, «٣ مواد» up to ten and «١١ مادةً» past it.
+  ///
+  /// The same counting the warehouse card does for the same thing — see `StockMaterialCard`.
+  /// The flat «$n مادةً» this replaced was correct only past ten, and these rows are almost
+  /// always under it: «4 مادةً» on the first card of the list is wrong where a reader cannot
+  /// miss it.
+  String _materialsLabel(int count) => switch (count) {
+    0 => 'بلا مواد',
+    1 => 'مادة واحدة',
+    2 => 'مادتان',
+    final n when n <= 10 => '${n.grouped} مواد',
+    final n => '${n.grouped} مادةً',
+  };
 }

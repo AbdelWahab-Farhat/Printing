@@ -138,7 +138,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                   children: [
                     Expanded(
                       child: Text(
-                        'تصفية المقاسات',
+                        'تصفية المواد',
                         style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),

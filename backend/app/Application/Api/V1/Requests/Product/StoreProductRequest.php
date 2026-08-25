@@ -97,7 +97,7 @@ class StoreProductRequest extends FormRequest
                 Rule::exists('product_categories', 'id')->whereNull('deleted_at'),
                 new CategoryMustBeALeaf,
             ],
-            // What the product is made of — «المادة». Optional, and the reason most
+            // What the product is made of — «التصنيف». Optional, and the reason most
             // products never need to name a shelf size by size: with a material set, every
             // variant resolves to that material's item at the same size, created on the spot if
             // the material has not reached it yet. An explicit `variants[].stock_item_id` still

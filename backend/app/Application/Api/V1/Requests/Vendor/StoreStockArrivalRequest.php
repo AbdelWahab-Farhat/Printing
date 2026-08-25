@@ -69,8 +69,8 @@ class StoreStockArrivalRequest extends FormRequest
             'notes.max' => 'الملاحظات طويلة جداً',
             'items.required' => 'يجب إضافة بند واحد على الأقل',
             'items.min' => 'يجب إضافة بند واحد على الأقل',
-            'items.*.stock_item_id.required' => 'المقاس مطلوب',
-            'items.*.stock_item_id.exists' => 'المقاس المحدد غير موجود',
+            'items.*.stock_item_id.required' => 'المادة مطلوبة',
+            'items.*.stock_item_id.exists' => 'المادة المحددة غير موجودة',
             'items.*.quantity.required' => 'الكمية مطلوبة',
             'items.*.quantity.numeric' => 'الكمية يجب أن تكون رقماً',
             'items.*.quantity.gt' => 'الكمية يجب أن تكون أكبر من صفر',
@@ -89,7 +89,7 @@ class StoreStockArrivalRequest extends FormRequest
             'invoice_number' => 'رقم الفاتورة',
             'notes' => 'الملاحظات',
             'items' => 'البنود',
-            'items.*.stock_item_id' => 'المقاس',
+            'items.*.stock_item_id' => 'المادة',
             'items.*.quantity' => 'الكمية',
         ];
     }

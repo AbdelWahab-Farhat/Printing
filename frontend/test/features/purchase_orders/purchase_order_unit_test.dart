@@ -310,7 +310,7 @@ void main() {
 
       // Assert — a fallback rather than a failed page, and **no invented code**: nothing to
       // print beats a plausible `S14` that names a different shelf.
-      expect(item.title, 'مقاس #14');
+      expect(item.title, 'مادة #14');
       expect(item.itemCode, isNull);
     });
 

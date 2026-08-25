@@ -19,7 +19,7 @@ use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
- * Stock item groups — «المادة», the family a shelf is a size of.
+ * Stock item groups — «التصنيف», the family a material is filed under.
  *
  * A group holds nothing. What it does is let a *product* name its material once, after which every
  * size that product carries resolves to that material's shelf at the same size — created on the

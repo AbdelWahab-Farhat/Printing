@@ -67,8 +67,8 @@ class RecordAdjustmentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'stock_item_id.required' => 'المقاس مطلوب',
-            'stock_item_id.exists' => 'المقاس المحدد غير موجود',
+            'stock_item_id.required' => 'المادة مطلوبة',
+            'stock_item_id.exists' => 'المادة المحددة غير موجودة',
             'warehouse_id.required' => 'المخزن مطلوب',
             'warehouse_id.exists' => 'المخزن غير موجود',
             'direction.required' => 'اتجاه التسوية مطلوب',
@@ -93,7 +93,7 @@ class RecordAdjustmentRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'stock_item_id' => 'المقاس',
+            'stock_item_id' => 'المادة',
             'warehouse_id' => 'المخزن',
             'direction' => 'اتجاه التسوية',
             'quantity' => 'الكمية',

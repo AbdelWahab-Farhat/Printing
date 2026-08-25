@@ -83,7 +83,7 @@ class StockItemController extends Controller
     {
         $item = $this->inventory->createStockItem(StockItemData::fromArray($request->validated()));
 
-        return $this->created(new StockItemResource($item), 'تم إضافة المقاس بنجاح');
+        return $this->created(new StockItemResource($item), 'تم إضافة المادة بنجاح');
     }
 
     /**
@@ -107,7 +107,7 @@ class StockItemController extends Controller
             StockItemData::fromArray($request->validated()),
         );
 
-        return $this->success(new StockItemResource($updated), 'تم تحديث المقاس بنجاح');
+        return $this->success(new StockItemResource($updated), 'تم تحديث المادة بنجاح');
     }
 
     /**
@@ -150,7 +150,7 @@ class StockItemController extends Controller
     {
         $this->inventory->deleteStockItem($stockItem);
 
-        return $this->successMessage('تم حذف المقاس بنجاح');
+        return $this->successMessage('تم حذف المادة بنجاح');
     }
 
     /**

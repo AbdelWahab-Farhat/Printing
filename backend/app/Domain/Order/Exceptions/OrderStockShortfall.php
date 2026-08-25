@@ -36,7 +36,7 @@ final class OrderStockShortfall extends DomainException
         parent::__construct(
             count($shortfalls) === 1
                 ? self::sentence($shortfalls[0])
-                : 'لا يوجد رصيد كافٍ في المخزن للمقاسات التالية'
+                : 'لا يوجد رصيد كافٍ في المخزن للمواد التالية'
         );
     }
 

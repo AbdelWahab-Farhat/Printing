@@ -52,8 +52,8 @@ class RecordFulfillmentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'stock_item_id.required' => 'المقاس مطلوب',
-            'stock_item_id.exists' => 'المقاس المحدد غير موجود',
+            'stock_item_id.required' => 'المادة مطلوبة',
+            'stock_item_id.exists' => 'المادة المحددة غير موجودة',
             'from_warehouse_id.required' => 'مخزن الصرف مطلوب',
             'from_warehouse_id.exists' => 'مخزن الصرف غير موجود',
             'quantity.required' => 'الكمية مطلوبة',
@@ -70,7 +70,7 @@ class RecordFulfillmentRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'stock_item_id' => 'المقاس',
+            'stock_item_id' => 'المادة',
             'from_warehouse_id' => 'مخزن الصرف',
             'quantity' => 'الكمية',
             'reference_id' => 'رقم الطلب',

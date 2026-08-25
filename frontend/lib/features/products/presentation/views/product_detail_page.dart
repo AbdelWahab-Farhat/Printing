@@ -520,7 +520,7 @@ class _Shelf extends StatelessWidget {
           SizedBox(width: 6.w),
           Expanded(
             child: Text(
-              'غير مرتبط بمقاس مادة — لا يمكن صرفه من المخزن',
+              'غير مرتبط بمادة — لا يمكن صرفه من المخزن',
               style: context.textTheme.labelSmall?.copyWith(color: scheme.error),
             ),
           ),
@@ -680,8 +680,8 @@ class _Identifiers extends StatelessWidget {
           // «المادة» — what the bag is cut from, and the reason its sizes have shelves at all.
           // Stated even when there is none: «بلا مادة» is the answer to why every size below
           // says «بلا صنف مخزني», and a row that simply vanished would leave that unexplained.
-          label: 'المادة',
-          value: product.stockItemGroup?.name ?? (product.hasMaterial ? 'مادة محدّدة' : 'بلا مادة'),
+          label: 'تصنيف المادة',
+          value: product.stockItemGroup?.name ?? (product.hasMaterial ? 'تصنيف محدّد' : 'بلا تصنيف'),
         ),
         SizedBox(height: 8.h),
         _FactRow(
@@ -695,7 +695,7 @@ class _Identifiers extends StatelessWidget {
                   // product with a material. Present, it is the count that will refuse an order
                   // at «جاهزة», said here where somebody is already reading the product.
                   if (product.unlinkedVariants.isNotEmpty)
-                    '${product.unlinkedVariants.length} بلا مقاس مادة',
+                    '${product.unlinkedVariants.length} بلا مادة',
                 ].join(' · '),
         ),
         SizedBox(height: 8.h),

@@ -284,7 +284,7 @@ class StockItemTest extends TestCase
         // Assert
         $response->assertCreated()
             ->assertJsonPath('status', true)
-            ->assertJsonPath('message', 'تم إضافة المقاس بنجاح')
+            ->assertJsonPath('message', 'تم إضافة المادة بنجاح')
             ->assertJsonPath('data.name', 'كيس شحن')
             ->assertJsonPath('data.display_name', 'كيس شحن 25*35');
         $this->assertDatabaseHas('stock_items', [
@@ -634,7 +634,7 @@ class StockItemTest extends TestCase
         $response = $this->withHeaders($headers)->deleteJson("/api/v1/stock-items/{$item->id}");
 
         // Assert
-        $response->assertOk()->assertJsonPath('message', 'تم حذف المقاس بنجاح');
+        $response->assertOk()->assertJsonPath('message', 'تم حذف المادة بنجاح');
         $this->assertSoftDeleted('stock_items', ['id' => $item->id]);
     }
 

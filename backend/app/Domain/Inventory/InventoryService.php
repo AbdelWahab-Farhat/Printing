@@ -123,7 +123,7 @@ class InventoryService
     }
 
     // ── stock item groups ───────────────────────────────────────────────────────────────
-    // «المادة» — the family a shelf is a size of. Holds nothing itself; it is
+    // «التصنيف» — the family a material is filed under. Holds nothing itself; it is
     // what lets a product name its material once instead of picking a shelf per size.
 
     /**

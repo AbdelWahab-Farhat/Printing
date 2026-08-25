@@ -16,7 +16,7 @@ final class StockItemNotOnPurchaseOrder extends DomainException
 {
     public static function make(int $stockItemId, int $purchaseOrderId): self
     {
-        return new self("المقاس رقم {$stockItemId} ليس ضمن بنود أمر الشراء رقم {$purchaseOrderId}");
+        return new self("المادة رقم {$stockItemId} ليست ضمن بنود أمر الشراء رقم {$purchaseOrderId}");
     }
 
     /**

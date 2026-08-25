@@ -68,10 +68,10 @@ class UpdateStockItemGroupRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'اسم المادة مطلوب',
-            'name.min' => 'اسم المادة قصير جداً',
-            'name.max' => 'اسم المادة طويل جداً',
-            'name.unique' => 'توجد مادة بنفس الاسم',
+            'name.required' => 'اسم التصنيف مطلوب',
+            'name.min' => 'اسم التصنيف قصير جداً',
+            'name.max' => 'اسم التصنيف طويل جداً',
+            'name.unique' => 'يوجد تصنيف بنفس الاسم',
             'default_unit.enum' => 'وحدة التخزين الافتراضية غير صحيحة',
             'description.max' => 'الوصف طويل جداً',
             'sort_order.integer' => 'الترتيب يجب أن يكون رقماً صحيحاً',
@@ -85,7 +85,7 @@ class UpdateStockItemGroupRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'name' => 'اسم المادة',
+            'name' => 'اسم التصنيف',
             'default_unit' => 'وحدة التخزين الافتراضية',
             'description' => 'الوصف',
             'is_active' => 'الحالة',

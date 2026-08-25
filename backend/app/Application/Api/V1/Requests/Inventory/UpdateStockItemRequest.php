@@ -72,10 +72,10 @@ class UpdateStockItemRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'اسم المقاس مطلوب',
-            'name.min' => 'اسم المقاس قصير جداً',
-            'name.max' => 'اسم المقاس طويل جداً',
-            'name.unique' => 'يوجد مقاس بنفس الاسم والأبعاد',
+            'name.required' => 'اسم المادة مطلوب',
+            'name.min' => 'اسم المادة قصير جداً',
+            'name.max' => 'اسم المادة طويل جداً',
+            'name.unique' => 'توجد مادة بنفس الاسم والمقاس',
             'width_cm.required_with' => 'العرض والطول يجب أن يُدخلا معاً',
             'height_cm.required_with' => 'العرض والطول يجب أن يُدخلا معاً',
             'width_cm.min' => 'العرض يجب أن يكون أكبر من صفر',
@@ -92,7 +92,7 @@ class UpdateStockItemRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'name' => 'اسم المقاس',
+            'name' => 'اسم المادة',
             'width_cm' => 'العرض',
             'height_cm' => 'الطول',
             'description' => 'الوصف',

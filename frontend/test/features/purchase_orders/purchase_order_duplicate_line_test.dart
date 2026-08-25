@@ -37,7 +37,7 @@ void main() {
   test('the duplicate-shelf refusal reaches the screen, index and all', () {
     // Arrange — `StorePurchaseOrderRequest`'s own wording, at the key it really arrives under.
     final state = refusedWith({
-      'items.1.stock_item_id': ['لا يمكن تكرار نفس المقاس أكثر من مرة في أمر الشراء'],
+      'items.1.stock_item_id': ['لا يمكن تكرار نفس المادة أكثر من مرة في أمر الشراء'],
     });
 
     // Act
@@ -46,14 +46,14 @@ void main() {
     // Assert — the server's Arabic, as sent. It is the only thing on the response that explains
     // why two lines a buyer sees as two different products are one line to the warehouse, and
     // replacing it with «حدث خطأ» would throw away the sentence the server took care to write.
-    expect(message, 'لا يمكن تكرار نفس المقاس أكثر من مرة في أمر الشراء');
+    expect(message, 'لا يمكن تكرار نفس المادة أكثر من مرة في أمر الشراء');
   });
 
   test('a complaint about the list as a whole still wins over an indexed one', () {
     // Arrange — both arrive when an empty form is posted against a stale draft.
     final state = refusedWith({
       'items': ['يجب إضافة بند واحد على الأقل'],
-      'items.0.stock_item_id': ['المقاس المحدد غير موجود'],
+      'items.0.stock_item_id': ['المادة المحددة غير موجودة'],
     });
 
     // Act
@@ -67,7 +67,7 @@ void main() {
   test('a refusal shown above the list is not also toasted as unrendered', () {
     // Arrange
     final state = refusedWith({
-      'items.1.stock_item_id': ['لا يمكن تكرار نفس المقاس أكثر من مرة في أمر الشراء'],
+      'items.1.stock_item_id': ['لا يمكن تكرار نفس المادة أكثر من مرة في أمر الشراء'],
     });
 
     // Act & Assert — the form already draws this one, and `hasUnrenderedErrors` is what decides

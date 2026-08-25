@@ -215,7 +215,7 @@ class _ProductFormViewState extends State<_ProductFormView> {
     final id = _editing?.stockItemGroupId;
     if (id == null) return null;
 
-    return (id: id, name: _editing?.stockItemGroup?.name ?? 'مادة محدّدة');
+    return (id: id, name: _editing?.stockItemGroup?.name ?? 'تصنيف محدّد');
   }
 
   /// The columns, read off the product being corrected — from whichever size lists the most of
@@ -1058,7 +1058,7 @@ class _MaterialField extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'المادة',
+                        'تصنيف المادة',
                         style: context.textTheme.bodySmall?.copyWith(
                           color: isSet
                               ? scheme.onPrimaryContainer.withValues(alpha: 0.8)
@@ -1067,7 +1067,7 @@ class _MaterialField extends StatelessWidget {
                       ),
                       SizedBox(height: 2.h),
                       Text(
-                        chosen?.name ?? 'اختر المادة — اضغط للاختيار',
+                        chosen?.name ?? 'اختر تصنيف المادة — اضغط للاختيار',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: context.textTheme.bodyMedium?.copyWith(
@@ -1095,9 +1095,9 @@ class _MaterialField extends StatelessWidget {
           child: Text(
             errorText ??
                 (isSet
-                    ? 'كل مقاس يُربط تلقائياً بمقاس المادة المطابق له، ويُنشأ إن لم '
-                          'يكن موجوداً.'
-                    : 'اختياري — بدونها لن تُربط المقاسات بأي مادة، ولا يمكن تسجيل '
+                    ? 'كل مقاس يُربط تلقائياً بمادة هذا التصنيف عند مقاسه، وتُنشأ المادة إن '
+                          'لم تكن موجودة.'
+                    : 'اختياري — بدونه لن تُربط المقاسات بأي مادة، ولا يمكن تسجيل '
                           'حركة مخزون عليها.'),
             style: context.textTheme.bodySmall?.copyWith(
               color: invalid ? scheme.error : scheme.onSurfaceVariant,
@@ -1135,8 +1135,8 @@ class _ShelfDisclosure extends StatelessWidget {
 
     final label = switch ((isOpen, pinnedCount)) {
       (true, _) => 'إخفاء ربط المقاسات بالمواد',
-      (false, 0) => 'ربط كل مقاس بمقاس مادة بعينه',
-      (false, final count) => '$count مقاس مربوط بمقاس مادة بعينه — عرض',
+      (false, 0) => 'ربط كل مقاس بمادة بعينها',
+      (false, final count) => '$count مقاس مربوط بمادة بعينها — عرض',
     };
 
     return Align(
@@ -1206,7 +1206,7 @@ class _ShelfRow extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'مقاس المادة',
+                        'المادة',
                         style: context.textTheme.labelSmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
@@ -1217,8 +1217,8 @@ class _ShelfRow extends StatelessWidget {
                         // `*` and no spaces — never rebuilt from the size's own fields.
                         label ??
                             (hasMaterial
-                                ? 'يُحدَّد من المادة عند الحفظ'
-                                : 'بلا مقاس مادة — لا حركة مخزون عليه'),
+                                ? 'تُحدَّد من تصنيف المادة عند الحفظ'
+                                : 'بلا مادة — لا حركة مخزون على هذا المقاس'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: context.textTheme.bodySmall?.copyWith(

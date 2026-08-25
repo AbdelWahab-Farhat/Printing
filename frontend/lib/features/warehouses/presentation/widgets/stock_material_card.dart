@@ -95,12 +95,12 @@ class StockMaterialCard extends StatelessWidget {
     );
   }
 
-  /// «مقاسان» for two, «٣ مقاسات» up to ten and «١١ مقاساً» beyond it — Arabic counts the pair
-  /// with its own word and changes case past ten, and «2 مقاسات» is the kind of wrong a reader
+  /// «مادتان» for two, «٣ مواد» up to ten and «١١ مادةً» beyond it — Arabic counts the pair
+  /// with its own word and changes case past ten, and «2 مواد» is the kind of wrong a reader
   /// notices before the number. Never one: a lone shelf is drawn as a plain row, not a card.
   String _sizesLabel(int count) => switch (count) {
-    2 => 'مقاسان',
-    final n when n <= 10 => '$n مقاسات',
-    final n => '$n مقاساً',
+    2 => 'مادتان',
+    final n when n <= 10 => '$n مواد',
+    final n => '$n مادةً',
   };
 }

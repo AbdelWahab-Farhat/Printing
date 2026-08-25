@@ -70,13 +70,13 @@ class _StockItemGroupPicker extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
             // «عن مادة», not «عن مجموعة»: the endpoint matches the name only — not the code and
             // not a size — so the box has to invite the one thing it can find.
-            child: SearchField(hint: 'ابحث عن مادة', onChanged: cubit.search),
+            child: SearchField(hint: 'ابحث عن تصنيف', onChanged: cubit.search),
           ),
           Expanded(
             child: BlocBuilder<StockItemGroupsCubit, StockItemGroupsState>(
               builder: (context, state) => PagedListView<StockItemGroup>(
                 state: state,
-                emptyMessage: 'لا توجد مواد مفعّلة',
+                emptyMessage: 'لا توجد تصنيفات مفعّلة',
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
                 // One row measured: a 38 tile with two lines beside it.

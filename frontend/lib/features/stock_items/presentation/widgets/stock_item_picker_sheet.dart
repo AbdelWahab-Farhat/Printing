@@ -74,7 +74,7 @@ class _StockItemPicker extends StatelessWidget {
               // Named after what the server actually matches: `search` is an ILIKE on the
               // material's name — not the code, and not the composed display name — so somebody
               // typing «S7» here would conclude the shelf had been deleted.
-              hint: 'ابحث باسم المقاس',
+              hint: 'ابحث باسم المادة',
               onChanged: cubit.search,
             ),
           ),
@@ -91,8 +91,8 @@ class _StockItemPicker extends StatelessWidget {
               builder: (context, state) => PagedListView<StockItem>(
                 state: state,
                 emptyMessage: cubit.hasSizeFilter
-                    ? 'لا مقاس بهذه الأبعاد — جرّب «كل المقاسات»'
-                    : 'لا توجد مقاسات',
+                    ? 'لا توجد مادة بهذا المقاس — جرّب «كل المقاسات»'
+                    : 'لا توجد مواد',
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
                 // One row measured: a 38 code tile with two lines beside it.

@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * «المادة» — the family a shelf is a size of: «كيس شحن», «كيس ورقي».
+ * «التصنيف» — the family a material is filed under: «كيس شحن», «كيس ورقي».
  *
  * **Holds nothing.** No balance, no cost layer, no size. A {@see StockItem} is still the only
  * thing a warehouse can put a quantity on; this is the name every one of its sizes shares. That
@@ -93,7 +93,7 @@ class StockItemGroup extends Model implements HasAuditTrail
      * The products made of this material.
      *
      * Inventory reading Catalog, which is the direction dependencies are allowed to run. Nothing
-     * here decides anything about a product; it answers «من يصنع من هذه المادة؟» for a screen,
+     * here decides anything about a product; it answers «من يصنع من هذا التصنيف؟» for a screen,
      * and it is what {@see DeleteStockItemGroup} counts.
      *
      * @return HasMany<Product, $this>

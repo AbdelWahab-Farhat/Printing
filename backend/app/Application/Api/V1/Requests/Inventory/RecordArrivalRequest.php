@@ -60,8 +60,8 @@ class RecordArrivalRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'stock_item_id.required' => 'المقاس مطلوب',
-            'stock_item_id.exists' => 'المقاس المحدد غير موجود',
+            'stock_item_id.required' => 'المادة مطلوبة',
+            'stock_item_id.exists' => 'المادة المحددة غير موجودة',
             'to_warehouse_id.required' => 'مخزن الاستلام مطلوب',
             'to_warehouse_id.exists' => 'مخزن الاستلام غير موجود',
             'quantity.required' => 'الكمية مطلوبة',
@@ -81,7 +81,7 @@ class RecordArrivalRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'stock_item_id' => 'المقاس',
+            'stock_item_id' => 'المادة',
             'to_warehouse_id' => 'مخزن الاستلام',
             'quantity' => 'الكمية',
             'reference_id' => 'رقم المرجع',

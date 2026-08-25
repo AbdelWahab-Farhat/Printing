@@ -82,7 +82,7 @@ class _MovementsView extends StatelessWidget {
                 state: state,
                 emptyMessage: stock == null
                     ? 'لا توجد حركات مسجّلة بعد'
-                    : 'لا توجد حركات على هذا المقاس بعد',
+                    : 'لا توجد حركات على هذه المادة بعد',
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
                 // One row measured: three lines beside a glyph.

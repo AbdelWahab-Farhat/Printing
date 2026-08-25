@@ -50,7 +50,7 @@ again. Naming the material once on the product removes the decision entirely.
 
 ## 3. The two resources
 
-### `StockItemGroup` — «المادة», the material
+### `StockItemGroup` — «التصنيف», the family a material is filed under
 
 Holds nothing: no balance, no cost layer, no size. Server-assigned code `G1`, `G2`…
 
@@ -252,7 +252,7 @@ point of the change, not a regression. Warn the warehouse staff.
 
 **A size can have no shelf.** `stock_item_id` is nullable, because a quote-only size is never
 stocked. Any stock movement against such a size is refused with a readable 422 under
-`errors.stock_item_id`: ««المنتج — المقاس» غير مرتبط بمقاس مادة — اربطه بمقاس قبل حركة المخزون».
+`errors.stock_item_id`: ««المنتج — المقاس» غير مرتبط بمادة — اربطه بمادة قبل حركة المخزون».
 
 **Renaming a group renames every size of it**, in one transaction. Required, not tidy: a grouped
 item carries its material's name, and that is what keeps `(name, size)` identifying one shelf. Say
@@ -430,7 +430,7 @@ Requires **PHP 8.4+** — the project's `composer.json` platform check refuses 8
 
 ---
 
-## 13. التسمية على الشاشة — «مادة» و«مقاس»
+## 13. التسمية على الشاشة — «تصنيف» و«مادة»
 
 The two entities are `StockItem` and `StockItemGroup` in code and on the wire, and that does not
 change. What changed is the Arabic they are shown in, on both sides — screens, validation
@@ -438,20 +438,28 @@ messages, controller messages, and the audit log.
 
 | Code | Was | Is | Example |
 |---|---|---|---|
-| `StockItemGroup` | «مجموعة أصناف» | **«مادة»** | كيس شحن |
-| `StockItem` | «صنف مخزني» | **«مقاس»** | كيس شحن 25×35 |
+| `StockItemGroup` | «مجموعة أصناف» | **«تصنيف»** | كيس شحن |
+| `StockItem` | «صنف مخزني» | **«مادة»** | كيس شحن 25×35 |
 
-**Why it had to move.** «صنف» is what people actually call the family — «شن الأصناف الي عندك؟»
-«أكياس، ورق، حبر» — so naming the *size* «صنف» and the family «مادة» taught the vocabulary
-backwards, and put «الأصناف» one letter away from «المنتجات» on the same tab. Named as what they
-are, the pair explains itself with no caption under it: a **مادة**, and its **مقاسات**.
+**Why.** «صنف» was the wrong word for the thing with a balance: what a storekeeper counts, orders
+and runs out of is a **مادة**, and the family it is filed under is a **تصنيف**. The old pair put
+the everyday noun on the screen that holds nothing and named the screen with the balances after a
+category — which is also why every one of those screens had needed a paragraph under its title
+explaining what it was.
 
-**Where «مقاس» would be ambiguous it is qualified «مقاس مادة».** A product variant is also a
-مقاس, and on the product form both appear in one sentence — «كل مقاس يُربط تلقائياً بمقاس المادة
-المطابق له». The same disambiguation is in the audit vocabulary, where `product_variant_id` is
-«المقاس» and `stock_item_id` is «مقاس المادة».
+**The tab reads المخازن · المواد · التصنيفات** — أين، ماذا، من أي شيء.
 
-**The tab reads المخازن · مقاسات المواد · المواد** — أين، ماذا، من أي شيء.
+**«مقاس» is now unambiguous.** It means a *product's* size and nothing else — `product_variants`,
+the invoice column, the size filter in the material picker. The stock item's dimensions are still
+«العرض» و«الطول»; it is a مادة that happens to have them.
+
+**The one collision, and how it is resolved.** Product categories are also «تصنيفات», and the
+product form asks both questions on one screen — a catalogue heading and what the product is cut
+from. `product_form_seeding_test` has guarded «سؤال تصنيف واحد لا اثنان» since long before this
+rename, and two fields labelled «التصنيف» would have broken it. So the catalogue heading keeps the
+bare word and the material's family is **«تصنيف المادة»** wherever the two meet — the product form
+and the product detail page. Inside المخزون, where no product category appears, it is «التصنيفات»
+plain.
 
 **Not renamed:** the order invoice's «الصنف» column, which names the *product* on a customer's
 document and never meant a stock item.

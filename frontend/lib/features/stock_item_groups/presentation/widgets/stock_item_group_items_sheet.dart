@@ -118,8 +118,8 @@ class _Header extends StatelessWidget {
         Text(
           // Two products at one size share one of these rows, which is the entire reason the
           // material exists — and the reason nothing here names a product.
-          'كل مقاس هنا رصيد واحد في المخازن، مهما بلغ عدد المنتجات التي تسحب منه. '
-          'تغيير اسم المادة يُعيد تسمية هذه المقاسات كلها.',
+          'كل مادة هنا رصيد واحد في المخازن، مهما بلغ عدد المنتجات التي تسحب منها. '
+          'تغيير اسم التصنيف يُعيد تسمية هذه المواد كلها.',
           style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
       ],
@@ -145,7 +145,7 @@ class _Items extends StatelessWidget {
         child: Text(
           // Not «لا يوجد», because nothing is wrong: a material with no sizes is a material no
           // product has claimed yet, and the sizes appear by themselves when one does.
-          'لا مقاسات تحت هذه المادة بعد. يُنشأ المقاس تلقائياً حين يختار منتج هذه المادة '
+          'لا مواد تحت هذا التصنيف بعد. تُنشأ المادة تلقائياً حين يختار منتج هذا التصنيف '
           'عند مقاس ما.',
           textAlign: TextAlign.center,
           style: context.textTheme.bodySmall?.copyWith(

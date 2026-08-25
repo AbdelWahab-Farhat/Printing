@@ -36,7 +36,7 @@ final class LineNeedsAMeasuredStockQuantity extends DomainException
         parent::__construct(
             count($items) === 1
                 ? self::sentence($items[0])
-                : 'أدخل الكمية المخصومة من المخزن للمقاسات التالية'
+                : 'أدخل الكمية المخصومة من المخزن للمواد التالية'
         );
     }
 

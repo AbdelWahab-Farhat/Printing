@@ -209,7 +209,7 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
             });
             context.showSuccess(
               'تم تحديث وحدة التخزين إلى «${item.unitLabel}»',
-              details: 'صُفِّر الرصيد في كل مخزن يحتوي المقاس — أعد الجرد بالوحدة الجديدة.',
+              details: 'صُفِّر الرصيد في كل مخزن يحتوي المادة — أعد الجرد بالوحدة الجديدة.',
             );
 
           case SaveStockItemFailure(:final failure) when state.hasUnrenderedErrors:
@@ -230,7 +230,7 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
         };
 
         return Scaffold(
-          appBar: AppBar(title: Text(_isEditing ? 'تعديل المقاس' : 'مقاس جديد')),
+          appBar: AppBar(title: Text(_isEditing ? 'تعديل المادة' : 'مادة جديدة')),
           body: SafeArea(
             child: Form(
               key: _formKey,
@@ -244,7 +244,7 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
                       // changes what every one of those sizes reads, and detaches none of them.
                       message:
                           '$shared. تغيير الاسم أو المقاس يغيّر ما تراه تلك المقاسات، ولا '
-                          'يفصلها عن هذا المقاس.',
+                          'يفصلها عن هذه المادة.',
                     ),
                     SizedBox(height: 16.h),
                   ],
@@ -256,7 +256,7 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
 
                   AppTextField(
                     controller: _name,
-                    label: 'اسم المقاس',
+                    label: 'اسم المادة',
                     hint: 'مثال: كيس شحن',
                     // Read-only under a material rather than absent, because the name is what
                     // the row will be called and hiding it would make the form unreadable.
@@ -265,11 +265,11 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
                     // owes them a reason. The free one needs no lecture — «اسم الصنف» over an
                     // empty box is the whole instruction.
                     helperText: _nameBelongsToMaterial
-                        ? 'الاسم يأتي من المادة — يُغيَّر من شاشة المادة'
+                        ? 'الاسم يأتي من التصنيف — يُغيَّر من شاشة التصنيف'
                         : null,
                     validator: Validators.compose([
                       Validators.required,
-                      Validators.minLength(2, label: 'اسم المقاس'),
+                      Validators.minLength(2, label: 'اسم المادة'),
                     ]),
                     errorText: state.nameError,
                     onChanged: (_) => cubit.clearFailure(),
@@ -333,7 +333,7 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
                   SizedBox(height: 28.h),
 
                   AppButton(
-                    label: _isEditing ? 'حفظ التعديلات' : 'إضافة المقاس',
+                    label: _isEditing ? 'حفظ التعديلات' : 'إضافة المادة',
                     isLoading: state.isSubmitting,
                     onPressed: _submit,
                   ),
@@ -473,7 +473,7 @@ class _UnitChoice extends StatelessWidget {
         if (error != null || isFixedByMaterial) ...[
           SizedBox(height: 6.h),
           Text(
-            error ?? 'تأتي من المادة',
+            error ?? 'تأتي من التصنيف',
             style: context.textTheme.bodySmall?.copyWith(
               color: error == null ? scheme.onSurfaceVariant : scheme.error,
             ),
@@ -553,7 +553,7 @@ class _UnitTile extends StatelessWidget {
         ),
         SizedBox(height: 6.h),
         Text(
-          error ?? 'تغييرها يصفّر رصيد المقاس في كل المخازن عبر تسوية مسجَّلة — لا يحوّل الكمية.',
+          error ?? 'تغييرها يصفّر رصيد المادة في كل المخازن عبر تسوية مسجَّلة — لا يحوّل الكمية.',
           style: context.textTheme.bodySmall?.copyWith(
             color: error == null ? scheme.onSurfaceVariant : scheme.error,
           ),
@@ -593,7 +593,7 @@ class _MaterialTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'المادة',
+                      'التصنيف',
                       style: context.textTheme.bodySmall?.copyWith(
                         color: scheme.onPrimaryContainer.withValues(alpha: 0.8),
                       ),

@@ -1372,7 +1372,7 @@ class OrderWorkflowTest extends TestCase
 
         // Assert — both shelves named, in the order the lines read, and still nothing landed
         $response->assertStatus(422);
-        $this->assertSame('لا يوجد رصيد كافٍ في المخزن للمقاسات التالية', $response->json('message'));
+        $this->assertSame('لا يوجد رصيد كافٍ في المخزن للمواد التالية', $response->json('message'));
         $this->assertSame([
             '«كيس شحن 25*35»: المتوفر (5.000) والمطلوب (40.000)',
             '«كيس نايلون 30*40»: المتوفر (0.000) والمطلوب (80.000)',
