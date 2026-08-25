@@ -239,7 +239,12 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
                     isLoading: state.isSubmitting,
                     onPressed: _submit,
                   ),
-                  if (_isEditing && widget.onDelete != null) ...[
+                  // **Nothing at all when the server would refuse.** No button, and no
+                  // paragraph in its place: «4 أصنافاً و1 منتجاً» is already printed on the row
+                  // this sheet opened from, so a note here re-states what the person just read
+                  // and turns the bottom of a form into an explanation of a button that is not
+                  // there.
+                  if (_isEditing && widget.onDelete != null && !widget.group!.isInUse) ...[
                     SizedBox(height: 8.h),
                     _DeleteRow(group: widget.group!, onDelete: widget.onDelete!),
                   ],
@@ -326,11 +331,12 @@ class _UnitChoice extends StatelessWidget {
   }
 }
 
-/// Removing a material — and, far more often, saying why that is not what is wanted.
+/// Removing a material.
 ///
-/// The counts are quoted **in the server's own phrasing**, joined the way it joins them, so
-/// somebody who reads this and taps anyway does not get a second, differently-worded account of
-/// the same fact. Fail-closed: a material whose counts never arrived is treated as in use.
+/// **Only ever built for one the server would actually delete** — see the guard at the call site,
+/// which is also why there is no refusal branch here. Fail-closed lives in
+/// [StockItemGroup.isInUse]: a material whose counts never arrived is treated as in use, so an
+/// unknown answer hides the button rather than offering one that 422s.
 class _DeleteRow extends StatelessWidget {
   const _DeleteRow({required this.group, required this.onDelete});
 
@@ -339,24 +345,6 @@ class _DeleteRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (group.isInUse) {
-      final summary = group.inUseSummary;
-
-      return Padding(
-        padding: EdgeInsets.only(top: 4.h),
-        child: Text(
-          summary == null
-              ? 'لا يمكن حذف مجموعة يرتبط بها أصناف مخزنية أو منتجات. غيّر ارتباطها أولاً.'
-              : 'لا يمكن حذف «${group.name}» لأن $summary مرتبط بها. غيّر ارتباط الأصناف '
-                    'والمنتجات أولاً.',
-          textAlign: TextAlign.center,
-          style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
-    }
-
     return AppButton.outlined(
       label: 'حذف المجموعة',
       onPressed: () async {

@@ -1,4 +1,3 @@
-import 'package:dayaa/core/utils/digits.dart';
 // The one type this module borrows from its neighbour, named rather than taken wholesale: the
 // same library also declares `StockItemGroupRef`, a three-field echo of the class below, and two
 // things called almost the same thing in one file is how the wrong one gets used.
@@ -97,23 +96,4 @@ abstract class StockItemGroup with _$StockItemGroup {
   /// appears and then 422s teaches people to ignore the message it prints.
   bool get isInUse => (itemsCount ?? 1) > 0 || (productsCount ?? 1) > 0;
 
-  /// What is still pointing at this material, phrased **the way the server phrases its
-  /// refusal** — «4 صنفاً مخزنياً و 2 منتجاً».
-  ///
-  /// Deliberately the same sentence fragment as `StockItemGroupInUse`, joined the same way and
-  /// dropping a zero side the same way, so somebody who taps anyway does not read two different
-  /// accounts of one fact. Null when nothing is known to point at it.
-  String? get inUseSummary {
-    // Zero for an absent count here, and one in [isInUse] above — the two questions differ.
-    // «هل أعرضُ الزر؟» must assume the worst; «ماذا أكتب؟» must not invent a number.
-    final sizeCount = itemsCount ?? 0;
-    final productCount = productsCount ?? 0;
-
-    final parts = <String>[
-      if (sizeCount > 0) '${sizeCount.grouped} صنفاً مخزنياً',
-      if (productCount > 0) '${productCount.grouped} منتجاً',
-    ];
-
-    return parts.isEmpty ? null : parts.join(' و');
-  }
 }
