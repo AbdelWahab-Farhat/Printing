@@ -92,7 +92,7 @@ void main() {
     // Assert — «صنف #7» over a blank: the shelf id is a poor name and an honest one, and the
     // balance beside it is still the number the reader opened this screen for. Nothing invents
     // a code it does not have.
-    expect(find.text('صنف #7'), findsOneWidget);
+    expect(find.text('مقاس #7'), findsOneWidget);
     expect(find.text('S9'), findsNothing);
     expect(find.text('50'), findsOneWidget);
   });

@@ -50,7 +50,7 @@ again. Naming the material once on the product removes the decision entirely.
 
 ## 3. The two resources
 
-### `StockItemGroup` — «مجموعة أصناف», the material
+### `StockItemGroup` — «المادة», the material
 
 Holds nothing: no balance, no cost layer, no size. Server-assigned code `G1`, `G2`…
 
@@ -252,7 +252,7 @@ point of the change, not a regression. Warn the warehouse staff.
 
 **A size can have no shelf.** `stock_item_id` is nullable, because a quote-only size is never
 stocked. Any stock movement against such a size is refused with a readable 422 under
-`errors.stock_item_id`: ««المنتج — المقاس» غير مرتبط بصنف مخزني — اربطه بصنف قبل حركة المخزون».
+`errors.stock_item_id`: ««المنتج — المقاس» غير مرتبط بمقاس مادة — اربطه بمقاس قبل حركة المخزون».
 
 **Renaming a group renames every size of it**, in one transaction. Required, not tidy: a grouped
 item carries its material's name, and that is what keeps `(name, size)` identifying one shelf. Say
@@ -427,3 +427,31 @@ And in `OrderWorkflowTest`: two products sharing a shelf are weighed against it 
 failure this whole change exists to prevent.
 
 Requires **PHP 8.4+** — the project's `composer.json` platform check refuses 8.2.
+
+---
+
+## 13. التسمية على الشاشة — «مادة» و«مقاس»
+
+The two entities are `StockItem` and `StockItemGroup` in code and on the wire, and that does not
+change. What changed is the Arabic they are shown in, on both sides — screens, validation
+messages, controller messages, and the audit log.
+
+| Code | Was | Is | Example |
+|---|---|---|---|
+| `StockItemGroup` | «مجموعة أصناف» | **«مادة»** | كيس شحن |
+| `StockItem` | «صنف مخزني» | **«مقاس»** | كيس شحن 25×35 |
+
+**Why it had to move.** «صنف» is what people actually call the family — «شن الأصناف الي عندك؟»
+«أكياس، ورق، حبر» — so naming the *size* «صنف» and the family «مادة» taught the vocabulary
+backwards, and put «الأصناف» one letter away from «المنتجات» on the same tab. Named as what they
+are, the pair explains itself with no caption under it: a **مادة**, and its **مقاسات**.
+
+**Where «مقاس» would be ambiguous it is qualified «مقاس مادة».** A product variant is also a
+مقاس, and on the product form both appear in one sentence — «كل مقاس يُربط تلقائياً بمقاس المادة
+المطابق له». The same disambiguation is in the audit vocabulary, where `product_variant_id` is
+«المقاس» and `stock_item_id` is «مقاس المادة».
+
+**The tab reads المخازن · مقاسات المواد · المواد** — أين، ماذا، من أي شيء.
+
+**Not renamed:** the order invoice's «الصنف» column, which names the *product* on a customer's
+document and never meant a stock item.

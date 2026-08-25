@@ -220,7 +220,7 @@ void main() {
       const failure = Failure.server(
         message: 'البيانات غير صحيحة',
         fieldErrors: {
-          'variants.2.stock_item_id': ['الصنف المخزني المحدد غير موجود'],
+          'variants.2.stock_item_id': ['المقاس المحدد غير موجود'],
         },
       );
 
@@ -229,7 +229,7 @@ void main() {
 
       // Assert — beside the third size and nowhere else: with several sizes on screen, said out
       // loud it would name none of them.
-      expect(state.variantStockItemError(2), 'الصنف المخزني المحدد غير موجود');
+      expect(state.variantStockItemError(2), 'المقاس المحدد غير موجود');
       expect(state.variantStockItemError(0), isNull);
       expect(state.hasUnrenderedErrors, isFalse);
       expect(hasVariantStockItemError(failure), isTrue);

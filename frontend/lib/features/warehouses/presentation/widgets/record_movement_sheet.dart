@@ -105,7 +105,7 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
     // Said here rather than by the validators, because neither box holds text: an untouched
     // picker has nothing to mark red, so the sheet says what is missing instead.
     if (_stockItemId == null) {
-      context.showError('اختر الصنف المخزني');
+      context.showError('اختر المقاس');
 
       return;
     }
@@ -198,8 +198,8 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                   ),
                   SizedBox(height: 14.h),
                   _PickerField(
-                    caption: 'الصنف المخزني',
-                    value: _stockItemLabel ?? 'اختر الصنف المخزني',
+                    caption: 'المقاس',
+                    value: _stockItemLabel ?? 'اختر المقاس',
                     isChosen: _stockItemId != null,
                     // Not [AppIcons.warehouse], which the two boxes under this one already
                     // wear: three identical glyphs down one form stop distinguishing anything.

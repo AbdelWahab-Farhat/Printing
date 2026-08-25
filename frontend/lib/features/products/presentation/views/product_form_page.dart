@@ -1095,9 +1095,9 @@ class _MaterialField extends StatelessWidget {
           child: Text(
             errorText ??
                 (isSet
-                    ? 'كل مقاس يُربط تلقائياً بصنف هذه المادة عند مقاسه، ويُنشأ الصنف إن لم '
+                    ? 'كل مقاس يُربط تلقائياً بمقاس المادة المطابق له، ويُنشأ إن لم '
                           'يكن موجوداً.'
-                    : 'اختياري — بدونها لن تُربط المقاسات بأي صنف مخزني، ولا يمكن تسجيل '
+                    : 'اختياري — بدونها لن تُربط المقاسات بأي مادة، ولا يمكن تسجيل '
                           'حركة مخزون عليها.'),
             style: context.textTheme.bodySmall?.copyWith(
               color: invalid ? scheme.error : scheme.onSurfaceVariant,
@@ -1134,9 +1134,9 @@ class _ShelfDisclosure extends StatelessWidget {
     final scheme = context.colorScheme;
 
     final label = switch ((isOpen, pinnedCount)) {
-      (true, _) => 'إخفاء ربط المقاسات بالأصناف',
-      (false, 0) => 'ربط كل مقاس بصنف مخزني بعينه',
-      (false, final count) => '$count مقاس مربوط بصنف بعينه — عرض',
+      (true, _) => 'إخفاء ربط المقاسات بالمواد',
+      (false, 0) => 'ربط كل مقاس بمقاس مادة بعينه',
+      (false, final count) => '$count مقاس مربوط بمقاس مادة بعينه — عرض',
     };
 
     return Align(
@@ -1206,7 +1206,7 @@ class _ShelfRow extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'الصنف المخزني',
+                        'مقاس المادة',
                         style: context.textTheme.labelSmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
@@ -1218,7 +1218,7 @@ class _ShelfRow extends StatelessWidget {
                         label ??
                             (hasMaterial
                                 ? 'يُحدَّد من المادة عند الحفظ'
-                                : 'بلا صنف مخزني — لا حركة مخزون على هذا المقاس'),
+                                : 'بلا مقاس مادة — لا حركة مخزون عليه'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: context.textTheme.bodySmall?.copyWith(

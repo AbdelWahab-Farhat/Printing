@@ -96,7 +96,7 @@ class _Numbers extends StatelessWidget {
             ),
             SizedBox(width: 8.w),
             Text(
-              '${summary.totalLines.grouped} صنفاً',
+              '${summary.totalLines.grouped} مقاساً',
               style: context.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: scheme.onSurfaceVariant,

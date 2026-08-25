@@ -22,7 +22,7 @@ final readonly class ProductData
         /** The catalogue heading it sits under — «التصنيف». Required from every request. */
         public int $productCategoryId,
         /**
-         * What the product is made of — «مجموعة أصناف». Optional.
+         * What the product is made of — «المادة». Optional.
          *
          * Naming it means every size the product carries resolves to the shelf of that material
          * at the same size, creating it if the material has not reached it yet. See

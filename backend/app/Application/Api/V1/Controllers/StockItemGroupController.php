@@ -20,7 +20,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Stock item groups — «مجموعة أصناف», the material a family of shelves is made of.
+ * Stock item groups — «المادة», the family a shelf is a size of.
  *
  * «كيس شحن» is a material; «كيس شحن 25*35» and «كيس شحن 35*40» are two of its sizes, and those
  * are the things a warehouse actually holds. **A group holds nothing** — no balance, no cost
@@ -71,7 +71,7 @@ class StockItemGroupController extends Controller
             StockItemGroupData::fromArray($request->validated()),
         );
 
-        return $this->created(new StockItemGroupResource($group), 'تم إضافة مجموعة الأصناف بنجاح');
+        return $this->created(new StockItemGroupResource($group), 'تم إضافة المادة بنجاح');
     }
 
     /**
@@ -104,7 +104,7 @@ class StockItemGroupController extends Controller
             StockItemGroupData::fromArray($request->validated()),
         );
 
-        return $this->success(new StockItemGroupResource($updated), 'تم تحديث مجموعة الأصناف بنجاح');
+        return $this->success(new StockItemGroupResource($updated), 'تم تحديث المادة بنجاح');
     }
 
     /**
@@ -120,7 +120,7 @@ class StockItemGroupController extends Controller
     {
         $this->inventory->deleteStockItemGroup($stockItemGroup);
 
-        return $this->successMessage('تم حذف مجموعة الأصناف بنجاح');
+        return $this->successMessage('تم حذف المادة بنجاح');
     }
 
     /**

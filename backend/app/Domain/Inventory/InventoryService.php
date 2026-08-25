@@ -123,7 +123,7 @@ class InventoryService
     }
 
     // ── stock item groups ───────────────────────────────────────────────────────────────
-    // «مجموعة أصناف» — the material a family of shelves is made of. Holds nothing itself; it is
+    // «المادة» — the family a shelf is a size of. Holds nothing itself; it is
     // what lets a product name its material once instead of picking a shelf per size.
 
     /**

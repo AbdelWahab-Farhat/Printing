@@ -93,7 +93,7 @@ void main() {
     // Act
     final failure = await refusal(const {
       'status': false,
-      'message': 'لا يوجد رصيد كافٍ في المخزن للأصناف التالية',
+      'message': 'لا يوجد رصيد كافٍ في المخزن للمقاسات التالية',
       'errors': {
         'fields.warehouse_id': [
           '«كيس شحن — 25*35»: المتوفر (5.000) والمطلوب (40.000)',
@@ -104,7 +104,7 @@ void main() {
 
     // Assert — the heading leads, both entries follow it, one per line. A refusal that named
     // only the first size would send the storekeeper back for the second one tomorrow.
-    expect(failure.message, 'لا يوجد رصيد كافٍ في المخزن للأصناف التالية');
+    expect(failure.message, 'لا يوجد رصيد كافٍ في المخزن للمقاسات التالية');
     expect(failure.details, contains('«كيس شحن — 25*35»: المتوفر (5.000) والمطلوب (40.000)'));
     expect(failure.details, contains('«كيس نايلون — 30*40»: المتوفر (0.000) والمطلوب (80.000)'));
     expect(failure.details!.split('\n'), hasLength(2));
@@ -116,7 +116,7 @@ void main() {
     // Act
     final failure = await refusal(const {
       'status': false,
-      'message': 'لا يوجد رصيد كافٍ في المخزن للأصناف التالية',
+      'message': 'لا يوجد رصيد كافٍ في المخزن للمقاسات التالية',
       'errors': {
         'fields.warehouse_id': [
           '«الاسم القديم — 25*35»: المتوفر (0.000) والمطلوب (10.000)',

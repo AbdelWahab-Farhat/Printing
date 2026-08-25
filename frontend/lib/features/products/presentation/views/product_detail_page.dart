@@ -520,7 +520,7 @@ class _Shelf extends StatelessWidget {
           SizedBox(width: 6.w),
           Expanded(
             child: Text(
-              'غير مرتبط بصنف مخزني — لا يمكن صرفه من المخزن',
+              'غير مرتبط بمقاس مادة — لا يمكن صرفه من المخزن',
               style: context.textTheme.labelSmall?.copyWith(color: scheme.error),
             ),
           ),
@@ -695,7 +695,7 @@ class _Identifiers extends StatelessWidget {
                   // product with a material. Present, it is the count that will refuse an order
                   // at «جاهزة», said here where somebody is already reading the product.
                   if (product.unlinkedVariants.isNotEmpty)
-                    '${product.unlinkedVariants.length} بلا صنف مخزني',
+                    '${product.unlinkedVariants.length} بلا مقاس مادة',
                 ].join(' · '),
         ),
         SizedBox(height: 8.h),

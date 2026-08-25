@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * «مجموعة أصناف» — the material a family of shelves is made of: «كيس شحن», «كيس ورقي».
+ * «المادة» — the family a shelf is a size of: «كيس شحن», «كيس ورقي».
  *
  * **Holds nothing.** No balance, no cost layer, no size. A {@see StockItem} is still the only
  * thing a warehouse can put a quantity on; this is the name every one of its sizes shares. That

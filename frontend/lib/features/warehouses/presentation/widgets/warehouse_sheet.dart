@@ -242,7 +242,7 @@ class _DeleteRow extends StatelessWidget {
       return Padding(
         padding: EdgeInsets.only(top: 4.h),
         child: Text(
-          'لا يمكن حذف مخزن ما زال يحتوي على أصناف. حوّل ما فيه إلى مخزن آخر أولاً.',
+          'لا يمكن حذف مخزن ما زال يحتوي على مخزون. حوّل ما فيه إلى مخزن آخر أولاً.',
           textAlign: TextAlign.center,
           style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.onSurfaceVariant,

@@ -12,9 +12,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// they are reference data. But they are not three subjects — they are one subject at three
 /// zoom levels, and every one of them is about the same heap of bags:
 ///
-///   المخازن  — **أين**: the rooms, and what each holds
-///   الأصناف  — **ماذا**: the shelf itself, a material at a size. This is what a balance is of.
-///   المواد   — **من أي شيء**: the family a shelf is a size of, and the thing a product names
+///   المخازن        — **أين**: the rooms, and what each holds
+///   مقاسات المواد  — **ماذا**: the shelf, a material at a size. What a balance is of.
+///   المواد         — **من أي شيء**: the family a shelf is a size of, and what a product names
 ///
 /// That reading is what the three screens teach by being used. None of it is printed on them —
 /// see [_segments].
@@ -42,12 +42,16 @@ class _InventoryTabPageState extends State<InventoryTabPage> {
   /// other two are consulted when something about a shelf needs explaining.
   int _segment = 0;
 
-  /// **Three words, and nothing under them.** Each segment used to carry a line explaining what
-  /// it was — «الرفّ نفسه، وعليه يقوم الرصيد» and the like. Written once they read well; met on
-  /// every visit they are a paragraph between the person and the list they came for, and after
-  /// the second day nobody reads them. The words «صنف» and «مادة» are learned from using the
-  /// screens, not from a caption repeated above them.
-  static const List<String> _segments = ['المخازن', 'الأصناف', 'المواد'];
+  /// **Three labels, and nothing under them.** Each segment used to carry a line explaining
+  /// what it was — «الرفّ نفسه، وعليه يقوم الرصيد» and the like. Written once they read well;
+  /// met on every visit they are a paragraph between the person and the list they came for,
+  /// and after the second day nobody reads them.
+  ///
+  /// **«مقاسات المواد» rather than «الأصناف»**, which is the one label a caption could not
+  /// rescue: «صنف» is what people call the family — «شن الأصناف الي عندك؟» «أكياس، ورق، حبر» —
+  /// so naming the *size* by it and the family «مادة» taught the vocabulary backwards. Named
+  /// as what it is, the pair explains itself: a مادة, and its مقاسات.
+  static const List<String> _segments = ['المخازن', 'مقاسات المواد', 'المواد'];
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +69,14 @@ class _InventoryTabPageState extends State<InventoryTabPage> {
             child: SegmentedButton<int>(
               segments: [
                 for (var i = 0; i < _segments.length; i++)
-                  ButtonSegment<int>(value: i, label: Text(_segments[i])),
+                  ButtonSegment<int>(
+                    value: i,
+                    // «مقاسات المواد» is two words in a third of the row: it measures inside the
+                    // strip on every phone size this app targets, but a segmented button does not
+                    // clip on its own, so the one that would not fit shortens rather than paints
+                    // a stripe over the neighbour.
+                    label: Text(_segments[i], maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
               ],
               selected: {_segment},
               // Never empty: one of the three is always the answer, so an unselected state would

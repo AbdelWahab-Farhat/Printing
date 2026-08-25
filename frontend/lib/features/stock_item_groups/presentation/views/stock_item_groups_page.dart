@@ -39,7 +39,7 @@ class StockItemGroupsPage extends StatelessWidget {
   /// **The same list either way — only the chrome differs.** Embedded, the shell above already
   /// carries the bar and the title, so a second `AppBar` would stack two headers on one screen;
   /// and the background must come from the shell or the tab reads as a card floating on itself.
-  /// Standalone is what a deep link, a picker's «إدارة الأصناف» and the back-stack still reach,
+  /// Standalone is what a deep link, a picker's «إدارة المواد» and the back-stack still reach,
   /// so both shapes stay real rather than one being a leftover.
   final bool isEmbedded;
 
@@ -85,7 +85,7 @@ class _StockItemGroupsView extends StatelessWidget {
     return Scaffold(
       // Transparent and bar-less when the shell above owns both — see [StockItemGroupsPage.isEmbedded].
       backgroundColor: isEmbedded ? Colors.transparent : null,
-      appBar: isEmbedded ? null : AppBar(title: const Text('مجموعات الأصناف')),
+      appBar: isEmbedded ? null : AppBar(title: const Text('المواد')),
       // A ternary rather than a PermissionGate: an empty widget in this slot still shifts the
       // bottom inset, so the button has to be absent rather than invisible.
       floatingActionButton: mayManage
@@ -95,7 +95,7 @@ class _StockItemGroupsView extends StatelessWidget {
               heroTag: 'fab-stock-item-groups',
               onPressed: () => _edit(context, null),
               icon: Icon(AppIcons.add),
-              label: const Text('مجموعة جديدة'),
+              label: const Text('مادة جديدة'),
             )
           : null,
       body: Column(
@@ -111,7 +111,7 @@ class _StockItemGroupsView extends StatelessWidget {
             child: BlocBuilder<StockItemGroupsCubit, StockItemGroupsState>(
               builder: (context, state) => PagedListView<StockItemGroup>(
                 state: state,
-                emptyMessage: 'لم تُضف أي مجموعة أصناف بعد',
+                emptyMessage: 'لم تُضف أي مادة بعد',
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
                 // One row measured: a 38 tile with two lines beside it.
@@ -153,7 +153,7 @@ Future<bool> confirmStockItemGroupDelete(
     context: context,
     title: 'حذف «${group.name}»؟',
     description:
-        'تختفي المادة نهائياً. لا يمكن حذفها ما دام يرتبط بها صنف مخزني واحد أو منتج واحد — '
+        'تختفي المادة نهائياً. لا يمكن حذفها ما دام يرتبط بها مقاس واحد أو منتج واحد — '
         'غيّر ارتباطها أولاً. إن كان المقصود التوقف عن شرائها فالإيقاف أفضل.',
   );
 

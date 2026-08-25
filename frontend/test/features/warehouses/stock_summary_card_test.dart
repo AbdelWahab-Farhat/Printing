@@ -59,7 +59,7 @@ void main() {
 
     // Assert — a warehouse holding six sizes of one bag is a small warehouse, however many
     // thousands of bags that is
-    expect(find.text('24 صنفاً'), findsOneWidget);
+    expect(find.text('24 مقاساً'), findsOneWidget);
   });
 
   testWidgets('every segment of the bar is named and counted', (tester) async {

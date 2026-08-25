@@ -94,6 +94,4 @@ abstract class StockItemGroup with _$StockItemGroup {
 
   /// Whether the server will refuse to delete it. Fail-closed for the same reason: a bin that
   /// appears and then 422s teaches people to ignore the message it prints.
-  bool get isInUse => (itemsCount ?? 1) > 0 || (productsCount ?? 1) > 0;
-
-}
+  bool get isInUse => (itemsCount ?? 1) > 0 || (productsCount ?? 1) > 0;}

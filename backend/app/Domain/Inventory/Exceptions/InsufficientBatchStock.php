@@ -22,7 +22,7 @@ final class InsufficientBatchStock extends DomainException
     public static function make(int $warehouseId, int $stockItemId, string $available, string $requested): self
     {
         return new self(
-            "دفعات التكلفة للمخزن رقم {$warehouseId} والصنف رقم {$stockItemId} ".
+            "دفعات التكلفة للمخزن رقم {$warehouseId} والمقاس رقم {$stockItemId} ".
             "({$available}) لا تكفي للكمية المطلوبة ({$requested}) — الرصيد والدفعات غير متطابقين"
         );
     }

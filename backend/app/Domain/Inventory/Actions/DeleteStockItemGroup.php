@@ -15,7 +15,7 @@ use App\Domain\Inventory\Models\StockItemGroup;
  * remembered to write it.
  *
  * Both sides are counted in one message rather than reported one at a time: a material is usually
- * held back by *both* — its sizes and the products made of it — and answering «فيه أصناف» only to
+ * held back by *both* — its sizes and the products made of it — and answering «فيه مقاسات» only to
  * answer «فيه منتجات» on the next attempt wastes the operator's time.
  *
  * Trashed rows count on both sides, the same reasoning {@see StockItem::isUsedByAnyVariant()}

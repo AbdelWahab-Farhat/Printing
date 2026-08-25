@@ -76,7 +76,7 @@ class _StockItemGroupPicker extends StatelessWidget {
             child: BlocBuilder<StockItemGroupsCubit, StockItemGroupsState>(
               builder: (context, state) => PagedListView<StockItemGroup>(
                 state: state,
-                emptyMessage: 'لا توجد مجموعات أصناف مفعّلة',
+                emptyMessage: 'لا توجد مواد مفعّلة',
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
                 // One row measured: a 38 tile with two lines beside it.

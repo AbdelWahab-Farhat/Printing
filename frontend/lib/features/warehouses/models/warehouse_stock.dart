@@ -87,7 +87,7 @@ abstract class WarehouseStock with _$WarehouseStock {
   /// **Never rebuilt from [StockItemRef.name] and the two dimensions here.** The shortfall an
   /// order is refused with quotes this exact string, and a second implementation in Dart would
   /// drift from it — the first screen to notice would be one comparing a refusal to a list.
-  String get title => item?.displayName ?? 'صنف #$stockItemId';
+  String get title => item?.displayName ?? 'مقاس #$stockItemId';
 
   /// `S7` — what a storekeeper reads down a phone line, and **what replaced the thumbnail** on
   /// this row. Null only for a payload that arrived without its item.

@@ -80,7 +80,7 @@ class UpdatePurchaseOrderRequest extends StorePurchaseOrderRequest
             'notes' => 'الملاحظات',
             'items' => 'البنود',
             'items.*.id' => 'معرف البند',
-            'items.*.stock_item_id' => 'الصنف المخزني',
+            'items.*.stock_item_id' => 'المقاس',
             'items.*.quantity_ordered' => 'الكمية المطلوبة',
             'items.*.base_total_cost' => 'التكلفة الإجمالية للبند',
             'additional_costs' => 'التكاليف الإضافية',

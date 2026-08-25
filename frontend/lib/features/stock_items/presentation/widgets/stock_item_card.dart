@@ -83,7 +83,7 @@ class StockItemCard extends StatelessWidget {
                   onPressed: onDelete,
                   icon: Icon(AppIcons.delete, size: 20.sp),
                   color: scheme.error,
-                  tooltip: 'حذف الصنف',
+                  tooltip: 'حذف المقاس',
                 )
               else if (onTap != null)
                 Icon(AppIcons.forward, size: 18.sp, color: scheme.onSurfaceVariant),

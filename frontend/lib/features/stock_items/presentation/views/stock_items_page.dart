@@ -15,7 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// «أصناف المخزون» — the shelves themselves, and the screen that curates them.
+/// «مقاسات المواد» — the shelves themselves, and the screen that curates them.
 ///
 /// **A stock item is a material at a size, and it is what a warehouse actually holds.** That is
 /// the sentence the line above the list exists to say: «كيس شحن سادة 25*35» and «كيس شحن مطبوع
@@ -34,7 +34,7 @@ class StockItemsPage extends StatelessWidget {
   /// **The same list either way — only the chrome differs.** Embedded, the shell above already
   /// carries the bar and the title, so a second `AppBar` would stack two headers on one screen;
   /// and the background must come from the shell or the tab reads as a card floating on itself.
-  /// Standalone is what a deep link, a picker's «إدارة الأصناف» and the back-stack still reach,
+  /// Standalone is what a deep link, a picker's «إدارة المقاسات» and the back-stack still reach,
   /// so both shapes stay real rather than one being a leftover.
   final bool isEmbedded;
 
@@ -71,7 +71,7 @@ class _StockItemsView extends StatelessWidget {
     if (item.isDrawnFrom) {
       context.showInfo(
         'لا يمكن حذف «${item.displayName}»',
-        details: '${item.sharedByLabel}. غيّر ارتباط تلك المقاسات بصنف آخر أولاً.',
+        details: '${item.sharedByLabel}. اربطها بمقاس مادة آخر أولاً.',
       );
 
       return;
@@ -83,7 +83,7 @@ class _StockItemsView extends StatelessWidget {
       // The two facts somebody needs before deleting rather than stopping: what survives, and
       // the one refusal the row could not rule out on its own.
       description:
-          'يختفي الصنف من القوائم، وتبقى حركاته المسجّلة وسجل تعديلاته كما هي. '
+          'يختفي المقاس من القوائم، وتبقى حركاته المسجّلة وسجل تعديلاته كما هي. '
           'يُرفض الحذف إن كان أي مخزن ما زال يحتوي كمية منه — سوِّ الجرد أو انقل الكمية أولاً. '
           'إن كان المقصود التوقف عن عرضه فالإيقاف أفضل.',
     );
@@ -113,7 +113,7 @@ class _StockItemsView extends StatelessWidget {
     return Scaffold(
       // Transparent and bar-less when the shell above owns both — see [StockItemsPage.isEmbedded].
       backgroundColor: isEmbedded ? Colors.transparent : null,
-      appBar: isEmbedded ? null : AppBar(title: const Text('أصناف المخزون')),
+      appBar: isEmbedded ? null : AppBar(title: const Text('مقاسات المواد')),
       // A ternary rather than a PermissionGate: an empty widget in this slot still shifts the
       // bottom inset, so the button has to be absent rather than invisible.
       floatingActionButton: mayManage
@@ -123,7 +123,7 @@ class _StockItemsView extends StatelessWidget {
               heroTag: 'fab-stock-items',
               onPressed: () => _open(context, null),
               icon: Icon(AppIcons.add),
-              label: const Text('صنف جديد'),
+              label: const Text('مقاس جديد'),
             )
           : null,
       body: Column(
@@ -144,7 +144,7 @@ class _StockItemsView extends StatelessWidget {
                   child: SearchField(
                     // Named after what the server actually matches: `search` is an ILIKE on the
                     // material's name — not the code, and not the composed display name.
-                    hint: 'ابحث باسم الصنف',
+                    hint: 'ابحث باسم المقاس',
                     onChanged: cubit.search,
                   ),
                 ),
@@ -173,8 +173,8 @@ class _StockItemsView extends StatelessWidget {
                 // Named for the filter, because «لا توجد أصناف» in front of somebody who
                 // narrowed the list to 25*35 reads as «the shelves are empty».
                 emptyMessage: cubit.isFiltered
-                    ? 'لا توجد أصناف بهذه التصفية'
-                    : 'لم يُضف أي صنف مخزني بعد',
+                    ? 'لا توجد مقاسات بهذه التصفية'
+                    : 'لم يُضف أي مقاس بعد',
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
                 // One row measured: a 38 code tile with two lines beside it.

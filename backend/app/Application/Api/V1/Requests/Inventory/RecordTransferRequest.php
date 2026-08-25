@@ -61,8 +61,8 @@ class RecordTransferRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'stock_item_id.required' => 'الصنف المخزني مطلوب',
-            'stock_item_id.exists' => 'الصنف المخزني المحدد غير موجود',
+            'stock_item_id.required' => 'المقاس مطلوب',
+            'stock_item_id.exists' => 'المقاس المحدد غير موجود',
             'from_warehouse_id.required' => 'المخزن المصدر مطلوب',
             'from_warehouse_id.exists' => 'المخزن المصدر غير موجود',
             'to_warehouse_id.required' => 'مخزن الوجهة مطلوب',
@@ -82,7 +82,7 @@ class RecordTransferRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'stock_item_id' => 'الصنف المخزني',
+            'stock_item_id' => 'المقاس',
             'from_warehouse_id' => 'المخزن المصدر',
             'to_warehouse_id' => 'مخزن الوجهة',
             'quantity' => 'الكمية',

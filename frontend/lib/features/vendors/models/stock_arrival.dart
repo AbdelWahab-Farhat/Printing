@@ -115,7 +115,7 @@ abstract class StockArrivalItem with _$StockArrivalItem {
   /// **No product name, deliberately.** A pile is not one product's: «كيس شحن سادة» and «كيس شحن
   /// مطبوع» both draw on this line's shelf, so naming either of them here would be picking one
   /// arbitrarily and telling the storekeeper the wrong thing.
-  String get title => stockItem?.displayName ?? 'صنف #$stockItemId';
+  String get title => stockItem?.displayName ?? 'مقاس #$stockItemId';
 
   /// `S7` — the shelf's own code, in the space the product photograph used to occupy.
   ///

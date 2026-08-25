@@ -12,7 +12,7 @@ use App\Support\Exceptions\DomainException;
  *
  * Deleting is soft and the foreign key is `nullOnDelete`, so this would not orphan a row — it
  * would do something quieter and worse: the variant keeps working right up until somebody tries
- * to fulfil an order with it, and then fails with «هذا المقاس غير مرتبط بصنف مخزني» about a link
+ * to fulfil an order with it, and then fails with «هذا المقاس غير مرتبط بمقاس مادة» about a link
  * that was silently cut weeks earlier by a delete nobody connected to it.
  *
  * Counts soft-deleted variants too — see {@see StockItem::isUsedByAnyVariant()}.

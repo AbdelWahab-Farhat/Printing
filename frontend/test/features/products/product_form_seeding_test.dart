@@ -361,7 +361,7 @@ void main() {
 
     // Assert
     expect(find.text('اختر المادة — اضغط للاختيار'), findsOneWidget);
-    expect(find.textContaining('لن تُربط المقاسات بأي صنف مخزني'), findsOneWidget);
+    expect(find.textContaining('لن تُربط المقاسات بأي مادة'), findsOneWidget);
   });
 
   testWidgets('a product being corrected opens on the material it is filed under', (
@@ -377,7 +377,7 @@ void main() {
     // Assert — the material's own name, and the sentence that says what naming it does.
     expect(find.text('كيس شحن'), findsOneWidget);
     expect(find.text('اختر المادة — اضغط للاختيار'), findsNothing);
-    expect(find.textContaining('كل مقاس يُربط تلقائياً بصنف هذه المادة'), findsOneWidget);
+    expect(find.textContaining('كل مقاس يُربط تلقائياً بمقاس المادة المطابق'), findsOneWidget);
   });
 
   // ─────────────────────── the per-size shelf pickers ───────────────────────
@@ -394,8 +394,8 @@ void main() {
     // Assert — the fold is shut and still names what is inside it: a fold that says nothing about
     // its contents is one people stop opening, and these links travel with every save whether or
     // not anybody opens it.
-    expect(find.text('الصنف المخزني'), findsNothing);
-    expect(find.text('1 مقاس مربوط بصنف بعينه — عرض'), findsOneWidget);
+    expect(find.text('مقاس المادة'), findsNothing);
+    expect(find.text('1 مقاس مربوط بمقاس مادة بعينه — عرض'), findsOneWidget);
   });
 
   testWidgets('a shelf pinned by hand with no material to explain it opens unfolded', (
@@ -431,7 +431,7 @@ void main() {
     // Assert — «كيس شحن 25*35» drawn exactly as the server composed it, one `*` and no spaces.
     // The shortfall sentence an order is refused with quotes that string, and a second spelling
     // built here out of the name and the dimensions is a second thing to reconcile.
-    expect(find.text('الصنف المخزني'), findsOneWidget);
+    expect(find.text('مقاس المادة'), findsOneWidget);
     expect(find.text('كيس شحن 25*35'), findsOneWidget);
   });
 
@@ -490,7 +490,7 @@ void main() {
     await tester.pumpWidget(host(const ProductFormPage(product: filed)));
     await tester.pumpAndSettle();
     // Nobody can see the links this save is about to restate, which is the whole point.
-    expect(find.text('الصنف المخزني'), findsNothing);
+    expect(find.text('مقاس المادة'), findsNothing);
 
     // Act — nothing edited; just Save. No `pumpAndSettle` after the tap: the button carries a
     // repeating spinner while the request is in flight and would never settle.

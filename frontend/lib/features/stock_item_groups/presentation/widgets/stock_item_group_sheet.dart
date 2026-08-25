@@ -99,8 +99,8 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
       context: context,
       title: 'إعادة تسمية «${group.name}»؟',
       description:
-          'الصنف المخزني يحمل اسم مجموعته، فتغيير الاسم هنا يُعيد تسمية '
-          '${count == null ? 'كل صنف مسجّل تحتها' : '${count.grouped} صنفاً مسجّلاً تحتها'} '
+          'المقاس يحمل اسم مادته، فتغيير الاسم هنا يُعيد تسمية '
+          '${count == null ? 'كل مقاس مسجّل تحتها' : '${count.grouped} مقاساً مسجّلاً تحتها'} '
           'في نفس اللحظة. الأرصدة وطبقات التكلفة لا تتغيّر، لكن الاسم القديم يختفي من كل شاشة.',
       severity: DialogSeverity.warning,
       confirmLabel: 'إعادة التسمية',
@@ -139,7 +139,7 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
         switch (state) {
           case SaveStockItemGroupSuccess(:final group):
             context.showSuccess(
-              _isEditing ? 'تم تحديث المجموعة' : 'تم إضافة المجموعة',
+              _isEditing ? 'تم تحديث المادة' : 'تم إضافة المادة',
             );
             Navigator.of(context).pop(group);
           case SaveStockItemGroupFailure(:final failure):
@@ -183,7 +183,7 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
                   ),
                   SizedBox(height: 12.h),
                   Text(
-                    _isEditing ? 'تعديل المجموعة' : 'مجموعة أصناف جديدة',
+                    _isEditing ? 'تعديل المادة' : 'مادة جديدة',
                     style: context.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -346,7 +346,7 @@ class _DeleteRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppButton.outlined(
-      label: 'حذف المجموعة',
+      label: 'حذف المادة',
       onPressed: () async {
         final deleted = await onDelete();
 

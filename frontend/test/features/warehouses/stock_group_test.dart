@@ -115,7 +115,7 @@ void main() {
     // heading of its own — «صنف #1» says less than a name and a great deal more than nothing.
     expect(groups, hasLength(2));
     expect(groups.every((g) => g.isSingle), isTrue);
-    expect(groups.map((g) => g.materialName), ['صنف #1', 'صنف #2']);
+    expect(groups.map((g) => g.materialName), ['مقاس #1', 'مقاس #2']);
   });
 
   test('a card keeps its key when the list around it changes', () {

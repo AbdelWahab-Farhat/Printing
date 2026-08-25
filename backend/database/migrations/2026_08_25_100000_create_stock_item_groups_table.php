@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * «مجموعة أصناف» — the material a family of shelves is made of: «كيس شحن», «كيس ورقي».
+ * «المادة» — the family a shelf is a size of: «كيس شحن», «كيس ورقي».
  *
  * **A group holds nothing.** It has no balance, no cost layer and no size; it is the name every
  * one of its sizes shares. `stock_items` remains the only thing a warehouse can put a quantity

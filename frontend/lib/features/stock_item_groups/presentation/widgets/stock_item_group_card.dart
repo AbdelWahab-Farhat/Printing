@@ -107,7 +107,7 @@ class StockItemGroupCard extends StatelessWidget {
                   onPressed: onEdit,
                   icon: Icon(AppIcons.edit, size: 20.sp),
                   color: scheme.onSurfaceVariant,
-                  tooltip: 'تعديل المجموعة',
+                  tooltip: 'تعديل المادة',
                 ),
             ],
           ),
@@ -140,7 +140,7 @@ class _Counts extends StatelessWidget {
           Text(
             // The server's own noun for a shelf — it is «صنف مخزني» in every refusal this
             // screen can produce, so the list counts the same thing by the same name.
-            count == 0 ? 'بلا أصناف' : '${count.grouped} صنفاً',
+            count == 0 ? 'بلا مقاسات' : '${count.grouped} مقاساً',
             style: context.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.w700,
               color: count == 0 ? scheme.onSurfaceVariant : scheme.primary,

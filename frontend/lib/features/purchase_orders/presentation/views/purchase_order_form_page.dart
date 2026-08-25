@@ -226,7 +226,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
     // anything on the screen looking like a duplicate.
     if (_lines.any((line) => line.stockItemId == picked.id)) {
       if (!mounted) return;
-      context.showInfo('هذا الصنف مضاف بالفعل');
+      context.showInfo('هذا المقاس مضاف بالفعل');
 
       return;
     }
@@ -411,7 +411,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
                   AppButton.tonal(
                     // «صنف» and no longer «مقاس»: what is added is a shelf, and the size is part
                     // of its name rather than a second choice after it.
-                    label: 'إضافة صنف',
+                    label: 'إضافة مقاس',
                     icon: AppIcons.add,
                     onPressed: _addLine,
                   ),

@@ -59,10 +59,10 @@ final class AuditAttributeLabels
         'cost_type' => 'نوع التكلفة',
         'warehouse_id' => 'المخزن',
         'vendor_id' => 'المورد',
-        'stock_item_id' => 'الصنف المخزني',
+        'stock_item_id' => 'مقاس المادة',
         // On a product it is «what this is made of», on a stock item «which material this is a
         // size of» — near enough the same sentence that one word serves both.
-        'stock_item_group_id' => 'مجموعة الأصناف',
+        'stock_item_group_id' => 'المادة',
         'product_variant_id' => 'المقاس',
         'order_id' => 'الطلبية',
         'recorded_by' => 'سجّلها',
@@ -152,9 +152,9 @@ final class AuditAttributeLabels
             'height_cm' => 'الارتفاع (سم)',
         ],
         // The material a family of shelves is made of. Renaming it renames every size of it, so
-        // «اسم المجموعة» is the entry somebody scanning a history will see most often.
+        // «اسم المادة» is the entry somebody scanning a history will see most often.
         'stock_item_group' => [
-            'name' => 'اسم المجموعة',
+            'name' => 'اسم المادة',
             'default_unit' => 'وحدة التخزين الافتراضية',
             'description' => 'الوصف',
         ],
@@ -168,7 +168,7 @@ final class AuditAttributeLabels
         // treating it as shared, and it would then be read as a claim that every *other* subject
         // has a `unit` column too. Same word everywhere, or it is not shared vocabulary.
         'stock_item' => [
-            'name' => 'اسم الصنف',
+            'name' => 'اسم المقاس',
             'width_cm' => 'العرض (سم)',
             'height_cm' => 'الارتفاع (سم)',
             'description' => 'الوصف',

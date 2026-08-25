@@ -88,7 +88,7 @@ abstract class StockMovement with _$StockMovement {
   String get quantityLabel => groupedDecimal(quantity);
 
   /// «كيس شحن 25*35» — the server's own composition, drawn as sent.
-  String get title => item?.displayName ?? 'صنف #$stockItemId';
+  String get title => item?.displayName ?? 'مقاس #$stockItemId';
 
   /// `S7`, in the accent a code wears everywhere in this app. Null only for a row that arrived
   /// without its item.

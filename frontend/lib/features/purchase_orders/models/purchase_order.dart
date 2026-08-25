@@ -322,7 +322,7 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
   /// **No product name, deliberately.** Two products draw on this line's shelf, so naming either
   /// of them would be picking one arbitrarily — and a buyer chasing a delivery would quote a
   /// product the vendor was never sold.
-  String get title => stockItem?.displayName ?? 'صنف #$stockItemId';
+  String get title => stockItem?.displayName ?? 'مقاس #$stockItemId';
 
   /// `S7` — the shelf's own code, in the space a product name and photograph used to occupy. The
   /// one part of a line safe to read down a phone line to a supplier.

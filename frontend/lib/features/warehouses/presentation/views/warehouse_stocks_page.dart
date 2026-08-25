@@ -136,8 +136,8 @@ class _StocksView extends StatelessWidget {
               builder: (context, state) => PagedListView<StockGroup>(
                 state: _grouped(state),
                 emptyMessage: switch (cubit.filter) {
-                  StockShelfFilter.low => 'لا توجد أصناف تحت حد التنبيه',
-                  StockShelfFilter.out => 'لا يوجد صنف نافد',
+                  StockShelfFilter.low => 'لا توجد مقاسات تحت حد التنبيه',
+                  StockShelfFilter.out => 'لا يوجد مقاس نافد',
                   StockShelfFilter.all => 'لا توجد أرصدة في هذا المخزن بعد',
                 },
                 onLoadMore: cubit.loadMore,

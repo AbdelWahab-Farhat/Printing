@@ -22,7 +22,7 @@ final class VariantHasNoStockItem extends DomainException
 {
     public static function make(string $variantName): self
     {
-        return new self("«{$variantName}» غير مرتبط بصنف مخزني — اربطه بصنف قبل حركة المخزون");
+        return new self("«{$variantName}» غير مرتبط بمقاس مادة — اربطه بمقاس قبل حركة المخزون");
     }
 
     /**

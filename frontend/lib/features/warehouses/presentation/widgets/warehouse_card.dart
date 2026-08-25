@@ -86,7 +86,7 @@ class WarehouseCard extends StatelessWidget {
               if (warehouse.stocksCount case final count?) ...[
                 SizedBox(width: 8.w),
                 Text(
-                  count == 0 ? 'فارغ' : '${count.grouped} صنفاً',
+                  count == 0 ? 'فارغ' : '${count.grouped} مقاساً',
                   style: context.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: count == 0 ? scheme.onSurfaceVariant : scheme.primary,

@@ -24,7 +24,7 @@ final class StockItemGroupInUse extends DomainException
         $parts = [];
 
         if ($items > 0) {
-            $parts[] = "{$items} صنفاً مخزنياً";
+            $parts[] = "{$items} مقاساً";
         }
 
         if ($products > 0) {
