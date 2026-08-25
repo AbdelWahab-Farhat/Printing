@@ -127,7 +127,11 @@ final class TransitionFields
             // each of them. `items.product` is not in the list query's eager set and strict mode
             // turns a forgotten load into an exception rather than a query per line, so it is
             // asked for once here rather than three times below.
-            $order->loadMissing('items.product');
+            // `items.product` for the labels, and `items.variant.stockItem` because the unit a
+            // line is stocked in now lives on the shelf — see {@see OrderItem::stockUnit()}.
+            // Asked for once here rather than three times below, and eagerly because strict mode
+            // turns a forgotten load into an exception rather than a query per line.
+            $order->loadMissing(['items.product', 'items.variant.stockItem']);
 
             // Where the stock this order consumes comes out of, asked exactly once per order —
             // see {@see \App\Domain\Order\Actions\DeductOrderStock}. `ready` is reached at most

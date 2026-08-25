@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Enums\MovementType;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -29,7 +29,7 @@ class StockMovementFactory extends Factory
     public function definition(): array
     {
         return [
-            'product_variant_id' => ProductVariant::factory(),
+            'stock_item_id' => StockItem::factory(),
             'from_warehouse_id' => null,
             'to_warehouse_id' => Warehouse::factory(),
             'quantity' => '50.000',
@@ -88,8 +88,8 @@ class StockMovementFactory extends Factory
         return $this->state(fn () => ['employee_id' => $employee->id]);
     }
 
-    public function forVariant(ProductVariant $variant): static
+    public function forStockItem(StockItem $item): static
     {
-        return $this->state(fn () => ['product_variant_id' => $variant->id]);
+        return $this->state(fn () => ['stock_item_id' => $item->id]);
     }
 }

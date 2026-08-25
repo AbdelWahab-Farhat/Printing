@@ -6,8 +6,8 @@ namespace App\Domain\Inventory\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Inventory\Actions\ApplyStockChange;
+use App\Domain\Inventory\Actions\SetStockItemUnit;
 use Database\Factories\WarehouseStockFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -28,12 +28,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * `low_stock_threshold` *is* fillable, because it is the opposite kind of thing: a preference
  * someone sets, not a fact the business observed.
  *
- * `unit` is not fillable: a snapshot of `productVariant->product->stock_unit`, written once by
- * {@see ApplyStockChange::increase()} the first time this (warehouse, variant) pair gets a
- * balance. Changed after that only by {@see \App\Domain\Inventory\Actions\SetStockUnit}, which is
- * what keeps every balance and batch for a product's variants agreeing with each other and with
- * `products.stock_unit` — the same treatment `purchase_order_items.unit` gets on arrival, with one
+ * `unit` is not fillable: a snapshot of `stockItem->unit`, written once by
+ * {@see ApplyStockChange::increase()} the first time this (warehouse, item) pair gets a balance.
+ * Changed after that only by {@see SetStockItemUnit}, which is what
+ * keeps every balance and batch for one shelf agreeing with each other and with
+ * `stock_items.unit` — the same treatment `purchase_order_items.unit` gets on arrival, with one
  * further write path added deliberately for this one column.
+ *
+ * It used to snapshot `products.stock_unit`, reached through the variant this row was keyed on.
+ * That column is gone: two products sharing one pile could each claim a different answer for it,
+ * and whichever movement ran first decided what the balance meant.
  */
 #[UseFactory(WarehouseStockFactory::class)]
 #[Fillable(['low_stock_threshold'])]
@@ -65,20 +69,20 @@ class WarehouseStock extends Model
     }
 
     /**
-     * The size this balance is of.
+     * The shelf this balance is of.
      *
-     * **Read-only, and the only cross-context relation in the codebase.** Inventory may depend
-     * on Catalog (never the other way round), but the rule in RULES.md §3 is that decisions
-     * cross a context boundary through its Service — so this relation exists purely to
-     * eager-load a label for rendering. Anything Inventory needs to *decide* about a variant —
-     * does it exist, may it be moved in fractions — is asked of `CatalogService`, never of this
-     * relation.
+     * **Same context, and that is the point of the move.** This used to reach across into Catalog
+     * for a `ProductVariant` — the one cross-context relation in the codebase, carefully limited
+     * to eager-loading a label because RULES.md §3 says decisions cross a boundary through a
+     * Service. Stock is keyed on a {@see StockItem} now, which Inventory owns, so the exception is
+     * no longer needed: the unit this row is checked against and the name it renders both come
+     * from a model in this module.
      *
-     * @return BelongsTo<ProductVariant, $this>
+     * @return BelongsTo<StockItem, $this>
      */
-    public function productVariant(): BelongsTo
+    public function stockItem(): BelongsTo
     {
-        return $this->belongsTo(ProductVariant::class);
+        return $this->belongsTo(StockItem::class);
     }
 
     /**

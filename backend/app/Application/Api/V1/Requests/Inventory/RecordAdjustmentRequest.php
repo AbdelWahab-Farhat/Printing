@@ -28,9 +28,9 @@ class RecordAdjustmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_variant_id' => [
+            'stock_item_id' => [
                 'required', 'integer',
-                Rule::exists('product_variants', 'id')->whereNull('deleted_at'),
+                Rule::exists('stock_items', 'id')->whereNull('deleted_at'),
             ],
 
             'warehouse_id' => [
@@ -67,8 +67,8 @@ class RecordAdjustmentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'product_variant_id.required' => 'المنتج والمقاس مطلوبان',
-            'product_variant_id.exists' => 'المقاس المحدد غير موجود',
+            'stock_item_id.required' => 'الصنف المخزني مطلوب',
+            'stock_item_id.exists' => 'الصنف المخزني المحدد غير موجود',
             'warehouse_id.required' => 'المخزن مطلوب',
             'warehouse_id.exists' => 'المخزن غير موجود',
             'direction.required' => 'اتجاه التسوية مطلوب',
@@ -93,7 +93,7 @@ class RecordAdjustmentRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'product_variant_id' => 'المقاس',
+            'stock_item_id' => 'الصنف المخزني',
             'warehouse_id' => 'المخزن',
             'direction' => 'اتجاه التسوية',
             'quantity' => 'الكمية',

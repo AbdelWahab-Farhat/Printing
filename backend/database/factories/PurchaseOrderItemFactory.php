@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -23,7 +23,7 @@ class PurchaseOrderItemFactory extends Factory
     {
         return [
             'purchase_order_id' => PurchaseOrder::factory(),
-            'product_variant_id' => ProductVariant::factory(),
+            'stock_item_id' => StockItem::factory(),
             'quantity_ordered' => '10.000',
             'quantity_received' => '0.000',
             'base_total_cost' => '50.00',
@@ -43,8 +43,8 @@ class PurchaseOrderItemFactory extends Factory
         return $this->state(fn () => ['purchase_order_id' => $order->id]);
     }
 
-    public function ofVariant(ProductVariant $variant): static
+    public function ofStockItem(StockItem $item): static
     {
-        return $this->state(fn () => ['product_variant_id' => $variant->id]);
+        return $this->state(fn () => ['stock_item_id' => $item->id]);
     }
 }

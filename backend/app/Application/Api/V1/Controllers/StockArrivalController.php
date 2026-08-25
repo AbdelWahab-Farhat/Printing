@@ -81,7 +81,7 @@ class StockArrivalController extends Controller
     public function show(StockArrival $stockArrival): JsonResponse
     {
         return $this->success(new StockArrivalResource(
-            $stockArrival->load(['vendor', 'warehouse', 'receivedByUser', 'items.productVariant.product']),
+            $stockArrival->load(['vendor', 'warehouse', 'receivedByUser', 'items.stockItem']),
         ));
     }
 

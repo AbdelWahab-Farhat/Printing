@@ -28,16 +28,19 @@ class StockMovementResource extends JsonResource
             // this added or removed — see the migration for the four shapes.
             'quantity' => (string) $this->quantity,
 
-            'product_variant_id' => $this->product_variant_id,
-            'product_variant' => $this->whenLoaded('productVariant', fn (): array => [
-                'id' => $this->productVariant->id,
-                'label' => $this->productVariant->label,
-                'product_id' => $this->productVariant->product_id,
-                // The code, because it is what staff say out loud — «عندك P7؟» — and the one
-                // thing on this row that is safe to read down a phone line. Free: the product
-                // is already loaded for its name.
-                'product_code' => $this->productVariant->product->code,
-                'product_name' => $this->productVariant->product->name,
+            'stock_item_id' => $this->stock_item_id,
+            // What moved: a shelf, not a product's size. Which product a movement was ultimately
+            // for is `reference_id` and the order behind it — two products can draw on one pile,
+            // so the item alone was never going to say.
+            'stock_item' => $this->whenLoaded('stockItem', fn (): array => [
+                'id' => $this->stockItem->id,
+                // The code, because it is what staff say out loud — «عندك S7؟» — and the one
+                // thing on this row that is safe to read down a phone line.
+                'code' => $this->stockItem->code,
+                'name' => $this->stockItem->name,
+                'width_cm' => $this->stockItem->width_cm,
+                'height_cm' => $this->stockItem->height_cm,
+                'display_name' => $this->stockItem->displayName(),
             ]),
 
             'from_warehouse_id' => $this->from_warehouse_id,

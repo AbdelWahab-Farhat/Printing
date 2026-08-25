@@ -48,9 +48,9 @@ class UpdatePurchaseOrderRequest extends StorePurchaseOrderRequest
             // line whose id is missing from this set is removed — see UpdatePurchaseOrder.
             'items.*.id' => ['nullable', 'integer'],
 
-            'items.*.product_variant_id' => [
+            'items.*.stock_item_id' => [
                 'required', 'integer', 'distinct',
-                Rule::exists('product_variants', 'id')->whereNull('deleted_at'),
+                Rule::exists('stock_items', 'id')->whereNull('deleted_at'),
             ],
 
             'items.*.quantity_ordered' => ['required', 'numeric', 'gt:0', 'max:999999999.999'],
@@ -80,7 +80,7 @@ class UpdatePurchaseOrderRequest extends StorePurchaseOrderRequest
             'notes' => 'الملاحظات',
             'items' => 'البنود',
             'items.*.id' => 'معرف البند',
-            'items.*.product_variant_id' => 'المقاس',
+            'items.*.stock_item_id' => 'الصنف المخزني',
             'items.*.quantity_ordered' => 'الكمية المطلوبة',
             'items.*.base_total_cost' => 'التكلفة الإجمالية للبند',
             'additional_costs' => 'التكاليف الإضافية',

@@ -28,10 +28,10 @@ class ProductFactory extends Factory
             'name' => 'كيس '.fake()->word(),
             'description' => fake()->sentence(),
             'features' => ['مقاوم للماء', 'إمكانية طباعة الشعار'],
+            // What the customer is charged by. What the *warehouse* counts a product's sizes in
+            // lives on the stock item each size draws from, and the two are still allowed to
+            // differ — see StockItemFactory::weighed().
             'pricing_unit' => PricingUnit::Piece,
-            // Equal to `pricing_unit` by default, same as every product the migration backfilled
-            // — a test that wants them to differ overrides this explicitly.
-            'stock_unit' => PricingUnit::Piece,
             'pricing_mode' => PricingMode::Tiered,
             'min_order_quantity' => 100,
             'is_active' => true,
@@ -44,7 +44,6 @@ class ProductFactory extends Factory
     {
         return $this->state(fn () => [
             'pricing_unit' => PricingUnit::Kilogram,
-            'stock_unit' => PricingUnit::Kilogram,
             'min_order_quantity' => 5,
         ]);
     }

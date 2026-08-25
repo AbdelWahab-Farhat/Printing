@@ -3,9 +3,9 @@
 namespace Database\Factories;
 
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Inventory\Enums\StockBatchSourceType;
 use App\Domain\Inventory\Models\StockBatch;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -32,7 +32,7 @@ class WarehouseStockFactory extends Factory
     {
         return [
             'warehouse_id' => Warehouse::factory(),
-            'product_variant_id' => ProductVariant::factory(),
+            'stock_item_id' => StockItem::factory(),
             'quantity' => '100.000',
             'low_stock_threshold' => null,
             'unit' => PricingUnit::Piece,
@@ -56,7 +56,7 @@ class WarehouseStockFactory extends Factory
 
             StockBatch::factory()->create([
                 'warehouse_id' => $stock->warehouse_id,
-                'product_variant_id' => $stock->product_variant_id,
+                'stock_item_id' => $stock->stock_item_id,
                 'source_type' => StockBatchSourceType::OpeningBalance,
                 'unit_cost' => '0.000',
                 'quantity_received' => $stock->quantity,

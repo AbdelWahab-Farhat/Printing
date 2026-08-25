@@ -53,12 +53,12 @@ final class ApplyStockChange
      */
     public function decrease(
         int $warehouseId,
-        int $productVariantId,
+        int $stockItemId,
         string $quantity,
         PricingUnit $unit,
         int $stockMovementId,
     ): StockChangeResult {
-        $stock = $this->lockedRow($warehouseId, $productVariantId);
+        $stock = $this->lockedRow($warehouseId, $stockItemId);
 
         // No row at all means this size has never been here, which is the same answer as a
         // balance of zero — and gives the storekeeper the number they need either way. Checked
@@ -79,7 +79,7 @@ final class ApplyStockChange
         $stock->quantity = bcsub($available, $quantity, 3);
         $stock->save();
 
-        $consumed = ($this->consumeBatches)($warehouseId, $productVariantId, $quantity, $stockMovementId);
+        $consumed = ($this->consumeBatches)($warehouseId, $stockItemId, $quantity, $stockMovementId);
 
         return new StockChangeResult($stock, $consumed);
     }
@@ -101,16 +101,16 @@ final class ApplyStockChange
      */
     public function increase(
         int $warehouseId,
-        int $productVariantId,
+        int $stockItemId,
         string $quantity,
         PricingUnit $unit,
         string $unitCost,
         StockBatchSourceType $sourceType,
         ?int $stockArrivalItemId = null,
     ): WarehouseStock {
-        $stock = $this->growBalance($warehouseId, $productVariantId, $quantity, $unit);
+        $stock = $this->growBalance($warehouseId, $stockItemId, $quantity, $unit);
 
-        $this->openBatch($warehouseId, $productVariantId, $quantity, $unitCost, $unit, $sourceType, $stockArrivalItemId, Carbon::now());
+        $this->openBatch($warehouseId, $stockItemId, $quantity, $unitCost, $unit, $sourceType, $stockArrivalItemId, Carbon::now());
 
         return $stock;
     }
@@ -130,17 +130,17 @@ final class ApplyStockChange
      */
     public function relocateBatches(
         int $warehouseId,
-        int $productVariantId,
+        int $stockItemId,
         PricingUnit $unit,
         array $consumed,
     ): WarehouseStock {
         $total = array_reduce($consumed, fn (string $carry, BatchDraw $draw) => bcadd($carry, $draw->quantity, 3), '0');
 
-        $stock = $this->growBalance($warehouseId, $productVariantId, $total, $unit);
+        $stock = $this->growBalance($warehouseId, $stockItemId, $total, $unit);
 
         foreach ($consumed as $draw) {
             $this->openBatch(
-                $warehouseId, $productVariantId, $draw->quantity, $draw->unitCost, $unit,
+                $warehouseId, $stockItemId, $draw->quantity, $draw->unitCost, $unit,
                 $draw->sourceType, $draw->stockArrivalItemId, Carbon::parse($draw->receivedAt),
             );
         }
@@ -161,7 +161,7 @@ final class ApplyStockChange
      */
     public function creditBack(
         int $warehouseId,
-        int $productVariantId,
+        int $stockItemId,
         PricingUnit $unit,
         int $reversedMovementId,
     ): WarehouseStock {
@@ -169,7 +169,7 @@ final class ApplyStockChange
             ->where('stock_movement_id', $reversedMovementId)
             ->sum('quantity');
 
-        $stock = $this->growBalance($warehouseId, $productVariantId, $total, $unit);
+        $stock = $this->growBalance($warehouseId, $stockItemId, $total, $unit);
 
         ($this->creditBackBatches)($reversedMovementId);
 
@@ -185,14 +185,14 @@ final class ApplyStockChange
      * held by this transaction is a no-op, so calling this before `decrease()`/`relocateBatches()`
      * touch the same row costs nothing.
      */
-    public function lockBalance(int $warehouseId, int $productVariantId): void
+    public function lockBalance(int $warehouseId, int $stockItemId): void
     {
-        $this->lockedRow($warehouseId, $productVariantId);
+        $this->lockedRow($warehouseId, $stockItemId);
     }
 
-    private function growBalance(int $warehouseId, int $productVariantId, string $quantity, PricingUnit $unit): WarehouseStock
+    private function growBalance(int $warehouseId, int $stockItemId, string $quantity, PricingUnit $unit): WarehouseStock
     {
-        $stock = $this->lockedRow($warehouseId, $productVariantId);
+        $stock = $this->lockedRow($warehouseId, $stockItemId);
 
         if ($stock === null) {
             // Created inside the caller's transaction and under the same unique index that makes
@@ -205,7 +205,7 @@ final class ApplyStockChange
             // mode — and, worse, would still write a row, with a quantity of zero.
             $stock = new WarehouseStock;
             $stock->warehouse_id = $warehouseId;
-            $stock->product_variant_id = $productVariantId;
+            $stock->stock_item_id = $stockItemId;
             $stock->quantity = $quantity;
             $stock->unit = $unit;
             $stock->save();
@@ -223,7 +223,7 @@ final class ApplyStockChange
 
     private function openBatch(
         int $warehouseId,
-        int $productVariantId,
+        int $stockItemId,
         string $quantity,
         string $unitCost,
         PricingUnit $unit,
@@ -233,7 +233,7 @@ final class ApplyStockChange
     ): void {
         $batch = new StockBatch;
         $batch->warehouse_id = $warehouseId;
-        $batch->product_variant_id = $productVariantId;
+        $batch->stock_item_id = $stockItemId;
         $batch->source_type = $sourceType;
         $batch->stock_arrival_item_id = $stockArrivalItemId;
         $batch->unit_cost = $unitCost;
@@ -261,11 +261,11 @@ final class ApplyStockChange
     /**
      * The balance row for this size in this warehouse, locked until the transaction ends.
      */
-    private function lockedRow(int $warehouseId, int $productVariantId): ?WarehouseStock
+    private function lockedRow(int $warehouseId, int $stockItemId): ?WarehouseStock
     {
         return WarehouseStock::query()
             ->where('warehouse_id', $warehouseId)
-            ->where('product_variant_id', $productVariantId)
+            ->where('stock_item_id', $stockItemId)
             ->lockForUpdate()
             ->first();
     }

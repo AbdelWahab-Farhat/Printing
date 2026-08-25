@@ -23,11 +23,11 @@ final class ConsumeStockBatchesFifo
     /**
      * @return list<BatchDraw>
      */
-    public function __invoke(int $warehouseId, int $productVariantId, string $quantity, int $stockMovementId): array
+    public function __invoke(int $warehouseId, int $stockItemId, string $quantity, int $stockMovementId): array
     {
         $batches = StockBatch::query()
             ->where('warehouse_id', $warehouseId)
-            ->where('product_variant_id', $productVariantId)
+            ->where('stock_item_id', $stockItemId)
             ->where('quantity_remaining', '>', 0)
             ->orderBy('received_at')
             ->orderBy('id')
@@ -82,7 +82,7 @@ final class ConsumeStockBatchesFifo
         if (bccomp($remaining, '0', 3) > 0) {
             $available = Money::sum(...array_map(fn (BatchDraw $draw) => $draw->quantity, $draws));
 
-            throw InsufficientBatchStock::make($warehouseId, $productVariantId, $available, $quantity);
+            throw InsufficientBatchStock::make($warehouseId, $stockItemId, $available, $quantity);
         }
 
         return $draws;

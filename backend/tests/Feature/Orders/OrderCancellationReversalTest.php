@@ -68,7 +68,7 @@ class OrderCancellationReversalTest extends TestCase
     {
         return (string) (WarehouseStock::query()
             ->where('warehouse_id', $warehouse->id)
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $variant->stock_item_id)
             ->first()?->quantity ?? '0.000');
     }
 
@@ -81,12 +81,12 @@ class OrderCancellationReversalTest extends TestCase
         $headers = $this->foreman();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id, 'to_warehouse_id' => $warehouse->id,
+            'stock_item_id' => $variant->stock_item_id, 'to_warehouse_id' => $warehouse->id,
             'quantity' => 60, 'unit_cost' => 5,
         ])->assertCreated();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id, 'to_warehouse_id' => $warehouse->id,
+            'stock_item_id' => $variant->stock_item_id, 'to_warehouse_id' => $warehouse->id,
             'quantity' => 60, 'unit_cost' => 8,
         ])->assertCreated();
 
@@ -150,7 +150,7 @@ class OrderCancellationReversalTest extends TestCase
         $headers = $this->foreman();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id, 'to_warehouse_id' => $warehouse->id,
+            'stock_item_id' => $variant->stock_item_id, 'to_warehouse_id' => $warehouse->id,
             'quantity' => 50, 'unit_cost' => 1,
         ])->assertCreated();
 

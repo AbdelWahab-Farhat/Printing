@@ -39,9 +39,9 @@ class ReceivePurchaseOrderArrivalRequest extends FormRequest
 
             'items' => ['required', 'array', 'min:1'],
 
-            'items.*.product_variant_id' => [
+            'items.*.stock_item_id' => [
                 'required', 'integer', 'distinct',
-                Rule::exists('product_variants', 'id')->whereNull('deleted_at'),
+                Rule::exists('stock_items', 'id')->whereNull('deleted_at'),
             ],
 
             // `gt:0`, not `min:0` — a line of nothing is not a delivery, the same rule
@@ -61,9 +61,9 @@ class ReceivePurchaseOrderArrivalRequest extends FormRequest
             'notes.max' => 'الملاحظات طويلة جداً',
             'items.required' => 'يجب إضافة بند واحد على الأقل',
             'items.min' => 'يجب إضافة بند واحد على الأقل',
-            'items.*.product_variant_id.required' => 'المنتج والمقاس مطلوبان',
-            'items.*.product_variant_id.exists' => 'المقاس المحدد غير موجود',
-            'items.*.product_variant_id.distinct' => 'لا يمكن تكرار نفس المقاس أكثر من مرة في الشحنة',
+            'items.*.stock_item_id.required' => 'الصنف المخزني مطلوب',
+            'items.*.stock_item_id.exists' => 'الصنف المخزني المحدد غير موجود',
+            'items.*.stock_item_id.distinct' => 'لا يمكن تكرار نفس الصنف أكثر من مرة في الشحنة',
             'items.*.quantity.required' => 'الكمية مطلوبة',
             'items.*.quantity.numeric' => 'الكمية يجب أن تكون رقماً',
             'items.*.quantity.gt' => 'الكمية يجب أن تكون أكبر من صفر',
@@ -80,7 +80,7 @@ class ReceivePurchaseOrderArrivalRequest extends FormRequest
             'invoice_number' => 'رقم الفاتورة',
             'notes' => 'الملاحظات',
             'items' => 'البنود',
-            'items.*.product_variant_id' => 'المقاس',
+            'items.*.stock_item_id' => 'الصنف المخزني',
             'items.*.quantity' => 'الكمية',
         ];
     }

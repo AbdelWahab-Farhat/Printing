@@ -26,6 +26,6 @@ final class SetLowStockThreshold
         // Down to the pictures, because the resource renders one. Loading the product but not
         // its images would leave the last hop to be fetched lazily — an extra query per update
         // in production, and a strict-mode exception everywhere else.
-        return $stock->load('productVariant.product.images');
+        return $stock->load('stockItem');
     }
 }

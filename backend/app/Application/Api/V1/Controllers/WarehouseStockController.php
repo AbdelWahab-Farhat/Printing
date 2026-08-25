@@ -46,13 +46,13 @@ class WarehouseStockController extends Controller
      * been used up stays as a line at `0.000` — its history is worth more than the tidiness of
      * removing it.
      *
-     * Filter with `product_variant_id`, `in_stock`, and `low_stock` — the last of which finds the
+     * Filter with `stock_item_id`, `in_stock`, and `low_stock` — the last of which finds the
      * lines that have fallen to the level someone asked to be warned at. A line with no threshold
      * set is outside that question and appears in neither `low_stock=true` nor `low_stock=false`.
      */
     public function index(Request $request, Warehouse $warehouse): JsonResponse
     {
-        $filters = StockFilters::fromArray($request->only(['product_variant_id', 'low_stock', 'in_stock']));
+        $filters = StockFilters::fromArray($request->only(['stock_item_id', 'low_stock', 'in_stock']));
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
         return $this->successWithPagination(

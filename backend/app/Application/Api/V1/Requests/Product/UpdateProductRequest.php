@@ -51,6 +51,14 @@ class UpdateProductRequest extends StoreProductRequest
                 Rule::exists('product_categories', 'id')->whereNull('deleted_at'),
                 new CategoryMustBeALeaf,
             ],
+            // See StoreProductRequest. Omitting it leaves the current material alone — there is
+            // deliberately no way to *clear* it here, because doing so would silently detach every
+            // one of the product's sizes from its shelf on this very save.
+            'stock_item_group_id' => [
+                'nullable', 'integer',
+                Rule::exists('stock_item_groups', 'id')->whereNull('deleted_at'),
+            ],
+
             'pricing_unit' => ['required', Rule::enum(PricingUnit::class)],
             'pricing_mode' => ['required', Rule::enum(PricingMode::class)],
 
@@ -64,6 +72,8 @@ class UpdateProductRequest extends StoreProductRequest
             // left out is deleted.
             'variants' => ['sometimes', 'array'],
             'variants.*.id' => ['sometimes', 'integer', $this->variantBelongsToThisProduct()],
+            // See StoreProductRequest for why this is nullable rather than required.
+            'variants.*.stock_item_id' => ['nullable', 'integer', Rule::exists('stock_items', 'id')->whereNull('deleted_at')],
             'variants.*.label' => ['required', 'string', 'max:60', 'distinct'],
             'variants.*.width_cm' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'variants.*.height_cm' => ['nullable', 'integer', 'min:1', 'max:1000'],

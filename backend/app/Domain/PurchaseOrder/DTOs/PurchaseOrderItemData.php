@@ -9,7 +9,7 @@ use App\Domain\Vendor\DTOs\StockArrivalItemData;
 final readonly class PurchaseOrderItemData
 {
     public function __construct(
-        public int $productVariantId,
+        public int $stockItemId,
         /** Always positive, normalised to three decimal places — see {@see quantityOrdered()}. */
         public string $quantityOrdered,
         /**
@@ -31,7 +31,7 @@ final readonly class PurchaseOrderItemData
     public static function fromArray(array $validated): self
     {
         return new self(
-            productVariantId: (int) $validated['product_variant_id'],
+            stockItemId: (int) $validated['stock_item_id'],
             quantityOrdered: self::quantityOrdered($validated['quantity_ordered']),
             baseTotalCost: self::money($validated['base_total_cost']),
             id: isset($validated['id']) ? (int) $validated['id'] : null,

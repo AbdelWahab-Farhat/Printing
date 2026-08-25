@@ -21,7 +21,7 @@ class WarehouseStockResource extends JsonResource
         return [
             'id' => $this->id,
             'warehouse_id' => $this->warehouse_id,
-            'product_variant_id' => $this->product_variant_id,
+            'stock_item_id' => $this->stock_item_id,
 
             // Strings, never numbers. A shelf count is compared against a ledger, and "1250.000"
             // survives a client's JSON parser intact where 1250.0 does not — the same reason
@@ -40,25 +40,24 @@ class WarehouseStockResource extends JsonResource
             'unit' => $this->unit->value,
             'unit_label' => $this->unit->label(),
 
-            // Which size this is, and what it belongs to — a storekeeper reads "كيس شحن · 25*35",
-            // not an id. Flattened rather than nested because the variant is only ever met
-            // through a balance line here, and a client should not have to walk two levels for
-            // a label.
-            'product_variant' => $this->whenLoaded('productVariant', fn (): array => [
-                'id' => $this->productVariant->id,
-                'label' => $this->productVariant->label,
-                'product_id' => $this->productVariant->product_id,
-                // The code, because it is what staff say out loud — «عندك P7؟» — and the one
-                // thing on this row that is safe to read down a phone line. Free: the product
-                // is already loaded for its name.
-                'product_code' => $this->productVariant->product->code,
-                'product_name' => $this->productVariant->product->name,
-                // The picture, because a storekeeper standing in front of a shelf recognises a
-                // bag before they read its name. It belongs to the *product*, so every size of
-                // «أكياس الشحن» shares one — there are no pictures at size level and inventing
-                // per-size ones would be a catalogue change, not a rendering one. Null for a
-                // product that has none, rather than an absent key a client has to guess about.
-                'image_url' => $this->productVariant->product->images->first()?->url(),
+            // What is on this shelf — a storekeeper reads «كيس شحن 25*35», not an id. Flattened
+            // rather than nested because the item is only ever met through a balance line here,
+            // and a client should not have to walk two levels for a label.
+            //
+            // **No product, deliberately.** A pile is not one product's: كيس شحن سادة and
+            // كيس شحن مطبوع both draw on this row, so naming either of them here would be picking
+            // one arbitrarily and telling the storekeeper the wrong thing. Which products use a
+            // shelf is a question the stock item's own screen answers.
+            'stock_item' => $this->whenLoaded('stockItem', fn (): array => [
+                'id' => $this->stockItem->id,
+                // The code, because it is what staff say out loud — «عندك S7؟» — and the one
+                // thing on this row that is safe to read down a phone line.
+                'code' => $this->stockItem->code,
+                'name' => $this->stockItem->name,
+                'width_cm' => $this->stockItem->width_cm,
+                'height_cm' => $this->stockItem->height_cm,
+                // Composed rather than stored, so renaming the material renames every shelf.
+                'display_name' => $this->stockItem->displayName(),
             ]),
 
             'created_at' => $this->created_at?->toIso8601String(),

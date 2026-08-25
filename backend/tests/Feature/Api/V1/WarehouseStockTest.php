@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
-use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,10 +72,10 @@ class WarehouseStockTest extends TestCase
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->size(25, 35)->create();
+        $variant = StockItem::factory()->size(25, 35)->create();
         WarehouseStock::factory()->quantity('1250.000')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
         ]);
         $headers = $this->viewer();
 
@@ -87,17 +87,17 @@ class WarehouseStockTest extends TestCase
             ->assertJsonPath('status', true)
             ->assertJsonPath('data.0.quantity', '1250.000')
             ->assertJsonPath('data.0.warehouse_id', $warehouse->id)
-            ->assertJsonPath('data.0.product_variant.label', '25*35')
+            ->assertJsonPath('data.0.stock_item.display_name', 'كيس شحن 25*35')
             // The code travels with the balance, because it is what staff say out loud and
             // what the app puts on the row so a shelf can be read down a phone line.
-            ->assertJsonPath('data.0.product_variant.product_code', $variant->product->code)
+            ->assertJsonPath('data.0.stock_item.code', $variant->code)
             ->assertJsonStructure([
                 'status',
                 'message',
                 'data' => [[
-                    'id', 'warehouse_id', 'product_variant_id', 'quantity',
+                    'id', 'warehouse_id', 'stock_item_id', 'quantity',
                     'low_stock_threshold', 'is_low_stock',
-                    'product_variant' => ['id', 'label', 'product_id', 'product_code', 'product_name'],
+                    'stock_item' => ['id', 'code', 'name', 'width_cm', 'height_cm', 'display_name'],
                 ]],
                 'meta' => ['current_page', 'per_page', 'last_page', 'total'],
             ]);
@@ -225,17 +225,17 @@ class WarehouseStockTest extends TestCase
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        $wanted = ProductVariant::factory()->create();
+        $wanted = StockItem::factory()->create();
         WarehouseStock::factory()->quantity('7.000')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $wanted->id,
+            'stock_item_id' => $wanted->id,
         ]);
         WarehouseStock::factory()->create(['warehouse_id' => $warehouse->id]);
         $headers = $this->viewer();
 
         // Act
         $response = $this->withHeaders($headers)
-            ->getJson("/api/v1/warehouses/{$warehouse->id}/stocks?product_variant_id={$wanted->id}");
+            ->getJson("/api/v1/warehouses/{$warehouse->id}/stocks?stock_item_id={$wanted->id}");
 
         // Assert
         $response->assertOk()
@@ -530,41 +530,23 @@ class WarehouseStockTest extends TestCase
         $this->assertDatabaseHas('warehouse_stocks', ['id' => $stock->id, 'quantity' => '100.000']);
     }
 
-    // ──────────────────────────────── the picture ────────────────────────────────
+    // ──────────────────────────── what a line names ────────────────────────────
+    //
+    // A balance line used to carry its product's name, code and primary picture, because it was
+    // keyed on one product's size. It is keyed on a shelf now, and a shelf is not one product's:
+    // كيس شحن سادة and كيس شحن مطبوع both draw on it. Naming or picturing either of them would
+    // be picking one arbitrarily and telling the storekeeper the wrong thing — so the line names
+    // the pile, and «which products use this shelf» is the stock item's own screen.
 
-    public function test_a_balance_line_carries_its_products_primary_picture(): void
-    {
-        // Arrange — a storekeeper finds a bag by looking at it, and the picture belongs to the
-        // product, so every size of it shares one
-        $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
-        ProductImage::factory()->create(['product_id' => $variant->product_id, 'sort_order' => 5]);
-        ProductImage::factory()->primary()->create([
-            'product_id' => $variant->product_id,
-            'path' => 'products/the-primary-one.jpg',
-        ]);
-        WarehouseStock::factory()->create([
-            'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
-        ]);
-        $headers = $this->viewer();
-
-        // Act
-        $response = $this->withHeaders($headers)->getJson("/api/v1/warehouses/{$warehouse->id}/stocks");
-
-        // Assert
-        $response->assertOk();
-        $this->assertStringContainsString(
-            'the-primary-one.jpg',
-            (string) $response->json('data.0.product_variant.image_url'),
-        );
-    }
-
-    public function test_a_product_with_no_picture_sends_a_null_rather_than_omitting_the_field(): void
+    public function test_a_balance_line_names_the_shelf_rather_than_any_one_product(): void
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        WarehouseStock::factory()->create(['warehouse_id' => $warehouse->id]);
+        $item = StockItem::factory()->named('كيس شحن')->size(25, 35)->create();
+        WarehouseStock::factory()->quantity('1250.000')->create([
+            'warehouse_id' => $warehouse->id,
+            'stock_item_id' => $item->id,
+        ]);
         $headers = $this->viewer();
 
         // Act
@@ -572,48 +554,50 @@ class WarehouseStockTest extends TestCase
 
         // Assert
         $response->assertOk()
-            ->assertJsonPath('data.0.product_variant.image_url', null)
-            ->assertJsonStructure(['data' => [['product_variant' => ['image_url']]]]);
+            ->assertJsonPath('data.0.stock_item.name', 'كيس شحن')
+            ->assertJsonPath('data.0.stock_item.display_name', 'كيس شحن 25*35')
+            // The code travels with the balance, because it is what staff say out loud and what
+            // the app puts on the row so a shelf can be read down a phone line.
+            ->assertJsonPath('data.0.stock_item.code', $item->code);
+
+        // …and nothing about a product, deliberately.
+        $this->assertNull($response->json('data.0.product_variant'));
     }
 
-    public function test_listing_a_shelf_of_pictured_products_stays_one_query_for_the_pictures(): void
+    public function test_two_products_sharing_a_shelf_produce_one_line_not_two(): void
     {
-        // Arrange — strict mode turns a forgotten eager load into an exception, and this is the
-        // test that would raise it
+        // Arrange — the whole point of the change: كيس شحن سادة 25*35 and كيس شحن مطبوع 25*35
+        // are two catalogue rows and one pile of bags
         $warehouse = Warehouse::factory()->create();
-        foreach (range(1, 3) as $ignored) {
-            $variant = ProductVariant::factory()->create();
-            ProductImage::factory()->primary()->create(['product_id' => $variant->product_id]);
-            WarehouseStock::factory()->create([
-                'warehouse_id' => $warehouse->id,
-                'product_variant_id' => $variant->id,
-            ]);
-        }
+        $item = StockItem::factory()->named('كيس شحن')->size(25, 35)->create();
+
+        ProductVariant::factory()->drawingFrom($item)->create();
+        ProductVariant::factory()->drawingFrom($item)->create();
+
+        WarehouseStock::factory()->quantity('700.000')->create([
+            'warehouse_id' => $warehouse->id,
+            'stock_item_id' => $item->id,
+        ]);
         $headers = $this->viewer();
 
         // Act
         $response = $this->withHeaders($headers)->getJson("/api/v1/warehouses/{$warehouse->id}/stocks");
 
         // Assert
-        $response->assertOk()->assertJsonCount(3, 'data');
-        foreach (range(0, 2) as $index) {
-            $this->assertNotNull($response->json("data.{$index}.product_variant.image_url"));
-        }
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.quantity', '700.000');
     }
 
-    public function test_the_threshold_reply_carries_the_same_picture_the_list_does(): void
+    public function test_the_threshold_reply_names_the_shelf_the_same_way_the_list_does(): void
     {
         // Arrange — the app patches its row from this reply, so a field the list has and this
-        // does not is a picture that vanishes the moment somebody edits an alert level
+        // does not is a label that vanishes the moment somebody edits an alert level
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
-        ProductImage::factory()->primary()->create([
-            'product_id' => $variant->product_id,
-            'path' => 'products/still-here.jpg',
-        ]);
+        $item = StockItem::factory()->named('كيس يد خارجية')->size(40, 40)->create();
         $stock = WarehouseStock::factory()->quantity('100.000')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $item->id,
         ]);
         $headers = $this->manager();
 
@@ -624,11 +608,28 @@ class WarehouseStockTest extends TestCase
         );
 
         // Assert
-        $response->assertOk();
-        $this->assertStringContainsString(
-            'still-here.jpg',
-            (string) $response->json('data.product_variant.image_url'),
-        );
+        $response->assertOk()
+            ->assertJsonPath('data.stock_item.display_name', 'كيس يد خارجية 40*40');
+    }
+
+    public function test_listing_a_shelf_of_many_items_stays_one_query_for_their_names(): void
+    {
+        // Arrange — strict mode turns a forgotten eager load into an exception, and this is the
+        // test that would raise it
+        $warehouse = Warehouse::factory()->create();
+        foreach (range(1, 3) as $ignored) {
+            WarehouseStock::factory()->create(['warehouse_id' => $warehouse->id]);
+        }
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/warehouses/{$warehouse->id}/stocks");
+
+        // Assert
+        $response->assertOk()->assertJsonCount(3, 'data');
+        foreach (range(0, 2) as $index) {
+            $this->assertNotNull($response->json("data.{$index}.stock_item.display_name"));
+        }
     }
 
     // ──────────────────────────────── the summary ────────────────────────────────
@@ -816,12 +817,12 @@ class WarehouseStockTest extends TestCase
     {
         // Arrange — a line appears the first time a movement puts something on that shelf
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/warehouses/{$warehouse->id}/stocks", [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'quantity' => '500.000',
         ]);
 

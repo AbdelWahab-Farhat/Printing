@@ -21,13 +21,17 @@ class PurchaseOrderItemResource extends JsonResource
         return [
             'id' => $this->id,
 
-            'product_variant_id' => $this->product_variant_id,
-            'product_variant' => $this->whenLoaded('productVariant', fn (): array => [
-                'id' => $this->productVariant->id,
-                'label' => $this->productVariant->label,
-                'product_id' => $this->productVariant->product_id,
-                'product_code' => $this->productVariant->product->code,
-                'product_name' => $this->productVariant->product->name,
+            'stock_item_id' => $this->stock_item_id,
+            // What was bought: a shelf, at a size, with its own price. «كيس شحن 25*35» and
+            // «كيس شحن 35*40» are two items and therefore two lines here — the size lives on the
+            // item, so per-size pricing survives the move off product variants intact.
+            'stock_item' => $this->whenLoaded('stockItem', fn (): array => [
+                'id' => $this->stockItem->id,
+                'code' => $this->stockItem->code,
+                'name' => $this->stockItem->name,
+                'width_cm' => $this->stockItem->width_cm,
+                'height_cm' => $this->stockItem->height_cm,
+                'display_name' => $this->stockItem->displayName(),
             ]),
 
             // Always positive — see StockArrivalItemResource for the same shape.

@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
-use App\Domain\Catalog\Models\Product;
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\Vendor\Models\StockArrival;
@@ -68,24 +67,22 @@ class StockArrivalTest extends TestCase
         return $this->auth();
     }
 
-    private function variant(): ProductVariant
+    private function variant(): StockItem
     {
-        return ProductVariant::factory()->create();
+        return StockItem::factory()->create();
     }
 
-    /** A size of a per-piece product (the factory default), where a fractional quantity is refused. */
-    private function pieceVariant(): ProductVariant
+    /** A shelf counted by the piece (the factory default), where a fractional quantity is refused. */
+    private function pieceVariant(): StockItem
     {
-        return ProductVariant::factory()->create([
-            'product_id' => Product::factory(),
-        ]);
+        return StockItem::factory()->create();
     }
 
-    private function stockOf(Warehouse $warehouse, ProductVariant $variant): ?WarehouseStock
+    private function stockOf(Warehouse $warehouse, StockItem $variant): ?WarehouseStock
     {
         return WarehouseStock::query()
             ->where('warehouse_id', $warehouse->id)
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $variant->id)
             ->first();
     }
 
@@ -105,7 +102,7 @@ class StockArrivalTest extends TestCase
             'warehouse_id' => $warehouse->id,
             'invoice_number' => 'INV-1001',
             'items' => [
-                ['product_variant_id' => $variant->id, 'quantity' => 200],
+                ['stock_item_id' => $variant->id, 'quantity' => 200],
             ],
         ]);
 
@@ -123,7 +120,7 @@ class StockArrivalTest extends TestCase
         // … the ledger row it produced …
         $arrivalId = $response->json('data.id');
         $this->assertDatabaseHas('stock_movements', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'from_warehouse_id' => null,
             'quantity' => '200.000',
@@ -150,7 +147,7 @@ class StockArrivalTest extends TestCase
             'vendor_id' => $vendor->id,
             'warehouse_id' => $warehouse->id,
             'purchase_order_id' => 999999,
-            'items' => [['product_variant_id' => $variant->id, 'quantity' => 10]],
+            'items' => [['stock_item_id' => $variant->id, 'quantity' => 10]],
         ]);
 
         // Assert
@@ -172,8 +169,8 @@ class StockArrivalTest extends TestCase
             'vendor_id' => $vendor->id,
             'warehouse_id' => $warehouse->id,
             'items' => [
-                ['product_variant_id' => $variantA->id, 'quantity' => 100],
-                ['product_variant_id' => $variantB->id, 'quantity' => 50],
+                ['stock_item_id' => $variantA->id, 'quantity' => 100],
+                ['stock_item_id' => $variantB->id, 'quantity' => 50],
             ],
         ]);
 
@@ -198,7 +195,7 @@ class StockArrivalTest extends TestCase
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-arrivals', [
             'vendor_id' => $vendor->id,
             'warehouse_id' => $warehouse->id,
-            'items' => [['product_variant_id' => $variant->id, 'quantity' => 10]],
+            'items' => [['stock_item_id' => $variant->id, 'quantity' => 10]],
         ]);
 
         // Assert — never accepted from the body, always the caller
@@ -218,7 +215,7 @@ class StockArrivalTest extends TestCase
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-arrivals', [
             'vendor_id' => $vendor->id,
             'warehouse_id' => $warehouse->id,
-            'items' => [['product_variant_id' => $variant->id, 'quantity' => 2.5]],
+            'items' => [['stock_item_id' => $variant->id, 'quantity' => 2.5]],
         ]);
 
         // Assert — refused, and nothing partially lands
@@ -248,7 +245,7 @@ class StockArrivalTest extends TestCase
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-arrivals', [
             'vendor_id' => $vendor->id,
             'warehouse_id' => $warehouse->id,
-            'items' => [['product_variant_id' => $variant->id, 'quantity' => 10]],
+            'items' => [['stock_item_id' => $variant->id, 'quantity' => 10]],
         ]);
 
         // Assert
@@ -267,7 +264,7 @@ class StockArrivalTest extends TestCase
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-arrivals', [
             'vendor_id' => 999999,
             'warehouse_id' => $warehouse->id,
-            'items' => [['product_variant_id' => $variant->id, 'quantity' => 10]],
+            'items' => [['stock_item_id' => $variant->id, 'quantity' => 10]],
         ]);
 
         // Assert

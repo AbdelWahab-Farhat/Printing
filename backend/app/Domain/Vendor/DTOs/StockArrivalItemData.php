@@ -9,7 +9,7 @@ use App\Domain\Inventory\DTOs\StockMovementData;
 final readonly class StockArrivalItemData
 {
     public function __construct(
-        public int $productVariantId,
+        public int $stockItemId,
         /** Always positive, normalised to three decimal places — see {@see quantity()}. */
         public string $quantity,
         /**
@@ -28,7 +28,7 @@ final readonly class StockArrivalItemData
     public static function fromArray(array $validated): self
     {
         return new self(
-            productVariantId: (int) $validated['product_variant_id'],
+            stockItemId: (int) $validated['stock_item_id'],
             quantity: self::quantity($validated['quantity']),
         );
     }

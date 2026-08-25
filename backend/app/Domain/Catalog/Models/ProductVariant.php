@@ -6,6 +6,7 @@ namespace App\Domain\Catalog\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Concerns\CascadesSoftDeletes;
+use App\Domain\Inventory\Models\StockItem;
 use Database\Factories\ProductVariantFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -22,7 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Audited; its entries are read through the product that owns it.
  */
 #[UseFactory(ProductVariantFactory::class)]
-#[Fillable(['label', 'width_cm', 'height_cm', 'is_active', 'sort_order'])]
+#[Fillable(['stock_item_id', 'label', 'width_cm', 'height_cm', 'is_active', 'sort_order'])]
 class ProductVariant extends Model
 {
     /** @use HasFactory<ProductVariantFactory> */
@@ -46,6 +47,26 @@ class ProductVariant extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * The shelf this size draws from — «كيس شحن 25*35».
+     *
+     * Null for a size that is never stocked; a quote-only product has no pile behind it, and a
+     * NOT NULL column would only teach whoever creates one to point at an unrelated row.
+     *
+     * **Read-only, and for rendering only.** This is a relation into Inventory, and RULES.md §3
+     * says decisions cross a context boundary through its Service — so anything anyone needs to
+     * *decide* about this link (which shelf does this size draw from, and what happens when it
+     * has none) is asked of `InventoryService::stockItemIdFor()`, which turns a missing link into
+     * a readable failure instead of a dereferenced null. This exists so a product screen can
+     * eager-load the item's name in one query.
+     *
+     * @return BelongsTo<StockItem, $this>
+     */
+    public function stockItem(): BelongsTo
+    {
+        return $this->belongsTo(StockItem::class);
     }
 
     /**

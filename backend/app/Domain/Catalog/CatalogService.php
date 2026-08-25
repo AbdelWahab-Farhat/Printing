@@ -16,7 +16,6 @@ use App\Domain\Catalog\Actions\UpdateProductCategory;
 use App\Domain\Catalog\DTOs\PriceQuote;
 use App\Domain\Catalog\DTOs\ProductCategoryData;
 use App\Domain\Catalog\DTOs\ProductData;
-use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductVariant;
@@ -35,14 +34,16 @@ use Illuminate\Http\UploadedFile;
  * themselves. That is what guarantees the number a customer was shown and the number written to
  * their order are produced by the same code.
  *
- * Inventory asks the same way: a stock movement resolves the size it names through
- * `findVariant()` and asks `requiresWholeQuantities()` whether a fraction of it is meaningful,
- * rather than reading a product column itself — but unlike `quote()`, this is *not* the same rule
- * an order's own quantity is checked against. Ordering is checked against `pricing_unit` (what
- * the customer is charged by — see `QuoteProductRequest`); a warehouse movement is checked
- * against `pricing_unit`'s sibling `stock_unit` (what the warehouse counts it in) through this
- * method. The two are allowed to disagree on purpose: a product bought in by weight and sold by
- * the piece needs whole numbers on an order and may still take a fractional weight off a shelf.
+ * **The warehouse no longer asks anything here.** A stock movement used to resolve a size through
+ * `findVariant()` and ask `requiresWholeQuantities()` whether a fraction of it was meaningful,
+ * because the rule lived on `products.stock_unit`. Stock is keyed on a stock item now, the item
+ * carries its own unit, and Inventory answers that question at home.
+ *
+ * The rule itself is unchanged and the two units still disagree on purpose: an order's quantity
+ * is checked against `pricing_unit` (what the customer is charged by — see `QuoteProductRequest`),
+ * a warehouse movement against `stock_items.unit` (what the shelf is counted in). A thing bought
+ * in by weight and sold by the piece needs whole numbers on an order and may still take a
+ * fractional weight off a shelf.
  */
 class CatalogService
 {
@@ -164,7 +165,7 @@ class CatalogService
     {
         $product->update(['is_active' => $isActive]);
 
-        return $product->load(['variants.priceTiers', 'images', 'productCategory']);
+        return $product->load(['variants.priceTiers', 'variants.stockItem', 'images', 'productCategory', 'stockItemGroup']);
     }
 
     public function quote(Product $product, ProductVariant $variant, string $quantity): PriceQuote
@@ -181,22 +182,5 @@ class CatalogService
     public function findVariant(int $variantId): ProductVariant
     {
         return ($this->findProductVariant)($variantId);
-    }
-
-    /**
-     * Whether a fraction of this size means anything **to the warehouse**.
-     *
-     * Pieces are countable, so half a shipping bag is a typo; a per-kilo product's quantity is a
-     * weight and fractions are the normal case. The rule itself lives on
-     * {@see PricingUnit}, next to the two cases it distinguishes — this only carries it across
-     * the context boundary so a caller does not have to walk into the product to find it.
-     *
-     * Reads `stock_unit`, not `pricing_unit` — the only caller is
-     * {@see \App\Domain\Inventory\Actions\RecordStockMovement}'s whole-quantity guard on a
-     * movement, which is a fact about what the shelf holds, not about what a customer ordered.
-     */
-    public function requiresWholeQuantities(ProductVariant $variant): bool
-    {
-        return $variant->loadMissing('product')->product->stock_unit->requiresWholeQuantities();
     }
 }

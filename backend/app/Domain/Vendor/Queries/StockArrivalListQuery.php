@@ -22,7 +22,7 @@ final class StockArrivalListQuery
     public function __invoke(StockArrivalFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return StockArrival::query()
-            ->with(['vendor', 'warehouse', 'receivedByUser', 'items.productVariant.product'])
+            ->with(['vendor', 'warehouse', 'receivedByUser', 'items.stockItem'])
             ->when($filters->vendorId !== null, fn (Builder $q) => $q->where('vendor_id', $filters->vendorId))
             ->when($filters->warehouseId !== null, fn (Builder $q) => $q->where('warehouse_id', $filters->warehouseId))
             ->when($filters->from !== null, fn (Builder $q) => $q->where('created_at', '>=', $filters->from))

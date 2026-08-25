@@ -20,7 +20,7 @@ final class ProductListQuery
         return Product::query()
             // Two levels deep: the resource renders every variant's price list, which would
             // otherwise be a query per variant per row.
-            ->with(['variants.priceTiers', 'images', 'productCategory'])
+            ->with(['variants.priceTiers', 'variants.stockItem', 'images', 'productCategory', 'stockItemGroup'])
             ->when($filters->search !== null, function ($query) use ($filters) {
                 $term = '%'.$filters->search.'%';
 

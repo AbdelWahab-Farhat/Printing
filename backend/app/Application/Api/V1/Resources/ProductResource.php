@@ -46,13 +46,27 @@ class ProductResource extends JsonResource
                 ],
             ),
             'product_category_id' => $this->product_category_id,
+
+            // What this product is made of. Null for one whose material nobody has named — a
+            // quote-only product, or one whose sizes come from several materials and are linked
+            // individually. When set, every size resolves to this material's shelf at its own
+            // size on save.
+            'stock_item_group_id' => $this->stock_item_group_id,
+            'stock_item_group' => $this->whenLoaded(
+                'stockItemGroup',
+                fn (): ?array => $this->stockItemGroup === null ? null : [
+                    'id' => $this->stockItemGroup->id,
+                    'code' => $this->stockItemGroup->code,
+                    'name' => $this->stockItemGroup->name,
+                    'default_unit' => $this->stockItemGroup->default_unit->value,
+                    'default_unit_label' => $this->stockItemGroup->default_unit->label(),
+                ],
+            ),
             'pricing_unit' => $this->pricing_unit->value,
             'pricing_unit_label' => $this->pricing_unit->label(),
 
             // What the warehouse counts this in — only equal to `pricing_unit` until someone
             // calls `PATCH products/{product}/stock-unit` to say otherwise.
-            'stock_unit' => $this->stock_unit->value,
-            'stock_unit_label' => $this->stock_unit->label(),
 
             'pricing_mode' => $this->pricing_mode->value,
             'pricing_mode_label' => $this->pricing_mode->label(),

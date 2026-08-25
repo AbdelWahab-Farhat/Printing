@@ -8,6 +8,9 @@ use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
+use App\Domain\Inventory\Actions\ResolveStockItemForVariant;
+use App\Domain\Inventory\Models\StockItem;
+use App\Domain\Inventory\Models\StockItemGroup;
 use Illuminate\Database\Seeder;
 
 /**
@@ -29,6 +32,28 @@ class CatalogSeeder extends Seeder
     /** The three quantity breaks every printed bag shares. */
     private const BREAKS = [1, 300, 1000];
 
+    /**
+     * What each printed product is made of — the shelf its sizes draw from.
+     *
+     * Each becomes a `StockItemGroup`, and the product is filed under it — so every size the
+     * product carries resolves to that material at that size, and one stock item serves however
+     * many products name it.
+     *
+     * Today each printed product names a different material, so nothing shares yet. The sharing
+     * arrives the moment the سادة products below stop being sold by the kilo and gain real sizes:
+     * point «أكياس الشحن السادة» at the «كيس شحن» group and its 25*35 lands on the identical row
+     * «أكياس الشحن» already uses, with nobody linking anything by hand.
+     *
+     * @var array<string, string>
+     */
+    private const MATERIALS = [
+        'shipping-bag' => 'كيس شحن',
+        'outer-handle-bag' => 'كيس يد خارجية',
+        'inner-handle-bag' => 'كيس يد داخلية',
+        'transparent-zipper-bag' => 'كيس شفاف بسحاب',
+        'paper-bag' => 'كيس ورقي',
+    ];
+
     public function run(): void
     {
         // The headings have to exist before anything can point at one, and this seeder is run on
@@ -49,6 +74,42 @@ class CatalogSeeder extends Seeder
      * @var array<string, int>
      */
     private array $categoryIds = [];
+
+    /**
+     * The material — «كيس شحن» — every size of it is filed under.
+     *
+     * @var array<string, StockItemGroup>
+     */
+    private array $groups = [];
+
+    private function group(string $name, PricingUnit $defaultUnit): StockItemGroup
+    {
+        return $this->groups[$name] ??= StockItemGroup::query()->updateOrCreate(
+            ['name' => $name],
+            ['default_unit' => $defaultUnit, 'is_active' => true, 'sort_order' => 0],
+        );
+    }
+
+    /**
+     * The shelf for one material at one size, created once and reused by every size that names it.
+     *
+     * `updateOrCreate` on (group, size) is what makes the sharing automatic: two products naming
+     * the same material at the same size get the same row without either of them knowing the
+     * other exists — which is the whole point of the table. It is the same match
+     * {@see ResolveStockItemForVariant} makes at runtime, written
+     * out here because the seeder builds its variants directly rather than through
+     * `SyncProductVariants`.
+     *
+     * The name is the group's, never passed in: a grouped item carries its material's name, and
+     * that is what keeps `(name, size)` able to identify exactly one shelf.
+     */
+    private function stockItemId(StockItemGroup $group, ?int $width, ?int $height): int
+    {
+        return (int) StockItem::query()->updateOrCreate(
+            ['stock_item_group_id' => $group->getKey(), 'width_cm' => $width, 'height_cm' => $height],
+            ['name' => $group->name, 'unit' => $group->default_unit, 'is_active' => true, 'sort_order' => 0],
+        )->getKey();
+    }
 
     /**
      * «مطبوعة» or «سادة» — the two headings that replaced the old مطبوعة/سادة column.
@@ -143,14 +204,17 @@ class CatalogSeeder extends Seeder
      */
     private function seedPrinted(array $definition, int $sortOrder): void
     {
+        $group = $this->group(self::MATERIALS[$definition['slug']], PricingUnit::Piece);
+
         $product = Product::query()->updateOrCreate(
             ['slug' => $definition['slug']],
             [
                 'name' => $definition['name'],
                 'features' => $definition['features'],
                 'product_category_id' => $this->categoryId('مطبوعة'),
+                // The material every one of this product's sizes is filed under.
+                'stock_item_group_id' => $group->getKey(),
                 'pricing_unit' => PricingUnit::Piece,
-                'stock_unit' => PricingUnit::Piece,
                 'pricing_mode' => PricingMode::Tiered,
                 'min_order_quantity' => $definition['min'],
                 'is_active' => true,
@@ -163,7 +227,13 @@ class CatalogSeeder extends Seeder
         foreach ($definition['sizes'] as $label => [$width, $height, $prices]) {
             $variant = $product->variants()->updateOrCreate(
                 ['label' => $label],
-                ['width_cm' => $width, 'height_cm' => $height, 'is_active' => true, 'sort_order' => $order++],
+                [
+                    'stock_item_id' => $this->stockItemId($group, $width, $height),
+                    'width_cm' => $width,
+                    'height_cm' => $height,
+                    'is_active' => true,
+                    'sort_order' => $order++,
+                ],
             );
 
             // Rewritten wholesale, so re-running never leaves a stale break behind.
@@ -191,8 +261,12 @@ class CatalogSeeder extends Seeder
                     .'يرجى إرسال تفاصيل المقاس والكمية المطلوبة ليتم تحديد السعر وتقديم العرض المناسب.',
                 'features' => ['مناسبة للملابس، العطور، الهدايا', 'تعكس هوية علامتك التجارية باحترافية'],
                 'product_category_id' => $this->categoryId('مطبوعة'),
+                // **No material, deliberately.** The sizes are agreed per order, so there is
+                // nothing for a size to resolve against — and this is the nullable case
+                // `products.stock_item_group_id` exists for. Its single placeholder variant stays
+                // unlinked, and any attempt to move stock against it is refused by name.
+                'stock_item_group_id' => null,
                 'pricing_unit' => PricingUnit::Piece,
-                'stock_unit' => PricingUnit::Piece,
                 'pricing_mode' => PricingMode::QuoteOnRequest,
                 'min_order_quantity' => 200,
                 'is_active' => true,
@@ -201,10 +275,13 @@ class CatalogSeeder extends Seeder
         );
 
         // A single placeholder variant so the product still has something to order against.
-        // It deliberately carries no price tiers.
+        // It deliberately carries no price tiers — and no stock item either: the size is agreed
+        // per order, so there is no pile to point at until one is. This is the nullable case
+        // `product_variants.stock_item_id` exists for, and any attempt to fulfil against it is
+        // refused by name rather than dereferenced.
         $product->variants()->updateOrCreate(
             ['label' => 'حسب الطلب'],
-            ['width_cm' => null, 'height_cm' => null, 'is_active' => true, 'sort_order' => 0],
+            ['stock_item_id' => null, 'width_cm' => null, 'height_cm' => null, 'is_active' => true, 'sort_order' => 0],
         );
     }
 
@@ -224,14 +301,16 @@ class CatalogSeeder extends Seeder
         $sortOrder = 10;
 
         foreach ($perKilo as $slug => [$name, $pricePerKilo]) {
+            $group = $this->group($name, PricingUnit::Kilogram);
+
             $product = Product::query()->updateOrCreate(
                 ['slug' => $slug],
                 [
                     'name' => $name,
                     'features' => ['بدون طباعة', 'تُباع بالكيلو'],
                     'product_category_id' => $this->categoryId('سادة'),
+                    'stock_item_group_id' => $group->getKey(),
                     'pricing_unit' => PricingUnit::Kilogram,
-                    'stock_unit' => PricingUnit::Kilogram,
                     'pricing_mode' => PricingMode::Tiered,
                     'min_order_quantity' => 1,
                     'is_active' => true,
@@ -239,9 +318,19 @@ class CatalogSeeder extends Seeder
                 ],
             );
 
+            // Unsized and weighed, because that is how these are sold today — so each gets its
+            // own kilogram shelf rather than sharing a sized one with its printed counterpart.
+            // See the note on self::MATERIALS: the day these gain sizes, they point at the
+            // printed product's items instead and one pile serves both.
             $variant = $product->variants()->updateOrCreate(
                 ['label' => 'سادة'],
-                ['width_cm' => null, 'height_cm' => null, 'is_active' => true, 'sort_order' => 0],
+                [
+                    'stock_item_id' => $this->stockItemId($group, null, null),
+                    'width_cm' => null,
+                    'height_cm' => null,
+                    'is_active' => true,
+                    'sort_order' => 0,
+                ],
             );
 
             $variant->priceTiers()->delete();

@@ -8,7 +8,7 @@ final readonly class StockFilters
 {
     public function __construct(
         /** One size's balance in this warehouse. */
-        public ?int $productVariantId = null,
+        public ?int $stockItemId = null,
         /** true = only the lines that have fallen to their threshold. false = only the ones that have not. */
         public ?bool $lowStock = null,
         /** false finds the sizes that have been here and are now used up. */
@@ -20,10 +20,10 @@ final readonly class StockFilters
      */
     public static function fromArray(array $query): self
     {
-        $variantId = $query['product_variant_id'] ?? null;
+        $stockItemId = $query['stock_item_id'] ?? null;
 
         return new self(
-            productVariantId: $variantId !== null && $variantId !== '' ? (int) $variantId : null,
+            stockItemId: $stockItemId !== null && $stockItemId !== '' ? (int) $stockItemId : null,
             lowStock: self::boolOrNull($query, 'low_stock'),
             inStock: self::boolOrNull($query, 'in_stock'),
         );

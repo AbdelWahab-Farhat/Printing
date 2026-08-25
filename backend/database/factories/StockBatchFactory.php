@@ -3,9 +3,9 @@
 namespace Database\Factories;
 
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Inventory\Enums\StockBatchSourceType;
 use App\Domain\Inventory\Models\StockBatch;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\Warehouse;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -28,7 +28,7 @@ class StockBatchFactory extends Factory
     {
         return [
             'warehouse_id' => Warehouse::factory(),
-            'product_variant_id' => ProductVariant::factory(),
+            'stock_item_id' => StockItem::factory(),
             'source_type' => StockBatchSourceType::PurchaseArrival,
             'stock_arrival_item_id' => null,
             'unit_cost' => '10.000',

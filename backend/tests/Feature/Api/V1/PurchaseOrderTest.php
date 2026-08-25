@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\PurchaseOrder\Actions\SendPurchaseOrder;
@@ -101,16 +101,16 @@ class PurchaseOrderTest extends TestCase
         $this->app->get('auth')->forgetGuards();
     }
 
-    private function variant(): ProductVariant
+    private function variant(): StockItem
     {
-        return ProductVariant::factory()->create();
+        return StockItem::factory()->create();
     }
 
-    private function stockOf(Warehouse $warehouse, ProductVariant $variant): ?WarehouseStock
+    private function stockOf(Warehouse $warehouse, StockItem $variant): ?WarehouseStock
     {
         return WarehouseStock::query()
             ->where('warehouse_id', $warehouse->id)
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $variant->id)
             ->first();
     }
 
@@ -118,7 +118,7 @@ class PurchaseOrderTest extends TestCase
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
-    private function payload(Vendor $vendor, Warehouse $warehouse, ProductVariant $variant, array $overrides = []): array
+    private function payload(Vendor $vendor, Warehouse $warehouse, StockItem $variant, array $overrides = []): array
     {
         return array_merge([
             'vendor_id' => $vendor->id,
@@ -127,7 +127,7 @@ class PurchaseOrderTest extends TestCase
             'expected_date' => now()->addWeek()->toDateString(),
             'notes' => 'دفعة أولى',
             'items' => [
-                ['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 50],
+                ['stock_item_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 50],
             ],
         ], $overrides);
     }
@@ -555,12 +555,12 @@ class PurchaseOrderTest extends TestCase
             ->assertJsonPath('data.vendor_id', $vendor->id)
             ->assertJsonPath('data.warehouse_id', $warehouse->id)
             ->assertJsonPath('data.status', 'new')
-            ->assertJsonPath('data.items.0.product_variant_id', $variant->id)
+            ->assertJsonPath('data.items.0.stock_item_id', $variant->id)
             ->assertJsonPath('data.items.0.quantity_ordered', '10.000');
 
         $this->assertDatabaseHas('purchase_orders', ['vendor_id' => $vendor->id, 'status' => 'new']);
         $this->assertDatabaseHas('purchase_order_items', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'quantity_ordered' => '10.000',
             'quantity_received' => '0.000',
         ]);
@@ -611,7 +611,7 @@ class PurchaseOrderTest extends TestCase
             'vendor_id' => 999999,
             'warehouse_id' => $warehouse->id,
             'order_date' => now()->toDateString(),
-            'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 50]],
+            'items' => [['stock_item_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 50]],
         ]);
 
         // Assert
@@ -632,13 +632,13 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $variant,
             ['items' => [
-                ['product_variant_id' => $variant->id, 'quantity_ordered' => 5, 'base_total_cost' => 25],
-                ['product_variant_id' => $variant->id, 'quantity_ordered' => 3, 'base_total_cost' => 15],
+                ['stock_item_id' => $variant->id, 'quantity_ordered' => 5, 'base_total_cost' => 25],
+                ['stock_item_id' => $variant->id, 'quantity_ordered' => 3, 'base_total_cost' => 15],
             ]],
         ));
 
         // Assert
-        $response->assertStatus(422)->assertJsonStructure(['errors' => ['items.0.product_variant_id']]);
+        $response->assertStatus(422)->assertJsonStructure(['errors' => ['items.0.stock_item_id']]);
     }
 
     // ──────────────────────────────── updating ────────────────────────────────
@@ -681,19 +681,19 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $kept,
             ['items' => [
-                ['product_variant_id' => $kept->id, 'quantity_ordered' => 10, 'base_total_cost' => 50],
-                ['product_variant_id' => $removed->id, 'quantity_ordered' => 4, 'base_total_cost' => 20],
+                ['stock_item_id' => $kept->id, 'quantity_ordered' => 10, 'base_total_cost' => 50],
+                ['stock_item_id' => $removed->id, 'quantity_ordered' => 4, 'base_total_cost' => 20],
             ]],
         ))->json('data');
 
-        $keptItemId = collect($order['items'])->firstWhere('product_variant_id', $kept->id)['id'];
+        $keptItemId = collect($order['items'])->firstWhere('stock_item_id', $kept->id)['id'];
 
         // Act — kept item's quantity changes, removed item is dropped, added item is new
         $response = $this->withHeaders($headers)->putJson(
             "/api/v1/purchase-orders/{$order['id']}",
             $this->payload($vendor, $warehouse, $kept, ['items' => [
-                ['id' => $keptItemId, 'product_variant_id' => $kept->id, 'quantity_ordered' => 20, 'base_total_cost' => 100],
-                ['product_variant_id' => $added->id, 'quantity_ordered' => 7, 'base_total_cost' => 35],
+                ['id' => $keptItemId, 'stock_item_id' => $kept->id, 'quantity_ordered' => 20, 'base_total_cost' => 100],
+                ['stock_item_id' => $added->id, 'quantity_ordered' => 7, 'base_total_cost' => 35],
             ]]),
         );
 
@@ -701,9 +701,9 @@ class PurchaseOrderTest extends TestCase
         $response->assertOk()->assertJsonCount(2, 'data.items');
         $this->assertDatabaseHas('purchase_order_items', ['id' => $keptItemId, 'quantity_ordered' => '20.000']);
         $this->assertDatabaseHas('purchase_order_items', [
-            'purchase_order_id' => $order['id'], 'product_variant_id' => $added->id, 'quantity_ordered' => '7.000',
+            'purchase_order_id' => $order['id'], 'stock_item_id' => $added->id, 'quantity_ordered' => '7.000',
         ]);
-        $this->assertSoftDeleted('purchase_order_items', ['purchase_order_id' => $order['id'], 'product_variant_id' => $removed->id]);
+        $this->assertSoftDeleted('purchase_order_items', ['purchase_order_id' => $order['id'], 'stock_item_id' => $removed->id]);
     }
 
     public function test_updating_a_purchase_order_is_refused_once_it_has_arrived(): void
@@ -911,7 +911,7 @@ class PurchaseOrderTest extends TestCase
         $response = $this->withHeaders($inventoryHeaders)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
             ['invoice_number' => 'INV-2001', 'items' => [
-                ['product_variant_id' => $variant->id, 'quantity' => 10],
+                ['stock_item_id' => $variant->id, 'quantity' => 10],
             ]],
         );
 
@@ -927,14 +927,14 @@ class PurchaseOrderTest extends TestCase
         $this->assertDatabaseHas('purchase_orders', ['id' => $order['id'], 'status' => 'completed']);
         $this->assertDatabaseHas('purchase_order_items', [
             'purchase_order_id' => $order['id'],
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'quantity_received' => '10.000',
         ]);
 
         // … the ledger row it produced …
         $arrivalId = $response->json('data.id');
         $this->assertDatabaseHas('stock_movements', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => '10.000',
             'movement_type' => 'purchase_arrival',
@@ -961,14 +961,14 @@ class PurchaseOrderTest extends TestCase
         // Act
         $response = $this->withHeaders($inventoryHeaders)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
-            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 4]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 4]]],
         );
 
         // Assert
         $response->assertCreated();
         $this->assertDatabaseHas('purchase_orders', ['id' => $order['id'], 'status' => 'arrived']);
         $this->assertDatabaseHas('purchase_order_items', [
-            'purchase_order_id' => $order['id'], 'product_variant_id' => $variant->id, 'quantity_received' => '4.000',
+            'purchase_order_id' => $order['id'], 'stock_item_id' => $variant->id, 'quantity_received' => '4.000',
         ]);
     }
 
@@ -986,20 +986,20 @@ class PurchaseOrderTest extends TestCase
         $this->forgetAuth();
         $this->withHeaders($headers)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
-            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 4]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 4]]],
         );
 
         // Act
         $response = $this->withHeaders($headers)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
-            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 6]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 6]]],
         );
 
         // Assert
         $response->assertCreated();
         $this->assertDatabaseHas('purchase_orders', ['id' => $order['id'], 'status' => 'completed']);
         $this->assertDatabaseHas('purchase_order_items', [
-            'purchase_order_id' => $order['id'], 'product_variant_id' => $variant->id, 'quantity_received' => '10.000',
+            'purchase_order_id' => $order['id'], 'stock_item_id' => $variant->id, 'quantity_received' => '10.000',
         ]);
         $this->assertDatabaseCount('stock_arrivals', 2);
         $this->assertDatabaseCount('stock_movements', 2);
@@ -1034,7 +1034,7 @@ class PurchaseOrderTest extends TestCase
         // Act — purchase_orders.manage alone, no inventory.manage
         $response = $this->withHeaders($secondManagerHeaders)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
-            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 10]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 10]]],
         );
 
         // Assert
@@ -1058,7 +1058,7 @@ class PurchaseOrderTest extends TestCase
         // Act
         $response = $this->withHeaders($inventoryHeaders)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
-            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 15]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 15]]],
         );
 
         // Assert — refused, and nothing partially lands
@@ -1066,7 +1066,7 @@ class PurchaseOrderTest extends TestCase
         $this->assertDatabaseCount('stock_arrivals', 0);
         $this->assertDatabaseCount('stock_movements', 0);
         $this->assertDatabaseHas('purchase_order_items', [
-            'purchase_order_id' => $order['id'], 'product_variant_id' => $variant->id, 'quantity_received' => '0.000',
+            'purchase_order_id' => $order['id'], 'stock_item_id' => $variant->id, 'quantity_received' => '0.000',
         ]);
     }
 
@@ -1087,7 +1087,7 @@ class PurchaseOrderTest extends TestCase
         // Act
         $response = $this->withHeaders($inventoryHeaders)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
-            ['items' => [['product_variant_id' => $notOrdered->id, 'quantity' => 1]]],
+            ['items' => [['stock_item_id' => $notOrdered->id, 'quantity' => 1]]],
         );
 
         // Assert
@@ -1109,13 +1109,13 @@ class PurchaseOrderTest extends TestCase
         $this->forgetAuth();
         $this->withHeaders($headers)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
-            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 10]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 10]]],
         );
 
         // Act
         $response = $this->withHeaders($headers)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
-            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 1]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 1]]],
         );
 
         // Assert
@@ -1132,7 +1132,7 @@ class PurchaseOrderTest extends TestCase
         // Act
         $response = $this->withHeaders($this->inventoryManager())->postJson(
             "/api/v1/purchase-orders/{$order->id}/arrivals",
-            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 1]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 1]]],
         );
 
         // Assert
@@ -1159,7 +1159,7 @@ class PurchaseOrderTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
-            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 10]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 10]]],
         );
 
         // Assert — never accepted from the body, always the caller
@@ -1183,8 +1183,8 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $variantA,
             ['items' => [
-                ['product_variant_id' => $variantA->id, 'quantity_ordered' => 10, 'base_total_cost' => 25],
-                ['product_variant_id' => $variantB->id, 'quantity_ordered' => 4, 'base_total_cost' => 12],
+                ['stock_item_id' => $variantA->id, 'quantity_ordered' => 10, 'base_total_cost' => 25],
+                ['stock_item_id' => $variantB->id, 'quantity_ordered' => 4, 'base_total_cost' => 12],
             ]],
         ));
 
@@ -1203,7 +1203,7 @@ class PurchaseOrderTest extends TestCase
             ->assertJsonPath('data.total_additional_cost', '0.00');
 
         $this->assertDatabaseHas('purchase_order_items', [
-            'product_variant_id' => $variantA->id,
+            'stock_item_id' => $variantA->id,
             'base_total_cost' => '25.00', 'base_unit_cost' => '2.500',
             'final_unit_cost' => '2.500', 'final_total_cost' => '25.00',
             'unit' => 'piece',
@@ -1221,14 +1221,14 @@ class PurchaseOrderTest extends TestCase
             $vendor,
             $warehouse,
             $variant,
-            ['items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 20]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 20]]],
         ))->json('data');
 
         // Act — same line, different total cost
         $response = $this->withHeaders($headers)->putJson(
             "/api/v1/purchase-orders/{$order['id']}",
             $this->payload($vendor, $warehouse, $variant, ['items' => [
-                ['id' => $order['items'][0]['id'], 'product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 80],
+                ['id' => $order['items'][0]['id'], 'stock_item_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 80],
             ]]),
         );
 
@@ -1250,7 +1250,7 @@ class PurchaseOrderTest extends TestCase
             $vendor,
             $warehouse,
             $variant,
-            ['items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity_ordered' => 10]]],
         ));
 
         // Assert
@@ -1268,7 +1268,7 @@ class PurchaseOrderTest extends TestCase
             $vendor,
             $warehouse,
             $variant,
-            ['items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 40]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 40]]],
         ))->json('data');
         $headers = $this->inventoryManager();
         $this->forgetAuth();
@@ -1276,7 +1276,7 @@ class PurchaseOrderTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
-            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 6]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 6]]],
         );
 
         // Assert — priced against what actually arrived (6 * 4.00 = 24.00), not the order line's
@@ -1286,7 +1286,7 @@ class PurchaseOrderTest extends TestCase
             ->assertJsonPath('data.items.0.total_cost', '24.00');
 
         $this->assertDatabaseHas('stock_arrival_items', [
-            'product_variant_id' => $variant->id, 'unit_cost' => '4.000', 'total_cost' => '24.00',
+            'stock_item_id' => $variant->id, 'unit_cost' => '4.000', 'total_cost' => '24.00',
         ]);
     }
 
@@ -1302,7 +1302,7 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $variant,
             [
-                'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 40]],
+                'items' => [['stock_item_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 40]],
                 'additional_costs' => [['name' => 'Delivery', 'amount' => 10]],
             ],
         ))->json('data');
@@ -1312,7 +1312,7 @@ class PurchaseOrderTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
-            ['items' => [['product_variant_id' => $variant->id, 'quantity' => 6]]],
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 6]]],
         );
 
         // Assert — 6 units at the landed 5.00/unit, not the base 4.00/unit
@@ -1321,7 +1321,7 @@ class PurchaseOrderTest extends TestCase
             ->assertJsonPath('data.items.0.total_cost', '30.00');
 
         $this->assertDatabaseHas('stock_arrival_items', [
-            'product_variant_id' => $variant->id, 'unit_cost' => '5.000', 'total_cost' => '30.00',
+            'stock_item_id' => $variant->id, 'unit_cost' => '5.000', 'total_cost' => '30.00',
         ]);
     }
 
@@ -1341,8 +1341,8 @@ class PurchaseOrderTest extends TestCase
             $variantA,
             [
                 'items' => [
-                    ['product_variant_id' => $variantA->id, 'quantity_ordered' => 4, 'base_total_cost' => 75],
-                    ['product_variant_id' => $variantB->id, 'quantity_ordered' => 6, 'base_total_cost' => 25],
+                    ['stock_item_id' => $variantA->id, 'quantity_ordered' => 4, 'base_total_cost' => 75],
+                    ['stock_item_id' => $variantB->id, 'quantity_ordered' => 6, 'base_total_cost' => 25],
                 ],
                 'additional_costs' => [
                     ['name' => 'Delivery', 'amount' => 10],
@@ -1382,9 +1382,9 @@ class PurchaseOrderTest extends TestCase
             $variantA,
             [
                 'items' => [
-                    ['product_variant_id' => $variantA->id, 'quantity_ordered' => 10, 'base_total_cost' => 10],
-                    ['product_variant_id' => $variantB->id, 'quantity_ordered' => 10, 'base_total_cost' => 10],
-                    ['product_variant_id' => $variantC->id, 'quantity_ordered' => 10, 'base_total_cost' => 10],
+                    ['stock_item_id' => $variantA->id, 'quantity_ordered' => 10, 'base_total_cost' => 10],
+                    ['stock_item_id' => $variantB->id, 'quantity_ordered' => 10, 'base_total_cost' => 10],
+                    ['stock_item_id' => $variantC->id, 'quantity_ordered' => 10, 'base_total_cost' => 10],
                 ],
                 'additional_costs' => [['name' => 'Delivery', 'amount' => 10]],
             ],
@@ -1414,7 +1414,7 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $variant,
             [
-                'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 5, 'base_total_cost' => 50]],
+                'items' => [['stock_item_id' => $variant->id, 'quantity_ordered' => 5, 'base_total_cost' => 50]],
                 'additional_costs' => [['name' => 'Unloading', 'amount' => 7.5]],
             ],
         ));
@@ -1443,8 +1443,8 @@ class PurchaseOrderTest extends TestCase
             $variantA,
             [
                 'items' => [
-                    ['product_variant_id' => $variantA->id, 'quantity_ordered' => 10, 'base_total_cost' => 0],
-                    ['product_variant_id' => $variantB->id, 'quantity_ordered' => 5, 'base_total_cost' => 0],
+                    ['stock_item_id' => $variantA->id, 'quantity_ordered' => 10, 'base_total_cost' => 0],
+                    ['stock_item_id' => $variantB->id, 'quantity_ordered' => 5, 'base_total_cost' => 0],
                 ],
                 'additional_costs' => [['name' => 'Delivery', 'amount' => 5]],
             ],
@@ -1471,7 +1471,7 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $variant,
             [
-                'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100]],
+                'items' => [['stock_item_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100]],
                 'additional_costs' => [['name' => 'Delivery', 'amount' => 20]],
             ],
         ))->json('data');
@@ -1482,7 +1482,7 @@ class PurchaseOrderTest extends TestCase
             "/api/v1/purchase-orders/{$order['id']}",
             $this->payload($vendor, $warehouse, $variant, [
                 'items' => [
-                    ['id' => $order['items'][0]['id'], 'product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100],
+                    ['id' => $order['items'][0]['id'], 'stock_item_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100],
                 ],
                 'additional_costs' => [['id' => $costId, 'name' => 'Delivery', 'amount' => 50]],
             ]),
@@ -1509,7 +1509,7 @@ class PurchaseOrderTest extends TestCase
             $warehouse,
             $variant,
             [
-                'items' => [['product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100]],
+                'items' => [['stock_item_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100]],
                 'additional_costs' => [['name' => 'Delivery', 'amount' => 20]],
             ],
         ))->json('data');
@@ -1520,7 +1520,7 @@ class PurchaseOrderTest extends TestCase
             "/api/v1/purchase-orders/{$order['id']}",
             $this->payload($vendor, $warehouse, $variant, [
                 'items' => [
-                    ['id' => $order['items'][0]['id'], 'product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100],
+                    ['id' => $order['items'][0]['id'], 'stock_item_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 100],
                 ],
             ]),
         );
@@ -1598,7 +1598,7 @@ class PurchaseOrderTest extends TestCase
             "/api/v1/purchase-orders/{$ownOrder['id']}",
             $this->payload($vendor, $warehouse, $variant, [
                 'items' => [
-                    ['id' => $ownOrder['items'][0]['id'], 'product_variant_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 50],
+                    ['id' => $ownOrder['items'][0]['id'], 'stock_item_id' => $variant->id, 'quantity_ordered' => 10, 'base_total_cost' => 50],
                 ],
                 'additional_costs' => [['id' => $foreignCostId, 'name' => 'Delivery', 'amount' => 10]],
             ]),
@@ -1619,7 +1619,7 @@ class PurchaseOrderTest extends TestCase
         $response = $this->withHeaders($this->inventoryManager())->postJson('/api/v1/stock-arrivals', [
             'vendor_id' => $vendor->id,
             'warehouse_id' => $warehouse->id,
-            'items' => [['product_variant_id' => $variant->id, 'quantity' => 10]],
+            'items' => [['stock_item_id' => $variant->id, 'quantity' => 10]],
         ]);
 
         // Assert

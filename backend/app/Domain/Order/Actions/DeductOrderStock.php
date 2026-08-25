@@ -7,27 +7,36 @@ namespace App\Domain\Order\Actions;
 use App\Domain\Inventory\Actions\ApplyStockChange;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\Exceptions\InsufficientStock;
+use App\Domain\Inventory\Exceptions\VariantHasNoStockItem;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Models\StockBatchConsumption;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Order\DTOs\StockShortfall;
 use App\Domain\Order\Exceptions\LineNeedsAMeasuredStockQuantity;
 use App\Domain\Order\Exceptions\OrderStockShortfall;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Support\Money;
+use App\Domain\Order\Support\TransitionFields;
 
 /**
- * Takes an order's lines out of a warehouse, once — the first real link between `Order` and
- * `Inventory`. Called by {@see ChangeOrderStatus}, inside its own transaction, the moment an
- * order first enters `ready`.
+ * Takes an order's lines out of a warehouse, once — the link between `Order` and `Inventory`.
+ * Called by {@see ChangeOrderStatus}, inside its own transaction, the moment an order first
+ * enters `ready`.
  *
  * **This class never writes a balance or a ledger row itself.**
  * {@see InventoryService::recordMovement()} — the same call every other stock movement in this
  * application goes through — is the only path taken, per RULES.md §3: cross-context work goes
  * through the other module's Service, never around it. One movement per line, so a shortfall on
- * size two of three throws mid-loop and rolls back everything `ChangeOrderStatus` did in this
+ * line two of three throws mid-loop and rolls back everything `ChangeOrderStatus` did in this
  * call, including the status change itself and any lines already deducted — there is no partial
  * deduction sitting beside an order that still reads `new`.
+ *
+ * **Every line resolves to a shelf before anything moves.** A line names a product size; a
+ * warehouse holds a {@see StockItem}. Two sizes on one order can be the same pile — كيس شحن سادة
+ * 25*35 and كيس شحن مطبوع 25*35 are two catalogue rows and one heap of bags — and this action is
+ * where that stops being invisible. A size pointing at no shelf at all is refused by name rather
+ * than dereferenced; see {@see VariantHasNoStockItem}.
  *
  * **The number deducted is exactly what the employee typed, nothing more.** A line whose
  * `warehouse_quantity` is null deducts the ordered quantity unchanged — sales unit and warehouse
@@ -39,14 +48,19 @@ use App\Domain\Order\Support\Money;
  * **And a line whose two units differ is not deducted at all until somebody has measured it.**
  * That fallback to the ordered quantity is only safe where the units agree; on a line sold by
  * the piece and stocked by the kilo it would take the piece count off a kilogram shelf. The move
- * into «جاهزة» asks for the figure — see {@see \App\Domain\Order\Support\TransitionFields} —
- * and {@see guardEveryLineIsMeasured()} is the floor under that form.
+ * into «جاهزة» asks for the figure — see {@see TransitionFields} —
+ * and {@see guardEveryLineIsMeasured()} is the floor under that form. **Which unit "the shelf's"
+ * means moved with this merge**: it used to be `products.stock_unit` and is now the `unit` of the
+ * {@see StockItem} the size draws on — see
+ * {@see OrderItem::stockUnit()}. The question the guard asks is unchanged.
  *
  * **Since batch costing landed, this is also the one place `order_items.material_cost` is
  * written.** `InventoryService::recordMovement()` FIFO-consumes cost layers behind the scenes;
  * `stock_batch_consumptions` rows tied to the movement it returns are the only record of what
  * that actually cost, so this action reads them back rather than the movement carrying the
- * figure itself.
+ * figure itself. Two lines drawing on one shelf therefore draw in order: the first takes the
+ * older layer, and the two can legitimately carry different costs for the same item. That was
+ * already true of two lines of one size and is not new here.
  */
 final class DeductOrderStock
 {
@@ -58,18 +72,30 @@ final class DeductOrderStock
     /**
      * @throws LineNeedsAMeasuredStockQuantity
      * @throws OrderStockShortfall
+     * @throws VariantHasNoStockItem
      */
     public function __invoke(Order $order, int $warehouseId, int $employeeId): void
     {
-        // Before the balances are even read: a line with no measurement has no figure to weigh
-        // against a shelf, and the number that would stand in for it is the wrong one.
+        // **Loaded once, here, because the guard below reads it.** `OrderItem::stockUnit()` now
+        // answers from the shelf rather than from the product, so asking whether a line is
+        // stocked in another unit touches `variant.stockItem` — and strict mode turns a
+        // forgotten load into an exception rather than a query per line.
+        $order->items->loadMissing('variant.stockItem');
+
+        // Before the shelves are even resolved: a line with no measurement has no figure to
+        // weigh against one, and the number that would stand in for it is the wrong one.
         $this->guardEveryLineIsMeasured($order);
 
-        $this->guardTheWarehouseHasItAll($order, $warehouseId);
+        // **Which pile each line comes off, resolved once.** Two sizes of two products can land
+        // on one shelf, so the requirement is totalled per shelf rather than per line — see
+        // {@see guardTheWarehouseHasItAll()}.
+        $shelves = $this->shelvesFor($order);
+
+        $this->guardTheWarehouseHasItAll($order, $warehouseId, $shelves);
 
         foreach ($order->items as $item) {
             $movement = $this->inventory->recordMovement(StockMovementData::fulfillment([
-                'product_variant_id' => $item->product_variant_id,
+                'stock_item_id' => $shelves[$item->getKey()]->getKey(),
                 'from_warehouse_id' => $warehouseId,
                 'quantity' => $item->producedQuantity(),
                 'reference_id' => $order->getKey(),
@@ -113,6 +139,30 @@ final class DeductOrderStock
     }
 
     /**
+     * The shelf behind every line, keyed by order item id, resolved in two queries for the whole
+     * order rather than one per line.
+     *
+     * Resolved up front, before anything moves, so that an order containing one unlinked size
+     * fails naming that size instead of half-deducting the lines before it.
+     *
+     * @return array<int, StockItem>
+     *
+     * @throws VariantHasNoStockItem
+     */
+    private function shelvesFor(Order $order): array
+    {
+        $order->items->loadMissing('variant.stockItem');
+
+        $shelves = [];
+
+        foreach ($order->items as $item) {
+            $shelves[$item->getKey()] = $this->inventory->stockItemFor($item->variant);
+        }
+
+        return $shelves;
+    }
+
+    /**
      * Weighs every line against the warehouse before a single one is taken out of it.
      *
      * **This is about the message, not the safety.** {@see ApplyStockChange} already refuses a
@@ -121,20 +171,28 @@ final class DeductOrderStock
      * moment it is read, so nothing below is treated as permission. What the loop above cannot
      * do is *report*: it fails on the first short line with {@see InsufficientStock}, which
      * carries two numbers and no name, and never reaches the lines after it. So an order with
-     * three sizes short said «not enough» once, about a size it did not name, and revealed the
-     * other two one restock at a time.
+     * three short items said «not enough» once, about something it did not name, and revealed the
+     * others one restock at a time.
      *
-     * **A size on two lines is weighed once, against both.** Two lines of 30 against a shelf of
-     * 50 each fit on their own; the order does not, and checking them separately would let it
-     * through here only to fail unnamed in the loop above.
+     * **Totalled per shelf, not per line — and that is what this change is for.** Two lines of
+     * 300 and 400 that draw on the same pile each fit inside a shelf of 500 on their own; the
+     * order does not. Keyed on the stock item, they add up to 700 against one balance and the
+     * order is refused here, by name, instead of passing two separate checks and coming up short
+     * on the floor. Before stock items existed those two lines were two different keys and there
+     * was no arrangement of this loop that could have caught it.
+     *
+     * @param  array<int, StockItem>  $shelves
      *
      * @throws OrderStockShortfall
      */
-    private function guardTheWarehouseHasItAll(Order $order, int $warehouseId): void
+    private function guardTheWarehouseHasItAll(Order $order, int $warehouseId, array $shelves): void
     {
         $available = $this->inventory->balancesFor(
             $warehouseId,
-            $order->items->pluck('product_variant_id')->map(intval(...))->unique()->values()->all(),
+            array_values(array_unique(array_map(
+                fn (StockItem $item) => (int) $item->getKey(),
+                $shelves,
+            ))),
         );
 
         /** @var array<int, string> $required */
@@ -143,23 +201,28 @@ final class DeductOrderStock
         $shortfalls = [];
 
         foreach ($order->items as $item) {
-            $variantId = (int) $item->product_variant_id;
+            $shelf = $shelves[$item->getKey()];
+            $stockItemId = (int) $shelf->getKey();
 
-            // Absent from the map means this size has never been in this warehouse, which is the
+            // Absent from the map means this item has never been in this warehouse, which is the
             // same answer as an empty shelf — and the same number the storekeeper needs either way.
-            $onShelf = $available[$variantId] ?? '0.000';
-            $required[$variantId] = bcadd($required[$variantId] ?? '0', $item->producedQuantity(), 3);
+            $onShelf = $available[$stockItemId] ?? '0.000';
+            $required[$stockItemId] = bcadd($required[$stockItemId] ?? '0', $item->producedQuantity(), 3);
 
-            if (bccomp($onShelf, $required[$variantId], 3) >= 0) {
+            if (bccomp($onShelf, $required[$stockItemId], 3) >= 0) {
                 continue;
             }
 
-            // Keyed by size rather than appended, so a second line of a size already short
-            // replaces its entry with the larger total instead of naming it twice.
-            $shortfalls[$variantId] = new StockShortfall(
-                name: trim("{$item->product_name} — {$item->variant_label}"),
+            // Keyed by shelf rather than appended, so a second line drawing on a pile already
+            // short replaces its entry with the larger total instead of naming it twice.
+            //
+            // Named by the shelf, not by «المنتج — المقاس»: what is short is one pile, and two
+            // different products can be the reason. Naming either of them would send the
+            // storekeeper looking for the wrong thing.
+            $shortfalls[$stockItemId] = new StockShortfall(
+                name: $shelf->displayName(),
                 available: $onShelf,
-                required: $required[$variantId],
+                required: $required[$stockItemId],
             );
         }
 

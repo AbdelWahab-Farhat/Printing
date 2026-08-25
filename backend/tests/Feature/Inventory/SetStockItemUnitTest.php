@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\Inventory;
 
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Models\Product;
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Enums\MovementType;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
@@ -18,23 +17,29 @@ use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
- * Declaring what a product's stock is counted in, once there is stock on the shelf.
+ * Declaring what a shelf is counted in, once there is stock on it.
  *
- * **200 pieces are not 200 kilograms, and the old behaviour said they were.** `SetStockUnit`
- * used to relabel the balance and leave the figure alone, so a shelf holding 200 bags became a
- * shelf holding "200 kg" — a number nobody measured, in a unit nobody weighed it in, feeding
- * every costing and shortage answer from that moment on. The quantity is discarded now: what was
+ * **200 pieces are not 200 kilograms, and the old behaviour said they were.** This used to
+ * relabel the balance and leave the figure alone, so a shelf holding 200 bags became a shelf
+ * holding "200 kg" — a number nobody measured, in a unit nobody weighed it in, feeding every
+ * costing and shortage answer from that moment on. The quantity is discarded now: what was
  * counted in the old unit cannot be carried into the new one.
  *
  * **And it is discarded through the ledger, not behind it.** {@see StockLedgerTest} states the
- * invariant this whole context exists to hold — for every (warehouse, size) the balance equals
- * the signed sum of its movements — so a balance that simply became zero would break the one
- * rule everything else serves. It leaves as an `Adjustment`, recorded in the unit it was
+ * invariant this whole context exists to hold — for every (warehouse, stock item) the balance
+ * equals the signed sum of its movements — so a balance that simply became zero would break the
+ * one rule everything else serves. It leaves as an `Adjustment`, recorded in the unit it was
  * actually counted in, which is also what keeps «لماذا اختفى الرصيد؟» answerable a year later.
+ *
+ * **The question moved from the product to the pile, and this file moved with it.** It used to
+ * hang off `PATCH /products/{id}/stock-unit` and `products.stock_unit`; a unit is a fact about
+ * the heap, and while each product answered separately «كيس شحن سادة» and «كيس شحن مطبوع» could
+ * insist that one pile was counted two different ways. The behaviour under test is unchanged —
+ * which is the point of keeping this file rather than writing a new one.
  *
  * Arrange - Act - Assert throughout.
  */
-class SetStockUnitTest extends TestCase
+class SetStockItemUnitTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -59,38 +64,34 @@ class SetStockUnitTest extends TestCase
         return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
     }
 
-    private function pieceProduct(): ProductVariant
+    /** A shelf counted by the piece — the side of the pair this endpoint changes. */
+    private function pieceShelf(): StockItem
     {
-        $product = Product::factory()->create([
-            'pricing_unit' => PricingUnit::Piece,
-            'stock_unit' => PricingUnit::Piece,
-        ]);
-
-        return ProductVariant::factory()->for($product)->create();
+        return StockItem::factory()->unit(PricingUnit::Piece)->create();
     }
 
     public function test_a_shelf_counted_in_the_old_unit_is_emptied_rather_than_relabelled(): void
     {
         // Arrange — 200 bags on the shelf, counted by the piece.
-        $variant = $this->pieceProduct();
+        $item = $this->pieceShelf();
         $warehouse = Warehouse::factory()->create();
         WarehouseStock::factory()->quantity('200')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $item->id,
             'unit' => PricingUnit::Piece,
         ]);
 
         // Act — the shop decides this product is stocked by weight from now on.
         $response = $this->withHeaders($this->manager())
-            ->patchJson("/api/v1/products/{$variant->product_id}/stock-unit", ['unit' => 'kilogram']);
+            ->patchJson("/api/v1/stock-items/{$item->id}/unit", ['unit' => 'kilogram']);
 
         // Assert — the unit changed and the figure did NOT come with it. 200 was a count of bags;
         // carrying it over would assert 200 kg nobody ever put on a scale.
         $response->assertOk();
-        $this->assertSame('kilogram', $response->json('data.stock_unit'));
+        $this->assertSame('kilogram', $response->json('data.unit'));
 
         $stock = WarehouseStock::query()
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $item->id)
             ->firstOrFail();
 
         $this->assertSame(PricingUnit::Kilogram, $stock->unit);
@@ -101,28 +102,28 @@ class SetStockUnitTest extends TestCase
     {
         // Arrange — the invariant StockLedgerTest states: the balance is the signed sum of the
         // movements. A balance that dropped to zero on its own would break it.
-        $variant = $this->pieceProduct();
+        $item = $this->pieceShelf();
         $warehouse = Warehouse::factory()->create();
         WarehouseStock::factory()->quantity('200')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $item->id,
             'unit' => PricingUnit::Piece,
         ]);
 
         // Act
         $this->withHeaders($this->manager())
-            ->patchJson("/api/v1/products/{$variant->product_id}/stock-unit", ['unit' => 'kilogram'])
+            ->patchJson("/api/v1/stock-items/{$item->id}/unit", ['unit' => 'kilogram'])
             ->assertOk();
 
         // Assert — one adjustment out of that warehouse, for exactly what was there.
         //
         // **The unit is in the note, and it has to be.** `stock_movements` has no unit column —
-        // a movement's unit is implicit in the product's `stock_unit`, which this very operation
+        // a movement's unit is implicit in the stock item's `unit`, which this very operation
         // is about to change. So a reader looking back at "200" would infer kilograms unless the
         // row says otherwise in words. That is what makes the note load-bearing rather than
         // decoration, and why it is asserted.
         $movement = StockMovement::query()
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $item->id)
             ->latest('id')
             ->firstOrFail();
 
@@ -134,29 +135,29 @@ class SetStockUnitTest extends TestCase
         $this->assertStringContainsString(PricingUnit::Piece->label(), (string) $movement->notes);
     }
 
-    public function test_every_warehouse_holding_the_product_is_emptied(): void
+    public function test_every_warehouse_holding_the_item_is_emptied(): void
     {
-        // Arrange — the same size on two shelves. Emptying one and relabelling the other would
+        // Arrange — one item on two shelves. Emptying one and relabelling the other would
         // leave a balance asserting kilograms it was never weighed in.
-        $variant = $this->pieceProduct();
+        $item = $this->pieceShelf();
         $first = Warehouse::factory()->create();
         $second = Warehouse::factory()->create();
 
         foreach ([$first, $second] as $warehouse) {
             WarehouseStock::factory()->quantity('50')->create([
                 'warehouse_id' => $warehouse->id,
-                'product_variant_id' => $variant->id,
+                'stock_item_id' => $item->id,
                 'unit' => PricingUnit::Piece,
             ]);
         }
 
         // Act
         $this->withHeaders($this->manager())
-            ->patchJson("/api/v1/products/{$variant->product_id}/stock-unit", ['unit' => 'kilogram'])
+            ->patchJson("/api/v1/stock-items/{$item->id}/unit", ['unit' => 'kilogram'])
             ->assertOk();
 
         // Assert
-        $balances = WarehouseStock::query()->where('product_variant_id', $variant->id)->get();
+        $balances = WarehouseStock::query()->where('stock_item_id', $item->id)->get();
 
         $this->assertCount(2, $balances);
         $balances->each(function (WarehouseStock $stock): void {
@@ -164,7 +165,7 @@ class SetStockUnitTest extends TestCase
             $this->assertSame(PricingUnit::Kilogram, $stock->unit);
         });
         $this->assertSame(2, StockMovement::query()
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $item->id)
             ->where('movement_type', MovementType::Adjustment)
             ->count());
     }
@@ -173,45 +174,45 @@ class SetStockUnitTest extends TestCase
     {
         // Arrange — nothing to discard. A zero-quantity adjustment would be a line in the ledger
         // that records no event, and the ledger is read by people.
-        $variant = $this->pieceProduct();
+        $item = $this->pieceShelf();
         WarehouseStock::factory()->quantity('0')->create([
             'warehouse_id' => Warehouse::factory()->create()->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $item->id,
             'unit' => PricingUnit::Piece,
         ]);
 
         // Act
         $this->withHeaders($this->manager())
-            ->patchJson("/api/v1/products/{$variant->product_id}/stock-unit", ['unit' => 'kilogram'])
+            ->patchJson("/api/v1/stock-items/{$item->id}/unit", ['unit' => 'kilogram'])
             ->assertOk();
 
         // Assert
         $this->assertSame(PricingUnit::Kilogram, WarehouseStock::query()
-            ->where('product_variant_id', $variant->id)->firstOrFail()->unit);
+            ->where('stock_item_id', $item->id)->firstOrFail()->unit);
         $this->assertSame(0, StockMovement::query()
-            ->where('product_variant_id', $variant->id)->count());
+            ->where('stock_item_id', $item->id)->count());
     }
 
     public function test_setting_the_unit_it_already_has_touches_nothing(): void
     {
         // Arrange — a no-op must stay a no-op. Discarding a shelf because somebody re-picked the
         // unit already showing would be the worst possible reading of this endpoint.
-        $variant = $this->pieceProduct();
+        $item = $this->pieceShelf();
         WarehouseStock::factory()->quantity('200')->create([
             'warehouse_id' => Warehouse::factory()->create()->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $item->id,
             'unit' => PricingUnit::Piece,
         ]);
 
         // Act
         $this->withHeaders($this->manager())
-            ->patchJson("/api/v1/products/{$variant->product_id}/stock-unit", ['unit' => 'piece'])
+            ->patchJson("/api/v1/stock-items/{$item->id}/unit", ['unit' => 'piece'])
             ->assertOk();
 
         // Assert — the 200 bags are still there.
         $this->assertSame('200.000', (string) WarehouseStock::query()
-            ->where('product_variant_id', $variant->id)->firstOrFail()->quantity);
+            ->where('stock_item_id', $item->id)->firstOrFail()->quantity);
         $this->assertSame(0, StockMovement::query()
-            ->where('product_variant_id', $variant->id)->count());
+            ->where('stock_item_id', $item->id)->count());
     }
 }

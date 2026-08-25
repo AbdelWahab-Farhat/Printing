@@ -8,9 +8,12 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Inventory\Actions\SetStockItemUnit;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Order\Actions\DeductOrderStock;
 use App\Domain\Order\Support\Money;
+use App\Domain\Order\Support\TransitionFields;
 use Database\Factories\OrderItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -35,7 +38,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * **It is asked for on the way into «جاهزة», not when the order is taken.** A clerk agreeing
  * «٥٠٠ قطعة» with a customer on the phone has not been near a scale, and the parcel does not
- * exist yet; the foreman who shelves it has both. See {@see \App\Domain\Order\Support\TransitionFields}.
+ * exist yet; the foreman who shelves it has both. See {@see TransitionFields}.
  *
  * Audited; its entries are read through the order that owns it.
  */
@@ -140,17 +143,25 @@ class OrderItem extends Model
     /**
      * The unit this line's stock is counted in on the shelf.
      *
-     * **The product's, not the line's.** `stock_unit` is a fact about the product — see
-     * {@see \App\Domain\Inventory\Actions\SetStockUnit} — while `pricing_unit` is what the
-     * customer was billed in, and since `stock_unit` became settable the two need not agree.
+     * **The shelf's, not the line's, and not the product's any more.** This used to read
+     * `products.stock_unit`; that column is gone, and the unit now belongs to the
+     * {@see StockItem} the size draws on — see
+     * {@see SetStockItemUnit}. The move is the whole point of
+     * stock items: «كيس شحن سادة» and «كيس شحن مطبوع» at one size are one pile, and while each
+     * product answered this question separately the two could insist that one heap was counted
+     * two different ways.
      *
-     * Falls back to the selling unit when the product is not loaded or has been deleted out from
-     * under the line: an invoice keeps its own copy of everything it needs, and guessing that
-     * the units differ would be the worse of the two mistakes.
+     * `pricing_unit` is untouched by any of it — what the customer was billed in — and the two
+     * still need not agree, which is exactly what {@see isStockedInAnotherUnit()} is about.
+     *
+     * Falls back to the selling unit when the variant, its shelf, or the link between them is
+     * missing — a quote-only size is never stocked, and an invoice keeps its own copy of
+     * everything it needs. Guessing that the units *differ* would be the worse of the two
+     * mistakes: it would demand a measurement for a line that needs none.
      */
     public function stockUnit(): PricingUnit
     {
-        return $this->product?->stock_unit ?? $this->pricing_unit;
+        return $this->variant?->stockItem?->unit ?? $this->pricing_unit;
     }
 
     /**

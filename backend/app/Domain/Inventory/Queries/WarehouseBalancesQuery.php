@@ -26,24 +26,24 @@ final class WarehouseBalancesQuery
      * "never been here" and "here and empty" are the same answer to the caller, and the caller
      * is the one that decides what to call it.
      *
-     * @param  list<int>  $productVariantIds
+     * @param  list<int>  $stockItemIds
      * @return array<int, string>
      */
-    public function __invoke(int $warehouseId, array $productVariantIds): array
+    public function __invoke(int $warehouseId, array $stockItemIds): array
     {
-        if ($productVariantIds === []) {
+        if ($stockItemIds === []) {
             return [];
         }
 
         $rows = WarehouseStock::query()
             ->where('warehouse_id', $warehouseId)
-            ->whereIn('product_variant_id', $productVariantIds)
-            ->get(['product_variant_id', 'quantity']);
+            ->whereIn('stock_item_id', $stockItemIds)
+            ->get(['stock_item_id', 'quantity']);
 
         $balances = [];
 
         foreach ($rows as $row) {
-            $balances[(int) $row->product_variant_id] = (string) $row->quantity;
+            $balances[(int) $row->stock_item_id] = (string) $row->quantity;
         }
 
         return $balances;

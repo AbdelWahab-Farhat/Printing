@@ -59,6 +59,10 @@ final class AuditAttributeLabels
         'cost_type' => 'نوع التكلفة',
         'warehouse_id' => 'المخزن',
         'vendor_id' => 'المورد',
+        'stock_item_id' => 'الصنف المخزني',
+        // On a product it is «what this is made of», on a stock item «which material this is a
+        // size of» — near enough the same sentence that one word serves both.
+        'stock_item_group_id' => 'مجموعة الأصناف',
         'product_variant_id' => 'المقاس',
         'order_id' => 'الطلبية',
         'recorded_by' => 'سجّلها',
@@ -124,7 +128,6 @@ final class AuditAttributeLabels
             'slug' => 'المعرّف',
             'description' => 'الوصف',
             'features' => 'المزايا',
-            'stock_unit' => 'وحدة التخزين',
             'pricing_mode' => 'طريقة التسعير',
             'min_order_quantity' => 'أقل كمية للطلب',
             // «تصنيف المنتج» while a `category` column stood beside it; the word is free now.
@@ -147,6 +150,28 @@ final class AuditAttributeLabels
             'label' => 'المقاس',
             'width_cm' => 'العرض (سم)',
             'height_cm' => 'الارتفاع (سم)',
+        ],
+        // The material a family of shelves is made of. Renaming it renames every size of it, so
+        // «اسم المجموعة» is the entry somebody scanning a history will see most often.
+        'stock_item_group' => [
+            'name' => 'اسم المجموعة',
+            'default_unit' => 'وحدة التخزين الافتراضية',
+            'description' => 'الوصف',
+        ],
+        // The shelf itself. `name` and the two dimensions are its own words rather than the
+        // shared ones above, because «الاسم» on a stock item means the material — «كيس شحن» —
+        // and the size beside it is what makes the row a shelf rather than a category.
+        //
+        // **`unit` is deliberately absent**, even though it is the most important column here.
+        // The shared list above already names it «الوحدة», and a per-subject override would make
+        // the word differ by one row — which is precisely what stops `AuditAttributeLabelsTest`
+        // treating it as shared, and it would then be read as a claim that every *other* subject
+        // has a `unit` column too. Same word everywhere, or it is not shared vocabulary.
+        'stock_item' => [
+            'name' => 'اسم الصنف',
+            'width_cm' => 'العرض (سم)',
+            'height_cm' => 'الارتفاع (سم)',
+            'description' => 'الوصف',
         ],
         'product_price_tier' => [
             'product_variant_id' => 'المقاس',

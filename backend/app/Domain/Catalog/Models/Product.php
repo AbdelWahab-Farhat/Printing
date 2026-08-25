@@ -8,8 +8,10 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Catalog\Actions\AllocateProductIdentifier;
 use App\Domain\Catalog\Actions\GenerateProductSlug;
+use App\Domain\Catalog\Actions\SyncProductVariants;
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Inventory\Models\StockItemGroup;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -29,16 +31,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * `code` is deliberately absent from the fillable list: it is allocated by
  * {@see AllocateProductIdentifier} and must never arrive in a request.
  *
- * `stock_unit` is fillable for the same reason `pricing_unit` is — a product needs one to be
- * created at all — but only `CreateProduct` ever reaches it in practice: `UpdateProductRequest`
- * deliberately carries no `stock_unit` rule, so a PUT can never change it. Past creation, the
- * only writer is {@see \App\Domain\Inventory\Actions\SetStockUnit}, which is what keeps
- * `warehouse_stocks.unit`/`stock_batches.unit` in step with whatever this column says.
+ * **`pricing_unit` is the only unit left here.** It is what the customer is charged by. Its
+ * sibling `stock_unit` — what the warehouse counted the product in — moved to
+ * `stock_items.unit` when stock stopped being keyed on a product's size: two products sharing one
+ * pile could each claim a different answer for it, and whichever movement ran first decided what
+ * the balance meant. The two are still allowed to disagree, which was the point of splitting them
+ * in the first place; the second half simply has an owner now.
  */
 #[UseFactory(ProductFactory::class)]
 #[Fillable([
     'slug', 'name', 'description', 'features', 'category', 'product_category_id',
-    'pricing_unit', 'pricing_mode', 'stock_unit', 'min_order_quantity', 'is_active', 'sort_order',
+    'stock_item_group_id', 'pricing_unit', 'pricing_mode', 'min_order_quantity', 'is_active', 'sort_order',
 ])]
 class Product extends Model implements HasAuditTrail
 {
@@ -83,7 +86,6 @@ class Product extends Model implements HasAuditTrail
         return [
             'features' => 'array',
             'pricing_unit' => PricingUnit::class,
-            'stock_unit' => PricingUnit::class,
             'pricing_mode' => PricingMode::class,
             // String, not float: money and the quantities it is multiplied by must stay exact.
             'min_order_quantity' => 'decimal:3',
@@ -105,6 +107,24 @@ class Product extends Model implements HasAuditTrail
     public function productCategory(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class);
+    }
+
+    /**
+     * What this product is made of — «كيس شحن».
+     *
+     * Optional, and a *default* rather than a rule: naming it here means every one of the
+     * product's sizes finds its own shelf under that material when the product is saved, instead
+     * of somebody picking one size by size. An explicit `stock_item_id` on a variant still wins,
+     * and a product with no material keeps working exactly as it did before groups existed.
+     *
+     * Read-only and for rendering — the resolution itself is asked of `InventoryService`, never
+     * of this relation. See {@see SyncProductVariants::resolveStockItemId()}.
+     *
+     * @return BelongsTo<StockItemGroup, $this>
+     */
+    public function stockItemGroup(): BelongsTo
+    {
+        return $this->belongsTo(StockItemGroup::class);
     }
 
     /**

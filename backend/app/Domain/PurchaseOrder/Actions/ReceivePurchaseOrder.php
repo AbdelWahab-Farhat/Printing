@@ -7,10 +7,10 @@ namespace App\Domain\PurchaseOrder\Actions;
 use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderData;
 use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderItemData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
-use App\Domain\PurchaseOrder\Exceptions\ProductVariantNotOnPurchaseOrder;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderHasNoWarehouse;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderNotReceivable;
 use App\Domain\PurchaseOrder\Exceptions\ReceivedQuantityExceedsOrdered;
+use App\Domain\PurchaseOrder\Exceptions\StockItemNotOnPurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use App\Domain\PurchaseOrder\Support\Money;
@@ -43,7 +43,7 @@ use Illuminate\Support\Facades\DB;
  *
  * @throws PurchaseOrderNotReceivable
  * @throws PurchaseOrderHasNoWarehouse
- * @throws ProductVariantNotOnPurchaseOrder
+ * @throws StockItemNotOnPurchaseOrder
  * @throws ReceivedQuantityExceedsOrdered
  */
 final class ReceivePurchaseOrder
@@ -65,7 +65,7 @@ final class ReceivePurchaseOrder
             // same order cannot both read the same quantity_received and both pass the
             // over-receipt guard below — the same reasoning ApplyStockChange locks a balance row
             // for.
-            $items = $order->items()->lockForUpdate()->get()->keyBy('product_variant_id');
+            $items = $order->items()->lockForUpdate()->get()->keyBy('stock_item_id');
 
             foreach ($data->items as $line) {
                 $this->guardLine($order, $items, $line);
@@ -78,11 +78,11 @@ final class ReceivePurchaseOrder
                 items: array_map(
                     function (ReceivePurchaseOrderItemData $line) use ($items): StockArrivalItemData {
                         /** @var PurchaseOrderItem $orderedLine */
-                        $orderedLine = $items->get($line->productVariantId);
+                        $orderedLine = $items->get($line->stockItemId);
                         $unitCost = $orderedLine->final_unit_cost === null ? null : (string) $orderedLine->final_unit_cost;
 
                         return new StockArrivalItemData(
-                            productVariantId: $line->productVariantId,
+                            stockItemId: $line->stockItemId,
                             quantity: $line->quantity,
                             unitCost: $unitCost,
                             // Priced against what *this* shipment delivered, not the order line's
@@ -101,7 +101,7 @@ final class ReceivePurchaseOrder
 
             foreach ($data->items as $line) {
                 /** @var PurchaseOrderItem $item */
-                $item = $items->get($line->productVariantId);
+                $item = $items->get($line->stockItemId);
                 $item->quantity_received = bcadd((string) $item->quantity_received, $line->quantity, 3);
                 $item->save();
             }
@@ -116,24 +116,24 @@ final class ReceivePurchaseOrder
     }
 
     /**
-     * @param  Collection<int, PurchaseOrderItem>  $items  Keyed by product_variant_id.
+     * @param  Collection<int, PurchaseOrderItem>  $items  Keyed by stock_item_id.
      *
-     * @throws ProductVariantNotOnPurchaseOrder
+     * @throws StockItemNotOnPurchaseOrder
      * @throws ReceivedQuantityExceedsOrdered
      */
     private function guardLine(PurchaseOrder $order, Collection $items, ReceivePurchaseOrderItemData $line): void
     {
-        $item = $items->get($line->productVariantId);
+        $item = $items->get($line->stockItemId);
 
         if ($item === null) {
-            throw ProductVariantNotOnPurchaseOrder::make($line->productVariantId, (int) $order->getKey());
+            throw StockItemNotOnPurchaseOrder::make($line->stockItemId, (int) $order->getKey());
         }
 
         $projected = bcadd((string) $item->quantity_received, $line->quantity, 3);
 
         if (bccomp($projected, (string) $item->quantity_ordered, 3) > 0) {
             throw ReceivedQuantityExceedsOrdered::make(
-                $line->productVariantId,
+                $line->stockItemId,
                 (string) $item->quantity_ordered,
                 (string) $item->quantity_received,
                 $line->quantity,

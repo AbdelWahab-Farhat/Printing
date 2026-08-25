@@ -51,7 +51,7 @@ class Warehouse extends Model implements HasAuditTrail
      */
     public function stocks(): HasMany
     {
-        return $this->hasMany(WarehouseStock::class)->orderBy('product_variant_id');
+        return $this->hasMany(WarehouseStock::class)->orderBy('stock_item_id');
     }
 
     /**

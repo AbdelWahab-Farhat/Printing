@@ -12,6 +12,7 @@ use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\DesignSource;
@@ -357,8 +358,8 @@ class OrderTransitionFieldsTest extends TestCase
     /**
      * **«يُخصم منه ما تستهلكه» does not say how much, and the person tapping it cannot know.**
      *
-     * What leaves the shelf is `warehouse_quantity ?? quantity` per line, in the *product's*
-     * stock unit — which since `stock_unit` landed need not be the unit the line is sold in. A
+     * What leaves the shelf is `warehouse_quantity ?? quantity` per line, in the *shelf's* own
+     * unit — see `OrderItem::stockUnit()` — which need not be the unit the line is sold in. A
      * foreman moving an order to «جاهزة» was being asked to name a warehouse without being told
      * what was about to come out of it, and the two numbers can differ both in size and in kind:
      * 300 bags sold, 12.5 kilograms taken.
@@ -369,11 +370,12 @@ class OrderTransitionFieldsTest extends TestCase
     public function test_the_warehouse_hint_names_what_will_actually_be_deducted(): void
     {
         // Arrange — sold by the piece, stocked by the kilo, and weighed onto the order at intake.
-        $product = Product::factory()->create([
-            'pricing_unit' => PricingUnit::Piece,
-            'stock_unit' => PricingUnit::Kilogram,
+        $product = Product::factory()->create(['pricing_unit' => PricingUnit::Piece]);
+        $shelf = StockItem::factory()->unit(PricingUnit::Kilogram)->create();
+        $variant = ProductVariant::factory()->for($product)->create([
+            'label' => '25*35',
+            'stock_item_id' => $shelf->id,
         ]);
-        $variant = ProductVariant::factory()->for($product)->create(['label' => '25*35']);
         $order = Order::factory()->status(OrderStatus::Printing)->create();
         OrderItem::factory()->for($order)->create([
             'product_id' => $product->id,
@@ -401,11 +403,12 @@ class OrderTransitionFieldsTest extends TestCase
     {
         // Arrange — no `warehouse_quantity`, which is nine lines in ten: what is sold is what
         // leaves, and `producedQuantity()` falls back to the ordered figure.
-        $product = Product::factory()->create([
-            'pricing_unit' => PricingUnit::Piece,
-            'stock_unit' => PricingUnit::Piece,
+        $product = Product::factory()->create(['pricing_unit' => PricingUnit::Piece]);
+        $shelf = StockItem::factory()->unit(PricingUnit::Piece)->create();
+        $variant = ProductVariant::factory()->for($product)->create([
+            'label' => '45*50',
+            'stock_item_id' => $shelf->id,
         ]);
-        $variant = ProductVariant::factory()->for($product)->create(['label' => '45*50']);
         $order = Order::factory()->status(OrderStatus::Printing)->create();
         OrderItem::factory()->for($order)->create([
             'product_id' => $product->id,
@@ -447,7 +450,7 @@ class OrderTransitionFieldsTest extends TestCase
     // ────────────── what actually leaves the shelf, asked line by line ──────────────
 
     /**
-     * One line of a run being printed: sold by the piece, stocked in $stockUnit.
+     * One line of a run being printed: sold by the piece, off a shelf counted in $stockUnit.
      *
      * @return array{0: Order, 1: OrderItem}
      */
@@ -456,11 +459,12 @@ class OrderTransitionFieldsTest extends TestCase
         string $sold = '500',
         ?string $measured = null,
     ): array {
-        $product = Product::factory()->create([
-            'pricing_unit' => PricingUnit::Piece,
-            'stock_unit' => $stockUnit,
+        $product = Product::factory()->create(['pricing_unit' => PricingUnit::Piece]);
+        $shelf = StockItem::factory()->unit($stockUnit)->create();
+        $variant = ProductVariant::factory()->for($product)->create([
+            'label' => '25*35',
+            'stock_item_id' => $shelf->id,
         ]);
-        $variant = ProductVariant::factory()->for($product)->create(['label' => '25*35']);
         $order = Order::factory()->status(OrderStatus::Printing)->create();
 
         $item = OrderItem::factory()->for($order)->create([
@@ -1114,11 +1118,9 @@ class OrderTransitionFieldsTest extends TestCase
     public function test_finishing_a_run_does_not_ask_for_a_parcel_weight(): void
     {
         // Arrange — a run sold by the kilo, which is the case that used to demand one.
-        $product = Product::factory()->create([
-            'pricing_unit' => PricingUnit::Kilogram,
-            'stock_unit' => PricingUnit::Kilogram,
-        ]);
-        $variant = ProductVariant::factory()->for($product)->create();
+        $product = Product::factory()->create(['pricing_unit' => PricingUnit::Kilogram]);
+        $shelf = StockItem::factory()->unit(PricingUnit::Kilogram)->create();
+        $variant = ProductVariant::factory()->for($product)->create(['stock_item_id' => $shelf->id]);
         $order = Order::factory()->status(OrderStatus::Printing)->create();
         OrderItem::factory()->for($order)->create([
             'product_id' => $product->id,

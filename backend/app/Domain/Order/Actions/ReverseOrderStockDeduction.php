@@ -42,13 +42,23 @@ final class ReverseOrderStockDeduction
 
     public function __invoke(Order $order, int $employeeId): void
     {
+        // One query for the whole order rather than one per line; strict-mode lazy loading is on
+        // outside production, so the hop from a line to its shelf has to be asked for explicitly.
+        $order->items->loadMissing('variant.stockItem');
+
         foreach ($order->items as $item) {
             if ($item->fulfillment_stock_movement_id === null) {
                 continue;
             }
 
+            // Resolved rather than read off the line: a line names a size, a warehouse holds a
+            // shelf, and only Inventory maps one to the other. A line that got this far has a
+            // shelf by construction — it could not have been fulfilled otherwise — so the throw
+            // inside is unreachable here rather than merely unlikely.
+            $stockItem = $this->inventory->stockItemFor($item->variant);
+
             $this->inventory->recordMovement(StockMovementData::orderReversal(
-                productVariantId: $item->product_variant_id,
+                stockItemId: (int) $stockItem->getKey(),
                 warehouseId: (int) $order->fulfillment_warehouse_id,
                 quantity: $item->producedQuantity(),
                 reversedMovementId: $item->fulfillment_stock_movement_id,

@@ -46,7 +46,7 @@ final class RecordStockArrival
 
             foreach ($data->items as $item) {
                 $movement = $this->inventory->recordMovement(StockMovementData::arrival([
-                    'product_variant_id' => $item->productVariantId,
+                    'stock_item_id' => $item->stockItemId,
                     'to_warehouse_id' => $data->warehouseId,
                     'quantity' => $item->quantity,
                     // Ties the ledger entry back to the document that caused it — the slot the
@@ -61,7 +61,7 @@ final class RecordStockArrival
 
                 $arrivalItem = new StockArrivalItem(['quantity' => $item->quantity]);
                 $arrivalItem->stock_arrival_id = $arrival->id;
-                $arrivalItem->product_variant_id = $item->productVariantId;
+                $arrivalItem->stock_item_id = $item->stockItemId;
                 $arrivalItem->stock_movement_id = $movement->id;
                 // Not fillable: null for a plain arrival, and set only when this DTO was built by
                 // ReceivePurchaseOrder — see the note on StockArrivalItemData::$unitCost.
@@ -74,7 +74,7 @@ final class RecordStockArrival
 
             return $arrival->load([
                 'vendor', 'warehouse', 'receivedByUser',
-                'items.productVariant.product', 'items.stockMovement',
+                'items.stockItem', 'items.stockMovement',
             ]);
         });
     }

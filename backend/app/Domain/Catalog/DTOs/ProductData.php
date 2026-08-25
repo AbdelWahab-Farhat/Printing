@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Catalog\DTOs;
 
+use App\Domain\Catalog\Actions\SyncProductVariants;
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
 
@@ -20,14 +21,20 @@ final readonly class ProductData
         public string $name,
         /** The catalogue heading it sits under — «التصنيف». Required from every request. */
         public int $productCategoryId,
-        public PricingUnit $pricingUnit,
         /**
-         * What the warehouse counts this in. Only ever read by {@see \App\Domain\Catalog\Actions\CreateProduct}
-         * — {@see \App\Domain\Catalog\Actions\UpdateProduct} builds its own attribute list and
-         * never touches this, since past creation the only writer is
-         * {@see \App\Domain\Inventory\Actions\SetStockUnit}.
+         * What the product is made of — «مجموعة أصناف». Optional.
+         *
+         * Naming it means every size the product carries resolves to the shelf of that material
+         * at the same size, creating it if the material has not reached it yet. See
+         * {@see SyncProductVariants::resolveStockItemId()}.
+         *
+         * `null` means **not supplied**, exactly as it does for `slug` and `isActive` below: on
+         * update the current material is kept. There is deliberately no way to *clear* it through
+         * this endpoint — doing so would silently detach every size from its shelf on the next
+         * save, and that is not a thing to make easy by accident.
          */
-        public PricingUnit $stockUnit,
+        public ?int $stockItemGroupId,
+        public PricingUnit $pricingUnit,
         public PricingMode $pricingMode,
         public string $minOrderQuantity,
         public ?string $description = null,
@@ -51,12 +58,10 @@ final readonly class ProductData
                 : null,
             name: (string) $validated['name'],
             productCategoryId: (int) $validated['product_category_id'],
+            stockItemGroupId: isset($validated['stock_item_group_id']) && $validated['stock_item_group_id'] !== ''
+                ? (int) $validated['stock_item_group_id']
+                : null,
             pricingUnit: $pricingUnit,
-            // Absent means "same as pricing_unit" — the common case, where what is stocked and
-            // what is sold agree.
-            stockUnit: isset($validated['stock_unit']) && $validated['stock_unit'] !== ''
-                ? PricingUnit::from((string) $validated['stock_unit'])
-                : $pricingUnit,
             pricingMode: PricingMode::from((string) $validated['pricing_mode']),
             minOrderQuantity: (string) ($validated['min_order_quantity'] ?? '1'),
             description: isset($validated['description']) && $validated['description'] !== ''
