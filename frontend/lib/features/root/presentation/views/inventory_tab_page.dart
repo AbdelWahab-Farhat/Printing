@@ -73,6 +73,12 @@ class _InventoryTabPageState extends State<InventoryTabPage> {
               multiSelectionEnabled: false,
               emptySelectionAllowed: false,
               showSelectedIcon: false,
+              // **Spans the row rather than shrink-wrapping its three words.** Sized to content
+              // it sat as a small island under a centred title, reading as a chip somebody had
+              // dropped there; full width it is plainly the switch for the list beneath it, and
+              // the three targets divide the row evenly instead of being three narrow ones in
+              // the middle.
+              expandedInsets: EdgeInsets.zero,
               style: SegmentedButton.styleFrom(
                 textStyle: context.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
                 padding: EdgeInsets.symmetric(horizontal: 8.w),

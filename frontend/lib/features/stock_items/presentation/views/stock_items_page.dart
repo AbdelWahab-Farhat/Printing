@@ -128,14 +128,27 @@ class _StockItemsView extends StatelessWidget {
           : null,
       body: Column(
         children: [
+          // **Narrowing and searching sit on one row, because they are one act.** The filter
+          // had a line of its own above the box, which spent a whole row on a single icon and
+          // put the two halves of «أرِني هذه فقط» at opposite ends of the screen. Beside the
+          // box it reads as what it is: the other way to cut the same list down.
+          //
+          // **No explaining sentence here either.** One used to occupy that row saying what a
+          // صنف is; the screen is reached from a tab that already names it, and a paragraph met
+          // on every visit is read once and scrolled past forever after.
           Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
+            padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
             child: Row(
               children: [
-                // **No explaining sentence here.** One went above this list saying what a صنف
-                // is; the screen is reached from a tab that already names it, and a paragraph
-                // repeated on every visit is read once and scrolled past forever after.
-                const Spacer(),
+                Expanded(
+                  child: SearchField(
+                    // Named after what the server actually matches: `search` is an ILIKE on the
+                    // material's name — not the code, and not the composed display name.
+                    hint: 'ابحث باسم الصنف',
+                    onChanged: cubit.search,
+                  ),
+                ),
+                SizedBox(width: 8.w),
                 // Rebuilt with the list, so the button's «filtered» fill and the rows it
                 // produced can never disagree.
                 BlocBuilder<StockItemsCubit, StockItemsState>(
@@ -151,15 +164,6 @@ class _StockItemsView extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
-            child: SearchField(
-              // Named after what the server actually matches: `search` is an ILIKE on the
-              // material's name — not the code, and not the composed display name.
-              hint: 'ابحث باسم الصنف',
-              onChanged: cubit.search,
             ),
           ),
           Expanded(
