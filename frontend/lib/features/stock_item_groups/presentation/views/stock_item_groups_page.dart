@@ -100,16 +100,7 @@ class _StockItemGroupsView extends StatelessWidget {
           : null,
       body: Column(
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
-            child: Text(
-              'المجموعة هي المادة نفسها بلا مقاس وبلا رصيد. أصنافها — المادة عند مقاس — هي ما '
-              'يُحفظ في المخازن، وتُنشأ تلقائياً حين يختار منتج هذه المادة.',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
+          // **No explaining sentence here** — see the note in [StockItemsPage].
           Padding(
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
             // «عن مادة», not «عن مجموعة»: the endpoint matches the name only — not the code —

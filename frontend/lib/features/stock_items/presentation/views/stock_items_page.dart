@@ -132,16 +132,10 @@ class _StockItemsView extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
             child: Row(
               children: [
-                Expanded(
-                  child: Text(
-                    'الصنف هو المادة بمقاسها — وهو ما يحتويه المخزن فعلاً. كل مقاسات '
-                    'المنتجات التي تُقصّ منه تسحب من رصيد واحد.',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8.w),
+                // **No explaining sentence here.** One went above this list saying what a صنف
+                // is; the screen is reached from a tab that already names it, and a paragraph
+                // repeated on every visit is read once and scrolled past forever after.
+                const Spacer(),
                 // Rebuilt with the list, so the button's «filtered» fill and the rows it
                 // produced can never disagree.
                 BlocBuilder<StockItemsCubit, StockItemsState>(

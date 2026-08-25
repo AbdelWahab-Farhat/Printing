@@ -16,6 +16,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 ///   الأصناف  — **ماذا**: the shelf itself, a material at a size. This is what a balance is of.
 ///   المواد   — **من أي شيء**: the family a shelf is a size of, and the thing a product names
 ///
+/// That reading is what the three screens teach by being used. None of it is printed on them —
+/// see [_segments].
+///
 /// Putting the middle one behind a hamburger while its balances sat under a tab meant the
 /// screen that *explains* «كيس شحن 25*35» was the hardest of the three to find, and somebody
 /// reading أصناف المخزون out of context read it as a duplicate of المنتجات.
@@ -39,43 +42,45 @@ class _InventoryTabPageState extends State<InventoryTabPage> {
   /// other two are consulted when something about a shelf needs explaining.
   int _segment = 0;
 
-  static const List<({String label, String caption})> _segments = [
-    (label: 'المخازن', caption: 'أين يقف المخزون'),
-    (label: 'الأصناف', caption: 'الرفّ نفسه — المادة بمقاسها، وعليه يقوم الرصيد'),
-    (label: 'المواد', caption: 'المادة التي الصنف مقاسٌ منها، وهي ما يسمّيه المنتج'),
-  ];
+  /// **Three words, and nothing under them.** Each segment used to carry a line explaining what
+  /// it was — «الرفّ نفسه، وعليه يقوم الرصيد» and the like. Written once they read well; met on
+  /// every visit they are a paragraph between the person and the list they came for, and after
+  /// the second day nobody reads them. The words «صنف» and «مادة» are learned from using the
+  /// screens, not from a caption repeated above them.
+  static const List<String> _segments = ['المخازن', 'الأصناف', 'المواد'];
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
     return Column(
       children: [
+        // **A switch, not a headline.** `SegmentedButton`'s default is a 48dp Material target
+        // with generous padding — right for a form control the eye has to find, wrong for three
+        // words that sit under an app bar and get used constantly. Sized down to a strip: the
+        // list below it is the subject of this screen, and the chrome should cost as few pixels
+        // as it can while staying comfortably tappable.
         Padding(
-          padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 6.h),
-          child: SegmentedButton<int>(
-            segments: [
-              for (var i = 0; i < _segments.length; i++)
-                ButtonSegment<int>(value: i, label: Text(_segments[i].label)),
-            ],
-            selected: {_segment},
-            // Never empty: one of the three is always the answer, so an unselected state would
-            // be a tab showing nothing with no way back.
-            multiSelectionEnabled: false,
-            emptySelectionAllowed: false,
-            showSelectedIcon: false,
-            onSelectionChanged: (choice) => setState(() => _segment = choice.first),
-          ),
-        ),
-        // One line saying what this segment *is*. The words «صنف» and «مادة» are new to
-        // everybody using this app, and a list of them with no sentence above it is a list
-        // people invent a meaning for — usually «نسخة ثانية من المنتجات».
-        Padding(
-          padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
-          child: Text(
-            _segments[_segment].caption,
-            textAlign: TextAlign.center,
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 6.h),
+          child: SizedBox(
+            height: 34.h,
+            child: SegmentedButton<int>(
+              segments: [
+                for (var i = 0; i < _segments.length; i++)
+                  ButtonSegment<int>(value: i, label: Text(_segments[i])),
+              ],
+              selected: {_segment},
+              // Never empty: one of the three is always the answer, so an unselected state would
+              // be a tab showing nothing with no way back.
+              multiSelectionEnabled: false,
+              emptySelectionAllowed: false,
+              showSelectedIcon: false,
+              style: SegmentedButton.styleFrom(
+                textStyle: context.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+                padding: EdgeInsets.symmetric(horizontal: 8.w),
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onSelectionChanged: (choice) => setState(() => _segment = choice.first),
+            ),
           ),
         ),
         Expanded(
