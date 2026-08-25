@@ -2,15 +2,20 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
+     *
+     * **Model events stay on.** The scaffold shipped this class with `WithoutModelEvents`, and
+     * that was fine until identifiers moved onto the models: `Product::booted()` allocates
+     * `code` (NOT NULL) and derives `slug`, and `User::booted()` allocates `employee_code`.
+     * Muting events took both away — the catalogue could not be seeded onto an empty database
+     * at all, and admin accounts were written with no employee code, silently, because that
+     * column tolerates a null. The events are how those columns get filled; a seeder is not a
+     * special case that gets to skip them.
      */
     public function run(): void
     {
