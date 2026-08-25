@@ -4,60 +4,66 @@ declare(strict_types=1);
 
 namespace App\Domain\Inventory\Actions;
 
-use App\Domain\Catalog\CatalogService;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\Enums\MovementType;
 use App\Domain\Inventory\Enums\StockBatchSourceType;
 use App\Domain\Inventory\Exceptions\FractionalQuantityNotAllowed;
 use App\Domain\Inventory\Exceptions\TransferRequiresTwoDifferentWarehouses;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockMovement;
+use App\Domain\Inventory\Queries\FindStockItem;
 use Illuminate\Support\Facades\DB;
 
 /**
  * The single write path for stock. Every quantity — and, since batch costing landed, every cost —
  * in the business changed because this ran.
  *
- * One class for all four movement types, because they differ only in which ends are filled —
- * and that difference is already stated on {@see MovementType}.
- * Four near-identical actions would be four places for the balance-and-ledger pairing to drift
- * apart, and the pairing is the entire point.
+ * One class for all movement types, because they differ only in which ends are filled — and that
+ * difference is already stated on {@see MovementType}. Several near-identical actions would be
+ * several places for the balance-and-ledger pairing to drift apart, and the pairing is the entire
+ * point.
  *
  * Everything happens in one transaction: the balances move, the batches behind them move with
  * them, and the row explaining all of it is written together, or none of it is. A partial failure
  * here would leave a shelf count with no reason behind it, which is precisely the state this
  * design exists to make impossible.
+ *
+ * **No longer asks Catalog anything.** It used to resolve a `ProductVariant` and reach through it
+ * for `product->stock_unit`, because stock was keyed on a product's size. Stock is keyed on a
+ * {@see StockItem} now, and the item carries its own unit — so the one question this action had
+ * for another context has an answer at home. Inventory may still depend on Catalog and does
+ * elsewhere; it simply has no reason to here.
  */
 final class RecordStockMovement
 {
     public function __construct(
         private readonly ApplyStockChange $applyStockChange,
-        private readonly CatalogService $catalog,
+        private readonly FindStockItem $findStockItem,
     ) {}
 
     public function __invoke(StockMovementData $data): StockMovement
     {
-        // Outside the transaction: it reads the catalogue and can 404, and holding a lock open
-        // while doing so buys nothing. Resolved once and reused for both the whole-quantity guard
-        // and the unit every balance touched by this movement is checked/stamped against.
-        $variant = $this->catalog->findVariant($data->productVariantId);
-        $this->guardWholeQuantity($data, $variant);
+        // Outside the transaction: it can 404, and holding a lock open while it does buys
+        // nothing. Resolved once and reused for both the whole-quantity guard and the unit every
+        // balance touched by this movement is checked or stamped against.
+        $item = ($this->findStockItem)($data->stockItemId);
+        $this->guardWholeQuantity($data, $item);
 
         if ($data->fromWarehouseId !== null && $data->fromWarehouseId === $data->toWarehouseId) {
             throw TransferRequiresTwoDifferentWarehouses::make();
         }
 
-        return DB::transaction(function () use ($data, $variant): StockMovement {
+        return DB::transaction(function () use ($data, $item): StockMovement {
             $movement = new StockMovement([
                 'quantity' => $data->quantity,
                 'notes' => $data->notes,
             ]);
 
             // Assigned rather than mass-assigned, deliberately. These four are the movement's
-            // identity — which size, which direction, whose hands — and none of them may ever
+            // identity — which item, which direction, whose hands — and none of them may ever
             // be settable by a payload. See RULES.md §9.4.
-            $movement->product_variant_id = $data->productVariantId;
+            $movement->stock_item_id = $data->stockItemId;
             $movement->movement_type = $data->movementType;
             $movement->from_warehouse_id = $data->fromWarehouseId;
             $movement->to_warehouse_id = $data->toWarehouseId;
@@ -66,14 +72,14 @@ final class RecordStockMovement
 
             // Saved before the balances move — not after, as before batch costing landed —
             // because consuming a cost layer needs this row's own id to attach the
-            // `stock_batch_consumptions` it produces to. Still one transaction: a balance failure
-            // rolls this insert back with everything else, so `test_a_refused_movement_leaves_no
-            // _trace_at_all` holds exactly as before.
+            // stock_batch_consumptions it produces to. Still one transaction: a balance failure
+            // rolls this insert back with everything else, so the "refused movement leaves no
+            // trace at all" test holds exactly as before.
             $movement->save();
 
-            $this->moveBalances($movement->id, $data, $variant->product->stock_unit);
+            $this->moveBalances($movement->id, $data, $item->unit);
 
-            return $movement->load(['productVariant.product', 'fromWarehouse', 'toWarehouse', 'employee']);
+            return $movement->load(['stockItem', 'fromWarehouse', 'toWarehouse', 'employee']);
         });
     }
 
@@ -93,7 +99,7 @@ final class RecordStockMovement
 
         if ($data->fromWarehouseId !== null) {
             $this->applyStockChange->decrease(
-                $data->fromWarehouseId, $data->productVariantId, $data->quantity, $unit, $movementId,
+                $data->fromWarehouseId, $data->stockItemId, $data->quantity, $unit, $movementId,
             );
 
             return;
@@ -101,7 +107,7 @@ final class RecordStockMovement
 
         if ($data->toWarehouseId !== null && $data->movementType === MovementType::OrderReversal) {
             $this->applyStockChange->creditBack(
-                $data->toWarehouseId, $data->productVariantId, $unit, $data->reversedMovementId,
+                $data->toWarehouseId, $data->stockItemId, $unit, $data->reversedMovementId,
             );
 
             return;
@@ -109,7 +115,7 @@ final class RecordStockMovement
 
         if ($data->toWarehouseId !== null) {
             $this->applyStockChange->increase(
-                $data->toWarehouseId, $data->productVariantId, $data->quantity, $unit,
+                $data->toWarehouseId, $data->stockItemId, $data->quantity, $unit,
                 $this->batchCost($data), $this->batchSource($data->movementType),
             );
         }
@@ -134,15 +140,15 @@ final class RecordStockMovement
         sort($ids);
 
         foreach ($ids as $warehouseId) {
-            $this->applyStockChange->lockBalance($warehouseId, $data->productVariantId);
+            $this->applyStockChange->lockBalance($warehouseId, $data->stockItemId);
         }
 
         $result = $this->applyStockChange->decrease(
-            $data->fromWarehouseId, $data->productVariantId, $data->quantity, $unit, $movementId,
+            $data->fromWarehouseId, $data->stockItemId, $data->quantity, $unit, $movementId,
         );
 
         $this->applyStockChange->relocateBatches(
-            $data->toWarehouseId, $data->productVariantId, $unit, $result->consumed,
+            $data->toWarehouseId, $data->stockItemId, $unit, $result->consumed,
         );
     }
 
@@ -161,32 +167,35 @@ final class RecordStockMovement
         return match ($type) {
             MovementType::PurchaseArrival => StockBatchSourceType::PurchaseArrival,
             MovementType::Adjustment => StockBatchSourceType::Adjustment,
-            // Never reached: InternalTransfer and OrderReversal each relocate/credit back
-            // existing batches instead of opening one, and OrderFulfillment/Adjustment-decrease
-            // only ever call decrease().
+            // Never reached: InternalTransfer and OrderReversal each relocate or credit back
+            // existing batches instead of opening one, and OrderFulfillment, ScrapLoss and an
+            // Adjustment-decrease only ever call decrease().
             MovementType::InternalTransfer, MovementType::OrderFulfillment,
-            MovementType::OrderReversal => StockBatchSourceType::Adjustment,
+            MovementType::OrderReversal, MovementType::ScrapLoss => StockBatchSourceType::Adjustment,
         };
     }
 
     /**
      * Half a shipping bag is a typo, half a kilo is Tuesday.
      *
-     * Asked of Catalog rather than answered here: this is the warehouse-movement half of the
-     * rule, keyed off `stock_unit` — see {@see \App\Domain\Catalog\CatalogService::requiresWholeQuantities()}.
-     * Deliberately not the same check `QuoteProductRequest` makes for an order quantity, which is
-     * keyed off `pricing_unit` instead: a product bought in by weight and sold by the piece needs
-     * whole numbers on the way out to a customer and may still take fractional amounts on the way
-     * off a shelf.
+     * Keyed off the stock item's own `unit` — what the shelf is counted in — and deliberately not
+     * the same check `QuoteProductRequest` makes for an order quantity, which is keyed off the
+     * product's `pricing_unit`. The two are allowed to disagree on purpose: a thing bought in by
+     * weight and sold by the piece needs whole numbers on the way out to a customer and may still
+     * take fractional amounts off a shelf.
+     *
+     * That divergence has not changed with this table; only its second half has an owner now. It
+     * used to be `products.stock_unit`, which meant two products sharing one pile could each
+     * claim a different answer for it.
      */
-    private function guardWholeQuantity(StockMovementData $data, ProductVariant $variant): void
+    private function guardWholeQuantity(StockMovementData $data, StockItem $item): void
     {
-        if (! $this->catalog->requiresWholeQuantities($variant)) {
+        if (! $item->unit->requiresWholeQuantities()) {
             return;
         }
 
         // The quantity is already normalised to three places, so "the fractional part is zero"
-        // is the comparison — not a float `floor`, which would answer wrongly for values a
+        // is the comparison — not a float floor(), which would answer wrongly for values a
         // storekeeper can plausibly type.
         if (bccomp($data->quantity, bcadd($data->quantity, '0', 0), 3) !== 0) {
             throw FractionalQuantityNotAllowed::make($data->quantity);

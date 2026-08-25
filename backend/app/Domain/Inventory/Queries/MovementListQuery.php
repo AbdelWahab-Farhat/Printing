@@ -26,7 +26,7 @@ final class MovementListQuery
         return StockMovement::query()
             // Every row renders the size, both ends and who moved it. Strict mode makes a
             // forgotten eager load throw rather than fire four queries per row.
-            ->with(['productVariant.product', 'fromWarehouse', 'toWarehouse', 'employee'])
+            ->with(['stockItem', 'fromWarehouse', 'toWarehouse', 'employee'])
             ->when($filters->warehouseId !== null, function (Builder $q) use ($filters) {
                 // Either end — see MovementFilters. Grouped so the OR set cannot escape and
                 // swallow the date and type filters beside it.
@@ -36,8 +36,8 @@ final class MovementListQuery
                 });
             })
             ->when(
-                $filters->productVariantId !== null,
-                fn (Builder $q) => $q->where('product_variant_id', $filters->productVariantId),
+                $filters->stockItemId !== null,
+                fn (Builder $q) => $q->where('stock_item_id', $filters->stockItemId),
             )
             ->when(
                 $filters->movementType !== null,

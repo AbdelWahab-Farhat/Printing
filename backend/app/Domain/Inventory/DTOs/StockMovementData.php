@@ -25,7 +25,7 @@ use App\Domain\Inventory\Enums\MovementType;
 final readonly class StockMovementData
 {
     private function __construct(
-        public int $productVariantId,
+        public int $stockItemId,
         public MovementType $movementType,
         /** Always positive, normalised to three decimal places. Direction lives in from/to. */
         public string $quantity,
@@ -57,7 +57,7 @@ final readonly class StockMovementData
     public static function arrival(array $validated, int $employeeId): self
     {
         return new self(
-            productVariantId: (int) $validated['product_variant_id'],
+            stockItemId: (int) $validated['stock_item_id'],
             movementType: MovementType::PurchaseArrival,
             quantity: self::quantity($validated['quantity']),
             fromWarehouseId: null,
@@ -77,7 +77,7 @@ final readonly class StockMovementData
     public static function transfer(array $validated, int $employeeId): self
     {
         return new self(
-            productVariantId: (int) $validated['product_variant_id'],
+            stockItemId: (int) $validated['stock_item_id'],
             movementType: MovementType::InternalTransfer,
             quantity: self::quantity($validated['quantity']),
             fromWarehouseId: (int) $validated['from_warehouse_id'],
@@ -96,7 +96,7 @@ final readonly class StockMovementData
     public static function fulfillment(array $validated, int $employeeId): self
     {
         return new self(
-            productVariantId: (int) $validated['product_variant_id'],
+            stockItemId: (int) $validated['stock_item_id'],
             movementType: MovementType::OrderFulfillment,
             quantity: self::quantity($validated['quantity']),
             fromWarehouseId: (int) $validated['from_warehouse_id'],
@@ -119,7 +119,7 @@ final readonly class StockMovementData
         $direction = AdjustmentDirection::from((string) $validated['direction']);
 
         return new self(
-            productVariantId: (int) $validated['product_variant_id'],
+            stockItemId: (int) $validated['stock_item_id'],
             movementType: MovementType::Adjustment,
             quantity: self::quantity($validated['quantity']),
             fromWarehouseId: $direction === AdjustmentDirection::Decrease ? $warehouseId : null,
@@ -144,7 +144,7 @@ final readonly class StockMovementData
      * through an HTTP endpoint, only constructed by `ReverseOrderStockDeduction` itself.
      */
     public static function orderReversal(
-        int $productVariantId,
+        int $stockItemId,
         int $warehouseId,
         string $quantity,
         int $reversedMovementId,
@@ -152,7 +152,7 @@ final readonly class StockMovementData
         int $employeeId,
     ): self {
         return new self(
-            productVariantId: $productVariantId,
+            stockItemId: $stockItemId,
             movementType: MovementType::OrderReversal,
             quantity: self::quantity($quantity),
             fromWarehouseId: null,
@@ -172,7 +172,7 @@ final readonly class StockMovementData
      * scrap belongs to a specific order and line, which only that action knows.
      */
     public static function scrapLoss(
-        int $productVariantId,
+        int $stockItemId,
         int $warehouseId,
         string $quantity,
         int $orderId,
@@ -180,7 +180,7 @@ final readonly class StockMovementData
         string $notes,
     ): self {
         return new self(
-            productVariantId: $productVariantId,
+            stockItemId: $stockItemId,
             movementType: MovementType::ScrapLoss,
             quantity: self::quantity($quantity),
             fromWarehouseId: $warehouseId,

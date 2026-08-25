@@ -11,6 +11,13 @@ final readonly class ProductVariantData
      */
     public function __construct(
         public string $label,
+        /**
+         * Which shelf this size draws from — null for a size that is never stocked.
+         *
+         * The one field on a variant that points outside Catalog. Two products at the same size
+         * normally name the same one: كيس شحن سادة 25*35 and كيس شحن مطبوع 25*35 are one pile.
+         */
+        public ?int $stockItemId = null,
         public ?int $widthCm = null,
         public ?int $heightCm = null,
         public bool $isActive = true,
@@ -27,6 +34,9 @@ final readonly class ProductVariantData
     {
         return new self(
             label: (string) $variant['label'],
+            stockItemId: isset($variant['stock_item_id']) && $variant['stock_item_id'] !== ''
+                ? (int) $variant['stock_item_id']
+                : null,
             widthCm: isset($variant['width_cm']) ? (int) $variant['width_cm'] : null,
             heightCm: isset($variant['height_cm']) ? (int) $variant['height_cm'] : null,
             isActive: (bool) ($variant['is_active'] ?? true),

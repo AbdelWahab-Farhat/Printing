@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Inventory\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Enums\MovementType;
 use Database\Factories\StockMovementFactory;
@@ -51,16 +50,18 @@ class StockMovement extends Model
     }
 
     /**
-     * The size that moved.
+     * The shelf that moved.
      *
-     * Read-only and for rendering only — see the note on {@see WarehouseStock::productVariant()}
-     * for why Inventory holds this relation but asks `CatalogService` for anything it decides on.
+     * A stock item, not a product size, since the balance this row explains is keyed on one — see
+     * the note on {@see WarehouseStock::stockItem()}. Which product the movement was ultimately
+     * for is answered by `reference_id` and the order behind it, never by this column: two
+     * products can draw on one shelf, so the item alone was never going to say.
      *
-     * @return BelongsTo<ProductVariant, $this>
+     * @return BelongsTo<StockItem, $this>
      */
-    public function productVariant(): BelongsTo
+    public function stockItem(): BelongsTo
     {
-        return $this->belongsTo(ProductVariant::class);
+        return $this->belongsTo(StockItem::class);
     }
 
     /**

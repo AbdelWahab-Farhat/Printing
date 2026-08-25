@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\PurchaseOrder\Actions;
 
-use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
@@ -18,9 +18,10 @@ use Illuminate\Support\Facades\DB;
  * Always lands in {@see PurchaseOrderStatus::New} — nothing is sent to a vendor and no stock moves
  * until {@see SendPurchaseOrder} or {@see ReceivePurchaseOrder} says otherwise.
  *
- * A line's `unit` is computed here, not trusted from the request: a snapshot of the variant's
- * product's `pricing_unit` at the moment the line is written — see the docblocks on
- * {@see PurchaseOrderItem::casts()}. Every cost-shaped figure a line carries — `base_unit_cost`,
+ * A line's `unit` is computed here, not trusted from the request: a snapshot of the stock item's
+ * own `unit` at the moment the line is written — see the docblocks on
+ * {@see PurchaseOrderItem::casts()}. It used to be reached through a product; a line names the
+ * shelf directly now, so the unit it will land in has one source and the hop is gone. Every cost-shaped figure a line carries — `base_unit_cost`,
  * `allocated_additional_cost`, `final_unit_cost`, `final_total_cost` — is left to
  * {@see AllocatePurchaseOrderAdditionalCosts}, run once every line and additional cost is
  * persisted, so it always sees the order's whole picture rather than one line at a time.
@@ -50,29 +51,28 @@ final class CreatePurchaseOrder
             $order->status = PurchaseOrderStatus::New;
             $order->save();
 
-            // One query for every size on the order rather than one per line: each needs its
-            // product's pricing_unit for the line's `unit` snapshot.
-            $variants = ProductVariant::query()
-                ->with('product')
-                ->whereIn('id', array_map(fn ($item) => $item->productVariantId, $data->items))
+            // One query for every shelf on the order rather than one per line: each needs its
+            // own `unit` for the line's snapshot.
+            $stockItems = StockItem::query()
+                ->whereIn('id', array_map(fn ($item) => $item->stockItemId, $data->items))
                 ->get()
-                ->keyBy(fn (ProductVariant $variant) => $variant->getKey());
+                ->keyBy(fn (StockItem $stockItem) => $stockItem->getKey());
 
             foreach ($data->items as $item) {
-                /** @var ProductVariant $variant */
-                $variant = $variants->get($item->productVariantId);
+                /** @var StockItem $stockItem */
+                $stockItem = $stockItems->get($item->stockItemId);
 
                 $orderItem = new PurchaseOrderItem([
                     'quantity_ordered' => $item->quantityOrdered,
                     'base_total_cost' => $item->baseTotalCost,
                 ]);
                 $orderItem->purchase_order_id = $order->id;
-                $orderItem->product_variant_id = $item->productVariantId;
+                $orderItem->stock_item_id = $item->stockItemId;
                 $orderItem->quantity_received = '0.000';
 
                 // Not fillable — see PurchaseOrderItem's docblock. Computed here, always, so a
-                // request can never post a unit the product disagrees with.
-                $orderItem->forceFill(['unit' => $variant->product->pricing_unit]);
+                // request can never post a unit the shelf disagrees with.
+                $orderItem->forceFill(['unit' => $stockItem->unit]);
 
                 $orderItem->save();
             }
@@ -84,7 +84,7 @@ final class CreatePurchaseOrder
             ($this->allocateAdditionalCosts)($order);
             ($this->recalculateTotal)($order);
 
-            return $order->load(['vendor', 'warehouse', 'items.productVariant.product', 'additionalCosts']);
+            return $order->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts']);
         });
     }
 }

@@ -97,6 +97,16 @@ class StoreProductRequest extends FormRequest
                 Rule::exists('product_categories', 'id')->whereNull('deleted_at'),
                 new CategoryMustBeALeaf,
             ],
+            // What the product is made of — «مجموعة أصناف». Optional, and the reason most
+            // products never need to name a shelf size by size: with a material set, every
+            // variant resolves to that material's item at the same size, created on the spot if
+            // the material has not reached it yet. An explicit `variants[].stock_item_id` still
+            // wins over it.
+            'stock_item_group_id' => [
+                'nullable', 'integer',
+                Rule::exists('stock_item_groups', 'id')->whereNull('deleted_at'),
+            ],
+
             'pricing_unit' => ['required', Rule::enum(PricingUnit::class)],
 
             // What the warehouse counts this in, if it differs from `pricing_unit` — a product
@@ -104,7 +114,6 @@ class StoreProductRequest extends FormRequest
             // common path, where the two agree; see {@see ProductData::fromArray()} for the
             // default. Never on `UpdateProductRequest`: past creation, only
             // `PATCH products/{product}/stock-unit` may change it.
-            'stock_unit' => ['nullable', Rule::enum(PricingUnit::class)],
 
             'pricing_mode' => ['required', Rule::enum(PricingMode::class)],
 
@@ -115,6 +124,11 @@ class StoreProductRequest extends FormRequest
             // A size and its price list. Sizes are optional here so a quote-only product can be
             // created before its sizes are known.
             'variants' => ['sometimes', 'array'],
+            // Which shelf this size draws from. Nullable on purpose: a quote-only size is never
+            // stocked, and requiring one here would teach whoever fills the form to point at an
+            // unrelated row to get past it. Every path that moves stock refuses an unlinked size
+            // by name instead.
+            'variants.*.stock_item_id' => ['nullable', 'integer', Rule::exists('stock_items', 'id')->whereNull('deleted_at')],
             'variants.*.label' => ['required', 'string', 'max:60', 'distinct'],
             'variants.*.width_cm' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'variants.*.height_cm' => ['nullable', 'integer', 'min:1', 'max:1000'],
@@ -185,7 +199,6 @@ class StoreProductRequest extends FormRequest
             'slug.unique' => 'المعرف مستخدم مسبقاً',
             'name.required' => 'اسم المنتج مطلوب',
             'pricing_unit.required' => 'وحدة التسعير مطلوبة',
-            'stock_unit.enum' => 'وحدة التخزين غير صحيحة',
             'pricing_mode.required' => 'طريقة التسعير مطلوبة',
             'min_order_quantity.required' => 'الحد الأدنى للطلب مطلوب',
             'min_order_quantity.min' => 'الحد الأدنى للطلب يجب أن يكون أكبر من صفر',
@@ -210,7 +223,6 @@ class StoreProductRequest extends FormRequest
             'features' => 'المميزات',
             'product_category_id' => 'التصنيف',
             'pricing_unit' => 'وحدة التسعير',
-            'stock_unit' => 'وحدة التخزين',
             'pricing_mode' => 'طريقة التسعير',
             'min_order_quantity' => 'الحد الأدنى للطلب',
             'variants' => 'المقاسات',

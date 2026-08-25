@@ -6,7 +6,7 @@ namespace App\Domain\PurchaseOrder\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Inventory\Models\StockItem;
 use Database\Factories\PurchaseOrderItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -35,7 +35,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * `final_unit_cost`/`final_total_cost` (the base figures plus that share — the landed cost,
  * which is what {@see ReceivePurchaseOrder} carries onto a stock arrival).
  *
- * `unit` is not fillable either: a snapshot of `productVariant->product->pricing_unit`, taken when
+ * `unit` is not fillable either: a snapshot of `stockItem->unit`, taken when
  * the line is created and never re-derived — for rendering only, the same treatment
  * `PurchaseOrder::warehouse()` documents.
  */
@@ -79,10 +79,10 @@ class PurchaseOrderItem extends Model
      * {@see PurchaseOrder::warehouse()} for why this context holds the relation but never
      * decides anything from it.
      *
-     * @return BelongsTo<ProductVariant, $this>
+     * @return BelongsTo<StockItem, $this>
      */
-    public function productVariant(): BelongsTo
+    public function stockItem(): BelongsTo
     {
-        return $this->belongsTo(ProductVariant::class);
+        return $this->belongsTo(StockItem::class);
     }
 }

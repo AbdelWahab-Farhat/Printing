@@ -27,9 +27,9 @@ class RecordArrivalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_variant_id' => [
+            'stock_item_id' => [
                 'required', 'integer',
-                Rule::exists('product_variants', 'id')->whereNull('deleted_at'),
+                Rule::exists('stock_items', 'id')->whereNull('deleted_at'),
             ],
 
             'to_warehouse_id' => [
@@ -60,8 +60,8 @@ class RecordArrivalRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'product_variant_id.required' => 'المنتج والمقاس مطلوبان',
-            'product_variant_id.exists' => 'المقاس المحدد غير موجود',
+            'stock_item_id.required' => 'الصنف المخزني مطلوب',
+            'stock_item_id.exists' => 'الصنف المخزني المحدد غير موجود',
             'to_warehouse_id.required' => 'مخزن الاستلام مطلوب',
             'to_warehouse_id.exists' => 'مخزن الاستلام غير موجود',
             'quantity.required' => 'الكمية مطلوبة',
@@ -81,7 +81,7 @@ class RecordArrivalRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'product_variant_id' => 'المقاس',
+            'stock_item_id' => 'الصنف المخزني',
             'to_warehouse_id' => 'مخزن الاستلام',
             'quantity' => 'الكمية',
             'reference_id' => 'رقم المرجع',

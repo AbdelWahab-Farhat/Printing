@@ -12,6 +12,7 @@ use App\Domain\Customer\Models\Customer;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 
 /**
  * The customer book the business already had, out of storage/ارقام الزباين.xlsx.
@@ -144,9 +145,9 @@ class CustomerSeeder extends Seeder
      */
     private function shopFor(
         array $entry,
-        \Illuminate\Support\Collection $cities,
-        \Illuminate\Support\Collection $regions,
-        \Illuminate\Support\Collection $fields,
+        Collection $cities,
+        Collection $regions,
+        Collection $fields,
         array $synonyms,
     ): ?array {
         $place = self::fold($entry['place']);
@@ -180,7 +181,7 @@ class CustomerSeeder extends Seeder
         )];
     }
 
-    private function fieldFor(?string $raw, \Illuminate\Support\Collection $fields, array $synonyms): ?int
+    private function fieldFor(?string $raw, Collection $fields, array $synonyms): ?int
     {
         $folded = self::fold($raw);
 

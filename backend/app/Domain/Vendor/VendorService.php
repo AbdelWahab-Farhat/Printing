@@ -87,7 +87,7 @@ class VendorService
     public function findStockArrival(int $id): StockArrival
     {
         return StockArrival::query()
-            ->with(['vendor', 'warehouse', 'receivedByUser', 'items.productVariant.product', 'items.stockMovement'])
+            ->with(['vendor', 'warehouse', 'receivedByUser', 'items.stockItem', 'items.stockMovement'])
             ->findOrFail($id);
     }
 

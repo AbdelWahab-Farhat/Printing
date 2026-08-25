@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1;
 
 use App\Domain\Catalog\Models\Product;
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -83,24 +83,22 @@ class StockMovementTest extends TestCase
     }
 
     /** A size of a per-piece product — the catalogue's default, and the countable case. */
-    private function variant(): ProductVariant
+    private function variant(): StockItem
     {
-        return ProductVariant::factory()->create();
+        return StockItem::factory()->create();
     }
 
-    /** A size of a per-kilo product, where fractional quantities are the normal case. */
-    private function weighedVariant(): ProductVariant
+    /** A shelf counted by weight, where fractional quantities are the normal case. */
+    private function weighedVariant(): StockItem
     {
-        return ProductVariant::factory()->create([
-            'product_id' => Product::factory()->perKilogram(),
-        ]);
+        return StockItem::factory()->weighed()->create();
     }
 
-    private function stockOf(Warehouse $warehouse, ProductVariant $variant): ?WarehouseStock
+    private function stockOf(Warehouse $warehouse, StockItem $variant): ?WarehouseStock
     {
         return WarehouseStock::query()
             ->where('warehouse_id', $warehouse->id)
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $variant->id)
             ->first();
     }
 
@@ -115,7 +113,7 @@ class StockMovementTest extends TestCase
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 1000,
             'notes' => 'توريد من المورد',
@@ -134,7 +132,7 @@ class StockMovementTest extends TestCase
         // … and the balance it produced
         $this->assertDatabaseHas('warehouse_stocks', [
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'quantity' => '1000.000',
         ]);
     }
@@ -149,7 +147,7 @@ class StockMovementTest extends TestCase
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 50,
         ]);
@@ -166,7 +164,7 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         $headers = $this->manager();
         $payload = [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 300,
         ];
@@ -189,7 +187,7 @@ class StockMovementTest extends TestCase
 
         // Act
         $response = $this->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
         ]);
@@ -208,7 +206,7 @@ class StockMovementTest extends TestCase
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
         ]);
@@ -228,13 +226,13 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         WarehouseStock::factory()->quantity('1000.000')->create([
             'warehouse_id' => $from->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
         ]);
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/transfers', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $from->id,
             'to_warehouse_id' => $to->id,
             'quantity' => 250,
@@ -259,13 +257,13 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         WarehouseStock::factory()->quantity('100.000')->create([
             'warehouse_id' => $from->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
         ]);
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/transfers', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $from->id,
             'to_warehouse_id' => $to->id,
             'quantity' => 101,
@@ -289,13 +287,13 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         WarehouseStock::factory()->quantity('100.000')->create([
             'warehouse_id' => $from->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
         ]);
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/transfers', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $from->id,
             'to_warehouse_id' => $to->id,
             'quantity' => 100,
@@ -314,13 +312,13 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         WarehouseStock::factory()->quantity('100.000')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
         ]);
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/transfers', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $warehouse->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
@@ -344,7 +342,7 @@ class StockMovementTest extends TestCase
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/transfers', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $from->id,
             'to_warehouse_id' => $to->id,
             'quantity' => 1,
@@ -364,13 +362,13 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         WarehouseStock::factory()->quantity('500.000')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
         ]);
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/fulfillments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $warehouse->id,
             'quantity' => 120,
             'reference_id' => 77,
@@ -394,13 +392,13 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         WarehouseStock::factory()->quantity('10.000')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
         ]);
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/fulfillments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $warehouse->id,
             'quantity' => 11,
         ]);
@@ -419,13 +417,13 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         WarehouseStock::factory()->quantity('100.000')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
         ]);
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/adjustments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'warehouse_id' => $warehouse->id,
             'direction' => 'increase',
             'quantity' => 15,
@@ -450,13 +448,13 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         WarehouseStock::factory()->quantity('100.000')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
         ]);
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/adjustments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'warehouse_id' => $warehouse->id,
             'direction' => 'decrease',
             'quantity' => 15,
@@ -478,13 +476,13 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         WarehouseStock::factory()->quantity('10.000')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
         ]);
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/adjustments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'warehouse_id' => $warehouse->id,
             'direction' => 'decrease',
             'quantity' => 11,
@@ -503,13 +501,13 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         WarehouseStock::factory()->quantity('100.000')->create([
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
         ]);
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/adjustments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'warehouse_id' => $warehouse->id,
             'direction' => 'decrease',
             'quantity' => 5,
@@ -529,7 +527,7 @@ class StockMovementTest extends TestCase
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/adjustments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'warehouse_id' => $warehouse->id,
             'direction' => 'sideways',
             'quantity' => 5,
@@ -551,7 +549,7 @@ class StockMovementTest extends TestCase
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 2.5,
         ]);
@@ -574,7 +572,7 @@ class StockMovementTest extends TestCase
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 12.75,
         ]);
@@ -595,7 +593,7 @@ class StockMovementTest extends TestCase
         $variant = $this->variant();
         $headers = $this->manager();
         $payload = array_merge([
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
         ], $overrides);
@@ -615,8 +613,8 @@ class StockMovementTest extends TestCase
     public static function invalidArrivalPayloads(): array
     {
         return [
-            'no variant' => [['product_variant_id' => null], 'product_variant_id'],
-            'variant does not exist' => [['product_variant_id' => 999999], 'product_variant_id'],
+            'no variant' => [['stock_item_id' => null], 'stock_item_id'],
+            'variant does not exist' => [['stock_item_id' => 999999], 'stock_item_id'],
             'no warehouse' => [['to_warehouse_id' => null], 'to_warehouse_id'],
             'warehouse does not exist' => [['to_warehouse_id' => 999999], 'to_warehouse_id'],
             'no quantity' => [['quantity' => null], 'quantity'],
@@ -637,7 +635,7 @@ class StockMovementTest extends TestCase
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
         ]);
@@ -658,7 +656,7 @@ class StockMovementTest extends TestCase
         // Act
         $response = $this->withHeaders($this->tokenFor($storekeeper))
             ->postJson('/api/v1/stock-movements/arrivals', [
-                'product_variant_id' => $variant->id,
+                'stock_item_id' => $variant->id,
                 'to_warehouse_id' => $warehouse->id,
                 'quantity' => 10,
             ]);
@@ -679,7 +677,7 @@ class StockMovementTest extends TestCase
         // Act
         $response = $this->withHeaders($this->tokenFor($storekeeper))
             ->postJson('/api/v1/stock-movements/arrivals', [
-                'product_variant_id' => $variant->id,
+                'stock_item_id' => $variant->id,
                 'to_warehouse_id' => $warehouse->id,
                 'quantity' => 10,
                 'employee_id' => $someoneElse->id,
@@ -699,7 +697,7 @@ class StockMovementTest extends TestCase
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
             'movement_type' => 'order_fulfillment',
@@ -717,7 +715,7 @@ class StockMovementTest extends TestCase
         $warehouse = Warehouse::factory()->create();
         $variant = $this->variant();
         $this->withHeaders($this->manager())->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 40,
         ]);
@@ -736,7 +734,7 @@ class StockMovementTest extends TestCase
                 'message',
                 'data' => [[
                     'id', 'movement_type', 'movement_type_label', 'quantity',
-                    'product_variant_id', 'from_warehouse_id', 'to_warehouse_id',
+                    'stock_item_id', 'from_warehouse_id', 'to_warehouse_id',
                     'reference_id', 'employee_id', 'notes', 'created_at',
                 ]],
                 'meta' => ['current_page', 'per_page', 'last_page', 'total'],
@@ -773,12 +771,12 @@ class StockMovementTest extends TestCase
         $manager = $this->manager();
 
         $this->withHeaders($manager)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $hub->id,
             'quantity' => 100,
         ]);
         $this->withHeaders($manager)->postJson('/api/v1/stock-movements/transfers', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $hub->id,
             'to_warehouse_id' => $other->id,
             'quantity' => 30,
@@ -799,12 +797,12 @@ class StockMovementTest extends TestCase
         $manager = $this->manager();
 
         $this->withHeaders($manager)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 100,
         ]);
         $this->withHeaders($manager)->postJson('/api/v1/stock-movements/fulfillments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $warehouse->id,
             'quantity' => 10,
         ]);
@@ -827,12 +825,12 @@ class StockMovementTest extends TestCase
         $manager = $this->manager();
 
         $this->withHeaders($manager)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 11,
         ]);
         $this->withHeaders($manager)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 22,
         ]);
@@ -855,7 +853,7 @@ class StockMovementTest extends TestCase
 
         foreach (range(1, 5) as $i) {
             $this->withHeaders($manager)->postJson('/api/v1/stock-movements/arrivals', [
-                'product_variant_id' => $variant->id,
+                'stock_item_id' => $variant->id,
                 'to_warehouse_id' => $warehouse->id,
                 'quantity' => $i,
             ]);
@@ -892,7 +890,7 @@ class StockMovementTest extends TestCase
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
         ]);

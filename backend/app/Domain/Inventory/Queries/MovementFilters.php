@@ -18,7 +18,7 @@ final readonly class MovementFilters
 {
     public function __construct(
         public ?int $warehouseId = null,
-        public ?int $productVariantId = null,
+        public ?int $stockItemId = null,
         public ?MovementType $movementType = null,
         public ?int $employeeId = null,
         /** The order a fulfillment belongs to, once Orders lands. */
@@ -37,7 +37,7 @@ final readonly class MovementFilters
 
         return new self(
             warehouseId: self::intOrNull($query['warehouse_id'] ?? null),
-            productVariantId: self::intOrNull($query['product_variant_id'] ?? null),
+            stockItemId: self::intOrNull($query['stock_item_id'] ?? null),
             // `tryFrom`: an unknown type in a query string returns everything rather than 500.
             movementType: is_string($type) && $type !== '' ? MovementType::tryFrom($type) : null,
             employeeId: self::intOrNull($query['employee_id'] ?? null),

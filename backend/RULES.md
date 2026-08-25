@@ -91,8 +91,9 @@ app/
 ```
 
 Existing contexts: `Identity` (users, roles, auth), `Customer` (customers, shops), `Catalog`
-(products, sizes, prices, photos), `Delivery` (cities, regions) and `Audit` (the trail every
-other context writes to without asking).
+(products, sizes, prices, photos), `Inventory` (warehouses, **stock items**, balances, the ledger,
+cost layers), `Order`, `PurchaseOrder`, `Vendor`, `Delivery` (cities, regions), `Reporting` and
+`Audit` (the trail every other context writes to without asking).
 
 ### The rules
 
@@ -421,6 +422,32 @@ customer's endpoints. Sending `shops` replaces the whole set (`id` = update, no 
 absent from the set = delete); omitting the key leaves them untouched. A shop dropped from the set
 is soft deleted and the removal is recorded. Soft-deleting the *customer* leaves the shops
 attached, so restoring one brings them back whole — see [§10](#10-soft-deletes-and-the-audit-trail).
+
+**A warehouse holds stock items, not product sizes.** A `StockItem` is a material *at a size* —
+«كيس شحن 25*35» — and it is what `warehouse_stocks`, `stock_movements`, `stock_batches`,
+`purchase_order_items` and `stock_arrival_items` are all keyed on. Many product variants, across
+different products, point at one through `product_variants.stock_item_id`: كيس شحن سادة 25*35 and
+كيس شحن مطبوع 25*35 are two catalogue rows and one pile of bags. What separates those two products
+is the printing, which is a `manufacturing_cost_rates` entry keyed per variant — not a different
+material.
+
+Sharing runs **across products at one size, never across sizes**. 25*35 and 35*40 are two stock
+items, two balances, two FIFO stacks and two purchase order lines at two prices, which is what
+keeps per-size costing intact.
+
+Three consequences worth knowing before touching this:
+
+- **An order's shortfall is totalled per stock item, not per line.** Two lines of 300 and 400
+  drawing on one pile each fit inside a shelf of 500 alone; the order does not. See
+  [DeductOrderStock](app/Domain/Order/Actions/DeductOrderStock.php).
+- **`stock_items.unit` is what the shelf is counted in**, and it replaced `products.stock_unit`.
+  A unit is a fact about the pile: two products sharing one must not be able to disagree about it.
+  It still differs from `products.pricing_unit` on purpose — a thing bought in by weight and sold
+  by the piece needs whole numbers on an order and fractional amounts off a shelf.
+- **`product_variants.stock_item_id` is nullable**, because a quote-only size is never stocked.
+  Every path that moves stock refuses such a size by name through
+  [VariantHasNoStockItem](app/Domain/Inventory/Exceptions/VariantHasNoStockItem.php) rather than
+  dereferencing null.
 
 ---
 

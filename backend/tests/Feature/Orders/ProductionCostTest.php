@@ -82,7 +82,7 @@ class ProductionCostTest extends TestCase
         $headers = $this->foreman();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->stock_item_id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 100,
             'unit_cost' => 4,
@@ -134,7 +134,7 @@ class ProductionCostTest extends TestCase
         $headers = $this->foreman();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->stock_item_id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 50,
             'unit_cost' => 2,
@@ -169,7 +169,7 @@ class ProductionCostTest extends TestCase
         $headers = $this->foreman();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->stock_item_id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 20,
             'unit_cost' => 1,
@@ -200,7 +200,7 @@ class ProductionCostTest extends TestCase
         $headers = $this->foreman();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->stock_item_id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
             'unit_cost' => 1,
@@ -233,7 +233,7 @@ class ProductionCostTest extends TestCase
         $headers = $this->foreman();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->stock_item_id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
             'unit_cost' => 1,

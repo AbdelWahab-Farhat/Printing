@@ -21,6 +21,8 @@ use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockBatchConsumption;
+use App\Domain\Inventory\Models\StockItem;
+use App\Domain\Inventory\Models\StockItemGroup;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
@@ -93,6 +95,8 @@ enum AuditSubject: string
     case ShippingCompany = 'shipping_company';
 
     // Inventory
+    case StockItemGroup = 'stock_item_group';
+    case StockItem = 'stock_item';
     case Warehouse = 'warehouse';
     case WarehouseStock = 'warehouse_stock';
     case StockMovement = 'stock_movement';
@@ -137,6 +141,8 @@ enum AuditSubject: string
             self::City => City::class,
             self::Region => Region::class,
             self::ShippingCompany => ShippingCompany::class,
+            self::StockItemGroup => StockItemGroup::class,
+            self::StockItem => StockItem::class,
             self::Warehouse => Warehouse::class,
             self::WarehouseStock => WarehouseStock::class,
             self::StockMovement => StockMovement::class,
@@ -179,6 +185,8 @@ enum AuditSubject: string
             self::City => 'مدينة',
             self::Region => 'منطقة',
             self::ShippingCompany => 'شركة توصيل',
+            self::StockItemGroup => 'مجموعة أصناف',
+            self::StockItem => 'صنف مخزني',
             self::Warehouse => 'مخزن',
             self::WarehouseStock => 'رصيد مخزني',
             self::StockMovement => 'حركة مخزنية',

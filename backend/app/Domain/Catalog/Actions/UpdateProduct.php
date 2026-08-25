@@ -26,6 +26,14 @@ final class UpdateProduct
                 'sort_order' => $data->sortOrder,
             ];
 
+            // Same rule as `is_active` and `slug`: absent means "leave it". Clearing a product's
+            // material would silently detach every one of its sizes from a shelf on this very
+            // save — see ProductData::$stockItemGroupId — so an update that does not mention it
+            // keeps what was there.
+            if ($data->stockItemGroupId !== null) {
+                $attributes['stock_item_group_id'] = $data->stockItemGroupId;
+            }
+
             // Same rule as `is_active`: absent means "leave it". A slug is what links point at,
             // and an update that simply did not mention it must not blank the column — it is
             // NOT NULL, so that would be a crash, and if it were nullable it would be worse: a
@@ -48,7 +56,7 @@ final class UpdateProduct
                 ($this->syncVariants)($product, $data->variants);
             }
 
-            return $product->load(['variants.priceTiers', 'images', 'productCategory']);
+            return $product->load(['variants.priceTiers', 'variants.stockItem', 'images', 'productCategory', 'stockItemGroup']);
         });
     }
 }

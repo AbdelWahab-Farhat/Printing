@@ -27,10 +27,10 @@ final class StockListQuery
             // mode turns a forgotten eager load into an exception rather than one query per row —
             // which is the behaviour we want, but only once, here. The images come in one extra
             // query for the whole page, and the relation already sorts the primary one first.
-            ->with('productVariant.product.images')
+            ->with('stockItem')
             ->when(
-                $filters->productVariantId !== null,
-                fn ($q) => $q->where('product_variant_id', $filters->productVariantId),
+                $filters->stockItemId !== null,
+                fn ($q) => $q->where('stock_item_id', $filters->stockItemId),
             )
             ->when(
                 $filters->inStock !== null,

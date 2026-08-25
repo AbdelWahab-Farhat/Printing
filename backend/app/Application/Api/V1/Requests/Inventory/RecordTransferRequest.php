@@ -28,9 +28,9 @@ class RecordTransferRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_variant_id' => [
+            'stock_item_id' => [
                 'required', 'integer',
-                Rule::exists('product_variants', 'id')->whereNull('deleted_at'),
+                Rule::exists('stock_items', 'id')->whereNull('deleted_at'),
             ],
 
             'from_warehouse_id' => [
@@ -61,8 +61,8 @@ class RecordTransferRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'product_variant_id.required' => 'المنتج والمقاس مطلوبان',
-            'product_variant_id.exists' => 'المقاس المحدد غير موجود',
+            'stock_item_id.required' => 'الصنف المخزني مطلوب',
+            'stock_item_id.exists' => 'الصنف المخزني المحدد غير موجود',
             'from_warehouse_id.required' => 'المخزن المصدر مطلوب',
             'from_warehouse_id.exists' => 'المخزن المصدر غير موجود',
             'to_warehouse_id.required' => 'مخزن الوجهة مطلوب',
@@ -82,7 +82,7 @@ class RecordTransferRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'product_variant_id' => 'المقاس',
+            'stock_item_id' => 'الصنف المخزني',
             'from_warehouse_id' => 'المخزن المصدر',
             'to_warehouse_id' => 'مخزن الوجهة',
             'quantity' => 'الكمية',

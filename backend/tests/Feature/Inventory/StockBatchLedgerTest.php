@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Inventory;
 
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockBatchConsumption;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
@@ -52,23 +52,23 @@ class StockBatchLedgerTest extends TestCase
         return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
     }
 
-    private function balanceOf(Warehouse $warehouse, ProductVariant $variant): string
+    private function balanceOf(Warehouse $warehouse, StockItem $variant): string
     {
         return (string) (WarehouseStock::query()
             ->where('warehouse_id', $warehouse->id)
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $variant->id)
             ->first()?->quantity ?? '0.000');
     }
 
-    private function batchTotalOf(Warehouse $warehouse, ProductVariant $variant): string
+    private function batchTotalOf(Warehouse $warehouse, StockItem $variant): string
     {
         return (string) number_format((float) StockBatch::query()
             ->where('warehouse_id', $warehouse->id)
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $variant->id)
             ->sum('quantity_remaining'), 3, '.', '');
     }
 
-    private function assertBatchesReconcile(Warehouse $warehouse, ProductVariant $variant): void
+    private function assertBatchesReconcile(Warehouse $warehouse, StockItem $variant): void
     {
         $this->assertSame(
             $this->balanceOf($warehouse, $variant),
@@ -81,26 +81,26 @@ class StockBatchLedgerTest extends TestCase
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         // Act — two arrivals at two different costs, then a fulfillment that spans both
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 100,
             'unit_cost' => 10,
         ])->assertCreated();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 100,
             'unit_cost' => 20,
         ])->assertCreated();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/fulfillments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $warehouse->id,
             'quantity' => 150,
         ])->assertCreated();
@@ -124,12 +124,12 @@ class StockBatchLedgerTest extends TestCase
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         // Act
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 40,
         ])->assertCreated();
@@ -137,7 +137,7 @@ class StockBatchLedgerTest extends TestCase
         // Assert
         $this->assertDatabaseHas('stock_batches', [
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'unit_cost' => '0.000',
             'source_type' => 'purchase_arrival',
         ]);
@@ -148,12 +148,12 @@ class StockBatchLedgerTest extends TestCase
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/adjustments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'warehouse_id' => $warehouse->id,
             'direction' => 'increase',
             'quantity' => 10,
@@ -169,12 +169,12 @@ class StockBatchLedgerTest extends TestCase
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         // Act
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/adjustments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'warehouse_id' => $warehouse->id,
             'direction' => 'increase',
             'quantity' => 10,
@@ -185,7 +185,7 @@ class StockBatchLedgerTest extends TestCase
         // Assert
         $this->assertDatabaseHas('stock_batches', [
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'unit_cost' => '7.500',
             'source_type' => 'adjustment',
         ]);
@@ -196,11 +196,11 @@ class StockBatchLedgerTest extends TestCase
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 30,
             'unit_cost' => 5,
@@ -208,7 +208,7 @@ class StockBatchLedgerTest extends TestCase
 
         // Act
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/adjustments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'warehouse_id' => $warehouse->id,
             'direction' => 'decrease',
             'quantity' => 5,
@@ -225,11 +225,11 @@ class StockBatchLedgerTest extends TestCase
         // Arrange
         $main = Warehouse::factory()->main()->create();
         $floor = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $main->id,
             'quantity' => 60,
             'unit_cost' => 12,
@@ -237,7 +237,7 @@ class StockBatchLedgerTest extends TestCase
 
         // Act
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/transfers', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $main->id,
             'to_warehouse_id' => $floor->id,
             'quantity' => 60,
@@ -252,7 +252,7 @@ class StockBatchLedgerTest extends TestCase
 
         $this->assertDatabaseHas('stock_batches', [
             'warehouse_id' => $floor->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'unit_cost' => '12.000',
             'source_type' => 'purchase_arrival',
             'quantity_remaining' => '60.000',
@@ -264,18 +264,18 @@ class StockBatchLedgerTest extends TestCase
         // Arrange — two arrivals at two costs, so the transfer must draw from both
         $main = Warehouse::factory()->main()->create();
         $floor = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $main->id,
             'quantity' => 40,
             'unit_cost' => 8,
         ])->assertCreated();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $main->id,
             'quantity' => 40,
             'unit_cost' => 9,
@@ -283,7 +283,7 @@ class StockBatchLedgerTest extends TestCase
 
         // Act — more than the first layer alone holds
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/transfers', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $main->id,
             'to_warehouse_id' => $floor->id,
             'quantity' => 60,
@@ -305,11 +305,11 @@ class StockBatchLedgerTest extends TestCase
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
             'unit_cost' => 4,
@@ -317,7 +317,7 @@ class StockBatchLedgerTest extends TestCase
 
         // Act — more than the shelf holds
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/fulfillments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $warehouse->id,
             'quantity' => 50,
         ]);
@@ -326,7 +326,7 @@ class StockBatchLedgerTest extends TestCase
         $response->assertStatus(422);
         $this->assertDatabaseHas('stock_batches', [
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'quantity_remaining' => '10.000',
         ]);
         $this->assertDatabaseCount('stock_batch_consumptions', 0);

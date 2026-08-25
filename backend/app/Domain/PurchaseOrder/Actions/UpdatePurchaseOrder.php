@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\PurchaseOrder\Actions;
 
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Customer\Actions\SyncCustomerShops;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderAdditionalCostData;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderData;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderItemData;
@@ -68,7 +68,7 @@ final class UpdatePurchaseOrder
             ($this->allocateAdditionalCosts)($order);
             ($this->recalculateTotal)($order);
 
-            return $order->load(['vendor', 'warehouse', 'items.productVariant.product', 'additionalCosts']);
+            return $order->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts']);
         });
     }
 
@@ -79,17 +79,16 @@ final class UpdatePurchaseOrder
     {
         $keptIds = [];
 
-        // One query for every size on the order rather than one per line: each needs its
-        // product's pricing_unit for the line's `unit` snapshot.
-        $variants = ProductVariant::query()
-            ->with('product')
-            ->whereIn('id', array_map(fn (PurchaseOrderItemData $item) => $item->productVariantId, $items))
+        // One query for every shelf on the order rather than one per line: each needs its own
+        // `unit` for the line's snapshot.
+        $stockItems = StockItem::query()
+            ->whereIn('id', array_map(fn (PurchaseOrderItemData $item) => $item->stockItemId, $items))
             ->get()
-            ->keyBy(fn (ProductVariant $variant) => $variant->getKey());
+            ->keyBy(fn (StockItem $stockItem) => $stockItem->getKey());
 
         foreach ($items as $item) {
-            /** @var ProductVariant $variant */
-            $variant = $variants->get($item->productVariantId);
+            /** @var StockItem $stockItem */
+            $stockItem = $stockItems->get($item->stockItemId);
 
             if ($item->id !== null) {
                 // Scoped through the relation, so another order's line is never found here.
@@ -100,8 +99,30 @@ final class UpdatePurchaseOrder
                 }
 
                 $existing->fill(['quantity_ordered' => $item->quantityOrdered, 'base_total_cost' => $item->baseTotalCost]);
-                $existing->product_variant_id = $item->productVariantId;
-                $existing->forceFill(['unit' => $variant->product->pricing_unit]);
+                $existing->stock_item_id = $item->stockItemId;
+                $existing->forceFill(['unit' => $stockItem->unit]);
+                $existing->save();
+                $keptIds[] = $existing->getKey();
+
+                continue;
+            }
+
+            // No id supplied: within one order a stock item may appear on only one line, so it
+            // *is* the natural key — the same move `SyncProductVariants` makes with a variant's
+            // label, and for the same reason. It lets the owner send the whole order back
+            // without tracking internal line ids.
+            //
+            // **Not optional since `purchase_order_items_one_line_per_item` landed.** This method
+            // creates before it deletes, so blindly inserting would put a second active row for
+            // this (order, item) alongside the one about to be removed, and the partial unique
+            // index refuses it — a 500 on a perfectly ordinary save. It used to "work" only
+            // because the duplicate was soft-deleted moments later, which also threw away the
+            // line's identity and its audit continuity on every single update.
+            $existing = $order->items()->where('stock_item_id', $item->stockItemId)->first();
+
+            if ($existing !== null) {
+                $existing->fill(['quantity_ordered' => $item->quantityOrdered, 'base_total_cost' => $item->baseTotalCost]);
+                $existing->forceFill(['unit' => $stockItem->unit]);
                 $existing->save();
                 $keptIds[] = $existing->getKey();
 
@@ -110,9 +131,9 @@ final class UpdatePurchaseOrder
 
             $created = new PurchaseOrderItem(['quantity_ordered' => $item->quantityOrdered, 'base_total_cost' => $item->baseTotalCost]);
             $created->purchase_order_id = $order->id;
-            $created->product_variant_id = $item->productVariantId;
+            $created->stock_item_id = $item->stockItemId;
             $created->quantity_received = '0.000';
-            $created->forceFill(['unit' => $variant->product->pricing_unit]);
+            $created->forceFill(['unit' => $stockItem->unit]);
             $created->save();
 
             $keptIds[] = $created->getKey();

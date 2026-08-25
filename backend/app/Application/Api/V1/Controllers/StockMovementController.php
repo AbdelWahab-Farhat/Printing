@@ -46,13 +46,13 @@ class StockMovementController extends Controller
      * The whole ledger, newest first. `warehouse_id` matches **either** end, so it answers
      * "everything that happened at the main store" — arrivals and despatches together.
      *
-     * Filter with `warehouse_id`, `product_variant_id`, `movement_type`, `employee_id`,
+     * Filter with `warehouse_id`, `stock_item_id`, `movement_type`, `employee_id`,
      * `reference_id`, `from` and `to`. Dates are inclusive: `to=2026-08-03` includes that whole day.
      */
     public function index(Request $request): JsonResponse
     {
         $filters = MovementFilters::fromArray($request->only([
-            'warehouse_id', 'product_variant_id', 'movement_type', 'employee_id', 'reference_id', 'from', 'to',
+            'warehouse_id', 'stock_item_id', 'movement_type', 'employee_id', 'reference_id', 'from', 'to',
         ]));
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 

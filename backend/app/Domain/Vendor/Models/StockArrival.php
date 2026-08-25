@@ -54,7 +54,7 @@ class StockArrival extends Model implements HasAuditTrail
     /**
      * Where the shipment was put away.
      *
-     * Read-only and for rendering only — the same shape `WarehouseStock::productVariant()` and
+     * Read-only and for rendering only — the same shape `WarehouseStock::stockItem()` and
      * `StockMovement::employee()` already use for a cross-context relation. Actually moving stock
      * goes through `InventoryService::recordMovement()`, never through this relation.
      *

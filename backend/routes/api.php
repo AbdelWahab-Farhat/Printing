@@ -22,6 +22,8 @@ use App\Application\Api\V1\Controllers\RegionController;
 use App\Application\Api\V1\Controllers\RoleController;
 use App\Application\Api\V1\Controllers\ShippingCompanyController;
 use App\Application\Api\V1\Controllers\StockArrivalController;
+use App\Application\Api\V1\Controllers\StockItemController;
+use App\Application\Api\V1\Controllers\StockItemGroupController;
 use App\Application\Api\V1\Controllers\StockMovementController;
 use App\Application\Api\V1\Controllers\UserController;
 use App\Application\Api\V1\Controllers\VendorCommentController;
@@ -244,12 +246,6 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('products/{product}/activation', [ProductController::class, 'setActivation'])
             ->middleware('can:products.manage')->name('products.activation');
 
-        // Gated by `inventory.manage`, not `products.manage`: what a product is counted in on
-        // the shelf is an inventory fact, not a catalogue one, even though it is addressed by
-        // product id — see SetStockUnit.
-        Route::patch('products/{product}/stock-unit', [ProductController::class, 'setStockUnit'])
-            ->middleware('can:inventory.manage')->name('products.stock-unit');
-
         // scoped() makes {image} resolve *within* {product}, so another product's image id is a
         // 404 rather than something every controller method has to remember to check.
         Route::apiResource('products.images', ProductImageController::class)
@@ -463,6 +459,38 @@ Route::prefix('v1')->group(function (): void {
             ->only(['store', 'update', 'destroy'])
             ->middleware('can:inventory.manage');
 
+        // The materials those shelves are sizes of. Declared before `stock-items` for no reason
+        // other than reading order — a group is the thing you create first.
+        //
+        // A group holds nothing; it is what lets a product name its material once and have every
+        // one of its sizes filed automatically. Same permission pair as everything else here.
+        Route::apiResource('stock-item-groups', StockItemGroupController::class)
+            ->only(['index', 'show'])
+            ->middleware('can:inventory.view');
+
+        Route::apiResource('stock-item-groups', StockItemGroupController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->middleware('can:inventory.manage');
+
+        // What the warehouses actually hold. Under the same pair of permissions as the shelves
+        // themselves, not `products.manage`: a stock item is what a pile *is*, and many product
+        // sizes across different products point at one — so it belongs to whoever administers
+        // stock, not to whoever edits the catalogue.
+        Route::apiResource('stock-items', StockItemController::class)
+            ->only(['index', 'show'])
+            ->middleware('can:inventory.view');
+
+        Route::apiResource('stock-items', StockItemController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->middleware('can:inventory.manage');
+
+        // Its own endpoint rather than a field on the update: changing a shelf's unit restamps
+        // every balance and cost layer snapshotted against it, in one transaction under the same
+        // locks a movement takes. Replaces the old `products/{product}/stock-unit` — a question
+        // that belonged to the pile, asked of a product that only shares it.
+        Route::patch('stock-items/{stock_item}/unit', [StockItemController::class, 'setUnit'])
+            ->middleware('can:inventory.manage')->name('stock-items.unit');
+
         // A balance line has no life outside its warehouse, so `scoped()` resolves {stock}
         // *within* {warehouse} — another warehouse's line id is a 404 by construction, the
         // same shape products.images and cities.regions already use.
@@ -551,6 +579,16 @@ Route::prefix('v1')->group(function (): void {
             // those are a ledger rather than a change log, and `/stock-movements?warehouse_id=`
             // is the reader built for them.
             Route::get('warehouses/{warehouse}/logs', [WarehouseController::class, 'logs'])->name('warehouses.logs');
+
+            // The item and the alert thresholds set on its shelves, for the same reason and with
+            // the same exclusion as the warehouse above — `/stock-movements?stock_item_id=` is
+            // the reader built for its ledger.
+            Route::get('stock-items/{stock_item}/logs', [StockItemController::class, 'logs'])
+                ->name('stock-items.logs');
+
+            // The material and every size of it — «من غيّر وحدة 25*35؟» is asked of the material.
+            Route::get('stock-item-groups/{stock_item_group}/logs', [StockItemGroupController::class, 'logs'])
+                ->name('stock-item-groups.logs');
 
             Route::get('vendors/{vendor}/logs', [VendorController::class, 'logs'])->name('vendors.logs');
             Route::get('vendors/{vendor}/comments/{comment}/logs', [VendorCommentController::class, 'logs'])

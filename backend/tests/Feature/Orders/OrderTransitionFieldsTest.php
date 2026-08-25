@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Tests\Feature\Orders;
 
 use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Identity\Enums\PermissionName;
-use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderStatus;
@@ -943,6 +944,20 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertSame(OrderStatus::Printing, $order->fresh()->status);
     }
 
+    /**
+     * The shelf an order line draws from.
+     *
+     * A line names a size; a warehouse holds a stock item. Read with an explicit query rather
+     * than `$item->variant->stock_item_id`, because strict mode is on outside production and a
+     * lazy load would throw rather than answer.
+     */
+    private function shelfOf(OrderItem $item): int
+    {
+        return (int) ProductVariant::query()
+            ->whereKey($item->product_variant_id)
+            ->value('stock_item_id');
+    }
+
     public function test_the_weight_lands_on_the_order_with_the_move(): void
     {
         // Arrange — a real balance to draw from: reaching `ready` now deducts stock for real,
@@ -954,7 +969,7 @@ class OrderTransitionFieldsTest extends TestCase
         $headers = $this->foreman();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $item->product_variant_id,
+            'stock_item_id' => $this->shelfOf($item),
             'to_warehouse_id' => $warehouse->id,
             'quantity' => $item->quantity,
             'unit_cost' => 1,

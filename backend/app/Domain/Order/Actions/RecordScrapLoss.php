@@ -49,9 +49,13 @@ final class RecordScrapLoss
             throw OrderNotYetInProduction::make();
         }
 
-        return DB::transaction(function () use ($order, $item, $quantity, $notes, $employeeId): ProductionCostEntry {
+        // A line names a size; the shelf it spoiled off is a stock item, and only Inventory maps
+        // one to the other. Outside the transaction because it reads and can throw.
+        $stockItem = $this->inventory->stockItemFor($item->loadMissing('variant.stockItem')->variant);
+
+        return DB::transaction(function () use ($order, $item, $stockItem, $quantity, $notes, $employeeId): ProductionCostEntry {
             $movement = $this->inventory->recordMovement(StockMovementData::scrapLoss(
-                productVariantId: $item->product_variant_id,
+                stockItemId: (int) $stockItem->getKey(),
                 warehouseId: (int) $order->fulfillment_warehouse_id,
                 quantity: $quantity,
                 orderId: $order->getKey(),

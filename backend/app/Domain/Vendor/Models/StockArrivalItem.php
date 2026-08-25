@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Vendor\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
-use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\PurchaseOrder\Actions\ReceivePurchaseOrder;
 use App\Domain\Vendor\Actions\RecordStockArrival;
@@ -68,11 +68,11 @@ class StockArrivalItem extends Model
      * {@see StockArrival::warehouse()} for why this context holds the relation but never decides
      * anything from it.
      *
-     * @return BelongsTo<ProductVariant, $this>
+     * @return BelongsTo<StockItem, $this>
      */
-    public function productVariant(): BelongsTo
+    public function stockItem(): BelongsTo
     {
-        return $this->belongsTo(ProductVariant::class);
+        return $this->belongsTo(StockItem::class);
     }
 
     /**

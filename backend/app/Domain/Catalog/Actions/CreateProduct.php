@@ -33,8 +33,11 @@ final class CreateProduct
                 'description' => $data->description,
                 'features' => $data->features,
                 'product_category_id' => $data->productCategoryId,
+                // Written before the variants are synced, deliberately: SyncProductVariants reads
+                // it off the product to resolve each size's shelf, so a product created with a
+                // material has its sizes filed under it in the same call.
+                'stock_item_group_id' => $data->stockItemGroupId,
                 'pricing_unit' => $data->pricingUnit,
-                'stock_unit' => $data->stockUnit,
                 'pricing_mode' => $data->pricingMode,
                 'min_order_quantity' => $data->minOrderQuantity,
                 'is_active' => $data->isActive ?? true,
@@ -49,7 +52,7 @@ final class CreateProduct
             // the same trade DeleteProductImage makes in the other direction.
             ($this->uploadImage)($product, $image, $altText);
 
-            return $product->load(['variants.priceTiers', 'images', 'productCategory']);
+            return $product->load(['variants.priceTiers', 'variants.stockItem', 'images', 'productCategory', 'stockItemGroup']);
         });
     }
 }

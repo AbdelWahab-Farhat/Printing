@@ -13,10 +13,10 @@ use App\Support\Exceptions\DomainException;
  */
 final class ReceivedQuantityExceedsOrdered extends DomainException
 {
-    public static function make(int $productVariantId, string $ordered, string $alreadyReceived, string $incoming): self
+    public static function make(int $stockItemId, string $ordered, string $alreadyReceived, string $incoming): self
     {
         return new self(
-            "الكمية المستلمة للمقاس رقم {$productVariantId} ({$alreadyReceived} + {$incoming}) ".
+            "الكمية المستلمة للمقاس رقم {$stockItemId} ({$alreadyReceived} + {$incoming}) ".
             "تتجاوز الكمية المطلوبة ({$ordered})",
         );
     }

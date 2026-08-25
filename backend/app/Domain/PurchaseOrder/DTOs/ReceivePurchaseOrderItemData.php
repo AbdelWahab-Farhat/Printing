@@ -7,7 +7,7 @@ namespace App\Domain\PurchaseOrder\DTOs;
 final readonly class ReceivePurchaseOrderItemData
 {
     public function __construct(
-        public int $productVariantId,
+        public int $stockItemId,
         /** Always positive, normalised to three decimal places — see {@see quantity()}. */
         public string $quantity,
     ) {}
@@ -18,7 +18,7 @@ final readonly class ReceivePurchaseOrderItemData
     public static function fromArray(array $validated): self
     {
         return new self(
-            productVariantId: (int) $validated['product_variant_id'],
+            stockItemId: (int) $validated['stock_item_id'],
             quantity: self::quantity($validated['quantity']),
         );
     }

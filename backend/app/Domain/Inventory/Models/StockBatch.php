@@ -6,9 +6,9 @@ namespace App\Domain\Inventory\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Catalog\Enums\PricingUnit;
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Inventory\Actions\ApplyStockChange;
 use App\Domain\Inventory\Actions\ConsumeStockBatchesFifo;
+use App\Domain\Inventory\Actions\SetStockUnit;
 use App\Domain\Inventory\Enums\StockBatchSourceType;
 use App\Domain\Vendor\Models\StockArrivalItem;
 use Database\Factories\StockBatchFactory;
@@ -34,8 +34,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * `unit` is the one column with a second writer: a snapshot of `product.stock_unit` on the way
  * in, like every other column here, but also changed — alongside every other batch and balance
  * for the same product's variants, in one transaction — by
- * {@see \App\Domain\Inventory\Actions\SetStockUnit}. Still never reachable from a payload; the
- * one endpoint that writes it validates against {@see \App\Domain\Catalog\Enums\PricingUnit} and
+ * {@see SetStockUnit}. Still never reachable from a payload; the
+ * one endpoint that writes it validates against {@see PricingUnit} and
  * nothing else.
  *
  * `quantity_remaining` for a given (warehouse, variant) must always sum to that pair's
@@ -72,14 +72,13 @@ class StockBatch extends Model
     }
 
     /**
-     * Read-only, for rendering — see the note on {@see WarehouseStock::productVariant()} for why
-     * Inventory holds this relation but asks `CatalogService` for anything it decides on.
+     * The shelf this cost layer belongs to — see the note on {@see WarehouseStock::stockItem()}.
      *
-     * @return BelongsTo<ProductVariant, $this>
+     * @return BelongsTo<StockItem, $this>
      */
-    public function productVariant(): BelongsTo
+    public function stockItem(): BelongsTo
     {
-        return $this->belongsTo(ProductVariant::class);
+        return $this->belongsTo(StockItem::class);
     }
 
     /**

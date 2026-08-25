@@ -24,7 +24,7 @@ final class PurchaseOrderListQuery
     public function __invoke(PurchaseOrderFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return $this->applyFilters(PurchaseOrder::query(), $filters)
-            ->with(['vendor', 'warehouse', 'items.productVariant.product'])
+            ->with(['vendor', 'warehouse', 'items.stockItem'])
             ->orderByDesc('id')
             ->paginate($perPage);
     }

@@ -6,9 +6,9 @@ namespace Tests\Feature\Inventory;
 
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\Product;
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
@@ -62,32 +62,32 @@ class StockLedgerTest extends TestCase
      * The signed sum of everything the ledger says about one shelf: what arrived here, less what
      * left here. This is the number the balance must equal.
      */
-    private function ledgerTotalFor(Warehouse $warehouse, ProductVariant $variant): string
+    private function ledgerTotalFor(Warehouse $warehouse, StockItem $variant): string
     {
         $in = StockMovement::query()
             ->where('to_warehouse_id', $warehouse->id)
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $variant->id)
             ->sum('quantity');
 
         $out = StockMovement::query()
             ->where('from_warehouse_id', $warehouse->id)
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $variant->id)
             ->sum('quantity');
 
         return bcsub((string) $in, (string) $out, 3);
     }
 
-    private function balanceOf(Warehouse $warehouse, ProductVariant $variant): string
+    private function balanceOf(Warehouse $warehouse, StockItem $variant): string
     {
         $stock = WarehouseStock::query()
             ->where('warehouse_id', $warehouse->id)
-            ->where('product_variant_id', $variant->id)
+            ->where('stock_item_id', $variant->id)
             ->first();
 
         return (string) ($stock?->quantity ?? '0.000');
     }
 
-    private function assertLedgerReconciles(Warehouse $warehouse, ProductVariant $variant): void
+    private function assertLedgerReconciles(Warehouse $warehouse, StockItem $variant): void
     {
         $this->assertSame(
             $this->ledgerTotalFor($warehouse, $variant),
@@ -101,31 +101,31 @@ class StockLedgerTest extends TestCase
         // Arrange
         $main = Warehouse::factory()->main()->create();
         $floor = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         // Act — a plausible week, entirely through the API
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $main->id,
             'quantity' => 5000,
         ])->assertCreated();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/transfers', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $main->id,
             'to_warehouse_id' => $floor->id,
             'quantity' => 1200,
         ])->assertCreated();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/fulfillments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $floor->id,
             'quantity' => 800,
         ])->assertCreated();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/adjustments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'warehouse_id' => $floor->id,
             'direction' => 'decrease',
             'quantity' => 50,
@@ -133,7 +133,7 @@ class StockLedgerTest extends TestCase
         ])->assertCreated();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/adjustments', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'warehouse_id' => $main->id,
             'direction' => 'increase',
             'quantity' => 25,
@@ -156,18 +156,18 @@ class StockLedgerTest extends TestCase
         // with no reason behind it
         $from = Warehouse::factory()->create();
         $to = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $from->id,
             'quantity' => 100,
         ])->assertCreated();
 
         // Act — more than the source holds
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/transfers', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'from_warehouse_id' => $from->id,
             'to_warehouse_id' => $to->id,
             'quantity' => 500,
@@ -186,19 +186,19 @@ class StockLedgerTest extends TestCase
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        $small = ProductVariant::factory()->size(20, 30)->create();
-        $large = ProductVariant::factory()->size(40, 50)->create();
+        $small = StockItem::factory()->size(20, 30)->create();
+        $large = StockItem::factory()->size(40, 50)->create();
         $headers = $this->manager();
 
         // Act
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $small->id,
+            'stock_item_id' => $small->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 300,
         ])->assertCreated();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $large->id,
+            'stock_item_id' => $large->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 700,
         ])->assertCreated();
@@ -213,13 +213,13 @@ class StockLedgerTest extends TestCase
     {
         // Arrange — the unique index is what makes the lock-and-increment correct
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         // Act
         foreach (range(1, 4) as $i) {
             $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-                'product_variant_id' => $variant->id,
+                'stock_item_id' => $variant->id,
                 'to_warehouse_id' => $warehouse->id,
                 'quantity' => 10,
             ])->assertCreated();
@@ -273,12 +273,12 @@ class StockLedgerTest extends TestCase
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         // Act
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
         ])->assertCreated();
@@ -304,12 +304,12 @@ class StockLedgerTest extends TestCase
             PermissionName::ManageInventory->value,
         ]);
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
 
         // Act
         $this->withHeaders(['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken])
             ->postJson('/api/v1/stock-movements/arrivals', [
-                'product_variant_id' => $variant->id,
+                'stock_item_id' => $variant->id,
                 'to_warehouse_id' => $warehouse->id,
                 'quantity' => 10,
             ])->assertCreated();
@@ -326,14 +326,14 @@ class StockLedgerTest extends TestCase
     {
         // Arrange
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()
-            ->for(Product::factory()->perKilogram(), 'product')
-            ->create();
+        // The unit is the shelf's own now, not reached through a product — which is what stops
+        // two products sharing this pile from disagreeing about how it is counted.
+        $variant = StockItem::factory()->weighed()->create();
         $headers = $this->manager();
 
         // Act
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 12.5,
         ])->assertCreated();
@@ -341,33 +341,33 @@ class StockLedgerTest extends TestCase
         // Assert
         $this->assertDatabaseHas('warehouse_stocks', [
             'warehouse_id' => $warehouse->id,
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'unit' => 'kilogram',
         ]);
     }
 
-    public function test_a_movement_is_refused_once_the_products_unit_no_longer_matches_the_balance(): void
+    public function test_a_movement_is_refused_once_the_items_unit_no_longer_matches_the_balance(): void
     {
         // Arrange — a balance already exists in pieces
         $warehouse = Warehouse::factory()->create();
-        $variant = ProductVariant::factory()->create();
+        $variant = StockItem::factory()->create();
         $headers = $this->manager();
 
         $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 10,
         ])->assertCreated();
 
-        // The product's stock_unit is switched to kilograms after the fact — the balance still
-        // says "piece". Movements resolve their unit from `stock_unit`, not `pricing_unit`
-        // (selling unit and warehouse unit are allowed to differ on purpose), so this is the
-        // column that has to move for the mismatch to fire.
-        $variant->product()->update(['stock_unit' => PricingUnit::Kilogram]);
+        // The shelf's unit is switched to kilograms behind the balance's back — written straight
+        // to the column rather than through SetStockItemUnit, precisely because that action would
+        // restamp the balance too and there would be nothing left to catch. This is the drift
+        // guard for the day some future caller writes the column without going through it.
+        $variant->forceFill(['unit' => PricingUnit::Kilogram])->save();
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
-            'product_variant_id' => $variant->id,
+            'stock_item_id' => $variant->id,
             'to_warehouse_id' => $warehouse->id,
             'quantity' => 5,
         ]);

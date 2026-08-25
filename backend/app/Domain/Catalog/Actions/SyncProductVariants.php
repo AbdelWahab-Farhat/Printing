@@ -10,6 +10,8 @@ use App\Domain\Catalog\Exceptions\VariantDoesNotBelongToProduct;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Inventory\Actions\ResolveStockItemForVariant;
+use App\Domain\Inventory\InventoryService;
 
 /**
  * Makes a product's variants — and each variant's price tiers — match the given set exactly.
@@ -21,6 +23,8 @@ use App\Domain\Catalog\Models\ProductVariant;
  */
 final class SyncProductVariants
 {
+    public function __construct(private readonly InventoryService $inventory) {}
+
     /**
      * @param  list<ProductVariantData>  $variants
      */
@@ -57,9 +61,46 @@ final class SyncProductVariants
             ->each(fn (ProductVariant $variant) => $variant->delete());
     }
 
+    /**
+     * Which shelf this size draws from, in the order the three answers are allowed to win.
+     *
+     *   1. **An explicit `stock_item_id` in the payload.** Always beats the material, so a 25*35
+     *      bag deliberately cut from a wider sheet keeps saying so.
+     *   2. **The product's material**, if it has one — the size is matched, or created, under it
+     *      by {@see ResolveStockItemForVariant}. This is the whole
+     *      point of `products.stock_item_group_id`: say the material once, and every size finds
+     *      its own pile.
+     *   3. **Null** — a quote-only size, or a product whose material nobody has named. Every path
+     *      that moves stock refuses such a size by name rather than dereferencing null.
+     *
+     * Asked of `InventoryService`, never of `StockItem::query()`: which shelves exist and what a
+     * new one is counted in are Inventory's decisions, and a decision crosses a context boundary
+     * through the other module's Service (RULES.md §3).
+     */
+    private function resolveStockItemId(Product $product, ProductVariantData $data): ?int
+    {
+        if ($data->stockItemId !== null) {
+            return $data->stockItemId;
+        }
+
+        if ($product->stock_item_group_id === null) {
+            return null;
+        }
+
+        return (int) $this->inventory->resolveStockItemForVariant(
+            (int) $product->stock_item_group_id,
+            $data->widthCm,
+            $data->heightCm,
+        )->getKey();
+    }
+
     private function upsertVariant(Product $product, ProductVariantData $data): ProductVariant
     {
         $attributes = [
+            // Nullable, and sent on every write rather than only when present: omitting a size's
+            // shelf is «افصله عن المخزون», not «اترك ما كان» — unless the product names a
+            // material, in which case that is what fills it in. See resolveStockItemId().
+            'stock_item_id' => $this->resolveStockItemId($product, $data),
             'label' => $data->label,
             'width_cm' => $data->widthCm,
             'height_cm' => $data->heightCm,
