@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// What a shipment brought.
+/// What a shipment brought, keyed by **stock item id** — which is what the endpoint addresses a
+/// received line by, not the order line's own id. Safe as a map because an order carries one line
+/// per shelf, so a key can never stand for two of them.
 typedef ReceivedShipment = ({
   Map<int, String> quantities,
   String? invoiceNumber,
@@ -52,11 +54,11 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
   final _invoice = TextEditingController();
   final _notes = TextEditingController();
 
-  /// One controller per outstanding line, keyed by product variant — which is what the API
-  /// addresses a received line by, not by the line's own id.
+  /// One controller per outstanding line, keyed by stock item — which is what the API addresses
+  /// a received line by, not by the line's own id.
   late final Map<int, TextEditingController> _quantities = {
     for (final item in widget.order.outstanding)
-      item.productVariantId: TextEditingController(),
+      item.stockItemId: TextEditingController(),
   };
 
   @override
@@ -133,7 +135,7 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
                 for (final item in outstanding) ...[
                   _LineBox(
                     item: item,
-                    controller: _quantities[item.productVariantId]!,
+                    controller: _quantities[item.stockItemId]!,
                   ),
                   SizedBox(height: 10.h),
                 ],
@@ -192,11 +194,26 @@ class _LineBox extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
+            // The shelf's own «كيس شحن 25*35», composed by the server. **No product name**: two
+            // products draw on this pile, and printing either would send a storeman looking for
+            // the wrong label on the pallet.
             item.title,
             style: context.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
+          // `S7` — what is actually written on the shelf, and the part safe to read down a phone
+          // line while a lorry waits. It is what stands where the product photograph used to.
+          if (item.itemCode case final code?) ...[
+            SizedBox(height: 2.h),
+            Text(
+              code,
+              textDirection: TextDirection.ltr,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           SizedBox(height: 4.h),
           Text(
             // The arithmetic the server already did. A screen that subtracted would be a second

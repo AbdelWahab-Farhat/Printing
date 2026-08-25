@@ -14,7 +14,7 @@ import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/record_movement_sheet.dart';
-import 'package:dayaa/features/warehouses/presentation/widgets/stock_product_card.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/stock_material_card.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/stock_row.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/stock_summary_card.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/threshold_sheet.dart';
@@ -145,7 +145,7 @@ class _StocksView extends StatelessWidget {
                   // Pulled together, because the reader pulled the screen and not the list.
                   await Future.wait([cubit.refresh(), summary.refresh()]);
                 },
-                // Between a lone size and a bag held in four of them — the list is now a mix of
+                // Between a lone shelf and a material held in four sizes — the list is a mix of
                 // both, and a skeleton the height of the shorter one jumps under every card.
                 skeletonHeight: 96.h,
                 itemBuilder: (context, group, index) {
@@ -156,7 +156,7 @@ class _StocksView extends StatelessWidget {
                     extra: (warehouse: warehouse, stock: stock),
                   );
 
-                  // One size is a row, as it always was: a heading naming a product above a
+                  // One size is a row, as it always was: a heading naming a material above a
                   // single line repeating it is a card that says everything twice.
                   return group.isSingle
                       ? StockRow(
@@ -167,7 +167,7 @@ class _StocksView extends StatelessWidget {
                               ? () => _editThreshold(context, cubit, summary, group.first)
                               : null,
                         )
-                      : StockProductCard(
+                      : StockMaterialCard(
                           key: ValueKey(group.key),
                           group: group,
                           onTapShelf: openHistory,
@@ -184,7 +184,7 @@ class _StocksView extends StatelessWidget {
     );
   }
 
-  /// The same page, read as products instead of as sizes.
+  /// The same page, read as materials instead of as shelves.
   ///
   /// **The Cubit still pages shelves**, because that is what the endpoint returns and what "the
   /// next page" means to it. Only the drawing groups, and only here: `meta` is carried through

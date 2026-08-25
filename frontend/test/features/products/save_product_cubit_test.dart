@@ -39,8 +39,6 @@ void main() {
     name: 'أكياس الشحن',
     pricingUnit: 'piece',
     pricingUnitLabel: 'قطعة',
-    stockUnit: 'piece',
-    stockUnitLabel: 'قطعة',
     pricingMode: 'tiered',
     pricingModeLabel: 'حسب الكمية',
     minOrderQuantity: '100.000',
@@ -191,6 +189,50 @@ void main() {
 
       // Assert
       expect(state.hasUnrenderedErrors, isTrue);
+    });
+
+    test('a complaint about the material sits under the material field', () {
+      // Arrange — the rule is `exists … whereNull(deleted_at)`, so a material archived between
+      // the picker being opened and Save being pressed is the one refusal the picker itself
+      // cannot prevent.
+      const failure = Failure.server(
+        message: 'البيانات غير صحيحة',
+        fieldErrors: {
+          'stock_item_group_id': ['المادة المحددة غير موجودة'],
+        },
+      );
+
+      // Act
+      const state = SaveProductState.failure(failure);
+
+      // Assert — painted, and therefore not also shouted: the form has a box for this one, and
+      // saying it twice is worse than saying it once.
+      expect(state.materialError, 'المادة المحددة غير موجودة');
+      expect(state.hasUnrenderedErrors, isFalse);
+    });
+
+    test("a complaint about one size's shelf names that size, and unfolds the pickers", () {
+      // Arrange — the sharp one. `variants.N.stock_item_id` is listed as a key the form paints
+      // inline, but the shelf pickers sit folded away behind «ربط كل مقاس بصنف مخزني بعينه» for
+      // almost every product. Both halves have to agree or the screen goes quiet: counted as
+      // rendered, no snackbar is raised; left folded, the message lands under a control nobody
+      // can see, and Save appears to have done nothing at all.
+      const failure = Failure.server(
+        message: 'البيانات غير صحيحة',
+        fieldErrors: {
+          'variants.2.stock_item_id': ['الصنف المخزني المحدد غير موجود'],
+        },
+      );
+
+      // Act
+      const state = SaveProductState.failure(failure);
+
+      // Assert — beside the third size and nowhere else: with several sizes on screen, said out
+      // loud it would name none of them.
+      expect(state.variantStockItemError(2), 'الصنف المخزني المحدد غير موجود');
+      expect(state.variantStockItemError(0), isNull);
+      expect(state.hasUnrenderedErrors, isFalse);
+      expect(hasVariantStockItemError(failure), isTrue);
     });
 
     test('a failure with no field errors at all is always spoken aloud', () {

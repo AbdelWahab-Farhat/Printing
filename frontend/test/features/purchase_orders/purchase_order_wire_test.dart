@@ -83,13 +83,47 @@ void main() {
   });
 
   group('raising one', () {
+    test('a line names the shelf, not a product size', () async {
+      // Arrange — two shelves, «كيس شحن 25*35» and «كيس شحن 35*40». What separates two products
+      // at one size is printing, which is a cost rate and not a different material, so both
+      // draw on one pile and a purchase order buys the pile.
+      const lines = [
+        PurchaseOrderLine(stockItemId: 3, quantity: '10', baseTotalCost: '25'),
+        PurchaseOrderLine(stockItemId: 4, quantity: '5', baseTotalCost: '15'),
+      ];
+
+      // Act
+      await repository.create(
+        vendorId: 1,
+        warehouseId: 2,
+        orderDate: '2026-08-08',
+        items: lines,
+      );
+
+      // Assert — `stock_item_id`, and **not** `product_variant_id`: the old key is one the
+      // server no longer reads, so a body still carrying it would be refused for a missing
+      // stock item while looking, on this side, exactly like a body that named one. Sharing
+      // runs across products at one size and never across sizes, which is why the two lines
+      // stay two ids rather than collapsing into one.
+      final body = captured.data as Map<String, dynamic>;
+      final items = body['items'] as List<dynamic>;
+
+      expect((items.first as Map<String, dynamic>)['stock_item_id'], 3);
+      expect((items.last as Map<String, dynamic>)['stock_item_id'], 4);
+      expect(
+        (items.first as Map<String, dynamic>).containsKey('product_variant_id'),
+        isFalse,
+      );
+    });
+
     test('a new line carries no id, and an existing one does', () async {
       // Arrange — the load-bearing detail of editing: the server matches lines by id and
       // removes any it is not sent, so a line that arrived without one would be deleted and
-      // recreated, taking its received quantity with it.
+      // recreated, taking its received quantity with it. It falls back to `stock_item_id` as
+      // the natural key while syncing, but that is a safety net and not a reason to drop the id.
       const lines = [
-        PurchaseOrderLine(id: 12, productVariantId: 3, quantity: '10', baseTotalCost: '25'),
-        PurchaseOrderLine(productVariantId: 4, quantity: '5', baseTotalCost: '15'),
+        PurchaseOrderLine(id: 12, stockItemId: 3, quantity: '10', baseTotalCost: '25'),
+        PurchaseOrderLine(stockItemId: 4, quantity: '5', baseTotalCost: '15'),
       ];
 
       // Act
@@ -115,8 +149,8 @@ void main() {
       // Arrange — a free replacement from the vendor. The server takes `gte:0`, so zero is a
       // recorded answer and not the absence of one; a line that dropped it would be refused.
       const lines = [
-        PurchaseOrderLine(productVariantId: 3, quantity: '10', baseTotalCost: '25.500'),
-        PurchaseOrderLine(productVariantId: 4, quantity: '5', baseTotalCost: '0'),
+        PurchaseOrderLine(stockItemId: 3, quantity: '10', baseTotalCost: '25.500'),
+        PurchaseOrderLine(stockItemId: 4, quantity: '5', baseTotalCost: '0'),
       ];
 
       // Act
@@ -144,7 +178,7 @@ void main() {
         warehouseId: 2,
         orderDate: '2026-08-08',
         items: const [
-          PurchaseOrderLine(productVariantId: 3, quantity: '10', baseTotalCost: '25'),
+          PurchaseOrderLine(stockItemId: 3, quantity: '10', baseTotalCost: '25'),
         ],
       );
 
@@ -173,7 +207,7 @@ void main() {
         warehouseId: 2,
         orderDate: '2026-08-08',
         items: const [
-          PurchaseOrderLine(productVariantId: 3, quantity: '10', baseTotalCost: '25'),
+          PurchaseOrderLine(stockItemId: 3, quantity: '10', baseTotalCost: '25'),
         ],
         additionalCosts: costs,
       );
@@ -196,7 +230,7 @@ void main() {
         warehouseId: 2,
         orderDate: '2026-08-08',
         items: const [
-          PurchaseOrderLine(productVariantId: 3, quantity: '10', baseTotalCost: '25'),
+          PurchaseOrderLine(stockItemId: 3, quantity: '10', baseTotalCost: '25'),
         ],
       );
 
@@ -217,7 +251,7 @@ void main() {
         warehouseId: 2,
         orderDate: '2026-08-08',
         items: const [
-          DraftLine(productVariantId: 3, quantity: '١٠', baseTotalCost: '٢٥'),
+          DraftLine(stockItemId: 3, quantity: '١٠', baseTotalCost: '٢٥'),
         ],
         additionalCosts: const [
           DraftAdditionalCost(name: '  توصيل  ', amount: '١٠٫٥'),
@@ -248,7 +282,7 @@ void main() {
         warehouseId: 2,
         orderDate: '2026-08-08',
         items: const [
-          DraftLine(productVariantId: 3, quantity: '10', baseTotalCost: '25'),
+          DraftLine(stockItemId: 3, quantity: '10', baseTotalCost: '25'),
         ],
         additionalCosts: const [
           DraftAdditionalCost(name: 'توصيل', amount: '10'),
@@ -278,12 +312,14 @@ void main() {
       // Act
       await repository.receiveArrival(
         7,
-        items: const [ReceivedLine(productVariantId: 3, quantity: '4')],
+        items: const [ReceivedLine(stockItemId: 3, quantity: '4')],
         invoiceNumber: 'INV-9',
       );
 
       // Assert — both come from the order. A client that could name them could book stock into
-      // somebody else's warehouse.
+      // somebody else's warehouse. The line addresses the **shelf**, which is also what makes
+      // it addressable at all: goods turn up as a pile, and there is no way to tell from a
+      // pallet which of the two products sharing the shelf it was ordered against.
       final body = captured.data as Map<String, dynamic>;
 
       expect(captured.path, '/purchase-orders/7/arrivals');
@@ -291,13 +327,15 @@ void main() {
       expect(body.containsKey('warehouse_id'), isFalse);
       expect(body['invoice_number'], 'INV-9');
       expect(body['items'], [
-        {'product_variant_id': 3, 'quantity': '4'},
+        {'stock_item_id': 3, 'quantity': '4'},
       ]);
     });
 
     test('an empty box is not a line', () async {
       // Arrange — the receive sheet opens with a box per outstanding line, and a shipment that
-      // brought two of five sizes is the ordinary case.
+      // brought two of five shelves is the ordinary case. The map is keyed by stock item id,
+      // which is what makes it safe to be a map at all: an order carries one line per shelf, so
+      // a key can never stand for two of them.
       final receive = ReceivePurchaseOrderArrival(repository);
 
       // Act
@@ -308,7 +346,7 @@ void main() {
       final body = captured.data as Map<String, dynamic>;
 
       expect(body['items'], [
-        {'product_variant_id': 3, 'quantity': '4'},
+        {'stock_item_id': 3, 'quantity': '4'},
       ]);
     });
 

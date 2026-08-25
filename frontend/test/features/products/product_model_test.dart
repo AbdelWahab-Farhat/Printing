@@ -14,9 +14,6 @@ void main() {
     'name': 'كيس شحن',
     'pricing_unit': 'piece',
     'pricing_unit_label': 'قطعة',
-    // Sent on every product, and equal to `pricing_unit` until somebody says otherwise.
-    'stock_unit': 'piece',
-    'stock_unit_label': 'قطعة',
     'pricing_mode': 'listed',
     'pricing_mode_label': 'سعر معلن',
     'has_listed_prices': true,
@@ -53,31 +50,127 @@ void main() {
     });
   });
 
-  group('stock unit', () {
-    test('is read beside the pricing unit, not instead of it', () {
-      // Arrange — a bag bought in by the kilo and sold by the piece. One product, two units:
-      // `pricing_unit` is what the customer is charged by, `stock_unit` what the shelf counts.
+  /// **«المادة» — where what the shelf counts in went.**
+  ///
+  /// A product used to carry a `stock_unit` of its own beside its `pricing_unit`, and that column
+  /// is gone: «كيس شحن سادة 25*35» and «كيس شحن مطبوع 25*35» are two catalogue rows over one pile
+  /// of bags, so neither of them can own how that pile is counted. The split the old pair
+  /// expressed is intact and still worth pinning — what the customer is charged by is one thing
+  /// and what the warehouse counts is another — it simply has two owners now: `pricing_unit` on
+  /// the product, `unit` on the shelf, with the material deciding what a *new* shelf starts out
+  /// counted in.
+  group('the material', () {
+    Map<String, dynamic> material(Map<String, dynamic> overrides) => {
+      'id': 3,
+      'code': 'G3',
+      'name': 'كيس شحن',
+      'default_unit': 'piece',
+      'default_unit_label': 'قطعة',
+      ...overrides,
+    };
+
+    Map<String, dynamic> shelf(Map<String, dynamic> overrides) => {
+      'id': 4,
+      'code': 'S4',
+      'name': 'كيس شحن',
+      'width_cm': 25,
+      'height_cm': 35,
+      'display_name': 'كيس شحن 25*35',
+      'unit': 'piece',
+      'unit_label': 'قطعة',
+      ...overrides,
+    };
+
+    test('what the shelf counts in is read beside the pricing unit, not instead of it', () {
+      // Arrange — a bag bought in by the kilo and sold by the piece. Still one product and two
+      // units; the second one now belongs to the material and to the shelf under it.
       final product = Product.fromJson(
-        productJson({'stock_unit': 'kilogram', 'stock_unit_label': 'كيلوغرام'}),
+        productJson({
+          'stock_item_group_id': 3,
+          'stock_item_group': material({
+            'default_unit': 'kilogram',
+            'default_unit_label': 'كيلوغرام',
+          }),
+          'variants': [
+            variantJson({
+              'stock_item_id': 4,
+              'stock_item': shelf({'unit': 'kilogram', 'unit_label': 'كيلوغرام'}),
+            }),
+          ],
+        }),
       );
 
-      // Act & Assert — both survive; neither is derived from the other.
+      // Act & Assert — both survive and neither is derived from the other. The material's
+      // `default_unit` is what a shelf minted for a *new* size starts out counted in; the
+      // shelf's own `unit` is what the existing pile is counted in today. The two are read
+      // apart because changing the material's never disturbs a shelf that already exists.
       expect(product.pricingUnit, 'piece');
-      expect(product.stockUnit, 'kilogram');
-      expect(product.stockUnitLabel, 'كيلوغرام');
+      expect(product.stockItemGroup?.defaultUnit, 'kilogram');
+      expect(product.stockItemGroup?.defaultUnitLabel, 'كيلوغرام');
+      expect(product.variants.single.stockItem?.unit, 'kilogram');
     });
 
-    test('is worth saying only when it differs from what is charged', () {
-      // Arrange — nine products in ten. The server defaults `stock_unit` to `pricing_unit`, so
-      // printing both on the detail screen would be the same word twice on almost every bag.
-      final agreed = Product.fromJson(productJson({}));
-      final split = Product.fromJson(
-        productJson({'stock_unit': 'kilogram', 'stock_unit_label': 'كيلوغرام'}),
+    test('is read off the id, so a response that carried only it still counts', () {
+      // Arrange — `stock_item_group` is eager-loaded on every product path today, but the id is
+      // a plain column and always on the wire. A screen that decided «بلا مادة» from a missing
+      // relation would be stating a fact the payload never made.
+      final related = Product.fromJson(
+        productJson({'stock_item_group_id': 3, 'stock_item_group': material({})}),
       );
+      final bare = Product.fromJson(productJson({'stock_item_group_id': 3}));
+      final none = Product.fromJson(productJson({}));
 
       // Act & Assert
-      expect(agreed.stocksInAnotherUnit, isFalse);
-      expect(split.stocksInAnotherUnit, isTrue);
+      expect(related.hasMaterial, isTrue);
+      expect(bare.hasMaterial, isTrue);
+      expect(bare.stockItemGroup, isNull);
+      // A quote-only bag genuinely has none, and that is an answer rather than a fault.
+      expect(none.hasMaterial, isFalse);
+    });
+
+    test('the shelf a size draws on is named exactly as the server composed it', () {
+      // Arrange — «كيس شحن 25*35», one `*` and no spaces. The sentence an order is refused with
+      // at «جاهزة» quotes this string, so rebuilding it here out of the name and the dimensions
+      // would hand the storekeeper a second spelling of one shelf to reconcile.
+      final product = Product.fromJson(
+        productJson({
+          'variants': [
+            variantJson({'stock_item_id': 4, 'stock_item': shelf({})}),
+          ],
+        }),
+      );
+
+      // Act
+      final variant = product.variants.single;
+
+      // Assert — and a code, where a product thumbnail used to be: a pile is not one product's,
+      // so picturing either of the two sharing it would tell the storekeeper the wrong thing.
+      expect(variant.shelfLabel, 'كيس شحن 25*35');
+      expect(variant.stockItem?.code, 'S4');
+      expect(variant.isStocked, isTrue);
+    });
+
+    test('a size with no shelf is reported by name rather than treated as a fault', () {
+      // Arrange — `stock_item_id` is nullable because a quote-only size is never stocked. Every
+      // stock path refuses such a size by name, so a screen that said nothing about it would
+      // leave the limitation to be discovered when an order failed at «جاهزة».
+      final product = Product.fromJson(
+        productJson({
+          'variants': [
+            variantJson({'id': 1, 'stock_item_id': 4, 'stock_item': shelf({})}),
+            variantJson({'id': 2, 'label': 'حسب الطلب'}),
+          ],
+        }),
+      );
+
+      // Act
+      final unlinked = product.unlinkedVariants;
+
+      // Assert — the unstocked size is singled out, and the stocked one is left alone.
+      expect(unlinked, hasLength(1));
+      expect(unlinked.single.label, 'حسب الطلب');
+      expect(unlinked.single.isStocked, isFalse);
+      expect(unlinked.single.shelfLabel, isNull);
     });
   });
 

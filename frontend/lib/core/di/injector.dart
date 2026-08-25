@@ -140,7 +140,6 @@ import 'package:dayaa/features/products/usecases/save_product_category.dart';
 import 'package:dayaa/features/products/usecases/set_primary_product_image.dart';
 import 'package:dayaa/features/products/usecases/set_product_category_activation.dart';
 import 'package:dayaa/features/products/usecases/set_product_category_image.dart';
-import 'package:dayaa/features/products/usecases/set_product_stock_unit.dart';
 import 'package:dayaa/features/products/usecases/upload_product_image.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_orders_filter.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/filtered_purchase_orders_cubit.dart';
@@ -166,6 +165,24 @@ import 'package:dayaa/features/shipping_companies/repositories/shipping_company_
 import 'package:dayaa/features/shipping_companies/usecases/get_shipping_companies.dart';
 import 'package:dayaa/features/shipping_companies/usecases/save_shipping_company.dart';
 import 'package:dayaa/features/splash/presentation/viewmodel/splash_cubit.dart';
+import 'package:dayaa/features/stock_item_groups/presentation/viewmodel/save_stock_item_group_cubit.dart';
+import 'package:dayaa/features/stock_item_groups/presentation/viewmodel/stock_item_group_items_cubit.dart';
+import 'package:dayaa/features/stock_item_groups/presentation/viewmodel/stock_item_groups_cubit.dart';
+import 'package:dayaa/features/stock_item_groups/repositories/stock_item_group_repository.dart';
+import 'package:dayaa/features/stock_item_groups/repositories/stock_item_group_repository_impl.dart';
+import 'package:dayaa/features/stock_item_groups/usecases/delete_stock_item_group.dart';
+import 'package:dayaa/features/stock_item_groups/usecases/get_stock_item_group.dart';
+import 'package:dayaa/features/stock_item_groups/usecases/get_stock_item_groups.dart';
+import 'package:dayaa/features/stock_item_groups/usecases/save_stock_item_group.dart';
+import 'package:dayaa/features/stock_items/presentation/viewmodel/save_stock_item_cubit.dart';
+import 'package:dayaa/features/stock_items/presentation/viewmodel/stock_items_cubit.dart';
+import 'package:dayaa/features/stock_items/repositories/stock_item_repository.dart';
+import 'package:dayaa/features/stock_items/repositories/stock_item_repository_impl.dart';
+import 'package:dayaa/features/stock_items/usecases/delete_stock_item.dart';
+import 'package:dayaa/features/stock_items/usecases/get_stock_item.dart';
+import 'package:dayaa/features/stock_items/usecases/get_stock_items.dart';
+import 'package:dayaa/features/stock_items/usecases/save_stock_item.dart';
+import 'package:dayaa/features/stock_items/usecases/set_stock_item_unit.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/viewmodel/save_vendor_cubit.dart';
 import 'package:dayaa/features/vendors/presentation/viewmodel/vendor_detail_cubit.dart';
@@ -280,6 +297,8 @@ abstract final class Injector {
     _registerBusinessFields();
     _registerProductCategories();
     _registerWarehouses();
+    _registerStockItems();
+    _registerStockItemGroups();
     _registerVendors();
     _registerPurchaseOrders();
     _registerManufacturingCostRates();
@@ -514,12 +533,6 @@ abstract final class Injector {
       ..registerLazySingleton<SaveProduct>(
         () => SaveProduct(sl<ProductRepository>()),
       )
-      // Registered with the catalogue because it is addressed by product id, though the grant it
-      // needs is `inventory.manage`: what the shelves count in is an inventory fact about the
-      // product rather than a catalogue one.
-      ..registerLazySingleton<SetProductStockUnit>(
-        () => SetProductStockUnit(sl<ProductRepository>()),
-      )
       // Registered with the catalogue rather than with orders, where its only caller lives: it
       // asks the *product* what a quantity costs, and an order is simply the first screen to
       // need the answer.
@@ -537,7 +550,6 @@ abstract final class Injector {
         (productId, _) => ProductDetailCubit(
           productId: productId,
           getProduct: sl<GetProduct>(),
-          setStockUnit: sl<SetProductStockUnit>(),
         ),
       )
       ..registerLazySingleton<UploadProductImage>(
@@ -1080,10 +1092,10 @@ abstract final class Injector {
       // workshop, one place, or one size in one place — and the last is what a shelf's own
       // history is.
       ..registerFactoryParam<StockMovementsCubit, int?, int?>(
-        (warehouseId, productVariantId) => StockMovementsCubit(
+        (warehouseId, stockItemId) => StockMovementsCubit(
           getMovements: sl<GetStockMovements>(),
           warehouseId: warehouseId,
-          productVariantId: productVariantId,
+          stockItemId: stockItemId,
         ),
       )
       ..registerFactory<SaveWarehouseCubit>(
@@ -1091,6 +1103,114 @@ abstract final class Injector {
       )
       ..registerFactory<RecordMovementCubit>(
         () => RecordMovementCubit(recordMovement: sl<RecordStockMovement>()),
+      );
+  }
+
+  /// أصناف المخزون — the shelves themselves: a material at a size, and the only thing a
+  /// warehouse now holds a quantity of.
+  ///
+  /// **Not part of `_registerWarehouses`, and the boundary is real.** A shelf exists whether or
+  /// not any warehouse holds it, it is named from three other features — the recording sheet,
+  /// the purchase-order line and the product form all open `showStockItemPicker` — and its unit
+  /// is changed from its own screen. Folding it into the warehouses block would make the
+  /// warehouses module look like the owner of something every one of those reaches past it for.
+  ///
+  /// **`StockItemsCubit` is a factory and every one of those callers is why.** A picker opens
+  /// pre-filtered to the variant's size (`loadForSize`) while the list screen behind it is
+  /// showing something else entirely; one shared instance would narrow the list under the sheet
+  /// and blank it when the sheet closed its Cubit.
+  ///
+  /// No `registerFactoryParam` here, unlike the group's sizes sheet: the picker's size is a
+  /// *filter* it applies after construction, not the identity of what the Cubit is about — a
+  /// 25*35 bag can legitimately be cut from a wider sheet, and «كل المقاسات» is one tap away.
+  static void _registerStockItems() {
+    sl
+      ..registerLazySingleton<StockItemRepository>(
+        () => StockItemRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetStockItems>(
+        () => GetStockItems(sl<StockItemRepository>()),
+      )
+      ..registerLazySingleton<GetStockItem>(
+        () => GetStockItem(sl<StockItemRepository>()),
+      )
+      ..registerLazySingleton<SaveStockItem>(
+        () => SaveStockItem(sl<StockItemRepository>()),
+      )
+      // Its own use case rather than a flag on [SaveStockItem], because it is not a save: the
+      // server empties every warehouse holding the shelf through a recorded «تسوية نقص» before
+      // the unit moves. 200 bags are not 200 kilograms, so what was there leaves through the
+      // ledger rather than being relabelled — which is why the screen asks first.
+      ..registerLazySingleton<SetStockItemUnit>(
+        () => SetStockItemUnit(sl<StockItemRepository>()),
+      )
+      ..registerLazySingleton<DeleteStockItem>(
+        () => DeleteStockItem(sl<StockItemRepository>()),
+      )
+      ..registerFactory<StockItemsCubit>(
+        () => StockItemsCubit(
+          getStockItems: sl<GetStockItems>(),
+          deleteStockItem: sl<DeleteStockItem>(),
+        ),
+      )
+      ..registerFactory<SaveStockItemCubit>(
+        () => SaveStockItemCubit(
+          saveStockItem: sl<SaveStockItem>(),
+          setStockItemUnit: sl<SetStockItemUnit>(),
+        ),
+      );
+  }
+
+  /// مجموعات الأصناف — the material a shelf is a *size of*.
+  ///
+  /// **Its own block rather than a few more lines inside `_registerWarehouses`**, even though a
+  /// material is only ever met through the stock: a group holds no quantity and belongs to no
+  /// warehouse, and filing it under the warehouses would say it does. It is the catalogue side
+  /// of the inventory — «كيس شحن» once, so nobody points each product size at its pile by hand.
+  ///
+  /// Registered **after** the shelves it names, because that is the direction the dependency
+  /// runs: this module reads `StockUnit` and `StockItem` from `features/stock_items` and that
+  /// module reads nothing back. GetIt does not care about the order — the reader does.
+  static void _registerStockItemGroups() {
+    sl
+      ..registerLazySingleton<StockItemGroupRepository>(
+        () => StockItemGroupRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetStockItemGroups>(
+        () => GetStockItemGroups(sl<StockItemGroupRepository>()),
+      )
+      ..registerLazySingleton<GetStockItemGroup>(
+        () => GetStockItemGroup(sl<StockItemGroupRepository>()),
+      )
+      ..registerLazySingleton<SaveStockItemGroup>(
+        () => SaveStockItemGroup(sl<StockItemGroupRepository>()),
+      )
+      ..registerLazySingleton<DeleteStockItemGroup>(
+        () => DeleteStockItemGroup(sl<StockItemGroupRepository>()),
+      )
+      // Factory, and not negotiable here: the same Cubit backs both the list screen and the
+      // material picker the product form opens, and the picker asks for the active materials
+      // only. Shared, one sheet's `loadActiveOnly()` would quietly hide every stopped material
+      // from the list screen underneath it — and closing the sheet would close the list's Cubit.
+      ..registerFactory<StockItemGroupsCubit>(
+        () => StockItemGroupsCubit(
+          getGroups: sl<GetStockItemGroups>(),
+          deleteGroup: sl<DeleteStockItemGroup>(),
+        ),
+      )
+      ..registerFactory<SaveStockItemGroupCubit>(
+        () => SaveStockItemGroupCubit(saveGroup: sl<SaveStockItemGroup>()),
+      )
+      // Parameterised for the reason the warehouse's shelves are: the sheet is *about* one
+      // material, so which one is a construction argument rather than something the Cubit is
+      // told afterwards and might be asked for twice with two different answers. The sizes of a
+      // material arrive only on `GET /stock-item-groups/{id}` — the list endpoint carries a
+      // count and no rows — so this is a fetch of its own, not a slice of the list above it.
+      ..registerFactoryParam<StockItemGroupItemsCubit, int, void>(
+        (groupId, _) => StockItemGroupItemsCubit(
+          groupId: groupId,
+          getGroup: sl<GetStockItemGroup>(),
+        ),
       );
   }
 

@@ -706,7 +706,16 @@ as String,
 /// @nodoc
 mixin _$PurchaseOrderItem {
 
- int get id;@JsonKey(name: 'product_variant_id') int get productVariantId;@JsonKey(name: 'product_variant') StockVariant? get variant;/// Strings, like every quantity in this app: `'10.000'` as the server stored it. Parsing
+ int get id;@JsonKey(name: 'stock_item_id') int get stockItemId;/// The shelf itself, in the six fields the server flattens it into — **borrowed from the
+/// warehouse model rather than copied**, because a purchase-order line, an arrival line and a
+/// balance row all meet the identical shape, and three classes holding it would be three
+/// things to keep in step. It carries no `product_name` and no `image_url`, deliberately:
+/// two products draw on one pile.
+///
+/// Nullable because it is `whenLoaded`, though every purchase order the API publishes carries
+/// it — `PurchaseOrderListQuery` and the show endpoint both eager-load `items.stockItem`. A
+/// missing key draws a fallback rather than failing the page.
+@JsonKey(name: 'stock_item') StockItemRef? get stockItem;/// Strings, like every quantity in this app: `'10.000'` as the server stored it. Parsing
 /// one to show it is how a decimal quietly becomes `10.0`.
 @JsonKey(name: 'quantity_ordered') String get quantityOrdered;@JsonKey(name: 'quantity_received') String get quantityReceived;/// Computed by the server, never here — a client that subtracted would be a second opinion
 /// about arithmetic that decides whether a shipment is refused.
@@ -722,8 +731,12 @@ mixin _$PurchaseOrderItem {
 ///
 /// **This is what the goods actually cost us**, and what every screen leads with. Null on a
 /// line the allocator never ran over, where the base figures are all there is.
-@JsonKey(name: 'final_unit_cost') String? get finalUnitCost;@JsonKey(name: 'final_total_cost') String? get finalTotalCost;/// What this line is counted in, snapshotted from the product when the line was written.
-/// Null on a line older than the column; the screens fall back to the variant's own unit.
+@JsonKey(name: 'final_unit_cost') String? get finalUnitCost;@JsonKey(name: 'final_total_cost') String? get finalTotalCost;/// What this line is counted in, snapshotted from the **stock item** when the line was
+/// written — `CreatePurchaseOrder` force-fills it from `stockItem->unit` and never trusts a
+/// unit sent by a client, so a request cannot post one the shelf disagrees with.
+///
+/// Null on a line older than the column, and everything built from it then says nothing
+/// rather than guessing — see [PurchaseLineUnit].
  String? get unit;@JsonKey(name: 'unit_label') String? get unitLabel;
 /// Create a copy of PurchaseOrderItem
 /// with the given fields replaced by the non-null parameter values.
@@ -737,16 +750,16 @@ $PurchaseOrderItemCopyWith<PurchaseOrderItem> get copyWith => _$PurchaseOrderIte
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderItem&&(identical(other.id, id) || other.id == id)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.quantityOrdered, quantityOrdered) || other.quantityOrdered == quantityOrdered)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.baseTotalCost, baseTotalCost) || other.baseTotalCost == baseTotalCost)&&(identical(other.baseUnitCost, baseUnitCost) || other.baseUnitCost == baseUnitCost)&&(identical(other.allocatedAdditionalCost, allocatedAdditionalCost) || other.allocatedAdditionalCost == allocatedAdditionalCost)&&(identical(other.finalUnitCost, finalUnitCost) || other.finalUnitCost == finalUnitCost)&&(identical(other.finalTotalCost, finalTotalCost) || other.finalTotalCost == finalTotalCost)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderItem&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.quantityOrdered, quantityOrdered) || other.quantityOrdered == quantityOrdered)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.baseTotalCost, baseTotalCost) || other.baseTotalCost == baseTotalCost)&&(identical(other.baseUnitCost, baseUnitCost) || other.baseUnitCost == baseUnitCost)&&(identical(other.allocatedAdditionalCost, allocatedAdditionalCost) || other.allocatedAdditionalCost == allocatedAdditionalCost)&&(identical(other.finalUnitCost, finalUnitCost) || other.finalUnitCost == finalUnitCost)&&(identical(other.finalTotalCost, finalTotalCost) || other.finalTotalCost == finalTotalCost)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,productVariantId,variant,quantityOrdered,quantityReceived,quantityRemaining,baseTotalCost,baseUnitCost,allocatedAdditionalCost,finalUnitCost,finalTotalCost,unit,unitLabel);
+int get hashCode => Object.hash(runtimeType,id,stockItemId,stockItem,quantityOrdered,quantityReceived,quantityRemaining,baseTotalCost,baseUnitCost,allocatedAdditionalCost,finalUnitCost,finalTotalCost,unit,unitLabel);
 
 @override
 String toString() {
-  return 'PurchaseOrderItem(id: $id, productVariantId: $productVariantId, variant: $variant, quantityOrdered: $quantityOrdered, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, baseTotalCost: $baseTotalCost, baseUnitCost: $baseUnitCost, allocatedAdditionalCost: $allocatedAdditionalCost, finalUnitCost: $finalUnitCost, finalTotalCost: $finalTotalCost, unit: $unit, unitLabel: $unitLabel)';
+  return 'PurchaseOrderItem(id: $id, stockItemId: $stockItemId, stockItem: $stockItem, quantityOrdered: $quantityOrdered, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, baseTotalCost: $baseTotalCost, baseUnitCost: $baseUnitCost, allocatedAdditionalCost: $allocatedAdditionalCost, finalUnitCost: $finalUnitCost, finalTotalCost: $finalTotalCost, unit: $unit, unitLabel: $unitLabel)';
 }
 
 
@@ -757,11 +770,11 @@ abstract mixin class $PurchaseOrderItemCopyWith<$Res>  {
   factory $PurchaseOrderItemCopyWith(PurchaseOrderItem value, $Res Function(PurchaseOrderItem) _then) = _$PurchaseOrderItemCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'quantity_ordered') String quantityOrdered,@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining,@JsonKey(name: 'base_total_cost') String? baseTotalCost,@JsonKey(name: 'base_unit_cost') String? baseUnitCost,@JsonKey(name: 'allocated_additional_cost') String? allocatedAdditionalCost,@JsonKey(name: 'final_unit_cost') String? finalUnitCost,@JsonKey(name: 'final_total_cost') String? finalTotalCost, String? unit,@JsonKey(name: 'unit_label') String? unitLabel
+ int id,@JsonKey(name: 'stock_item_id') int stockItemId,@JsonKey(name: 'stock_item') StockItemRef? stockItem,@JsonKey(name: 'quantity_ordered') String quantityOrdered,@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining,@JsonKey(name: 'base_total_cost') String? baseTotalCost,@JsonKey(name: 'base_unit_cost') String? baseUnitCost,@JsonKey(name: 'allocated_additional_cost') String? allocatedAdditionalCost,@JsonKey(name: 'final_unit_cost') String? finalUnitCost,@JsonKey(name: 'final_total_cost') String? finalTotalCost, String? unit,@JsonKey(name: 'unit_label') String? unitLabel
 });
 
 
-$StockVariantCopyWith<$Res>? get variant;
+$StockItemRefCopyWith<$Res>? get stockItem;
 
 }
 /// @nodoc
@@ -774,12 +787,12 @@ class _$PurchaseOrderItemCopyWithImpl<$Res>
 
 /// Create a copy of PurchaseOrderItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? productVariantId = null,Object? variant = freezed,Object? quantityOrdered = null,Object? quantityReceived = null,Object? quantityRemaining = null,Object? baseTotalCost = freezed,Object? baseUnitCost = freezed,Object? allocatedAdditionalCost = freezed,Object? finalUnitCost = freezed,Object? finalTotalCost = freezed,Object? unit = freezed,Object? unitLabel = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? stockItemId = null,Object? stockItem = freezed,Object? quantityOrdered = null,Object? quantityReceived = null,Object? quantityRemaining = null,Object? baseTotalCost = freezed,Object? baseUnitCost = freezed,Object? allocatedAdditionalCost = freezed,Object? finalUnitCost = freezed,Object? finalTotalCost = freezed,Object? unit = freezed,Object? unitLabel = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as int,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
-as int,variant: freezed == variant ? _self.variant : variant // ignore: cast_nullable_to_non_nullable
-as StockVariant?,quantityOrdered: null == quantityOrdered ? _self.quantityOrdered : quantityOrdered // ignore: cast_nullable_to_non_nullable
+as int,stockItemId: null == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
+as int,stockItem: freezed == stockItem ? _self.stockItem : stockItem // ignore: cast_nullable_to_non_nullable
+as StockItemRef?,quantityOrdered: null == quantityOrdered ? _self.quantityOrdered : quantityOrdered // ignore: cast_nullable_to_non_nullable
 as String,quantityReceived: null == quantityReceived ? _self.quantityReceived : quantityReceived // ignore: cast_nullable_to_non_nullable
 as String,quantityRemaining: null == quantityRemaining ? _self.quantityRemaining : quantityRemaining // ignore: cast_nullable_to_non_nullable
 as String,baseTotalCost: freezed == baseTotalCost ? _self.baseTotalCost : baseTotalCost // ignore: cast_nullable_to_non_nullable
@@ -796,13 +809,13 @@ as String?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$StockVariantCopyWith<$Res>? get variant {
-    if (_self.variant == null) {
+$StockItemRefCopyWith<$Res>? get stockItem {
+    if (_self.stockItem == null) {
     return null;
   }
 
-  return $StockVariantCopyWith<$Res>(_self.variant!, (value) {
-    return _then(_self.copyWith(variant: value));
+  return $StockItemRefCopyWith<$Res>(_self.stockItem!, (value) {
+    return _then(_self.copyWith(stockItem: value));
   });
 }
 }
@@ -886,10 +899,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'base_total_cost')  String? baseTotalCost, @JsonKey(name: 'base_unit_cost')  String? baseUnitCost, @JsonKey(name: 'allocated_additional_cost')  String? allocatedAdditionalCost, @JsonKey(name: 'final_unit_cost')  String? finalUnitCost, @JsonKey(name: 'final_total_cost')  String? finalTotalCost,  String? unit, @JsonKey(name: 'unit_label')  String? unitLabel)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? stockItem, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'base_total_cost')  String? baseTotalCost, @JsonKey(name: 'base_unit_cost')  String? baseUnitCost, @JsonKey(name: 'allocated_additional_cost')  String? allocatedAdditionalCost, @JsonKey(name: 'final_unit_cost')  String? finalUnitCost, @JsonKey(name: 'final_total_cost')  String? finalTotalCost,  String? unit, @JsonKey(name: 'unit_label')  String? unitLabel)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PurchaseOrderItem() when $default != null:
-return $default(_that.id,_that.productVariantId,_that.variant,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.baseTotalCost,_that.baseUnitCost,_that.allocatedAdditionalCost,_that.finalUnitCost,_that.finalTotalCost,_that.unit,_that.unitLabel);case _:
+return $default(_that.id,_that.stockItemId,_that.stockItem,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.baseTotalCost,_that.baseUnitCost,_that.allocatedAdditionalCost,_that.finalUnitCost,_that.finalTotalCost,_that.unit,_that.unitLabel);case _:
   return orElse();
 
 }
@@ -907,10 +920,10 @@ return $default(_that.id,_that.productVariantId,_that.variant,_that.quantityOrde
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'base_total_cost')  String? baseTotalCost, @JsonKey(name: 'base_unit_cost')  String? baseUnitCost, @JsonKey(name: 'allocated_additional_cost')  String? allocatedAdditionalCost, @JsonKey(name: 'final_unit_cost')  String? finalUnitCost, @JsonKey(name: 'final_total_cost')  String? finalTotalCost,  String? unit, @JsonKey(name: 'unit_label')  String? unitLabel)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? stockItem, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'base_total_cost')  String? baseTotalCost, @JsonKey(name: 'base_unit_cost')  String? baseUnitCost, @JsonKey(name: 'allocated_additional_cost')  String? allocatedAdditionalCost, @JsonKey(name: 'final_unit_cost')  String? finalUnitCost, @JsonKey(name: 'final_total_cost')  String? finalTotalCost,  String? unit, @JsonKey(name: 'unit_label')  String? unitLabel)  $default,) {final _that = this;
 switch (_that) {
 case _PurchaseOrderItem():
-return $default(_that.id,_that.productVariantId,_that.variant,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.baseTotalCost,_that.baseUnitCost,_that.allocatedAdditionalCost,_that.finalUnitCost,_that.finalTotalCost,_that.unit,_that.unitLabel);case _:
+return $default(_that.id,_that.stockItemId,_that.stockItem,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.baseTotalCost,_that.baseUnitCost,_that.allocatedAdditionalCost,_that.finalUnitCost,_that.finalTotalCost,_that.unit,_that.unitLabel);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -927,10 +940,10 @@ return $default(_that.id,_that.productVariantId,_that.variant,_that.quantityOrde
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'base_total_cost')  String? baseTotalCost, @JsonKey(name: 'base_unit_cost')  String? baseUnitCost, @JsonKey(name: 'allocated_additional_cost')  String? allocatedAdditionalCost, @JsonKey(name: 'final_unit_cost')  String? finalUnitCost, @JsonKey(name: 'final_total_cost')  String? finalTotalCost,  String? unit, @JsonKey(name: 'unit_label')  String? unitLabel)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? stockItem, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'base_total_cost')  String? baseTotalCost, @JsonKey(name: 'base_unit_cost')  String? baseUnitCost, @JsonKey(name: 'allocated_additional_cost')  String? allocatedAdditionalCost, @JsonKey(name: 'final_unit_cost')  String? finalUnitCost, @JsonKey(name: 'final_total_cost')  String? finalTotalCost,  String? unit, @JsonKey(name: 'unit_label')  String? unitLabel)?  $default,) {final _that = this;
 switch (_that) {
 case _PurchaseOrderItem() when $default != null:
-return $default(_that.id,_that.productVariantId,_that.variant,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.baseTotalCost,_that.baseUnitCost,_that.allocatedAdditionalCost,_that.finalUnitCost,_that.finalTotalCost,_that.unit,_that.unitLabel);case _:
+return $default(_that.id,_that.stockItemId,_that.stockItem,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.baseTotalCost,_that.baseUnitCost,_that.allocatedAdditionalCost,_that.finalUnitCost,_that.finalTotalCost,_that.unit,_that.unitLabel);case _:
   return null;
 
 }
@@ -942,12 +955,21 @@ return $default(_that.id,_that.productVariantId,_that.variant,_that.quantityOrde
 @JsonSerializable()
 
 class _PurchaseOrderItem extends PurchaseOrderItem {
-  const _PurchaseOrderItem({required this.id, @JsonKey(name: 'product_variant_id') required this.productVariantId, @JsonKey(name: 'product_variant') this.variant, @JsonKey(name: 'quantity_ordered') required this.quantityOrdered, @JsonKey(name: 'quantity_received') required this.quantityReceived, @JsonKey(name: 'quantity_remaining') required this.quantityRemaining, @JsonKey(name: 'base_total_cost') this.baseTotalCost, @JsonKey(name: 'base_unit_cost') this.baseUnitCost, @JsonKey(name: 'allocated_additional_cost') this.allocatedAdditionalCost, @JsonKey(name: 'final_unit_cost') this.finalUnitCost, @JsonKey(name: 'final_total_cost') this.finalTotalCost, this.unit, @JsonKey(name: 'unit_label') this.unitLabel}): super._();
+  const _PurchaseOrderItem({required this.id, @JsonKey(name: 'stock_item_id') required this.stockItemId, @JsonKey(name: 'stock_item') this.stockItem, @JsonKey(name: 'quantity_ordered') required this.quantityOrdered, @JsonKey(name: 'quantity_received') required this.quantityReceived, @JsonKey(name: 'quantity_remaining') required this.quantityRemaining, @JsonKey(name: 'base_total_cost') this.baseTotalCost, @JsonKey(name: 'base_unit_cost') this.baseUnitCost, @JsonKey(name: 'allocated_additional_cost') this.allocatedAdditionalCost, @JsonKey(name: 'final_unit_cost') this.finalUnitCost, @JsonKey(name: 'final_total_cost') this.finalTotalCost, this.unit, @JsonKey(name: 'unit_label') this.unitLabel}): super._();
   factory _PurchaseOrderItem.fromJson(Map<String, dynamic> json) => _$PurchaseOrderItemFromJson(json);
 
 @override final  int id;
-@override@JsonKey(name: 'product_variant_id') final  int productVariantId;
-@override@JsonKey(name: 'product_variant') final  StockVariant? variant;
+@override@JsonKey(name: 'stock_item_id') final  int stockItemId;
+/// The shelf itself, in the six fields the server flattens it into — **borrowed from the
+/// warehouse model rather than copied**, because a purchase-order line, an arrival line and a
+/// balance row all meet the identical shape, and three classes holding it would be three
+/// things to keep in step. It carries no `product_name` and no `image_url`, deliberately:
+/// two products draw on one pile.
+///
+/// Nullable because it is `whenLoaded`, though every purchase order the API publishes carries
+/// it — `PurchaseOrderListQuery` and the show endpoint both eager-load `items.stockItem`. A
+/// missing key draws a fallback rather than failing the page.
+@override@JsonKey(name: 'stock_item') final  StockItemRef? stockItem;
 /// Strings, like every quantity in this app: `'10.000'` as the server stored it. Parsing
 /// one to show it is how a decimal quietly becomes `10.0`.
 @override@JsonKey(name: 'quantity_ordered') final  String quantityOrdered;
@@ -972,8 +994,12 @@ class _PurchaseOrderItem extends PurchaseOrderItem {
 /// line the allocator never ran over, where the base figures are all there is.
 @override@JsonKey(name: 'final_unit_cost') final  String? finalUnitCost;
 @override@JsonKey(name: 'final_total_cost') final  String? finalTotalCost;
-/// What this line is counted in, snapshotted from the product when the line was written.
-/// Null on a line older than the column; the screens fall back to the variant's own unit.
+/// What this line is counted in, snapshotted from the **stock item** when the line was
+/// written — `CreatePurchaseOrder` force-fills it from `stockItem->unit` and never trusts a
+/// unit sent by a client, so a request cannot post one the shelf disagrees with.
+///
+/// Null on a line older than the column, and everything built from it then says nothing
+/// rather than guessing — see [PurchaseLineUnit].
 @override final  String? unit;
 @override@JsonKey(name: 'unit_label') final  String? unitLabel;
 
@@ -990,16 +1016,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PurchaseOrderItem&&(identical(other.id, id) || other.id == id)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.quantityOrdered, quantityOrdered) || other.quantityOrdered == quantityOrdered)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.baseTotalCost, baseTotalCost) || other.baseTotalCost == baseTotalCost)&&(identical(other.baseUnitCost, baseUnitCost) || other.baseUnitCost == baseUnitCost)&&(identical(other.allocatedAdditionalCost, allocatedAdditionalCost) || other.allocatedAdditionalCost == allocatedAdditionalCost)&&(identical(other.finalUnitCost, finalUnitCost) || other.finalUnitCost == finalUnitCost)&&(identical(other.finalTotalCost, finalTotalCost) || other.finalTotalCost == finalTotalCost)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PurchaseOrderItem&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.quantityOrdered, quantityOrdered) || other.quantityOrdered == quantityOrdered)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.baseTotalCost, baseTotalCost) || other.baseTotalCost == baseTotalCost)&&(identical(other.baseUnitCost, baseUnitCost) || other.baseUnitCost == baseUnitCost)&&(identical(other.allocatedAdditionalCost, allocatedAdditionalCost) || other.allocatedAdditionalCost == allocatedAdditionalCost)&&(identical(other.finalUnitCost, finalUnitCost) || other.finalUnitCost == finalUnitCost)&&(identical(other.finalTotalCost, finalTotalCost) || other.finalTotalCost == finalTotalCost)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,productVariantId,variant,quantityOrdered,quantityReceived,quantityRemaining,baseTotalCost,baseUnitCost,allocatedAdditionalCost,finalUnitCost,finalTotalCost,unit,unitLabel);
+int get hashCode => Object.hash(runtimeType,id,stockItemId,stockItem,quantityOrdered,quantityReceived,quantityRemaining,baseTotalCost,baseUnitCost,allocatedAdditionalCost,finalUnitCost,finalTotalCost,unit,unitLabel);
 
 @override
 String toString() {
-  return 'PurchaseOrderItem(id: $id, productVariantId: $productVariantId, variant: $variant, quantityOrdered: $quantityOrdered, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, baseTotalCost: $baseTotalCost, baseUnitCost: $baseUnitCost, allocatedAdditionalCost: $allocatedAdditionalCost, finalUnitCost: $finalUnitCost, finalTotalCost: $finalTotalCost, unit: $unit, unitLabel: $unitLabel)';
+  return 'PurchaseOrderItem(id: $id, stockItemId: $stockItemId, stockItem: $stockItem, quantityOrdered: $quantityOrdered, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, baseTotalCost: $baseTotalCost, baseUnitCost: $baseUnitCost, allocatedAdditionalCost: $allocatedAdditionalCost, finalUnitCost: $finalUnitCost, finalTotalCost: $finalTotalCost, unit: $unit, unitLabel: $unitLabel)';
 }
 
 
@@ -1010,11 +1036,11 @@ abstract mixin class _$PurchaseOrderItemCopyWith<$Res> implements $PurchaseOrder
   factory _$PurchaseOrderItemCopyWith(_PurchaseOrderItem value, $Res Function(_PurchaseOrderItem) _then) = __$PurchaseOrderItemCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'quantity_ordered') String quantityOrdered,@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining,@JsonKey(name: 'base_total_cost') String? baseTotalCost,@JsonKey(name: 'base_unit_cost') String? baseUnitCost,@JsonKey(name: 'allocated_additional_cost') String? allocatedAdditionalCost,@JsonKey(name: 'final_unit_cost') String? finalUnitCost,@JsonKey(name: 'final_total_cost') String? finalTotalCost, String? unit,@JsonKey(name: 'unit_label') String? unitLabel
+ int id,@JsonKey(name: 'stock_item_id') int stockItemId,@JsonKey(name: 'stock_item') StockItemRef? stockItem,@JsonKey(name: 'quantity_ordered') String quantityOrdered,@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining,@JsonKey(name: 'base_total_cost') String? baseTotalCost,@JsonKey(name: 'base_unit_cost') String? baseUnitCost,@JsonKey(name: 'allocated_additional_cost') String? allocatedAdditionalCost,@JsonKey(name: 'final_unit_cost') String? finalUnitCost,@JsonKey(name: 'final_total_cost') String? finalTotalCost, String? unit,@JsonKey(name: 'unit_label') String? unitLabel
 });
 
 
-@override $StockVariantCopyWith<$Res>? get variant;
+@override $StockItemRefCopyWith<$Res>? get stockItem;
 
 }
 /// @nodoc
@@ -1027,12 +1053,12 @@ class __$PurchaseOrderItemCopyWithImpl<$Res>
 
 /// Create a copy of PurchaseOrderItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? productVariantId = null,Object? variant = freezed,Object? quantityOrdered = null,Object? quantityReceived = null,Object? quantityRemaining = null,Object? baseTotalCost = freezed,Object? baseUnitCost = freezed,Object? allocatedAdditionalCost = freezed,Object? finalUnitCost = freezed,Object? finalTotalCost = freezed,Object? unit = freezed,Object? unitLabel = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? stockItemId = null,Object? stockItem = freezed,Object? quantityOrdered = null,Object? quantityReceived = null,Object? quantityRemaining = null,Object? baseTotalCost = freezed,Object? baseUnitCost = freezed,Object? allocatedAdditionalCost = freezed,Object? finalUnitCost = freezed,Object? finalTotalCost = freezed,Object? unit = freezed,Object? unitLabel = freezed,}) {
   return _then(_PurchaseOrderItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as int,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
-as int,variant: freezed == variant ? _self.variant : variant // ignore: cast_nullable_to_non_nullable
-as StockVariant?,quantityOrdered: null == quantityOrdered ? _self.quantityOrdered : quantityOrdered // ignore: cast_nullable_to_non_nullable
+as int,stockItemId: null == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
+as int,stockItem: freezed == stockItem ? _self.stockItem : stockItem // ignore: cast_nullable_to_non_nullable
+as StockItemRef?,quantityOrdered: null == quantityOrdered ? _self.quantityOrdered : quantityOrdered // ignore: cast_nullable_to_non_nullable
 as String,quantityReceived: null == quantityReceived ? _self.quantityReceived : quantityReceived // ignore: cast_nullable_to_non_nullable
 as String,quantityRemaining: null == quantityRemaining ? _self.quantityRemaining : quantityRemaining // ignore: cast_nullable_to_non_nullable
 as String,baseTotalCost: freezed == baseTotalCost ? _self.baseTotalCost : baseTotalCost // ignore: cast_nullable_to_non_nullable
@@ -1050,13 +1076,13 @@ as String?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$StockVariantCopyWith<$Res>? get variant {
-    if (_self.variant == null) {
+$StockItemRefCopyWith<$Res>? get stockItem {
+    if (_self.stockItem == null) {
     return null;
   }
 
-  return $StockVariantCopyWith<$Res>(_self.variant!, (value) {
-    return _then(_self.copyWith(variant: value));
+  return $StockItemRefCopyWith<$Res>(_self.stockItem!, (value) {
+    return _then(_self.copyWith(stockItem: value));
   });
 }
 }

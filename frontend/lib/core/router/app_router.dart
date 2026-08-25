@@ -51,12 +51,16 @@ import 'package:dayaa/features/purchase_orders/presentation/views/purchase_order
 import 'package:dayaa/features/purchase_orders/presentation/views/purchase_order_form_page.dart';
 import 'package:dayaa/features/purchase_orders/presentation/views/purchase_orders_page.dart';
 import 'package:dayaa/features/reports/presentation/views/profit_and_loss_page.dart';
+import 'package:dayaa/features/root/presentation/views/inventory_tab_page.dart';
 import 'package:dayaa/features/root/presentation/views/root_page.dart';
 import 'package:dayaa/features/settings/presentation/views/settings_page.dart';
 import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
 import 'package:dayaa/features/shipping_companies/presentation/views/shipping_companies_page.dart';
 import 'package:dayaa/features/shipping_companies/presentation/views/shipping_company_form_page.dart';
 import 'package:dayaa/features/splash/presentation/views/splash_page.dart';
+import 'package:dayaa/features/stock_item_groups/presentation/views/stock_item_groups_page.dart';
+import 'package:dayaa/features/stock_items/presentation/views/stock_item_form_page.dart';
+import 'package:dayaa/features/stock_items/presentation/views/stock_items_page.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/views/vendor_detail_page.dart';
 import 'package:dayaa/features/vendors/presentation/views/vendor_form_page.dart';
@@ -65,7 +69,6 @@ import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:dayaa/features/warehouses/presentation/views/stock_movements_page.dart';
 import 'package:dayaa/features/warehouses/presentation/views/warehouse_stocks_page.dart';
-import 'package:dayaa/features/warehouses/presentation/views/warehouses_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
@@ -108,6 +111,29 @@ abstract final class Routes {
 
   /// Every movement in the workshop, whatever the place.
   static const String stockMovements = '/stock-movements';
+
+  /// أصناف المخزون — the shelves themselves: a material at a size, and the only thing a
+  /// warehouse now holds a quantity of.
+  ///
+  /// Flat rather than a child of `/warehouse`, because a shelf is not a warehouse's: two
+  /// products at one size draw on one pile, and the same pile is stocked in three rooms. It is
+  /// reference data the stock tab points *at*, not a page inside it.
+  static const String stockItems = '/stock-items';
+
+  /// Opening a shelf, or correcting one. Takes a `StockItemFormArgs` as `extra` — the shelf
+  /// being edited, or the material a new one is filed under.
+  ///
+  /// Its `GoRoute` is declared **before** [stockItems]'s, and before any future
+  /// `/stock-items/:id`, because go_router matches in declaration order and `:id` would read the
+  /// literal word «form» as an id. The same trap `/vendors/form` sits beside.
+  static const String stockItemForm = '/stock-items/form';
+
+  /// مجموعات الأصناف — the material a shelf is a size of, «كيس شحن» before it has a size.
+  ///
+  /// A sibling of [stockItems] rather than a parent path with the sizes underneath: a material
+  /// holds nothing and is administered on its own, and its sizes arrive inside its own record
+  /// rather than from a filtered list — `/stock-items` carries no group filter at all.
+  static const String stockItemGroups = '/stock-item-groups';
 
   /// الأرباح والخسائر. A flat route with no id: the report is about a period the screen itself
   /// chooses, so there is nothing to put in the path.
@@ -373,7 +399,7 @@ abstract final class AppRouter {
                     sl<Session>().can(AppPermission.viewInventory)
                     ? null
                     : Routes.home,
-                builder: (context, state) => const WarehousesPage(),
+                builder: (context, state) => const InventoryTabPage(),
               ),
             ],
           ),
@@ -437,6 +463,44 @@ abstract final class AppRouter {
         redirect: (context, state) =>
             sl<Session>().can(AppPermission.viewInventory) ? null : Routes.home,
         builder: (context, state) => const StockMovementsPage(),
+      ),
+      // Declared **before** `/stock-items`, and that ordering is load-bearing the day a
+      // `/stock-items/:id` joins them: `:id` declared first captures the literal word «form»
+      // and `int.parse('form')` throws on the way in. The same trap `/vendors/form` sits beside.
+      //
+      // Guarded on *managing* inventory rather than viewing it, and it falls back to the list
+      // rather than home — the pattern `/vendors/form` and `/products/new` set. A deep link, a
+      // notification tap or a stale back-stack entry must not open a form whose only possible
+      // ending is a 403, and somebody who may read the shelves should land on them.
+      GoRoute(
+        path: Routes.stockItemForm,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.manageInventory)
+            ? null
+            : Routes.stockItems,
+        builder: (context, state) {
+          // `extra` is ours and is absent on a deep link. Both fields are optional anyway —
+          // nothing carried means «open a new shelf under no material», which is a real answer.
+          final args = state.extra as StockItemFormArgs?;
+
+          return StockItemFormPage(item: args?.item, group: args?.group);
+        },
+      ),
+      // The shelves, and the materials they are sizes of. Outside the shell for the reason
+      // `/warehouse/:id/stocks` is: reference data is a place the user goes *to*, and the bottom
+      // bar claiming they are still browsing a tab would be wrong. Guarded each on its own,
+      // because there is no guarded parent to inherit from.
+      GoRoute(
+        path: Routes.stockItems,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewInventory) ? null : Routes.home,
+        builder: (context, state) => const StockItemsPage(),
+      ),
+      GoRoute(
+        path: Routes.stockItemGroups,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewInventory) ? null : Routes.home,
+        builder: (context, state) => const StockItemGroupsPage(),
       ),
       // No `/reports/:id` sibling to be shadowed by, so nothing here is ordering-sensitive.
       // Guarded like every other screen whose every request would answer 403 without the grant.

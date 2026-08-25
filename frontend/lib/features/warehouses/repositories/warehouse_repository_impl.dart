@@ -117,7 +117,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
   @override
   Future<Either<Failure, Paginated<StockMovement>>> movements({
     int? warehouseId,
-    int? productVariantId,
+    int? stockItemId,
     int page = 1,
     int perPage = 20,
   }) {
@@ -128,7 +128,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
           'page': page,
           'per_page': perPage,
           'warehouse_id': ?warehouseId,
-          'product_variant_id': ?productVariantId,
+          'stock_item_id': ?stockItemId,
         },
       ),
       parseItem: StockMovement.fromJson,
@@ -137,13 +137,13 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
 
   @override
   Future<Either<Failure, StockMovement>> recordArrival({
-    required int productVariantId,
+    required int stockItemId,
     required int toWarehouseId,
     required String quantity,
     String? notes,
   }) {
     return _record(StockMovementEndpoints.arrivals, <String, dynamic>{
-      'product_variant_id': productVariantId,
+      'stock_item_id': stockItemId,
       'to_warehouse_id': toWarehouseId,
       'quantity': quantity,
       if (notes != null && notes.isNotEmpty) 'notes': notes,
@@ -152,14 +152,14 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
 
   @override
   Future<Either<Failure, StockMovement>> recordTransfer({
-    required int productVariantId,
+    required int stockItemId,
     required int fromWarehouseId,
     required int toWarehouseId,
     required String quantity,
     String? notes,
   }) {
     return _record(StockMovementEndpoints.transfers, <String, dynamic>{
-      'product_variant_id': productVariantId,
+      'stock_item_id': stockItemId,
       'from_warehouse_id': fromWarehouseId,
       'to_warehouse_id': toWarehouseId,
       'quantity': quantity,
@@ -169,14 +169,14 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
 
   @override
   Future<Either<Failure, StockMovement>> recordAdjustment({
-    required int productVariantId,
+    required int stockItemId,
     required int warehouseId,
     required String quantity,
     required bool isIncrease,
     String? notes,
   }) {
     return _record(StockMovementEndpoints.adjustments, <String, dynamic>{
-      'product_variant_id': productVariantId,
+      'stock_item_id': stockItemId,
       'warehouse_id': warehouseId,
       'quantity': quantity,
       // The backend's own enum. The one place the app spells one of its values, because a

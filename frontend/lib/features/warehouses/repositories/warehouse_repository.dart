@@ -67,18 +67,21 @@ abstract interface class WarehouseRepository {
   /// The ledger, newest first.
   ///
   /// [warehouseId] narrows it to one place, counting both ends of a transfer.
-  /// [productVariantId] narrows it to one size — «كل ما حدث لهذا المقاس»: where it came from,
-  /// where it went, and every count that corrected it. The two combine.
+  /// [stockItemId] narrows it to one shelf — «كل ما حدث لهذا الصنف»: where it came from, where
+  /// it went, and every count that corrected it. The two combine.
+  ///
+  /// **One shelf, not one product's size.** Two catalogue rows can draw on the same pile, so
+  /// this feed answers for the pile — which is the only reading that explains the number on it.
   Future<Either<Failure, Paginated<StockMovement>>> movements({
     int? warehouseId,
-    int? productVariantId,
+    int? stockItemId,
     int page = 1,
     int perPage = 20,
   });
 
   /// Stock arriving from outside — a purchase. No source, because there is none.
   Future<Either<Failure, StockMovement>> recordArrival({
-    required int productVariantId,
+    required int stockItemId,
     required int toWarehouseId,
     required String quantity,
     String? notes,
@@ -87,7 +90,7 @@ abstract interface class WarehouseRepository {
   /// Stock moving between two of our own places. Both ends required, and the server refuses
   /// the same warehouse twice.
   Future<Either<Failure, StockMovement>> recordTransfer({
-    required int productVariantId,
+    required int stockItemId,
     required int fromWarehouseId,
     required int toWarehouseId,
     required String quantity,
@@ -97,7 +100,7 @@ abstract interface class WarehouseRepository {
   /// A count that disagreed with the record. [isIncrease] is which way the correction goes —
   /// the quantity itself is always positive.
   Future<Either<Failure, StockMovement>> recordAdjustment({
-    required int productVariantId,
+    required int stockItemId,
     required int warehouseId,
     required String quantity,
     required bool isIncrease,

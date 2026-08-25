@@ -20,12 +20,14 @@ extension RecordMovementStateX on RecordMovementState {
   /// holding the number it is about.
   String? get quantityError => _fieldError('quantity');
 
-  String? get warehouseError =>
-      _fieldError('to_warehouse_id') ?? _fieldError('warehouse_id');
+  String? get warehouseError => _fieldError('to_warehouse_id') ?? _fieldError('warehouse_id');
 
   String? get sourceError => _fieldError('from_warehouse_id');
 
-  String? get variantError => _fieldError('product_variant_id');
+  /// «الصنف المخزني مطلوب», «الصنف المخزني المحدد غير موجود» — and the refusal a size with no
+  /// shelf earns, ««المنتج — المقاس» غير مرتبط بصنف مخزني», which the Order context raises under
+  /// this very key. All three belong under the box that picked the shelf.
+  String? get stockItemError => _fieldError('stock_item_id');
 
   /// «سبب التسوية مطلوب». Required on an adjustment and on nothing else — the other three
   /// movements explain themselves, so this key only ever arrives for one kind.
@@ -38,7 +40,7 @@ extension RecordMovementStateX on RecordMovementState {
       quantityError != null ||
       warehouseError != null ||
       sourceError != null ||
-      variantError != null ||
+      stockItemError != null ||
       notesError != null;
 
   /// Whether the request may have landed. A movement has no unique key, so this is the one

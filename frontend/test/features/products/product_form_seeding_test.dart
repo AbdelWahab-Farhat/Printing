@@ -1,7 +1,9 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/products/models/new_product.dart';
 import 'package:dayaa/features/products/models/product.dart';
 import 'package:dayaa/features/products/models/product_category.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/product_categories_cubit.dart';
@@ -20,6 +22,48 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _StubRepository implements ProductRepository {
+  @override
+  Object noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Keeps the body the form handed over, and refuses it.
+///
+/// **Refused on purpose, with a complaint the form paints under «اسم المنتج».** A success would
+/// send the page through `context.pop()` and a snackbar, neither of which the one test using
+/// this is about; a refusal on a key the form renders inline leaves the screen where it is and
+/// the body captured. See `SaveProductState.hasUnrenderedErrors`.
+class _RecordingRepository implements ProductRepository {
+  NewProduct? sent;
+
+  static const _refusal = Left<Failure, Product>(
+    Failure.server(
+      message: 'البيانات غير صحيحة',
+      fieldErrors: {
+        'name': ['الاسم مستخدم مسبقاً'],
+      },
+    ),
+  );
+
+  @override
+  Future<Either<Failure, Product>> update(
+    int productId,
+    NewProduct product,
+  ) async {
+    sent = product;
+
+    return _refusal;
+  }
+
+  @override
+  Future<Either<Failure, Product>> create(
+    NewProduct product, {
+    required PickedFile image,
+  }) async {
+    sent = product;
+
+    return _refusal;
+  }
+
   @override
   Object noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -92,6 +136,27 @@ void main() {
     );
   }
 
+  /// «كيس شحن» — the material both of this product's sizes are cut from.
+  const material = ProductMaterial(
+    id: 3,
+    code: 'G3',
+    name: 'كيس شحن',
+    defaultUnit: 'piece',
+    defaultUnitLabel: 'قطعة',
+  );
+
+  /// The shelf «25*35» draws on, as the API nests it on a variant.
+  const shelf = VariantStockItem(
+    id: 4,
+    code: 'S4',
+    name: 'كيس شحن',
+    widthCm: 25,
+    heightCm: 35,
+    displayName: 'كيس شحن 25*35',
+    unit: 'piece',
+    unitLabel: 'قطعة',
+  );
+
   const product = Product(
     id: 7,
     code: 'P7',
@@ -99,8 +164,8 @@ void main() {
     name: 'أكياس الشحن',
     pricingUnit: 'piece',
     pricingUnitLabel: 'بالقطعة',
-    stockUnit: 'piece',
-    stockUnitLabel: 'بالقطعة',
+    stockItemGroupId: 3,
+    stockItemGroup: material,
     pricingMode: 'tiered',
     pricingModeLabel: 'أسعار مدرجة',
     minOrderQuantity: '100.000',
@@ -110,6 +175,9 @@ void main() {
         label: '25*35',
         widthCm: 25,
         heightCm: 35,
+        // Filed by the server the last time this product was saved, from the material above.
+        stockItemId: 4,
+        stockItem: shelf,
         priceTiers: [
           ProductPriceTier(id: 1, minQuantity: '1.000', unitPrice: '1.100'),
           ProductPriceTier(id: 2, minQuantity: '300.000', unitPrice: '0.950'),
@@ -249,48 +317,201 @@ void main() {
     expect(find.text('اختر تصنيف المنتج'), findsOneWidget);
   });
 
-  // ─────────────────────────── the two units ───────────────────────────
+  // ─────────────────────────── «المادة» ───────────────────────────
 
-  /// **Two pickers on every product would be two identical dropdowns on nine bags in ten.**
+  /// **The whole stock feature, from the user's side, is one field at the top of this form.**
   ///
-  /// The server defaults `stock_unit` to whatever `pricing_unit` was sent, so the common case —
-  /// what is sold and what is counted are the same thing — has to stay a zero-extra-tap flow.
-  /// The second picker is revealed by a switch, and only somebody who has a bag bought in by the
-  /// kilo and sold by the piece ever sees it.
-  testWidgets('the storage unit is asked for only when somebody says it differs', (
+  /// Naming what the product is cut from files every one of its sizes onto a shelf on the next
+  /// save: the server takes each size without a shelf of its own and finds this material's «صنف
+  /// مخزني» at that size, minting it if the material has not reached that size yet. It replaced a
+  /// per-size picker that asked the same question once per size, where one wrong answer split
+  /// «كيس شحن 25*35» into two heaps with nothing to say it had happened.
+  ///
+  /// The storage-unit switch that used to stand here is **gone, not moved.** Two products at one
+  /// size share one pile, so what that pile is counted in cannot belong to either of them; it
+  /// lives on «الصنف المخزني» and is changed from that screen, where changing it empties the
+  /// shelf through a recorded adjustment rather than relabelling a figure that would then mean
+  /// nothing.
+  testWidgets('asks what the product is cut from, and never what the shelf counts in', (
     tester,
   ) async {
-    // Arrange
+    // Arrange & Act
     await tester.pumpWidget(host(const ProductFormPage()));
     await tester.pumpAndSettle();
 
-    // Assert — the selling unit is always there; the storage one is not.
+    // Assert — one material question, with the selling unit beside it. There is no second unit
+    // picker and no switch to reveal one: `POST|PUT /products` has carried no `stock_unit` rule
+    // since the column was dropped, and a control that silently did nothing would be worse than
+    // no control at all.
+    expect(find.text('المادة'), findsOneWidget);
     expect(find.text('وحدة التسعير'), findsOneWidget);
     expect(find.text('وحدة المخزون'), findsNothing);
-
-    // Act
-    final toggle = find.text('وحدة المخزون تختلف عن وحدة البيع');
-    await tester.ensureVisible(toggle);
-    await tester.pump();
-    await tester.tap(toggle);
-    await tester.pumpAndSettle();
-
-    // Assert — a second row of chips, its own question.
-    expect(find.text('وحدة المخزون'), findsOneWidget);
+    expect(find.text('وحدة المخزون تختلف عن وحدة البيع'), findsNothing);
   });
 
-  testWidgets('correcting a product never offers to change what the shelf counts in', (
+  testWidgets('a product with no material says what that costs, rather than nothing', (
     tester,
   ) async {
-    // Arrange — `PUT /products/{id}` carries no `stock_unit` rule and ignores the key entirely.
-    // A switch on this form that silently did nothing would be worse than no switch.
+    // Arrange — «بلا مادة» is a real answer: a quote-only bag is never stocked. But it has a
+    // consequence nothing else on any screen will mention until an order is refused at «جاهزة»,
+    // so the empty field states it here.
+    // Act
+    await tester.pumpWidget(host(const ProductFormPage()));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('اختر المادة — اضغط للاختيار'), findsOneWidget);
+    expect(find.textContaining('لن تُربط المقاسات بأي صنف مخزني'), findsOneWidget);
+  });
+
+  testWidgets('a product being corrected opens on the material it is filed under', (
+    tester,
+  ) async {
+    // Arrange — the one thing a form must never do to data it was only asked to display is
+    // silently blank it. An empty picker would read as «بلا مادة» while the save omitted the key
+    // and kept the material anyway: the screen would have been lying, and only by luck harmlessly.
     // Act
     await tester.pumpWidget(host(const ProductFormPage(product: product)));
     await tester.pumpAndSettle();
 
-    // Assert — the correction lives on the detail screen, behind `inventory.manage`.
-    expect(find.text('وحدة المخزون تختلف عن وحدة البيع'), findsNothing);
-    expect(find.text('وحدة المخزون'), findsNothing);
+    // Assert — the material's own name, and the sentence that says what naming it does.
+    expect(find.text('كيس شحن'), findsOneWidget);
+    expect(find.text('اختر المادة — اضغط للاختيار'), findsNothing);
+    expect(find.textContaining('كل مقاس يُربط تلقائياً بصنف هذه المادة'), findsOneWidget);
+  });
+
+  // ─────────────────────── the per-size shelf pickers ───────────────────────
+
+  testWidgets('the shelf pickers stay folded away when a material explains them', (
+    tester,
+  ) async {
+    // Arrange — every link on this product is the server's own doing, produced by the one field
+    // at the top. Four pickers repeating that answer would bury the field that made it.
+    // Act
+    await tester.pumpWidget(host(const ProductFormPage(product: product)));
+    await tester.pumpAndSettle();
+
+    // Assert — the fold is shut and still names what is inside it: a fold that says nothing about
+    // its contents is one people stop opening, and these links travel with every save whether or
+    // not anybody opens it.
+    expect(find.text('الصنف المخزني'), findsNothing);
+    expect(find.text('1 مقاس مربوط بصنف بعينه — عرض'), findsOneWidget);
+  });
+
+  testWidgets('a shelf pinned by hand with no material to explain it opens unfolded', (
+    tester,
+  ) async {
+    // Arrange — the escape hatch: a 25*35 bag deliberately cut from a wider sheet. With no
+    // material, this link is the only record of a decision somebody took, and the form is about
+    // to send it back — hiding it would hide what the next save does.
+    const pinned = Product(
+      id: 7,
+      code: 'P7',
+      slug: 'shipping-bags',
+      name: 'أكياس الشحن',
+      pricingUnit: 'piece',
+      pricingUnitLabel: 'بالقطعة',
+      pricingMode: 'tiered',
+      pricingModeLabel: 'أسعار مدرجة',
+      minOrderQuantity: '100.000',
+      variants: [
+        ProductVariant(
+          id: 12,
+          label: '25*35',
+          stockItemId: 4,
+          stockItem: shelf,
+        ),
+      ],
+    );
+
+    // Act
+    await tester.pumpWidget(host(const ProductFormPage(product: pinned)));
+    await tester.pumpAndSettle();
+
+    // Assert — «كيس شحن 25*35» drawn exactly as the server composed it, one `*` and no spaces.
+    // The shortfall sentence an order is refused with quotes that string, and a second spelling
+    // built here out of the name and the dimensions is a second thing to reconcile.
+    expect(find.text('الصنف المخزني'), findsOneWidget);
+    expect(find.text('كيس شحن 25*35'), findsOneWidget);
+  });
+
+  /// **The trap, from the screen's end.**
+  ///
+  /// `PUT /products/{id}` replaces the whole variant set and re-resolves every size's shelf from
+  /// the body it is handed. The links are folded away and nobody touched them — so a form that
+  /// sent only what it was showing would detach every size from its pile on a save that corrected
+  /// a price, and nobody would find out until an order failed at «جاهزة».
+  ///
+  /// `SaveProduct` round-trips rather than omitting the `variants` key, and this is the screen's
+  /// half of that: the seeding reads `stock_item_id` off each variant and the submit sends it
+  /// back untouched, fold open or shut.
+  testWidgets('a save that touched no size still sends every shelf back', (tester) async {
+    // Arrange — one break per size and every cell filled, so Save is not stopped by a validator
+    // and the assertion is about the body rather than about the grid. Both sizes are filed under
+    // the material; only the first has reached a shelf so far.
+    const filed = Product(
+      id: 7,
+      code: 'P7',
+      slug: 'shipping-bags',
+      name: 'أكياس الشحن',
+      productCategory: ProductCategory(id: 3, name: 'أكياس'),
+      productCategoryId: 3,
+      pricingUnit: 'piece',
+      pricingUnitLabel: 'بالقطعة',
+      stockItemGroupId: 3,
+      stockItemGroup: material,
+      pricingMode: 'tiered',
+      pricingModeLabel: 'أسعار مدرجة',
+      minOrderQuantity: '100.000',
+      variants: [
+        ProductVariant(
+          id: 12,
+          label: '25*35',
+          stockItemId: 4,
+          stockItem: shelf,
+          priceTiers: [
+            ProductPriceTier(id: 1, minQuantity: '100.000', unitPrice: '1.100'),
+          ],
+        ),
+        ProductVariant(
+          id: 13,
+          label: '35*40',
+          priceTiers: [
+            ProductPriceTier(id: 2, minQuantity: '100.000', unitPrice: '1.200'),
+          ],
+        ),
+      ],
+    );
+
+    final repository = _RecordingRepository();
+    sl.unregister<SaveProduct>();
+    sl.registerLazySingleton<SaveProduct>(() => SaveProduct(repository));
+
+    await tester.pumpWidget(host(const ProductFormPage(product: filed)));
+    await tester.pumpAndSettle();
+    // Nobody can see the links this save is about to restate, which is the whole point.
+    expect(find.text('الصنف المخزني'), findsNothing);
+
+    // Act — nothing edited; just Save. No `pumpAndSettle` after the tap: the button carries a
+    // repeating spinner while the request is in flight and would never settle.
+    await tester.ensureVisible(find.text('حفظ التعديلات'));
+    await tester.pump();
+    await tester.tap(find.text('حفظ التعديلات'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Assert — the sizes go back with their ids *and* their shelves, and the one that never had
+    // a shelf omits the key rather than sending null: absent means «اترك المادة تقرر», which is
+    // what lets the server file it. The material travels too, as its id.
+    final sent = repository.sent!;
+
+    expect(sent.stockItemGroupId, 3);
+    expect([for (final size in sent.variants) size.id], [12, 13]);
+    expect([for (final size in sent.variants) size.stockItemId], [4, null]);
+    expect(
+      (sent.toJson()['variants'] as List<dynamic>).last,
+      isNot(contains('stock_item_id')),
+    );
   });
 
   testWidgets('a product being corrected opens on the heading it already has', (
@@ -307,8 +528,6 @@ void main() {
       productCategoryId: 3,
       pricingUnit: 'piece',
       pricingUnitLabel: 'بالقطعة',
-      stockUnit: 'piece',
-      stockUnitLabel: 'بالقطعة',
       pricingMode: 'tiered',
       pricingModeLabel: 'أسعار مدرجة',
       minOrderQuantity: '100.000',

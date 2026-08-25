@@ -12,6 +12,11 @@ import 'package:mocktail/mocktail.dart';
 /// Writing one line into the ledger: which endpoint each kind goes to, and what happens to the
 /// number on the way.
 ///
+/// **What moves is a صنف مخزني, not a product's size.** «كيس شحن سادة 25*35» and «كيس شحن مطبوع
+/// 25*35» are two catalogue rows and one pile of bags, so every payload here names the pile. A
+/// movement keyed by a product size could only ever have moved one of the two products' shares of
+/// stock that was never divided — which is the shortfall this whole change exists to prevent.
+///
 /// Arrange - Act - Assert throughout.
 class _MockWarehouseRepository extends Mock implements WarehouseRepository {}
 
@@ -24,13 +29,13 @@ void main() {
     movementType: MovementType.purchaseArrival,
     movementTypeLabel: 'توريد',
     quantity: '250.000',
-    productVariantId: 3,
+    stockItemId: 3,
   );
 
   const shelf = WarehouseStock(
     id: 5,
     warehouseId: 1,
-    productVariantId: 3,
+    stockItemId: 3,
     quantity: '250.000',
     unit: 'piece',
     unitLabel: 'قطعة',
@@ -42,7 +47,7 @@ void main() {
 
     when(
       () => repository.recordArrival(
-        productVariantId: any(named: 'productVariantId'),
+        stockItemId: any(named: 'stockItemId'),
         toWarehouseId: any(named: 'toWarehouseId'),
         quantity: any(named: 'quantity'),
         notes: any(named: 'notes'),
@@ -51,7 +56,7 @@ void main() {
 
     when(
       () => repository.recordTransfer(
-        productVariantId: any(named: 'productVariantId'),
+        stockItemId: any(named: 'stockItemId'),
         fromWarehouseId: any(named: 'fromWarehouseId'),
         toWarehouseId: any(named: 'toWarehouseId'),
         quantity: any(named: 'quantity'),
@@ -61,7 +66,7 @@ void main() {
 
     when(
       () => repository.recordAdjustment(
-        productVariantId: any(named: 'productVariantId'),
+        stockItemId: any(named: 'stockItemId'),
         warehouseId: any(named: 'warehouseId'),
         quantity: any(named: 'quantity'),
         isIncrease: any(named: 'isIncrease'),
@@ -74,7 +79,7 @@ void main() {
     // Arrange & Act
     await record(
       kind: MovementKind.arrival,
-      productVariantId: 3,
+      stockItemId: 3,
       warehouseId: 1,
       quantity: '250',
     );
@@ -82,7 +87,7 @@ void main() {
     // Assert — each kind is its own endpoint precisely because their shapes differ.
     verify(
       () => repository.recordArrival(
-        productVariantId: 3,
+        stockItemId: 3,
         toWarehouseId: 1,
         quantity: '250',
         notes: null,
@@ -94,7 +99,7 @@ void main() {
     // Arrange & Act
     await record(
       kind: MovementKind.transfer,
-      productVariantId: 3,
+      stockItemId: 3,
       warehouseId: 2,
       fromWarehouseId: 1,
       quantity: '50',
@@ -103,7 +108,7 @@ void main() {
     // Assert
     verify(
       () => repository.recordTransfer(
-        productVariantId: 3,
+        stockItemId: 3,
         fromWarehouseId: 1,
         toWarehouseId: 2,
         quantity: '50',
@@ -116,7 +121,7 @@ void main() {
     // Arrange & Act
     await record(
       kind: MovementKind.decrease,
-      productVariantId: 3,
+      stockItemId: 3,
       warehouseId: 1,
       quantity: '4',
       notes: '  تلف أثناء التخزين  ',
@@ -125,7 +130,7 @@ void main() {
     // Assert — and the note is trimmed on the way out.
     verify(
       () => repository.recordAdjustment(
-        productVariantId: 3,
+        stockItemId: 3,
         warehouseId: 1,
         quantity: '4',
         isIncrease: false,
@@ -139,7 +144,7 @@ void main() {
     // decimal mark. Sent untouched, either is a 422 about a field filled in correctly.
     await record(
       kind: MovementKind.arrival,
-      productVariantId: 3,
+      stockItemId: 3,
       warehouseId: 1,
       quantity: '٢٥٠,٥',
     );
@@ -147,7 +152,7 @@ void main() {
     // Assert
     final captured = verify(
       () => repository.recordArrival(
-        productVariantId: any(named: 'productVariantId'),
+        stockItemId: any(named: 'stockItemId'),
         toWarehouseId: any(named: 'toWarehouseId'),
         quantity: captureAny(named: 'quantity'),
         notes: any(named: 'notes'),
@@ -207,7 +212,11 @@ void main() {
       // envelope's generic sentence, which tells the storekeeper *that* something is wrong
       // without telling them what. `notes` did exactly that until it was wired.
       final keys = {
-        'product_variant_id': 'variant',
+        // `stock_item_id` carries three refusals at once — «الصنف المخزني مطلوب», «غير موجود»,
+        // and ««المنتج — المقاس» غير مرتبط بصنف مخزني» for a quote-only size nobody gave a shelf.
+        // The last is new and is not an impossible state: a size may legitimately have none, so
+        // it is a refusal this form has to be able to put under the box that picked the pile.
+        'stock_item_id': 'stock item',
         'warehouse_id': 'warehouse',
         'to_warehouse_id': 'warehouse',
         'from_warehouse_id': 'source',
@@ -247,7 +256,7 @@ void main() {
     // Arrange — «الكمية المطلوبة غير متوفرة» is the server's sentence, and the app keeps it.
     when(
       () => repository.recordTransfer(
-        productVariantId: any(named: 'productVariantId'),
+        stockItemId: any(named: 'stockItemId'),
         fromWarehouseId: any(named: 'fromWarehouseId'),
         toWarehouseId: any(named: 'toWarehouseId'),
         quantity: any(named: 'quantity'),
@@ -260,7 +269,7 @@ void main() {
     // Act
     final result = await record(
       kind: MovementKind.transfer,
-      productVariantId: 3,
+      stockItemId: 3,
       warehouseId: 2,
       fromWarehouseId: 1,
       quantity: '999',

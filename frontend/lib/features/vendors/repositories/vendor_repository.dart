@@ -70,8 +70,9 @@ abstract interface class VendorRepository {
   /// `received_by` is **not** a parameter — the server stamps it from the authenticated user,
   /// and sending it would be this app claiming who received something it does not know.
   ///
-  /// A fractional [quantity] against a per-piece product is refused with a `422` on that item,
-  /// the same rule a single-line arrival already meets.
+  /// A fractional [StockArrivalLine.quantity] against a shelf counted in «قطعة» is refused with
+  /// a `422` on that item, the same rule a single-line arrival already meets. The unit is the
+  /// **stock item's** now, not the product's — `products.stock_unit` is gone.
   Future<Either<Failure, StockArrival>> recordStockArrival({
     required int vendorId,
     required int warehouseId,
@@ -81,25 +82,28 @@ abstract interface class VendorRepository {
   });
 }
 
-/// One line of a shipment being posted: which size, and how much of it.
+/// One line of a shipment being posted: which shelf, and how much of it.
 ///
 /// A class rather than the record type the spec sketched, because it is named in a repository
 /// contract, a use case and a form's state — three places that would each have to spell the
 /// record's shape out in full, and all three would have to be edited the day a line grows a
 /// third field.
 class StockArrivalLine {
-  const StockArrivalLine({
-    required this.productVariantId,
-    required this.quantity,
-  });
+  const StockArrivalLine({required this.stockItemId, required this.quantity});
 
-  final int productVariantId;
+  /// **The stock item, not a product's size.** Two products at one size draw on one pile, so
+  /// booking goods in against either of them separately is what used to split the heap.
+  ///
+  /// Unlike a purchase order's lines, `StoreStockArrivalRequest` puts **no `distinct` rule** on
+  /// this — the same shelf may legitimately appear twice on one document, e.g. two pallets from
+  /// the same vendor weighed apart. Nothing here refuses it either.
+  final int stockItemId;
 
   /// A decimal as typed, kept as text all the way to the wire — see [StockArrivalItem.quantity].
   final String quantity;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'product_variant_id': productVariantId,
+    'stock_item_id': stockItemId,
     'quantity': quantity,
   };
 }

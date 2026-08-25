@@ -4,9 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 /// What a purchase-order line is counted in and what it ended up costing, said out loud.
 ///
 /// **A number on a buying screen without its unit is a number nobody can act on.** «٥٠٠» against
-/// «الأكياس الشفافة السادة» is five hundred kilograms — the product is priced by weight — and a
-/// buyer reading it as five hundred bags orders roughly a tonne of the wrong thing. The server
-/// has always sent `unit_label`; these are the getters that stop the screens dropping it.
+/// «لفة نايلون شفاف» is five hundred kilograms — that shelf is counted by weight — and a buyer
+/// reading it as five hundred rolls orders roughly a tonne of the wrong thing. The server has
+/// always sent `unit_label`; these are the getters that stop the screens dropping it.
+///
+/// **The unit is the shelf's, not the product's.** It used to be snapshotted from the product's
+/// `stock_unit`, which two products sharing one pile could disagree about; that column is gone
+/// and `stock_items.unit` replaced it. Nothing in the wording below changed — which is the point
+/// of pinning it across the move.
 ///
 /// **And a cost without its additional costs is a price nobody paid.** The server now spreads
 /// delivery, unloading and customs across the lines and reports the landed figure per line; the
@@ -23,7 +28,7 @@ void main() {
     String? finalTotalCost,
   }) => PurchaseOrderItem(
     id: 1,
-    productVariantId: 4,
+    stockItemId: 4,
     quantityOrdered: '500.000',
     quantityReceived: '120.500',
     quantityRemaining: '379.500',
@@ -222,7 +227,15 @@ void main() {
         'items': [
           {
             'id': 40,
-            'product_variant_id': 14,
+            'stock_item_id': 14,
+            'stock_item': {
+              'id': 14,
+              'code': 'S7',
+              'name': 'كيس شحن',
+              'width_cm': 25,
+              'height_cm': 35,
+              'display_name': 'كيس شحن 25*35',
+            },
             'quantity_ordered': '4.000',
             'quantity_received': '0.000',
             'quantity_remaining': '4.000',
@@ -246,6 +259,59 @@ void main() {
       expect(order.additionalCosts.map((cost) => cost.name), ['توصيل', 'جمارك']);
       expect(order.items.single.finalUnitCost, '21.188');
       expect(order.items.single.allocatedAdditionalCost, '9.75');
+    });
+
+    test('a line is titled by the shelf the server named, never by a product', () {
+      // Arrange — the six fields the server flattens a stock item into, and no more: there is
+      // no `product_name` and no `image_url` in them, because «كيس شحن سادة» and «كيس شحن مطبوع»
+      // both draw on this line and naming either would be picking one arbitrarily.
+      final json = <String, dynamic>{
+        'id': 40,
+        'stock_item_id': 14,
+        'stock_item': {
+          'id': 14,
+          'code': 'S7',
+          'name': 'كيس شحن',
+          'width_cm': 25,
+          'height_cm': 35,
+          'display_name': 'كيس شحن 25*35',
+        },
+        'quantity_ordered': '4.000',
+        'quantity_received': '0.000',
+        'quantity_remaining': '4.000',
+      };
+
+      // Act
+      final item = PurchaseOrderItem.fromJson(json);
+
+      // Assert — `display_name` **as sent**, never rebuilt here from the name and the two
+      // dimensions. A shortfall an order is refused with quotes this exact string, so a second
+      // composition in Dart would drift from it and the first screen to notice would be one
+      // comparing a refusal to a list. The code is what a buyer reads down a phone line to a
+      // supplier, in the space the product photograph used to occupy.
+      expect(item.title, 'كيس شحن 25*35');
+      expect(item.itemCode, 'S7');
+      expect(item.stockItem?.sizeLabel, '25*35');
+    });
+
+    test('a line whose shelf did not travel with it still says something', () {
+      // Arrange — `stock_item` is `whenLoaded`, and every endpoint publishing an order eager-
+      // loads it today. This is the payload that would arrive if one stopped.
+      final json = <String, dynamic>{
+        'id': 40,
+        'stock_item_id': 14,
+        'quantity_ordered': '4.000',
+        'quantity_received': '0.000',
+        'quantity_remaining': '4.000',
+      };
+
+      // Act
+      final item = PurchaseOrderItem.fromJson(json);
+
+      // Assert — a fallback rather than a failed page, and **no invented code**: nothing to
+      // print beats a plausible `S14` that names a different shelf.
+      expect(item.title, 'صنف #14');
+      expect(item.itemCode, isNull);
     });
 
     test('an order raised before any of this parses with the fields absent', () {

@@ -4,10 +4,10 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/stock_items/presentation/widgets/stock_item_picker_sheet.dart';
 import 'package:dayaa/features/warehouses/models/stock_movement.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
-import 'package:dayaa/features/warehouses/presentation/widgets/variant_picker_sheet.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
 import 'package:dayaa/features/warehouses/usecases/record_stock_movement.dart';
 import 'package:flutter/material.dart';
@@ -17,9 +17,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// Writing one line into the ledger — a delivery arriving, stock moving between our own places,
 /// or a count that disagreed with the record.
 ///
-/// **One sheet for all four kinds**, because the questions are the same three: which size, how
+/// **One sheet for all four kinds**, because the questions are the same three: which shelf, how
 /// much, and where. Only the *where* differs — a transfer asks for both ends, everything else
 /// for one — so the kind is a row of chips at the top rather than four separate screens.
+///
+/// **The first question is a صنف مخزني, and it used to be a product's size.** The picker no
+/// longer walks the catalogue: «كيس شحن سادة» and «كيس شحن مطبوع» at 25*35 are one pile, so
+/// asking which *product* is being moved would have made a storekeeper answer a question the
+/// shelf cannot tell apart — and whichever of the two they picked, the same bags would move.
 ///
 /// Returns the movement the server wrote, so the screen behind can re-read the balance it
 /// moved rather than compute one.
@@ -54,15 +59,16 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
   final _notes = TextEditingController();
 
   MovementKind _kind = MovementKind.arrival;
-  int? _variantId;
-  String? _variantLabel;
+  int? _stockItemId;
+  String? _stockItemLabel;
 
-  /// What the shelf counts this size in — «قطعة» or «كيلوغرام», the server's own word.
+  /// What this shelf is counted in — «قطعة» or «كيلوغرام», the server's own word for it.
   ///
-  /// Held so the quantity field can say which unit it is asking for. It is the *stock* unit and
-  /// not the pricing one: a bag sold by the piece may still be weighed onto the shelf, and this
-  /// sheet writes to the shelf.
-  String? _stockUnitLabel;
+  /// Held so the quantity field can say which unit it is asking for. **It belongs to the shelf
+  /// and to nothing else**: `products.stock_unit` was dropped precisely because two products
+  /// sharing one pile cannot be allowed to disagree about how it is counted, and a product's
+  /// `pricing_unit` — what the customer is charged by — never governed this field.
+  String? _unitLabel;
   late Warehouse? _warehouse = widget.warehouse;
   Warehouse? _source;
 
@@ -73,14 +79,16 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
     super.dispose();
   }
 
-  Future<void> _pickVariant() async {
-    final picked = await showVariantPicker(context: context);
+  Future<void> _pickStockItem() async {
+    final picked = await showStockItemPicker(context: context);
     if (picked == null) return;
 
     setState(() {
-      _variantId = picked.variant.id;
-      _variantLabel = '${picked.product.name} · ${picked.variant.label}';
-      _stockUnitLabel = picked.product.stockUnitLabel;
+      _stockItemId = picked.id;
+      // The server's own composition of name and size. Never rebuilt from the parts: the
+      // shortfall an order is refused with quotes this exact string.
+      _stockItemLabel = picked.displayName;
+      _unitLabel = picked.unitLabel;
     });
   }
 
@@ -96,8 +104,8 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
 
     // Said here rather than by the validators, because neither box holds text: an untouched
     // picker has nothing to mark red, so the sheet says what is missing instead.
-    if (_variantId == null) {
-      context.showError('اختر المقاس');
+    if (_stockItemId == null) {
+      context.showError('اختر الصنف المخزني');
 
       return;
     }
@@ -116,7 +124,7 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
 
     context.read<RecordMovementCubit>().submit(
       kind: _kind,
-      productVariantId: _variantId!,
+      stockItemId: _stockItemId!,
       warehouseId: _warehouse!.id,
       fromWarehouseId: _source?.id,
       quantity: _quantity.text,
@@ -176,9 +184,7 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                   SizedBox(height: 12.h),
                   Text(
                     'تسجيل حركة مخزون',
-                    style: context.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   SizedBox(height: 12.h),
                   _KindChoice(
@@ -192,12 +198,14 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                   ),
                   SizedBox(height: 14.h),
                   _PickerField(
-                    caption: 'المقاس',
-                    value: _variantLabel ?? 'اختر المنتج والمقاس',
-                    isChosen: _variantId != null,
-                    icon: AppIcons.products,
-                    errorText: state.variantError,
-                    onTap: _pickVariant,
+                    caption: 'الصنف المخزني',
+                    value: _stockItemLabel ?? 'اختر الصنف المخزني',
+                    isChosen: _stockItemId != null,
+                    // Not [AppIcons.warehouse], which the two boxes under this one already
+                    // wear: three identical glyphs down one form stop distinguishing anything.
+                    icon: AppIcons.tag,
+                    errorText: state.stockItemError,
+                    onTap: _pickStockItem,
                   ),
                   if (_kind.needsSource) ...[
                     SizedBox(height: 10.h),
@@ -222,15 +230,13 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                   SizedBox(height: 14.h),
                   AppTextField(
                     controller: _quantity,
-                    // **Names the unit once a size is chosen.** «الكمية» alone asks for a number
-                    // without saying of what, and the answer differs by product now that a bag
+                    // **Names the unit once a shelf is chosen.** «الكمية» alone asks for a number
+                    // without saying of what, and the answer differs by shelf now that a bag
                     // sold by the piece can be stocked by the kilo — typing 200 meaning bags into
                     // a field that records kilograms is a mistake the form should not allow to be
                     // made silently. Plain «الكمية» until something is picked, because until then
                     // there is no unit to name.
-                    label: _stockUnitLabel == null
-                        ? 'الكمية'
-                        : 'الكمية ($_stockUnitLabel)',
+                    label: _unitLabel == null ? 'الكمية' : 'الكمية ($_unitLabel)',
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     textDirection: TextDirection.ltr,
                     validator: Validators.compose([
@@ -250,20 +256,13 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                     maxLines: 2,
                     textInputAction: TextInputAction.done,
                     validator: _kind.isAdjustment
-                        ? Validators.compose([
-                            Validators.required,
-                            Validators.minLength(3),
-                          ])
+                        ? Validators.compose([Validators.required, Validators.minLength(3)])
                         : null,
                     errorText: state.notesError,
                     onChanged: (_) => context.read<RecordMovementCubit>().clearFailure(),
                   ),
                   SizedBox(height: 20.h),
-                  AppButton(
-                    label: 'تسجيل',
-                    isLoading: state.isSubmitting,
-                    onPressed: _submit,
-                  ),
+                  AppButton(label: 'تسجيل', isLoading: state.isSubmitting, onPressed: _submit),
                 ],
               ),
             ),
@@ -309,9 +308,7 @@ class _KindChoice extends StatelessWidget {
                   ? scheme.onErrorContainer
                   : scheme.onPrimaryContainer,
             ),
-            side: BorderSide(
-              color: kind == value ? Colors.transparent : scheme.outlineVariant,
-            ),
+            side: BorderSide(color: kind == value ? Colors.transparent : scheme.outlineVariant),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
           ),
       ],
@@ -355,9 +352,7 @@ class _PickerField extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
               decoration: BoxDecoration(
                 borderRadius: radius,
-                border: Border.all(
-                  color: errorText == null ? scheme.outlineVariant : scheme.error,
-                ),
+                border: Border.all(color: errorText == null ? scheme.outlineVariant : scheme.error),
               ),
               child: Row(
                 children: [
@@ -394,10 +389,7 @@ class _PickerField extends StatelessWidget {
         ),
         if (errorText != null) ...[
           SizedBox(height: 4.h),
-          Text(
-            errorText!,
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
-          ),
+          Text(errorText!, style: context.textTheme.bodySmall?.copyWith(color: scheme.error)),
         ],
       ],
     );

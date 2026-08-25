@@ -248,13 +248,30 @@ abstract class PurchaseOrderAdditionalCost with _$PurchaseOrderAdditionalCost {
   String get amountLabel => groupedDecimal(amount);
 }
 
-/// One line: a size, how much was ordered, and how much of it has turned up.
+/// One line: a shelf, how much was ordered, and how much of it has turned up.
+///
+/// **A line names a stock item, not a product's size — and there is exactly one line per item.**
+/// «كيس شحن سادة 25*35» and «كيس شحن مطبوع 25*35» are two catalogue rows and one pile of bags, so
+/// buying "both" is buying one thing twice. The server now carries a unique index
+/// (`purchase_order_items_one_line_per_item`) as well as the `distinct` rule that used to stand
+/// alone, so a second line for the same shelf is refused rather than quietly stored — which is why
+/// the form refuses to build one in the first place.
 @freezed
 abstract class PurchaseOrderItem with _$PurchaseOrderItem {
   const factory PurchaseOrderItem({
     required int id,
-    @JsonKey(name: 'product_variant_id') required int productVariantId,
-    @JsonKey(name: 'product_variant') StockVariant? variant,
+    @JsonKey(name: 'stock_item_id') required int stockItemId,
+
+    /// The shelf itself, in the six fields the server flattens it into — **borrowed from the
+    /// warehouse model rather than copied**, because a purchase-order line, an arrival line and a
+    /// balance row all meet the identical shape, and three classes holding it would be three
+    /// things to keep in step. It carries no `product_name` and no `image_url`, deliberately:
+    /// two products draw on one pile.
+    ///
+    /// Nullable because it is `whenLoaded`, though every purchase order the API publishes carries
+    /// it — `PurchaseOrderListQuery` and the show endpoint both eager-load `items.stockItem`. A
+    /// missing key draws a fallback rather than failing the page.
+    @JsonKey(name: 'stock_item') StockItemRef? stockItem,
 
     /// Strings, like every quantity in this app: `'10.000'` as the server stored it. Parsing
     /// one to show it is how a decimal quietly becomes `10.0`.
@@ -285,8 +302,12 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
     @JsonKey(name: 'final_unit_cost') String? finalUnitCost,
     @JsonKey(name: 'final_total_cost') String? finalTotalCost,
 
-    /// What this line is counted in, snapshotted from the product when the line was written.
-    /// Null on a line older than the column; the screens fall back to the variant's own unit.
+    /// What this line is counted in, snapshotted from the **stock item** when the line was
+    /// written — `CreatePurchaseOrder` force-fills it from `stockItem->unit` and never trusts a
+    /// unit sent by a client, so a request cannot post one the shelf disagrees with.
+    ///
+    /// Null on a line older than the column, and everything built from it then says nothing
+    /// rather than guessing — see [PurchaseLineUnit].
     String? unit,
     @JsonKey(name: 'unit_label') String? unitLabel,
   }) = _PurchaseOrderItem;
@@ -296,9 +317,18 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
   factory PurchaseOrderItem.fromJson(Map<String, dynamic> json) =>
       _$PurchaseOrderItemFromJson(json);
 
-  String get title => variant == null
-      ? 'مقاس #$productVariantId'
-      : '${variant!.productName} · ${variant!.label}';
+  /// «كيس شحن 25*35» — the server's own `display_name`, drawn as sent.
+  ///
+  /// **No product name, deliberately.** Two products draw on this line's shelf, so naming either
+  /// of them would be picking one arbitrarily — and a buyer chasing a delivery would quote a
+  /// product the vendor was never sold.
+  String get title => stockItem?.displayName ?? 'صنف #$stockItemId';
+
+  /// `S7` — the shelf's own code, in the space a product name and photograph used to occupy. The
+  /// one part of a line safe to read down a phone line to a supplier.
+  ///
+  /// Null on a line that arrived without its item: nothing to print beats a code invented here.
+  String? get itemCode => stockItem?.code;
 
   String get orderedLabel => groupedDecimal(quantityOrdered);
 
@@ -363,9 +393,14 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
 /// What a purchase-order line is counted in, and every phrase this app builds out of it.
 ///
 /// **A quantity on a buying screen without its unit is a number nobody can act on.** «٥٠٠»
-/// against «الأكياس الشفافة السادة» is five hundred *kilograms* — that product is priced by
-/// weight — and a buyer reading it as five hundred bags orders about a tonne of the wrong thing.
-/// The server has always sent `unit_label`; this is what stops the screens dropping it.
+/// against «لفة نايلون شفاف» is five hundred *kilograms* — that shelf is counted by weight — and
+/// a buyer reading it as five hundred rolls orders about a tonne of the wrong thing. The server
+/// sends `unit_label` on every line; this is what stops the screens dropping it.
+///
+/// **The unit is the shelf's, not the product's.** It used to be snapshotted from the product's
+/// `stock_unit`, which two products sharing one pile could disagree about; that column is gone and
+/// `stock_items.unit` replaced it. `pricing_unit` — what the *customer* is charged by — is a
+/// different question and is deliberately not this.
 ///
 /// **One place for the wording, and the Arabic is the reason.** Three surfaces print these — the
 /// form's quantity box, the line on the order, the receiving sheet — and «لل» + «كيلوغرام» is

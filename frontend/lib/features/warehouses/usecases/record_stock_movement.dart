@@ -8,7 +8,7 @@ import 'package:dayaa/features/warehouses/repositories/warehouse_repository.dart
 /// count that disagreed with the record.
 ///
 /// One enum rather than three screens, because the form is the same three questions — which
-/// size, how much, and where — and only the *where* differs.
+/// shelf, how much, and where — and only the *where* differs.
 enum MovementKind {
   arrival('توريد', 'مخزن الاستلام'),
   transfer('تحويل داخلي', 'مخزن الوجهة'),
@@ -32,6 +32,10 @@ enum MovementKind {
 
 /// Writes one line into the ledger.
 ///
+/// **What moves is a صنف مخزني, not a product's size.** Two catalogue rows at one size draw on
+/// one pile, so the movement names the pile — a payload keyed by a product size could only ever
+/// have moved one of the two products' shares of stock that was never divided.
+///
 /// **The quantity is normalised here and nowhere else.** ٢٥٠ from an Arabic keyboard and «250,5»
 /// with the decimal comma that keyboard offers first both have to reach the API as `250` and
 /// `250.5`, or the storekeeper gets a 422 about a field they filled in correctly.
@@ -47,7 +51,7 @@ class RecordStockMovement {
 
   Future<Either<Failure, StockMovement>> call({
     required MovementKind kind,
-    required int productVariantId,
+    required int stockItemId,
     required int warehouseId,
     int? fromWarehouseId,
     required String quantity,
@@ -58,13 +62,13 @@ class RecordStockMovement {
 
     return switch (kind) {
       MovementKind.arrival => _repository.recordArrival(
-        productVariantId: productVariantId,
+        stockItemId: stockItemId,
         toWarehouseId: warehouseId,
         quantity: amount,
         notes: trimmedNotes,
       ),
       MovementKind.transfer => _repository.recordTransfer(
-        productVariantId: productVariantId,
+        stockItemId: stockItemId,
         // Required by the form before it ever gets here; the server refuses the pair anyway if
         // both ends name the same place.
         fromWarehouseId: fromWarehouseId!,
@@ -73,7 +77,7 @@ class RecordStockMovement {
         notes: trimmedNotes,
       ),
       MovementKind.increase || MovementKind.decrease => _repository.recordAdjustment(
-        productVariantId: productVariantId,
+        stockItemId: stockItemId,
         warehouseId: warehouseId,
         quantity: amount,
         isIncrease: kind == MovementKind.increase,

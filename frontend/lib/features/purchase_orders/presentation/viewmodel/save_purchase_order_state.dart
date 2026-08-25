@@ -28,12 +28,20 @@ extension SavePurchaseOrderStateX on SavePurchaseOrderState {
   /// The one that catches people: «التاريخ المتوقع يجب أن يكون بعد أو يساوي تاريخ الطلب».
   String? get expectedDateError => _fieldError('expected_date');
 
-  /// A complaint about the list as a whole — no lines, or the same size twice. It has no single
-  /// box to sit under, so the form puts it above the lines.
+  /// A complaint about the list as a whole — no lines, or the same shelf twice.
+  ///
+  /// **The duplicate is the one that matters now.** An order carries one line per stock item, and
+  /// two products at one size share a shelf — so a buyer who used to raise «كيس شحن سادة 25*35»
+  /// and «كيس شحن مطبوع 25*35» as two lines is now naming one thing twice, and the server refuses
+  /// it with «لا يمكن تكرار نفس الصنف أكثر من مرة في أمر الشراء». The form blocks it before the
+  /// save, but a stale screen can still reach it, so it must land somewhere readable rather than
+  /// disappear.
+  ///
+  /// It has no single box to sit under, so the form puts it above the lines.
   String? get itemsError =>
       _fieldError('items') ??
       // Laravel addresses a duplicate at the offending index, so the whole-list message a
-      // person needs has to be found among keys like `items.1.product_variant_id`.
+      // person needs has to be found among keys like `items.1.stock_item_id`.
       _firstMatching(RegExp(r'^items\.\d+\.'));
 
   /// The same, for the order-level costs. Sits above that list for the same reason: an

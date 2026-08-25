@@ -236,6 +236,12 @@ class _RootDrawer extends StatelessWidget {
                 onTap: () => context.push(Routes.products),
               ),
             ),
+            // **أصناف المخزون and مجموعات الأصناف are not here any more.** They were rows in
+            // this drawer while their balances sat under a tab, which put the screen that
+            // *explains* «كيس شحن 25*35» further away than the numbers it explains — and read
+            // out of context, a list of أصناف looks like a second copy of المنتجات. They are
+            // segments of the المخزون tab now; see [InventoryTabPage]. Their routes still exist
+            // for deep links and for the pickers that push them.
             _DrawerLink(
               icon: AppIcons.city,
               label: 'مدن التوصيل',

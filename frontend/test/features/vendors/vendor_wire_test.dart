@@ -15,6 +15,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// - `received_by` must never be sent: the server stamps it from the token, and a client that
 ///   sends one is claiming who received a shipment it cannot know.
 ///
+/// And one that would be refused rather than misread, pinned because it is the whole of the
+/// stock-item migration as seen from the socket: an arrival line carries `stock_item_id`. Goods
+/// are booked against **the shelf**, not against one of the two products that share it.
+///
 /// Requests are stopped at the door, so nothing here needs a server.
 ///
 /// Arrange - Act - Assert throughout.
@@ -82,20 +86,22 @@ void main() {
       warehouseId: 3,
       invoiceNumber: 'INV-1001',
       items: const [
-        StockArrivalLine(productVariantId: 45, quantity: '200'),
-        StockArrivalLine(productVariantId: 46, quantity: '50.5'),
+        StockArrivalLine(stockItemId: 45, quantity: '200'),
+        StockArrivalLine(stockItemId: 46, quantity: '50.5'),
       ],
     );
 
-    // Assert
+    // Assert — the line names the shelf. `product_variant_id` is a key this endpoint no longer
+    // reads, and a body still sending it would be refused for a missing stock item while
+    // looking, from here, exactly like one that named a shelf.
     final body = capture.body! as Map<String, dynamic>;
 
     expect(body['vendor_id'], 12);
     expect(body['warehouse_id'], 3);
     expect(body['invoice_number'], 'INV-1001');
     expect(body['items'], [
-      {'product_variant_id': 45, 'quantity': '200'},
-      {'product_variant_id': 46, 'quantity': '50.5'},
+      {'stock_item_id': 45, 'quantity': '200'},
+      {'stock_item_id': 46, 'quantity': '50.5'},
     ]);
 
     // The two the server owns, and the one it would have accepted from us.
@@ -110,7 +116,7 @@ void main() {
     await repository.recordStockArrival(
       vendorId: 1,
       warehouseId: 1,
-      items: const [StockArrivalLine(productVariantId: 9, quantity: '0.850')],
+      items: const [StockArrivalLine(stockItemId: 9, quantity: '0.850')],
     );
 
     // Assert

@@ -30,6 +30,16 @@ extension SaveProductStateX on SaveProductState {
   /// being drawn and the form being saved.
   String? get productCategoryError => _fieldError('product_category_id');
 
+  /// The server's complaint about «المادة» — a material deleted or archived between the picker
+  /// being opened and the form being saved. The rule is `exists … whereNull(deleted_at)`, so this
+  /// is the one refusal the picker itself cannot prevent.
+  String? get materialError => _fieldError('stock_item_group_id');
+
+  /// One size's shelf — `variants.2.stock_item_id`. Painted beside that size rather than as a
+  /// snackbar: with several sizes on screen, «الصنف المخزني المحدد غير موجود» said out loud names
+  /// none of them.
+  String? variantStockItemError(int index) => _fieldError('variants.$index.stock_item_id');
+
   /// The server's complaint about the photo — too large, or not an image after all.
   ///
   /// The form checks that one was *chosen* before submitting, so anything arriving here is
@@ -74,9 +84,27 @@ extension SaveProductStateX on SaveProductState {
 final RegExp _renderedKey = RegExp(
   // `slug` is deliberately absent: the server generates it and the form has no box for it, so
   // a complaint about one has nowhere to be painted and belongs in the snackbar instead.
-  r'^(name|min_order_quantity|image'
+  //
+  // `variants.N.stock_item_id` is here even though the shelf pickers usually sit folded away
+  // behind «ربط كل مقاس بصنف مخزني بعينه» — the form opens that disclosure when one of these
+  // arrives, precisely so this entry stays true. Move one without the other and the screen goes
+  // quiet on a refusal.
+  r'^(name|min_order_quantity|image|stock_item_group_id'
   r'|variants\.\d+\.label'
+  r'|variants\.\d+\.stock_item_id'
   r'|variants\.\d+\.price_tiers\.\d+\.unit_price)$',
 );
+
+/// Whether any of the server's complaints is about a size's shelf.
+///
+/// The form asks this to unfold the per-size shelf pickers before painting, because a message
+/// under a control nobody can see is a screen that appears to have done nothing.
+bool hasVariantStockItemError(Failure failure) => switch (failure) {
+  ServerFailure(:final fieldErrors) =>
+    fieldErrors?.keys.any((key) => _variantStockItemKey.hasMatch(key)) ?? false,
+  _ => false,
+};
+
+final RegExp _variantStockItemKey = RegExp(r'^variants\.\d+\.stock_item_id$');
 
 bool _isRenderedKey(String key) => _renderedKey.hasMatch(key);

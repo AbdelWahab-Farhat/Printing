@@ -97,6 +97,42 @@ abstract final class WarehouseEndpoints {
       '/warehouses/$warehouseId/stocks/$stockId/threshold';
 }
 
+/// أصناف المخزون — the shelves themselves.
+///
+/// **A shelf is a material at a size, not a product's size.** «كيس شحن سادة» and «كيس شحن مطبوع»
+/// at 25*35 are two catalogue rows and one pile of bags; what separates them is printing, which
+/// is a cost rate, not a different material. So a warehouse holds one of these and every product
+/// size that is cut from it draws on the same balance.
+///
+/// Sharing runs across products at one size and **never across sizes**: «كيس شحن 25*35» and
+/// «كيس شحن 35*40» are two shelves, two balances and two FIFO stacks, so per-size costing is
+/// intact.
+abstract final class StockItemEndpoints {
+  static const String index = '/stock-items';
+
+  static String show(int stockItemId) => '/stock-items/$stockItemId';
+
+  /// What the pile is counted in — **and changing it empties the shelf.** A quantity counted in
+  /// one unit means nothing in another, so what was there leaves through a recorded adjustment
+  /// rather than being relabelled. Say so before asking.
+  static String unit(int stockItemId) => '/stock-items/$stockItemId/unit';
+
+  static String logs(int stockItemId) => '/stock-items/$stockItemId/logs';
+}
+
+/// مجموعات الأصناف — the material itself, the thing a shelf is a *size of*.
+///
+/// **It holds nothing**: no balance, no cost layer, no size. It exists so nobody has to point
+/// each product size at its shelf by hand — naming the material once on the product files every
+/// size of it automatically, and one wrong click can no longer split a heap in two.
+abstract final class StockItemGroupEndpoints {
+  static const String index = '/stock-item-groups';
+
+  static String show(int groupId) => '/stock-item-groups/$groupId';
+
+  static String logs(int groupId) => '/stock-item-groups/$groupId/logs';
+}
+
 /// The ledger. One feed to read, and an endpoint per *kind* of write — an arrival has no
 /// source, a transfer has both ends, an adjustment has a direction instead of either.
 abstract final class StockMovementEndpoints {
@@ -193,14 +229,6 @@ abstract final class ProductEndpoints {
   static String show(int productId) => '/products/$productId';
 
   static String quote(int productId) => '/products/$productId/quote';
-
-  /// What the warehouse counts this product in.
-  ///
-  /// Its own PATCH rather than a field on [show]'s PUT, and guarded by `inventory.manage` rather
-  /// than `products.manage`: the server cascades the unit to every warehouse balance and cost
-  /// batch for the product's variants, which is an inventory fact addressed by product id and
-  /// not a catalogue edit.
-  static String stockUnit(int productId) => '/products/$productId/stock-unit';
 
   /// A product's photographs — where one is added.
   ///

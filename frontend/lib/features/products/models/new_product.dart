@@ -36,21 +36,23 @@ abstract class NewProduct with _$NewProduct {
 
     @JsonKey(includeIfNull: false) List<String>? features,
 
-
     /// «التصنيف» — the catalogue heading. Required by the API from today on.
     @JsonKey(name: 'product_category_id') required int productCategoryId,
 
-    @JsonKey(name: 'pricing_unit') required String pricingUnit,
-
-    /// What the warehouse will count this in. **Optional, and omitted from the body when it is
-    /// not set** — the server then defaults it to [pricingUnit], which is the common case where
-    /// what is stocked and what is sold agree. Sending the same value again would be this app
-    /// repeating the server's own rule back at it, and the first place the two could drift.
+    /// «المادة» — what the product is cut from, and the field that files each of its sizes onto a
+    /// shelf on this very save.
     ///
-    /// Accepted on create only. `PUT /products/{id}` carries no rule for it and ignores the key;
-    /// correcting it afterwards is `PATCH /products/{id}/stock-unit`, because it cascades to
-    /// every warehouse balance and cost batch the product's variants have.
-    @JsonKey(name: 'stock_unit', includeIfNull: false) String? stockUnit,
+    /// **Omitted from the body when null, and that is load-bearing on an update.** The API's rule
+    /// is `nullable`, but its comment is explicit that omitting the key leaves the current
+    /// material alone and that there is deliberately no way to *clear* it — clearing would detach
+    /// every one of the product's sizes from its shelf in one save, and nobody would find out
+    /// until an order was refused at «جاهزة». So «لم يُذكر» is the only thing this app can say,
+    /// and `includeIfNull: false` is what says it.
+    ///
+    /// It is the opposite of [NewProductVariant.stockItemId] in that respect — see there.
+    @JsonKey(name: 'stock_item_group_id', includeIfNull: false) int? stockItemGroupId,
+
+    @JsonKey(name: 'pricing_unit') required String pricingUnit,
 
     @JsonKey(name: 'pricing_mode') required String pricingMode,
 
@@ -77,6 +79,22 @@ abstract class NewProductVariant with _$NewProductVariant {
     ///
     /// Null when creating, and omitted from the body then.
     @JsonKey(includeIfNull: false) int? id,
+
+    /// **The shelf this size draws from — and the field that will bite whoever forgets it.**
+    ///
+    /// `PUT /products/{id}` replaces the whole variant set, and the server resolves each size's
+    /// shelf from scratch on every save: an explicit id here wins, otherwise the product's
+    /// material supplies one at that size, otherwise the size is left with none. So a size sent
+    /// **without** this key does not keep what it had — it is re-resolved, and for a product with
+    /// no material that means unlinked. An app that loaded a product, corrected a price and put
+    /// the sizes back bare would detach every one of them from its pile, and nobody would find
+    /// out until an order failed at «جاهزة».
+    ///
+    /// This app takes the round-trip: the form seeds every row from `data.variants[].stock_item_id`
+    /// and sends it back untouched, so an explicit link survives an edit that had nothing to do
+    /// with it. Null is therefore a real answer here — «اترك المادة تقرر» — which is why it is
+    /// omitted from the body rather than sent as `null`.
+    @JsonKey(name: 'stock_item_id', includeIfNull: false) int? stockItemId,
 
     required String label,
 

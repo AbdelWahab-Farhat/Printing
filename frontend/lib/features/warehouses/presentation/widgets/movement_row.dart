@@ -16,7 +16,7 @@ class MovementRow extends StatelessWidget {
 
   final StockMovement movement;
 
-  /// Whether to name the size on the row. False on a feed that is *about* one size — there the
+  /// Whether to name the shelf on the row. False on a feed that is *about* one shelf — there the
   /// header says it once, and repeating it per row is a column of identical words.
   final bool showTitle;
 
@@ -45,9 +45,10 @@ class MovementRow extends StatelessWidget {
                 if (showTitle) ...[
                   Row(
                     children: [
-                      // The code, in the accent it wears on the catalogue card — «P7» is what
-                      // is said out loud and searched for.
-                      if (movement.variant?.productCode case final code?) ...[
+                      // The shelf's code, in the accent a code wears everywhere in this app —
+                      // «S7» is what is said out loud and searched for. Not a product's: the
+                      // pile is shared, and this row moved all of it at once.
+                      if (movement.code case final code?) ...[
                         Text(
                           code,
                           textDirection: TextDirection.ltr,
@@ -75,13 +76,13 @@ class MovementRow extends StatelessWidget {
                 Text(
                   // «توريد · من المخزن الرئيسي ← صالة العرض» — what happened and where, in one
                   // line, with the halves that do not exist simply absent.
-                  [movement.movementTypeLabel, if (movement.route.isNotEmpty) movement.route]
-                      .join(' · '),
+                  [
+                    movement.movementTypeLabel,
+                    if (movement.route.isNotEmpty) movement.route,
+                  ].join(' · '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+                  style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
                 if (_meta(movement) case final meta when meta.isNotEmpty) ...[
                   SizedBox(height: 2.h),
@@ -89,9 +90,7 @@ class MovementRow extends StatelessWidget {
                     meta,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
+                    style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
                   ),
                 ],
                 if (movement.notes case final notes?) ...[
@@ -111,10 +110,7 @@ class MovementRow extends StatelessWidget {
           Text(
             movement.quantityLabel,
             textDirection: TextDirection.ltr,
-            style: context.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: tone,
-            ),
+            style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800, color: tone),
           ),
         ],
       ),
@@ -141,6 +137,14 @@ class MovementRow extends StatelessWidget {
       MovementType.internalTransfer => (AppIcons.statusChange, scheme.primary),
       MovementType.orderFulfillment => (AppIcons.orders, scheme.onSurfaceVariant),
       MovementType.adjustment => (AppIcons.edit, scheme.onSurfaceVariant),
+      // Stock coming back from a cancelled order. [AppIcons.refund] for the turning arrow
+      // alone — it is documented for money, but the shape is «the other direction» and that is
+      // exactly what this row is: an order's issue, undone.
+      MovementType.orderReversal => (AppIcons.refund, scheme.tertiary),
+      // Material destroyed on the way through the workshop. Struck out rather than binned:
+      // nothing is removed from the ledger, and the quantity was real right up until it was
+      // spoiled. Red, because it is the only kind here that is a loss.
+      MovementType.scrapLoss => (AppIcons.writeOff, scheme.error),
       // Nothing is claimed about a kind this build has never heard of; its Arabic came with it.
       MovementType.unknown => (AppIcons.more, scheme.onSurfaceVariant),
     };

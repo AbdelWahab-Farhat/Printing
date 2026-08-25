@@ -5,10 +5,10 @@ import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
-import 'package:dayaa/features/orders/presentation/widgets/product_picker_sheet.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/save_purchase_order_cubit.dart';
 import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
+import 'package:dayaa/features/stock_items/presentation/widgets/stock_item_picker_sheet.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/widgets/vendor_picker_sheet.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
@@ -28,6 +28,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// written in — «٤ لفّات بـ ٧٥ د.ل» — and it is what the server stores; it works the per-unit
 /// figure out itself. A box asking for the unit price would have buyers dividing on paper before
 /// they could fill the form in.
+///
+/// **A line names a shelf, and a shelf appears at most once.** The picker offers «الأصناف
+/// المخزنية» rather than a product and then a size: «كيس شحن سادة 25*35» and «كيس شحن مطبوع
+/// 25*35» are one pile, so asking «أي منتج؟» then «أي مقاس؟» asked two questions to reach a thing
+/// with one name — and let a buyer raise two lines for one heap at two prices. The server now
+/// refuses that outright with a unique index, so the form refuses it first, in a sentence.
 ///
 /// **Delivery and customs are a second list, not a line.** They are charged on the order rather
 /// than on any one size, so the form collects them separately and the server spreads them across
@@ -82,10 +88,11 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
     for (final item in widget.order?.items ?? const <PurchaseOrderItem>[])
       _LineDraft(
         id: item.id,
-        productVariantId: item.productVariantId,
+        stockItemId: item.stockItemId,
         title: item.title,
-        // Snapshotted on the line when it was raised, not looked up again: a product whose unit
-        // was corrected since must not silently re-label the quantity already agreed with the
+        code: item.itemCode,
+        // Snapshotted on the line when it was raised, not looked up again: a shelf whose unit was
+        // re-declared since must not silently re-label the quantity already agreed with the
         // vendor.
         unit: item.lineUnit,
         quantity: item.orderedLabel,
@@ -203,15 +210,23 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
     });
   }
 
+  /// Opens the shelf picker and adds what came back.
+  ///
+  /// **Opened wide, with no size to narrow it by.** The picker takes a width and a height when
+  /// there is a variant to hint from; a purchase order starts from the supplier, not from a
+  /// product, so there is nothing to pre-narrow with and it opens on everything.
   Future<void> _addLine() async {
-    final picked = await showProductPicker(context: context);
+    final picked = await showStockItemPicker(context: context);
     if (picked == null) return;
 
     // Refused here as well as by the server, and with a sentence rather than a 422: the API's
-    // `distinct` rule points at `items.2.product_variant_id`, which is not a thing on screen.
-    if (_lines.any((line) => line.productVariantId == picked.variant.id)) {
+    // `distinct` rule — and now a unique index behind it — points at `items.2.stock_item_id`,
+    // which is not a thing on screen. It matters more than it used to: two products at one size
+    // are now one shelf, so a buyer adding «سادة» and «مطبوع» is naming one line twice without
+    // anything on the screen looking like a duplicate.
+    if (_lines.any((line) => line.stockItemId == picked.id)) {
       if (!mounted) return;
-      context.showInfo('هذا المقاس مضاف بالفعل');
+      context.showInfo('هذا الصنف مضاف بالفعل');
 
       return;
     }
@@ -219,11 +234,15 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
     setState(() {
       _lines.add(
         _LineDraft(
-          productVariantId: picked.variant.id,
-          title: '${picked.product.name} · ${picked.variant.label}',
-          // The product's own word, so the two boxes below say what they want before anything is
-          // typed into them. The server snapshots the same unit onto the line when it is saved.
-          unit: PurchaseLineUnit(picked.product.pricingUnitLabel),
+          stockItemId: picked.id,
+          // The server's own composition, drawn as sent — never rebuilt from the name and the
+          // two dimensions.
+          title: picked.displayName,
+          code: picked.code,
+          // The **shelf's** unit, so the two boxes below say what they want before anything is
+          // typed into them. `CreatePurchaseOrder` force-fills the line from the same field when
+          // it saves, so the form asks in the word the order will report in.
+          unit: PurchaseLineUnit(picked.unitLabel),
           quantity: '',
           baseTotalCost: '',
         ),
@@ -277,7 +296,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
             // Carried through, so an existing line is corrected rather than replaced — and its
             // received quantity survives the edit.
             id: line.id,
-            productVariantId: line.productVariantId,
+            stockItemId: line.stockItemId,
             quantity: line.quantity.text,
             baseTotalCost: line.baseTotalCost.text,
           ),
@@ -383,14 +402,16 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
                   SizedBox(height: 8.h),
                   for (final line in _lines)
                     _LineRow(
-                      key: ValueKey(line.productVariantId),
+                      key: ValueKey(line.stockItemId),
                       line: line,
                       onChanged: (_) => cubit.clearFailure(),
                       onRemove: () => _removeLine(line),
                     ),
                   SizedBox(height: 8.h),
                   AppButton.tonal(
-                    label: 'إضافة مقاس',
+                    // «صنف» and no longer «مقاس»: what is added is a shelf, and the size is part
+                    // of its name rather than a second choice after it.
+                    label: 'إضافة صنف',
                     icon: AppIcons.add,
                     onPressed: _addLine,
                   ),
@@ -454,24 +475,37 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
 /// One line as the form holds it: both numbers are still text, because that is what was typed.
 class _LineDraft {
   _LineDraft({
-    required this.productVariantId,
+    required this.stockItemId,
     required this.title,
     required String quantity,
     required String baseTotalCost,
+    this.code,
     this.unit = const PurchaseLineUnit(null),
     this.id,
   }) : quantity = TextEditingController(text: quantity),
        baseTotalCost = TextEditingController(text: baseTotalCost);
 
   final int? id;
-  final int productVariantId;
+
+  /// Which shelf. Also the row's identity on screen — an order may hold only one line per item,
+  /// so it is unique among the drafts by construction, which is what makes it a safe `ValueKey`.
+  final int stockItemId;
+
+  /// «كيس شحن 25*35», as the server composed it.
   final String title;
+
+  /// `S7` — the shelf's code, kept beside the name because it is the part a buyer reads down a
+  /// phone line to the supplier, and because it is what replaced the product photograph. Null
+  /// only on a line seeded from an order that arrived without its item.
+  final String? code;
 
   /// «كيلوغرام» or «قطعة» — what the quantity box below is asking for.
   ///
-  /// The *same* type the saved line uses, so the form asks in the word the order will report
-  /// in. Null only on a line raised before the unit column existed, and everything built from it
-  /// then says nothing rather than guessing.
+  /// The *same* type the saved line uses, so the form asks in the word the order will report in.
+  /// It is the **shelf's** unit: two products sharing a pile cannot disagree about how it is
+  /// counted, which is exactly why `products.stock_unit` was dropped. Null only on a line raised
+  /// before the unit column existed, and everything built from it then says nothing rather than
+  /// guessing.
   final PurchaseLineUnit unit;
 
   final TextEditingController quantity;
@@ -598,13 +632,32 @@ class _LineRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  line.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      line.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    // Under the name and quieter than it: the code identifies the shelf on the
+                    // phone to the supplier, and it is what stands where the product's name and
+                    // photograph used to. A line that arrived without its item draws nothing here
+                    // rather than a code invented from the id.
+                    if (line.code case final code?) ...[
+                      SizedBox(height: 2.h),
+                      Text(
+                        code,
+                        textDirection: TextDirection.ltr,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               IconButton(

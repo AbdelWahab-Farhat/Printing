@@ -56,12 +56,10 @@ _StockArrivalItem _$StockArrivalItemFromJson(Map<String, dynamic> json) =>
     _StockArrivalItem(
       id: (json['id'] as num).toInt(),
       quantity: json['quantity'] as String,
-      productVariantId: (json['product_variant_id'] as num).toInt(),
-      variant: json['product_variant'] == null
+      stockItemId: (json['stock_item_id'] as num).toInt(),
+      stockItem: json['stock_item'] == null
           ? null
-          : StockVariant.fromJson(
-              json['product_variant'] as Map<String, dynamic>,
-            ),
+          : StockItemRef.fromJson(json['stock_item'] as Map<String, dynamic>),
       unitCost: json['unit_cost'] as String?,
       totalCost: json['total_cost'] as String?,
       stockMovementId: (json['stock_movement_id'] as num).toInt(),
@@ -71,8 +69,8 @@ Map<String, dynamic> _$StockArrivalItemToJson(_StockArrivalItem instance) =>
     <String, dynamic>{
       'id': instance.id,
       'quantity': instance.quantity,
-      'product_variant_id': instance.productVariantId,
-      'product_variant': instance.variant?.toJson(),
+      'stock_item_id': instance.stockItemId,
+      'stock_item': instance.stockItem?.toJson(),
       'unit_cost': instance.unitCost,
       'total_cost': instance.totalCost,
       'stock_movement_id': instance.stockMovementId,

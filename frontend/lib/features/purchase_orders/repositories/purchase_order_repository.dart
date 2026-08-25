@@ -11,7 +11,7 @@ import 'package:dayaa/features/vendors/models/stock_arrival.dart';
 /// compared. It exists so a call takes one argument per line instead of three parallel lists.
 class PurchaseOrderLine {
   const PurchaseOrderLine({
-    required this.productVariantId,
+    required this.stockItemId,
     required this.quantity,
     required this.baseTotalCost,
     this.id,
@@ -22,9 +22,15 @@ class PurchaseOrderLine {
   /// **Absent means "new", and a line left out of the list is removed** — the same replace-in-
   /// full contract an order's items follow. A line that lost its id on the way through would be
   /// deleted and recreated, taking its `quantity_received` with it.
+  ///
+  /// The server also matches on [stockItemId] as the natural key while syncing, so a line whose
+  /// id did not survive the round trip is still corrected rather than replaced.
   final int? id;
 
-  final int productVariantId;
+  /// **Which shelf, not which product's size.** Two products at one size draw on one pile, so an
+  /// order carries **one line per stock item** — a unique index on the server refuses a second,
+  /// and the form refuses to build one.
+  final int stockItemId;
 
   /// As typed, normalised to ASCII digits. Never parsed here.
   final String quantity;
@@ -43,7 +49,7 @@ class PurchaseOrderLine {
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': ?id,
-    'product_variant_id': productVariantId,
+    'stock_item_id': stockItemId,
     'quantity_ordered': quantity,
     'base_total_cost': baseTotalCost,
   };
@@ -74,14 +80,18 @@ class PurchaseOrderAdditionalCostLine {
 }
 
 /// One line of a shipment being booked in.
+///
+/// Addressed by the shelf and not by the order line's own id — that is what
+/// `ReceivePurchaseOrderArrivalRequest` reads, and it is `distinct`, so the same item may appear
+/// only once in a shipment.
 class ReceivedLine {
-  const ReceivedLine({required this.productVariantId, required this.quantity});
+  const ReceivedLine({required this.stockItemId, required this.quantity});
 
-  final int productVariantId;
+  final int stockItemId;
   final String quantity;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'product_variant_id': productVariantId,
+    'stock_item_id': stockItemId,
     'quantity': quantity,
   };
 }
@@ -134,6 +144,10 @@ abstract interface class PurchaseOrderRepository {
   ///
   /// **Both lists replace what is stored.** Whatever is not sent is deleted, so a caller always
   /// sends the full current set — see [PurchaseOrderLine.id].
+  ///
+  /// Two lines naming one stock item are refused — the server carries a unique index as well as
+  /// the `distinct` rule — and the refusal arrives against `items.<n>.stock_item_id`, which the
+  /// form surfaces above the list rather than swallowing.
   Future<Either<Failure, PurchaseOrder>> update(
     int purchaseOrderId, {
     required int vendorId,

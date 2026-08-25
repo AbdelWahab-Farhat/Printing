@@ -17,10 +17,10 @@ _StockMovement _$StockMovementFromJson(
   ),
   movementTypeLabel: json['movement_type_label'] as String,
   quantity: json['quantity'] as String,
-  productVariantId: (json['product_variant_id'] as num).toInt(),
-  variant: json['product_variant'] == null
+  stockItemId: (json['stock_item_id'] as num).toInt(),
+  item: json['stock_item'] == null
       ? null
-      : StockVariant.fromJson(json['product_variant'] as Map<String, dynamic>),
+      : StockItemRef.fromJson(json['stock_item'] as Map<String, dynamic>),
   fromWarehouseId: (json['from_warehouse_id'] as num?)?.toInt(),
   fromWarehouse: json['from_warehouse'] == null
       ? null
@@ -46,8 +46,8 @@ Map<String, dynamic> _$StockMovementToJson(_StockMovement instance) =>
       'movement_type': _$MovementTypeEnumMap[instance.movementType]!,
       'movement_type_label': instance.movementTypeLabel,
       'quantity': instance.quantity,
-      'product_variant_id': instance.productVariantId,
-      'product_variant': instance.variant?.toJson(),
+      'stock_item_id': instance.stockItemId,
+      'stock_item': instance.item?.toJson(),
       'from_warehouse_id': instance.fromWarehouseId,
       'from_warehouse': instance.fromWarehouse?.toJson(),
       'to_warehouse_id': instance.toWarehouseId,
@@ -64,6 +64,8 @@ const _$MovementTypeEnumMap = {
   MovementType.internalTransfer: 'internal_transfer',
   MovementType.orderFulfillment: 'order_fulfillment',
   MovementType.adjustment: 'adjustment',
+  MovementType.orderReversal: 'order_reversal',
+  MovementType.scrapLoss: 'scrap_loss',
   MovementType.unknown: 'unknown',
 };
 

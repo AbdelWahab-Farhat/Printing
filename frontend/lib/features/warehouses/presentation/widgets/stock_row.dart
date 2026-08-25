@@ -2,23 +2,22 @@ import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
-import 'package:dayaa/features/products/models/product.dart';
-import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// One shelf: the bag, its size, how much of it is here, and whether that is too little.
+/// One shelf: the material, its size, how much of it is here, and whether that is too little.
 ///
 /// **The quantity is the loudest thing on the row**, because it is the only question this
 /// screen is opened to answer. What changed around it:
 ///
-///   * **a picture leads the row.** A storekeeper standing in front of the rack recognises the
-///     bag before they read its name. It is the *product's* photograph — there are none at size
-///     level — so every size of «أكياس الشحن» shares one, and the slot is held at a fixed width
-///     whether or not it arrives, so a list does not reflow as the pictures land.
+///   * **the code leads, where a photograph used to.** A shelf is a pile of material at a size,
+///     and two products can draw on it — «كيس شحن سادة» and «كيس شحن مطبوع» both take from this
+///     row — so a picture here could only ever have been one of the two, chosen arbitrarily, and
+///     it told the storekeeper the wrong thing. `S7` is what gets read down a phone line and
+///     what identifies the pile without claiming anything about who sells it.
 ///   * **zero is a state, not a number.** `is_low_stock` comes from the server and says nothing
-///     about a size nobody set an alert level for, so a line at zero used to render exactly like
+///     about a shelf nobody set an alert level for, so a line at zero used to render exactly like
 ///     a healthy one — the emptiest row on the screen was also the calmest. It now says «نافد».
 ///   * **one badge at a time.** An empty shelf below its threshold is both; only the louder word
 ///     is worth the space, and two badges saying the same thing twice is not emphasis.
@@ -28,16 +27,16 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// with. The alert level has a button of its own — the row leads somewhere, and one tap cannot
 /// mean two things.
 ///
-/// **Two forms of the same row.** [StockRow.new] is a card of its own, for a product this
-/// warehouse holds in one size. [StockRow.inGroup] is a line inside `StockProductCard`, where
-/// the picture, the code and the product's name have already been said once above it — so the
-/// line drops all three and keeps only what differs between sizes.
+/// **Two forms of the same row.** [StockRow.new] is a card of its own, for a material this
+/// warehouse holds in one size. [StockRow.inGroup] is a line inside `StockMaterialCard`, where
+/// the material's name has already been said once above it — so the line drops it and keeps the
+/// size and the code, which are what differ between one size and the next.
 class StockRow extends StatelessWidget {
   const StockRow({required this.stock, this.onTap, this.onEditThreshold, super.key})
     : _standalone = true;
 
-  /// One size under its product's heading: no picture, no code, no product name — the card
-  /// above carries them, and a row that repeated them would make one bag read as several.
+  /// One size under its material's heading: the whole «كيس شحن 25*35» would repeat a word the
+  /// card said above it, so the line carries «25*35» and its own code alone.
   const StockRow.inGroup({required this.stock, this.onTap, this.onEditThreshold, super.key})
     : _standalone = false;
 
@@ -66,9 +65,10 @@ class StockRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: radius,
       child: Container(
-        // Inside a card the line is indented to where the product's name starts, so the sizes
-        // read as belonging to the heading rather than as three more rows beside it.
-        padding: EdgeInsetsDirectional.fromSTEB(_standalone ? 12.w : 66.w, 10.h, 12.w, 10.h),
+        // Inside a card the line is indented, so the sizes read as belonging to the heading
+        // rather than as three more rows beside it. A short step, now that nothing wide leads
+        // the heading for them to line up under.
+        padding: EdgeInsetsDirectional.fromSTEB(_standalone ? 12.w : 24.w, 10.h, 12.w, 10.h),
         decoration: _standalone
             ? BoxDecoration(
                 borderRadius: radius,
@@ -77,20 +77,6 @@ class StockRow extends StatelessWidget {
             : null,
         child: Row(
           children: [
-            // The catalogue's own thumbnail, not a second widget drawing the same thing. It
-            // takes a `ProductImage`, so the row's flat url is wrapped in one rather than
-            // teaching the thumbnail a second way to be given a picture.
-            if (_standalone) ...[
-              ProductThumbnail(
-                image: switch (stock.variant?.imageUrl) {
-                  final url? => ProductImage(id: stock.variant!.id, url: url),
-                  _ => null,
-                },
-                side: 44.w,
-                radius: 10.r,
-              ),
-              SizedBox(width: 10.w),
-            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,10 +84,11 @@ class StockRow extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      // The code leads, in the accent it wears on the catalogue card: «P7» is
-                      // what a storekeeper is told on the phone and what they search for. In a
-                      // group it is the card's, said once at the top.
-                      if (stock.variant?.productCode case final code? when _standalone) ...[
+                      // The code leads, in the accent a code wears everywhere in this app.
+                      // **On both forms**, unlike the product code it replaced: a card groups
+                      // sizes of one material and each of them is its own shelf with its own
+                      // `S7`, so the card above has none to say once for all of them.
+                      if (stock.code case final code?) ...[
                         Text(
                           code,
                           textDirection: TextDirection.ltr,
@@ -114,7 +101,7 @@ class StockRow extends StatelessWidget {
                       ],
                       Flexible(
                         child: Text(
-                          // The size alone under a heading that already named the bag.
+                          // The size alone under a heading that already named the material.
                           _standalone ? stock.title : stock.sizeLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -178,6 +165,8 @@ class StockRow extends StatelessWidget {
                   ),
                 ),
                 Text(
+                  // The balance's own snapshot, not the item's current unit: what was counted
+                  // in bags is drawn in bags even after somebody re-declares the shelf.
                   stock.unitLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

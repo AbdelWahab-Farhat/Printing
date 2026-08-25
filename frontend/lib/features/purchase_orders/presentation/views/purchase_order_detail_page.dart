@@ -392,11 +392,31 @@ class _LineRow extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(
-                item.title,
-                style: context.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    // «كيس شحن 25*35» — the shelf's own name, composed by the server. **No
+                    // product name here, deliberately**: two products draw on this line's pile,
+                    // so naming either of them would be picking one arbitrarily.
+                    item.title,
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  // `S7`, quieter and underneath. It is what a buyer quotes to the supplier, and
+                  // what stands where the product's name and photograph used to.
+                  if (item.itemCode case final code?) ...[
+                    SizedBox(height: 2.h),
+                    Text(
+                      code,
+                      textDirection: TextDirection.ltr,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             if (isDone)

@@ -2,12 +2,11 @@ part of 'product_detail_cubit.dart';
 
 /// Everything the product detail screen can be, and nothing it cannot.
 ///
-/// Three cases, not four: there is no `changing`, and the one write this screen does needs none.
-/// [ProductDetailCubit.setStockUnit] is answered with the whole product refreshed, so it lands as
-/// an ordinary `loaded`; a refusal is handed back to the caller and never emitted, because
-/// replacing a product somebody is reading with an error page is not what "that did not work"
-/// should look like. When stopping a product lands, a `changing` case may arrive with it —
-/// carrying the product, so nothing is blanked while a request is in flight.
+/// Three cases, not four: there is no `changing`, because this screen no longer writes anything.
+/// The one write it used to have — declaring what the warehouse counted this product in — went
+/// with its endpoint when the unit moved onto the «صنف مخزني» it belongs to. When stopping a
+/// product lands, a `changing` case may arrive with it — carrying the product, so nothing is
+/// blanked while a request is in flight.
 @freezed
 sealed class ProductDetailState with _$ProductDetailState {
   const factory ProductDetailState.loading() = ProductDetailLoading;

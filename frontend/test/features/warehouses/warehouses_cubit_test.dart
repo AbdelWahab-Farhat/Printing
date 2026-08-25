@@ -171,7 +171,7 @@ void main() {
       when(
         () => repository.movements(
           warehouseId: any(named: 'warehouseId'),
-          productVariantId: any(named: 'productVariantId'),
+          stockItemId: any(named: 'stockItemId'),
           page: any(named: 'page'),
           perPage: any(named: 'perPage'),
         ),
@@ -191,21 +191,25 @@ void main() {
       verify(
         () => repository.movements(
           warehouseId: null,
-          productVariantId: null,
+          stockItemId: null,
           page: 1,
           perPage: any(named: 'perPage'),
         ),
       ).called(1);
     });
 
-    test('one shelf asks for its size *and* its place', () async {
-      // Arrange — «هذا المقاس، في هذا المخزن»: the two filters combine, which is what makes a
-      // shelf's own history different from the size's history everywhere.
+    test('one shelf asks for its صنف *and* its place', () async {
+      // Arrange — «هذا الصنف، في هذا المخزن»: the two filters combine, which is what makes a
+      // shelf's own history different from the item's history everywhere.
+      //
+      // **The pile, not one product's share of it.** Two catalogue rows draw on «كيس شحن 25*35»,
+      // and the rows that explain the number on that shelf are all of them together — narrowing
+      // by a product size would show a history that does not add up to the balance above it.
       answerLedger();
       final ledger = StockMovementsCubit(
         getMovements: GetStockMovements(repository),
         warehouseId: 2,
-        productVariantId: 7,
+        stockItemId: 7,
       );
 
       // Act
@@ -216,7 +220,7 @@ void main() {
       verify(
         () => repository.movements(
           warehouseId: 2,
-          productVariantId: 7,
+          stockItemId: 7,
           page: 1,
           perPage: any(named: 'perPage'),
         ),
@@ -228,7 +232,7 @@ void main() {
       when(
         () => repository.movements(
           warehouseId: any(named: 'warehouseId'),
-          productVariantId: any(named: 'productVariantId'),
+          stockItemId: any(named: 'stockItemId'),
           page: any(named: 'page'),
           perPage: any(named: 'perPage'),
         ),
@@ -241,7 +245,7 @@ void main() {
                 movementType: MovementType.purchaseArrival,
                 movementTypeLabel: 'توريد',
                 quantity: '10.000',
-                productVariantId: 7,
+                stockItemId: 7,
               ),
             ],
             meta: PageMeta(currentPage: 1, perPage: 20, lastPage: 2, total: 21),
@@ -251,7 +255,7 @@ void main() {
       final ledger = StockMovementsCubit(
         getMovements: GetStockMovements(repository),
         warehouseId: 2,
-        productVariantId: 7,
+        stockItemId: 7,
       );
 
       // Act
@@ -263,7 +267,7 @@ void main() {
       verify(
         () => repository.movements(
           warehouseId: 2,
-          productVariantId: 7,
+          stockItemId: 7,
           page: 2,
           perPage: any(named: 'perPage'),
         ),

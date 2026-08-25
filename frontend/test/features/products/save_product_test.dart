@@ -42,8 +42,6 @@ void main() {
     name: 'أكياس الشحن',
     pricingUnit: 'piece',
     pricingUnitLabel: 'قطعة',
-    stockUnit: 'piece',
-    stockUnitLabel: 'قطعة',
     pricingMode: 'tiered',
     pricingModeLabel: 'حسب الكمية',
     minOrderQuantity: '100.000',
@@ -82,8 +80,8 @@ void main() {
     String name = 'أكياس الشحن',
     String? description,
     List<String> features = const [],
+    int? stockItemGroupId,
     String pricingUnit = 'piece',
-    String? stockUnit,
     String pricingMode = 'tiered',
     String minOrderQuantity = '100',
     List<DraftVariant> variants = const [],
@@ -96,14 +94,20 @@ void main() {
       features: features,
       // Required by the API from today on — see PRODUCT-CATEGORIES.md.
       productCategoryId: 3,
+      // «المادة» — left unnamed by default, which is what a product with no material sends.
+      stockItemGroupId: stockItemGroupId,
       pricingUnit: pricingUnit,
-      stockUnit: stockUnit,
       pricingMode: pricingMode,
       minOrderQuantity: minOrderQuantity,
       variants: variants,
       image: image,
     );
   }
+
+  /// The draft the *update* endpoint was handed. Same one-shot rule as [sent].
+  NewProduct updated() =>
+      verify(() => repository.update(any(), captureAny())).captured.single
+          as NewProduct;
 
   group('Arabic-Indic digits', () {
     test(
@@ -262,31 +266,36 @@ void main() {
       },
     );
 
-    test('no stock unit chosen is a key the request never mentions', () async {
-      // Arrange — the server defaults `stock_unit` to whatever `pricing_unit` was sent, which is
-      // nine bags in ten. Sending the same value again would be the app repeating the server's
-      // own rule back at it, and the first place the two could drift.
+    test('no material named is a key the request never mentions', () async {
+      // Arrange — a product can genuinely have none: a quote-only bag is never stocked. The key
+      // has to be *absent* rather than `null`, and on an update that is load-bearing — omitting
+      // it leaves the current material alone, and the API deliberately offers no way to clear
+      // one, because clearing would detach every size from its pile on that very save.
       // Act
-      await submit(pricingUnit: 'piece');
+      await submit();
 
       // Assert
       final draft = sent();
 
-      expect(draft.stockUnit, isNull);
-      expect(draft.toJson().containsKey('stock_unit'), isFalse);
+      expect(draft.stockItemGroupId, isNull);
+      expect(draft.toJson().containsKey('stock_item_group_id'), isFalse);
     });
 
-    test('a shelf counted in something else is sent, and sent apart', () async {
-      // Arrange — bought in by the kilo, sold by the piece. `min_order_quantity` is still
-      // governed by the *pricing* unit, so the two travel as two fields.
+    test('the material travels as an id, beside what the customer is charged by', () async {
+      // Arrange — bought in by the kilo, sold by the piece. The two units used to be two fields
+      // on this body; the second one belongs to «الصنف المخزني» now, and what the product says
+      // is *which material* — the server mints each size's shelf from it with the material's own
+      // default unit, never the product's `pricing_unit`.
       // Act
-      await submit(pricingUnit: 'piece', stockUnit: 'kilogram');
+      await submit(pricingUnit: 'piece', stockItemGroupId: 3);
 
-      // Assert
+      // Assert — `min_order_quantity` is still governed by the pricing unit, so the two ideas
+      // stay two fields.
       final body = sent().toJson();
 
       expect(body['pricing_unit'], 'piece');
-      expect(body['stock_unit'], 'kilogram');
+      expect(body['stock_item_group_id'], 3);
+      expect(body.containsKey('stock_unit'), isFalse);
     });
 
     test('a quote-only product carries no prices at all', () async {
@@ -410,6 +419,97 @@ void main() {
     expect(draft.variants.first.id, 12);
     // The new size carries none, which is how the server is told it is new.
     expect(draft.variants.last.id, isNull);
+  });
+
+  // ─────────────────────── the shelf each size draws from ───────────────────────
+
+  /// **The trap this section exists for.**
+  ///
+  /// `PUT /products/{id}` replaces the entire variant set and re-resolves every size's shelf from
+  /// the body it was handed: an explicit `stock_item_id` wins, otherwise the product's material
+  /// supplies one at that size, otherwise the size is left with none. So a size sent *without*
+  /// the key does not keep what it had — it is resolved again, and for a product with no material
+  /// that means detached. An app that loaded a product, corrected a price and put the sizes back
+  /// bare would unlink every one of them, and nobody would find out until an order was refused
+  /// at «جاهزة».
+  ///
+  /// The API allows two safe answers: round-trip `stock_item_id` with every size, or omit the
+  /// `variants` key altogether when sizes are not being edited. **This app round-trips**, because
+  /// one form edits the name, the minimum and the size grid together and there is no moment where
+  /// it knows the sizes were left alone. These tests pin that choice — the other one would pass a
+  /// test that asked only «did the link survive?», and fail the day somebody corrects a price and
+  /// a size in the same breath.
+  group('the shelf each size draws from', () {
+    test('a size opened with a shelf sends that shelf back', () async {
+      // Arrange — the form merely displayed this link; the save has to restate it or the server
+      // resolves the size again from scratch.
+      // Act
+      await submit(
+        id: 7,
+        variants: const [DraftVariant(id: 12, stockItemId: 4, label: '25*35')],
+      );
+
+      // Assert — on the model *and* in the body: `includeIfNull: false` means the two can
+      // disagree, and only the second is what actually travels.
+      final draft = updated();
+
+      expect(draft.variants.single.stockItemId, 4);
+      expect(
+        (draft.toJson()['variants'] as List<dynamic>).single,
+        containsPair('stock_item_id', 4),
+      );
+    });
+
+    test('a size with no shelf omits the key rather than sending null', () async {
+      // Arrange — «اترك المادة تقرر» is a real answer, and the one almost every size gives: with
+      // a material named, the server files the size itself and mints the shelf if that material
+      // has not reached this size yet. Sending `null` would say something else entirely.
+      // Act
+      await submit(
+        id: 7,
+        stockItemGroupId: 3,
+        variants: const [DraftVariant(id: 12, label: '25*35')],
+      );
+
+      // Assert
+      final draft = updated();
+
+      expect(draft.variants.single.stockItemId, isNull);
+      expect(
+        (draft.toJson()['variants'] as List<dynamic>).single,
+        isNot(contains('stock_item_id')),
+      );
+    });
+
+    test('an edit that touched no size at all still restates every shelf', () async {
+      // Arrange — the sharp one, and the reason this app round-trips rather than omitting the
+      // `variants` key: correcting the minimum order is not an edit anybody would call a size
+      // change, and it is exactly the save that would silently detach all three sizes.
+      const sizes = [
+        DraftVariant(id: 12, stockItemId: 4, label: '25*35'),
+        DraftVariant(id: 13, stockItemId: 9, label: '35*40'),
+        DraftVariant(id: 14, label: 'حسب الطلب'),
+      ];
+
+      // Act
+      await submit(id: 7, minOrderQuantity: '250', variants: sizes);
+
+      // Assert — every size that had a pile still names it, in order, and the one that never had
+      // one still says nothing. The `variants` key is present rather than omitted, which is the
+      // half of the choice a test asserting only on the links would miss.
+      final body = updated().toJson();
+      final restated = body['variants'] as List<dynamic>;
+
+      expect(body.containsKey('variants'), isTrue);
+      expect(
+        [
+          for (final size in restated)
+            (size as Map<String, dynamic>)['stock_item_id'],
+        ],
+        [4, 9, null],
+      );
+      expect(body['min_order_quantity'], '250');
+    });
   });
 
   test('a size added on the create form carries no id at all', () async {

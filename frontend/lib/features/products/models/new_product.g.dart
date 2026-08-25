@@ -14,8 +14,8 @@ _NewProduct _$NewProductFromJson(Map<String, dynamic> json) => _NewProduct(
       ?.map((e) => e as String)
       .toList(),
   productCategoryId: (json['product_category_id'] as num).toInt(),
+  stockItemGroupId: (json['stock_item_group_id'] as num?)?.toInt(),
   pricingUnit: json['pricing_unit'] as String,
-  stockUnit: json['stock_unit'] as String?,
   pricingMode: json['pricing_mode'] as String,
   minOrderQuantity: json['min_order_quantity'] as String,
   variants:
@@ -32,8 +32,8 @@ Map<String, dynamic> _$NewProductToJson(_NewProduct instance) =>
       'description': ?instance.description,
       'features': ?instance.features,
       'product_category_id': instance.productCategoryId,
+      'stock_item_group_id': ?instance.stockItemGroupId,
       'pricing_unit': instance.pricingUnit,
-      'stock_unit': ?instance.stockUnit,
       'pricing_mode': instance.pricingMode,
       'min_order_quantity': instance.minOrderQuantity,
       'variants': instance.variants.map((e) => e.toJson()).toList(),
@@ -42,6 +42,7 @@ Map<String, dynamic> _$NewProductToJson(_NewProduct instance) =>
 _NewProductVariant _$NewProductVariantFromJson(Map<String, dynamic> json) =>
     _NewProductVariant(
       id: (json['id'] as num?)?.toInt(),
+      stockItemId: (json['stock_item_id'] as num?)?.toInt(),
       label: json['label'] as String,
       widthCm: (json['width_cm'] as num?)?.toInt(),
       heightCm: (json['height_cm'] as num?)?.toInt(),
@@ -55,6 +56,7 @@ _NewProductVariant _$NewProductVariantFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$NewProductVariantToJson(_NewProductVariant instance) =>
     <String, dynamic>{
       'id': ?instance.id,
+      'stock_item_id': ?instance.stockItemId,
       'label': instance.label,
       'width_cm': ?instance.widthCm,
       'height_cm': ?instance.heightCm,

@@ -25,9 +25,6 @@ abstract class Product with _$Product {
     String? description,
     @Default(<String>[]) List<String> features,
 
-
-    /// The Arabic label for it, sent by the server so the app keeps no translation table.
-
     /// «التصنيف» — the catalogue heading this product sits under. Null only for a product
     /// recorded before categories existed and not edited since; the form refuses to save one.
     ///
@@ -38,20 +35,29 @@ abstract class Product with _$Product {
 
     @JsonKey(name: 'product_category_id') int? productCategoryId,
 
+    /// «المادة» — what this product is cut from, and **the one field that files every size of it
+    /// onto a shelf**.
+    ///
+    /// Naming the material once is the whole feature: on every save the server walks the sizes
+    /// and, for each one without a shelf of its own, finds this material's «صنف مخزني» at that
+    /// size — creating it if the material has not reached that size yet, with the material's own
+    /// name and default unit. Before it existed each size had to be pointed at a pile by hand,
+    /// and one wrong tap split «كيس شحن 25*35» into two heaps nobody could reconcile.
+    ///
+    /// Null for a product whose material nobody has named — a quote-only bag, or one whose sizes
+    /// come from several materials and are linked one by one. **It cannot be cleared through
+    /// `PUT /products`**: omitting the key leaves the current material alone, and there is
+    /// deliberately no way to say «none», because doing so would detach every size from its
+    /// shelf on that very save.
+    @JsonKey(name: 'stock_item_group_id') int? stockItemGroupId,
+
+    /// The material itself. `whenLoaded` on the resource, but eager-loaded on every product path
+    /// the API has — index, show, store, update, activation — so `null` here really does mean
+    /// «بلا مادة» rather than «لم يُطلب». [stockItemGroupId] is the field to trust when in doubt.
+    @JsonKey(name: 'stock_item_group') ProductMaterial? stockItemGroup,
+
     @JsonKey(name: 'pricing_unit') required String pricingUnit,
     @JsonKey(name: 'pricing_unit_label') required String pricingUnitLabel,
-
-    /// **What the warehouse counts this in, which is not always what the customer is charged
-    /// by.** A bag bought in by the kilo and sold by the piece has two units, and one column
-    /// could only ever hold one of them: [pricingUnit] governs the price and the order-quantity
-    /// granularity, this one governs every stock movement and the balances they leave behind.
-    ///
-    /// Sent on every product and never null — the server defaults it to [pricingUnit] until
-    /// somebody declares otherwise, which is nine bags in ten. Changing it after creation is
-    /// its own endpoint, not a field on the edit form: it cascades to every warehouse balance
-    /// and cost batch for the product's variants. See [stocksInAnotherUnit].
-    @JsonKey(name: 'stock_unit') required String stockUnit,
-    @JsonKey(name: 'stock_unit_label') required String stockUnitLabel,
 
     @JsonKey(name: 'pricing_mode') required String pricingMode,
     @JsonKey(name: 'pricing_mode_label') required String pricingModeLabel,
@@ -105,12 +111,21 @@ abstract class Product with _$Product {
   /// `'100.000'` reads as a quantity to a database and as noise to a person: `'100'`.
   String get minOrderQuantityLabel => groupedDecimal(minOrderQuantity);
 
-  /// Whether the shelf counts this in something other than what the invoice charges by.
+  /// Whether somebody has said what this bag is cut from.
   ///
-  /// False for nine bags in ten, and that is what this is for: the two labels are the same word
-  /// on almost every product, so a screen that printed both unconditionally would be repeating
-  /// itself everywhere to be informative in one place.
-  bool get stocksInAnotherUnit => stockUnit != pricingUnit;
+  /// Read off the id rather than off [stockItemGroup]: the id is a plain column and always on
+  /// the wire, so this stays true for a response that carried the relation and one that did not.
+  bool get hasMaterial => stockItemGroupId != null;
+
+  /// The sizes that draw on no shelf at all.
+  ///
+  /// **Worth a screen saying out loud**, because nothing else will until an order is refused at
+  /// «جاهزة»: every stock path refuses an unlinked size by name rather than inventing a pile for
+  /// it. Empty is the ordinary answer for a product with a material — the server files each size
+  /// on save — and for a quote-only bag it is the correct answer too, which is why this is
+  /// reported and never treated as a fault.
+  List<ProductVariant> get unlinkedVariants =>
+      variants.where((variant) => !variant.isStocked).toList(growable: false);
 
   bool get hasDescription => description != null && description!.trim().isNotEmpty;
 
@@ -144,12 +159,43 @@ abstract class ProductVariant with _$ProductVariant {
     @JsonKey(name: 'height_cm') int? heightCm,
     @JsonKey(name: 'is_active') @Default(true) bool isActive,
     @JsonKey(name: 'sort_order') @Default(0) int sortOrder,
+
+    /// «الصنف المخزني» this size draws from — the pile, not the size.
+    ///
+    /// **Two products at one size share one of these**, and that is the point: «كيس شحن سادة
+    /// 25*35» and «كيس شحن مطبوع 25*35» are two catalogue rows and one heap of bags. What
+    /// separates them is the printing, which is a manufacturing cost rate keyed per variant, not
+    /// a different material.
+    ///
+    /// Null for a size that is never stocked. Set by hand only as an escape hatch — a 25*35 bag
+    /// deliberately cut from a wider sheet — because with the product's material named the server
+    /// resolves it on every save.
+    ///
+    /// ⚠️ **On `PUT /products` the whole variant set is replaced, so a size sent without this key
+    /// loses whatever it was pointed at.** See `NewProductVariant.stockItemId` for what this app
+    /// does about that.
+    @JsonKey(name: 'stock_item_id') int? stockItemId,
+
+    /// The shelf itself, for showing what a size draws on without a second request. Loaded on
+    /// every product-returning path, so `null` alongside a non-null [stockItemId] does not happen
+    /// in practice.
+    @JsonKey(name: 'stock_item') VariantStockItem? stockItem,
+
     @JsonKey(name: 'price_tiers') @Default(<ProductPriceTier>[]) List<ProductPriceTier> priceTiers,
   }) = _ProductVariant;
 
   const ProductVariant._();
 
   factory ProductVariant.fromJson(Map<String, dynamic> json) => _$ProductVariantFromJson(json);
+
+  /// Whether this size has a pile behind it. `false` means every stock movement against it is
+  /// refused by name — «غير مرتبط بصنف مخزني» — rather than silently doing nothing.
+  bool get isStocked => stockItemId != null;
+
+  /// «كيس شحن 25*35» — the shelf's name as the **server** composed it, or null when there is no
+  /// shelf. Never rebuilt from the parts here: the sentence an order is refused with quotes this
+  /// exact string, and a second spelling of it is a second thing for somebody to reconcile.
+  String? get shelfLabel => stockItem?.displayName;
 
   /// `'25 × 35 سم'`, or `null` for a size recorded as a name only.
   ///
@@ -170,6 +216,82 @@ abstract class ProductVariant with _$ProductVariant {
 
     return sorted;
   }
+}
+
+/// «المادة» as a **product** carries it — five fields, flattened by the server.
+///
+/// **Named `ProductMaterial` rather than `StockItemGroup`, and that is not squeamishness.** The
+/// material has a feature module of its own with a full model in it, and `features/stock_items/`
+/// declares a three-field echo called `StockItemGroupRef`. This is a third shape again — the two
+/// `default_unit` fields the ref has no room for — and any screen that shows a product beside a
+/// material picker has to import two of the three into one file. Three distinct names is the only
+/// arrangement in which the wrong one cannot be reached for.
+///
+/// [defaultUnit] is here because it answers the question the product form is actually asked:
+/// «المقاسات الجديدة ستُحسب بأي وحدة؟». A shelf minted for one of this product's sizes takes the
+/// material's unit and **never** the product's `pricing_unit` — a thing bought in by weight and
+/// sold by the piece needs the two to differ.
+@freezed
+abstract class ProductMaterial with _$ProductMaterial {
+  const factory ProductMaterial({
+    required int id,
+
+    /// `G3` — server-allocated from the id and never settable.
+    required String code,
+
+    required String name,
+
+    /// What a size created under this material starts out counted in. Changing it on the material
+    /// disturbs no existing shelf; it only decides what the next one is minted with.
+    @JsonKey(name: 'default_unit') required String defaultUnit,
+
+    /// The server's Arabic for [defaultUnit] — «قطعة», «كيلوغرام» — drawn as sent, so a unit the
+    /// backend grows tomorrow still reads right without this app being rebuilt.
+    @JsonKey(name: 'default_unit_label') required String defaultUnitLabel,
+  }) = _ProductMaterial;
+
+  factory ProductMaterial.fromJson(Map<String, dynamic> json) => _$ProductMaterialFromJson(json);
+}
+
+/// The shelf a size draws from, as it arrives **nested on a variant**: eight fields, no counts
+/// and no timestamps.
+///
+/// **Not `features/stock_items/`'s `StockItem`, and it cannot be.** That model requires
+/// `is_active` and `sort_order`, which this nested shape does not carry — parsing one into it
+/// would throw on every product the catalogue draws. Borrowing it and defaulting those two would
+/// be worse: the row would claim a shelf is active when nothing said so.
+///
+/// It carries `unit` and `unit_label`, which the same nested object on a warehouse balance or a
+/// movement does not — there the unit is a snapshot on the balance itself.
+@freezed
+abstract class VariantStockItem with _$VariantStockItem {
+  const factory VariantStockItem({
+    required int id,
+
+    /// `S7`. **What stands where a product thumbnail used to**: a pile is not one product's, so
+    /// a picture of either of the two products sharing it would be telling the storekeeper the
+    /// wrong thing. A code reads well on a row and is safe to say down a phone line.
+    required String code,
+
+    /// The material's name without the size. [displayName] is what gets drawn.
+    required String name,
+
+    @JsonKey(name: 'width_cm') int? widthCm,
+    @JsonKey(name: 'height_cm') int? heightCm,
+
+    /// «كيس شحن 25*35» — composed server-side, a bare `*` with no spaces, and **rendered as
+    /// sent**. The shortfall message an order is refused with quotes this exact string.
+    @JsonKey(name: 'display_name') required String displayName,
+
+    /// What this shelf is counted in — independent of the product's `pricing_unit`, which is what
+    /// the customer is charged by. The two differ on anything bought by weight and sold by count.
+    required String unit,
+
+    @JsonKey(name: 'unit_label') required String unitLabel,
+  }) = _VariantStockItem;
+
+  factory VariantStockItem.fromJson(Map<String, dynamic> json) =>
+      _$VariantStockItemFromJson(json);
 }
 
 /// "This many or more, at this price."

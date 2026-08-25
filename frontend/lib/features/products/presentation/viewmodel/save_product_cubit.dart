@@ -40,11 +40,12 @@ class SaveProductCubit extends Cubit<SaveProductState> {
     String? description,
     List<String> features = const [],
     required int productCategoryId,
-    required String pricingUnit,
 
-    /// What the warehouse counts this in, when the form was told it differs from what is sold.
-    /// Null lets the server default it to [pricingUnit] — see [SaveProduct].
-    String? stockUnit,
+    /// «المادة» this product is cut from — the one choice that files every size of it onto a
+    /// shelf. Null omits the key, which on an edit leaves the current material alone: the server
+    /// offers no way to clear it. See `NewProduct.stockItemGroupId`.
+    int? stockItemGroupId,
+    required String pricingUnit,
     required String pricingMode,
     required String minOrderQuantity,
     List<DraftVariant> variants = const [],
@@ -65,8 +66,8 @@ class SaveProductCubit extends Cubit<SaveProductState> {
       description: description,
       features: features,
       productCategoryId: productCategoryId,
+      stockItemGroupId: stockItemGroupId,
       pricingUnit: pricingUnit,
-      stockUnit: stockUnit,
       pricingMode: pricingMode,
       minOrderQuantity: minOrderQuantity,
       variants: variants,

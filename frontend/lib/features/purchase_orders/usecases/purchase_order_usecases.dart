@@ -65,7 +65,7 @@ class GetPurchaseOrder {
 /// One line as the form holds it: both numbers are still text, because that is what was typed.
 class DraftLine {
   const DraftLine({
-    required this.productVariantId,
+    required this.stockItemId,
     required this.quantity,
     required this.baseTotalCost,
     this.id,
@@ -73,7 +73,11 @@ class DraftLine {
   });
 
   final int? id;
-  final int productVariantId;
+
+  /// Which shelf this line buys into. **One line per stock item** — see
+  /// [PurchaseOrderLine.stockItemId] for why the server refuses a second.
+  final int stockItemId;
+
   final String quantity;
 
   /// What the whole line costs us, as typed. Required on every line — see
@@ -133,7 +137,7 @@ class SavePurchaseOrder {
           // Carried through, so the server corrects the line rather than replacing it — and
           // its `quantity_received` survives the edit.
           id: line.id,
-          productVariantId: line.productVariantId,
+          stockItemId: line.stockItemId,
           quantity: _number(line.quantity),
           baseTotalCost: _number(line.baseTotalCost),
         ),
@@ -199,6 +203,9 @@ class ReceivePurchaseOrderArrival {
 
   final PurchaseOrderRepository _repository;
 
+  /// [quantities] is keyed by **stock item id**, not by the order line's own id — that is what
+  /// the endpoint addresses a received line by, and it is what makes the map safe: an order
+  /// carries one line per shelf, so a key can never stand for two of them.
   Future<Either<Failure, StockArrival>> call(
     int purchaseOrderId, {
     required Map<int, String> quantities,
@@ -208,10 +215,7 @@ class ReceivePurchaseOrderArrival {
     final lines = [
       for (final entry in quantities.entries)
         if (_isPositive(entry.value))
-          ReceivedLine(
-            productVariantId: entry.key,
-            quantity: _number(entry.value),
-          ),
+          ReceivedLine(stockItemId: entry.key, quantity: _number(entry.value)),
     ];
 
     return _repository.receiveArrival(

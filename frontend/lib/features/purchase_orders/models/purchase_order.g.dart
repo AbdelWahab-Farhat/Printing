@@ -98,12 +98,10 @@ Map<String, dynamic> _$PurchaseOrderAdditionalCostToJson(
 _PurchaseOrderItem _$PurchaseOrderItemFromJson(Map<String, dynamic> json) =>
     _PurchaseOrderItem(
       id: (json['id'] as num).toInt(),
-      productVariantId: (json['product_variant_id'] as num).toInt(),
-      variant: json['product_variant'] == null
+      stockItemId: (json['stock_item_id'] as num).toInt(),
+      stockItem: json['stock_item'] == null
           ? null
-          : StockVariant.fromJson(
-              json['product_variant'] as Map<String, dynamic>,
-            ),
+          : StockItemRef.fromJson(json['stock_item'] as Map<String, dynamic>),
       quantityOrdered: json['quantity_ordered'] as String,
       quantityReceived: json['quantity_received'] as String,
       quantityRemaining: json['quantity_remaining'] as String,
@@ -119,8 +117,8 @@ _PurchaseOrderItem _$PurchaseOrderItemFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$PurchaseOrderItemToJson(_PurchaseOrderItem instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'product_variant_id': instance.productVariantId,
-      'product_variant': instance.variant?.toJson(),
+      'stock_item_id': instance.stockItemId,
+      'stock_item': instance.stockItem?.toJson(),
       'quantity_ordered': instance.quantityOrdered,
       'quantity_received': instance.quantityReceived,
       'quantity_remaining': instance.quantityRemaining,

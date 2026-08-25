@@ -2,124 +2,142 @@ import 'package:dayaa/features/warehouses/models/stock_group.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Every size of one bag belongs on one card.
+/// Every size of one material belongs on one card.
 ///
-/// The list is one row per *size*, and a warehouse that stocks «أكياس الشحن» in four sizes
-/// reads as four unrelated products with the same name repeated four times. Grouping is the
-/// only thing here: the shelves themselves are untouched, and their order is the server's.
+/// The list is one row per *shelf*, which is the truth — a balance belongs to a size and never to
+/// a material — and a warehouse that stocks «كيس شحن» in four sizes read as four unrelated things
+/// with the same name repeated four times. Grouping is the only thing here: the shelves
+/// themselves are untouched, and their order is the server's.
+///
+/// **This used to group by product, and that was the bug the whole migration exists to fix.**
+/// «كيس شحن سادة 25*35» and «كيس شحن مطبوع 25*35» are two catalogue rows and one pile of bags, so
+/// heading a card with either product's name — or its photograph — picked one of the two
+/// arbitrarily and told the storekeeper the shelf belonged to it. What a balance line now carries
+/// about its identity is the material, the size and the code; there is no product and no picture
+/// on it to group by, deliberately.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
-  WarehouseStock shelf({
-    required int id,
-    int? productId,
-    String label = '25*35',
-    String productName = 'أكياس الشحن',
-  }) => WarehouseStock(
-    id: id,
-    warehouseId: 1,
-    productVariantId: id,
-    quantity: '10.000',
-    unit: 'kg',
-    unitLabel: 'كيلوغرام',
-    variant: productId == null
-        ? null
-        : StockVariant(
-            id: id,
-            label: label,
-            productId: productId,
-            productCode: 'P$productId',
-            productName: productName,
-          ),
-  );
+  /// One balance line. [material] `null` is a line that arrived without its nested item — the
+  /// only case where the row says nothing about what it is a size of.
+  WarehouseStock shelf({required int id, String? material, int? width, int? height}) =>
+      WarehouseStock(
+        id: id,
+        warehouseId: 1,
+        stockItemId: id,
+        quantity: '10.000',
+        unit: 'kg',
+        unitLabel: 'كيلوغرام',
+        item: material == null
+            ? null
+            : StockItemRef(
+                id: id,
+                code: 'S$id',
+                name: material,
+                widthCm: width,
+                heightCm: height,
+                // Composed server-side. Spelled out here rather than built from the parts for
+                // exactly the reason the app never builds it either: a second implementation
+                // would drift from the one the shortfall messages quote.
+                displayName: width == null ? material : '$material $width*$height',
+              ),
+      );
 
-  test('sizes of the same product become one group', () {
+  test('sizes of one material become one group', () {
     // Arrange
     final shelves = [
-      shelf(id: 1, productId: 7, label: '25*35'),
-      shelf(id: 2, productId: 7, label: '45*50'),
-      shelf(id: 3, productId: 7, label: '50*60'),
+      shelf(id: 1, material: 'كيس شحن', width: 25, height: 35),
+      shelf(id: 2, material: 'كيس شحن', width: 45, height: 50),
+      shelf(id: 3, material: 'كيس شحن', width: 50, height: 60),
     ];
 
     // Act
     final groups = StockGroup.from(shelves);
 
-    // Assert
+    // Assert — one heading for the three, because the material is what they genuinely share.
+    // Each size keeps its own `S7` all the same: a shelf is a material *at a size*, so the
+    // code identifies one pile and there is no code the group could say once for all of them.
+    // That is the difference from the product card this replaced, where one code belonged to
+    // the heading and no line had one of its own.
     expect(groups, hasLength(1));
     expect(groups.single.shelves.map((s) => s.id), [1, 2, 3]);
-    expect(groups.single.productName, 'أكياس الشحن');
-    expect(groups.single.productCode, 'P7');
+    expect(groups.single.materialName, 'كيس شحن');
+    expect(groups.single.shelves.map((s) => s.code), ['S1', 'S2', 'S3']);
+    expect(groups.single.isSingle, isFalse);
   });
 
-  test('different products stay apart, in the order the server sent them', () {
+  test('different materials stay apart, in the order the server sent them', () {
     // Arrange
     final shelves = [
-      shelf(id: 1, productId: 7),
-      shelf(id: 2, productId: 9, productName: 'أكياس شحن سادة'),
+      shelf(id: 1, material: 'كيس شحن', width: 25, height: 35),
+      shelf(id: 2, material: 'ورق لاصق', width: 25, height: 35),
     ];
 
     // Act
     final groups = StockGroup.from(shelves);
 
-    // Assert
-    expect(groups.map((g) => g.productName), ['أكياس الشحن', 'أكياس شحن سادة']);
+    // Assert — two materials at one size are still two piles, and the name is what separates
+    // them: `stock_item_groups.name` is uniquely indexed and the server renames every size of a
+    // material in the same transaction, so two sizes of one thing always agree on it and two
+    // materials never can. Grouping by the only field the row carries is the same grouping.
+    expect(groups.map((g) => g.materialName), ['كيس شحن', 'ورق لاصق']);
     expect(groups.every((g) => g.isSingle), isTrue);
   });
 
-  test('the same product split by another one is still one group', () {
-    // Arrange — the server orders by size id, so two sizes of one bag can arrive apart
+  test('one material split by another is still one group', () {
+    // Arrange — the server orders by id, so two sizes of one material can arrive apart
     final shelves = [
-      shelf(id: 1, productId: 7),
-      shelf(id: 2, productId: 9, productName: 'أكياس شحن سادة'),
-      shelf(id: 3, productId: 7, label: '50*60'),
+      shelf(id: 1, material: 'كيس شحن', width: 25, height: 35),
+      shelf(id: 2, material: 'ورق لاصق', width: 25, height: 35),
+      shelf(id: 3, material: 'كيس شحن', width: 50, height: 60),
     ];
 
     // Act
     final groups = StockGroup.from(shelves);
 
-    // Assert — merged where it first appeared, and nothing is dropped
+    // Assert — merged where it first appeared, and nothing is dropped: grouping is by key, not
+    // by adjacency, or a material would split into two cards because another one landed between
+    // its sizes.
     expect(groups, hasLength(2));
     expect(groups.first.shelves.map((s) => s.id), [1, 3]);
     expect(groups.last.shelves.map((s) => s.id), [2]);
   });
 
-  test('a shelf that arrived without its product stands alone', () {
+  test('a shelf that arrived without its item stands alone, named after itself', () {
     // Arrange — two such lines say nothing about belonging together, so they are not joined
     final shelves = [shelf(id: 1), shelf(id: 2)];
 
     // Act
     final groups = StockGroup.from(shelves);
 
-    // Assert
+    // Assert — keyed by the shelf rather than by a name it does not have. Joining them under a
+    // shared blank would claim a material the payload never mentioned, and each still gets a
+    // heading of its own — «صنف #1» says less than a name and a great deal more than nothing.
     expect(groups, hasLength(2));
     expect(groups.every((g) => g.isSingle), isTrue);
+    expect(groups.map((g) => g.materialName), ['صنف #1', 'صنف #2']);
   });
 
-  test('the group wears the first picture it has, not the first shelf', () {
-    // Arrange — the picture is the product's, and one size may have arrived without it
-    final shelves = [
-      shelf(id: 1, productId: 7),
-      const WarehouseStock(
-        id: 2,
-        warehouseId: 1,
-        productVariantId: 2,
-        quantity: '5.000',
-        unit: 'kg',
-        unitLabel: 'كيلوغرام',
-        variant: StockVariant(
-          id: 2,
-          label: '45*50',
-          productId: 7,
-          productName: 'أكياس الشحن',
-          imageUrl: 'https://example.test/bag.jpg',
-        ),
-      ),
-    ];
+  test('a card keeps its key when the list around it changes', () {
+    // Arrange — the list keys its cards by this. A key that moved with the shelves would rebuild
+    // every card on every refresh, and the reader would lose their place mid-scroll.
+    final before = StockGroup.from([
+      shelf(id: 1, material: 'كيس شحن', width: 25, height: 35),
+      shelf(id: 3, material: 'كيس شحن', width: 50, height: 60),
+    ]).single;
 
-    // Act
-    final groups = StockGroup.from(shelves);
+    // Act — a refresh: a new material sorts ahead of the bags, and the 25*35 was emptied out of
+    // this warehouse, so the group has one fewer shelf and is no longer first.
+    final after = StockGroup.from([
+      shelf(id: 2, material: 'ورق لاصق', width: 25, height: 35),
+      shelf(id: 3, material: 'كيس شحن', width: 50, height: 60),
+    ]).last;
 
-    // Assert
-    expect(groups.single.imageUrl, 'https://example.test/bag.jpg');
+    // Assert — the key is the material's name, not the first shelf's id, and it is stable for
+    // exactly as long as the material's name is. A balance line carries no group id to use
+    // instead, and a rename that reshuffles this list is a rename that changed every heading in
+    // it anyway.
+    expect(after.key, before.key);
+    expect(after.materialName, before.materialName);
   });
 }

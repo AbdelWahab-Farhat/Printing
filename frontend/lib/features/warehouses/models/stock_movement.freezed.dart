@@ -18,7 +18,9 @@ mixin _$StockMovement {
  int get id;@JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) MovementType get movementType;/// The server's Arabic for [movementType].
 @JsonKey(name: 'movement_type_label') String get movementTypeLabel;/// Always positive. Which way it went is [movementType] plus the two warehouses — an
 /// adjustment down is a movement *out of* a warehouse, not a negative number.
- String get quantity;@JsonKey(name: 'product_variant_id') int get productVariantId;@JsonKey(name: 'product_variant') StockVariant? get variant;@JsonKey(name: 'from_warehouse_id') int? get fromWarehouseId;@JsonKey(name: 'from_warehouse') MovementPlace? get fromWarehouse;@JsonKey(name: 'to_warehouse_id') int? get toWarehouseId;@JsonKey(name: 'to_warehouse') MovementPlace? get toWarehouse;/// The order a fulfillment was for, or the purchase an arrival came from.
+ String get quantity;/// **The pile that moved, not a product's size.** Two catalogue rows can share one, so a row
+/// here answers «ماذا تحرّك من الرف» and deliberately not «لأي منتج».
+@JsonKey(name: 'stock_item_id') int get stockItemId;@JsonKey(name: 'stock_item') StockItemRef? get item;@JsonKey(name: 'from_warehouse_id') int? get fromWarehouseId;@JsonKey(name: 'from_warehouse') MovementPlace? get fromWarehouse;@JsonKey(name: 'to_warehouse_id') int? get toWarehouseId;@JsonKey(name: 'to_warehouse') MovementPlace? get toWarehouse;/// The order a fulfillment was for, or the purchase an arrival came from.
 @JsonKey(name: 'reference_id') int? get referenceId;@JsonKey(name: 'employee_id') int? get employeeId; MovementActor? get employee; String? get notes;@JsonKey(name: 'created_at') DateTime? get createdAt;
 /// Create a copy of StockMovement
 /// with the given fields replaced by the non-null parameter values.
@@ -32,16 +34,16 @@ $StockMovementCopyWith<StockMovement> get copyWith => _$StockMovementCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockMovement&&(identical(other.id, id) || other.id == id)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.movementTypeLabel, movementTypeLabel) || other.movementTypeLabel == movementTypeLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.fromWarehouseId, fromWarehouseId) || other.fromWarehouseId == fromWarehouseId)&&(identical(other.fromWarehouse, fromWarehouse) || other.fromWarehouse == fromWarehouse)&&(identical(other.toWarehouseId, toWarehouseId) || other.toWarehouseId == toWarehouseId)&&(identical(other.toWarehouse, toWarehouse) || other.toWarehouse == toWarehouse)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.employee, employee) || other.employee == employee)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockMovement&&(identical(other.id, id) || other.id == id)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.movementTypeLabel, movementTypeLabel) || other.movementTypeLabel == movementTypeLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.item, item) || other.item == item)&&(identical(other.fromWarehouseId, fromWarehouseId) || other.fromWarehouseId == fromWarehouseId)&&(identical(other.fromWarehouse, fromWarehouse) || other.fromWarehouse == fromWarehouse)&&(identical(other.toWarehouseId, toWarehouseId) || other.toWarehouseId == toWarehouseId)&&(identical(other.toWarehouse, toWarehouse) || other.toWarehouse == toWarehouse)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.employee, employee) || other.employee == employee)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,movementType,movementTypeLabel,quantity,productVariantId,variant,fromWarehouseId,fromWarehouse,toWarehouseId,toWarehouse,referenceId,employeeId,employee,notes,createdAt);
+int get hashCode => Object.hash(runtimeType,id,movementType,movementTypeLabel,quantity,stockItemId,item,fromWarehouseId,fromWarehouse,toWarehouseId,toWarehouse,referenceId,employeeId,employee,notes,createdAt);
 
 @override
 String toString() {
-  return 'StockMovement(id: $id, movementType: $movementType, movementTypeLabel: $movementTypeLabel, quantity: $quantity, productVariantId: $productVariantId, variant: $variant, fromWarehouseId: $fromWarehouseId, fromWarehouse: $fromWarehouse, toWarehouseId: $toWarehouseId, toWarehouse: $toWarehouse, referenceId: $referenceId, employeeId: $employeeId, employee: $employee, notes: $notes, createdAt: $createdAt)';
+  return 'StockMovement(id: $id, movementType: $movementType, movementTypeLabel: $movementTypeLabel, quantity: $quantity, stockItemId: $stockItemId, item: $item, fromWarehouseId: $fromWarehouseId, fromWarehouse: $fromWarehouse, toWarehouseId: $toWarehouseId, toWarehouse: $toWarehouse, referenceId: $referenceId, employeeId: $employeeId, employee: $employee, notes: $notes, createdAt: $createdAt)';
 }
 
 
@@ -52,11 +54,11 @@ abstract mixin class $StockMovementCopyWith<$Res>  {
   factory $StockMovementCopyWith(StockMovement value, $Res Function(StockMovement) _then) = _$StockMovementCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) MovementType movementType,@JsonKey(name: 'movement_type_label') String movementTypeLabel, String quantity,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'from_warehouse_id') int? fromWarehouseId,@JsonKey(name: 'from_warehouse') MovementPlace? fromWarehouse,@JsonKey(name: 'to_warehouse_id') int? toWarehouseId,@JsonKey(name: 'to_warehouse') MovementPlace? toWarehouse,@JsonKey(name: 'reference_id') int? referenceId,@JsonKey(name: 'employee_id') int? employeeId, MovementActor? employee, String? notes,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) MovementType movementType,@JsonKey(name: 'movement_type_label') String movementTypeLabel, String quantity,@JsonKey(name: 'stock_item_id') int stockItemId,@JsonKey(name: 'stock_item') StockItemRef? item,@JsonKey(name: 'from_warehouse_id') int? fromWarehouseId,@JsonKey(name: 'from_warehouse') MovementPlace? fromWarehouse,@JsonKey(name: 'to_warehouse_id') int? toWarehouseId,@JsonKey(name: 'to_warehouse') MovementPlace? toWarehouse,@JsonKey(name: 'reference_id') int? referenceId,@JsonKey(name: 'employee_id') int? employeeId, MovementActor? employee, String? notes,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
-$StockVariantCopyWith<$Res>? get variant;$MovementPlaceCopyWith<$Res>? get fromWarehouse;$MovementPlaceCopyWith<$Res>? get toWarehouse;$MovementActorCopyWith<$Res>? get employee;
+$StockItemRefCopyWith<$Res>? get item;$MovementPlaceCopyWith<$Res>? get fromWarehouse;$MovementPlaceCopyWith<$Res>? get toWarehouse;$MovementActorCopyWith<$Res>? get employee;
 
 }
 /// @nodoc
@@ -69,15 +71,15 @@ class _$StockMovementCopyWithImpl<$Res>
 
 /// Create a copy of StockMovement
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? movementType = null,Object? movementTypeLabel = null,Object? quantity = null,Object? productVariantId = null,Object? variant = freezed,Object? fromWarehouseId = freezed,Object? fromWarehouse = freezed,Object? toWarehouseId = freezed,Object? toWarehouse = freezed,Object? referenceId = freezed,Object? employeeId = freezed,Object? employee = freezed,Object? notes = freezed,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? movementType = null,Object? movementTypeLabel = null,Object? quantity = null,Object? stockItemId = null,Object? item = freezed,Object? fromWarehouseId = freezed,Object? fromWarehouse = freezed,Object? toWarehouseId = freezed,Object? toWarehouse = freezed,Object? referenceId = freezed,Object? employeeId = freezed,Object? employee = freezed,Object? notes = freezed,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,movementType: null == movementType ? _self.movementType : movementType // ignore: cast_nullable_to_non_nullable
 as MovementType,movementTypeLabel: null == movementTypeLabel ? _self.movementTypeLabel : movementTypeLabel // ignore: cast_nullable_to_non_nullable
 as String,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
-as String,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
-as int,variant: freezed == variant ? _self.variant : variant // ignore: cast_nullable_to_non_nullable
-as StockVariant?,fromWarehouseId: freezed == fromWarehouseId ? _self.fromWarehouseId : fromWarehouseId // ignore: cast_nullable_to_non_nullable
+as String,stockItemId: null == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
+as int,item: freezed == item ? _self.item : item // ignore: cast_nullable_to_non_nullable
+as StockItemRef?,fromWarehouseId: freezed == fromWarehouseId ? _self.fromWarehouseId : fromWarehouseId // ignore: cast_nullable_to_non_nullable
 as int?,fromWarehouse: freezed == fromWarehouse ? _self.fromWarehouse : fromWarehouse // ignore: cast_nullable_to_non_nullable
 as MovementPlace?,toWarehouseId: freezed == toWarehouseId ? _self.toWarehouseId : toWarehouseId // ignore: cast_nullable_to_non_nullable
 as int?,toWarehouse: freezed == toWarehouse ? _self.toWarehouse : toWarehouse // ignore: cast_nullable_to_non_nullable
@@ -93,13 +95,13 @@ as DateTime?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$StockVariantCopyWith<$Res>? get variant {
-    if (_self.variant == null) {
+$StockItemRefCopyWith<$Res>? get item {
+    if (_self.item == null) {
     return null;
   }
 
-  return $StockVariantCopyWith<$Res>(_self.variant!, (value) {
-    return _then(_self.copyWith(variant: value));
+  return $StockItemRefCopyWith<$Res>(_self.item!, (value) {
+    return _then(_self.copyWith(item: value));
   });
 }/// Create a copy of StockMovement
 /// with the given fields replaced by the non-null parameter values.
@@ -219,10 +221,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StockMovement() when $default != null:
-return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.productVariantId,_that.variant,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.createdAt);case _:
+return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.stockItemId,_that.item,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.createdAt);case _:
   return orElse();
 
 }
@@ -240,10 +242,10 @@ return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quanti
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _StockMovement():
-return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.productVariantId,_that.variant,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.createdAt);case _:
+return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.stockItemId,_that.item,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -260,10 +262,10 @@ return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quanti
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'product_variant_id')  int productVariantId, @JsonKey(name: 'product_variant')  StockVariant? variant, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _StockMovement() when $default != null:
-return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.productVariantId,_that.variant,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.createdAt);case _:
+return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.stockItemId,_that.item,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.createdAt);case _:
   return null;
 
 }
@@ -275,7 +277,7 @@ return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quanti
 @JsonSerializable()
 
 class _StockMovement extends StockMovement {
-  const _StockMovement({required this.id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) required this.movementType, @JsonKey(name: 'movement_type_label') required this.movementTypeLabel, required this.quantity, @JsonKey(name: 'product_variant_id') required this.productVariantId, @JsonKey(name: 'product_variant') this.variant, @JsonKey(name: 'from_warehouse_id') this.fromWarehouseId, @JsonKey(name: 'from_warehouse') this.fromWarehouse, @JsonKey(name: 'to_warehouse_id') this.toWarehouseId, @JsonKey(name: 'to_warehouse') this.toWarehouse, @JsonKey(name: 'reference_id') this.referenceId, @JsonKey(name: 'employee_id') this.employeeId, this.employee, this.notes, @JsonKey(name: 'created_at') this.createdAt}): super._();
+  const _StockMovement({required this.id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) required this.movementType, @JsonKey(name: 'movement_type_label') required this.movementTypeLabel, required this.quantity, @JsonKey(name: 'stock_item_id') required this.stockItemId, @JsonKey(name: 'stock_item') this.item, @JsonKey(name: 'from_warehouse_id') this.fromWarehouseId, @JsonKey(name: 'from_warehouse') this.fromWarehouse, @JsonKey(name: 'to_warehouse_id') this.toWarehouseId, @JsonKey(name: 'to_warehouse') this.toWarehouse, @JsonKey(name: 'reference_id') this.referenceId, @JsonKey(name: 'employee_id') this.employeeId, this.employee, this.notes, @JsonKey(name: 'created_at') this.createdAt}): super._();
   factory _StockMovement.fromJson(Map<String, dynamic> json) => _$StockMovementFromJson(json);
 
 @override final  int id;
@@ -285,8 +287,10 @@ class _StockMovement extends StockMovement {
 /// Always positive. Which way it went is [movementType] plus the two warehouses — an
 /// adjustment down is a movement *out of* a warehouse, not a negative number.
 @override final  String quantity;
-@override@JsonKey(name: 'product_variant_id') final  int productVariantId;
-@override@JsonKey(name: 'product_variant') final  StockVariant? variant;
+/// **The pile that moved, not a product's size.** Two catalogue rows can share one, so a row
+/// here answers «ماذا تحرّك من الرف» and deliberately not «لأي منتج».
+@override@JsonKey(name: 'stock_item_id') final  int stockItemId;
+@override@JsonKey(name: 'stock_item') final  StockItemRef? item;
 @override@JsonKey(name: 'from_warehouse_id') final  int? fromWarehouseId;
 @override@JsonKey(name: 'from_warehouse') final  MovementPlace? fromWarehouse;
 @override@JsonKey(name: 'to_warehouse_id') final  int? toWarehouseId;
@@ -311,16 +315,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockMovement&&(identical(other.id, id) || other.id == id)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.movementTypeLabel, movementTypeLabel) || other.movementTypeLabel == movementTypeLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.fromWarehouseId, fromWarehouseId) || other.fromWarehouseId == fromWarehouseId)&&(identical(other.fromWarehouse, fromWarehouse) || other.fromWarehouse == fromWarehouse)&&(identical(other.toWarehouseId, toWarehouseId) || other.toWarehouseId == toWarehouseId)&&(identical(other.toWarehouse, toWarehouse) || other.toWarehouse == toWarehouse)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.employee, employee) || other.employee == employee)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockMovement&&(identical(other.id, id) || other.id == id)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.movementTypeLabel, movementTypeLabel) || other.movementTypeLabel == movementTypeLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.item, item) || other.item == item)&&(identical(other.fromWarehouseId, fromWarehouseId) || other.fromWarehouseId == fromWarehouseId)&&(identical(other.fromWarehouse, fromWarehouse) || other.fromWarehouse == fromWarehouse)&&(identical(other.toWarehouseId, toWarehouseId) || other.toWarehouseId == toWarehouseId)&&(identical(other.toWarehouse, toWarehouse) || other.toWarehouse == toWarehouse)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.employee, employee) || other.employee == employee)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,movementType,movementTypeLabel,quantity,productVariantId,variant,fromWarehouseId,fromWarehouse,toWarehouseId,toWarehouse,referenceId,employeeId,employee,notes,createdAt);
+int get hashCode => Object.hash(runtimeType,id,movementType,movementTypeLabel,quantity,stockItemId,item,fromWarehouseId,fromWarehouse,toWarehouseId,toWarehouse,referenceId,employeeId,employee,notes,createdAt);
 
 @override
 String toString() {
-  return 'StockMovement(id: $id, movementType: $movementType, movementTypeLabel: $movementTypeLabel, quantity: $quantity, productVariantId: $productVariantId, variant: $variant, fromWarehouseId: $fromWarehouseId, fromWarehouse: $fromWarehouse, toWarehouseId: $toWarehouseId, toWarehouse: $toWarehouse, referenceId: $referenceId, employeeId: $employeeId, employee: $employee, notes: $notes, createdAt: $createdAt)';
+  return 'StockMovement(id: $id, movementType: $movementType, movementTypeLabel: $movementTypeLabel, quantity: $quantity, stockItemId: $stockItemId, item: $item, fromWarehouseId: $fromWarehouseId, fromWarehouse: $fromWarehouse, toWarehouseId: $toWarehouseId, toWarehouse: $toWarehouse, referenceId: $referenceId, employeeId: $employeeId, employee: $employee, notes: $notes, createdAt: $createdAt)';
 }
 
 
@@ -331,11 +335,11 @@ abstract mixin class _$StockMovementCopyWith<$Res> implements $StockMovementCopy
   factory _$StockMovementCopyWith(_StockMovement value, $Res Function(_StockMovement) _then) = __$StockMovementCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) MovementType movementType,@JsonKey(name: 'movement_type_label') String movementTypeLabel, String quantity,@JsonKey(name: 'product_variant_id') int productVariantId,@JsonKey(name: 'product_variant') StockVariant? variant,@JsonKey(name: 'from_warehouse_id') int? fromWarehouseId,@JsonKey(name: 'from_warehouse') MovementPlace? fromWarehouse,@JsonKey(name: 'to_warehouse_id') int? toWarehouseId,@JsonKey(name: 'to_warehouse') MovementPlace? toWarehouse,@JsonKey(name: 'reference_id') int? referenceId,@JsonKey(name: 'employee_id') int? employeeId, MovementActor? employee, String? notes,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) MovementType movementType,@JsonKey(name: 'movement_type_label') String movementTypeLabel, String quantity,@JsonKey(name: 'stock_item_id') int stockItemId,@JsonKey(name: 'stock_item') StockItemRef? item,@JsonKey(name: 'from_warehouse_id') int? fromWarehouseId,@JsonKey(name: 'from_warehouse') MovementPlace? fromWarehouse,@JsonKey(name: 'to_warehouse_id') int? toWarehouseId,@JsonKey(name: 'to_warehouse') MovementPlace? toWarehouse,@JsonKey(name: 'reference_id') int? referenceId,@JsonKey(name: 'employee_id') int? employeeId, MovementActor? employee, String? notes,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
-@override $StockVariantCopyWith<$Res>? get variant;@override $MovementPlaceCopyWith<$Res>? get fromWarehouse;@override $MovementPlaceCopyWith<$Res>? get toWarehouse;@override $MovementActorCopyWith<$Res>? get employee;
+@override $StockItemRefCopyWith<$Res>? get item;@override $MovementPlaceCopyWith<$Res>? get fromWarehouse;@override $MovementPlaceCopyWith<$Res>? get toWarehouse;@override $MovementActorCopyWith<$Res>? get employee;
 
 }
 /// @nodoc
@@ -348,15 +352,15 @@ class __$StockMovementCopyWithImpl<$Res>
 
 /// Create a copy of StockMovement
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? movementType = null,Object? movementTypeLabel = null,Object? quantity = null,Object? productVariantId = null,Object? variant = freezed,Object? fromWarehouseId = freezed,Object? fromWarehouse = freezed,Object? toWarehouseId = freezed,Object? toWarehouse = freezed,Object? referenceId = freezed,Object? employeeId = freezed,Object? employee = freezed,Object? notes = freezed,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? movementType = null,Object? movementTypeLabel = null,Object? quantity = null,Object? stockItemId = null,Object? item = freezed,Object? fromWarehouseId = freezed,Object? fromWarehouse = freezed,Object? toWarehouseId = freezed,Object? toWarehouse = freezed,Object? referenceId = freezed,Object? employeeId = freezed,Object? employee = freezed,Object? notes = freezed,Object? createdAt = freezed,}) {
   return _then(_StockMovement(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,movementType: null == movementType ? _self.movementType : movementType // ignore: cast_nullable_to_non_nullable
 as MovementType,movementTypeLabel: null == movementTypeLabel ? _self.movementTypeLabel : movementTypeLabel // ignore: cast_nullable_to_non_nullable
 as String,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
-as String,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
-as int,variant: freezed == variant ? _self.variant : variant // ignore: cast_nullable_to_non_nullable
-as StockVariant?,fromWarehouseId: freezed == fromWarehouseId ? _self.fromWarehouseId : fromWarehouseId // ignore: cast_nullable_to_non_nullable
+as String,stockItemId: null == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
+as int,item: freezed == item ? _self.item : item // ignore: cast_nullable_to_non_nullable
+as StockItemRef?,fromWarehouseId: freezed == fromWarehouseId ? _self.fromWarehouseId : fromWarehouseId // ignore: cast_nullable_to_non_nullable
 as int?,fromWarehouse: freezed == fromWarehouse ? _self.fromWarehouse : fromWarehouse // ignore: cast_nullable_to_non_nullable
 as MovementPlace?,toWarehouseId: freezed == toWarehouseId ? _self.toWarehouseId : toWarehouseId // ignore: cast_nullable_to_non_nullable
 as int?,toWarehouse: freezed == toWarehouse ? _self.toWarehouse : toWarehouse // ignore: cast_nullable_to_non_nullable
@@ -373,13 +377,13 @@ as DateTime?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$StockVariantCopyWith<$Res>? get variant {
-    if (_self.variant == null) {
+$StockItemRefCopyWith<$Res>? get item {
+    if (_self.item == null) {
     return null;
   }
 
-  return $StockVariantCopyWith<$Res>(_self.variant!, (value) {
-    return _then(_self.copyWith(variant: value));
+  return $StockItemRefCopyWith<$Res>(_self.item!, (value) {
+    return _then(_self.copyWith(item: value));
   });
 }/// Create a copy of StockMovement
 /// with the given fields replaced by the non-null parameter values.

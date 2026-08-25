@@ -4,10 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// The mechanical guard on every field the server publishes having somewhere to land.
 ///
-/// `Vendor`, `StockArrival` and `StockArrivalItem` are twenty-five field names typed out twice —
+/// `Vendor`, `StockArrival` and `StockArrivalItem` are twenty-nine field names typed out twice —
 /// once in a PHP resource and once as a `@JsonKey` over here — in two languages, with no
 /// compiler watching either side. A key the server renames or adds does not fail: it simply
 /// arrives and is dropped, and the screen shows a blank where the answer was.
+///
+/// **`product_variant_id` → `stock_item_id` is exactly the rename this exists to catch.** An
+/// arrival line names the shelf now, and the old key would have gone on parsing to nothing while
+/// every line on the screen kept drawing — a blank title over a real quantity.
 ///
 /// So this reads the PHP resources and checks each key they publish is one the app's generated
 /// `fromJson` actually looks for. It reads the **generated** files rather than the annotations,
@@ -42,8 +46,9 @@ void main() {
     return keys;
   }
 
-  /// The item's `product_variant` is parsed by `StockVariant`, which lives with the shelves —
-  /// deliberately reused rather than copied, so its keys are read from there.
+  /// The item's `stock_item` is parsed by `StockItemRef`, which lives with the shelves — the
+  /// same six fields a balance row and a purchase-order line meet, deliberately reused rather
+  /// than copied, so its keys are read from there.
   const generated = [
     'lib/features/vendors/models/vendor.g.dart',
     'lib/features/vendors/models/stock_arrival.g.dart',

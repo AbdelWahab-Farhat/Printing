@@ -42,12 +42,12 @@ class SaveProduct {
     String? description,
     List<String> features = const [],
     required int productCategoryId,
-    required String pricingUnit,
 
-    /// What the warehouse will count this in, when the form was told it differs from what is
-    /// sold. Null — the common case — omits the key and lets the server default it to
-    /// [pricingUnit]. Ignored on an update: the API has no rule for it there.
-    String? stockUnit,
+    /// «المادة» this product is cut from. Null omits the key entirely, which on an update means
+    /// «اترك المادة كما هي» — the server offers no way to clear it, because clearing would
+    /// detach every size from its shelf on that save. See [NewProduct.stockItemGroupId].
+    int? stockItemGroupId,
+    required String pricingUnit,
     required String pricingMode,
     required String minOrderQuantity,
     List<DraftVariant> variants = const [],
@@ -80,8 +80,8 @@ class SaveProduct {
       // product has no selling points" where absence says nothing at all.
       features: kept.isEmpty ? null : kept,
       productCategoryId: productCategoryId,
+      stockItemGroupId: stockItemGroupId,
       pricingUnit: pricingUnit,
-      stockUnit: stockUnit,
       pricingMode: pricingMode,
       minOrderQuantity: _number(minOrderQuantity),
       variants: [
@@ -90,6 +90,10 @@ class SaveProduct {
             // Carried straight through: a size that already exists must arrive with its id or
             // the server treats it as a new one and removes the old — see NewProductVariant.
             id: variant.id,
+            // Round-tripped, never dropped. The server re-resolves every size's shelf on every
+            // save, so a link the form was merely *showing* has to be sent back or it is lost —
+            // see NewProductVariant.stockItemId, which is the whole argument.
+            stockItemId: variant.stockItemId,
             label: variant.label.trim(),
             widthCm: _dimension(variant.widthCm),
             heightCm: _dimension(variant.heightCm),
@@ -138,6 +142,7 @@ class DraftVariant {
   const DraftVariant({
     required this.label,
     this.id,
+    this.stockItemId,
     this.widthCm,
     this.heightCm,
     this.priceTiers = const [],
@@ -145,6 +150,13 @@ class DraftVariant {
 
   /// Null for a size being added; the existing row's id when one is being corrected.
   final int? id;
+
+  /// The shelf this size draws from, as the form found it or as somebody re-pointed it.
+  ///
+  /// **An `int` and not text, unlike every other value here**, because nobody types it: it comes
+  /// from the product the form opened on, or from a picker that answered with a real row. The
+  /// digits problem this class exists to hold back never arises for it.
+  final int? stockItemId;
 
   final String label;
   final String? widthCm;

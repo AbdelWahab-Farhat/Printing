@@ -61,23 +61,33 @@ abstract class StockArrival with _$StockArrival {
   int get lineCount => items.length;
 }
 
-/// One line: how much of one size this shipment brought, and the ledger row it wrote.
+/// One line: how much of one stock item this shipment brought, and the ledger row it wrote.
 @freezed
 abstract class StockArrivalItem with _$StockArrivalItem {
   const factory StockArrivalItem({
     required int id,
 
-    /// A decimal the server sent — `'200.000'`. Kept as a `String` for the same reason
-    /// [WarehouseStock.quantity] is: parsing it into a `double` is the first step towards
-    /// arithmetic this app has no business doing.
+    /// A decimal the server sent — `'200.000'`. Kept as a `String` because parsing it into a
+    /// `double` to hold it is the first step towards arithmetic this app has no business doing:
+    /// a balance moves because a *movement* explains it, never because a client computed it.
     required String quantity,
 
-    @JsonKey(name: 'product_variant_id') required int productVariantId,
+    /// **Which shelf, not which product's size.** «كيس شحن سادة 25*35» and «كيس شحن مطبوع
+    /// 25*35» are two catalogue rows and one pile of bags, so a shipment is booked against the
+    /// pile — see [StockItemRef].
+    @JsonKey(name: 'stock_item_id') required int stockItemId,
 
-    /// Reuses the shelf model's own summary — the server flattens a variant to the same five
+    /// Reuses the shelf model's own summary — the server flattens a stock item to the same six
     /// fields wherever it appears, and a second class holding them would be a second thing to
-    /// keep in step.
-    @JsonKey(name: 'product_variant') StockVariant? variant,
+    /// keep in step. **There is no `product_name` and no `image_url` in it**: a pile is not one
+    /// product's, so naming or picturing one of the two products sharing it would tell the
+    /// storekeeper the wrong thing. [StockItemRef.code] and [StockItemRef.displayName] are what
+    /// stand in their place.
+    ///
+    /// Nullable because it is `whenLoaded`, though every arrival the API publishes today carries
+    /// it: `StockArrivalListQuery` eager-loads `items.stockItem`. A missing key draws a fallback
+    /// rather than failing the page.
+    @JsonKey(name: 'stock_item') StockItemRef? stockItem,
 
     /// What this line cost, carried down from the purchase order it fulfilled.
     ///
@@ -100,9 +110,18 @@ abstract class StockArrivalItem with _$StockArrivalItem {
   /// `'200.000'` reads as a quantity to a database and as noise to a storekeeper: `'200'`.
   String get quantityLabel => groupedDecimal(quantity);
 
-  String get title => variant == null
-      ? 'مقاس #$productVariantId'
-      : '${variant!.productName} · ${variant!.label}';
+  /// «كيس شحن 25*35» — composed by the server and drawn as sent.
+  ///
+  /// **No product name, deliberately.** A pile is not one product's: «كيس شحن سادة» and «كيس شحن
+  /// مطبوع» both draw on this line's shelf, so naming either of them here would be picking one
+  /// arbitrarily and telling the storekeeper the wrong thing.
+  String get title => stockItem?.displayName ?? 'صنف #$stockItemId';
+
+  /// `S7` — the shelf's own code, in the space the product photograph used to occupy.
+  ///
+  /// Null on a line that arrived without its item, where there is nothing to print rather than
+  /// a code invented from the id.
+  String? get itemCode => stockItem?.code;
 }
 
 /// An id and the name it had — the shape the server flattens the vendor, the warehouse and the

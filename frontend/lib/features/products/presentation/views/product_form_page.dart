@@ -16,6 +16,8 @@ import 'package:dayaa/features/products/presentation/viewmodel/product_categorie
 import 'package:dayaa/features/products/presentation/viewmodel/save_product_cubit.dart';
 import 'package:dayaa/features/products/presentation/widgets/product_category_picker.dart';
 import 'package:dayaa/features/products/usecases/save_product.dart';
+import 'package:dayaa/features/stock_item_groups/presentation/widgets/stock_item_group_picker_sheet.dart';
+import 'package:dayaa/features/stock_items/presentation/widgets/stock_item_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -35,6 +37,19 @@ import 'package:go_router/go_router.dart';
 ///
 /// So the editor is a grid: thresholds along the top, sizes down the side, one price in each
 /// cell — the same shape the user will see on the card afterwards.
+///
+/// **One other field earns its place at the top: «المادة».** Naming what the product is cut from
+/// is the entire warehouse half of this screen — on save the server files each of the product's
+/// sizes onto that material's shelf at its own size, minting the shelf if the material has not
+/// reached that size yet. It replaced a per-size shelf picker that asked the same question four
+/// times and split a heap in two whenever one of the four answers was wrong. That picker still
+/// exists, folded away under the sizes, for the one bag in ten deliberately cut from a wider
+/// sheet — see [_ProductFormViewState._showShelves].
+///
+/// The storage-unit switch that used to sit here is **gone, not moved**. Two products at one size
+/// share one pile, so what that pile is counted in cannot belong to either of them; it lives on
+/// «الصنف المخزني» now, and changing it there empties the shelf through a recorded adjustment
+/// rather than relabelling a number that would then mean nothing.
 class ProductFormPage extends StatelessWidget {
   const ProductFormPage({this.product, super.key});
 
@@ -96,18 +111,29 @@ class _ProductFormViewState extends State<_ProductFormView> {
   String? _categoryError;
   late PricingUnit _unit = PricingUnit.fromWire(_editing?.pricingUnit);
 
-  /// What the warehouse will count this in, and whether anybody said it differs.
+  /// «المادة» — **the whole stock feature, from the user's side, is this one field.**
   ///
-  /// **Asked only when adding, and only when the switch is on.** The server defaults `stock_unit`
-  /// to whatever `pricing_unit` was sent, which is right for nine bags in ten — so the common
-  /// case stays a zero-extra-tap flow and [_stockUnit] is left null, omitting the key entirely.
-  /// A bag bought in by the kilo and sold by the piece is the exception the switch is for.
+  /// Naming the material once files every size of the product onto a shelf: on each save the
+  /// server takes each size without a shelf of its own and finds this material's «صنف مخزني» at
+  /// that size, minting it if the material has not reached that size yet. Before it existed,
+  /// somebody had to point four sizes at four piles by hand, and one wrong tap split a heap in
+  /// two with nothing to say it had happened.
   ///
-  /// Never shown while correcting: `PUT /products/{id}` carries no rule for it and ignores the
-  /// key, so a control here would silently do nothing. That correction is its own action on the
-  /// detail screen, behind `inventory.manage`.
-  bool _stocksInAnotherUnit = false;
-  late PricingUnit _stockUnit = _unit;
+  /// The id is what travels; the name is only ever drawn. Null omits the key on save, which on an
+  /// edit means «اترك المادة كما هي» — the server offers no way to clear it, deliberately.
+  late ({int id, String name})? _material = _seedMaterial();
+
+  /// Whether the per-size shelf pickers are unfolded.
+  ///
+  /// **Folded away by default, because almost nobody should ever open it.** Pointing a size at a
+  /// particular pile is the escape hatch — a 25*35 bag deliberately cut from a wider sheet — and
+  /// with a material named the server answers the question correctly without being asked. Opening
+  /// it unfolded would put four pickers on the screen to serve the tenth product.
+  ///
+  /// Seeded open for a product that already has hand-picked shelves and no material to explain
+  /// them: those links are the only record of a decision somebody took, and a form that hid them
+  /// would be hiding what it is about to send back.
+  late bool _showShelves;
 
   /// Priced by the piece with a published list, which is nine bags in ten.
   late bool _isQuoteOnly = _editing?.pricingMode == 'quote_on_request';
@@ -143,6 +169,7 @@ class _ProductFormViewState extends State<_ProductFormView> {
 
     if (existing.isEmpty) {
       _sizes.add(_SizeRow(columns: _breaks.length));
+      _showShelves = false;
 
       return;
     }
@@ -169,6 +196,26 @@ class _ProductFormViewState extends State<_ProductFormView> {
         ),
       );
     }
+
+    // Unfolded only for links that nothing else on the screen explains. With a material named,
+    // every one of these was the server's own doing and repeating it four times over would bury
+    // the one field that produced them; with no material, a shelf on a size is somebody's
+    // deliberate decision and hiding it would hide what the next save is about to send back.
+    _showShelves = _material == null && _sizes.any((size) => size.stockItemId != null);
+  }
+
+  /// The material recorded on the product being corrected, or null while one is being added.
+  ///
+  /// The name falls back rather than the whole field falling away: `stock_item_group` is eager
+  /// loaded on every product path the API has, but a response that somehow carried only the id
+  /// must still leave the field *filled*. An empty picker would read as «بلا مادة», and the next
+  /// save would omit the key — which happens to keep the material, but only by luck, and the
+  /// screen would have been lying about it the whole time.
+  ({int id, String name})? _seedMaterial() {
+    final id = _editing?.stockItemGroupId;
+    if (id == null) return null;
+
+    return (id: id, name: _editing?.stockItemGroup?.name ?? 'مادة محدّدة');
   }
 
   /// The columns, read off the product being corrected — from whichever size lists the most of
@@ -300,6 +347,87 @@ class _ProductFormViewState extends State<_ProductFormView> {
     });
   }
 
+  /// Chooses «المادة», and drops every hand-picked shelf when the answer changes.
+  ///
+  /// **The clearing is the point, not a side effect.** An explicit `stock_item_id` beats the
+  /// material on the server, every time — so a size still pointing at the old material's pile
+  /// would quietly ignore the material just chosen, and the field would be showing one answer
+  /// while the save made another. Naming a new material means «كل المقاسات تُقصّ من هذه» and
+  /// nothing else would be an honest reading of the tap.
+  ///
+  /// **Only when one material replaces another.** Re-picking the one already set must not throw
+  /// away an override added a moment ago, and naming a *first* material must not either: those
+  /// pins were made when there was no material to make them, so they are somebody's deliberate
+  /// record rather than a stale answer to this question. They stay, and the fold below is already
+  /// open on them — see [_showShelves] — so they can be dropped one at a time if that is meant.
+  Future<void> _pickMaterial() async {
+    FocusScope.of(context).unfocus();
+
+    final chosen = await showStockItemGroupPicker(context: context);
+    if (chosen == null || !mounted) return;
+
+    final current = _material;
+    final replaced = current != null && current.id != chosen.id;
+
+    setState(() {
+      _material = (id: chosen.id, name: chosen.name);
+
+      if (replaced) {
+        for (final size in _sizes) {
+          size.stockItemId = null;
+          size.shelfLabel = null;
+        }
+      }
+    });
+
+    context.read<SaveProductCubit>().clearFailure();
+  }
+
+  /// Points one size at a particular pile — the escape hatch, and nothing more.
+  ///
+  /// The size's own dimensions pre-narrow the picker, because the shelf wanted is almost always
+  /// the one at the same size. It narrows and does not constrain: a 25*35 bag can legitimately be
+  /// cut from a wider sheet, which is the entire reason this control exists at all.
+  Future<void> _pickShelf(int index) async {
+    FocusScope.of(context).unfocus();
+
+    final row = _sizes[index];
+    final chosen = await showStockItemPicker(
+      context: context,
+      widthCm: _dimensionOf(row.width.text),
+      heightCm: _dimensionOf(row.height.text),
+    );
+    if (chosen == null || !mounted) return;
+
+    setState(() {
+      row.stockItemId = chosen.id;
+      // The server's own composition, kept as sent. Rebuilding «كيس شحن 25*35» from the parts is
+      // exactly what `display_name` exists to stop.
+      row.shelfLabel = chosen.displayName;
+    });
+
+    context.read<SaveProductCubit>().clearFailure();
+  }
+
+  /// Hands one size back to the material.
+  ///
+  /// Not «حذف الربط» in the sense of leaving it with nothing: the key is simply omitted, and the
+  /// server re-resolves it from the material on the next save. A product with no material is the
+  /// one case where this really does mean «بلا صنف», and the row says so.
+  void _clearShelf(int index) {
+    setState(() {
+      _sizes[index].stockItemId = null;
+      _sizes[index].shelfLabel = null;
+    });
+  }
+
+  /// `٢٥` from a Libyan keyboard, as an `int` the picker can filter on.
+  ///
+  /// Null for anything that is not a whole number — the field is optional and half-typed most of
+  /// the time it is read, and a picker that narrowed on a partial width would hide the row wanted.
+  static int? _dimensionOf(String input) =>
+      int.tryParse(Validators.toWesternDigits(input.trim()));
+
   void _submit() {
     // Dismissed first so the button the user just pressed is not hidden behind the keyboard
     // while the request runs.
@@ -336,11 +464,11 @@ class _ProductFormViewState extends State<_ProductFormView> {
       name: _name.text,
       // Non-null by the guard above: nothing reaches here without a heading picked.
       productCategoryId: _productCategoryId!,
+      // Omitted while null, which on an edit keeps whatever material the product has: the API
+      // offers no way to clear one, because clearing would detach every size from its pile on
+      // this very save.
+      stockItemGroupId: _material?.id,
       pricingUnit: _unit.wire,
-      // Omitted unless somebody said the shelf counts this in something else — the server
-      // defaults it to `pricing_unit`, and repeating that here is the first place the two
-      // could drift. Ignored on an update anyway: the API has no rule for it there.
-      stockUnit: _stocksInAnotherUnit ? _stockUnit.wire : null,
       pricingMode: _isQuoteOnly ? 'quote_on_request' : 'tiered',
       minOrderQuantity: _minimum.text,
       variants: [
@@ -348,6 +476,11 @@ class _ProductFormViewState extends State<_ProductFormView> {
           DraftVariant(
             // The existing row's id, so the server corrects this size rather than replacing it.
             id: size.id,
+            // **Sent whether or not the shelf pickers are on screen.** The server re-resolves
+            // every size's shelf from this body, so a link folded away behind «متقدّم» and left
+            // out here would be gone after a save that only touched a price — and nothing would
+            // say so until an order was refused at «جاهزة».
+            stockItemId: size.stockItemId,
             label: size.label.text,
             widthCm: size.width.text,
             heightCm: size.height.text,
@@ -401,6 +534,14 @@ class _ProductFormViewState extends State<_ProductFormView> {
                 _leave(context);
 
               case SaveProductFailure(:final failure):
+                // A complaint about a size's shelf is painted beside that size — but the pickers
+                // are folded away by default, so the message would land on a control nobody can
+                // see. Unfolding here is what keeps `stock_item_id` honestly listed as a key the
+                // form renders.
+                if (hasVariantStockItemError(failure) && !_showShelves) {
+                  setState(() => _showShelves = true);
+                }
+
                 // Only what the form has nowhere to paint. Everything else is already under
                 // its own field, and saying it twice is worse than saying it once.
                 if (state.hasUnrenderedErrors) context.showFailure(failure);
@@ -465,6 +606,23 @@ class _ProductFormViewState extends State<_ProductFormView> {
                           _categoryError = null;
                         }),
                       ),
+                      SizedBox(height: 16.h),
+
+                      // **The one field that files this product's sizes onto shelves**, and the
+                      // whole of this change from the user's side. It sits with the product's
+                      // identity rather than with the sizes because it is answered once for the
+                      // product, however many sizes it grows later — see [_material].
+                      //
+                      // Deliberately not gated on `inventory.view`: this is a field on
+                      // `POST|PUT /products`, guarded by `products.manage` like everything else
+                      // on this form, and hiding it from whoever fills the catalogue in would
+                      // hide the feature from exactly the people it was built for. A reader who
+                      // may not browse materials gets the server's own Arabic inside the sheet.
+                      _MaterialField(
+                        material: _material,
+                        errorText: state.materialError,
+                        onTap: _pickMaterial,
+                      ),
                       SizedBox(height: 12.h),
 
                       _ChoiceRow<PricingUnit>(
@@ -472,44 +630,13 @@ class _ProductFormViewState extends State<_ProductFormView> {
                         values: PricingUnit.choices,
                         selected: _unit,
                         labelOf: (value) => value.label,
-                        onSelected: (value) => setState(() {
-                          _unit = value;
-                          // Mirrors, so long as nobody has said the two differ. Changing the
-                          // selling unit on a form where the storage picker is hidden must not
-                          // leave a stale storage unit behind it.
-                          if (!_stocksInAnotherUnit) _stockUnit = value;
-                        }),
+                        // **Only what the customer is charged by.** What the shelf is counted in
+                        // is no longer a product's business at all: two products at one size share
+                        // one pile and cannot be allowed to disagree about how it is counted, so
+                        // the unit lives on «الصنف المخزني» and is changed from its own screen —
+                        // where doing so empties the shelf through a recorded adjustment.
+                        onSelected: (value) => setState(() => _unit = value),
                       ),
-                      SizedBox(height: 4.h),
-
-                      // Only while adding — see [_stocksInAnotherUnit].
-                      if (_needsImage) ...[
-                        SwitchListTile.adaptive(
-                          value: _stocksInAnotherUnit,
-                          onChanged: (value) => setState(() {
-                            _stocksInAnotherUnit = value;
-                            // Back to mirroring when switched off, so turning it on again opens
-                            // on the selling unit rather than on an abandoned answer.
-                            if (!value) _stockUnit = _unit;
-                          }),
-                          title: const Text('وحدة المخزون تختلف عن وحدة البيع'),
-                          subtitle: const Text(
-                            'مثل كيس يُشترى بالكيلوغرام ويُباع بالقطعة',
-                          ),
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        if (_stocksInAnotherUnit) ...[
-                          SizedBox(height: 4.h),
-                          _ChoiceRow<PricingUnit>(
-                            label: 'وحدة المخزون',
-                            values: PricingUnit.choices,
-                            selected: _stockUnit,
-                            labelOf: (value) => value.label,
-                            onSelected: (value) =>
-                                setState(() => _stockUnit = value),
-                          ),
-                        ],
-                      ],
                       SizedBox(height: 16.h),
 
                       AppTextField(
@@ -523,10 +650,9 @@ class _ProductFormViewState extends State<_ProductFormView> {
                         // Whole pieces, but a weight can be fractional — the API draws the same
                         // line and this asks earlier so the user is not told by a round trip.
                         //
-                        // **[_unit] and never [_stockUnit].** A minimum order is what the
-                        // customer buys, so it is governed by the selling unit; the server splits
-                        // it the same way, and a per-kilo *shelf* does not make a per-piece bag
-                        // orderable by the half.
+                        // **The selling unit and never the shelf's.** A minimum order is what the
+                        // customer buys; the server splits it the same way, and a pile counted by
+                        // the kilo does not make a per-piece bag orderable by the half.
                         validator: _unit == PricingUnit.piece
                             ? Validators.integer(allowZero: false)
                             : Validators.decimal(allowZero: false),
@@ -579,6 +705,21 @@ class _ProductFormViewState extends State<_ProductFormView> {
                         SizedBox(height: 12.h),
                       ],
 
+                      // Above what it unfolds, not below it: a control that reveals rows further
+                      // up the page is one people tap twice looking for what it did.
+                      _ShelfDisclosure(
+                        isOpen: _showShelves,
+                        // Counted rather than merely hidden: a fold that says nothing about what
+                        // is inside it is a fold somebody stops opening, and these links are the
+                        // only record of a decision the material did not make.
+                        pinnedCount: _sizes
+                            .where((size) => size.stockItemId != null)
+                            .length,
+                        onToggle: () =>
+                            setState(() => _showShelves = !_showShelves),
+                      ),
+                      SizedBox(height: 8.h),
+
                       for (var index = 0; index < _sizes.length; index++) ...[
                         _SizeCard(
                           // Keyed by the row object, not by its index: removing the second of
@@ -588,9 +729,15 @@ class _ProductFormViewState extends State<_ProductFormView> {
                           row: _sizes[index],
                           ordinal: index + 1,
                           showPrices: _hasPrices,
+                          // Folded away for almost everybody — see [_showShelves].
+                          showShelf: _showShelves,
+                          hasMaterial: _material != null,
                           labelError: state.variantLabelError(index),
+                          shelfError: state.variantStockItemError(index),
                           priceErrorOf: (column) =>
                               state.priceError(index, column),
+                          onPickShelf: () => _pickShelf(index),
+                          onClearShelf: () => _clearShelf(index),
                           onRemove: _sizes.length <= 1
                               ? null
                               : () => _removeSize(index),
@@ -709,14 +856,20 @@ class _BreakHeader extends StatelessWidget {
   }
 }
 
-/// One size: its name, its dimensions, and one price per threshold.
+/// One size: its name, its dimensions, one price per threshold — and, when unfolded, the pile it
+/// draws from.
 class _SizeCard extends StatelessWidget {
   const _SizeCard({
     required this.row,
     required this.ordinal,
     required this.showPrices,
+    required this.showShelf,
+    required this.hasMaterial,
     required this.labelError,
+    required this.shelfError,
     required this.priceErrorOf,
+    required this.onPickShelf,
+    required this.onClearShelf,
     required this.onRemove,
     required this.onChanged,
     super.key,
@@ -725,8 +878,21 @@ class _SizeCard extends StatelessWidget {
   final _SizeRow row;
   final int ordinal;
   final bool showPrices;
+
+  /// Whether the shelf row is unfolded. It is drawn only then — but what it holds is sent on
+  /// every save regardless, which is the only reason folding it away is safe.
+  final bool showShelf;
+
+  /// Whether the product names a material. It decides what an *empty* shelf row means: with one,
+  /// «يُحدَّد من المادة عند الحفظ»; without, «بلا صنف مخزني», which is a real limitation worth
+  /// saying rather than a blank.
+  final bool hasMaterial;
+
   final String? labelError;
+  final String? shelfError;
   final String? Function(int column) priceErrorOf;
+  final VoidCallback onPickShelf;
+  final VoidCallback onClearShelf;
   final VoidCallback? onRemove;
   final VoidCallback onChanged;
 
@@ -787,6 +953,16 @@ class _SizeCard extends StatelessWidget {
               ),
             ],
           ),
+          if (showShelf) ...[
+            SizedBox(height: 10.h),
+            _ShelfRow(
+              label: row.shelfLabel,
+              hasMaterial: hasMaterial,
+              errorText: shelfError,
+              onPick: onPickShelf,
+              onClear: row.stockItemId == null ? null : onClearShelf,
+            ),
+          ],
           if (showPrices) ...[
             SizedBox(height: 12.h),
             Wrap(
@@ -817,6 +993,268 @@ class _SizeCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// «المادة» — one tap, and every size of the product is filed onto a shelf.
+///
+/// Full width and shaped like the photo picker beside it, because it is the same kind of control:
+/// a field whose value comes from a sheet rather than a keyboard. The line underneath is not
+/// decoration — it is the only place the screen can say what the tap actually did, since the
+/// filing happens on the server at save time and produces nothing visible here.
+///
+/// There is no way to clear it once set, and that is the API's rule rather than an omission: a
+/// product's material cannot be removed through `PUT /products`, because doing so would detach
+/// every one of its sizes from its pile on that very save. Choosing a *different* material is the
+/// available move, and the caller drops the per-size overrides when it happens.
+class _MaterialField extends StatelessWidget {
+  const _MaterialField({required this.material, required this.onTap, this.errorText});
+
+  final ({int id, String name})? material;
+  final VoidCallback onTap;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final chosen = material;
+    final isSet = chosen != null;
+    final invalid = errorText != null;
+    final corner = BorderRadius.circular(12.r);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: corner,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+            decoration: BoxDecoration(
+              borderRadius: corner,
+              // Filled once a material is named, empty and outlined until then — the same way
+              // the photo picker above says «مطلوبة» before it says a filename. The tinted state
+              // is what makes «هذا المنتج له مادة» readable without stopping to read.
+              color: isSet ? scheme.primaryContainer : null,
+              border: isSet && !invalid
+                  ? null
+                  : Border.all(
+                      color: invalid ? scheme.error : scheme.outlineVariant,
+                      width: invalid ? 1.4 : 1,
+                    ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  AppIcons.warehouse,
+                  size: 22.sp,
+                  color: isSet ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'المادة',
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: isSet
+                              ? scheme.onPrimaryContainer.withValues(alpha: 0.8)
+                              : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        chosen?.name ?? 'اختر المادة — اضغط للاختيار',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: isSet ? scheme.onPrimaryContainer : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  AppIcons.forward,
+                  size: 18.sp,
+                  color: isSet ? scheme.onPrimaryContainer : scheme.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: 6.h),
+        Padding(
+          // Lines up with the text inside the box rather than with its border, so the sentence
+          // sits under the thing it is about.
+          padding: EdgeInsetsDirectional.only(start: 14.w),
+          child: Text(
+            errorText ??
+                (isSet
+                    ? 'كل مقاس يُربط تلقائياً بصنف هذه المادة عند مقاسه، ويُنشأ الصنف إن لم '
+                          'يكن موجوداً.'
+                    : 'اختياري — بدونها لن تُربط المقاسات بأي صنف مخزني، ولا يمكن تسجيل '
+                          'حركة مخزون عليها.'),
+            style: context.textTheme.bodySmall?.copyWith(
+              color: invalid ? scheme.error : scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The way in and out of the per-size shelf pickers.
+///
+/// **A fold, not a switch.** Nothing here is saved: closing it changes no value and the links
+/// inside travel with every save either way. A switch would say otherwise, and somebody would
+/// close it believing they had detached something.
+class _ShelfDisclosure extends StatelessWidget {
+  const _ShelfDisclosure({
+    required this.isOpen,
+    required this.pinnedCount,
+    required this.onToggle,
+  });
+
+  final bool isOpen;
+
+  /// How many sizes are pointed at a pile by hand. Named on the closed row so the fold never
+  /// hides the fact that something is inside it.
+  final int pinnedCount;
+
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    final label = switch ((isOpen, pinnedCount)) {
+      (true, _) => 'إخفاء ربط المقاسات بالأصناف',
+      (false, 0) => 'ربط كل مقاس بصنف مخزني بعينه',
+      (false, final count) => '$count مقاس مربوط بصنف بعينه — عرض',
+    };
+
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: TextButton.icon(
+        onPressed: onToggle,
+        icon: Icon(isOpen ? AppIcons.close : AppIcons.warehouse, size: 18.sp),
+        label: Text(
+          label,
+          style: context.textTheme.labelLarge?.copyWith(color: scheme.primary),
+        ),
+      ),
+    );
+  }
+}
+
+/// Which pile one size draws from — the escape hatch, drawn only when the fold is open.
+///
+/// The empty state says two different things because it *is* two different things: with a
+/// material named the server will fill this in on save, and saying «بلا صنف» would be wrong; with
+/// no material it will stay empty, and every stock movement against this size will be refused by
+/// name. A single neutral placeholder would be false in one of the two cases.
+class _ShelfRow extends StatelessWidget {
+  const _ShelfRow({
+    required this.label,
+    required this.hasMaterial,
+    required this.onPick,
+    required this.onClear,
+    this.errorText,
+  });
+
+  final String? label;
+  final bool hasMaterial;
+  final VoidCallback onPick;
+
+  /// Null while nothing is pinned — there is no link to hand back to the material.
+  final VoidCallback? onClear;
+
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final invalid = errorText != null;
+    final corner = BorderRadius.circular(12.r);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: onPick,
+          borderRadius: corner,
+          child: Container(
+            padding: EdgeInsetsDirectional.fromSTEB(12.w, 10.h, 4.w, 10.h),
+            decoration: BoxDecoration(
+              borderRadius: corner,
+              color: scheme.surfaceContainerHigh.withValues(alpha: 0.45),
+              border: invalid ? Border.all(color: scheme.error) : null,
+            ),
+            child: Row(
+              children: [
+                Icon(AppIcons.warehouse, size: 18.sp, color: scheme.onSurfaceVariant),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'الصنف المخزني',
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        // The server's own composition when there is one — «كيس شحن 25*35», one
+                        // `*` and no spaces — never rebuilt from the size's own fields.
+                        label ??
+                            (hasMaterial
+                                ? 'يُحدَّد من المادة عند الحفظ'
+                                : 'بلا صنف مخزني — لا حركة مخزون على هذا المقاس'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          fontWeight: label == null ? FontWeight.w400 : FontWeight.w700,
+                          color: label == null ? scheme.onSurfaceVariant : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (onClear != null)
+                  IconButton(
+                    onPressed: onClear,
+                    icon: Icon(AppIcons.clear, size: 16.sp),
+                    // «إعادة إلى المادة», not «حذف»: the key is omitted and the server resolves
+                    // the size again from the product's material on the next save.
+                    tooltip: 'إلغاء التحديد',
+                    visualDensity: VisualDensity.compact,
+                  )
+                else
+                  SizedBox(width: 8.w),
+              ],
+            ),
+          ),
+        ),
+        if (invalid) ...[
+          SizedBox(height: 4.h),
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: 12.w),
+            child: Text(
+              errorText!,
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -859,14 +1297,29 @@ class _SizeRow {
   /// It carries its **id**, and that is the load-bearing part: the server matches sizes by id
   /// and removes any it is not sent, so a row that lost its id on the way through this screen
   /// would be deleted and recreated — taking the order lines that point at it with it.
+  ///
+  /// It carries its **shelf** for the same kind of reason, one step further on: the server
+  /// re-resolves every size's `stock_item_id` from the body of each save, so a link this screen
+  /// merely displayed and did not send back is a link that no longer exists afterwards.
   _SizeRow.from({required ProductVariant variant, required List<String> prices})
     : id = variant.id,
+      stockItemId = variant.stockItemId,
+      shelfLabel = variant.shelfLabel,
       prices = [for (final price in prices) TextEditingController(text: price)],
       label = TextEditingController(text: variant.label),
       width = TextEditingController(text: variant.widthCm?.toString() ?? ''),
       height = TextEditingController(text: variant.heightCm?.toString() ?? '');
 
   final int? id;
+
+  /// The pile this size draws from — round-tripped untouched unless somebody re-points it here.
+  /// Null means «اترك المادة تقرر», which is the answer for almost every size.
+  int? stockItemId;
+
+  /// «كيس شحن 25*35» as the **server** composed it, kept only to draw. Cleared together with
+  /// [stockItemId], never independently: a name with no id behind it would show a link that the
+  /// save is not going to make.
+  String? shelfLabel;
 
   final TextEditingController label;
   final TextEditingController width;

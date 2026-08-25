@@ -8,12 +8,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Which size is being moved.
+/// Which product size is being priced.
 ///
-/// **Stock is held per size, not per product**, so the picker has to reach one — «أكياس شحن» is
-/// not a thing that sits on a shelf, «أكياس شحن · 25*35» is. It is one sheet rather than two
-/// screens: the catalogue is already searchable and each product carries its sizes, so tapping
-/// a product opens its sizes underneath it and tapping a size answers.
+/// **It no longer picks a shelf, and it lives here only because it was born here.** Stock used to
+/// be held per product size, so recording a movement started by walking the catalogue; a shelf is
+/// now a صنف مخزني that several products draw on, and `showStockItemPicker` in
+/// `features/stock_items` is what the recording sheet asks with. What is left of this one is the
+/// question a *cost rate* asks — «كم تكلفة طباعة هذا المقاس؟» — which is genuinely per product
+/// size, because printing is what distinguishes two catalogue rows that share one pile.
+///
+/// Its one caller is `features/manufacturing_cost_rates`. **Move it there when that feature is
+/// next opened**; it stayed put in this change only because moving a file two features touch is
+/// not something to do in the same commit as a contract swap.
+///
+/// One sheet rather than two screens: the catalogue is already searchable and each product
+/// carries its sizes, so tapping a product opens its sizes underneath it and tapping a size
+/// answers.
 ///
 /// It borrows [ProductsCubit] whole. The catalogue list, its search debounce and its paging are
 /// the same here as on the products tab, and a second implementation of them would be a second
@@ -126,9 +136,7 @@ class _ProductRow extends StatelessWidget {
             style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           subtitle: Text(
-            variants.isEmpty
-                ? 'لا مقاسات مفعّلة'
-                : '${product.code} · ${variants.length} مقاس',
+            variants.isEmpty ? 'لا مقاسات مفعّلة' : '${product.code} · ${variants.length} مقاس',
             style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ),
@@ -145,9 +153,7 @@ class _ProductRow extends StatelessWidget {
                     onPressed: () => onPick(variant),
                     backgroundColor: scheme.surfaceContainerHighest,
                     side: BorderSide(color: scheme.outlineVariant),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
                   ),
               ],
             ),

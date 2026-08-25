@@ -59,8 +59,6 @@ void main() {
     name: 'كيس شحن',
     pricingUnit: 'piece',
     pricingUnitLabel: 'قطعة',
-    stockUnit: 'piece',
-    stockUnitLabel: 'قطعة',
     pricingMode: 'listed',
     pricingModeLabel: 'سعر معلن',
     hasListedPrices: true,

@@ -4,7 +4,14 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'warehouse_stock.freezed.dart';
 part 'warehouse_stock.g.dart';
 
-/// One shelf: how much of one size sits in one warehouse.
+/// One shelf: how much of one **صنف مخزني** sits in one warehouse.
+///
+/// **A shelf holds a material at a size, not a product's size.** «كيس شحن سادة 25*35» and «كيس شحن
+/// مطبوع 25*35» are two catalogue rows and one pile of bags — what separates them is printing,
+/// which is a cost rate rather than a different material — so both draw on this one row. Before
+/// that was true each kept a private balance over stock bought once, and an order for 300 of one
+/// and 400 of the other passed two checks against two shelves of 500, then came up short on the
+/// floor.
 ///
 /// **The quantity is a `String`.** It is a decimal the server sent — `'250.000'` — and parsing
 /// it into a `double` to hold it is the first step towards arithmetic this app has no business
@@ -15,13 +22,15 @@ abstract class WarehouseStock with _$WarehouseStock {
   const factory WarehouseStock({
     required int id,
     @JsonKey(name: 'warehouse_id') required int warehouseId,
-    @JsonKey(name: 'product_variant_id') required int productVariantId,
+    @JsonKey(name: 'stock_item_id') required int stockItemId,
 
     required String quantity,
 
     /// What this balance is counted in, snapshotted when the shelf was first stocked and never
-    /// re-derived — so a product whose pricing unit changes later cannot silently restate a
-    /// balance that was counted the old way.
+    /// re-derived — so a unit chosen for the item later cannot silently restate a number that
+    /// was counted the old way. Re-declaring the item's unit does not relabel this either: the
+    /// server empties every shelf through a recorded adjustment first, and the shelf comes back
+    /// at zero in the new unit.
     required String unit,
 
     /// The server's Arabic for [unit], kept as a label rather than a translation table here —
@@ -35,7 +44,7 @@ abstract class WarehouseStock with _$WarehouseStock {
     /// alert", which is not the same as a threshold of zero.
     @JsonKey(name: 'is_low_stock') @Default(false) bool isLowStock,
 
-    @JsonKey(name: 'product_variant') StockVariant? variant,
+    @JsonKey(name: 'stock_item') StockItemRef? item,
 
     @JsonKey(name: 'created_at') DateTime? createdAt,
     @JsonKey(name: 'updated_at') DateTime? updatedAt,
@@ -73,32 +82,75 @@ abstract class WarehouseStock with _$WarehouseStock {
   /// what prefills «حد التنبيه» in the sheet. Whoever draws it groups it there.
   String? get thresholdLabel => lowStockThreshold == null ? null : trimDecimals(lowStockThreshold!);
 
-  /// «25*35» — the size alone, for a line drawn under a heading that already named the bag.
-  String get sizeLabel => variant?.label ?? 'مقاس #$productVariantId';
+  /// «كيس شحن 25*35» — the server's own composition, drawn as sent.
+  ///
+  /// **Never rebuilt from [StockItemRef.name] and the two dimensions here.** The shortfall an
+  /// order is refused with quotes this exact string, and a second implementation in Dart would
+  /// drift from it — the first screen to notice would be one comparing a refusal to a list.
+  String get title => item?.displayName ?? 'صنف #$stockItemId';
 
-  /// «أكياس شحن · 25*35», or just the size when the row came without its product.
-  String get title => variant == null ? sizeLabel : '${variant!.productName} · ${variant!.label}';
+  /// `S7` — what a storekeeper reads down a phone line, and **what replaced the thumbnail** on
+  /// this row. Null only for a payload that arrived without its item.
+  String? get code => item?.code;
+
+  /// «25*35» — the size alone, for a line drawn under a heading that already named the material.
+  ///
+  /// Falls back to the whole [title] for a shelf counted without dimensions: there is no size to
+  /// show there, and a blank line under a heading says less than a repeated name.
+  String get sizeLabel => item?.sizeLabel ?? title;
+
+  /// The material this shelf is a size of — what several shelves of one thing have in common,
+  /// and therefore what groups them on the screen. The whole [title] when the item did not
+  /// arrive, so an ungrouped line still stands under something it is named after.
+  String get materialName => item?.name ?? title;
 }
 
-/// The size a balance line is about, flattened by the server because it is only ever met here.
+/// The shelf's own identity on a balance line: the material, the size, and the code that names
+/// the pile. Six fields, flattened by the server because they are only ever met here.
+///
+/// **No product, deliberately** — the server's own comment on the resource, and the whole point
+/// of the change. «كيس شحن سادة» and «كيس شحن مطبوع» both draw on this row, so naming or
+/// picturing either of them here would be picking one arbitrarily and telling the storekeeper the
+/// wrong thing. That is why this shape carries no `product_name`, no `product_id` and no
+/// `image_url` — and why the row that used to lead with a photograph now leads with [code].
+///
+/// **`StockItemRef`, not `StockItem`.** `features/stock_items` owns the full model and this is
+/// not it: that one requires `unit`, `unit_label`, `is_active` and `sort_order`, none of which
+/// the server nests here, so parsing this six-key object with it would throw on the first shelf.
+/// Naming the two apart also lets one file import both, which the recording sheet does — the
+/// same reason `StockItemGroupRef` exists beside `StockItemGroup`.
+///
+/// **No unit here either**, and that is not an omission: the unit lives on the balance line
+/// above, where it was snapshotted when the shelf was first stocked. Reading it off the item
+/// would restate an old count in a new unit.
 @freezed
-abstract class StockVariant with _$StockVariant {
-  const factory StockVariant({
+abstract class StockItemRef with _$StockItemRef {
+  const factory StockItemRef({
     required int id,
-    required String label,
-    @JsonKey(name: 'product_id') required int productId,
 
-    /// `P7` — what staff say out loud, and the one thing on a shelf row safe to read down a
-    /// phone line. Nullable for a payload minted before the server started sending it.
-    @JsonKey(name: 'product_code') String? productCode,
+    /// `S7` — server-allocated, never settable.
+    required String code,
 
-    @JsonKey(name: 'product_name') required String productName,
+    /// The material's name, without the size. [displayName] is what gets drawn.
+    required String name,
 
-    /// The product's own photograph — there are none at size level, so every size of «أكياس
-    /// الشحن» shares one. Null for a product nobody has photographed, and for a payload minted
-    /// before the server started sending it.
-    @JsonKey(name: 'image_url') String? imageUrl,
-  }) = _StockVariant;
+    /// Null for something counted without dimensions — a roll, an ink. The two travel together:
+    /// the server refuses a width with no height.
+    @JsonKey(name: 'width_cm') int? widthCm,
+    @JsonKey(name: 'height_cm') int? heightCm,
 
-  factory StockVariant.fromJson(Map<String, dynamic> json) => _$StockVariantFromJson(json);
+    /// «كيس شحن 25*35», composed server-side. Rendered as sent, never rebuilt.
+    @JsonKey(name: 'display_name') required String displayName,
+  }) = _StockItemRef;
+
+  const StockItemRef._();
+
+  factory StockItemRef.fromJson(Map<String, dynamic> json) => _$StockItemRefFromJson(json);
+
+  bool get hasSize => widthCm != null && heightCm != null;
+
+  /// «25*35» — the same separator the server composes [displayName] with, so the two read as one
+  /// fact when a card puts the material above and the size below. Null for an unsized item,
+  /// which has nothing to say here.
+  String? get sizeLabel => hasSize ? '$widthCm*$heightCm' : null;
 }

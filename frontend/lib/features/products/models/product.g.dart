@@ -21,10 +21,14 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
           json['product_category'] as Map<String, dynamic>,
         ),
   productCategoryId: (json['product_category_id'] as num?)?.toInt(),
+  stockItemGroupId: (json['stock_item_group_id'] as num?)?.toInt(),
+  stockItemGroup: json['stock_item_group'] == null
+      ? null
+      : ProductMaterial.fromJson(
+          json['stock_item_group'] as Map<String, dynamic>,
+        ),
   pricingUnit: json['pricing_unit'] as String,
   pricingUnitLabel: json['pricing_unit_label'] as String,
-  stockUnit: json['stock_unit'] as String,
-  stockUnitLabel: json['stock_unit_label'] as String,
   pricingMode: json['pricing_mode'] as String,
   pricingModeLabel: json['pricing_mode_label'] as String,
   hasListedPrices: json['has_listed_prices'] as bool? ?? false,
@@ -58,10 +62,10 @@ Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
   'features': instance.features,
   'product_category': instance.productCategory?.toJson(),
   'product_category_id': instance.productCategoryId,
+  'stock_item_group_id': instance.stockItemGroupId,
+  'stock_item_group': instance.stockItemGroup?.toJson(),
   'pricing_unit': instance.pricingUnit,
   'pricing_unit_label': instance.pricingUnitLabel,
-  'stock_unit': instance.stockUnit,
-  'stock_unit_label': instance.stockUnitLabel,
   'pricing_mode': instance.pricingMode,
   'pricing_mode_label': instance.pricingModeLabel,
   'has_listed_prices': instance.hasListedPrices,
@@ -82,6 +86,12 @@ _ProductVariant _$ProductVariantFromJson(Map<String, dynamic> json) =>
       heightCm: (json['height_cm'] as num?)?.toInt(),
       isActive: json['is_active'] as bool? ?? true,
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
+      stockItemId: (json['stock_item_id'] as num?)?.toInt(),
+      stockItem: json['stock_item'] == null
+          ? null
+          : VariantStockItem.fromJson(
+              json['stock_item'] as Map<String, dynamic>,
+            ),
       priceTiers:
           (json['price_tiers'] as List<dynamic>?)
               ?.map((e) => ProductPriceTier.fromJson(e as Map<String, dynamic>))
@@ -97,7 +107,51 @@ Map<String, dynamic> _$ProductVariantToJson(_ProductVariant instance) =>
       'height_cm': instance.heightCm,
       'is_active': instance.isActive,
       'sort_order': instance.sortOrder,
+      'stock_item_id': instance.stockItemId,
+      'stock_item': instance.stockItem?.toJson(),
       'price_tiers': instance.priceTiers.map((e) => e.toJson()).toList(),
+    };
+
+_ProductMaterial _$ProductMaterialFromJson(Map<String, dynamic> json) =>
+    _ProductMaterial(
+      id: (json['id'] as num).toInt(),
+      code: json['code'] as String,
+      name: json['name'] as String,
+      defaultUnit: json['default_unit'] as String,
+      defaultUnitLabel: json['default_unit_label'] as String,
+    );
+
+Map<String, dynamic> _$ProductMaterialToJson(_ProductMaterial instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'code': instance.code,
+      'name': instance.name,
+      'default_unit': instance.defaultUnit,
+      'default_unit_label': instance.defaultUnitLabel,
+    };
+
+_VariantStockItem _$VariantStockItemFromJson(Map<String, dynamic> json) =>
+    _VariantStockItem(
+      id: (json['id'] as num).toInt(),
+      code: json['code'] as String,
+      name: json['name'] as String,
+      widthCm: (json['width_cm'] as num?)?.toInt(),
+      heightCm: (json['height_cm'] as num?)?.toInt(),
+      displayName: json['display_name'] as String,
+      unit: json['unit'] as String,
+      unitLabel: json['unit_label'] as String,
+    );
+
+Map<String, dynamic> _$VariantStockItemToJson(_VariantStockItem instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'code': instance.code,
+      'name': instance.name,
+      'width_cm': instance.widthCm,
+      'height_cm': instance.heightCm,
+      'display_name': instance.displayName,
+      'unit': instance.unit,
+      'unit_label': instance.unitLabel,
     };
 
 _ProductPriceTier _$ProductPriceTierFromJson(Map<String, dynamic> json) =>

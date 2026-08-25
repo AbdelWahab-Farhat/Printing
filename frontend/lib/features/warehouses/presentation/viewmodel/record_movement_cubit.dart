@@ -22,7 +22,7 @@ class RecordMovementCubit extends Cubit<RecordMovementState> {
 
   Future<void> submit({
     required MovementKind kind,
-    required int productVariantId,
+    required int stockItemId,
     required int warehouseId,
     int? fromWarehouseId,
     required String quantity,
@@ -34,7 +34,7 @@ class RecordMovementCubit extends Cubit<RecordMovementState> {
 
     final result = await _recordMovement(
       kind: kind,
-      productVariantId: productVariantId,
+      stockItemId: stockItemId,
       warehouseId: warehouseId,
       fromWarehouseId: fromWarehouseId,
       quantity: quantity,
