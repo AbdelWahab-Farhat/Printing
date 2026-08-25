@@ -27,7 +27,15 @@ class UpdateProductRequest extends StoreProductRequest
     public function rules(): array
     {
         return [
-            'slug' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9-]+$/', $this->slugUniqueAmongOtherProducts()],
+            // **Optional, exactly as on creating.** The app stopped collecting a slug once the
+            // server started generating them, so an edit sends no `slug` key at all — `required`
+            // here made every save from the product form a 422 saying «المعرف مطلوب» about a
+            // field the screen does not have. Absent means "leave the existing one alone", which
+            // {@see \App\Domain\Catalog\Actions\UpdateProduct} already implements.
+            //
+            // Still fully validated when it *is* sent, and still unique among the other
+            // products: optional is not the same as unchecked.
+            'slug' => ['sometimes', 'nullable', 'string', 'max:80', 'regex:/^[a-z0-9-]+$/', $this->slugUniqueAmongOtherProducts()],
             'name' => ['required', 'string', 'min:2', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'features' => ['nullable', 'array', 'max:12'],

@@ -48,7 +48,7 @@ class CustomerTest extends TestCase
 
     /**
      * Empties the table and rewinds the id sequence, so a test can assert on the very first
-     * code (C1) rather than on whatever number the sequence happens to be at.
+     * code (A1) rather than on whatever number the sequence happens to be at.
      */
     private function resetCustomerSequence(): void
     {
@@ -81,7 +81,7 @@ class CustomerTest extends TestCase
 
     // ─────────────────────────── customer code ───────────────────────────
 
-    public function test_the_first_customer_gets_the_code_c1(): void
+    public function test_the_first_customer_gets_the_code_a1(): void
     {
         // Arrange
         $this->resetCustomerSequence();
@@ -92,11 +92,11 @@ class CustomerTest extends TestCase
 
         // Assert
         $response->assertCreated()
-            ->assertJsonPath('data.code', 'C1')
+            ->assertJsonPath('data.code', 'A1')
             ->assertJsonPath('data.id', 1);
     }
 
-    public function test_codes_increment_c1_c2_c3_in_order(): void
+    public function test_codes_increment_a1_a2_a3_in_order(): void
     {
         // Arrange
         $this->resetCustomerSequence();
@@ -115,7 +115,7 @@ class CustomerTest extends TestCase
         }
 
         // Assert
-        $this->assertSame(['C1', 'C2', 'C3'], $codes);
+        $this->assertSame(['A1', 'A2', 'A3'], $codes);
     }
 
     public function test_the_code_always_matches_the_id(): void
@@ -128,7 +128,7 @@ class CustomerTest extends TestCase
 
         // Assert
         $response->assertCreated();
-        $this->assertSame('C'.$response->json('data.id'), $response->json('data.code'));
+        $this->assertSame('A'.$response->json('data.id'), $response->json('data.code'));
     }
 
     public function test_a_client_cannot_choose_its_own_code_or_id(): void

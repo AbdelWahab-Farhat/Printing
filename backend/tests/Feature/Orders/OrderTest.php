@@ -172,7 +172,7 @@ class OrderTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload());
 
-        // Assert — asked for outright: no C1/P1-style prefix to spell out on the phone.
+        // Assert — asked for outright: no A1/P1-style prefix to spell out on the phone.
         $code = $response->json('data.code');
         $this->assertMatchesRegularExpression('/^\d+$/', (string) $code);
         $this->assertSame((string) $response->json('data.id'), (string) $code);

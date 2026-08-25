@@ -572,6 +572,32 @@ class ProductTest extends TestCase
         $response->assertOk()->assertJsonPath('data.slug', 'shipping-bag');
     }
 
+    /**
+     * **The product form has no slug box.** It stopped collecting one when the server began
+     * generating them, so every edit the app sends arrives with no `slug` key at all — and for a
+     * while `required` on the update rule turned each of those saves into a 422 reading «المعرف
+     * مطلوب», about a field nobody could see, let alone fill.
+     *
+     * Absent means "leave it": the existing slug is what links already point at.
+     */
+    public function test_update_without_a_slug_keeps_the_existing_one(): void
+    {
+        // Arrange
+        $product = Product::factory()->create(['slug' => 'shipping-bag', 'name' => 'قديم']);
+        $headers = $this->auth();
+
+        $payload = $this->payload(['name' => 'جديد']);
+        unset($payload['slug']);
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/products/{$product->id}", $payload);
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.slug', 'shipping-bag')
+            ->assertJsonPath('data.name', 'جديد');
+    }
+
     public function test_update_rejects_a_slug_taken_by_another_product(): void
     {
         // Arrange

@@ -31,6 +31,9 @@ class DatabaseSeeder extends Seeder
             BusinessFieldSeeder::class,
             // Warehouses only. Stock arrives by being recorded, never by being seeded.
             InventorySeeder::class,
+            // Last of the three that feed it: the book files every customer under a city and a
+            // trade, and resolves both by name against what the two seeders above just wrote.
+            CustomerSeeder::class,
         ]);
     }
 }

@@ -27,7 +27,12 @@ Docs/*.tmp.json
 # (vendor/, node_modules/, build/, .dart_tool/, storage/ …).
 
 # ── Customer personal data (never commit; this repository is public) ──────────
-# The customer book is 574 real names and telephone numbers. It is copied to each
+# The customer book is 667 real names and telephone numbers. It is copied to each
 # server out of band and read by CustomerSeeder, which says so when it is absent.
 backend/storage/*.xlsx
+# The workbook itself, wherever it is dropped to be re-extracted from.
+Info/*.xlsx
 backend/database/seeders/data/customers.php
+# The same book — the rows still waiting for a telephone number, so the same real names
+# and the same reason.
+backend/database/seeders/data/customers-without-a-phone.xlsx
