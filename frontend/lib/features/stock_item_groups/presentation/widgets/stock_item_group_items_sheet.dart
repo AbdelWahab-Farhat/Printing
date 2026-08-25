@@ -1,10 +1,13 @@
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/features/stock_item_groups/models/stock_item_group.dart';
 import 'package:dayaa/features/stock_item_groups/presentation/viewmodel/stock_item_group_items_cubit.dart';
 import 'package:dayaa/features/stock_items/models/stock_item.dart' show StockItem;
+import 'package:dayaa/features/stock_items/presentation/views/stock_item_form_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,27 +20,74 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// search: what comes back is all of it, already ordered by width then height.
 ///
 /// [group] is handed in so the header draws from the row that was tapped rather than from the
-/// request. The material's name and unit are on screen while the sizes are still loading, and
-/// stay on screen if the request fails.
-Future<void> showStockItemGroupItemsSheet({
+/// request. The category's name and unit are on screen while the materials are still loading,
+/// and stay on screen if the request fails.
+///
+/// **Answers whether anything was created**, so the row behind can re-read its count.
+Future<bool> showStockItemGroupItemsSheet({
   required BuildContext context,
   required StockItemGroup group,
-}) {
-  return showModalBottomSheet<void>(
+}) async {
+  // A box rather than the sheet's own pop value: a sheet is dismissed by dragging it down at
+  // least as often as by a button, and a drag pops `null` with nothing able to intercept it.
+  // What the caller needs to know is whether the count it drew is still true, and that has to
+  // survive either way out.
+  final created = _MaterialsWereCreated();
+
+  await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     builder: (_) => BlocProvider<StockItemGroupItemsCubit>(
       create: (_) => sl<StockItemGroupItemsCubit>(param1: group.id)..load(),
-      child: _StockItemGroupItems(group: group),
+      child: _StockItemGroupItems(group: group, created: created),
     ),
   );
+
+  return created.value;
+}
+
+/// Whether a material was created while the sheet was open — see [showStockItemGroupItemsSheet].
+class _MaterialsWereCreated {
+  bool value = false;
 }
 
 class _StockItemGroupItems extends StatelessWidget {
-  const _StockItemGroupItems({required this.group});
+  const _StockItemGroupItems({required this.group, required this.created});
 
   final StockItemGroup group;
+
+  final _MaterialsWereCreated created;
+
+  /// Opens the material form already filed under this category.
+  ///
+  /// **This is the only way a material is created filed.** `stock_item_group_id` is accepted by
+  /// `POST /stock-items` and by no update, so a material created loose from the المواد tab can
+  /// never be given a category afterwards — moving one would rename it, and a rename can collide
+  /// with a name that already exists. The category therefore has to be decided at the moment of
+  /// creation, which means being on a screen that already knows it.
+  ///
+  /// The tapped row is handed over rather than the loaded category — the same choice the header
+  /// makes. Only `id` and `name` do any work: the unit shown under a filed material is decorative
+  /// either way, because the server takes `default_unit` from the category whatever is sent.
+  Future<void> _create(BuildContext context) async {
+    final cubit = context.read<StockItemGroupItemsCubit>();
+
+    final saved = await openStockItemForm(
+      context,
+      group: (id: group.id, name: group.name, defaultUnit: group.defaultUnit),
+    );
+
+    // A dismissed form changes nothing, and re-reading after one flickers the list under the
+    // thumb to redraw what is already there.
+    if (!(saved ?? false)) return;
+
+    created.value = true;
+
+    // The materials are `items[]` on the category's own response and arrive nowhere else, so
+    // asking again is the only way the new one appears.
+    await cubit.load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +133,17 @@ class _StockItemGroupItems extends StatelessWidget {
               },
             ),
           ),
+          // Absent rather than disabled for a reader: the server refuses either way, and a
+          // control that cannot be used is a question somebody has to answer for themselves.
+          if (sl<Session>().can(AppPermission.manageInventory))
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 12.h),
+              child: AppButton.tonal(
+                label: 'مادة جديدة',
+                icon: AppIcons.add,
+                onPressed: () => _create(context),
+              ),
+            ),
         ],
       ),
     );

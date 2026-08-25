@@ -61,6 +61,19 @@ class _StockItemGroupsView extends StatelessWidget {
   ///
   /// A refresh after a dismissed sheet is a request nobody asked for, and it flickers the list
   /// under the user's thumb.
+  /// Opens what a category holds, and re-reads the list only if a material was created in there.
+  ///
+  /// The count on the row is the thing that goes stale — «4 مواد» stays 4 while a fifth is being
+  /// filed two taps away — and it is the only thing, so the refresh is worth exactly one request
+  /// and only when there was a creation.
+  Future<void> _openMaterials(BuildContext context, StockItemGroup group) async {
+    final cubit = context.read<StockItemGroupsCubit>();
+
+    final created = await showStockItemGroupItemsSheet(context: context, group: group);
+
+    if (created) await cubit.refresh();
+  }
+
   Future<void> _edit(BuildContext context, StockItemGroup? group) async {
     final cubit = context.read<StockItemGroupsCubit>();
 
@@ -121,8 +134,7 @@ class _StockItemGroupsView extends StatelessWidget {
                   group: group,
                   // Everybody who can read the table can read what is under a material; the
                   // sizes are the whole content of one.
-                  onTap: () =>
-                      showStockItemGroupItemsSheet(context: context, group: group),
+                  onTap: () => _openMaterials(context, group),
                   onEdit: mayManage ? () => _edit(context, group) : null,
                 ),
               ),
