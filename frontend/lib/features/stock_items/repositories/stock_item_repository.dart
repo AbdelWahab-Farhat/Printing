@@ -89,6 +89,20 @@ abstract interface class StockItemRepository {
   /// the balance will be zeroed — see `showStockUnitSheet`.
   Future<Either<Failure, StockItem>> setUnit(int stockItemId, {required StockUnit unit});
 
+  /// Says which product sizes draw on this pile — **the whole set, replacing what was there.**
+  ///
+  /// What is in [variantIds] is linked, what was linked and is missing comes off, and an empty
+  /// list empties the material on purpose. One request whatever the selection spans: pointing
+  /// four sizes across three products at one pile used to be three product saves, each one
+  /// rewriting prices and images that nobody on this screen touched.
+  ///
+  /// A size already drawing on another material is moved. Nothing in the ledger follows it — a
+  /// movement is keyed on the material, not on the size — so only what it deducts from next
+  /// changes, and the screen says which pile it is leaving before sending this.
+  ///
+  /// Answers with the material carrying its sizes, so the screen redraws from the server.
+  Future<Either<Failure, StockItem>> setVariants(int stockItemId, List<int> variantIds);
+
   /// Removes a shelf. Soft, like every delete here: the balances that reached zero, the ledger
   /// explaining them and the item's own history all survive.
   ///

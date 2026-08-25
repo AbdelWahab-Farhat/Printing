@@ -58,6 +58,11 @@ class StockItemResource extends JsonResource
             // visible on a listing. Counted by the query, never by loading the variants.
             'variants_count' => $this->whenCounted('variants'),
 
+            // The sizes themselves — only where they were loaded, which is `setVariants` and
+            // nothing else. A listing that carried them would ship the whole catalogue inside the
+            // inventory list to draw a number `variants_count` already answers.
+            'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
+
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

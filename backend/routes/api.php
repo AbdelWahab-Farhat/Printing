@@ -498,6 +498,16 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('stock-items/{stock_item}/unit', [StockItemController::class, 'setUnit'])
             ->middleware('can:inventory.manage')->name('stock-items.unit');
 
+        // Which product sizes draw on this pile, said from the pile's side. `inventory.manage`
+        // and not `products.manage`: what is being decided is what a material feeds, and the
+        // person who administers the shelves is the one who knows. The product body is untouched
+        // — pointing four sizes at one pile used to mean saving three products, each rewriting
+        // prices and images the person had no business in.
+        //
+        // PUT, because the list replaces: it is the whole set every time, `[]` included.
+        Route::put('stock-items/{stock_item}/variants', [StockItemController::class, 'setVariants'])
+            ->middleware('can:inventory.manage')->name('stock-items.variants');
+
         // A balance line has no life outside its warehouse, so `scoped()` resolves {stock}
         // *within* {warehouse} — another warehouse's line id is a 404 by construction, the
         // same shape products.images and cities.regions already use.

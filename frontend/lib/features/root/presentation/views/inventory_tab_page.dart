@@ -1,5 +1,4 @@
 import 'package:dayaa/core/utils/context_extensions.dart';
-import 'package:dayaa/features/stock_item_groups/presentation/views/stock_item_groups_page.dart';
 import 'package:dayaa/features/stock_items/presentation/views/stock_items_page.dart';
 import 'package:dayaa/features/warehouses/presentation/views/warehouses_page.dart';
 import 'package:flutter/material.dart';
@@ -12,9 +11,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// they are reference data. But they are not three subjects — they are one subject at three
 /// zoom levels, and every one of them is about the same heap of bags:
 ///
-///   المخازن    — **أين**: the rooms, and what each holds
-///   المواد     — **ماذا**: the shelf itself, a material at a size. What a balance is of.
-///   التصنيفات  — **من أي شيء**: the family a shelf is a size of, and what a product names
+///   المخازن  — **أين**: the rooms, and what each holds
+///   المواد   — **ماذا**: the shelf itself, a material at a size. What a balance is of.
 ///
 /// That reading is what the three screens teach by being used. None of it is printed on them —
 /// see [_segments].
@@ -103,7 +101,6 @@ class _InventoryTabPageState extends State<InventoryTabPage> {
             children: const [
               WarehousesPage(),
               StockItemsPage(isEmbedded: true),
-              StockItemGroupsPage(isEmbedded: true),
             ],
           ),
         ),

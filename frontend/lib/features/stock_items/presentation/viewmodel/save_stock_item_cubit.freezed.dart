@@ -55,7 +55,7 @@ extension SaveStockItemStatePatterns on SaveStockItemState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( SaveStockItemInitial value)?  initial,TResult Function( SaveStockItemSubmitting value)?  submitting,TResult Function( SaveStockItemSuccess value)?  success,TResult Function( SaveStockItemChangingUnit value)?  changingUnit,TResult Function( SaveStockItemUnitChanged value)?  unitChanged,TResult Function( SaveStockItemFailure value)?  failure,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( SaveStockItemInitial value)?  initial,TResult Function( SaveStockItemSubmitting value)?  submitting,TResult Function( SaveStockItemSuccess value)?  success,TResult Function( SaveStockItemChangingUnit value)?  changingUnit,TResult Function( SaveStockItemUnitChanged value)?  unitChanged,TResult Function( SaveStockItemLinksRefused value)?  linksRefused,TResult Function( SaveStockItemFailure value)?  failure,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case SaveStockItemInitial() when initial != null:
@@ -63,7 +63,8 @@ return initial(_that);case SaveStockItemSubmitting() when submitting != null:
 return submitting(_that);case SaveStockItemSuccess() when success != null:
 return success(_that);case SaveStockItemChangingUnit() when changingUnit != null:
 return changingUnit(_that);case SaveStockItemUnitChanged() when unitChanged != null:
-return unitChanged(_that);case SaveStockItemFailure() when failure != null:
+return unitChanged(_that);case SaveStockItemLinksRefused() when linksRefused != null:
+return linksRefused(_that);case SaveStockItemFailure() when failure != null:
 return failure(_that);case _:
   return orElse();
 
@@ -82,7 +83,7 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( SaveStockItemInitial value)  initial,required TResult Function( SaveStockItemSubmitting value)  submitting,required TResult Function( SaveStockItemSuccess value)  success,required TResult Function( SaveStockItemChangingUnit value)  changingUnit,required TResult Function( SaveStockItemUnitChanged value)  unitChanged,required TResult Function( SaveStockItemFailure value)  failure,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( SaveStockItemInitial value)  initial,required TResult Function( SaveStockItemSubmitting value)  submitting,required TResult Function( SaveStockItemSuccess value)  success,required TResult Function( SaveStockItemChangingUnit value)  changingUnit,required TResult Function( SaveStockItemUnitChanged value)  unitChanged,required TResult Function( SaveStockItemLinksRefused value)  linksRefused,required TResult Function( SaveStockItemFailure value)  failure,}){
 final _that = this;
 switch (_that) {
 case SaveStockItemInitial():
@@ -90,7 +91,8 @@ return initial(_that);case SaveStockItemSubmitting():
 return submitting(_that);case SaveStockItemSuccess():
 return success(_that);case SaveStockItemChangingUnit():
 return changingUnit(_that);case SaveStockItemUnitChanged():
-return unitChanged(_that);case SaveStockItemFailure():
+return unitChanged(_that);case SaveStockItemLinksRefused():
+return linksRefused(_that);case SaveStockItemFailure():
 return failure(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -105,7 +107,7 @@ return failure(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( SaveStockItemInitial value)?  initial,TResult? Function( SaveStockItemSubmitting value)?  submitting,TResult? Function( SaveStockItemSuccess value)?  success,TResult? Function( SaveStockItemChangingUnit value)?  changingUnit,TResult? Function( SaveStockItemUnitChanged value)?  unitChanged,TResult? Function( SaveStockItemFailure value)?  failure,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( SaveStockItemInitial value)?  initial,TResult? Function( SaveStockItemSubmitting value)?  submitting,TResult? Function( SaveStockItemSuccess value)?  success,TResult? Function( SaveStockItemChangingUnit value)?  changingUnit,TResult? Function( SaveStockItemUnitChanged value)?  unitChanged,TResult? Function( SaveStockItemLinksRefused value)?  linksRefused,TResult? Function( SaveStockItemFailure value)?  failure,}){
 final _that = this;
 switch (_that) {
 case SaveStockItemInitial() when initial != null:
@@ -113,7 +115,8 @@ return initial(_that);case SaveStockItemSubmitting() when submitting != null:
 return submitting(_that);case SaveStockItemSuccess() when success != null:
 return success(_that);case SaveStockItemChangingUnit() when changingUnit != null:
 return changingUnit(_that);case SaveStockItemUnitChanged() when unitChanged != null:
-return unitChanged(_that);case SaveStockItemFailure() when failure != null:
+return unitChanged(_that);case SaveStockItemLinksRefused() when linksRefused != null:
+return linksRefused(_that);case SaveStockItemFailure() when failure != null:
 return failure(_that);case _:
   return null;
 
@@ -131,14 +134,15 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  submitting,TResult Function( StockItem item)?  success,TResult Function()?  changingUnit,TResult Function( StockItem item)?  unitChanged,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  submitting,TResult Function( StockItem item)?  success,TResult Function()?  changingUnit,TResult Function( StockItem item)?  unitChanged,TResult Function( StockItem item,  Failure failure)?  linksRefused,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case SaveStockItemInitial() when initial != null:
 return initial();case SaveStockItemSubmitting() when submitting != null:
 return submitting();case SaveStockItemSuccess() when success != null:
 return success(_that.item);case SaveStockItemChangingUnit() when changingUnit != null:
 return changingUnit();case SaveStockItemUnitChanged() when unitChanged != null:
-return unitChanged(_that.item);case SaveStockItemFailure() when failure != null:
+return unitChanged(_that.item);case SaveStockItemLinksRefused() when linksRefused != null:
+return linksRefused(_that.item,_that.failure);case SaveStockItemFailure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
 
@@ -157,14 +161,15 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  submitting,required TResult Function( StockItem item)  success,required TResult Function()  changingUnit,required TResult Function( StockItem item)  unitChanged,required TResult Function( Failure failure)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  submitting,required TResult Function( StockItem item)  success,required TResult Function()  changingUnit,required TResult Function( StockItem item)  unitChanged,required TResult Function( StockItem item,  Failure failure)  linksRefused,required TResult Function( Failure failure)  failure,}) {final _that = this;
 switch (_that) {
 case SaveStockItemInitial():
 return initial();case SaveStockItemSubmitting():
 return submitting();case SaveStockItemSuccess():
 return success(_that.item);case SaveStockItemChangingUnit():
 return changingUnit();case SaveStockItemUnitChanged():
-return unitChanged(_that.item);case SaveStockItemFailure():
+return unitChanged(_that.item);case SaveStockItemLinksRefused():
+return linksRefused(_that.item,_that.failure);case SaveStockItemFailure():
 return failure(_that.failure);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -179,14 +184,15 @@ return failure(_that.failure);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  submitting,TResult? Function( StockItem item)?  success,TResult? Function()?  changingUnit,TResult? Function( StockItem item)?  unitChanged,TResult? Function( Failure failure)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  submitting,TResult? Function( StockItem item)?  success,TResult? Function()?  changingUnit,TResult? Function( StockItem item)?  unitChanged,TResult? Function( StockItem item,  Failure failure)?  linksRefused,TResult? Function( Failure failure)?  failure,}) {final _that = this;
 switch (_that) {
 case SaveStockItemInitial() when initial != null:
 return initial();case SaveStockItemSubmitting() when submitting != null:
 return submitting();case SaveStockItemSuccess() when success != null:
 return success(_that.item);case SaveStockItemChangingUnit() when changingUnit != null:
 return changingUnit();case SaveStockItemUnitChanged() when unitChanged != null:
-return unitChanged(_that.item);case SaveStockItemFailure() when failure != null:
+return unitChanged(_that.item);case SaveStockItemLinksRefused() when linksRefused != null:
+return linksRefused(_that.item,_that.failure);case SaveStockItemFailure() when failure != null:
 return failure(_that.failure);case _:
   return null;
 
@@ -437,6 +443,92 @@ $StockItemCopyWith<$Res> get item {
   
   return $StockItemCopyWith<$Res>(_self.item, (value) {
     return _then(_self.copyWith(item: value));
+  });
+}
+}
+
+/// @nodoc
+
+
+class SaveStockItemLinksRefused implements SaveStockItemState {
+  const SaveStockItemLinksRefused(this.item, this.failure);
+  
+
+ final  StockItem item;
+ final  Failure failure;
+
+/// Create a copy of SaveStockItemState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SaveStockItemLinksRefusedCopyWith<SaveStockItemLinksRefused> get copyWith => _$SaveStockItemLinksRefusedCopyWithImpl<SaveStockItemLinksRefused>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemLinksRefused&&(identical(other.item, item) || other.item == item)&&(identical(other.failure, failure) || other.failure == failure));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,item,failure);
+
+@override
+String toString() {
+  return 'SaveStockItemState.linksRefused(item: $item, failure: $failure)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SaveStockItemLinksRefusedCopyWith<$Res> implements $SaveStockItemStateCopyWith<$Res> {
+  factory $SaveStockItemLinksRefusedCopyWith(SaveStockItemLinksRefused value, $Res Function(SaveStockItemLinksRefused) _then) = _$SaveStockItemLinksRefusedCopyWithImpl;
+@useResult
+$Res call({
+ StockItem item, Failure failure
+});
+
+
+$StockItemCopyWith<$Res> get item;$FailureCopyWith<$Res> get failure;
+
+}
+/// @nodoc
+class _$SaveStockItemLinksRefusedCopyWithImpl<$Res>
+    implements $SaveStockItemLinksRefusedCopyWith<$Res> {
+  _$SaveStockItemLinksRefusedCopyWithImpl(this._self, this._then);
+
+  final SaveStockItemLinksRefused _self;
+  final $Res Function(SaveStockItemLinksRefused) _then;
+
+/// Create a copy of SaveStockItemState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? item = null,Object? failure = null,}) {
+  return _then(SaveStockItemLinksRefused(
+null == item ? _self.item : item // ignore: cast_nullable_to_non_nullable
+as StockItem,null == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
+as Failure,
+  ));
+}
+
+/// Create a copy of SaveStockItemState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$StockItemCopyWith<$Res> get item {
+  
+  return $StockItemCopyWith<$Res>(_self.item, (value) {
+    return _then(_self.copyWith(item: value));
+  });
+}/// Create a copy of SaveStockItemState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FailureCopyWith<$Res> get failure {
+  
+  return $FailureCopyWith<$Res>(_self.failure, (value) {
+    return _then(_self.copyWith(failure: value));
   });
 }
 }

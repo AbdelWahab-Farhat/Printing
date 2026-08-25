@@ -175,6 +175,7 @@ import 'package:dayaa/features/stock_item_groups/usecases/get_stock_item_group.d
 import 'package:dayaa/features/stock_item_groups/usecases/get_stock_item_groups.dart';
 import 'package:dayaa/features/stock_item_groups/usecases/save_stock_item_group.dart';
 import 'package:dayaa/features/stock_items/presentation/viewmodel/save_stock_item_cubit.dart';
+import 'package:dayaa/features/stock_items/presentation/viewmodel/stock_item_links_cubit.dart';
 import 'package:dayaa/features/stock_items/presentation/viewmodel/stock_items_cubit.dart';
 import 'package:dayaa/features/stock_items/repositories/stock_item_repository.dart';
 import 'package:dayaa/features/stock_items/repositories/stock_item_repository_impl.dart';
@@ -183,6 +184,7 @@ import 'package:dayaa/features/stock_items/usecases/get_stock_item.dart';
 import 'package:dayaa/features/stock_items/usecases/get_stock_items.dart';
 import 'package:dayaa/features/stock_items/usecases/save_stock_item.dart';
 import 'package:dayaa/features/stock_items/usecases/set_stock_item_unit.dart';
+import 'package:dayaa/features/stock_items/usecases/set_stock_item_variants.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/viewmodel/save_vendor_cubit.dart';
 import 'package:dayaa/features/vendors/presentation/viewmodel/vendor_detail_cubit.dart';
@@ -1144,6 +1146,12 @@ abstract final class Injector {
       ..registerLazySingleton<SetStockItemUnit>(
         () => SetStockItemUnit(sl<StockItemRepository>()),
       )
+      // Its own use case for the same reason: it is not part of saving the row. It rewires other
+      // rows — `stock_item_id` on product sizes — through the one endpoint that can do it without
+      // resending the products those sizes belong to.
+      ..registerLazySingleton<SetStockItemVariants>(
+        () => SetStockItemVariants(sl<StockItemRepository>()),
+      )
       ..registerLazySingleton<DeleteStockItem>(
         () => DeleteStockItem(sl<StockItemRepository>()),
       )
@@ -1157,6 +1165,17 @@ abstract final class Injector {
         () => SaveStockItemCubit(
           saveStockItem: sl<SaveStockItem>(),
           setStockItemUnit: sl<SetStockItemUnit>(),
+          setStockItemVariants: sl<SetStockItemVariants>(),
+        ),
+      )
+      // Takes the id it is about, and null while creating — a new material has no links to read
+      // and no id to read them by. `GET /stock-items/{id}` is the only response carrying the
+      // sizes; the listing carries their count and not the rows, which is why the form has to ask
+      // before anything may be ticked. See [StockItemLinksCubit].
+      ..registerFactoryParam<StockItemLinksCubit, int?, void>(
+        (stockItemId, _) => StockItemLinksCubit(
+          getStockItem: sl<GetStockItem>(),
+          stockItemId: stockItemId,
         ),
       );
   }

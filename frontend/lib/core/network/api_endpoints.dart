@@ -117,6 +117,11 @@ abstract final class StockItemEndpoints {
   /// rather than being relabelled. Say so before asking.
   static String unit(int stockItemId) => '/stock-items/$stockItemId/unit';
 
+  /// Which product sizes draw on this pile — **the whole set, every time.** A PUT because the
+  /// list replaces: what it carries is linked, what it omits is unlinked, and `[]` empties the
+  /// material deliberately. The product bodies are untouched.
+  static String variants(int stockItemId) => '/stock-items/$stockItemId/variants';
+
   static String logs(int stockItemId) => '/stock-items/$stockItemId/logs';
 }
 

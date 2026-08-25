@@ -677,14 +677,6 @@ class _Identifiers extends StatelessWidget {
         _FactRow(label: 'وحدة التسعير', value: product.pricingUnitLabel),
         SizedBox(height: 8.h),
         _FactRow(
-          // «المادة» — what the bag is cut from, and the reason its sizes have shelves at all.
-          // Stated even when there is none: «بلا مادة» is the answer to why every size below
-          // says «بلا صنف مخزني», and a row that simply vanished would leave that unexplained.
-          label: 'تصنيف المادة',
-          value: product.stockItemGroup?.name ?? (product.hasMaterial ? 'تصنيف محدّد' : 'بلا تصنيف'),
-        ),
-        SizedBox(height: 8.h),
-        _FactRow(
           label: 'المقاسات',
           value: product.variants.isEmpty
               ? 'لا توجد'

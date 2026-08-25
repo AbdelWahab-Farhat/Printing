@@ -80,6 +80,11 @@ abstract class StockItem with _$StockItem {
     /// «لم يُحسب», never zero — see [sharedByLabel], which draws nothing rather than «لا مقاس».
     @JsonKey(name: 'variants_count') int? variantsCount,
 
+    /// The product sizes drawing on this shelf, **only on `GET /stock-items/{id}` and on the
+    /// answer to setting them**. Empty on a listing means «not asked for», not «none» —
+    /// [variantsCount] is what answers that, and it is the field a row draws.
+    @Default(<StockItemVariantRef>[]) List<StockItemVariantRef> variants,
+
     @JsonKey(name: 'created_at') DateTime? createdAt,
     @JsonKey(name: 'updated_at') DateTime? updatedAt,
   }) = _StockItem;
@@ -118,6 +123,50 @@ abstract class StockItem with _$StockItem {
     final count when count <= 10 => '$count مقاسات تسحب منه',
     final count => '$count مقاساً يسحب منه',
   };
+}
+
+/// One product size drawing on a shelf, named the way a person reads it: «كيس شحن سادة — 25*35».
+///
+/// **The product travels with it, and that is the point.** A size is «25*35» to nobody on its own,
+/// and the screen this exists for lists sizes belonging to several different products at once —
+/// two of which are often the same numbers. The server sends `product` only where a caller loaded
+/// it, which today is the material's own responses.
+@freezed
+abstract class StockItemVariantRef with _$StockItemVariantRef {
+  const factory StockItemVariantRef({
+    required int id,
+
+    /// The size as the catalogue words it — «25*35», «كبير». Free text on the product.
+    required String label,
+
+    @JsonKey(name: 'width_cm') int? widthCm,
+    @JsonKey(name: 'height_cm') int? heightCm,
+
+    @JsonKey(name: 'is_active') @Default(true) bool isActive,
+
+    /// Absent wherever the caller did not load it. Nothing draws a size without one.
+    StockItemVariantProductRef? product,
+  }) = _StockItemVariantRef;
+
+  const StockItemVariantRef._();
+
+  factory StockItemVariantRef.fromJson(Map<String, dynamic> json) =>
+      _$StockItemVariantRefFromJson(json);
+
+  /// «كيس شحن سادة — 25*35», or just the size where the product was not loaded.
+  String get displayName => product == null ? label : '${product!.name} — $label';
+}
+
+/// The product a size belongs to — its name, because that is the half a reader recognises.
+@freezed
+abstract class StockItemVariantProductRef with _$StockItemVariantProductRef {
+  const factory StockItemVariantProductRef({
+    required int id,
+    required String name,
+  }) = _StockItemVariantProductRef;
+
+  factory StockItemVariantProductRef.fromJson(Map<String, dynamic> json) =>
+      _$StockItemVariantProductRefFromJson(json);
 }
 
 /// The material a stock item is filed under, flattened by the server because it is only ever met

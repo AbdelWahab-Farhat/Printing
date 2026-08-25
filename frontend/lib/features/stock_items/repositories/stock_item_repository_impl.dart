@@ -126,6 +126,20 @@ class StockItemRepositoryImpl implements StockItemRepository {
   }
 
   @override
+  Future<Either<Failure, StockItem>> setVariants(int stockItemId, List<int> variantIds) {
+    return safeRequest<StockItem>(
+      // Sent even when empty, which is why the server validates it `present` rather than
+      // `required`: «لا شيء يسحب من هذه المادة» is an answer, and dropping the key would make it
+      // indistinguishable from a request that forgot to say.
+      () => _dio.put(
+        StockItemEndpoints.variants(stockItemId),
+        data: <String, dynamic>{'variant_ids': variantIds},
+      ),
+      parse: (data) => StockItem.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, String>> delete(int stockItemId) {
     return safeCommand(() => _dio.delete(StockItemEndpoints.show(stockItemId)));
   }

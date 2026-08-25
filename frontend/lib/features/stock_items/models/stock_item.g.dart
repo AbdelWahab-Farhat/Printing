@@ -29,6 +29,11 @@ _StockItem _$StockItemFromJson(Map<String, dynamic> json) => _StockItem(
   isActive: json['is_active'] as bool,
   sortOrder: (json['sort_order'] as num).toInt(),
   variantsCount: (json['variants_count'] as num?)?.toInt(),
+  variants:
+      (json['variants'] as List<dynamic>?)
+          ?.map((e) => StockItemVariantRef.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <StockItemVariantRef>[],
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -53,6 +58,7 @@ Map<String, dynamic> _$StockItemToJson(_StockItem instance) =>
       'is_active': instance.isActive,
       'sort_order': instance.sortOrder,
       'variants_count': instance.variantsCount,
+      'variants': instance.variants.map((e) => e.toJson()).toList(),
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
     };
@@ -62,6 +68,42 @@ const _$StockUnitEnumMap = {
   StockUnit.kilogram: 'kilogram',
   StockUnit.unknown: 'unknown',
 };
+
+_StockItemVariantRef _$StockItemVariantRefFromJson(Map<String, dynamic> json) =>
+    _StockItemVariantRef(
+      id: (json['id'] as num).toInt(),
+      label: json['label'] as String,
+      widthCm: (json['width_cm'] as num?)?.toInt(),
+      heightCm: (json['height_cm'] as num?)?.toInt(),
+      isActive: json['is_active'] as bool? ?? true,
+      product: json['product'] == null
+          ? null
+          : StockItemVariantProductRef.fromJson(
+              json['product'] as Map<String, dynamic>,
+            ),
+    );
+
+Map<String, dynamic> _$StockItemVariantRefToJson(
+  _StockItemVariantRef instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'label': instance.label,
+  'width_cm': instance.widthCm,
+  'height_cm': instance.heightCm,
+  'is_active': instance.isActive,
+  'product': instance.product?.toJson(),
+};
+
+_StockItemVariantProductRef _$StockItemVariantProductRefFromJson(
+  Map<String, dynamic> json,
+) => _StockItemVariantProductRef(
+  id: (json['id'] as num).toInt(),
+  name: json['name'] as String,
+);
+
+Map<String, dynamic> _$StockItemVariantProductRefToJson(
+  _StockItemVariantProductRef instance,
+) => <String, dynamic>{'id': instance.id, 'name': instance.name};
 
 _StockItemGroupRef _$StockItemGroupRefFromJson(Map<String, dynamic> json) =>
     _StockItemGroupRef(

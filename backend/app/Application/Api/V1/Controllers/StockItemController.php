@@ -7,11 +7,13 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Inventory\SetStockItemUnitRequest;
+use App\Application\Api\V1\Requests\Inventory\SetStockItemVariantsRequest;
 use App\Application\Api\V1\Requests\Inventory\StoreStockItemRequest;
 use App\Application\Api\V1\Requests\Inventory\UpdateStockItemRequest;
 use App\Application\Api\V1\Resources\StockItemResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
+use App\Domain\Catalog\CatalogService;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Inventory\DTOs\StockItemData;
 use App\Domain\Inventory\InventoryService;
@@ -46,7 +48,12 @@ class StockItemController extends Controller
 {
     use ReadsAuditTrail, ResponseTrait;
 
-    public function __construct(private readonly InventoryService $inventory) {}
+    public function __construct(
+        private readonly InventoryService $inventory,
+        // `product_variants` is Catalog's table, and `setVariants` writes it — so it is asked for
+        // through Catalog's own door rather than reached around (RULES.md §3).
+        private readonly CatalogService $catalog,
+    ) {}
 
     /**
      * List stock items
@@ -91,7 +98,11 @@ class StockItemController extends Controller
      */
     public function show(StockItem $stockItem): JsonResponse
     {
-        return $this->success(new StockItemResource($stockItem->loadCount('variants')));
+        // The sizes as well as their count, which the listing deliberately does not carry: this is
+        // the one response a screen can edit the links from, and it has to draw what is there now.
+        return $this->success(
+            new StockItemResource($stockItem->load('variants.product')->loadCount('variants')),
+        );
     }
 
     /**
@@ -108,6 +119,30 @@ class StockItemController extends Controller
         );
 
         return $this->success(new StockItemResource($updated), 'تم تحديث المادة بنجاح');
+    }
+
+    /**
+     * Set which product sizes draw on a stock item
+     *
+     * **The list replaces what was there.** Sizes in it are pointed at this material, sizes that
+     * were on it and are missing from it are unlinked, and `[]` empties it deliberately. Sending
+     * the whole set is what lets one screen say «these four and no others» in one request instead
+     * of editing four products.
+     *
+     * **Moving a size off another material is allowed.** Nothing already in the ledger follows it
+     * — a movement is keyed on the material, not on the size that caused it — so only what this
+     * size deducts from next changes. The screen confirms that by name before sending it.
+     *
+     * Every link that actually moves is written to the audit trail, one variant at a time.
+     */
+    public function setVariants(SetStockItemVariantsRequest $request, StockItem $stockItem): JsonResponse
+    {
+        $updated = $this->catalog->pointVariantsAtStockItem(
+            $stockItem,
+            array_map(intval(...), $request->validated('variant_ids')),
+        );
+
+        return $this->success(new StockItemResource($updated), 'تم تحديث المقاسات المرتبطة بنجاح');
     }
 
     /**

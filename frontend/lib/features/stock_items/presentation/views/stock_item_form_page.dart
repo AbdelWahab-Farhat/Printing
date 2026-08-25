@@ -7,7 +7,9 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/stock_items/models/stock_item.dart';
 import 'package:dayaa/features/stock_items/models/stock_unit.dart';
 import 'package:dayaa/features/stock_items/presentation/viewmodel/save_stock_item_cubit.dart';
+import 'package:dayaa/features/stock_items/presentation/viewmodel/stock_item_links_cubit.dart';
 import 'package:dayaa/features/stock_items/presentation/widgets/stock_unit_sheet.dart';
+import 'package:dayaa/features/stock_items/presentation/widgets/variant_link_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -74,8 +76,16 @@ class StockItemFormPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<SaveStockItemCubit>(
-      create: (_) => sl<SaveStockItemCubit>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<SaveStockItemCubit>(create: (_) => sl<SaveStockItemCubit>()),
+        // Reads which product sizes already draw on this material. It has to be read rather than
+        // assumed: saving the links replaces the whole set, so a selection seeded from nothing
+        // would unlink everything the material already had. See [StockItemLinksCubit].
+        BlocProvider<StockItemLinksCubit>(
+          create: (_) => sl<StockItemLinksCubit>(param1: item?.id)..load(),
+        ),
+      ],
       child: _StockItemFormView(item: item, group: group),
     );
   }
@@ -168,6 +178,30 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
     await context.read<SaveStockItemCubit>().changeUnit(item.id, unit: picked);
   }
 
+  /// Opens the catalogue, ticked as it stands, and keeps what comes back.
+  ///
+  /// **Nothing is sent from here.** The selection rides with «حفظ», so a person who opens the
+  /// picker, ticks four sizes and then backs out of the form has changed nothing — which is what
+  /// every other control on this screen does, and the links should not be the one exception.
+  Future<void> _pickLinks() async {
+    final links = context.read<StockItemLinksCubit>();
+
+    final picked = await showVariantLinkPicker(
+      context: context,
+      // The server's own composition where there is one; the box while creating, because that is
+      // what the material is about to be called. Never empty — the confirm dialog names it.
+      materialName: _item?.displayName ?? _nameOrPlaceholder,
+      initial: links.state.current,
+    );
+
+    if (picked == null) return;
+
+    links.select(picked);
+  }
+
+  String get _nameOrPlaceholder =>
+      _name.text.trim().isEmpty ? 'هذه المادة' : _name.text.trim();
+
   void _submit() {
     FocusScope.of(context).unfocus();
 
@@ -175,6 +209,9 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
 
     context.read<SaveStockItemCubit>().submit(
       stockItemId: _item?.id,
+      // Null unless somebody actually opened the picker — opening a form and pressing «حفظ»
+      // must not rewrite links nobody looked at, and this endpoint replaces rather than adds.
+      variantIds: context.read<StockItemLinksCubit>().state.pending?.toList(),
       // Only ever on creation; the server ignores it on an update and the form does not offer it.
       stockItemGroupId: _isEditing ? null : widget.group?.id,
       name: _name.text,
@@ -211,6 +248,16 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
               'تم تحديث وحدة التخزين إلى «${item.unitLabel}»',
               details: 'صُفِّر الرصيد في كل مخزن يحتوي المادة — أعد الجرد بالوحدة الجديدة.',
             );
+
+          // **Stored, but not rewired — and the screen stays open on it.** The material is in the
+          // database with everything that was typed into it; what failed is the second request.
+          // Closing here would report a save that half happened, and reporting a plain failure
+          // would send somebody back to retype a row that already exists. So the id is adopted —
+          // the form is now editing rather than creating — and the links can be tried again with
+          // one tap.
+          case SaveStockItemLinksRefused(:final item, :final failure):
+            setState(() => _item = item);
+            context.showFailure(failure);
 
           case SaveStockItemFailure(:final failure) when state.hasUnrenderedErrors:
             context.showFailure(failure);
@@ -317,6 +364,10 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
                     errorText: state.descriptionError,
                     onChanged: (_) => cubit.clearFailure(),
                   ),
+                  SizedBox(height: 20.h),
+
+                  _LinkedVariants(onPick: _pickLinks),
+
                   // **Only on a shelf that already exists.** Nobody opens this form to add
                   // something they want hidden, so on the way in it is a question with one
                   // answer — [_isActive] starts true and is sent as true without being asked.
@@ -343,6 +394,123 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Which product sizes draw on this material, and the way to change them.
+///
+/// **The link is a column on a product size, and this is the only screen that edits it from the
+/// other end.** A product's own form can point one of its sizes at a pile; nothing else can point
+/// four sizes belonging to three different products at one pile in a single act, which is the
+/// thing a storekeeper actually wants when two catalogue rows turn out to be one heap of bags.
+///
+/// **Refuses to offer the picker when the read failed**, rather than offering an empty one: the
+/// save replaces the whole set, so a selection ticked on top of «I could not find out what was
+/// there» would unlink every size the material already had.
+class _LinkedVariants extends StatelessWidget {
+  const _LinkedVariants({required this.onPick});
+
+  final Future<void> Function() onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return BlocBuilder<StockItemLinksCubit, StockItemLinksState>(
+      builder: (context, state) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'المنتجات التي تسحب منها',
+            style: context.textTheme.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          SizedBox(height: 8.h),
+          switch (state) {
+            StockItemLinksInitial() || StockItemLinksLoading() => Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.h),
+              child: SizedBox(
+                height: 18.h,
+                width: 18.h,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+            StockItemLinksFailure(:final failure) => Text(
+              failure.message,
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
+            ),
+            StockItemLinksLoaded(:final variants, :final selected) => _Chosen(
+              variants: variants,
+              selected: selected,
+            ),
+          },
+          if (state.isReady) ...[
+            SizedBox(height: 10.h),
+            AppButton.outlined(
+              label: state.current.isEmpty ? 'اربط مقاسات' : 'تعديل المقاسات',
+              icon: AppIcons.products,
+              onPressed: onPick,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// What is on the material right now — by name while it is untouched, by count once it is not.
+///
+/// **The picker answers with ids and nothing else**, because a size on a page nobody scrolled to
+/// has no row to read a name off. So the moment a selection exists this stops naming things and
+/// counts them instead, which is honest: naming four of six and silently dropping two would be
+/// worse than naming none.
+class _Chosen extends StatelessWidget {
+  const _Chosen({required this.variants, required this.selected});
+
+  final List<StockItemVariantRef> variants;
+  final Set<int>? selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    if (selected case final picked?) {
+      return Text(
+        picked.isEmpty
+            ? 'لن يسحب منها أي مقاس — يُحفظ مع النموذج'
+            : '${picked.length} ${picked.length == 1 ? 'مقاس' : 'مقاسات'} — تُحفظ مع النموذج',
+        style: context.textTheme.bodySmall?.copyWith(
+          color: scheme.primary,
+          fontWeight: FontWeight.w700,
+        ),
+      );
+    }
+
+    if (variants.isEmpty) {
+      return Text(
+        'لا يسحب منها أي مقاس',
+        style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+      );
+    }
+
+    return Wrap(
+      spacing: 8.w,
+      runSpacing: 8.h,
+      children: [
+        for (final variant in variants)
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: scheme.outlineVariant),
+            ),
+            child: Text(
+              variant.displayName,
+              style: context.textTheme.labelSmall,
+            ),
+          ),
+      ],
     );
   }
 }

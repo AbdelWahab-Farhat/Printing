@@ -332,55 +332,41 @@ void main() {
   /// lives on «الصنف المخزني» and is changed from that screen, where changing it empties the
   /// shelf through a recorded adjustment rather than relabelling a figure that would then mean
   /// nothing.
-  testWidgets('asks what the product is cut from, and never what the shelf counts in', (
-    tester,
-  ) async {
+  testWidgets('the form no longer asks what the product is cut from', (tester) async {
     // Arrange & Act
     await tester.pumpWidget(host(const ProductFormPage()));
     await tester.pumpAndSettle();
 
-    // Assert — one material question, with the selling unit beside it. There is no second unit
-    // picker and no switch to reveal one: `POST|PUT /products` has carried no `stock_unit` rule
-    // since the column was dropped, and a control that silently did nothing would be worse than
-    // no control at all.
-    //
-    // «تصنيف المادة», not «التصنيف»: the catalogue heading two sections up owns that word on
-    // this form, and the assertion above guards there being only one of it.
-    expect(find.text('تصنيف المادة'), findsOneWidget);
+    // Assert — the catalogue heading owns «التصنيف» on this form and is the only classification
+    // question left on it. Which material a size draws on is now said from the material's own
+    // screen, where the whole set is ticked at once instead of one product at a time.
+    expect(find.text('تصنيف المادة'), findsNothing);
+    expect(find.text('اختر تصنيف المادة — اضغط للاختيار'), findsNothing);
+    expect(find.textContaining('لن تُربط المقاسات بأي مادة'), findsNothing);
+
+    // …and the selling unit is still asked, with no second unit picker beside it: `POST|PUT
+    // /products` has carried no `stock_unit` rule since the column was dropped, and a control
+    // that silently did nothing would be worse than no control at all.
     expect(find.text('وحدة التسعير'), findsOneWidget);
     expect(find.text('وحدة المخزون'), findsNothing);
     expect(find.text('وحدة المخزون تختلف عن وحدة البيع'), findsNothing);
   });
 
-  testWidgets('a product with no material says what that costs, rather than nothing', (
+  testWidgets('a product keeps the material it is filed under without showing it', (
     tester,
   ) async {
-    // Arrange — «بلا مادة» is a real answer: a quote-only bag is never stocked. But it has a
-    // consequence nothing else on any screen will mention until an order is refused at «جاهزة»,
-    // so the empty field states it here.
-    // Act
-    await tester.pumpWidget(host(const ProductFormPage()));
-    await tester.pumpAndSettle();
-
-    // Assert
-    expect(find.text('اختر تصنيف المادة — اضغط للاختيار'), findsOneWidget);
-    expect(find.textContaining('لن تُربط المقاسات بأي مادة'), findsOneWidget);
-  });
-
-  testWidgets('a product being corrected opens on the material it is filed under', (
-    tester,
-  ) async {
-    // Arrange — the one thing a form must never do to data it was only asked to display is
-    // silently blank it. An empty picker would read as «بلا مادة» while the save omitted the key
-    // and kept the material anyway: the screen would have been lying, and only by luck harmlessly.
+    // Arrange — the category still resolves shelves on the server for every product that has
+    // one; what went away is the control, not the column. So the form must carry it silently and
+    // hand it back untouched, and must not display it anywhere.
     // Act
     await tester.pumpWidget(host(const ProductFormPage(product: product)));
     await tester.pumpAndSettle();
 
-    // Assert — the material's own name, and the sentence that says what naming it does.
-    expect(find.text('كيس شحن'), findsOneWidget);
-    expect(find.text('اختر تصنيف المادة — اضغط للاختيار'), findsNothing);
-    expect(find.textContaining('كل مقاس يُربط تلقائياً بمادة هذا التصنيف'), findsOneWidget);
+    // Assert — no name, no picker, no sentence about what naming one does. That the value is
+    // still *sent* is asserted where it can be: «a save that touched no size still sends every
+    // shelf back», which reads `stockItemGroupId` off the recorded body.
+    expect(find.text('كيس شحن'), findsNothing);
+    expect(find.textContaining('كل مقاس يُربط تلقائياً'), findsNothing);
   });
 
   // ─────────────────────── the per-size shelf pickers ───────────────────────

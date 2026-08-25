@@ -41,6 +41,14 @@ class ProductVariantResource extends JsonResource
                 'unit_label' => $this->stockItem->unit->label(),
             ]),
 
+            // Which product this size belongs to, where a caller loaded it. A size is «المنتج —
+            // المقاس» to a reader and «25*35» on its own to nobody, and the one screen that lists
+            // sizes across several products at once cannot name them without this.
+            'product' => $this->whenLoaded('product', fn (): ?array => $this->product === null ? null : [
+                'id' => $this->product->id,
+                'name' => $this->product->name,
+            ]),
+
             'price_tiers' => ProductPriceTierResource::collection($this->whenLoaded('priceTiers')),
         ];
     }

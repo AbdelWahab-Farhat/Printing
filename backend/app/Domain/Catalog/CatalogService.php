@@ -7,6 +7,7 @@ namespace App\Domain\Catalog;
 use App\Domain\Catalog\Actions\CreateProduct;
 use App\Domain\Catalog\Actions\CreateProductCategory;
 use App\Domain\Catalog\Actions\DeleteProductCategory;
+use App\Domain\Catalog\Actions\PointVariantsAtStockItem;
 use App\Domain\Catalog\Actions\QuoteProductPrice;
 use App\Domain\Catalog\Actions\RemoveProductCategoryImage;
 use App\Domain\Catalog\Actions\ReorderProductCategories;
@@ -24,6 +25,7 @@ use App\Domain\Catalog\Queries\ProductCategoryFilters;
 use App\Domain\Catalog\Queries\ProductCategoryListQuery;
 use App\Domain\Catalog\Queries\ProductFilters;
 use App\Domain\Catalog\Queries\ProductListQuery;
+use App\Domain\Inventory\Models\StockItem;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 
@@ -53,6 +55,7 @@ class CatalogService
         private readonly QuoteProductPrice $quoteProductPrice,
         private readonly ProductListQuery $listQuery,
         private readonly FindProductVariant $findProductVariant,
+        private readonly PointVariantsAtStockItem $pointVariantsAtStockItem,
         private readonly CreateProductCategory $createCategory,
         private readonly UpdateProductCategory $updateCategory,
         private readonly DeleteProductCategory $deleteCategory,
@@ -179,6 +182,20 @@ class CatalogService
      * The seam another context reaches a variant through — it never queries
      * {@see ProductVariant} itself.
      */
+    /**
+     * Points a set of product sizes at one material, and unlinks everything it left out.
+     *
+     * The door Inventory knocks on: `product_variants` is Catalog's table, and a material's screen
+     * reaches it here rather than writing it (RULES.md §3). See {@see PointVariantsAtStockItem}
+     * for why the list replaces rather than adds.
+     *
+     * @param  list<int>  $variantIds
+     */
+    public function pointVariantsAtStockItem(StockItem $item, array $variantIds): StockItem
+    {
+        return ($this->pointVariantsAtStockItem)($item, $variantIds);
+    }
+
     public function findVariant(int $variantId): ProductVariant
     {
         return ($this->findProductVariant)($variantId);

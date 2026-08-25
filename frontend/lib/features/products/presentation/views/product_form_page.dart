@@ -16,7 +16,6 @@ import 'package:dayaa/features/products/presentation/viewmodel/product_categorie
 import 'package:dayaa/features/products/presentation/viewmodel/save_product_cubit.dart';
 import 'package:dayaa/features/products/presentation/widgets/product_category_picker.dart';
 import 'package:dayaa/features/products/usecases/save_product.dart';
-import 'package:dayaa/features/stock_item_groups/presentation/widgets/stock_item_group_picker_sheet.dart';
 import 'package:dayaa/features/stock_items/presentation/widgets/stock_item_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -121,7 +120,7 @@ class _ProductFormViewState extends State<_ProductFormView> {
   ///
   /// The id is what travels; the name is only ever drawn. Null omits the key on save, which on an
   /// edit means «اترك المادة كما هي» — the server offers no way to clear it, deliberately.
-  late ({int id, String name})? _material = _seedMaterial();
+  late final ({int id, String name})? _material = _seedMaterial();
 
   /// Whether the per-size shelf pickers are unfolded.
   ///
@@ -345,42 +344,6 @@ class _ProductFormViewState extends State<_ProductFormView> {
       _image = files.first;
       _imageError = null;
     });
-  }
-
-  /// Chooses «المادة», and drops every hand-picked shelf when the answer changes.
-  ///
-  /// **The clearing is the point, not a side effect.** An explicit `stock_item_id` beats the
-  /// material on the server, every time — so a size still pointing at the old material's pile
-  /// would quietly ignore the material just chosen, and the field would be showing one answer
-  /// while the save made another. Naming a new material means «كل المقاسات تُقصّ من هذه» and
-  /// nothing else would be an honest reading of the tap.
-  ///
-  /// **Only when one material replaces another.** Re-picking the one already set must not throw
-  /// away an override added a moment ago, and naming a *first* material must not either: those
-  /// pins were made when there was no material to make them, so they are somebody's deliberate
-  /// record rather than a stale answer to this question. They stay, and the fold below is already
-  /// open on them — see [_showShelves] — so they can be dropped one at a time if that is meant.
-  Future<void> _pickMaterial() async {
-    FocusScope.of(context).unfocus();
-
-    final chosen = await showStockItemGroupPicker(context: context);
-    if (chosen == null || !mounted) return;
-
-    final current = _material;
-    final replaced = current != null && current.id != chosen.id;
-
-    setState(() {
-      _material = (id: chosen.id, name: chosen.name);
-
-      if (replaced) {
-        for (final size in _sizes) {
-          size.stockItemId = null;
-          size.shelfLabel = null;
-        }
-      }
-    });
-
-    context.read<SaveProductCubit>().clearFailure();
   }
 
   /// Points one size at a particular pile — the escape hatch, and nothing more.
@@ -607,23 +570,6 @@ class _ProductFormViewState extends State<_ProductFormView> {
                         }),
                       ),
                       SizedBox(height: 16.h),
-
-                      // **The one field that files this product's sizes onto shelves**, and the
-                      // whole of this change from the user's side. It sits with the product's
-                      // identity rather than with the sizes because it is answered once for the
-                      // product, however many sizes it grows later — see [_material].
-                      //
-                      // Deliberately not gated on `inventory.view`: this is a field on
-                      // `POST|PUT /products`, guarded by `products.manage` like everything else
-                      // on this form, and hiding it from whoever fills the catalogue in would
-                      // hide the feature from exactly the people it was built for. A reader who
-                      // may not browse materials gets the server's own Arabic inside the sheet.
-                      _MaterialField(
-                        material: _material,
-                        errorText: state.materialError,
-                        onTap: _pickMaterial,
-                      ),
-                      SizedBox(height: 12.h),
 
                       _ChoiceRow<PricingUnit>(
                         label: 'وحدة التسعير',
@@ -997,118 +943,6 @@ class _SizeCard extends StatelessWidget {
   }
 }
 
-/// «المادة» — one tap, and every size of the product is filed onto a shelf.
-///
-/// Full width and shaped like the photo picker beside it, because it is the same kind of control:
-/// a field whose value comes from a sheet rather than a keyboard. The line underneath is not
-/// decoration — it is the only place the screen can say what the tap actually did, since the
-/// filing happens on the server at save time and produces nothing visible here.
-///
-/// There is no way to clear it once set, and that is the API's rule rather than an omission: a
-/// product's material cannot be removed through `PUT /products`, because doing so would detach
-/// every one of its sizes from its pile on that very save. Choosing a *different* material is the
-/// available move, and the caller drops the per-size overrides when it happens.
-class _MaterialField extends StatelessWidget {
-  const _MaterialField({required this.material, required this.onTap, this.errorText});
-
-  final ({int id, String name})? material;
-  final VoidCallback onTap;
-  final String? errorText;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final chosen = material;
-    final isSet = chosen != null;
-    final invalid = errorText != null;
-    final corner = BorderRadius.circular(12.r);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        InkWell(
-          onTap: onTap,
-          borderRadius: corner,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-            decoration: BoxDecoration(
-              borderRadius: corner,
-              // Filled once a material is named, empty and outlined until then — the same way
-              // the photo picker above says «مطلوبة» before it says a filename. The tinted state
-              // is what makes «هذا المنتج له مادة» readable without stopping to read.
-              color: isSet ? scheme.primaryContainer : null,
-              border: isSet && !invalid
-                  ? null
-                  : Border.all(
-                      color: invalid ? scheme.error : scheme.outlineVariant,
-                      width: invalid ? 1.4 : 1,
-                    ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  AppIcons.warehouse,
-                  size: 22.sp,
-                  color: isSet ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'تصنيف المادة',
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: isSet
-                              ? scheme.onPrimaryContainer.withValues(alpha: 0.8)
-                              : scheme.onSurfaceVariant,
-                        ),
-                      ),
-                      SizedBox(height: 2.h),
-                      Text(
-                        chosen?.name ?? 'اختر تصنيف المادة — اضغط للاختيار',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: isSet ? scheme.onPrimaryContainer : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  AppIcons.forward,
-                  size: 18.sp,
-                  color: isSet ? scheme.onPrimaryContainer : scheme.primary,
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(height: 6.h),
-        Padding(
-          // Lines up with the text inside the box rather than with its border, so the sentence
-          // sits under the thing it is about.
-          padding: EdgeInsetsDirectional.only(start: 14.w),
-          child: Text(
-            errorText ??
-                (isSet
-                    ? 'كل مقاس يُربط تلقائياً بمادة هذا التصنيف عند مقاسه، وتُنشأ المادة إن '
-                          'لم تكن موجودة.'
-                    : 'اختياري — بدونه لن تُربط المقاسات بأي مادة، ولا يمكن تسجيل '
-                          'حركة مخزون عليها.'),
-            style: context.textTheme.bodySmall?.copyWith(
-              color: invalid ? scheme.error : scheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// The way in and out of the per-size shelf pickers.
 ///
 /// **A fold, not a switch.** Nothing here is saved: closing it changes no value and the links
@@ -1217,7 +1051,7 @@ class _ShelfRow extends StatelessWidget {
                         // `*` and no spaces — never rebuilt from the size's own fields.
                         label ??
                             (hasMaterial
-                                ? 'تُحدَّد من تصنيف المادة عند الحفظ'
+                                ? 'تُحدَّد تلقائياً عند الحفظ'
                                 : 'بلا مادة — لا حركة مخزون على هذا المقاس'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

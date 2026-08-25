@@ -23,6 +23,15 @@ sealed class SaveStockItemState with _$SaveStockItemState {
   /// word on it. Carries the item so the tile can redraw from the server's own `unit_label`.
   const factory SaveStockItemState.unitChanged(StockItem item) = SaveStockItemUnitChanged;
 
+  /// The material was stored and the links were refused.
+  ///
+  /// **Its own case, because it is neither of the other two.** A plain failure reads as «nothing
+  /// was saved» and sends somebody back to retype a form that is already in the database; a plain
+  /// success closes the screen on a rewiring that did not happen. Carries the stored material —
+  /// the form has an id now, so trying the links again is one tap, not a re-save.
+  const factory SaveStockItemState.linksRefused(StockItem item, Failure failure) =
+      SaveStockItemLinksRefused;
+
   const factory SaveStockItemState.failure(Failure failure) = SaveStockItemFailure;
 }
 

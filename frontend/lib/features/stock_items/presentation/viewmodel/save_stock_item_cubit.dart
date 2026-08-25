@@ -1,8 +1,10 @@
+import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/stock_items/models/stock_item.dart';
 import 'package:dayaa/features/stock_items/models/stock_unit.dart';
 import 'package:dayaa/features/stock_items/usecases/save_stock_item.dart';
 import 'package:dayaa/features/stock_items/usecases/set_stock_item_unit.dart';
+import 'package:dayaa/features/stock_items/usecases/set_stock_item_variants.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -24,12 +26,15 @@ class SaveStockItemCubit extends Cubit<SaveStockItemState> {
   SaveStockItemCubit({
     required SaveStockItem saveStockItem,
     required SetStockItemUnit setStockItemUnit,
+    required SetStockItemVariants setStockItemVariants,
   }) : _saveStockItem = saveStockItem,
        _setStockItemUnit = setStockItemUnit,
+       _setStockItemVariants = setStockItemVariants,
        super(const SaveStockItemState.initial());
 
   final SaveStockItem _saveStockItem;
   final SetStockItemUnit _setStockItemUnit;
+  final SetStockItemVariants _setStockItemVariants;
 
   /// Adds a shelf, or corrects one.
   ///
@@ -46,6 +51,7 @@ class SaveStockItemCubit extends Cubit<SaveStockItemState> {
     String? description,
     required bool isActive,
     required int sortOrder,
+    List<int>? variantIds,
   }) async {
     // Ignored rather than queued: a second tap while the first request is in flight is a second
     // POST, and it comes back as «يوجد صنف مخزني بنفس الاسم والمقاس» against the row the first
@@ -69,7 +75,35 @@ class SaveStockItemCubit extends Cubit<SaveStockItemState> {
     // The form may have been popped while the request was in flight.
     if (isClosed) return;
 
+    // **The links go second, and only if the material was stored.** On a new material there is no
+    // id to point anything at until the first call answers, so the order is forced rather than
+    // chosen — and it is the safe one either way: a link list can be re-sent, typing cannot.
+    if (result case Right(value: final item) when variantIds != null) {
+      await _pointVariants(item, variantIds);
+
+      return;
+    }
+
     emit(result.fold((f) => SaveStockItemState.failure(f), (i) => SaveStockItemState.success(i)));
+  }
+
+  /// The second half of a save: which product sizes draw on the material that was just stored.
+  ///
+  /// **A failure here does not undo the material.** It exists, correctly, with everything that
+  /// was typed into it; what did not happen is the rewiring. So the form stays open on the
+  /// selection and says so — see [SaveStockItemState.linksRefused] — rather than reporting a
+  /// failure that would read as «nothing was saved» and send somebody to type it all again.
+  Future<void> _pointVariants(StockItem item, List<int> variantIds) async {
+    final linked = await _setStockItemVariants(item.id, variantIds);
+
+    if (isClosed) return;
+
+    emit(
+      linked.fold(
+        (f) => SaveStockItemState.linksRefused(item, f),
+        SaveStockItemState.success,
+      ),
+    );
   }
 
   /// Changes what the pile is counted in — **after somebody has been told the balance will be
