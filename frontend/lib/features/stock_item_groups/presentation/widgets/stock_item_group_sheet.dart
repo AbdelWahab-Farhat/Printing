@@ -218,16 +218,21 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
                     errorText: state.descriptionError,
                     onChanged: (_) => cubit.clearFailure(),
                   ),
-                  SizedBox(height: 4.h),
-                  SwitchListTile.adaptive(
-                    value: _isActive,
-                    onChanged: (value) => setState(() => _isActive = value),
-                    // The same words the sibling صنف form uses for the same column, and no
-                    // paragraph under them: «off» is plainly not «deleted» once the switch is
-                    // read as what it is — whether this shows up in a picker.
-                    title: const Text('يُعرض في قوائم الاختيار'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                  // Kept off the new-material form for the reason the sibling صنف form keeps
+                  // it off its own: a material is created to be used, and a switch whose answer
+                  // is always the same is a row to read past.
+                  //
+                  // The label is word-for-word that form's, deliberately: it is the same column
+                  // on two screens, and calling it two things would teach that it is two things.
+                  if (_isEditing) ...[
+                    SizedBox(height: 4.h),
+                    SwitchListTile.adaptive(
+                      value: _isActive,
+                      onChanged: (value) => setState(() => _isActive = value),
+                      title: const Text('يُعرض في قوائم الاختيار'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ],
                   SizedBox(height: 20.h),
                   AppButton(
                     label: _isEditing ? 'حفظ' : 'إضافة',

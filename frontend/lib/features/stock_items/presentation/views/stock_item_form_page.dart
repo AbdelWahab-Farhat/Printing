@@ -59,7 +59,8 @@ Future<bool?> openStockItemForm(
 ///     material's own screen, where a rename covers every size in one transaction;
 ///   * **`sort_order` has no control and is still sent.** The update is a full replacement: an
 ///     absent `sort_order` renumbers the shelf to zero and an absent `is_active` re-offers one
-///     somebody stopped. The first is round-tripped from what was loaded, the second has a switch.
+///     somebody stopped. The first is round-tripped from what was loaded, the second has a
+///     switch — and only while editing, because a new shelf is always created showing.
 class StockItemFormPage extends StatelessWidget {
   const StockItemFormPage({this.item, this.group, super.key});
 
@@ -316,21 +317,19 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
                     errorText: state.descriptionError,
                     onChanged: (_) => cubit.clearFailure(),
                   ),
-                  SizedBox(height: 8.h),
-
-                  SwitchListTile.adaptive(
-                    value: _isActive,
-                    onChanged: (value) => setState(() => _isActive = value),
-                    title: const Text('يُعرض في قوائم الاختيار'),
-                    // Said out loud, because "off" is not "deleted" and the difference is the
-                    // whole reason this is a switch rather than a bin: the pile, its balance and
-                    // its history all stay exactly where they are.
-                    subtitle: const Text(
-                      'إن أُطفئ لم يعد يظهر عند تسجيل الحركات وأوامر الشراء، ويبقى رصيده '
-                      'وسجله كما هما',
+                  // **Only on a shelf that already exists.** Nobody opens this form to add
+                  // something they want hidden, so on the way in it is a question with one
+                  // answer — [_isActive] starts true and is sent as true without being asked.
+                  // Stopping a shelf is a real decision, and it belongs where it is taken.
+                  if (_isEditing) ...[
+                    SizedBox(height: 8.h),
+                    SwitchListTile.adaptive(
+                      value: _isActive,
+                      onChanged: (value) => setState(() => _isActive = value),
+                      title: const Text('يُعرض في قوائم الاختيار'),
+                      contentPadding: EdgeInsets.zero,
                     ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                  ],
                   SizedBox(height: 28.h),
 
                   AppButton(
