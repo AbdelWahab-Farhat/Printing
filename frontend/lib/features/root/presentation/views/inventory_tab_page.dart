@@ -40,19 +40,45 @@ class _InventoryTabPageState extends State<InventoryTabPage> {
   /// other two are consulted when something about a shelf needs explaining.
   int _segment = 0;
 
-  /// **Three words, and nothing under them.** Each segment used to carry a line explaining what
-  /// it was — «الرفّ نفسه، وعليه يقوم الرصيد» and the like. Written once they read well; met on
+  /// **Two words, and nothing under them.** Each segment used to carry a line explaining what it
+  /// was — «الرفّ نفسه، وعليه يقوم الرصيد» and the like. Written once they read well; met on
   /// every visit they are a paragraph between the person and the list they came for, and after
   /// the second day nobody reads them.
   ///
-  /// **The middle one is «المواد», and that is the whole naming.** What a storekeeper counts,
+  /// **«المواد» is the second one, and that is the whole naming.** What a storekeeper counts,
   /// orders and runs out of is a **مادة** — «كيس شحن 25×35» — and «كيس شحن» on its own is the
   /// **تصنيف** it is filed under. Calling the sized thing «صنف» put the everyday word on the
   /// screen nobody visits and left the screen with the balances named after a category.
-  static const List<String> _segments = ['المخازن', 'المواد', 'التصنيفات'];
+  ///
+  /// **And التصنيفات is no longer one of them.** A category is a thing the server keeps working
+  /// with and nobody is asked about: which product sizes draw on a material is now said on the
+  /// material itself, all of them at once, instead of one product at a time. The screen and its
+  /// route still exist — a deep link resolves and the data behind it is untouched — but nothing
+  /// navigates there.
+  ///
+  /// **This list and [IndexedStack]'s children are one thing in two places.** A label with no
+  /// body behind it is a `RangeError` the moment somebody taps it, and neither the analyzer nor
+  /// a widget test that never taps the third segment would say so — see [_bodies].
+  static const List<String> _segments = ['المخازن', 'المواد'];
+
+  /// One body per label in [_segments], in that order.
+  ///
+  /// **Kept beside the labels rather than inline**, because the two drifted apart once already:
+  /// a segment was removed from the stack and left in the strip, and the tab looked perfectly
+  /// correct until the third one was tapped. Named together, the mismatch is visible at a glance
+  /// — and asserted below.
+  static const List<Widget> _bodies = [
+    WarehousesPage(),
+    StockItemsPage(isEmbedded: true),
+  ];
 
   @override
   Widget build(BuildContext context) {
+    assert(
+      _segments.length == _bodies.length,
+      'every segment needs a body: ${_segments.length} labels, ${_bodies.length} bodies',
+    );
+
     return Column(
       children: [
         // **A switch, not a headline.** `SegmentedButton`'s default is a 48dp Material target
@@ -96,13 +122,7 @@ class _InventoryTabPageState extends State<InventoryTabPage> {
           // rebuilding the subtree on every segment tap would re-request the list each time and
           // throw away a scroll position and a filter the person had just set. This is the same
           // reason the shell keeps every tab alive.
-          child: IndexedStack(
-            index: _segment,
-            children: const [
-              WarehousesPage(),
-              StockItemsPage(isEmbedded: true),
-            ],
-          ),
+          child: IndexedStack(index: _segment, children: _bodies),
         ),
       ],
     );
