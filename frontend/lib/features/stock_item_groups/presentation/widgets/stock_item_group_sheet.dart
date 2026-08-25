@@ -188,16 +188,6 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    // What a material *is*, said once at the top: the commonest way this table
-                    // gets filled with the wrong rows is somebody entering a size here.
-                    'المجموعة هي المادة نفسها — «كيس شحن» — بلا مقاس وبلا رصيد. المقاسات '
-                    'تُنشأ تحتها تلقائياً حين يختارها منتج.',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
                   SizedBox(height: 16.h),
                   AppTextField(
                     controller: _name,
@@ -232,14 +222,10 @@ class _StockItemGroupFormState extends State<_StockItemGroupForm> {
                   SwitchListTile.adaptive(
                     value: _isActive,
                     onChanged: (value) => setState(() => _isActive = value),
-                    title: const Text('مادة يشتريها المحل'),
-                    // Said out loud, because "off" is not "deleted" and the difference is why
-                    // this switch exists rather than a bin: the shelves under a stopped
-                    // material keep every gram they hold, and the ledger keeps every movement.
-                    subtitle: const Text(
-                      'إن أُطفئت لم تُعرض عند اختيار مادة لمنتج جديد، وتبقى أصنافها وأرصدتها '
-                      'وحركاتها كما هي',
-                    ),
+                    // The same words the sibling صنف form uses for the same column, and no
+                    // paragraph under them: «off» is plainly not «deleted» once the switch is
+                    // read as what it is — whether this shows up in a picker.
+                    title: const Text('يُعرض في قوائم الاختيار'),
                     contentPadding: EdgeInsets.zero,
                   ),
                   SizedBox(height: 20.h),
@@ -319,20 +305,10 @@ class _UnitChoice extends StatelessWidget {
               ),
           ],
         ),
-        SizedBox(height: 6.h),
-        Text(
-          // The field reads like «كيف يُحسب هذا المخزون», and it is not that. It is the default
-          // stamped on a size at the moment the server creates it, and nothing else: an
-          // existing shelf's unit was snapshotted onto every balance and cost layer that ever
-          // touched it, and moving it is a different, destructive act on the item itself.
-          isEditing
-              ? 'تُحدّد وحدة أي صنف يُنشأ تحت هذه المجموعة لاحقاً. لا تمسّ أصنافها الحالية '
-                    'ولا أرصدتها — وحدة صنف قائم تُغيَّر من الصنف نفسه، وتغييرها يُصفّر رصيده '
-                    'في كل مخزن عبر تسوية مسجّلة.'
-              : 'تُحدّد وحدة أي صنف يُنشأ تحت هذه المجموعة — القطعة للأكياس المعدودة، '
-                    'والكيلوغرام لما يُوزن.',
-          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-        ),
+        // **No paragraph under the chips.** The label says «الافتراضية», which is the whole
+        // point of the field, and the one warning that used to live here — that changing a
+        // live صنف's unit zeroes its balance — belongs at the moment somebody does it. It is
+        // said there, in the confirm dialog on the صنف itself, where it can still stop them.
         if (errorText case final error?) ...[
           SizedBox(height: 4.h),
           Text(

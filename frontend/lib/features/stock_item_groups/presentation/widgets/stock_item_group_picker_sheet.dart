@@ -64,13 +64,8 @@ class _StockItemGroupPicker extends StatelessWidget {
               borderRadius: BorderRadius.circular(2.r),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 4.h),
-            child: Text(
-              'المادة التي يُقص منها المنتج. مقاسات المنتج تُربط بأصنافها تلقائياً عند الحفظ.',
-              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-            ),
-          ),
+          // No sentence over the list: the field that opened this sheet is already labelled
+          // «المادة», and a picker that explains itself every time is one to scroll past.
           Padding(
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
             // «عن مادة», not «عن مجموعة»: the endpoint matches the name only — not the code and

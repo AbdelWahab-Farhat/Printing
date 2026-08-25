@@ -260,9 +260,12 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
                     // Read-only under a material rather than absent, because the name is what
                     // the row will be called and hiding it would make the form unreadable.
                     readOnly: _nameBelongsToMaterial,
+                    // Kept only where the box is read-only: a field somebody cannot type in
+                    // owes them a reason. The free one needs no lecture — «اسم الصنف» over an
+                    // empty box is the whole instruction.
                     helperText: _nameBelongsToMaterial
-                        ? 'الاسم يأتي من المادة — تغييره يتم من شاشة المجموعة ويشمل كل مقاساتها'
-                        : 'الاسم مع المقاس يميّزان الصنف — «كيس شحن» بمقاسين هما صنفان',
+                        ? 'الاسم يأتي من المادة — يُغيَّر من شاشة المجموعة'
+                        : null,
                     validator: Validators.compose([
                       Validators.required,
                       Validators.minLength(2, label: 'اسم الصنف'),
@@ -464,18 +467,19 @@ class _UnitChoice extends StatelessWidget {
               ),
           ],
         ),
-        SizedBox(height: 6.h),
-        Text(
-          error ??
-              (isFixedByMaterial
-                  ? 'تأتي من المادة — كل مقاس يُنشأ تحتها يبدأ بوحدتها الافتراضية'
-                  : 'ما يُعدّ به هذا الصنف في المخزن. مستقل عن وحدة تسعير المنتج — '
-                        'ما يُشترى بالوزن قد يُباع بالقطعة. لا يمكن تغييره لاحقاً إلا '
-                        'بتصفير الرصيد.'),
-          style: context.textTheme.bodySmall?.copyWith(
-            color: error == null ? scheme.onSurfaceVariant : scheme.error,
+        // A line only when there is something the person cannot see for themselves: a refusal,
+        // or a box they are not allowed to touch. The «what a unit is» paragraph went — and the
+        // «changing it later zeroes the balance» half of it is said by the confirm dialog that
+        // actually does it, where it can still stop somebody.
+        if (error != null || isFixedByMaterial) ...[
+          SizedBox(height: 6.h),
+          Text(
+            error ?? 'تأتي من المادة',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: error == null ? scheme.onSurfaceVariant : scheme.error,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
