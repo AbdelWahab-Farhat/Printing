@@ -33,17 +33,35 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('purchase_order_items', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('product_variant_id');
-
-            $table->foreignId('stock_item_id')->after('purchase_order_id')
+            // Nullable, backfilled, then made NOT NULL — see the note in
+            // `rekey_warehouse_stocks_to_stock_items`. A no-op on an empty database.
+            $table->foreignId('stock_item_id')->nullable()->after('purchase_order_id')
                 ->constrained('stock_items')->cascadeOnDelete();
         });
 
         Schema::table('stock_arrival_items', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('product_variant_id');
-
-            $table->foreignId('stock_item_id')->after('stock_arrival_id')
+            $table->foreignId('stock_item_id')->nullable()->after('stock_arrival_id')
                 ->constrained('stock_items')->cascadeOnDelete();
+        });
+
+        foreach (['purchase_order_items', 'stock_arrival_items'] as $lines) {
+            DB::statement(
+                "UPDATE {$lines}
+                 SET stock_item_id = v.stock_item_id
+                 FROM product_variants v
+                 WHERE v.id = {$lines}.product_variant_id
+                   AND v.stock_item_id IS NOT NULL"
+            );
+        }
+
+        Schema::table('purchase_order_items', function (Blueprint $table) {
+            $table->unsignedBigInteger('stock_item_id')->nullable(false)->change();
+            $table->dropConstrainedForeignId('product_variant_id');
+        });
+
+        Schema::table('stock_arrival_items', function (Blueprint $table) {
+            $table->unsignedBigInteger('stock_item_id')->nullable(false)->change();
+            $table->dropConstrainedForeignId('product_variant_id');
         });
 
         DB::statement(

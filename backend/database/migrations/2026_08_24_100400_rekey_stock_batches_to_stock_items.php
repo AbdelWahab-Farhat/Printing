@@ -3,6 +3,7 @@
 use App\Domain\Inventory\Actions\ConsumeStockBatchesFifo;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -25,11 +26,25 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('stock_batches', function (Blueprint $table) {
+            // Nullable, backfilled, then made NOT NULL — see the note in
+            // `rekey_warehouse_stocks_to_stock_items`. A no-op on an empty database.
+            $table->foreignId('stock_item_id')->nullable()->after('warehouse_id')
+                ->constrained('stock_items')->cascadeOnDelete();
+        });
+
+        DB::statement(
+            'UPDATE stock_batches
+             SET stock_item_id = v.stock_item_id
+             FROM product_variants v
+             WHERE v.id = stock_batches.product_variant_id
+               AND v.stock_item_id IS NOT NULL'
+        );
+
+        Schema::table('stock_batches', function (Blueprint $table) {
+            $table->unsignedBigInteger('stock_item_id')->nullable(false)->change();
+
             $table->dropIndex(['warehouse_id', 'product_variant_id', 'received_at']);
             $table->dropConstrainedForeignId('product_variant_id');
-
-            $table->foreignId('stock_item_id')->after('warehouse_id')
-                ->constrained('stock_items')->cascadeOnDelete();
 
             // FIFO always asks "which of this item, in this warehouse, still has something left,
             // oldest first" — this is that query's index.
