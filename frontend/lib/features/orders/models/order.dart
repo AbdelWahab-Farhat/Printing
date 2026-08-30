@@ -215,6 +215,10 @@ abstract class Order with _$Order {
   /// Only charged when we did the design, so the server sends `'0.00'` otherwise.
   bool get hasDesignFee => designFee != '0.00';
 
+  /// A delivery that was actually charged for. An office pickup is `'0.00'`, and so is a
+  /// delivery we did not bill — neither is a line on the customer's copy.
+  bool get hasDeliveryPrice => deliveryPrice != '0.00';
+
   /// The name to put on the delivery line — the recipient when there is one, else the customer.
   String? get recipient => recipientName ?? customer?.name;
 

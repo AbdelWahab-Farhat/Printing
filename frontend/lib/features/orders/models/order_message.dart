@@ -1,6 +1,7 @@
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_status.dart';
 
 /// The order written out as a message, for a reader who does not have the app.
 ///
@@ -12,10 +13,10 @@ import 'package:dayaa/features/orders/models/order.dart';
 ///
 /// The message it replaces was a single column of twelve lines, and the number somebody rings
 /// about — «المتبقي» — sat in the middle of it with nothing to separate it from the address. A
-/// heading with a blank line above it lets a reader jump: *my number*, *what I ordered*, *what I
-/// owe*, *where I collect it*. The headings carry an emoji rather than bold marks, deliberately:
-/// a variant label like `35*40` puts a stray asterisk in the message, and WhatsApp's own bold
-/// syntax is asterisks.
+/// heading with a blank line above it lets a reader jump: *what I ordered*, *what I owe*, *where
+/// I collect it*. The headings carry an emoji rather than bold marks, deliberately: a variant
+/// label like `35*40` puts a stray asterisk in the message, and WhatsApp's own bold syntax is
+/// asterisks.
 ///
 /// **Nothing here is computed.** Every amount is the string the server sent — «المتبقي» is not
 /// `grandTotal - paidAmount` worked out on the phone, for the same reason the screen does not do
@@ -24,6 +25,10 @@ import 'package:dayaa/features/orders/models/order.dart';
 /// **A section with nothing to say is absent**, not empty. An order with no design fee, no
 /// discount and no notes should read as an order without those things, not as an order with
 /// three blank headings under it.
+///
+/// **What staff need and the customer does not is not here at all.** The status and the
+/// customer's own name are on the screen for the clerk, and each of them was a line the customer
+/// had to read past to reach the number they were asking about.
 class OrderMessage {
   const OrderMessage._();
 
@@ -32,24 +37,18 @@ class OrderMessage {
   /// receiving this does not necessarily.
   static const String currency = 'د';
 
-  static const String orderHeading = '📄 الطلبية';
-  static const String customerHeading = '👤 الزبون';
   static const String itemsHeading = '🛍️ المطلوب';
   static const String moneyHeading = '💰 الحساب';
-
-  /// Two headings for one section, because they are two different instructions: one says come
-  /// and get it, the other says it is coming to you.
-  static const String pickupHeading = '📦 الاستلام';
-  static const String deliveryHeading = '🚚 التوصيل';
-
   static const String notesHeading = '📝 ملاحظات';
+
+  /// One label for both office pickup and delivery, because it answers the same question either
+  /// way: the place this order reaches its owner.
+  static const String placeLabel = 'مكان الإستلام';
 
   /// The whole message, ready to be pasted into a chat.
   static String of(Order order) {
     final sections = <String>[
-      '🖨️ فاتورة طلبية #${order.code}',
-      _order(order),
-      _customer(order),
+      _header(order),
       _items(order),
       _money(order),
       _destination(order),
@@ -68,32 +67,39 @@ class OrderMessage {
   /// subject, which reads as spam.
   static String subjectOf(Order order) => 'فاتورة طلبية #${order.code}';
 
-  static String _order(Order order) => _section(orderHeading, [
-    // The server's own Arabic for the status — a state added after this release still reads
-    // correctly here, the same way it does on the screen.
-    'الحالة: ${order.statusLabel}',
+  /// Which invoice this is, when it was taken, whose it is, and the one number it will be
+  /// received on.
+  ///
+  /// **No name.** The customer knows who they are, and the message arrives on their own phone;
+  /// the name was there for the clerk, who reads it on the screen instead.
+  ///
+  /// **One number, never two.** The recipient's when the order has one, the customer's when it
+  /// does not — printing both makes the reader work out which of them the order is coming to.
+  static String _header(Order order) => _section('🖨️ رقم فاتورة: #${order.code}', [
     if (_dayOf(order) case final day?) 'التاريخ: $day',
-  ]);
+    if (order.customer case final customer?) 'كود الزبون: ${customer.code}',
+    if (_receivingPhone(order) case final phone?) 'رقم المستلم: $phone',
+  ], alwaysShown: true);
 
-  static String _customer(Order order) {
-    final customer = order.customer;
-    if (customer == null) return '';
+  static String? _receivingPhone(Order order) => order.recipientPhone ?? order.customer?.phone;
 
-    return _section(customerHeading, [
-      'كود الزبون: ${customer.code}',
-      'الإسم: ${customer.name}',
-      'الرقم: ${customer.phone}',
-    ]);
-  }
+  /// The day the order was taken, at the top where the reader looks for it.
+  ///
+  /// Not [Order.placedAgo]: «منذ ٣ أيام» is true when it is copied and wrong by the time the
+  /// customer scrolls back to it, and a message is read long after it is sent. The same words
+  /// the app draws everywhere else, so «14 أغسطس 2026» never asks which half of `2026-08-14` is
+  /// the month.
+  static String? _dayOf(Order order) => (order.placedAt ?? order.createdAt)?.dayLabel;
 
-  /// The bags, each numbered, on two lines: what it is, then how many at what price.
+  /// The bags, each numbered, then what there is to check about them under it.
   ///
   /// **Numbered rather than bulleted**, because an order of four sizes is discussed on the phone
   /// by position — «التاني، اللي 30*40» — and a row of identical dots gives nobody anything to
   /// say. The number is also what the reader counts against «طلبت تلاتة».
   ///
-  /// Split across two lines rather than run together, because the first is the line the customer
-  /// checks against what they asked for and the second is the one they check against the total.
+  /// Under the name, one fact per line: the count, then what that count came to. A customer
+  /// checking a message checks those two things separately, and a single run-on line asks them
+  /// to find each in the middle of the other.
   static String _items(Order order) {
     final items = order.items ?? const <OrderItem>[];
     if (items.isEmpty) return '';
@@ -102,76 +108,77 @@ class OrderMessage {
 
     for (final (index, item) in items.indexed) {
       lines
-        ..add('${index + 1}. ${item.productName} — ${item.variantLabel}')
-        ..add(
-          '   ${item.quantity.grouped} ${item.pricingUnitLabel} × '
-          '${item.unitPrice.grouped} = ${_amount(item.lineTotal)}',
-        );
+        ..add('${index + 1}. ${item.productName} — ${item.variantLabel}:')
+        // Padding zeros are the database's, not the shop's: an order of «100.000 قطعة» is an
+        // order of a hundred bags.
+        ..add('- الكمية: ${groupedDecimal(item.quantity)} ${item.pricingUnitLabel}')
+        ..add('- القيمة: ${_amount(item.lineTotal)}');
 
       // Said on the line it is missing from, because that is the only place the number means
       // anything: «ناقص ٤٠» of *which* size.
       if (item.shortageQuantity case final missing?) {
-        lines.add('   ناقص: ${missing.grouped} ${item.pricingUnitLabel}');
+        lines.add('- ناقص: ${groupedDecimal(missing)} ${item.pricingUnitLabel}');
       }
     }
 
     return _section(itemsHeading, lines);
   }
 
-  /// The screen's «الحساب» card, minus one line.
+  /// Every charge that made the bill, then what is left of it.
   ///
-  /// **«التوصيل» is not on the message, at the owner's instruction** — the screen still shows it,
-  /// including the `0.00` an office pickup costs, because a member of staff checking a total
-  /// wants to see that it is nothing rather than infer it. The customer's copy leaves it out.
+  /// **«التوصيل» is a line here**, unlike in the first version of this message: on an order that
+  /// was charged for delivery, the fee is a figure the customer is being asked to pay, and
+  /// leaving it out left a gap between the products and what was owed that nothing explained.
   ///
-  /// The consequence, stated so nobody has to rediscover it: on an order that *was* charged for
-  /// delivery, «المنتجات» plus the fees no longer reach «الإجمالي», and the gap is silent.
+  /// A charge of nothing is still absent, delivery included. The screen prints the `0.00` an
+  /// office pickup costs because a member of staff checking a total wants to see that it is
+  /// nothing rather than infer it; on this copy a zero line is a question, not an answer.
+  ///
+  /// **«الإجمالي» is not here, by the owner's instruction.** The charges add up to it and
+  /// «المدفوع» and «المتبقي» are read off it, so it is a line the reader can do without.
   static String _money(Order order) => _section(moneyHeading, [
     'المنتجات: ${_amount(order.itemsTotal)}',
     if (order.hasDesignFee) 'التصميم: ${_amount(order.designFee)}',
+    if (order.hasDeliveryPrice) 'التوصيل: ${_amount(order.deliveryPrice)}',
     if (order.hasDiscount) 'الخصم: - ${_amount(order.discount)}',
-    'الإجمالي: ${_amount(order.grandTotal)}',
     'المدفوع: ${_amount(order.paidAmount)}',
     'المتبقي: ${_amount(order.remainingAmount)}',
   ]);
 
-  static String _destination(Order order) => _section(
-    order.isOfficePickup ? pickupHeading : deliveryHeading,
-    [
-      '${order.fulfilmentTypeLabel}: ${order.destination}',
-      if (order.customerShopName case final shop?) 'المحل: $shop',
-      if (order.addressDetails case final address?) 'العنوان: $address',
-      if (order.recipientName case final name?) 'المستلم: $name',
-      if (order.recipientPhone case final phone?) 'هاتف المستلم: $phone',
-      if (order.shippingCompany case final company?) 'شركة الشحن: $company',
-      if (order.trackingNumber case final tracking?) 'رقم التتبع: $tracking',
-    ],
-  );
-
-  /// A section of their own, though the screen keeps them under the address.
+  /// Where the order reaches its owner, with no heading of its own.
   ///
-  /// «شعار فقط» is an instruction about the work, not about where it goes, and on the message it
-  /// is often the last thing the customer is asked to confirm.
+  /// One line is all most orders need here, and a line under an emoji heading of its own was a
+  /// section built for a single fact. «هاتف المستلم» is not repeated — it is in the header, the
+  /// only number on the message.
+  static String _destination(Order order) => _section('$placeLabel: ${order.destination}', [
+    if (order.customerShopName case final shop?) 'المحل: $shop',
+    if (order.addressDetails case final address?) 'العنوان: $address',
+    if (order.recipientName case final name?) 'المستلم: $name',
+    if (order.shippingCompany case final company?) 'شركة الشحن: $company',
+    if (order.trackingNumber case final tracking?) 'رقم التتبع: $tracking',
+  ], alwaysShown: true);
+
+  /// A section of their own, though the screen keeps them under the address — and **only while
+  /// the order is «جديدة»**, by the owner's instruction.
+  ///
+  /// The note on an order is written when it is taken («دفع عربون بقيمة 30 د ليبيانا», «شعار
+  /// فقط») and it is asking the customer to confirm something before the work starts. On an
+  /// order already printed, already out for delivery, already settled, that same sentence is a
+  /// stale instruction the customer can no longer act on.
   static String _notes(Order order) {
+    if (order.status != OrderStatus.taken) return '';
+
     final notes = order.notes?.trim();
 
     return notes == null || notes.isEmpty ? '' : _section(notesHeading, [notes]);
   }
 
-  static String _section(String heading, List<String> lines) =>
-      lines.isEmpty ? '' : [heading, ...lines].join('\n');
+  /// A heading and its lines. Empty when there are no lines — unless the heading is itself the
+  /// fact, the way «مكان الإستلام: درنة» and the invoice number are.
+  static String _section(String heading, List<String> lines, {bool alwaysShown = false}) =>
+      lines.isEmpty && !alwaysShown ? '' : [heading, ...lines].join('\n');
 
   /// Grouped, like every figure the app draws: a customer reading «2,975 د» on their phone is
   /// reading the same number the clerk read on theirs.
   static String _amount(String value) => '${value.grouped} $currency';
-
-  /// The day the order was taken, `Y-m-d`.
-  ///
-  /// Not [Order.placedAgo]: «منذ ٣ أيام» is true when it is copied and wrong by the time the
-  /// customer scrolls back to it, and a message is read long after it is sent.
-  static String? _dayOf(Order order) {
-    // The same words the app draws everywhere else. A customer reading «14 أغسطس 2026» in a
-    // WhatsApp message does not have to work out which half of `2026-08-14` is the month.
-    return (order.placedAt ?? order.createdAt)?.dayLabel;
-  }
 }
