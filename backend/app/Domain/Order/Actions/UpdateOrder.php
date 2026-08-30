@@ -41,6 +41,7 @@ final class UpdateOrder
         private readonly SyncOrderItems $syncItems,
         private readonly RecalculateOrderTotals $recalculate,
         private readonly CustomerService $customers,
+        private readonly ResolveOrderFlow $resolveFlow,
     ) {}
 
     /**
@@ -103,6 +104,13 @@ final class UpdateOrder
             if ($data->items !== null) {
                 ($this->syncItems)($order, $data->items);
             }
+
+            // Called unconditionally and idempotent: a set of lines that comes back unchanged
+            // resolves to the flow the order already has and writes nothing. It is a no-op for
+            // anything past «جديدة» too — swapping the last printed line out of an order that is
+            // already at the press does not move it onto a road with no press on it, see
+            // {@see ResolveOrderFlow}.
+            ($this->resolveFlow)($order->load('items'));
 
             return ($this->recalculate)($order->load('items'))->refresh();
         });

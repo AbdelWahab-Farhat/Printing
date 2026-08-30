@@ -137,6 +137,9 @@ final class AuditAttributeLabels
             'name' => 'اسم التصنيف',
             'description' => 'الوصف',
             'parent_id' => 'التصنيف الرئيسي',
+            // Worth a history entry more than most: turning it on changes the road every order
+            // taken under this heading walks from that moment — see `ResolveOrderFlow`.
+            'skips_production' => 'يتخطّى التصميم والطباعة',
             // Four columns for one picture, and all four are read the same way by somebody
             // scanning a history: «تغيّرت الصورة». Naming them separately is what stops the
             // screen printing `image_path` at them.
@@ -236,6 +239,10 @@ final class AuditAttributeLabels
             'stock_deducted_at' => 'تاريخ خصم المخزون',
             'fulfillment_warehouse_id' => 'مخزن التنفيذ',
             'total_cogs' => 'إجمالي تكلفة البضاعة',
+            // Its *values* need no dictionary: `OrderFlow` names itself, and AuditValueLabels
+            // translates any enum-cast column whose enum can — so a history row reads «بلا تصميم
+            // وطباعة» rather than `no_production`.
+            'production_flow' => 'مسار التنفيذ',
         ],
         'order_item' => [
             'order_id' => 'الطلبية',

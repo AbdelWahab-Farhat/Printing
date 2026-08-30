@@ -26,11 +26,24 @@ class ProductCategoryFactory extends Factory
             'description' => null,
             'is_active' => true,
             'sort_order' => 0,
+            // The road every order took before flows existed, which is what an unremarkable
+            // category should still mean.
+            'skips_production' => false,
         ];
     }
 
     public function inactive(): static
     {
         return $this->state(fn () => ['is_active' => false]);
+    }
+
+    /**
+     * Goods that are already made — the catalogue's «سادة».
+     *
+     * An order made only of these walks جديدة → جاهزة; see `ResolveOrderFlow`.
+     */
+    public function skipsProduction(): static
+    {
+        return $this->state(fn () => ['skips_production' => true]);
     }
 }

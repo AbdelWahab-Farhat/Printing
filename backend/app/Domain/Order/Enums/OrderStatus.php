@@ -16,6 +16,13 @@ use App\Domain\Identity\Enums\PermissionName;
  * about what follows what — a second copy of these rules is a second thing to keep in step, and
  * the copy that drifts is always the one guarding the write.
  *
+ * **The map reads two things about the order, and neither is a status.** {@see FulfilmentType}
+ * decides which of the two dispatch statuses "it is leaving" means, and {@see OrderFlow} decides
+ * whether the artwork and the press are on this order's road at all — a كيس سادة is picked off
+ * a shelf, so «جديدة» leads straight to «جاهزة». Both are passed *in* rather than looked up:
+ * this enum knows the rules and knows nothing about orders, customers or the catalogue, which is
+ * what lets `OrderStatusTest` assert the whole machine without touching the database.
+ *
  * **Adding a status is a `case` and a few lines in the matches below.** That is deliberately a
  * code change rather than a row in a table: half of these statuses carry behaviour a row cannot
  * express — dispatch is chosen by the server from the city, cancelling demands a reason, the
@@ -115,9 +122,58 @@ enum OrderStatus: string
      * **The line it stops at is «جاهزة».** Once the bags exist there is nothing to rewind to:
      * every move after that describes where a physical parcel is.
      *
+     * **[$flow] is the second thing the map reads, and only two arms look at it.** An order made
+     * entirely of goods that are not printed has no artwork to agree and no press to run, so
+     * «جديدة» offers «جاهزة» directly and «نواقص» rejoins there too — see {@see OrderFlow}. The
+     * other eleven arms are the same road whatever is in the bags: a parcel comes back from a
+     * courier the same way whether it was printed or not.
+     *
+     * **The default is not a convenience.** `Standard` is what every order in the system was
+     * before this parameter existed, so a caller that does not know about flows — a console
+     * command, `OrderStatusTest`'s structural sweeps — keeps getting exactly the map it always
+     * got, and the new road is something a caller opts into by naming it.
+     *
      * @return list<self>
      */
-    public function allowedNext(): array
+    public function allowedNext(OrderFlow $flow = OrderFlow::Standard): array
+    {
+        // **Both arms that branch are about the same absent thing: the work.** «جديدة» is where
+        // an order is sent to the designer or the press; «نواقص» is where it goes when it could
+        // not be started and is where it rejoins from. Neither has anything to offer an order
+        // whose goods are already made, and offering it anyway would put two buttons on the
+        // screen that describe work nobody is going to do — which is the whole complaint this
+        // flow was added to answer.
+        if (! $flow->hasProduction()) {
+            return match ($this) {
+                // Straight to the shelf. «نواقص» stays, and it is not an oversight: the stock
+                // for a plain bag is exactly the thing that can turn out not to be there, which
+                // is what that status has always meant — see the arm below.
+                self::New => [self::Ready, self::Shortage],
+
+                // The way back on is «جاهزة» rather than the two production statuses, because
+                // those are not on this order's road at all. Written as its own arm rather than
+                // as a filter over the standard one: a filter would silently produce an empty
+                // list the day a status is added, and an order with no way out of a shortage is
+                // the exact gap `test_a_shortage_is_never_a_dead_end` exists to catch.
+                self::Shortage => [self::Ready, self::Cancelled],
+
+                default => $this->standardNext(),
+            };
+        }
+
+        return $this->standardNext();
+    }
+
+    /**
+     * The map as the business first described it, and still the one almost every order walks.
+     *
+     * Split out from {@see allowedNext()} so the two roads share the eleven arms they agree on
+     * rather than keeping two copies of them — the day «راجع مكتب» gains a move, it gains it for
+     * printed and plain orders alike, from one place.
+     *
+     * @return list<self>
+     */
+    private function standardNext(): array
     {
         return match ($this) {
             // The one open status that cannot be cancelled, and it is deliberate: a job nobody
@@ -198,9 +254,15 @@ enum OrderStatus: string
         };
     }
 
-    public function canMoveTo(self $target): bool
+    /**
+     * **[$flow] must be passed by anything enforcing the map**, not merely by anything drawing
+     * it. `ChangeOrderStatus` is the one caller that matters: left on the default it would refuse
+     * the «جاهزة» the app had just been told it could offer, and the short road would exist on
+     * screen and nowhere else.
+     */
+    public function canMoveTo(self $target, OrderFlow $flow = OrderFlow::Standard): bool
     {
-        return in_array($target, $this->allowedNext(), true);
+        return in_array($target, $this->allowedNext($flow), true);
     }
 
     /** Finished. Nothing follows, and nothing may reopen it. */
@@ -336,11 +398,17 @@ enum OrderStatus: string
      * The dispatch pair collapses to whichever the destination implies, so the line has one
      * step there rather than a fork the reader has to resolve.
      *
+     * **An order that skips production has a shorter line, not a line with two dead steps on
+     * it.** Leaving «قيد التصميم» and «قيد الطباعة» drawn-but-never-reached would make the bar
+     * claim a plain order is two sevenths of the way through when it is on the shelf and ready
+     * to go — the same lie the detour handling above exists to prevent, told about the road
+     * instead of about the order.
+     *
      * @return list<self>
      */
-    public static function mainLine(FulfilmentType $fulfilment): array
+    public static function mainLine(FulfilmentType $fulfilment, OrderFlow $flow = OrderFlow::Standard): array
     {
-        return [
+        return array_values(array_filter([
             self::New,
             self::Designing,
             self::Printing,
@@ -348,7 +416,19 @@ enum OrderStatus: string
             self::dispatchFor($fulfilment),
             self::Delivered,
             self::Settled,
-        ];
+        ], fn (self $status) => $flow->hasProduction() || ! $status->isProduction()));
+    }
+
+    /**
+     * Whether this status is the work itself — the artwork being agreed, or the press running.
+     *
+     * The two steps an order made of ready-made goods never takes, named once here so
+     * {@see mainLine()} filters on a question about the domain rather than on a list of two
+     * cases repeated wherever the short road is drawn.
+     */
+    public function isProduction(): bool
+    {
+        return $this === self::Designing || $this === self::Printing;
     }
 
     /**
@@ -358,17 +438,17 @@ enum OrderStatus: string
      * it is not a step on the way to anywhere, and a progress bar that pretended otherwise would
      * be drawing a road that does not exist.
      */
-    public function isOnMainLine(FulfilmentType $fulfilment): bool
+    public function isOnMainLine(FulfilmentType $fulfilment, OrderFlow $flow = OrderFlow::Standard): bool
     {
-        return in_array($this, self::mainLine($fulfilment), true);
+        return in_array($this, self::mainLine($fulfilment, $flow), true);
     }
 
     /**
      * How far along the main line this status is, or null when it is a detour.
      */
-    public function mainLinePosition(FulfilmentType $fulfilment): ?int
+    public function mainLinePosition(FulfilmentType $fulfilment, OrderFlow $flow = OrderFlow::Standard): ?int
     {
-        $index = array_search($this, self::mainLine($fulfilment), true);
+        $index = array_search($this, self::mainLine($fulfilment, $flow), true);
 
         return $index === false ? null : $index;
     }

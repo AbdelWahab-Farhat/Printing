@@ -21,6 +21,14 @@ final readonly class ProductCategoryData
         public bool $isActive = true,
         /** Where it sits in the catalogue. Equal values fall back to the name. */
         public int $sortOrder = 0,
+        /**
+         * Whether goods under this heading skip the designer and the press — see
+         * `ProductCategory::skipsProduction()`.
+         *
+         * Defaults to false, and that is the safe direction: a heading nobody has thought about
+         * yet sends its orders down the road every order took before this existed.
+         */
+        public bool $skipsProduction = false,
     ) {}
 
     /**
@@ -42,6 +50,7 @@ final readonly class ProductCategoryData
             description: $description !== '' ? $description : null,
             isActive: (bool) ($validated['is_active'] ?? true),
             sortOrder: (int) ($validated['sort_order'] ?? 0),
+            skipsProduction: (bool) ($validated['skips_production'] ?? false),
         );
     }
 }

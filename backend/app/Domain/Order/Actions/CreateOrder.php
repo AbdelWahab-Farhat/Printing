@@ -32,6 +32,9 @@ final class CreateOrder
         private readonly RecordStatusTransition $record,
         private readonly CustomerService $customers,
         private readonly AddOrderDesign $addDesign,
+        // Which road the order walks, read off its lines' categories — the flow twin of
+        // `ResolveOrderDestination` above.
+        private readonly ResolveOrderFlow $resolveFlow,
     ) {}
 
     /**
@@ -120,6 +123,13 @@ final class CreateOrder
             }
 
             ($this->recalculate)($order->load('items'));
+
+            // The other thing the lines decide, read the moment they are all on: whether this
+            // order has anything to design or print at all — see {@see ResolveOrderFlow}. Inside
+            // the transaction and after the loop above, because it is an answer about the whole
+            // set: an order is only put on the short road when *every* line is goods that are
+            // already made.
+            ($this->resolveFlow)($order);
 
             // `from` is null exactly once per order, which is what makes "when was this taken"
             // a query on the timeline rather than a special case somewhere else.

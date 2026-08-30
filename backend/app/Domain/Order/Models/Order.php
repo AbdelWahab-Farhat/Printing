@@ -16,6 +16,7 @@ use App\Domain\Order\Actions\AllocateOrderIdentifier;
 use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Enums\DesignSource;
+use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentStatus;
@@ -84,6 +85,11 @@ class Order extends Model implements HasAuditTrail
         return [
             'status' => OrderStatus::class,
             'fulfilment_type' => FulfilmentType::class,
+            // Which road this order walks, stamped at intake by `ResolveOrderFlow` and never
+            // re-read afterwards — see that action for why it is a snapshot. Absent from the
+            // fillable list for the reason `grand_total` is: a request that could post it could
+            // skip the press on paper.
+            'production_flow' => OrderFlow::class,
             'design_source' => DesignSource::class,
             // Strings, not floats: these are summed, and money that is summed must stay exact.
             'items_total' => 'decimal:2',
@@ -383,7 +389,11 @@ class Order extends Model implements HasAuditTrail
 
         $targets = array_map(
             fn (OrderStatus $target) => $target->isDispatch() ? $dispatch : $target,
-            $this->status->allowedNext(),
+            // **Both facts about this order, and neither is its status.** The destination
+            // collapses the dispatch pair below; the flow decides whether the designer and the
+            // press are on this order's road at all — an order of ready-made goods is offered
+            // «جاهزة» from «جديدة» and is never shown two buttons for work nobody will do.
+            $this->status->allowedNext($this->production_flow),
         );
 
         // array_unique keeps the first occurrence, so the collapsed pair leaves one entry in
@@ -416,8 +426,11 @@ class Order extends Model implements HasAuditTrail
      */
     public function progress(): array
     {
-        $line = OrderStatus::mainLine($this->fulfilment_type);
-        $position = $this->status->mainLinePosition($this->fulfilment_type);
+        // The same pair `availableTransitionsFor()` reads, and for the same reason: an order
+        // that skips production draws five steps rather than seven, instead of two steps it will
+        // never reach sitting on the bar claiming it is a third of the way through.
+        $line = OrderStatus::mainLine($this->fulfilment_type, $this->production_flow);
+        $position = $this->status->mainLinePosition($this->fulfilment_type, $this->production_flow);
 
         // A detour has no position of its own, so "how far did it get" comes from the furthest
         // main-line step its timeline actually recorded. Without this an order returned from

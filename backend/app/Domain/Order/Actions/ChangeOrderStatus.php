@@ -86,7 +86,11 @@ final class ChangeOrderStatus
 
         $target = $this->resolve($order, $target);
 
-        if (! $from->canMoveTo($target)) {
+        // **The order's own road, not the general one.** An order made entirely of goods that are
+        // already made walks جديدة → جاهزة — see {@see OrderFlow} — and asking the map without
+        // saying so would refuse the very move `Order::availableTransitionsFor()` had just told
+        // the app it could make, leaving the short road drawn on screen and enforced nowhere.
+        if (! $from->canMoveTo($target, $order->production_flow)) {
             throw TransitionNotAllowed::make($from, $target);
         }
 
@@ -114,12 +118,18 @@ final class ChangeOrderStatus
                 throw SettlementRequiresFullPayment::make($order->remainingAmount());
             }
 
-            // Decided before anything below touches the row: `ready` is reachable only from
-            // `printing` and never revisited once left — see `OrderStatus::allowedNext()` — so an
-            // order reaches it at most once, and stock may leave the warehouse exactly once per
-            // order — see DeductOrderStock. Deducting here rather than on entry to `printing`
-            // also means the lines are already frozen (`Order::itemsAreEditable()` excludes
-            // `ready`), so what gets deducted can no longer be edited out from under it.
+            // Decided before anything below touches the row: nothing ever returns to `ready` —
+            // see `OrderStatus::allowedNext()` — so an order reaches it at most once, and stock
+            // may leave the warehouse exactly once per order — see DeductOrderStock. Deducting
+            // here rather than on entry to `printing` also means the lines are already frozen
+            // (`Order::itemsAreEditable()` excludes `ready`), so what gets deducted can no longer
+            // be edited out from under it.
+            //
+            // **Keyed on the target alone, which is what makes the short road cost nothing.** An
+            // order that skips production arrives here from `new` rather than from `printing`
+            // and is deducted, costed and asked for a warehouse identically — skipping the press
+            // is not skipping fulfilment. See {@see TransitionFields}, which describes the form
+            // off the same fact.
             $deductStock = $target === OrderStatus::Ready && $order->stock_deducted_at === null;
 
             // The mirror image: a cancellation only has anything to undo if stock genuinely left

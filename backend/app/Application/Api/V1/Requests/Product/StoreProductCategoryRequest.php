@@ -49,6 +49,12 @@ class StoreProductCategoryRequest extends FormRequest
             'is_active' => ['sometimes', 'boolean'],
 
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:9999'],
+
+            // Whether an order made entirely of goods from this heading may go straight from
+            // «جديدة» to «جاهزة» — see `ProductCategory::skipsProduction()`. Optional and false
+            // by default: a heading nobody has thought about sends its orders down the road
+            // every order took before this field existed.
+            'skips_production' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -80,6 +86,7 @@ class StoreProductCategoryRequest extends FormRequest
             'description' => 'وصف التصنيف',
             'is_active' => 'الحالة',
             'sort_order' => 'الترتيب',
+            'skips_production' => 'يتخطّى التصميم والطباعة',
         ];
     }
 }

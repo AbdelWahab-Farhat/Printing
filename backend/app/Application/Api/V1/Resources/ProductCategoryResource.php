@@ -37,6 +37,14 @@ class ProductCategoryResource extends JsonResource
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,
 
+            // Whether an order made only of goods from this heading skips the designer and the
+            // press. **This row's own answer, not the effective one** — a child that inherits a
+            // flagged parent reads false here, and that is deliberate: this is the value an edit
+            // form puts back, so showing the inherited answer would have somebody save a flag
+            // onto a child that never asked for one. The effective answer is the domain's, and
+            // it is asked through `ProductCategory::skipsProduction()`.
+            'skips_production' => $this->skips_production,
+
             // Products filed directly on this heading. Zero for a parent by construction — a
             // heading with children is a heading, not a slot.
             'products_count' => $this->whenCounted('products'),

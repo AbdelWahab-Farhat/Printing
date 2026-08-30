@@ -31,6 +31,14 @@ class OrderResource extends JsonResource
 
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
+
+            // **Which road this order walks**, so a client can *explain* a five-step bar rather
+            // than leaving one that looks truncated. It is not a second copy of the rules —
+            // `available_transitions` and `progress` below already have the answers baked in —
+            // it is the reason for them, which is the one thing a screen cannot derive from
+            // either.
+            'production_flow' => $this->production_flow->value,
+            'production_flow_label' => $this->production_flow->label(),
             // Two questions, and «تم الاستلام» answers them differently: nothing about the order
             // may be edited any more (`is_closed`), but it still owes its settlement, so it is
             // not finished (`is_final`).
