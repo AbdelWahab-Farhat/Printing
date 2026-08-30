@@ -37,9 +37,13 @@ class OrderStatusTest extends TestCase
     public static function transitions(): array
     {
         return [
-            'a new order is designed, printed, or found short at intake — and nothing else' => [
+            'a new order is prepped for the press, or found short at intake — and nothing else' => [
                 OrderStatus::New,
-                [OrderStatus::Designing, OrderStatus::Printing, OrderStatus::Shortage],
+                [OrderStatus::ReadyToPrint, OrderStatus::Shortage],
+            ],
+            'the handover leads into the press, either door — or is written off' => [
+                OrderStatus::ReadyToPrint,
+                [OrderStatus::Designing, OrderStatus::Printing, OrderStatus::Cancelled],
             ],
             'a design must pass through printing — never straight to ready' => [
                 OrderStatus::Designing,
@@ -49,9 +53,9 @@ class OrderStatusTest extends TestCase
                 OrderStatus::Printing,
                 [OrderStatus::Ready, OrderStatus::Designing, OrderStatus::Cancelled],
             ],
-            'a shortage rejoins the route it was taken off' => [
+            'a shortage rejoins the route at the handover it was taken off before' => [
                 OrderStatus::Shortage,
-                [OrderStatus::Designing, OrderStatus::Printing, OrderStatus::Cancelled],
+                [OrderStatus::ReadyToPrint, OrderStatus::Cancelled],
             ],
             'ready leaves for the customer or is written off — the bags exist, so it never goes back' => [
                 OrderStatus::Ready,
@@ -298,6 +302,42 @@ class OrderStatusTest extends TestCase
     }
 
     // ─────────────────────────── the rules behind the map ───────────────────────────
+
+    public function test_the_press_is_entered_through_one_door(): void
+    {
+        // Arrange — the two statuses the printing department owns.
+        $press = [OrderStatus::Designing, OrderStatus::Printing];
+
+        // Act — every status inventory owns, and what it can reach.
+        $fromIntake = OrderStatus::New->allowedNext();
+        $fromShortage = OrderStatus::Shortage->allowedNext();
+
+        // Assert — **the whole point of «جاهزة للطباعة».** An order used to cross from the
+        // warehouse to the press invisibly, so the moment inventory finished was recorded
+        // nowhere and the press found out by somebody noticing. Neither of the two statuses
+        // inventory owns may reach a production status directly any more.
+        foreach ($press as $status) {
+            $this->assertNotContains($status, $fromIntake);
+            $this->assertNotContains($status, $fromShortage);
+        }
+
+        $this->assertContains(OrderStatus::ReadyToPrint, $fromIntake);
+        $this->assertContains(OrderStatus::ReadyToPrint, $fromShortage);
+    }
+
+    public function test_the_handover_is_reached_from_intake_and_from_a_resolved_shortage(): void
+    {
+        // Act
+        $waysIn = array_values(array_filter(
+            OrderStatus::cases(),
+            fn (OrderStatus $s) => in_array(OrderStatus::ReadyToPrint, $s->allowedNext(), true),
+        ));
+
+        // Assert — the two places an order can be while inventory still has it. Nothing comes
+        // *back* to the handover: once the press has the order, finishing it is the press's
+        // business and re-handing it over would describe a second delivery that never happened.
+        $this->assertEqualsCanonicalizing([OrderStatus::New, OrderStatus::Shortage], $waysIn);
+    }
 
     public function test_a_design_can_never_skip_printing(): void
     {

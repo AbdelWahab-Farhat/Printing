@@ -77,6 +77,10 @@ enum PermissionName: string
     case ManageOrders = 'orders.manage';
     case DiscountOrders = 'orders.discount';
     case ManageOrderDesigns = 'orders.designs.manage';
+    // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
+    // the order to the press. Separate from the two production statuses beside it because a
+    // different desk does it.
+    case MoveOrderToReadyToPrint = 'orders.status.ready_to_print';
     case MoveOrderToDesigning = 'orders.status.designing';
     case MoveOrderToPrinting = 'orders.status.printing';
     case MoveOrderToReady = 'orders.status.ready';
@@ -171,6 +175,7 @@ enum PermissionName: string
             self::ManageOrders => 'إضافة وتعديل الطلبيات',
             self::DiscountOrders => 'منح خصم على الطلبية',
             self::ManageOrderDesigns => 'إدارة تصاميم الطلبية واعتمادها',
+            self::MoveOrderToReadyToPrint => 'تحويل الطلبية إلى جاهزة للطباعة',
             self::MoveOrderToDesigning => 'تحويل الطلبية إلى قيد التصميم',
             self::MoveOrderToPrinting => 'تحويل الطلبية إلى قيد الطباعة',
             self::MoveOrderToReady => 'تحويل الطلبية إلى جاهزة',
@@ -218,6 +223,7 @@ enum PermissionName: string
             self::ViewShippingCompanies, self::ManageShippingCompanies => 'شركات التوصيل',
             self::ViewOrders, self::ManageOrders, self::DiscountOrders,
             self::ManageOrderDesigns => 'الطلبيات',
+            self::MoveOrderToReadyToPrint,
             self::MoveOrderToDesigning, self::MoveOrderToPrinting, self::MoveOrderToReady,
             self::MoveOrderToShortage, self::DispatchOrders, self::MarkOrdersDelivered,
             self::SettleOrders, self::RecordCourierReturn, self::RecordCarrierReturn,

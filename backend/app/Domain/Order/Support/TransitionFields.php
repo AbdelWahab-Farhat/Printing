@@ -122,31 +122,41 @@ final class TransitionFields
         // kilo-priced order on the grounds that «الوزن هو ما تُحاسب عليه», which was never true
         // of the code. What comes off the shelf is asked for below instead — per line, and only
         // where nobody could work it out.
-        if ($target === OrderStatus::Ready) {
-            // Read by the preview, by the per-line fields and by `isStockedInAnotherUnit()` on
-            // each of them. `items.product` is not in the list query's eager set and strict mode
-            // turns a forgotten load into an exception rather than a query per line, so it is
-            // asked for once here rather than three times below.
+        // **Two moves ask the same two questions, because two moves can be the one where stock
+        // leaves.** «جاهزة للطباعة» is where the warehouse weighs the goods and lets them go, and
+        // it is the first stop for every printed order. An order of ready-made goods never passes
+        // through it — see {@see \App\Domain\Order\Enums\OrderFlow} — so for that one «جاهزة» is
+        // still the first and only deduction, and asks in full.
+        //
+        // **Which of the two this is, is read from `stock_deducted_at` rather than from the
+        // road.** That is the same fact `ChangeOrderStatus` decides the deduction itself on, so
+        // the form and the deduction cannot disagree about whether this move takes stock out — and
+        // a third road added later needs no new branch here.
+        if ($target === OrderStatus::ReadyToPrint || $target === OrderStatus::Ready) {
             // `items.product` for the labels, and `items.variant.stockItem` because the unit a
             // line is stocked in now lives on the shelf — see {@see OrderItem::stockUnit()}.
             // Asked for once here rather than three times below, and eagerly because strict mode
             // turns a forgotten load into an exception rather than a query per line.
             $order->loadMissing(['items.product', 'items.variant.stockItem']);
 
+            $deductsHere = $order->stock_deducted_at === null;
+
             // Where the stock this order consumes comes out of, asked exactly once per order —
-            // see {@see \App\Domain\Order\Actions\DeductOrderStock}. `ready` is reached at most
-            // once per order (see `OrderStatus::allowedNext()`), so unlike `printing` this never
-            // needs a re-entry guard of its own — `stock_deducted_at` still gates `required`
-            // rather than `$fields` itself, so a caller that lands here after a stray retry sees
-            // the field, just not required.
-            $fields[] = TransitionField::warehouse(
-                key: 'warehouse_id',
-                label: 'المخزن',
-                required: $order->stock_deducted_at === null,
-                hint: $order->stock_deducted_at === null
-                    ? self::deductionPreview($order)
-                    : 'خُصم المخزون بالفعل من هذه الطلبية',
-            );
+            // see {@see \App\Domain\Order\Actions\DeductOrderStock}.
+            //
+            // **Withheld entirely once the stock has gone**, rather than offered-but-optional as
+            // it used to be. An order arriving at «جاهزة» already deducted is being *corrected*,
+            // and a correction goes back to the shelf it came off — `orders.fulfillment_warehouse_id`
+            // — so a second picker here could only ever send the difference somewhere else and
+            // leave two shelves wrong instead of one.
+            if ($deductsHere) {
+                $fields[] = TransitionField::warehouse(
+                    key: 'warehouse_id',
+                    label: 'المخزن',
+                    required: true,
+                    hint: self::deductionPreview($order),
+                );
+            }
 
             // **What actually comes off the shelf, for the lines where nobody could work it
             // out.** A run sold by the piece and stocked by the kilo has two figures and no
@@ -156,8 +166,11 @@ final class TransitionFields
             // leaves, and a box asking a foreman to retype a number the order already holds can
             // only ever introduce a difference between the two.
             //
-            // Gated on `stock_deducted_at` exactly as the warehouse above it is: an order whose
-            // stock has already gone is offered the field and not made to answer it.
+            // **Asked again at «جاهزة», and that is the point of asking twice.** The warehouse
+            // weighs what it pulls; the press knows what it actually used. The second figure is
+            // the true one, and the shelf is corrected to it — see
+            // {@see \App\Domain\Order\Actions\RestateOrderStockDeduction}. It opens holding the
+            // first figure, so leaving the box alone means «ما زال صحيحاً» rather than silence.
             foreach ($order->items as $item) {
                 if (! $item->isStockedInAnotherUnit()) {
                     continue;
@@ -166,12 +179,15 @@ final class TransitionFields
                 $fields[] = TransitionField::number(
                     key: self::stockQuantityKey($item),
                     label: "المخصوم من {$item->variant_label} ({$item->stockUnit()->label()})",
-                    required: $order->stock_deducted_at === null,
-                    hint: "المباع {$item->quantity} {$item->pricing_unit->label()} — والمخزن يُنقص بال{$item->stockUnit()->label()}",
-                    // An answer, not a placeholder, and only where one already exists: an order
-                    // taken while the create form still asked for this carries what was measured
-                    // then, and re-asking from an empty box invites a second figure for a parcel
-                    // that was weighed once.
+                    // Required either way: on the first pass nothing may leave unmeasured, and on
+                    // the correction an emptied box would read as «صفر» against a shelf that has
+                    // already given the goods up.
+                    required: true,
+                    hint: $deductsHere
+                        ? "المباع {$item->quantity} {$item->pricing_unit->label()} — والمخزن يُنقص بال{$item->stockUnit()->label()}"
+                        : "خرج من المخزن {$item->warehouse_quantity} {$item->stockUnit()->label()} — صحّحه إن اختلف المستهلك فعلاً",
+                    // An answer, not a placeholder: a line weighed at «جاهزة للطباعة» opens here
+                    // holding that figure, so an unchanged run is confirmed by leaving it be.
                     value: $item->warehouse_quantity !== null ? (string) $item->warehouse_quantity : null,
                 );
             }

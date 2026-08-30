@@ -163,6 +163,9 @@ class OrderResource extends JsonResource
             'stock_deducted_at' => $this->stock_deducted_at?->toIso8601String(),
 
             'placed_at' => $this->placed_at?->toIso8601String(),
+            // When the warehouse finished and handed the order to the press — null for every
+            // order taken before that step existed, which is the honest answer for them.
+            'ready_to_print_at' => $this->ready_to_print_at?->toIso8601String(),
             'design_started_at' => $this->design_started_at?->toIso8601String(),
             'printing_started_at' => $this->printing_started_at?->toIso8601String(),
             'ready_at' => $this->ready_at?->toIso8601String(),

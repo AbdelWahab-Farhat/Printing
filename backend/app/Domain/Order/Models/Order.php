@@ -115,6 +115,7 @@ class Order extends Model implements HasAuditTrail
             // answers exactly. See `TransitionFields::money()`.
             'collected_amount' => 'decimal:2',
             'placed_at' => 'datetime',
+            'ready_to_print_at' => 'datetime',
             'design_started_at' => 'datetime',
             'printing_started_at' => 'datetime',
             // Stamped once by ChangeOrderStatus, on the first entry into `ready` — see
@@ -313,6 +314,29 @@ class Order extends Model implements HasAuditTrail
     }
 
     /**
+     * The sizes still missing from this order, by label.
+     *
+     * **What stands between «نواقص» and the press.** «جاهزة للطباعة» tells another department the
+     * goods are all here; an order still short of one size has not made that true — see
+     * `ShortageMustBeResolved`.
+     *
+     * Returns labels rather than a bare boolean because the person refused by it is standing at
+     * the shelves: «ما زال ناقصاً: 25*35» sends them somewhere, «الطلبية غير مكتملة» does not.
+     * Empty means nothing is short, which is what makes it readable as a yes/no at the call site.
+     *
+     * @return list<string>
+     */
+    public function unresolvedShortages(): array
+    {
+        return $this->items
+            ->filter(fn (OrderItem $item) => $item->shortage_quantity !== null
+                && bccomp((string) $item->shortage_quantity, '0', 3) > 0)
+            ->map(fn (OrderItem $item) => (string) $item->variant_label)
+            ->values()
+            ->all();
+    }
+
+    /**
      * Whether another version of the artwork may be put on the order.
      *
      * **Open before the work starts and while it is being done; closed once the press is
@@ -328,6 +352,13 @@ class Order extends Model implements HasAuditTrail
      * {@see CreateOrder} — and «قيد التصميم» remains what it always was: the queue for the
      * orders whose artwork does not exist yet.
      *
+     * **«جاهزة للطباعة» accepts one for the same reason «جديدة» does, and must.** The short path
+     * is an agreed file going on the order and the press starting; that path now runs through the
+     * handover, so refusing artwork here would leave the customer's own file with nowhere to go
+     * but a detour into the designer's queue and straight back out — the exact walk this rule was
+     * loosened to end. The goods being weighed and off the shelf by then changes nothing about
+     * the artwork: the press has not run.
+     *
      * The line stops at «قيد الطباعة» because that is where it means something: the bags are
      * being printed from a settled file, and changing it is going back to design on purpose —
      * a move somebody makes and the timeline records.
@@ -341,7 +372,11 @@ class Order extends Model implements HasAuditTrail
      */
     public function designsAreEditable(): bool
     {
-        return in_array($this->status, [OrderStatus::New, OrderStatus::Designing], true);
+        return in_array(
+            $this->status,
+            [OrderStatus::New, OrderStatus::ReadyToPrint, OrderStatus::Designing],
+            true,
+        );
     }
 
     /**

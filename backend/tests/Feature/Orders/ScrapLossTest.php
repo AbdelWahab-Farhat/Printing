@@ -43,6 +43,7 @@ class ScrapLossTest extends TestCase
         $user->givePermissionTo([
             PermissionName::ViewOrders->value,
             PermissionName::ManageOrders->value,
+            PermissionName::MoveOrderToReadyToPrint->value,
             PermissionName::MoveOrderToPrinting->value,
             PermissionName::MoveOrderToReady->value,
             PermissionName::ViewInventory->value,
@@ -81,13 +82,20 @@ class ScrapLossTest extends TestCase
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
 
+        // The warehouse is named at the handover now — that is where the stock actually leaves —
+        // and «جاهزة» no longer offers the picker, because by then there is nothing left to
+        // choose: a correction goes back to the shelf it came off.
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::ReadyToPrint->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ])->assertOk();
+
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Printing->value,
         ])->assertOk();
 
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Ready->value,
-            'fields' => ['warehouse_id' => $warehouse->id],
         ])->assertOk();
 
         return [$order->refresh(), $item->refresh(), $warehouse, $variant];

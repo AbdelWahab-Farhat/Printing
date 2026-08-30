@@ -38,6 +38,20 @@ enum OrderStatus: string
     /** Taken, not started. The only status nothing leads back to. */
     case New = 'new';
 
+    /**
+     * Prepped by the warehouse and handed to the press.
+     *
+     * **The line between two departments, and the reason this status exists.** «جديدة» and
+     * «نواقص» are inventory's — the goods are being found, counted and weighed — while «قيد
+     * التصميم» and «قيد الطباعة» belong to printing. An order used to cross that line invisibly,
+     * so the press had no queue to read and no moment marked the handover.
+     *
+     * **It is also where the stock leaves the warehouse**, which is what makes it more than a
+     * label: entering it names a warehouse and a weight, and the shelf drops. «جاهزة» later
+     * measures again and corrects the difference — see `RestateOrderStockDeduction`.
+     */
+    case ReadyToPrint = 'ready_to_print';
+
     /** Artwork is being agreed with the customer — see {@see OrderDesignStatus}. */
     case Designing = 'designing';
 
@@ -90,6 +104,7 @@ enum OrderStatus: string
     {
         return match ($this) {
             self::New => 'جديدة',
+            self::ReadyToPrint => 'جاهزة للطباعة',
             self::Designing => 'قيد التصميم',
             self::Printing => 'قيد الطباعة',
             self::Ready => 'جاهزة',
@@ -182,7 +197,14 @@ enum OrderStatus: string
             // — the order has cost something by then, which is when writing it off is a decision
             // rather than a stray tap. «نواقص» is here for the opposite reason: it is not an
             // ending, it is the job failing to start.
-            self::New => [self::Designing, self::Printing, self::Shortage],
+            self::New => [self::ReadyToPrint, self::Shortage],
+
+            // **The handover, and the only way into the press.** «جديدة» used to lead straight to
+            // the designer or the machine, which meant the moment inventory finished with an
+            // order was recorded nowhere: the press found out by somebody noticing. Routing both
+            // through one status gives printing a queue to read, and gives the warehouse one
+            // place to weigh the goods and let them go — see {@see ReadyToPrint}.
+            self::ReadyToPrint => [self::Designing, self::Printing, self::Cancelled],
 
             // Never straight to ready: artwork that has been agreed still has to be printed.
             self::Designing => [self::Printing, self::Cancelled],
@@ -204,9 +226,14 @@ enum OrderStatus: string
             // name for «the run came up short» — a different event, at a different desk, which
             // the press already answers by going back a step to print the rest.
             //
-            // Out of it are the two ways in to the work it never started, plus the ending: a
+            // Out of it is the way back on to the road it was taken off, plus the ending: a
             // shortage that is never resolved is written off rather than left parked forever.
-            self::Shortage => [self::Designing, self::Printing, self::Cancelled],
+            // It rejoins at «جاهزة للطباعة» rather than at the two production statuses for the
+            // same reason «جديدة» does — an order reaches the press through one door, and the
+            // missing stock has to be found and weighed before it goes through it. The domain
+            // refuses the move while anything is still short; see
+            // `ShortageMustBeResolved`.
+            self::Shortage => [self::ReadyToPrint, self::Cancelled],
 
             // No returns: it never left the building, so there is no courier and no carrier.
             // A customer who has not come yet is simply still waiting.
@@ -326,6 +353,7 @@ enum OrderStatus: string
     {
         return match ($this) {
             self::New => PermissionName::ManageOrders,
+            self::ReadyToPrint => PermissionName::MoveOrderToReadyToPrint,
             self::Designing => PermissionName::MoveOrderToDesigning,
             self::Printing => PermissionName::MoveOrderToPrinting,
             self::Ready => PermissionName::MoveOrderToReady,
@@ -363,6 +391,10 @@ enum OrderStatus: string
     {
         return match ($this) {
             self::New => 'placed_at',
+            // Unlike «نواقص», something does ask this question: «كم تقعد الطلبية بين المخزن
+            // والمطبعة؟» is the whole reason the status was added, and it cannot be answered
+            // from a status that is entered at most once without a column to read.
+            self::ReadyToPrint => 'ready_to_print_at',
             self::Designing => 'design_started_at',
             self::Printing => 'printing_started_at',
             self::Ready => 'ready_at',
@@ -410,6 +442,7 @@ enum OrderStatus: string
     {
         return array_values(array_filter([
             self::New,
+            self::ReadyToPrint,
             self::Designing,
             self::Printing,
             self::Ready,
@@ -426,9 +459,16 @@ enum OrderStatus: string
      * {@see mainLine()} filters on a question about the domain rather than on a list of two
      * cases repeated wherever the short road is drawn.
      */
+    /**
+     * **«جاهزة للطباعة» counts as production**, and that is what keeps it off the blank-goods
+     * line: it is the door into the press, so an order that never goes near the press never goes
+     * near it either.
+     */
     public function isProduction(): bool
     {
-        return $this === self::Designing || $this === self::Printing;
+        return $this === self::ReadyToPrint
+            || $this === self::Designing
+            || $this === self::Printing;
     }
 
     /**

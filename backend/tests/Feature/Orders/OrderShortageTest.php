@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Orders;
 
+use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\Warehouse;
+use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
@@ -62,9 +65,32 @@ class OrderShortageTest extends TestCase
         return $this->auth(
             PermissionName::ViewOrders,
             PermissionName::MoveOrderToShortage,
+            PermissionName::MoveOrderToReadyToPrint,
             PermissionName::MoveOrderToDesigning,
             PermissionName::MoveOrderToPrinting,
         );
+    }
+
+    /**
+     * A shelf holding far more than the order will draw.
+     *
+     * Leaving «نواقص» now lands on «جاهزة للطباعة», and that is where the stock goes out — so
+     * these tests need a warehouse that can cover the run. It is deliberately generous: what is
+     * under test here is the *invoice* following the shortage, and a run refused for a balance
+     * would be a different test failing in this one's name.
+     */
+    private function stockedWarehouse(OrderItem $item): Warehouse
+    {
+        $warehouse = Warehouse::factory()->create();
+
+        WarehouseStock::factory()->quantity('1000')->create([
+            'warehouse_id' => $warehouse->id,
+            'stock_item_id' => ProductVariant::query()
+                ->whereKey($item->product_variant_id)
+                ->value('stock_item_id'),
+        ]);
+
+        return $warehouse;
     }
 
     /**
@@ -251,11 +277,11 @@ class OrderShortageTest extends TestCase
             ->getJson("/api/v1/orders/{$order->id}")
             ->json('data.available_transitions');
 
-        $printing = collect($transitions)->firstWhere('status', OrderStatus::Printing->value);
+        $handover = collect($transitions)->firstWhere('status', OrderStatus::ReadyToPrint->value);
 
         // Assert — one field per short line, bounded by what is missing from it and filled in
         // with the whole of it, because «وصل الكل» is what leaving this status usually means.
-        $field = collect($printing['fields'])->firstWhere('key', "received_{$item->id}");
+        $field = collect($handover['fields'])->firstWhere('key', "received_{$item->id}");
 
         $this->assertNotNull($field);
         $this->assertSame('100.000', $field['value']);
@@ -270,16 +296,20 @@ class OrderShortageTest extends TestCase
         app(RecalculateOrderTotals::class)($order->refresh());
         $headers = $this->storeman();
 
+        $warehouse = $this->stockedWarehouse($item);
+
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+            'status' => OrderStatus::ReadyToPrint->value,
             'fields' => [
                 "received_{$item->id}" => '100',
+                'warehouse_id' => $warehouse->id,
             ],
         ]);
 
-        // Assert — the move and the money in one transaction.
-        $response->assertOk()->assertJsonPath('data.status', 'printing');
+        // Assert — the move and the money in one transaction. The stock all arrived, so the
+        // order is complete and may be handed to the press.
+        $response->assertOk()->assertJsonPath('data.status', 'ready_to_print');
         $this->assertNull($item->fresh()->shortage_quantity);
         $this->assertSame('465.00', (string) $order->fresh()->items_total);
     }
@@ -288,41 +318,73 @@ class OrderShortageTest extends TestCase
     {
         // Arrange
         [$order, $item] = $this->orderOf300(OrderStatus::Shortage);
-        $item->forceFill(['shortage_quantity' => '100'])->save();
-        app(RecalculateOrderTotals::class)($order->refresh());
         $headers = $this->storeman();
 
-        // Act — sixty of the hundred came in.
-        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+        // Recorded through the endpoint that owns the column, so `line_total` and the order's
+        // totals are re-derived with it. The arrange has to leave the order in a state the domain
+        // could actually have produced, because the refusal below rolls the move back and this is
+        // what is left standing afterwards.
+        $this->setShortages($headers, $order, [$item->id => '100'])->assertOk();
+
+        $warehouse = $this->stockedWarehouse($item);
+
+        // Act — sixty of the hundred came in, so forty are still missing.
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::ReadyToPrint->value,
             'fields' => [
                 "received_{$item->id}" => '60',
+                'warehouse_id' => $warehouse->id,
             ],
-        ])->assertOk();
+        ]);
 
-        // Assert — forty still missing, and the invoice sits between the two: 260 × 1.550.
-        $this->assertSame('40.000', (string) $item->fresh()->shortage_quantity);
-        $this->assertSame('403.00', (string) $order->fresh()->items_total);
+        // Assert — **refused, and nothing of it kept.** «جاهزة للطباعة» promises the press a
+        // complete order, and forty bags are still missing; the whole move is one transaction, so
+        // the partial arrival it carried goes back with it rather than leaving the order half
+        // corrected by a move that failed.
+        //
+        // That is not a dead end for the storeman: a delivery that only partly arrived is
+        // recorded on `PATCH /orders/{order}/shortages` — the screen built for exactly this,
+        // pinned below — and the handover is attempted once the rest turns up.
+        $response->assertStatus(422);
+        $this->assertStringContainsString('ما زال ناقصاً', $response->json('message'));
+
+        $this->assertSame(OrderStatus::Shortage, $order->fresh()->status);
+        $this->assertSame('100.000', (string) $item->fresh()->shortage_quantity);
+        $this->assertSame('310.00', (string) $order->fresh()->items_total);
     }
 
     public function test_nothing_arriving_leaves_the_shortage_where_it_was(): void
     {
         // Arrange
         [$order, $item] = $this->orderOf300(OrderStatus::Shortage);
-        $item->forceFill(['shortage_quantity' => '100'])->save();
-        app(RecalculateOrderTotals::class)($order->refresh());
         $headers = $this->storeman();
 
-        // Act — zero typed over the prefill: the job is starting on what is here, and the rest
-        // is not coming.
-        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+        // Recorded through the endpoint that owns the column, so `line_total` and the order's
+        // totals are re-derived with it. The arrange has to leave the order in a state the domain
+        // could actually have produced, because the refusal below rolls the move back and this is
+        // what is left standing afterwards.
+        $this->setShortages($headers, $order, [$item->id => '100'])->assertOk();
+
+        $warehouse = $this->stockedWarehouse($item);
+
+        // Act — zero typed over the prefill: nothing came in.
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::ReadyToPrint->value,
             'fields' => [
                 "received_{$item->id}" => '0',
+                'warehouse_id' => $warehouse->id,
             ],
-        ])->assertOk();
+        ]);
 
-        // Assert
+        // Assert — **the job no longer starts on what is here.** It used to: «نواقص» led straight
+        // to the press, and an order could be printed short with the invoice cut to match. Now
+        // the road out runs through a status that tells another department the order is complete,
+        // so an order nothing arrived for cannot take it — and the message names the size that is
+        // missing, because the person refused is standing at the shelves.
+        $response->assertStatus(422);
+        $this->assertStringContainsString('25*35', $response->json('message'));
+
+        $this->assertSame(OrderStatus::Shortage, $order->fresh()->status);
         $this->assertSame('100.000', (string) $item->fresh()->shortage_quantity);
         $this->assertSame('310.00', (string) $order->fresh()->items_total);
     }

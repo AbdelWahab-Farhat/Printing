@@ -73,6 +73,7 @@ class OrderProductionFlowTest extends TestCase
             PermissionName::ViewOrders,
             PermissionName::ManageOrders,
             PermissionName::ManageOrderDesigns,
+            PermissionName::MoveOrderToReadyToPrint,
             PermissionName::MoveOrderToDesigning,
             PermissionName::MoveOrderToPrinting,
             PermissionName::MoveOrderToReady,
@@ -355,10 +356,10 @@ class OrderProductionFlowTest extends TestCase
         // have the bar claim a plain order is two sevenths of the way through at the moment it is
         // standing on the shelf ready to go.
         $this->assertSame(['new', 'ready', 'out_for_delivery', 'delivered', 'settled'], $plainSteps);
-        $this->assertSame(
-            ['new', 'designing', 'printing', 'ready', 'out_for_delivery', 'delivered', 'settled'],
-            $printedSteps,
-        );
+        $this->assertSame([
+            'new', 'ready_to_print', 'designing', 'printing',
+            'ready', 'out_for_delivery', 'delivered', 'settled',
+        ], $printedSteps);
     }
 
     public function test_a_plain_order_parked_short_rejoins_at_the_shelf(): void
@@ -529,7 +530,8 @@ class OrderProductionFlowTest extends TestCase
         // drawing itself as a detour from the status it is standing in.
         $this->assertSame(OrderFlow::Standard, $order->fresh()->production_flow);
         $this->assertContains(
-            'printing',
+            // The road into the press, which is what a printed order in «جديدة» is offered.
+            'ready_to_print',
             array_column($this->show($headers, $order)->json('data.available_transitions'), 'status'),
         );
     }

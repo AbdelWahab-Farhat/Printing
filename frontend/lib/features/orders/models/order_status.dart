@@ -18,6 +18,14 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 enum OrderStatus {
   @JsonValue('new')
   taken('new', 'جديدة'),
+
+  /// Prepped and weighed by the warehouse, waiting for the press to pick it up.
+  ///
+  /// The handover between two departments — see `OrderStatus.php`. It is also where the stock
+  /// leaves the shelf, but nothing here needs to know that: the sheet draws whatever fields the
+  /// server describes for the move.
+  @JsonValue('ready_to_print')
+  readyToPrint('ready_to_print', 'جاهزة للطباعة'),
   @JsonValue('designing')
   designing('designing', 'قيد التصميم'),
   @JsonValue('printing')
@@ -130,7 +138,11 @@ enum OrderStatus {
   /// workshop, on its way, come back, or finished".
   OrderStatusTone get tone => switch (this) {
     OrderStatus.taken => OrderStatusTone.fresh,
-    OrderStatus.designing || OrderStatus.printing => OrderStatusTone.working,
+    // In the workshop's hands and moving: prepped is no longer untouched, and it is a long way
+    // from being finished goods.
+    OrderStatus.readyToPrint ||
+    OrderStatus.designing ||
+    OrderStatus.printing => OrderStatusTone.working,
     OrderStatus.ready => OrderStatusTone.ready,
     OrderStatus.shortage => OrderStatusTone.attention,
     OrderStatus.officePickup || OrderStatus.outForDelivery => OrderStatusTone.moving,

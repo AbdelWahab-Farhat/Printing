@@ -54,6 +54,7 @@ class OrderCancellationReversalTest extends TestCase
         $user->givePermissionTo([
             PermissionName::ViewOrders->value,
             PermissionName::ManageOrders->value,
+            PermissionName::MoveOrderToReadyToPrint->value,
             PermissionName::MoveOrderToPrinting->value,
             PermissionName::MoveOrderToReady->value,
             PermissionName::CancelOrders->value,
@@ -95,13 +96,20 @@ class OrderCancellationReversalTest extends TestCase
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '90',
         ]);
 
+        // The stock leaves at the handover, so that is where the warehouse is named — and then on
+        // through the press to «جاهزة», because labour and overhead are costed there rather than
+        // at the handover: that is where the run has actually happened.
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::ReadyToPrint->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ])->assertOk();
+
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Printing->value,
         ])->assertOk();
 
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Ready->value,
-            'fields' => ['warehouse_id' => $warehouse->id],
         ])->assertOk();
 
         // 90 drawn: the whole 60@5 layer, then 30 of the 60@8 layer
@@ -161,13 +169,20 @@ class OrderCancellationReversalTest extends TestCase
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '50',
         ]);
 
+        // The stock leaves at the handover, so that is where the warehouse is named — and then on
+        // through the press to «جاهزة», because labour and overhead are costed there rather than
+        // at the handover: that is where the run has actually happened.
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::ReadyToPrint->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ])->assertOk();
+
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Printing->value,
         ])->assertOk();
 
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Ready->value,
-            'fields' => ['warehouse_id' => $warehouse->id],
         ])->assertOk();
 
         $order->refresh();

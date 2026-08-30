@@ -45,6 +45,7 @@ class ProductionCostTest extends TestCase
         $user->givePermissionTo([
             PermissionName::ViewOrders->value,
             PermissionName::ManageOrders->value,
+            PermissionName::MoveOrderToReadyToPrint->value,
             PermissionName::MoveOrderToPrinting->value,
             PermissionName::MoveOrderToReady->value,
             // The way back into printing: a correction goes to the designer and forward again.
@@ -57,19 +58,29 @@ class ProductionCostTest extends TestCase
     }
 
     /**
-     * Walks an order from wherever it starts to `ready` — printing first (no fields required to
-     * get there from `new`), then ready, which is where stock now leaves the warehouse and
-     * production cost is applied.
+     * Walks a new order all the way to «جاهزة», through the two things that now happen on the
+     * way: the warehouse hands it to the press at «جاهزة للطباعة», **naming the shelf the stock
+     * leaves from**, and «جاهزة» is where the press finishes and production cost is applied.
+     *
+     * The two used to be one step. Material cost still lands with the deduction — so at the
+     * handover — while labour, machine and overhead land here, because those are the press
+     * running and it has not run when the warehouse lets the goods go.
      */
     private function enterReady(array $headers, Order $order, Warehouse $warehouse): void
     {
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
+            'status' => OrderStatus::ReadyToPrint->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
         ])->assertOk();
 
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+        ])->assertOk();
+
+        // No warehouse this time: the stock has already gone, so the move does not offer one —
+        // and the request refuses a key its transition never described.
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Ready->value,
-            'fields' => ['warehouse_id' => $warehouse->id],
         ])->assertOk();
     }
 
@@ -257,14 +268,19 @@ class ProductionCostTest extends TestCase
         $this->assertSame('30.00', (string) $item->refresh()->labor_cost);
     }
 
-    public function test_stock_already_deducted_does_not_reapply_manufacturing_rates(): void
+    public function test_an_order_already_called_ready_does_not_reapply_manufacturing_rates(): void
     {
         // Arrange — `ready` has no way back to `printing`/`designing` (see
-        // `OrderStatus::allowedNext()`), so unlike the old `printing`-triggered guard this cannot
-        // be exercised by a real reprint any more: an order that has reached `ready` never sees
-        // this transition fire again through legitimate use. What is left to test is the guard
-        // itself — `stock_deducted_at !== null` — by putting the order in the state a second
-        // `ready` entry would otherwise find it in.
+        // `OrderStatus::allowedNext()`), so this cannot be exercised by a real reprint: an order
+        // that has reached `ready` never sees the transition fire again through legitimate use.
+        // What is left to test is the guard itself, by putting the order in the state a second
+        // `ready` entry would find it in.
+        //
+        // **The guard is `ready_at`, and it used to be `stock_deducted_at`.** The two once
+        // happened in one breath; now the stock leaves at «جاهزة للطباعة», so every printed order
+        // reaches here already deducted and the old fact would have stopped costing anything at
+        // all. What has-this-been-costed actually depends on is whether the order has been called
+        // ready before.
         $product = Product::factory()->create();
         $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
         $warehouse = Warehouse::factory()->create();
@@ -274,6 +290,7 @@ class ProductionCostTest extends TestCase
 
         $order = Order::factory()->status(OrderStatus::Printing)->create([
             'stock_deducted_at' => now(),
+            'ready_at' => now(),
             'fulfillment_warehouse_id' => $warehouse->id,
         ]);
         $item = OrderItem::factory()->for($order)->create([
