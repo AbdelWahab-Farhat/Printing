@@ -121,6 +121,11 @@ class _PagedListViewState<T> extends State<PagedListView<T>> {
                 child: ListView.separated(
                   controller: _controller,
                   padding: padding,
+                  // Two cards do not fill a phone, and a list with nothing to scroll swallows
+                  // the drag before the RefreshIndicator ever sees it — so the short lists,
+                  // the ones a user is most likely to pull on, were the ones that would not
+                  // refresh.
+                  physics: const AlwaysScrollableScrollPhysics(),
                   // One extra row while a page is on its way: the footer is part of the list, so
                   // it scrolls with it instead of floating over the last card.
                   itemCount: page.items.length + (isLoadingMore ? 1 : 0),
