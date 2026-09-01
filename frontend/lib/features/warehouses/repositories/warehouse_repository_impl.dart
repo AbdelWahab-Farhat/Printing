@@ -19,6 +19,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
   @override
   Future<Either<Failure, Paginated<Warehouse>>> warehouses({
     String? search,
+    WarehouseType? type,
     int page = 1,
     int perPage = 20,
   }) {
@@ -31,6 +32,9 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
           // Omitted rather than sent as null: a null in a query string arrives as the literal
           // "null" and the API would filter on it.
           if (search != null && search.isNotEmpty) 'search': search,
+          // `unknown` is a kind this build cannot name, so it is no filter at all — sending it
+          // would ask the server about a word it has never heard of.
+          if (type != null && type != WarehouseType.unknown) 'type': _wire(type),
         },
       ),
       parseItem: Warehouse.fromJson,

@@ -12,8 +12,13 @@ import 'package:dayaa/features/warehouses/models/warehouse_stock_summary.dart';
 /// are one context: a balance only ever changes through a movement, and a screen that showed
 /// one without the other would be showing half an answer.
 abstract interface class WarehouseRepository {
+  /// [type] narrows to one kind of place — «الرئيسي», today, which is the answer a form
+  /// asking for a warehouse opens holding. Asked of the server rather than filtered here: the
+  /// main store need not sit on the first page, and a client that read one and hoped would name
+  /// the wrong shelf in a business with a dozen.
   Future<Either<Failure, Paginated<Warehouse>>> warehouses({
     String? search,
+    WarehouseType? type,
     int page = 1,
     int perPage = 20,
   });

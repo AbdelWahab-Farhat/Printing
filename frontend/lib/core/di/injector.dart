@@ -694,6 +694,10 @@ abstract final class Injector {
           orderId: orderId,
           getOrder: sl<GetOrder>(),
           changeStatus: sl<ChangeOrderStatus>(),
+          // The two lists the app manages itself, so the form can answer the fields whose
+          // answer is never in doubt: the main store, and the carrier when there is only one.
+          getWarehouses: sl<GetWarehouses>(),
+          getShippingCompanies: sl<GetShippingCompanies>(),
         ),
       )
       // Parameterised by the *customer*, not by an order — there is no order yet, and the

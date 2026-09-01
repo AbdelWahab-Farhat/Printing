@@ -109,6 +109,13 @@ enum AppPermission {
   manageOrders('orders.manage', 'إضافة وتعديل الطلبيات'),
   discountOrders('orders.discount', 'منح خصم على الطلبية'),
   manageOrderDesigns('orders.designs.manage', 'إدارة تصاميم الطلبية واعتمادها'),
+  // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
+  // the order to the press. Separate from the two production grants beside it because a
+  // different desk does it — the wording is `PermissionName.php`'s, word for word.
+  moveOrderToReadyToPrint(
+    'orders.status.ready_to_print',
+    'تحويل الطلبية إلى جاهزة للطباعة',
+  ),
   moveOrderToDesigning(
     'orders.status.designing',
     'تحويل الطلبية إلى قيد التصميم',

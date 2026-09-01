@@ -5,7 +5,9 @@ import 'package:dayaa/features/orders/models/transition_field.dart';
 import 'package:dayaa/features/orders/usecases/change_order_status.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/features/shipping_companies/usecases/get_shipping_companies.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
+import 'package:dayaa/features/warehouses/usecases/get_warehouses.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -27,14 +29,28 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
     required int orderId,
     required GetOrder getOrder,
     required ChangeOrderStatus changeStatus,
+    required GetWarehouses getWarehouses,
+    required GetShippingCompanies getShippingCompanies,
   }) : _orderId = orderId,
        _getOrder = getOrder,
        _changeStatus = changeStatus,
+       _getWarehouses = getWarehouses,
+       _getShippingCompanies = getShippingCompanies,
        super(const OrderStatusState.loading());
 
   final int _orderId;
   final GetOrder _getOrder;
   final ChangeOrderStatus _changeStatus;
+
+  /// The two lists this app owns, fetched to answer a field on the form's behalf — see
+  /// [_fillInTheObvious]. Not to draw a picker: the pickers fetch their own.
+  final GetWarehouses _getWarehouses;
+  final GetShippingCompanies _getShippingCompanies;
+
+  /// Resolved once per screen and kept, because the answer cannot change while one order is
+  /// being moved and the road here is a phone on a mobile connection.
+  Warehouse? _mainStore;
+  ShippingCompany? _soleCarrier;
 
   Future<void> load() async {
     if (state.order == null) emit(const OrderStatusState.loading());
@@ -61,6 +77,10 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
         },
       ),
     );
+
+    // The move chosen for the user gets its defaults too — nobody is going to tap and trigger
+    // them.
+    if (state.selected case final only?) await _fillInTheObvious(only);
   }
 
   /// Picks a destination, and empties whatever was typed for the last one.
@@ -68,7 +88,7 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
   /// Deliberately not merged: two paths may both have a `notes`, and carrying an answer across
   /// would submit a sentence written about a different move. What replaces it is not nothing,
   /// though — see [_prefilled].
-  void select(OrderTransition transition) {
+  Future<void> select(OrderTransition transition) async {
     final order = state.order;
     if (order == null) return;
 
@@ -78,6 +98,81 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
         selected: transition,
         values: _prefilled(transition),
       ),
+    );
+
+    await _fillInTheObvious(transition);
+  }
+
+  /// Answers, on the person's behalf, the fields whose answer the app can work out.
+  ///
+  /// **The warehouse and the carrier are the two kinds whose lists this app owns** — the server
+  /// sends no options for either, precisely because the app manages them. So it is the app that
+  /// can see when the list has only one sensible answer, and a form that opens holding it saves
+  /// a storekeeper the same three taps thirty times a day:
+  ///
+  /// - «المخزن» opens on the main store. Every other shelf is still one tap away in the picker.
+  /// - «شركة التوصيل» opens on the carrier **when it is the only active one**. A second one
+  ///   hands the choice straight back: which of two took the parcel is a fact, not a default.
+  ///
+  /// **A suggestion, never an answer that overrules one.** The lists are fetched over the wire,
+  /// so a reply can land after somebody has already picked — or after they have moved to another
+  /// destination entirely. Both are checked before anything is written, and a list that fails to
+  /// load leaves the field empty rather than the screen broken: the picker was always the way to
+  /// fill it in.
+  Future<void> _fillInTheObvious(OrderTransition transition) async {
+    for (final field in transition.fields) {
+      final Object? answer = switch (field.type) {
+        TransitionFieldType.warehouse => await _mainWarehouse(),
+        TransitionFieldType.shippingCompany => await _onlyActiveCarrier(),
+        _ => null,
+      };
+
+      if (answer != null) _suggest(transition, field.key, answer);
+    }
+  }
+
+  /// Writes a default, unless the form has moved on without it.
+  void _suggest(OrderTransition transition, String key, Object value) {
+    if (isClosed) return;
+
+    // They chose another destination while the list was loading — this answer belongs to a form
+    // that is no longer on screen.
+    if (state.selected != transition) return;
+
+    // They answered it themselves, or the server sent an answer with the field. Either beats a
+    // guess made from a list.
+    if (state.values[key] != null) return;
+
+    setValue(key, value);
+  }
+
+  /// «الرئيسي», asked of the server by type rather than guessed off the first page.
+  Future<Warehouse?> _mainWarehouse() async {
+    if (_mainStore case final store?) return store;
+
+    final result = await _getWarehouses(type: WarehouseType.main, perPage: 1);
+
+    return _mainStore = result.fold(
+      // A list that would not load is not an emergency here: the field simply opens empty, as
+      // it did before any of this existed.
+      (_) => null,
+      (page) => page.items.isEmpty ? null : page.items.first,
+    );
+  }
+
+  /// The carrier, when the business deals with exactly one.
+  ///
+  /// `total` rather than the length of the page is what decides it: two pages of one row each
+  /// are still two carriers, and a page size of two only exists to make the question answerable
+  /// in one request.
+  Future<ShippingCompany?> _onlyActiveCarrier() async {
+    if (_soleCarrier case final carrier?) return carrier;
+
+    final result = await _getShippingCompanies(isActive: true, perPage: 2);
+
+    return _soleCarrier = result.fold(
+      (_) => null,
+      (page) => page.meta.total == 1 && page.items.isNotEmpty ? page.items.first : null,
     );
   }
 

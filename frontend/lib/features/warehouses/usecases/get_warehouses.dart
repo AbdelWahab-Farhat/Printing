@@ -12,11 +12,17 @@ class GetWarehouses {
 
   Future<Either<Failure, Paginated<Warehouse>>> call({
     String? search,
+    WarehouseType? type,
     int page = 1,
     int perPage = 20,
   }) {
     // Trimmed here rather than in the Cubit: a trailing space from a paste is a search that
     // silently finds nothing.
-    return _repository.warehouses(search: search?.trim(), page: page, perPage: perPage);
+    return _repository.warehouses(
+      search: search?.trim(),
+      type: type,
+      page: page,
+      perPage: perPage,
+    );
   }
 }

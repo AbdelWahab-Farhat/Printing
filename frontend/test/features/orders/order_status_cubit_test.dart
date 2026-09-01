@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
@@ -8,10 +9,20 @@ import 'package:dayaa/features/orders/presentation/viewmodel/order_status_cubit.
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/change_order_status.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
+import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/features/shipping_companies/repositories/shipping_company_repository.dart';
+import 'package:dayaa/features/shipping_companies/usecases/get_shipping_companies.dart';
+import 'package:dayaa/features/warehouses/models/warehouse.dart';
+import 'package:dayaa/features/warehouses/repositories/warehouse_repository.dart';
+import 'package:dayaa/features/warehouses/usecases/get_warehouses.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockOrderRepository extends Mock implements OrderRepository {}
+
+class _MockWarehouseRepository extends Mock implements WarehouseRepository {}
+
+class _MockShippingCompanyRepository extends Mock implements ShippingCompanyRepository {}
 
 /// Moving one order, and carrying whatever the chosen path asked for.
 ///
@@ -22,6 +33,8 @@ class _MockOrderRepository extends Mock implements OrderRepository {}
 /// Arrange - Act - Assert throughout.
 void main() {
   late _MockOrderRepository repository;
+  late _MockWarehouseRepository warehouses;
+  late _MockShippingCompanyRepository carriers;
   late OrderStatusCubit cubit;
 
   const artwork = TransitionField(
@@ -61,6 +74,49 @@ void main() {
     status: OrderStatus.printing,
     label: 'قيد الطباعة',
     fields: [received],
+  );
+
+  /// «المخزن» — a field whose list the app owns, so nobody has to be asked for the usual answer.
+  const store = TransitionField(
+    key: 'warehouse_id',
+    type: TransitionFieldType.warehouse,
+    label: 'المخزن',
+    isRequired: true,
+  );
+
+  const toReady = OrderTransition(
+    status: OrderStatus.ready,
+    label: 'جاهزة',
+    fields: [store],
+  );
+
+  const courier = TransitionField(
+    key: 'shipping_company_id',
+    type: TransitionFieldType.shippingCompany,
+    label: 'شركة التوصيل',
+    isRequired: true,
+  );
+
+  const toDelivery = OrderTransition(
+    status: OrderStatus.outForDelivery,
+    label: 'جاري التوصيل',
+    fields: [courier],
+  );
+
+  Warehouse warehouse(int id, {required WarehouseType type, String name = 'المخزن الرئيسي'}) =>
+      Warehouse(id: id, name: name, type: type, typeLabel: 'رئيسي');
+
+  ShippingCompany carrier(int id, {String name = 'المتحدة للشحن'}) =>
+      ShippingCompany(id: id, name: name);
+
+  Paginated<T> onePage<T>(List<T> items, {int? total}) => Paginated<T>(
+    items: items,
+    meta: PageMeta(
+      currentPage: 1,
+      perPage: 20,
+      lastPage: 1,
+      total: total ?? items.length,
+    ),
   );
 
   const toCancelled = OrderTransition(
@@ -107,10 +163,35 @@ void main() {
 
   setUp(() {
     repository = _MockOrderRepository();
+    warehouses = _MockWarehouseRepository();
+    carriers = _MockShippingCompanyRepository();
+
+    // Nothing to default to unless a test says otherwise: a move that asks for neither must not
+    // depend on either list answering.
+    when(
+      () => warehouses.warehouses(
+        search: any(named: 'search'),
+        type: any(named: 'type'),
+        page: any(named: 'page'),
+        perPage: any(named: 'perPage'),
+      ),
+    ).thenAnswer((_) async => Right(onePage<Warehouse>([])));
+
+    when(
+      () => carriers.companies(
+        search: any(named: 'search'),
+        isActive: any(named: 'isActive'),
+        page: any(named: 'page'),
+        perPage: any(named: 'perPage'),
+      ),
+    ).thenAnswer((_) async => Right(onePage<ShippingCompany>([])));
+
     cubit = OrderStatusCubit(
       orderId: 7,
       getOrder: GetOrder(repository),
       changeStatus: ChangeOrderStatus(repository),
+      getWarehouses: GetWarehouses(warehouses),
+      getShippingCompanies: GetShippingCompanies(carriers),
     );
   });
 
@@ -154,7 +235,7 @@ void main() {
     await cubit.load();
 
     // Act
-    cubit.select(toDesigning);
+    await cubit.select(toDesigning);
 
     // Assert — the server refuses this too; the button spares the round trip.
     expect(cubit.state.canSubmit, isFalse);
@@ -174,7 +255,7 @@ void main() {
     await cubit.load();
 
     // Act
-    cubit.select(toPrinting);
+    await cubit.select(toPrinting);
 
     // Assert
     expect(cubit.state.canSubmit, isTrue);
@@ -186,11 +267,11 @@ void main() {
       (_) async => Right(orderWith(transitions: [toDesigning, toCancelled])),
     );
     await cubit.load();
-    cubit.select(toCancelled);
+    await cubit.select(toCancelled);
     cubit.setValue('reason', 'العميل غيّر رأيه');
 
     // Act
-    cubit.select(toDesigning);
+    await cubit.select(toDesigning);
 
     // Assert — two paths may both have a `reason`, and carrying one across would send a
     // sentence written about a different move.
@@ -211,7 +292,7 @@ void main() {
       await cubit.load();
 
       // Act
-      cubit.select(outOfShortage);
+      await cubit.select(outOfShortage);
 
       // Assert
       expect(cubit.state.values['received_11'], '100.000');
@@ -235,16 +316,196 @@ void main() {
         (_) async => Right(orderWith(transitions: [outOfShortage, toCancelled])),
       );
       await cubit.load();
-      cubit.select(outOfShortage);
+      await cubit.select(outOfShortage);
       cubit.setValue('received_11', '40');
 
       // Act — off to another move and back.
-      cubit.select(toCancelled);
-      cubit.select(outOfShortage);
+      await cubit.select(toCancelled);
+      await cubit.select(outOfShortage);
 
       // Assert — the prefill is part of the form, so it returns with it rather than leaving an
       // empty box where a number used to be.
       expect(cubit.state.values['received_11'], '100.000');
+    });
+  });
+
+  /// **The answer the app already knows, filled in rather than asked for.**
+  ///
+  /// The warehouse and the carrier are the two fields whose lists this app owns — the server
+  /// sends no options for either. So when the list has an obvious answer, the form opens holding
+  /// it: a storekeeper moving thirty orders a day should not tap through the same sheet thirty
+  /// times to name the same shelf. Both stay changeable — the picker is still there.
+  group('a choice the app can make on its own', () {
+    test('«المخزن» opens holding the main store', () async {
+      // Arrange
+      when(() => repository.order(7)).thenAnswer(
+        (_) async => Right(orderWith(transitions: [toReady, toCancelled])),
+      );
+      when(
+        () => warehouses.warehouses(
+          search: any(named: 'search'),
+          type: WarehouseType.main,
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer(
+        (_) async => Right(onePage([warehouse(3, type: WarehouseType.main)])),
+      );
+      await cubit.load();
+
+      // Act
+      await cubit.select(toReady);
+
+      // Assert — the whole warehouse, so the button can say its name.
+      expect(cubit.state.values['warehouse_id'], warehouse(3, type: WarehouseType.main));
+      expect(cubit.state.canSubmit, isTrue);
+    });
+
+    test('the main store is asked for by type rather than guessed from the first row', () async {
+      // Arrange
+      when(() => repository.order(7))
+          .thenAnswer((_) async => Right(orderWith(transitions: [toReady])));
+
+      // Act — the one move on offer is chosen for the user, so nothing would ever tap.
+      await cubit.load();
+
+      // Assert — «الرئيسي» is a fact the server holds; reading the first page and hoping is not
+      // the same question.
+      verify(
+        () => warehouses.warehouses(
+          search: any(named: 'search'),
+          type: WarehouseType.main,
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
+    });
+
+    test('a business with no main store is still asked', () async {
+      // Arrange — the stub answers with nothing, as it does by default.
+      when(() => repository.order(7))
+          .thenAnswer((_) async => Right(orderWith(transitions: [toReady])));
+
+      // Act
+      await cubit.load();
+
+      // Assert — an empty field is honest; a guessed shelf is a wrong deduction.
+      expect(cubit.state.values['warehouse_id'], isNull);
+      expect(cubit.state.canSubmit, isFalse);
+    });
+
+    test('the one carrier we deal with is chosen for the person', () async {
+      // Arrange
+      when(() => repository.order(7))
+          .thenAnswer((_) async => Right(orderWith(transitions: [toDelivery])));
+      when(
+        () => carriers.companies(
+          search: any(named: 'search'),
+          isActive: true,
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer((_) async => Right(onePage([carrier(2)])));
+
+      // Act
+      await cubit.load();
+
+      // Assert — a list of one that still has to be tapped is a tap that tells nobody anything.
+      expect(cubit.state.values['shipping_company_id'], carrier(2));
+    });
+
+    test('a second carrier gives the choice back to the person', () async {
+      // Arrange
+      when(() => repository.order(7))
+          .thenAnswer((_) async => Right(orderWith(transitions: [toDelivery])));
+      when(
+        () => carriers.companies(
+          search: any(named: 'search'),
+          isActive: true,
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer(
+        (_) async => Right(onePage([carrier(2), carrier(5, name: 'سريع')], total: 2)),
+      );
+
+      // Act
+      await cubit.load();
+
+      // Assert — which of two took the parcel is not the app's to decide.
+      expect(cubit.state.values['shipping_company_id'], isNull);
+    });
+
+    test('a shelf the person picked is not overwritten by the default arriving late', () async {
+      // Arrange — the list answers slowly, which is the ordinary case on a Libyan connection.
+      when(() => repository.order(7))
+          .thenAnswer((_) async => Right(orderWith(transitions: [toReady, toCancelled])));
+      when(
+        () => warehouses.warehouses(
+          search: any(named: 'search'),
+          type: WarehouseType.main,
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer(
+        (_) async => Future.delayed(
+          const Duration(milliseconds: 20),
+          () => Right(onePage([warehouse(3, type: WarehouseType.main)])),
+        ),
+      );
+      await cubit.load();
+
+      // Act — they open the picker and name another shelf before the default lands.
+      final pending = cubit.select(toReady);
+      cubit.setValue('warehouse_id', warehouse(9, type: WarehouseType.operational, name: 'الورشة'));
+      await pending;
+
+      // Assert — a suggestion that overrules an answer is worse than no suggestion.
+      expect(
+        cubit.state.values['warehouse_id'],
+        warehouse(9, type: WarehouseType.operational, name: 'الورشة'),
+      );
+    });
+
+    test('the store filled in for the person travels as its id', () async {
+      // Arrange
+      when(() => repository.order(7))
+          .thenAnswer((_) async => Right(orderWith(transitions: [toReady])));
+      when(
+        () => warehouses.warehouses(
+          search: any(named: 'search'),
+          type: WarehouseType.main,
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer(
+        (_) async => Right(onePage([warehouse(3, type: WarehouseType.main)])),
+      );
+      await cubit.load();
+
+      when(
+        () => repository.changeStatus(
+          7,
+          status: any(named: 'status'),
+          reason: any(named: 'reason'),
+          fields: any(named: 'fields'),
+        ),
+      ).thenAnswer((_) async => Right(orderWith()));
+
+      // Act
+      await cubit.submit();
+
+      // Assert — exactly what a picked one sends; nothing downstream knows it was a default.
+      final sent = verify(
+        () => repository.changeStatus(
+          7,
+          status: any(named: 'status'),
+          reason: any(named: 'reason'),
+          fields: captureAny(named: 'fields'),
+        ),
+      ).captured.last;
+
+      expect(sent, {'warehouse_id': 3});
     });
   });
 
