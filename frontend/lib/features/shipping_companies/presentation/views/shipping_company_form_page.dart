@@ -79,8 +79,10 @@ class _ShippingCompanyFormViewState extends State<_ShippingCompanyFormView> {
       listener: (context, state) {
         switch (state) {
           case SaveShippingCompanySuccess(:final company):
-            // True says the list behind should refresh; a dismissed form returns nothing.
-            Navigator.of(context).pop(true);
+            // The saved company goes back with it, so the list behind redraws that one row from
+            // what the server stored rather than re-reading the page. A dismissed form returns
+            // nothing, and the list does not move.
+            Navigator.of(context).pop(company);
             context.showSuccess(
               _isEditing ? 'تم تحديث «${company.name}»' : 'تمت إضافة «${company.name}»',
             );

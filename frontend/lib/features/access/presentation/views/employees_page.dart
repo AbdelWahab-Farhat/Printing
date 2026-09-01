@@ -58,10 +58,11 @@ class _EmployeesView extends StatelessWidget {
               // two default-tagged FABs in one subtree is the «multiple heroes» assertion.
               heroTag: 'fab-employees',
               onPressed: () async {
-                final created = await context.push(Routes.addEmployee);
+                final created = await context.push<AuthUser>(Routes.addEmployee);
 
-                // Only when an account was actually created: a form the user backed out of has
-                // changed nothing, and refreshing anyway would scroll a long list to the top.
+                // Re-read: this list is ordered by the server, not newest-first, so where a new
+                // account belongs is its answer. Only when one was actually created — a form
+                // the user backed out of has changed nothing.
                 if (created != null) await cubit.refresh();
               },
               icon: Icon(AppIcons.addEmployee),
@@ -112,12 +113,12 @@ class _EmployeesView extends StatelessWidget {
                   // each reader may *do* there, and a row that does nothing for somebody with
                   // `users.view` is a row that looks broken.
                   //
-                  // Reloaded on the way back, like the customer list: that screen can rename,
-                  // change roles and stop the account, and a list still showing the old row is
-                  // a list nobody trusts.
+                  // The detail screen hands the account back when it renamed it, changed its
+                  // roles or stopped it, so the row redraws itself with no request — and
+                  // nothing happens at all after a screen the user merely read.
                   onTap: () async {
-                    await context.push(Routes.employee(user.id));
-                    await cubit.refresh();
+                    final changed = await context.push<AuthUser>(Routes.employee(user.id));
+                    if (changed != null) cubit.replace(changed);
                   },
                 ),
               ),

@@ -42,4 +42,15 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
 
     emit(result.fold((f) => ProductDetailState.failure(f), (p) => ProductDetailState.loaded(p)));
   }
+
+  /// Takes a reading the caller already has — the form's saved copy, straight from the server.
+  ///
+  /// The alternative was [load], which is a request for something this screen was just handed:
+  /// the form posts the product and the server answers with the whole record, prices and all.
+  /// A pull still re-reads, and so does the retry on the failure view.
+  void show(Product product) {
+    if (isClosed) return;
+
+    emit(ProductDetailState.loaded(product));
+  }
 }

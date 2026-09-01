@@ -47,6 +47,16 @@ class VendorDetailCubit extends Cubit<VendorDetailState> {
     );
   }
 
+  /// Takes a reading the caller already has — the form's saved copy, straight from the server.
+  ///
+  /// The alternative was [load], which is a request for something this screen was just handed.
+  /// A pull still re-reads, and so does the retry on the failure view.
+  void show(Vendor vendor) {
+    if (isClosed) return;
+
+    emit(VendorDetailState.ready(vendor));
+  }
+
   /// Stops offering this supplier, or brings it back. Answers with the failure, or null.
   Future<Failure?> setActive({required bool isActive}) async {
     final vendor = state.vendor;

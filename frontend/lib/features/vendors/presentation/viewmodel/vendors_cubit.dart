@@ -20,6 +20,9 @@ class VendorsCubit extends PagedCubit<Vendor> {
   final bool _onlyActive;
 
   @override
+  Object identityOf(Vendor item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<Vendor>>> fetchPage({
     String? search,
     required int page,
@@ -32,27 +35,14 @@ class VendorsCubit extends PagedCubit<Vendor> {
     );
   }
 
-  /// Puts back a vendor a form or an activation toggle changed, without re-reading the page.
+  /// A deactivated supplier stays on the list rather than being dropped from it.
   ///
-  /// Kept in place rather than dropped even when it has just been switched off: unlike a status
-  /// filter, this list is «كل الموردين» — a supplier that vanished on being deactivated would
-  /// look deleted, which is precisely the thing this feature refuses to do.
-  void replace(Vendor updated) {
-    final current = state;
-    if (current is! PagedLoaded<Vendor>) return;
-
-    emit(
-      current.copyWith(
-        page: Paginated<Vendor>(
-          items: [
-            for (final vendor in current.page.items)
-              if (vendor.id == updated.id) updated else vendor,
-          ],
-          meta: current.page.meta,
-        ),
-      ),
-    );
-  }
+  /// The default [PagedCubit.belongs] already says so; it is spelled out because the neighbouring
+  /// lists say the opposite. Unlike a status filter, this one is «كل الموردين» — a supplier that
+  /// vanished on being switched off would look deleted, which is precisely the thing this
+  /// feature refuses to do. The picker's copy is narrowed by the *server*, on its own request.
+  @override
+  bool belongs(Vendor item) => true;
 }
 
 typedef VendorsState = PagedState<Vendor>;

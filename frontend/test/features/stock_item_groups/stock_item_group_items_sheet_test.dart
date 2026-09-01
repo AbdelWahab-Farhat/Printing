@@ -111,14 +111,15 @@ void main() {
   /// What the form was handed, captured instead of built.
   StockItemFormArgs? handed;
 
-  /// What the form answers when it closes. `true` is «saved», which is what triggers the reload.
-  bool? formAnswers;
+  /// What the form answers when it closes. The saved material is «saved», which is what
+  /// triggers the reload; null is a form that was backed out of.
+  StockItem? formAnswers;
 
   setUp(() async {
     await Injector.reset();
 
     handed = null;
-    formAnswers = true;
+    formAnswers = anotherSize;
 
     session = Session();
     sl.registerSingleton<Session>(session);

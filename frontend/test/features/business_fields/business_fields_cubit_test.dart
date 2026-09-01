@@ -178,20 +178,22 @@ void main() {
   });
 
   group('stopping a field', () {
-    test('the list is re-read from the server rather than patched in place', () async {
-      // Arrange — deactivating changes what a filtered list should contain, so a locally edited
-      // copy would disagree with the server the moment it happened.
+    test('the row is redrawn from what the endpoint answered, with no second read', () async {
+      // Arrange — the activation endpoint answers with the field it just changed, so there is
+      // nothing left to ask the list for.
       answerWith(Right(pageOf(const [shipping, clothes])));
+      final stopped = shipping.copyWith(isActive: false);
       when(
         () => repository.setActivation(any(), isActive: any(named: 'isActive')),
-      ).thenAnswer((_) async => const Right(shipping));
+      ).thenAnswer((_) async => Right(stopped));
       await cubit.load();
 
       // Act
       final failure = await cubit.setActivation(shipping, isActive: false);
 
-      // Assert
+      // Assert — one read, the one that filled the screen in the first place.
       expect(failure, isNull);
+      expect((cubit.state as BusinessFieldsLoaded).page.items, [stopped, clothes]);
       verify(() => repository.setActivation(1, isActive: false)).called(1);
       verify(
         () => repository.fields(
@@ -200,7 +202,23 @@ void main() {
           page: 1,
           perPage: any(named: 'perPage'),
         ),
-      ).called(2);
+      ).called(1);
+    });
+
+    test('a field stopped while «المعروضة» is showing leaves the list', () async {
+      // Arrange — the same write, on a list narrowed to the offered fields.
+      answerWith(Right(pageOf(const [shipping, clothes])));
+      when(
+        () => repository.setActivation(any(), isActive: any(named: 'isActive')),
+      ).thenAnswer((_) async => Right(shipping.copyWith(isActive: false)));
+      cubit.isActive = true;
+      await cubit.load();
+
+      // Act
+      await cubit.setActivation(shipping, isActive: false);
+
+      // Assert — leaving it there would make the chip above it a lie until the next refresh.
+      expect((cubit.state as BusinessFieldsLoaded).page.items, [clothes]);
     });
 
     test('a refusal comes back to the screen and the list is left alone', () async {

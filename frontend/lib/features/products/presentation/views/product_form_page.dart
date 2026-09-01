@@ -464,12 +464,14 @@ class _ProductFormViewState extends State<_ProductFormView> {
     );
   }
 
-  /// Back to wherever this was opened from, saying whether anything was written.
+  /// Back to wherever this was opened from, carrying [saved] — the product the *server* stored,
+  /// which is exactly what the screen behind needs to redraw its row without asking for it
+  /// again. Nothing, when the form was left without saving.
   ///
   /// `canPop` because the screen has its own route: a deep link straight to it has nothing
   /// beneath to return to.
-  void _leave(BuildContext context) =>
-      context.canPop() ? context.pop(true) : context.go(Routes.products);
+  void _leave(BuildContext context, [Product? saved]) =>
+      context.canPop() ? context.pop(saved) : context.go(Routes.products);
 
   @override
   Widget build(BuildContext context) {
@@ -494,7 +496,7 @@ class _ProductFormViewState extends State<_ProductFormView> {
                   context.showSuccess('تم حفظ ${product.name}');
                 }
 
-                _leave(context);
+                _leave(context, product);
 
               case SaveProductFailure(:final failure):
                 // A complaint about a size's shelf is painted beside that size — but the pickers

@@ -57,9 +57,16 @@ class _StockItemsView extends StatelessWidget {
 
     final saved = await openStockItemForm(context, item: item);
 
-    // Only when something actually changed: a refresh after a dismissed form is a request
-    // nobody asked for, and it flickers the list under the user's thumb.
-    if (saved ?? false) await cubit.refresh();
+    // Only when something actually changed. A corrected shelf is redrawn where it stands, out
+    // of what the form handed back; a *new* one re-reads, because this list is in the business's
+    // own order and where it lands is the server's answer. A dismissed form moves nothing.
+    if (saved == null) return;
+
+    if (item == null) {
+      await cubit.refresh();
+    } else {
+      cubit.replace(saved);
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context, StockItem item) async {

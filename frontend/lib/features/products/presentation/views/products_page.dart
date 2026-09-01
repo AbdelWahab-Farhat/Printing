@@ -77,11 +77,14 @@ class _ProductsViewState extends State<_ProductsView> {
               // Unique per screen, because the shell keeps every tab alive in an IndexedStack:
               // two default-tagged FABs in one subtree is the «multiple heroes» assertion.
               heroTag: 'fab-products',
-              // Refreshes on the way back: a bag added on that form belongs in this list
-              // without the user having to think about pulling down.
+              // Re-read, and this is the case where that is still right: the catalogue is
+              // ordered by the business's own `sort_order`, so where a new bag lands is the
+              // server's answer — putting it at the top here would be this app inventing one.
+              // Only after something was actually saved, though; a form backed out of moves
+              // nothing.
               onPressed: () async {
-                await context.push(Routes.addProduct);
-                await cubit.refresh();
+                final created = await context.push<Product>(Routes.addProduct);
+                if (created != null) await cubit.refresh();
               },
               icon: Icon(AppIcons.addProduct),
               label: const Text('منتج جديد'),
@@ -138,9 +141,13 @@ class _ProductsViewState extends State<_ProductsView> {
                 itemBuilder: (context, product, index) => ProductCard(
                   key: ValueKey(product.id),
                   product: product,
-                  // No refresh on the way back: that screen only reads. It gets one the day
-                  // stopping a product from it lands.
-                  onTap: () => unawaited(context.push(Routes.product(product.id))),
+                  // The detail screen hands the bag back when its form changed it, so the card
+                  // redraws itself with no request — and nothing happens at all after a screen
+                  // the user merely read.
+                  onTap: () async {
+                    final changed = await context.push<Product>(Routes.product(product.id));
+                    if (changed != null) cubit.replace(changed);
+                  },
                 ),
               ),
             ),

@@ -319,8 +319,10 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
     return BlocConsumer<SavePurchaseOrderCubit, SavePurchaseOrderState>(
       listener: (context, state) {
         switch (state) {
-          case SavePurchaseOrderSuccess():
-            Navigator.of(context).pop(true);
+          case SavePurchaseOrderSuccess(:final order):
+            // The saved order goes back with it, so the screen behind redraws its row from what
+            // the server stored rather than asking for it again.
+            Navigator.of(context).pop(order);
             context.showSuccess(
               _isEditing ? 'تم حفظ أمر الشراء' : 'تم إنشاء أمر الشراء',
             );

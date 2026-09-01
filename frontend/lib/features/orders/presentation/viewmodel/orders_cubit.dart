@@ -63,6 +63,9 @@ class OrdersCubit extends PagedCubit<Order> {
   bool get isFiltered => status != null || paymentStatuses.isNotEmpty;
 
   @override
+  Object identityOf(Order item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<Order>>> fetchPage({String? search, required int page}) {
     // The status rides along with every page, including the ones `loadMore` asks for: page two
     // of «نواقص» must not arrive as page two of everything.
@@ -146,40 +149,31 @@ class OrdersCubit extends PagedCubit<Order> {
     await load(search: currentSearch);
   }
 
-  /// Replaces one row in place, without a round trip.
+  /// Whether an order still belongs under the filters on screen.
   ///
-  /// Called when the detail screen hands back an order it has just moved. Re-fetching the whole
-  /// page instead would be correct and wasteful — and worse, it would scroll a long list back to
-  /// wherever page one ends.
+  /// Both axes, for the same reason: an order that has just been paid off while «غير مدفوعة»
+  /// is selected should leave that list, exactly as one marked delivered leaves «جاهزة».
+  /// [PagedCubit.replace] drops the row when this says no.
+  @override
+  bool belongs(Order item) =>
+      (status == null || item.status == status) &&
+      (paymentStatuses.isEmpty || paymentStatuses.contains(item.paymentStatus));
+
+  /// Replaces one row in place, without a round trip — and re-reads the numbers beside the
+  /// filter, which are the one thing on this screen a status change makes stale everywhere at
+  /// once.
   ///
-  /// **A row that no longer belongs under the current status is dropped rather than left
-  /// showing.** Marking an order delivered while «جاهزة» is selected should take it off that
-  /// list; leaving it there would make the filter a lie until the next refresh.
-  void replace(Order updated) {
-    final current = state;
-    if (current is! PagedLoaded<Order>) return;
+  /// **Only when the row actually moved.** A patch that matched nothing — an order from a page
+  /// this screen has not loaded — leaves the counts describing exactly what they described
+  /// before, and asking for them again would be the request this whole arrangement removes.
+  @override
+  bool replace(Order updated) {
+    if (!super.replace(updated)) return false;
 
-    // Both axes, for the same reason: an order that has just been paid off while «غير مدفوعة»
-    // is selected should leave that list, exactly as one marked delivered leaves «جاهزة».
-    final belongs =
-        (status == null || updated.status == status) &&
-        (paymentStatuses.isEmpty || paymentStatuses.contains(updated.paymentStatus));
-
-    final items = <Order>[
-      for (final order in current.page.items)
-        if (order.id != updated.id) order else if (belongs) updated,
-    ];
-
-    emit(
-      current.copyWith(
-        page: Paginated<Order>(items: items, meta: current.page.meta),
-      ),
-    );
-
-    // The move changed what the numbers describe, so they are asked for again — the counts are
-    // the one thing on this screen that a status change makes stale everywhere at once.
     _hasCounted = false;
     unawaited(_refreshCounts(currentSearch));
+
+    return true;
   }
 }
 

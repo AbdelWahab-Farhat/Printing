@@ -102,19 +102,22 @@ void main() {
 
   // ───────────────────────────── retiring one ─────────────────────────────
 
-  test('stopping a heading re-reads the list rather than editing it here', () async {
-    // Arrange
+  test('stopping a heading redraws that row from what the endpoint answered', () async {
+    // Arrange — the activation endpoint answers with the heading it just changed, so there is
+    // nothing left to ask the list for.
     arrangeList([bags, boxes]);
     await cubit.load();
 
+    const stopped = ProductCategory(id: 1, name: 'أكياس', isActive: false);
     when(() => repository.setActivation(1, isActive: false))
-        .thenAnswer((_) async => const Right(ProductCategory(id: 1, name: 'أكياس', isActive: false)));
+        .thenAnswer((_) async => const Right(stopped));
 
     // Act
     final failure = await cubit.setActivation(bags, isActive: false);
 
-    // Assert — the server's list is the one on screen; nothing was patched locally.
+    // Assert — one read, the one that filled the screen in the first place.
     expect(failure, isNull);
+    expect((cubit.state as ProductCategoriesLoaded).page.items, [stopped, boxes]);
     verify(
       () => repository.categories(
         search: any(named: 'search'),
@@ -122,7 +125,23 @@ void main() {
         page: 1,
         perPage: any(named: 'perPage'),
       ),
-    ).called(2);
+    ).called(1);
+  });
+
+  test('a heading stopped while «المعروضة» is showing leaves the list', () async {
+    // Arrange — the same write, on a list narrowed to the offered headings.
+    arrangeList([bags, boxes]);
+    cubit.isActive = true;
+    await cubit.load();
+
+    when(() => repository.setActivation(1, isActive: false))
+        .thenAnswer((_) async => const Right(ProductCategory(id: 1, name: 'أكياس', isActive: false)));
+
+    // Act
+    await cubit.setActivation(bags, isActive: false);
+
+    // Assert — leaving it there would make the chip above it a lie until the next refresh.
+    expect((cubit.state as ProductCategoriesLoaded).page.items, [boxes]);
   });
 
   test('a refused activation is handed back and the list is left alone', () async {

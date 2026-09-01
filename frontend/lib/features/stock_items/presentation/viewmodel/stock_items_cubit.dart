@@ -47,6 +47,18 @@ class StockItemsCubit extends PagedCubit<StockItem> {
   bool get isFiltered => isActive != null || hasSizeFilter;
 
   @override
+  Object identityOf(StockItem item) => item.id;
+
+  /// A shelf edited out of the question on screen leaves it: stopped while «المعروضة» is
+  /// selected, or resized while the picker is narrowed to one size. Leaving it there would make
+  /// the filter a lie until the next refresh.
+  @override
+  bool belongs(StockItem item) =>
+      (isActive == null || item.isActive == isActive) &&
+      (widthCm == null || item.widthCm == widthCm) &&
+      (heightCm == null || item.heightCm == heightCm);
+
+  @override
   Future<Either<Failure, Paginated<StockItem>>> fetchPage({String? search, required int page}) {
     // The filters ride along with every page, including the ones `loadMore` asks for — a second
     // page fetched without them would append rows the first one had excluded.

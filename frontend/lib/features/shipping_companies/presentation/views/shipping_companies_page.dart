@@ -36,14 +36,22 @@ class _ShippingCompaniesView extends StatelessWidget {
   Future<void> _open(BuildContext context, ShippingCompany? company) async {
     final cubit = context.read<ShippingCompaniesCubit>();
 
-    final saved = await context.push<bool>(
+    final saved = await context.push<ShippingCompany>(
       Routes.shippingCompanyForm,
       extra: company,
     );
 
-    // Only when something actually changed: a refresh after a dismissed form is a request
-    // nobody asked for, and it flickers the list under the user's thumb.
-    if (saved ?? false) await cubit.refresh();
+    // Only when something actually changed. An edit redraws that one row from what came back;
+    // a *new* company re-reads, because this list is alphabetical — where it lands is the
+    // server's answer, and «شركة النور» does not belong at the top just because it was typed
+    // last. A dismissed form returns nothing and the list does not move.
+    if (saved == null) return;
+
+    if (company == null) {
+      await cubit.refresh();
+    } else {
+      cubit.replace(saved);
+    }
   }
 
   @override

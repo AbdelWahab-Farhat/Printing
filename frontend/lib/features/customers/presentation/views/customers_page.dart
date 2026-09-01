@@ -99,16 +99,19 @@ class _CustomersViewState extends State<_CustomersView> {
                 emptyMessage: _filter.isNarrowed
                     ? 'لا يوجد عملاء بهذه التصفية'
                     : 'لا يوجد عملاء بعد',
-                skeletonHeight: 88.h,
+                skeletonHeight: 216.h,
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
                 itemBuilder: (context, customer, index) => CustomerCard(
+                  key: ValueKey(customer.id),
                   customer: customer,
-                  // Reloaded on the way back: the detail screen can rename, deactivate or edit,
-                  // and a list still showing the old row is a list nobody trusts.
+                  // The detail screen hands the customer back when it renamed, edited or
+                  // deactivated them, so the row redraws itself with no request — and nothing
+                  // happens at all when the screen was only read. Re-fetching page one instead
+                  // threw a scrolled list back to the top to redraw one card.
                   onTap: () async {
-                    await context.push(Routes.customer(customer.id));
-                    await cubit.refresh();
+                    final changed = await context.push<Customer>(Routes.customer(customer.id));
+                    if (changed != null) cubit.replace(changed);
                   },
                 ),
               ),
@@ -120,11 +123,12 @@ class _CustomersViewState extends State<_CustomersView> {
                               // Unique per screen, because the shell keeps every tab alive in an IndexedStack:
                               // two default-tagged FABs in one subtree is the «multiple heroes» assertion.
                               heroTag: 'fab-customers',
-        // Refreshes on the way back: a customer registered on that form belongs at the top of
-        // this list without the user having to think about pulling down.
+        // The registered customer goes straight to the top of this list, out of what the form
+        // handed back — where the user just put them, without a second reading of a page they
+        // are already looking at.
         onPressed: () async {
-          await context.push(Routes.addCustomer);
-          await cubit.refresh();
+          final created = await context.push<Customer>(Routes.addCustomer);
+          if (created != null) cubit.insert(created);
         },
         icon: Icon(AppIcons.addCustomer),
         label: const Text('عميل جديد'),

@@ -32,7 +32,7 @@ typedef StockItemFormArgs = ({StockItem? item, StockItemGroupChoice? group});
 /// feature was built alongside the router change rather than after it, and `core/router/` is
 /// owned elsewhere. It is one function so that wiring it up is one edit — replace the literal
 /// with `Routes.stockItemForm` and delete this paragraph.
-Future<bool?> openStockItemForm(
+Future<StockItem?> openStockItemForm(
   BuildContext context, {
   StockItem? item,
   StockItemGroupChoice? group,
@@ -40,7 +40,7 @@ Future<bool?> openStockItemForm(
   const path = '/stock-items/form';
   final StockItemFormArgs args = (item: item, group: group);
 
-  return context.push<bool>(path, extra: args);
+  return context.push<StockItem>(path, extra: args);
 }
 
 /// Opening a shelf, or correcting one.
@@ -230,8 +230,9 @@ class _StockItemFormViewState extends State<_StockItemFormView> {
       listener: (context, state) {
         switch (state) {
           case SaveStockItemSuccess(:final item):
-            // True says the list behind should refresh; a dismissed form returns nothing.
-            Navigator.of(context).pop(true);
+            // The saved shelf goes back with it, so the screen behind can redraw that one row
+            // from what the server stored. A dismissed form returns nothing.
+            Navigator.of(context).pop(item);
             context.showSuccess(
               _isEditing ? 'تم تحديث ${item.displayName}' : 'تم إضافة ${item.displayName}',
             );

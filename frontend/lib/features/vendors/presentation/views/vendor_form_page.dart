@@ -109,8 +109,10 @@ class _VendorFormViewState extends State<_VendorFormView> {
               return;
             }
 
-            // True says the list behind should refresh; a dismissed form returns nothing.
-            Navigator.of(context).pop(true);
+            // The saved supplier goes back with it, so the screen behind redraws its row from
+            // what the server stored rather than asking for it again. A dismissed form returns
+            // nothing, and nothing behind it moves.
+            Navigator.of(context).pop(vendor);
             context.showSuccess(
               _isEditing
                   ? 'تم تحديث «${vendor.name}»'

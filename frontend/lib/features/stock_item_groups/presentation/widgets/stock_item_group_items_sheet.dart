@@ -80,7 +80,7 @@ class _StockItemGroupItems extends StatelessWidget {
 
     // A dismissed form changes nothing, and re-reading after one flickers the list under the
     // thumb to redraw what is already there.
-    if (!(saved ?? false)) return;
+    if (saved == null) return;
 
     created.value = true;
 

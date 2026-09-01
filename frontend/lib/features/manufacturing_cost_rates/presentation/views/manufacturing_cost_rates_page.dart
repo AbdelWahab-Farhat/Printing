@@ -44,14 +44,21 @@ class _ManufacturingCostRatesView extends StatelessWidget {
   Future<void> _open(BuildContext context, ManufacturingCostRate? rate) async {
     final cubit = context.read<ManufacturingCostRatesCubit>();
 
-    final saved = await context.push<bool>(
+    final saved = await context.push<ManufacturingCostRate>(
       Routes.manufacturingCostRateForm,
       extra: rate,
     );
 
-    // Only when something actually changed: a refresh after a dismissed form is a request
-    // nobody asked for, and it flickers the list under the user's thumb.
-    if (saved ?? false) await cubit.refresh();
+    // Only when something actually changed. An edited rate is redrawn where it stands, out of
+    // what the form handed back; a *new* one re-reads, because the table is grouped by cost
+    // type and where a rate belongs in it is the server's answer.
+    if (saved == null) return;
+
+    if (rate == null) {
+      await cubit.refresh();
+    } else {
+      cubit.replace(saved);
+    }
   }
 
   Future<void> _toggle(

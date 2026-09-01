@@ -15,9 +15,11 @@ import 'package:dayaa/features/business_fields/usecases/set_business_field_activ
 /// row — stop offering it, or remove it — because both change the list under the user and the
 /// screen must not be left guessing what it now holds.
 ///
-/// **Both reload rather than patch the row in place.** Deactivating changes what a filtered
-/// list should contain, and deleting changes the paging; a locally edited copy would disagree
-/// with the server the moment either happened. The list is short and the request is cheap.
+/// **Deactivating patches the row; deleting still reloads.** The activation endpoint answers
+/// with the field it just changed, so there is nothing left to ask for — and [belongs] takes the
+/// row off a narrowed list rather than leaving it there contradicting the chip. A *delete* is
+/// the one that still re-reads: it moves the page boundary, and a list that quietly loses a row
+/// without moving it hides whatever slid up past it.
 class BusinessFieldsCubit extends PagedCubit<BusinessField> {
   BusinessFieldsCubit({
     required GetBusinessFields getBusinessFields,
@@ -34,6 +36,14 @@ class BusinessFieldsCubit extends PagedCubit<BusinessField> {
   /// Which fields the list is narrowed to. `null` — the default — shows the stopped ones too,
   /// which is what a screen for *curating* the list has to do.
   bool? isActive;
+
+  @override
+  Object identityOf(BusinessField item) => item.id;
+
+  /// A field stopped while «المعروضة» is showing leaves the list, rather than sitting there
+  /// contradicting the chip above it.
+  @override
+  bool belongs(BusinessField item) => isActive == null || item.isActive == isActive;
 
   @override
   Future<Either<Failure, Paginated<BusinessField>>> fetchPage({
@@ -63,10 +73,11 @@ class BusinessFieldsCubit extends PagedCubit<BusinessField> {
 
     if (isClosed) return null;
 
-    final failure = result.fold<Failure?>((failure) => failure, (_) => null);
-    if (failure == null) await refresh();
+    return result.fold<Failure?>((failure) => failure, (updated) {
+      replace(updated);
 
-    return failure;
+      return null;
+    });
   }
 
   /// Removes a field from the list.

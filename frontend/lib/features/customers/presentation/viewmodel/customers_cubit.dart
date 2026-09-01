@@ -47,6 +47,9 @@ class CustomersCubit extends PagedCubit<Customer> {
   }
 
   @override
+  Object identityOf(Customer item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<Customer>>> fetchPage({String? search, required int page}) {
     return _getCustomers(
       search: search,

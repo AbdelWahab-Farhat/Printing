@@ -1,4 +1,5 @@
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
@@ -41,21 +42,27 @@ class _PurchaseOrderDetailView extends StatefulWidget {
       _PurchaseOrderDetailViewState();
 }
 
+/// Stateful for one reason: it remembers the order as it changed — sent, cancelled, a shipment
+/// booked in — so `pop` can hand the list behind the new row instead of making it re-read the
+/// page. That is screen lifecycle, not business state.
 class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
-  bool _changed = false;
+  final _changes = Changes<PurchaseOrder>();
 
   Future<void> _edit(BuildContext context) async {
     final cubit = context.read<PurchaseOrderDetailCubit>();
     final order = cubit.state.order;
     if (order == null) return;
 
-    final saved = await context.push<bool>(
+    final saved = await context.push<PurchaseOrder>(
       Routes.purchaseOrderForm,
       extra: order,
     );
-    if (saved != true || !context.mounted) return;
+    if (saved == null || !context.mounted) return;
 
-    setState(() => _changed = true);
+    // Re-read rather than taking the form's copy: a purchase order's outstanding quantities are
+    // the server's arithmetic over every shipment booked against it, and this screen is the one
+    // that has to be right about them. The *list* behind is handed the result, which is the
+    // request this used to cost twice.
     await cubit.load();
   }
 
@@ -84,7 +91,6 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
       return;
     }
 
-    setState(() => _changed = true);
     context.showSuccess('تم إلغاء أمر الشراء');
   }
 
@@ -127,7 +133,6 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
       return;
     }
 
-    setState(() => _changed = true);
     context.showSuccess('تم تسجيل الشحنة ودخلت المخزن');
   }
 
@@ -139,7 +144,7 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        context.pop(_changed);
+        context.pop(_changes.result);
       },
       child: Scaffold(
         floatingActionButtonLocation: AppSpeedDial.location,
@@ -167,7 +172,11 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
                 );
               },
             ),
-        body: BlocBuilder<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
+        body: BlocConsumer<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
+          // Every reading goes past here, whatever produced it — the form, a cancellation, a
+          // shipment booked in. What differs from the first one is what the list behind is
+          // handed on the way out.
+          listener: (context, state) => _changes.saw(state.order),
           builder: (context, state) {
             final order = state.order;
 

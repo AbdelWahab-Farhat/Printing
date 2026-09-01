@@ -34,6 +34,19 @@ class ProductsCubit extends PagedCubit<Product> {
   int? productCategoryId;
 
   @override
+  Object identityOf(Product item) => item.id;
+
+  /// Whether a product still belongs on the list as it is narrowed.
+  ///
+  /// A bag whose heading was changed on the form leaves «سادة» rather than sitting there under
+  /// the wrong one until somebody pulls to refresh — and one that was stopped leaves the
+  /// picker, which is the whole reason the picker asks for orderable products only.
+  @override
+  bool belongs(Product item) =>
+      (productCategoryId == null || item.productCategoryId == productCategoryId) &&
+      (!onlyOrderable || item.isActive);
+
+  @override
   Future<Either<Failure, Paginated<Product>>> fetchPage({
     String? search,
     required int page,

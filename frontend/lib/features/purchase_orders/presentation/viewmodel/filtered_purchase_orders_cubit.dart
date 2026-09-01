@@ -25,6 +25,9 @@ class FilteredPurchaseOrdersCubit extends PagedCubit<PurchaseOrder> {
   final PurchaseOrdersFilter _filter;
 
   @override
+  Object identityOf(PurchaseOrder item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<PurchaseOrder>>> fetchPage({
     String? search,
     required int page,
@@ -41,31 +44,13 @@ class FilteredPurchaseOrdersCubit extends PagedCubit<PurchaseOrder> {
     );
   }
 
-  /// Puts back an order the detail screen changed, or drops it when the change took it out of
-  /// the answer this screen is showing.
+  /// Whether an order still answers the question this screen was opened to ask.
   ///
   /// **Dropping is the point.** Cancelling the last outstanding order from a screen titled
   /// «الجارية» should empty it, not leave a row contradicting the title above it.
-  void replace(PurchaseOrder updated) {
-    final current = state;
-    if (current is! PagedLoaded<PurchaseOrder>) return;
-
-    final belongs =
-        _filter.statuses.isEmpty ||
-        _filter.statuses.contains(updated.status.wire);
-
-    emit(
-      current.copyWith(
-        page: Paginated<PurchaseOrder>(
-          items: [
-            for (final order in current.page.items)
-              if (order.id != updated.id) order else if (belongs) updated,
-          ],
-          meta: current.page.meta,
-        ),
-      ),
-    );
-  }
+  @override
+  bool belongs(PurchaseOrder item) =>
+      _filter.statuses.isEmpty || _filter.statuses.contains(item.status.wire);
 }
 
 typedef FilteredPurchaseOrdersState = PagedState<PurchaseOrder>;

@@ -79,6 +79,9 @@ class ActivityLogCubit extends PagedCubit<ActivityLogEntry> {
   }
 
   @override
+  Object identityOf(ActivityLogEntry item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<ActivityLogEntry>>> fetchPage({
     String? search,
     required int page,

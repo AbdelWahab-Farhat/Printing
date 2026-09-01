@@ -87,7 +87,16 @@ class _StockItemGroupsView extends StatelessWidget {
           : () => confirmStockItemGroupDelete(context, cubit, group),
     );
 
-    if (saved != null) await cubit.refresh();
+    // A renamed material is redrawn where it stands, out of what the sheet handed back; a *new*
+    // one re-reads, because this list is in the business's own order and where it belongs is
+    // the server's answer. A dismissed sheet moves nothing.
+    if (saved == null) return;
+
+    if (group == null) {
+      await cubit.refresh();
+    } else {
+      cubit.replace(saved);
+    }
   }
 
   @override

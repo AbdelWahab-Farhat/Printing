@@ -58,6 +58,9 @@ class _WarehousesView extends StatelessWidget {
               onPressed: () async {
                 final created = await showWarehouseSheet(context: context);
 
+                // Re-read: this list is in the server's order rather than newest-first, so
+                // where a new warehouse belongs is its answer. A dismissed sheet returns
+                // nothing and the list does not move.
                 if (created != null) await cubit.refresh();
               },
               icon: Icon(AppIcons.add),
@@ -83,9 +86,17 @@ class _WarehousesView extends StatelessWidget {
                   key: ValueKey(warehouse.id),
                   warehouse: warehouse,
                   onTap: () async {
-                    await context.push(Routes.warehouseStocks(warehouse.id), extra: warehouse);
-                    // A movement recorded in there changes the count on this row.
-                    await cubit.refresh();
+                    // **Only when something was written in there.** A movement changes the count
+                    // on this row and the count is the server's arithmetic — this screen cannot
+                    // patch it, so it re-reads. But walking in to look at the shelves and
+                    // walking back out changes nothing, and used to cost a request and a jump
+                    // to the top of the list all the same.
+                    final changed = await context.push<bool>(
+                      Routes.warehouseStocks(warehouse.id),
+                      extra: warehouse,
+                    );
+
+                    if (changed ?? false) await cubit.refresh();
                   },
                 ),
               ),
