@@ -107,10 +107,14 @@ final class ApplyStockChange
         string $unitCost,
         StockBatchSourceType $sourceType,
         ?int $stockArrivalItemId = null,
+        ?int $stockMovementId = null,
     ): WarehouseStock {
         $stock = $this->growBalance($warehouseId, $stockItemId, $quantity, $unit);
 
-        $this->openBatch($warehouseId, $stockItemId, $quantity, $unitCost, $unit, $sourceType, $stockArrivalItemId, Carbon::now());
+        $this->openBatch(
+            $warehouseId, $stockItemId, $quantity, $unitCost, $unit,
+            $sourceType, $stockArrivalItemId, Carbon::now(), $stockMovementId,
+        );
 
         return $stock;
     }
@@ -142,6 +146,10 @@ final class ApplyStockChange
             $this->openBatch(
                 $warehouseId, $stockItemId, $draw->quantity, $draw->unitCost, $unit,
                 $draw->sourceType, $draw->stockArrivalItemId, Carbon::parse($draw->receivedAt),
+                // The event that brought this stock into the business, not the transfer that
+                // moved it — the same reasoning `received_at` and `source_type` above follow.
+                // The transfer is fully recorded as its own `stock_movements` row.
+                $draw->stockMovementId,
             );
         }
 
@@ -230,12 +238,14 @@ final class ApplyStockChange
         StockBatchSourceType $sourceType,
         ?int $stockArrivalItemId,
         Carbon $receivedAt,
+        ?int $stockMovementId = null,
     ): void {
         $batch = new StockBatch;
         $batch->warehouse_id = $warehouseId;
         $batch->stock_item_id = $stockItemId;
         $batch->source_type = $sourceType;
         $batch->stock_arrival_item_id = $stockArrivalItemId;
+        $batch->stock_movement_id = $stockMovementId;
         $batch->unit_cost = $unitCost;
         $batch->quantity_received = $quantity;
         $batch->quantity_remaining = $quantity;

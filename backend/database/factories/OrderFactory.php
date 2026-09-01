@@ -44,6 +44,7 @@ class OrderFactory extends Factory
             'design_fee' => '0.00',
             'delivery_price' => '20.00',
             'discount' => '0.00',
+            'additional_cost' => '0.00',
             'grand_total' => '20.00',
             'placed_at' => now(),
         ];

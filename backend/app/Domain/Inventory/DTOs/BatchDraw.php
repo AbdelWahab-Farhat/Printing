@@ -27,5 +27,11 @@ final readonly class BatchDraw
         public string $receivedAt,
         public StockBatchSourceType $sourceType,
         public ?int $stockArrivalItemId,
+        /**
+         * The movement that opened the layer this was drawn from — carried so a transfer's
+         * destination recreates it pointing at the same event, exactly as it already keeps the
+         * original `received_at`. Null for every layer opened before that column existed.
+         */
+        public ?int $stockMovementId = null,
     ) {}
 }

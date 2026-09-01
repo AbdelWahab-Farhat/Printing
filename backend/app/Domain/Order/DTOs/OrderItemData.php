@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\DTOs;
 
+use App\Domain\Order\Support\TransitionFields;
+
 /**
  * One requested line, before it has been priced.
  *
  * **No warehouse quantity.** What comes off the shelf is asked for on the way into «جاهزة» by
- * the person holding the parcel — see {@see \App\Domain\Order\Support\TransitionFields} — not
+ * the person holding the parcel — see {@see TransitionFields} — not
  * when the order is taken, where nobody has been near a scale and the parcel does not exist yet.
  *
  * `unitPrice` is the exception that keeps quote-on-request products orderable. The catalogue

@@ -21,6 +21,7 @@ use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockBatchConsumption;
+use App\Domain\Inventory\Models\StockBatchRevaluation;
 use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockItemGroup;
 use App\Domain\Inventory\Models\StockMovement;
@@ -102,6 +103,7 @@ enum AuditSubject: string
     case StockMovement = 'stock_movement';
     case StockBatch = 'stock_batch';
     case StockBatchConsumption = 'stock_batch_consumption';
+    case StockBatchRevaluation = 'stock_batch_revaluation';
 
     // Vendors
     case Vendor = 'vendor';
@@ -148,6 +150,7 @@ enum AuditSubject: string
             self::StockMovement => StockMovement::class,
             self::StockBatch => StockBatch::class,
             self::StockBatchConsumption => StockBatchConsumption::class,
+            self::StockBatchRevaluation => StockBatchRevaluation::class,
             self::Vendor => Vendor::class,
             self::StockArrival => StockArrival::class,
             self::StockArrivalItem => StockArrivalItem::class,
@@ -192,6 +195,7 @@ enum AuditSubject: string
             self::StockMovement => 'حركة مخزنية',
             self::StockBatch => 'دفعة تكلفة',
             self::StockBatchConsumption => 'سحب من دفعة تكلفة',
+            self::StockBatchRevaluation => 'تعديل تكلفة دفعة',
             self::Vendor => 'مورد',
             self::StockArrival => 'توريد',
             self::StockArrivalItem => 'بند توريد',

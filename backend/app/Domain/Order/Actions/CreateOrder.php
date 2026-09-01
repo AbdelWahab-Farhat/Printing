@@ -11,6 +11,7 @@ use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Exceptions\AdditionalCostRequiresPermission;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\OrderNeedsAtLeastOneItem;
 use App\Domain\Order\Models\Order;
@@ -40,6 +41,7 @@ final class CreateOrder
     /**
      * @throws OrderNeedsAtLeastOneItem
      * @throws DiscountRequiresPermission
+     * @throws AdditionalCostRequiresPermission
      * @throws ShopDoesNotBelongToCustomer
      */
     public function __invoke(OrderData $data, ?User $actor = null): Order
@@ -49,6 +51,7 @@ final class CreateOrder
         }
 
         $this->guardDiscount($data, $actor);
+        $this->guardAdditionalCost($data, $actor);
 
         $customer = $this->customers->find($data->customerId);
 
@@ -94,6 +97,11 @@ final class CreateOrder
                 'design_fee' => $data->designSource->isChargeable() ? $data->designFee : '0.00',
                 'delivery_price' => $destination->deliveryPrice,
                 'discount' => $data->discount,
+                // The three move together and are guarded together: an amount, why it was
+                // charged, and the words beside it are one decision, not three fields.
+                'additional_cost' => $data->additionalCost,
+                'additional_cost_reason' => $data->additionalCostReason,
+                'additional_cost_note' => $data->additionalCostNote,
                 'placed_at' => now(),
                 'created_by' => $actor?->getKey(),
             ]);
@@ -153,6 +161,25 @@ final class CreateOrder
 
         if (! $actor?->can(PermissionName::DiscountOrders->value)) {
             throw DiscountRequiresPermission::make();
+        }
+    }
+
+    /**
+     * The other half of the same arrangement, and a grant of its own.
+     *
+     * Charging a customer more is not the same decision as charging them less, however alike
+     * the two fields look — see {@see AdditionalCostRequiresPermission}.
+     *
+     * @throws AdditionalCostRequiresPermission
+     */
+    private function guardAdditionalCost(OrderData $data, ?User $actor): void
+    {
+        if (bccomp($data->additionalCost, '0', Money::SCALE) <= 0) {
+            return;
+        }
+
+        if (! $actor?->can(PermissionName::AddOrderAdditionalCost->value)) {
+            throw AdditionalCostRequiresPermission::make();
         }
     }
 

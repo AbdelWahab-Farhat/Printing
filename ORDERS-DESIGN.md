@@ -312,6 +312,8 @@ public function permission(): PermissionName { /* … */ }
 
 حقول الانتقال · شاشة تغيير الحالة · «تم التسوية» و«إعادة إرسال» · مودل شركة التوصيل · تعديل مكان الاستلام · أرقام الشاشة الرئيسية — كلها في [ORDERS-STATUS-FLOW.md](ORDERS-STATUS-FLOW.md). والدفعات في [PAYMENTS-DESIGN.md](PAYMENTS-DESIGN.md)، وخانة المال في شاشة تغيير الحالة في [PAYMENT-AT-STATUS-CHANGE.md](PAYMENT-AT-STATUS-CHANGE.md).
 
+و**التكلفة الإضافية** — قيمة تُضاف إلى الإجمالي بجوار الخصم، بسبب من قائمة مغلقة وملاحظة اختيارية، خلف صلاحية `orders.additional_cost` — في [ORDER-ADDITIONAL-COST-BACKEND-CHANGES.md](ORDER-ADDITIONAL-COST-BACKEND-CHANGES.md)، وربطها بالتطبيق في [ORDER-ADDITIONAL-COST-FRONTEND-INTEGRATION.md](ORDER-ADDITIONAL-COST-FRONTEND-INTEGRATION.md).
+
 ---
 
 ## ١١. ما يبقى يدوياً

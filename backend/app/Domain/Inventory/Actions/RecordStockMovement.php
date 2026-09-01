@@ -117,6 +117,11 @@ final class RecordStockMovement
             $this->applyStockChange->increase(
                 $data->toWarehouseId, $data->stockItemId, $data->quantity, $unit,
                 $this->batchCost($data), $this->batchSource($data->movementType),
+                // No arrival line to point at — see the stock_batches migration for why that
+                // column is still never filled. The movement id is the traceability that *is*
+                // available at this moment, and it reaches the same document by one more hop.
+                stockArrivalItemId: null,
+                stockMovementId: $movementId,
             );
         }
     }

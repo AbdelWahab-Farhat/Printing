@@ -15,6 +15,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\AllocateOrderIdentifier;
 use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
+use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderPaymentType;
@@ -96,6 +97,13 @@ class Order extends Model implements HasAuditTrail
             'design_fee' => 'decimal:2',
             'delivery_price' => 'decimal:2',
             'discount' => 'decimal:2',
+            // The charge that goes the other way — packaging, transport, a change to what was
+            // agreed. Beside the discount rather than inside it, so «لماذا تغيّر الإجمالي؟» has
+            // two readable halves rather than one net figure that answers nothing.
+            'additional_cost' => 'decimal:2',
+            // Cast, and that is the whole of what makes the change history say «تغليف خاص»
+            // rather than `special_packaging` — see AuditValueLabels, which derives from here.
+            'additional_cost_reason' => AdditionalCostReason::class,
             'grand_total' => 'decimal:2',
             // The cost-side twin of grand_total — written only by RecalculateOrderCogs, and
             // absent from the fillable list for the same reason grand_total is.

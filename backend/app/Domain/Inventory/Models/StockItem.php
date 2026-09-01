@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -138,6 +139,32 @@ class StockItem extends Model implements HasAuditTrail
     public function batches(): HasMany
     {
         return $this->hasMany(StockBatch::class);
+    }
+
+    /**
+     * The last layer of this material anybody actually put a price on.
+     *
+     * **The figure the arrival form offers as a suggestion — and never applies.** A cost filled
+     * in by the server would stop layers opening at zero, and a layer opening at zero is the only
+     * signal that anybody was *meant* to price the stock. So this travels to the client, the
+     * client shows it with its date, and a person taps it or does not. See
+     * STOCK-COST-FROM-INVENTORY.md §8.
+     *
+     * Across every warehouse: the shelf a delivery happens to land on says nothing about what
+     * the material is worth. Null when nothing was ever priced, which is exactly when there is
+     * nothing to suggest.
+     *
+     * **A relation rather than a method the resource calls**, so it is eager-loaded on the one
+     * response that needs it and a fifteen-row listing does not run fifteen queries to draw a
+     * hint nobody is reading.
+     *
+     * @return HasOne<StockBatch, $this>
+     */
+    public function latestCostedBatch(): HasOne
+    {
+        return $this->hasOne(StockBatch::class)
+            ->where('unit_cost', '>', 0)
+            ->ofMany(['received_at' => 'max', 'id' => 'max'], fn ($q) => $q->where('unit_cost', '>', 0));
     }
 
     /**

@@ -113,6 +113,14 @@ class OrderResource extends JsonResource
             'design_fee' => (string) $this->design_fee,
             'delivery_price' => (string) $this->delivery_price,
             'discount' => (string) $this->discount,
+            // Beside the discount and never folded into it: an order's total is read as «هذا ما
+            // أُضيف وهذا ما خُصم», and one net figure explains neither. The reason travels with
+            // its label for the same reason `design_source` does — a client that translated the
+            // code itself would be keeping a second copy of a list this API owns.
+            'additional_cost' => (string) $this->additional_cost,
+            'additional_cost_reason' => $this->additional_cost_reason?->value,
+            'additional_cost_reason_label' => $this->additional_cost_reason?->label(),
+            'additional_cost_note' => $this->additional_cost_note,
             'grand_total' => (string) $this->grand_total,
 
             // The cost side, null until the order has reached printing — see the order_items

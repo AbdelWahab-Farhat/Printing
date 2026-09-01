@@ -71,6 +71,7 @@ final class ConsumeStockBatchesFifo
                 receivedAt: $batch->received_at->toISOString(),
                 sourceType: $batch->source_type,
                 stockArrivalItemId: $batch->stock_arrival_item_id,
+                stockMovementId: $batch->stock_movement_id,
             );
 
             $remaining = bcsub($remaining, $take, 3);
