@@ -180,17 +180,20 @@ void main() {
     expect(orders, findsOneWidget);
   });
 
-  testWidgets('a count nobody sent draws nothing at all', (tester) async {
+  testWidgets('a count nobody sent leaves a dash under the label', (tester) async {
     // Arrange — a reader without `orders.view` gets no key, and neither does the form's own
     // response after a save.
     await tester.pumpWidget(host(CustomerCard(customer: customerWith())));
 
     // Act
-    final orders = find.textContaining('طلبية');
+    final label = find.text('الطلبيات');
+    final value = find.text('–');
 
-    // Assert — «لا طلبيات» about a customer nobody counted would be a claim this card was never
-    // given the right to make.
-    expect(orders, findsNothing);
+    // Assert — the column keeps its place so the two cards in view still line up, and says «–»
+    // rather than a number: «لا طلبيات» about a customer nobody counted would be a claim this
+    // card was never given the right to make.
+    expect(label, findsOneWidget);
+    expect(value, findsOneWidget);
     expect(find.text('لا طلبيات'), findsNothing);
   });
 
@@ -231,4 +234,83 @@ void main() {
     // Assert
     expect(orders, findsOneWidget);
   });
+
+  // ─────────────────────── the shape of the card ────────────────────────
+
+  testWidgets('the name and the code share one strip above the details', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(CustomerCard(customer: customerWith())));
+
+    // Act
+    final name = tester.getCenter(find.text('مطبعة الفجر'));
+    final phoneLabel = tester.getCenter(find.text('رقم الهاتف'));
+
+    // Assert — who this is comes first and on its own line; what you do about them sits
+    // underneath, the way the reference card is read top to bottom.
+    expect(name.dy, lessThan(phoneLabel.dy));
+  });
+
+  testWidgets('the code is introduced by a hash, to its right', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(CustomerCard(customer: customerWith())));
+
+    // Act
+    final hash = tester.getCenter(find.text('#'));
+    final code = tester.getCenter(find.text('C8'));
+
+    // Assert — «# C8», which in an RTL row means the hash is the child before the code and so
+    // lands to its right.
+    expect(code.dx, lessThan(hash.dx));
+  });
+
+  testWidgets('the phone is a labelled field, not a line with an icon', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(CustomerCard(customer: customerWith())));
+
+    // Act
+    final label = tester.getCenter(find.text('رقم الهاتف'));
+    final value = tester.getCenter(find.text('0917775555'));
+
+    // Assert — the label says what the number is, so the number itself needs no glyph to
+    // explain it, and the two stack in one column.
+    expect(label.dy, lessThan(value.dy));
+    expect((label.dx - value.dx).abs(), lessThan(1));
+  });
+
+  testWidgets('the phone column takes the reading side, the orders column the other', (
+    tester,
+  ) async {
+    // Arrange
+    await tester.pumpWidget(host(CustomerCard(customer: customerWith(ordersCount: 17))));
+
+    // Act
+    final phone = tester.getCenter(find.text('رقم الهاتف'));
+    final orders = tester.getCenter(find.text('الطلبيات'));
+
+    // Assert — two halves of one row: the phone is what the card is opened for, so it keeps the
+    // side an Arabic reader starts from.
+    expect(orders.dx, lessThan(phone.dx));
+  });
+
+  testWidgets('the call sheet renames the column to what it is showing', (tester) async {
+    // Arrange
+    await tester.pumpWidget(
+      host(
+        CustomerCard(
+          customer: customerWith(
+            ordersCount: 4,
+            lastOrderAt: DateTime.now().subtract(const Duration(days: 70)),
+          ),
+        ),
+      ),
+    );
+
+    // Act
+    final label = find.text('آخر طلبية');
+
+    // Assert — «منذ شهرين» under «الطلبيات» would read as a quantity of orders.
+    expect(label, findsOneWidget);
+    expect(find.text('الطلبيات'), findsNothing);
+  });
+
 }

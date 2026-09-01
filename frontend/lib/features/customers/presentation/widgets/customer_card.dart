@@ -10,18 +10,22 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// Name, code and phone — the three things a customer is looked up by, so all three are on the
 /// card rather than one screen deeper.
 ///
-/// **A square holds the code, not an initial.** It used to show the first letter of the name,
-/// and on a list of Libyan print shops that is «م» on almost every row: the eye met the same
-/// glyph each time and learned to skip the column. That is the exact failure `ProductCard`
-/// records for the placeholder thumbnail it removed for the same reason. The code is the one
-/// thing on the row that is unique, short, and said out loud on the phone — so it gets a square
-/// of its own, and the faint grey chip that used to carry it is gone rather than duplicated.
+/// **Built to the shape the reference app uses**, because that is the shape the people running
+/// this business already read a customer in: one line along the top saying *who* this is, and
+/// beneath it a wide, quiet band of labelled fields saying what you do about them. Nothing on
+/// the card is packed against anything else — the air is the layout, not decoration on top of
+/// it, which is why the vertical gaps here are large enough to look like mistakes and are not.
 ///
-/// **The square sits at the far left, so it lands last in Arabic reading order.** The name is
-/// what a row is found by and it keeps the start of the line; the code is what the row is then
-/// *quoted* by, and a column of codes down one edge is a column to run a finger along. Being
-/// the last child of an RTL row is what puts it there — not an alignment, so it cannot drift
-/// when the name grows.
+/// **The strip carries the identity, the fields carry the facts.** A row of icon-plus-value
+/// makes the reader learn what each glyph stands for; a label over its value does not. So the
+/// phone lost its handset and gained «رقم الهاتف», and the orders count lost its document glyph
+/// and gained a heading that changes with what the column is actually showing.
+///
+/// **The code sits at the far left of the strip, so it lands last in Arabic reading order.**
+/// The name is what a row is found by and it keeps the start of the line; the code is what the
+/// row is then *quoted* by, and a column of codes down one edge is a column to run a finger
+/// along. Being the last child of an RTL row is what puts it there — not an alignment, so it
+/// cannot drift when the name grows.
 class CustomerCard extends StatelessWidget {
   const CustomerCard({required this.customer, this.onTap, super.key});
 
@@ -39,8 +43,17 @@ class CustomerCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20.r),
         child: Container(
-          padding: EdgeInsets.all(14.w),
+          // Deep at the bottom, shallow at the top: the strip is the card's own lid and sits
+          // close under the edge, while the fields are given the room the reference gives them.
+          padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 60.h),
           decoration: BoxDecoration(
+            // The same white the warehouse rows are, and it has to be painted *here* rather
+            // than left to the Material below. A `BoxShadow` is drawn as the whole rounded
+            // rectangle filled and blurred, so with no colour on this decoration the shadow
+            // washed straight across the card's face and turned it grey — a 5% black veil over
+            // every customer. `BoxDecoration` paints shadows first and the colour over them,
+            // which is what puts the shadow back outside the edge where it belongs.
+            color: scheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(20.r),
             border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
             boxShadow: [
@@ -51,72 +64,26 @@ class CustomerCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            customer.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: scheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        // Only when it is *not* the normal case: a badge on every row stops
-                        // being read.
-                        if (!customer.isActive) const _InactiveBadge(),
-                      ],
+              _IdentityStrip(customer: customer),
+              SizedBox(height: 52.h),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _Field(
+                      label: 'رقم الهاتف',
+                      value: customer.phone,
+                      // A Libyan number reads left-to-right even inside this RTL card.
+                      valueDirection: TextDirection.ltr,
                     ),
-                    SizedBox(height: 8.h),
-                    Row(
-                      children: [
-                        Icon(AppIcons.phone, size: 15.sp, color: scheme.onSurfaceVariant),
-                        SizedBox(width: 5.w),
-                        Text(
-                          customer.phone,
-                          // A Libyan number reads left-to-right even inside this RTL card.
-                          textDirection: TextDirection.ltr,
-                          style: context.textTheme.bodyMedium?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                        // How much business this customer does, beside how to reach them —
-                        // which is the pair somebody scanning this list is weighing. Absent
-                        // when the server sent no count: see `Customer.ordersCount`.
-                        // Flexible, and the phone is not: at a large system text scale something
-                        // on this line has to give, and it must not be the number somebody rings.
-                        //
-                        // **The silence replaces the count rather than joining it**, on the one
-                        // list that has a date to show — «الأقدم طلباً». The row is read for the
-                        // number it was sorted by, and both on this line would be a line too
-                        // long on a phone. A customer on that same list who has never ordered
-                        // has no date, so the count falls through and says «لا طلبيات» — which
-                        // is the answer that sort gives about them anyway.
-                        if (customer.lastOrderAgo case final silence?) ...[
-                          SizedBox(width: 10.w),
-                          Flexible(child: _LastOrderBadge(label: silence)),
-                        ] else if (customer.ordersCount case final orders?) ...[
-                          SizedBox(width: 10.w),
-                          Flexible(child: _OrdersBadge(count: orders)),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                  Expanded(child: _OrdersField(customer: customer)),
+                ],
               ),
-              SizedBox(width: 12.w),
-              // Last child of an RTL row, so it lands on the far left — a column of codes down
-              // one edge, in the place Arabic reading order arrives at rather than starts from.
-              _CodeBadge(code: customer.code, isActive: customer.isActive),
             ],
           ),
         ),
@@ -125,9 +92,57 @@ class CustomerCard extends StatelessWidget {
   }
 }
 
-/// The customer's code, in the card's most prominent slot.
-class _CodeBadge extends StatelessWidget {
-  const _CodeBadge({required this.code, required this.isActive});
+/// Who this row is about: the glyph, the name, and the code it is quoted by.
+///
+/// **No fill behind it.** It was a tinted band, and a grey slab across the top of a white card
+/// reads as a row that has been switched off — every customer on the list looked deactivated.
+/// The person glyph is already the fixed place the eye lands on, and it costs nothing.
+class _IdentityStrip extends StatelessWidget {
+  const _IdentityStrip({required this.customer});
+
+  final Customer customer;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Row(
+      children: [
+        Icon(AppIcons.person, size: 20.sp, color: scheme.onSurfaceVariant),
+        SizedBox(width: 10.w),
+        Expanded(
+          child: Text(
+            customer.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            // Full-strength ink, now that there is no tint under it to lift it off the card.
+            // The name is what the row is found by; muted, it read as switched off.
+            style: context.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurface,
+            ),
+          ),
+        ),
+        // Only when it is *not* the normal case: a badge on every row stops being read.
+        if (!customer.isActive) ...[SizedBox(width: 8.w), const _InactiveBadge()],
+        SizedBox(width: 10.w),
+        Text(
+          '#',
+          style: context.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: scheme.outline,
+          ),
+        ),
+        SizedBox(width: 6.w),
+        _Code(code: customer.code, isActive: customer.isActive),
+      ],
+    );
+  }
+}
+
+/// The customer's code — `C8`, `C1284` — at the far left of the strip.
+class _Code extends StatelessWidget {
+  const _Code({required this.code, required this.isActive});
 
   final String code;
   final bool isActive;
@@ -136,20 +151,12 @@ class _CodeBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
-    return Container(
-      height: 48.w,
-      width: 48.w,
-      alignment: Alignment.center,
-      padding: EdgeInsets.symmetric(horizontal: 4.w),
-      decoration: BoxDecoration(
-        // The square keeps saying whether the customer is switched off, which is the one thing
-        // it was already carrying that was worth carrying.
-        color: isActive ? scheme.primaryContainer : scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14.r),
-      ),
-      // Codes are 'C' + the row id, so they grow: C9 today, C1284 in two years. Scaled down to
-      // fit rather than clipped — half a code is worse than a small one, because «C12…» and
-      // «C128…» read as the same customer.
+    return ConstrainedBox(
+      // Codes are 'C' + the row id, so they grow: C9 today, C1284 in two years. Capped and
+      // scaled down to fit rather than clipped — half a code is worse than a small one, because
+      // «C12…» and «C128…» read as the same customer. The cap is what stops a long one from
+      // eating the name beside it.
+      constraints: BoxConstraints(maxWidth: 110.w),
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(
@@ -157,8 +164,10 @@ class _CodeBadge extends StatelessWidget {
           // A Latin letter and digits: they read left-to-right even inside this RTL card.
           textDirection: TextDirection.ltr,
           style: context.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: isActive ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+            // The code keeps saying whether the customer is switched off, which is the one thing
+            // the old square was carrying that was worth carrying.
+            color: isActive ? scheme.onSurfaceVariant : scheme.outline,
           ),
         ),
       ),
@@ -166,80 +175,85 @@ class _CodeBadge extends StatelessWidget {
   }
 }
 
-/// How many orders this customer has placed, ever.
+/// A heading with its value under it, centred in its half of the row.
 ///
-/// **Zero says so in words rather than going quiet.** A row that shows nothing at zero teaches
-/// the eye that the slot is noise, and then «١٧ طلبية» on the row below it does not get read
-/// either. «لا طلبيات» is also the one thing on this card that answers «هل هذا عميل جديد؟»
-/// without opening him.
-class _OrdersBadge extends StatelessWidget {
-  const _OrdersBadge({required this.count});
+/// Centred because the pair is read as one block against the identical block beside it, and two
+/// centred blocks are what makes the card's lower half look deliberate rather than left over.
+class _Field extends StatelessWidget {
+  const _Field({required this.label, required this.value, this.valueDirection});
 
-  final int count;
+  final String label;
+  final String value;
+  final TextDirection? valueDirection;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final isNew = count == 0;
 
-    return Row(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          AppIcons.orders,
-          size: 15.sp,
-          color: isNew ? scheme.outline : scheme.onSurfaceVariant,
-        ),
-        SizedBox(width: 5.w),
-        Flexible(
-          child: Text(
-            // Not «٠ طلبية»: a numeral standing for nothing is read as a number before it is
-            // read as an absence, and Arabic has a shorter way to say it.
-            isNew ? 'لا طلبيات' : '${count.grouped} طلبية',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: isNew ? scheme.outline : scheme.onSurfaceVariant,
-              fontWeight: isNew ? FontWeight.w400 : FontWeight.w700,
-            ),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: scheme.onSurface,
           ),
+        ),
+        SizedBox(height: 14.h),
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          textDirection: valueDirection,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
         ),
       ],
     );
   }
 }
 
-/// How long it has been since this customer last ordered — «منذ شهرين».
+/// The second column: how much business this customer does.
 ///
-/// **Its own glyph, not the orders one.** It stands where the count stands and is read in the
-/// same glance, so borrowing that icon would make «منذ شهرين» look like a quantity of orders.
-/// A clock is what the row is actually about on this list: elapsed time.
-class _LastOrderBadge extends StatelessWidget {
-  const _LastOrderBadge({required this.label});
+/// **The heading changes with the answer.** On «الأقدم طلباً» the list is sorted by the silence
+/// and the row is read for it, so the column says «آخر طلبية» and shows «منذ شهرين»; putting
+/// that under «الطلبيات» would read as a quantity of orders. Everywhere else the column is the
+/// count.
+///
+/// **Zero says so in words rather than going quiet.** A row that shows nothing at zero teaches
+/// the eye that the slot is noise, and then «١٧ طلبية» on the row below it does not get read
+/// either. «لا طلبيات» is also the one thing on this card that answers «هل هذا عميل جديد؟»
+/// without opening him.
+///
+/// **A count nobody sent is a dash, not a nought.** A reader without `orders.view` is not sent
+/// the key at all, and neither is the response to saving the form — so the column keeps its
+/// place, and says it was not told.
+class _OrdersField extends StatelessWidget {
+  const _OrdersField({required this.customer});
 
-  final String label;
+  final Customer customer;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
+    if (customer.lastOrderAgo case final silence?) {
+      return _Field(label: 'آخر طلبية', value: silence);
+    }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(AppIcons.elapsed, size: 15.sp, color: scheme.onSurfaceVariant),
-        SizedBox(width: 5.w),
-        Flexible(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
+    final count = customer.ordersCount;
+
+    return _Field(
+      label: 'الطلبيات',
+      value: switch (count) {
+        null => '–',
+        // Not «٠ طلبية»: a numeral standing for nothing is read as a number before it is read as
+        // an absence, and Arabic has a shorter way to say it.
+        0 => 'لا طلبيات',
+        _ => '${count.grouped} طلبية',
+      },
     );
   }
 }
