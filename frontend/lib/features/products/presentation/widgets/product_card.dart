@@ -65,6 +65,12 @@ class ProductCard extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.all(12.w),
           decoration: BoxDecoration(
+            // Painted here, not left to the Material above: a `BoxShadow` is drawn as the whole
+            // rounded rectangle filled and blurred, so a decoration with a shadow and no colour
+            // washes 5% black straight across the card's face and turns the white grey.
+            // `BoxDecoration` paints shadows first and the colour over them, which keeps the
+            // shadow outside the edge where it belongs.
+            color: scheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(20.r),
             border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
             boxShadow: [
