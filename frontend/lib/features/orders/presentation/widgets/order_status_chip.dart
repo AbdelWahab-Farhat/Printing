@@ -131,6 +131,16 @@ class OrderStatusChip extends StatelessWidget {
     OrderStatus.unknown => AppIcons.unknownStatus,
   };
 
+  /// The same tone, washed down for a row that *names* a status rather than being in it.
+  ///
+  /// صفحة «تغيير الحالة» تعرض الوجهات كلها في قائمة واحدة، وكانت كلها رمادية حتى تُختار — أي
+  /// أن اللون الذي يعرفه الموظف من البطاقة ومن الشريط يختفي في المكان الوحيد الذي يقرّر فيه.
+  /// الغسل يبقي الهوية ويترك الملء الكامل علامةً للمختار وحده.
+  static Color tintFor(ColorScheme scheme, OrderStatusTone tone) => Color.alphaBlend(
+    toneColour(scheme, tone).$1.withValues(alpha: 0.3),
+    scheme.surfaceContainerLowest,
+  );
+
   /// Nine tones out of the scheme's own roles.
   ///
   /// Public and static so the status filter's dots read from the same table: a legend the list

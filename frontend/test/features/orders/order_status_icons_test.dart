@@ -1,3 +1,4 @@
+import 'package:dayaa/core/theme/theme.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
 import 'package:flutter/material.dart';
@@ -37,5 +38,38 @@ void main() {
 
     // Assert
     expect(glyphs.length, 3);
+  });
+
+  group('the wash a row wears when it only *names* a status', () {
+    final scheme = MaterialTheme.lightScheme();
+
+    test('every tone washes the surface without becoming the full container', () {
+      // Arrange — صفحة «تغيير الحالة» تعرض الوجهات كلها معاً: المختارة تأخذ لون الحالة كاملاً،
+      // وغير المختارة كانت رمادية بلا هوية.
+      for (final tone in OrderStatusTone.values) {
+        // Act
+        final tint = OrderStatusChip.tintFor(scheme, tone);
+
+        // Assert
+        expect(tint, isNot(scheme.surfaceContainerLow), reason: '$tone');
+        expect(tint, isNot(scheme.surfaceContainerLowest), reason: '$tone');
+        expect(tint, isNot(OrderStatusChip.toneColour(scheme, tone).$1), reason: '$tone');
+      }
+    });
+
+    test('two tones that look different still look different washed', () {
+      // Arrange — الغسل يخفّف اللون ولا يمحوه؛ ولو قرّب النغمات من بعضها لصار زينة بلا معنى.
+      // النغمات التي تتقاسم أصلاً حاويةً واحدة — «قيد العمل» و«في الطريق» مثلاً — تبقى واحدة.
+
+      // Act
+      final attention = OrderStatusChip.tintFor(scheme, OrderStatusTone.attention);
+      final ready = OrderStatusChip.tintFor(scheme, OrderStatusTone.ready);
+      final fresh = OrderStatusChip.tintFor(scheme, OrderStatusTone.fresh);
+
+      // Assert
+      expect(attention, isNot(ready));
+      expect(ready, isNot(fresh));
+      expect(fresh, isNot(attention));
+    });
   });
 }

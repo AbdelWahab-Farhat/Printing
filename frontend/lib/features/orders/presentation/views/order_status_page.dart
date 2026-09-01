@@ -201,8 +201,14 @@ class _Destination extends StatelessWidget {
         OrderStatusChip.toneColour(scheme, transition.status.tone);
     final radius = BorderRadius.circular(16.r);
 
+    // **كل وجهة بلون حالتها، لا الرمادي.** الموظف يعرف «نواقص» بالأحمر و«جاهزة» بالأخضر من
+    // البطاقة ومن الشريط أعلى الطلبية، وكان هذا هو المكان الوحيد الذي يسقط فيه اللون — وهو
+    // المكان الذي يُتَّخذ فيه القرار. غير المختارة تلبس غَسلاً من نغمتها، والمختارة تلبسها
+    // كاملة بحافة أعرض، فيبقى الفرق بينهما مقروءاً بلا رماد.
     return Material(
-      color: isSelected ? background : scheme.surfaceContainerLow,
+      color: isSelected
+          ? background
+          : OrderStatusChip.tintFor(scheme, transition.status.tone),
       borderRadius: radius,
       child: InkWell(
         onTap: onTap,
@@ -212,7 +218,7 @@ class _Destination extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: radius,
             border: Border.all(
-              color: isSelected ? foreground.withValues(alpha: 0.4) : scheme.outlineVariant,
+              color: foreground.withValues(alpha: isSelected ? 0.5 : 0.2),
               width: isSelected ? 1.6 : 1,
             ),
           ),
@@ -221,15 +227,16 @@ class _Destination extends StatelessWidget {
               Icon(
                 OrderStatusChip.iconFor(transition.status),
                 size: 22.sp,
-                color: isSelected ? foreground : scheme.onSurfaceVariant,
+                color: foreground,
               ),
               SizedBox(width: 12.w),
               Expanded(
                 child: Text(
                   transition.label,
                   style: context.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: isSelected ? foreground : scheme.onSurface,
+                    // The chosen row is the one being sent, so it says its own name loudest.
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+                    color: foreground,
                   ),
                 ),
               ),
@@ -239,9 +246,7 @@ class _Destination extends StatelessWidget {
                 Text(
                   'يتطلب بيانات',
                   style: context.textTheme.labelSmall?.copyWith(
-                    color: isSelected
-                        ? foreground.withValues(alpha: 0.75)
-                        : scheme.onSurfaceVariant,
+                    color: foreground.withValues(alpha: 0.75),
                   ),
                 ),
             ],
