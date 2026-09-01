@@ -220,7 +220,7 @@ class _Destination extends StatelessWidget {
             children: [
               Icon(
                 OrderStatusChip.iconFor(transition.status),
-                size: 20.sp,
+                size: 22.sp,
                 color: isSelected ? foreground : scheme.onSurfaceVariant,
               ),
               SizedBox(width: 12.w),

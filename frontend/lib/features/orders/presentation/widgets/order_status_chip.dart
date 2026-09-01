@@ -93,30 +93,42 @@ class OrderStatusChip extends StatelessWidget {
 
   /// A glyph per status, so a state is read before its word is.
   ///
-  /// Public and static for the same reason [toneColour] is: the bar on the detail screen and
-  /// anything that names a status later draw from one legend rather than each inventing its own.
+  /// Public and static for the same reason [toneColour] is: the bar on the detail screen, the
+  /// card in the list and the transition rows all draw from one legend rather than each
+  /// inventing its own.
   ///
-  /// Grouped the way the tones are — the three returns share an arrow, the two dispatches do not
-  /// — because twelve distinct glyphs is not a legend anybody learns, and the question asked of
-  /// one is which *kind* of place the order is sitting in.
+  /// **وواحدةٌ لكل حالة، لا عائلة لكل مجموعة.** جُمعت الحالات أول الأمر كما تُجمع الألوان —
+  /// سهمٌ واحد للرواجع الثلاثة، وصحٌّ واحد لـ«جاهزة» و«تم الاستلام» — فكان الشكل يقول «من أي
+  /// نوع هذه» ثم يترك القارئ يقرأ الكلمة ليعرف أيّها. اللون يقول النوع؛ والأيقونة تقول الحالة
+  /// بعينها، وإلا فلا داعي لها.
   static IconData iconFor(OrderStatus status) => switch (status) {
-    OrderStatus.taken => AppIcons.orders,
+    OrderStatus.taken => AppIcons.statusNew,
+    // **The warehouse's glyph, not the press's.** The goods have been found, counted and
+    // weighed, and the shelf has dropped; drawing it with a printer would put the order at a
+    // machine nobody has started yet.
+    OrderStatus.readyToPrint => AppIcons.warehouse,
     OrderStatus.designing => AppIcons.designs,
-    OrderStatus.printing => AppIcons.products,
+    // The press itself, where «قيد الطباعة» actually is — not the bag it will become.
+    OrderStatus.printing => AppIcons.printedProduct,
+    // Done in the workshop: an outlined tick. Its pair is `delivered`'s filled one — finished
+    // *here* against finished *there*.
     OrderStatus.ready => AppIcons.activate,
     OrderStatus.shortage => AppIcons.error,
     OrderStatus.officePickup => AppIcons.officePickup,
-    OrderStatus.outForDelivery => AppIcons.mapPin,
-    OrderStatus.delivered => AppIcons.activate,
+    OrderStatus.outForDelivery => AppIcons.outForDelivery,
+    OrderStatus.delivered => AppIcons.ordersReceived,
     OrderStatus.settled => AppIcons.settled,
-    OrderStatus.returnedCourier ||
-    OrderStatus.returnedCarrier ||
-    OrderStatus.returnedOffice => AppIcons.back,
+    // Three returns, three glyphs: on the road, at the carrier, back on our counter. The word
+    // that tells them apart is the longest on the card, and the one nobody reads twice.
+    OrderStatus.returnedCourier => AppIcons.returnedCourier,
+    OrderStatus.returnedCarrier => AppIcons.returnedCarrier,
+    OrderStatus.returnedOffice => AppIcons.returnedOffice,
     OrderStatus.resend => AppIcons.resend,
-    OrderStatus.cancelled => AppIcons.deactivate,
+    // Struck out, not paused: nothing is coming back to life here.
+    OrderStatus.cancelled => AppIcons.ordersCancelled,
     // Nothing is claimed about a status this build has never heard of. The label arrived with
     // it and says what it is.
-    OrderStatus.unknown => AppIcons.more,
+    OrderStatus.unknown => AppIcons.unknownStatus,
   };
 
   /// Nine tones out of the scheme's own roles.

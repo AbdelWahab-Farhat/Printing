@@ -327,6 +327,39 @@ abstract final class AppIcons {
   static IconData get report =>
       _pick(Icons.analytics_outlined, CupertinoIcons.chart_bar);
 
+  // ── حالات الطلبية ──────────────────────────────────────────────────────────
+  // One glyph per status, and no two alike. These are read in a list, at a glance, by somebody
+  // looking for «الرواجع» among thirty rows — a shape shared by two states is a shape that
+  // sends them back to the words, which is the work the icon was put there to save.
+
+  /// «جديدة» — an order taken and not yet touched by anyone.
+  static IconData get statusNew =>
+      _pick(Icons.fiber_new_rounded, CupertinoIcons.sparkles);
+
+  /// «جاري التوصيل» — out on the road with the driver.
+  static IconData get outForDelivery =>
+      _pick(Icons.local_shipping_rounded, CupertinoIcons.car_detailed);
+
+  /// «راجع لدى المندوب» — turned back on the road; our own man still has it.
+  static IconData get returnedCourier =>
+      _pick(Icons.u_turn_left_rounded, CupertinoIcons.arrow_uturn_left);
+
+  /// «راجع لدى شركة التوصيل» — sitting at the carrier's depot, out of our hands.
+  ///
+  /// The turn of [returnedCourier] inside a ring: the same event, a step further away.
+  static IconData get returnedCarrier =>
+      _pick(Icons.assignment_return_rounded, CupertinoIcons.arrow_uturn_left_circle);
+
+  /// «راجع مكتب» — back on our own counter. A tray, because that is where it physically is:
+  /// the parcel came home, and somebody has to decide what happens to it.
+  static IconData get returnedOffice =>
+      _pick(Icons.move_to_inbox_rounded, CupertinoIcons.tray_arrow_down_fill);
+
+  /// A status this build has never heard of. A question mark says exactly that — [more]'s
+  /// ellipsis said «there is more here», which is a different, and untrue, claim.
+  static IconData get unknownStatus =>
+      _pick(Icons.help_outline_rounded, CupertinoIcons.question_circle);
+
   // ── who works here, and what they may do ───────────────────────────────────
 
   /// Staff accounts. Deliberately not [customers]: the two are both "a group of people", and
