@@ -51,7 +51,6 @@ class OrderMessage {
       _header(order),
       _items(order),
       _money(order),
-      _destination(order),
       _notes(order),
     ];
 
@@ -67,18 +66,23 @@ class OrderMessage {
   /// subject, which reads as spam.
   static String subjectOf(Order order) => 'فاتورة طلبية #${order.code}';
 
-  /// Which invoice this is, when it was taken, whose it is, and the one number it will be
-  /// received on.
+  /// Which invoice this is, when it was taken, whose it is, the one number it will be received
+  /// on, and where it is collected.
   ///
   /// **No name.** The customer knows who they are, and the message arrives on their own phone;
   /// the name was there for the clerk, who reads it on the screen instead.
   ///
   /// **One number, never two.** The recipient's when the order has one, the customer's when it
   /// does not — printing both makes the reader work out which of them the order is coming to.
+  ///
+  /// **The number and the place are read together**, by the owner's instruction: they are the two
+  /// facts a driver's call is about, and one of them sitting under the bill meant the reader had
+  /// to scroll past the money to check where the bags were going.
   static String _header(Order order) => _section('🖨️ رقم فاتورة: #${order.code}', [
     if (_dayOf(order) case final day?) 'التاريخ: $day',
     if (order.customer case final customer?) 'كود الزبون: ${customer.code}',
     if (_receivingPhone(order) case final phone?) 'رقم المستلم: $phone',
+    ..._destination(order),
   ], alwaysShown: true);
 
   static String? _receivingPhone(Order order) => order.recipientPhone ?? order.customer?.phone;
@@ -145,18 +149,19 @@ class OrderMessage {
     'المتبقي: ${_amount(order.remainingAmount)}',
   ]);
 
-  /// Where the order reaches its owner, with no heading of its own.
+  /// Where the order reaches its owner — lines of the header, not a section of its own.
   ///
   /// One line is all most orders need here, and a line under an emoji heading of its own was a
-  /// section built for a single fact. «هاتف المستلم» is not repeated — it is in the header, the
+  /// section built for a single fact. «هاتف المستلم» is not repeated — it is right above, the
   /// only number on the message.
-  static String _destination(Order order) => _section('$placeLabel: ${order.destination}', [
+  static List<String> _destination(Order order) => [
+    '$placeLabel: ${order.destination}',
     if (order.customerShopName case final shop?) 'المحل: $shop',
     if (order.addressDetails case final address?) 'العنوان: $address',
     if (order.recipientName case final name?) 'المستلم: $name',
     if (order.shippingCompany case final company?) 'شركة الشحن: $company',
     if (order.trackingNumber case final tracking?) 'رقم التتبع: $tracking',
-  ], alwaysShown: true);
+  ];
 
   /// A section of their own, though the screen keeps them under the address — and **only while
   /// the order is «جديدة»**, by the owner's instruction.
@@ -180,5 +185,11 @@ class OrderMessage {
 
   /// Grouped, like every figure the app draws: a customer reading «2,975 د» on their phone is
   /// reading the same number the clerk read on theirs.
-  static String _amount(String value) => '${value.grouped} $currency';
+  ///
+  /// **And with no padding zeros**, the same as the quantities above it: `113.00` is a hundred
+  /// and thirteen dinars to the person paying it, and a column of `.00` on a phone is two digits
+  /// the eye has to step over on every line. A real fraction keeps exactly its own digits —
+  /// `1.500` is «1.5», `12.250` is «12.25» — because the trimming is string surgery on what the
+  /// server sent, never a number parsed and printed back.
+  static String _amount(String value) => '${groupedDecimal(value)} $currency';
 }

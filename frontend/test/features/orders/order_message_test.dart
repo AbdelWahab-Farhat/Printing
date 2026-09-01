@@ -82,12 +82,13 @@ void main() {
     // Act
     final message = OrderMessage.of(order);
 
-    // Assert — four lines, no heading between them: this is what a forwarded message is read by.
+    // Assert — five lines, no heading between them: this is what a forwarded message is read by.
     expect(message.split('\n\n').first, '''
 🖨️ رقم فاتورة: #55
 التاريخ: 12 أغسطس 2026
 كود الزبون: C10
-رقم المستلم: 0944909850''');
+رقم المستلم: 0944909850
+مكان الإستلام: طرابلس''');
   });
 
   test('the number is the recipient\'s when the order has one, and never both', () {
@@ -133,9 +134,9 @@ void main() {
     // Act
     final message = OrderMessage.of(order);
     final headings = [
+      OrderMessage.placeLabel,
       OrderMessage.itemsHeading,
       OrderMessage.moneyHeading,
-      OrderMessage.placeLabel,
       OrderMessage.notesHeading,
     ].map(message.indexOf).toList();
 
@@ -166,7 +167,7 @@ void main() {
     // Assert — «400.000» is the database's padding, not a quantity anybody ordered.
     expect(message, contains('1. أكياس الشحن — 35*40:'));
     expect(message, contains('- الكمية: 400 قطعة'));
-    expect(message, contains('- القيمة: 420.00 د'));
+    expect(message, contains('- القيمة: 420 د'));
   });
 
   test('the lines are numbered, so an order of four sizes can be talked about', () {
@@ -210,17 +211,40 @@ void main() {
 
     // Act
     final positions = <String>[
-      'المنتجات: 420.00 د',
-      'التصميم: 20.00 د',
-      'التوصيل: 50.00 د',
-      'الخصم: - 10.00 د',
-      'المدفوع: 30.00 د',
-      'المتبقي: 450.00 د',
+      'المنتجات: 420 د',
+      'التصميم: 20 د',
+      'التوصيل: 50 د',
+      'الخصم: - 10 د',
+      'المدفوع: 30 د',
+      'المتبقي: 450 د',
     ].map(OrderMessage.of(order).indexOf).toList();
 
     // Assert — every one found, each below the one before it.
     expect(positions, everyElement(isNonNegative));
     expect(positions, orderedEquals(<int>[...positions]..sort()));
+  });
+
+  test('an amount is written the way it is said, without the database\'s padding', () {
+    // Arrange — a bill of whole dinars, and one with a fraction somebody actually pays.
+    final whole = orderWith(deliveryPrice: '40.00', paidAmount: '30.00', remainingAmount: '430.00');
+    final fractional = orderWith(
+      items: [item.copyWith(quantity: '100.000', lineTotal: '12.250')],
+      deliveryPrice: '1.500',
+      remainingAmount: '13.750',
+    );
+
+    // Act
+    final round = OrderMessage.of(whole);
+    final broken = OrderMessage.of(fractional);
+
+    // Assert — a whole number loses the point entirely; a real fraction keeps only its digits.
+    expect(round, contains('التوصيل: 40 د'));
+    expect(round, contains('المدفوع: 30 د'));
+    expect(round, isNot(contains('.00')));
+    expect(broken, contains('- الكمية: 100 قطعة'));
+    expect(broken, contains('- القيمة: 12.25 د'));
+    expect(broken, contains('التوصيل: 1.5 د'));
+    expect(broken, contains('المتبقي: 13.75 د'));
   });
 
   test('«الإجمالي» is not a line, by the owner\'s instruction', () {
@@ -247,9 +271,9 @@ void main() {
     expect(quiet, isNot(contains('التصميم')));
     expect(quiet, isNot(contains('التوصيل')));
     expect(quiet, isNot(contains('الخصم')));
-    expect(full, contains('التصميم: 25.00 د'));
-    expect(full, contains('التوصيل: 50.00 د'));
-    expect(full, contains('الخصم: - 10.00 د'));
+    expect(full, contains('التصميم: 25 د'));
+    expect(full, contains('التوصيل: 50 د'));
+    expect(full, contains('الخصم: - 10 د'));
   });
 
   test('where it is received is one line, whether it is fetched or delivered', () {
