@@ -30,11 +30,13 @@ import 'package:dayaa/features/location/presentation/views/pick_location_page.da
 import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rate_form_page.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rates_page.dart';
+import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:dayaa/features/orders/presentation/views/filtered_orders_page.dart';
 import 'package:dayaa/features/orders/presentation/views/new_order_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_detail_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_edit_page.dart';
+import 'package:dayaa/features/orders/presentation/views/order_notes_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_payments_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_status_page.dart';
 import 'package:dayaa/features/orders/presentation/views/orders_page.dart';
@@ -342,6 +344,15 @@ abstract final class Routes {
 
   static String orderPayments(int id) => '/orders/$id/payments';
 
+  /// Everything written on the order, each note beside the status it was written at.
+  ///
+  /// The order travels as `extra` because the screen that opens it already holds one — a page
+  /// that re-fetched what its caller has in hand would be a request per tap. A deep link brings
+  /// nothing and the page loads it itself.
+  static const String orderNotesPath = 'notes';
+
+  static String orderNotes(int id) => '/orders/$id/notes';
+
   /// Choosing a point on the map. Outside the shell, and returns a `LatLng` through `pop`.
   static const String pickLocation = '/pick-location';
 }
@@ -546,6 +557,15 @@ abstract final class AppRouter {
             path: Routes.orderEditPath,
             builder: (context, state) =>
                 OrderEditPage(orderId: int.parse(state.pathParameters['id']!)),
+          ),
+          // No guard: the notes are part of the order, and anybody who reached the order has
+          // already been allowed to read them.
+          GoRoute(
+            path: Routes.orderNotesPath,
+            builder: (context, state) => OrderNotesPage(
+              orderId: int.parse(state.pathParameters['id']!),
+              order: state.extra is Order ? state.extra! as Order : null,
+            ),
           ),
           // Guarded here rather than only on the arm that opens it, so a deep link cannot walk
           // past the check — the API refuses too, and this is what stops the screen 403ing in

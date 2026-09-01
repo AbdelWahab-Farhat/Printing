@@ -23,7 +23,7 @@ class MovementRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final (icon, tone) = _look(context, movement.movementType);
+    final (icon, tone) = movementLook(context, movement.movementType);
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
@@ -108,7 +108,9 @@ class MovementRow extends StatelessWidget {
           ),
           SizedBox(width: 8.w),
           Text(
-            movement.quantityLabel,
+            // Signed for the warehouse the feed was read for, when it was read for one: the
+            // direction is otherwise a preposition halfway along the line above.
+            movement.signedQuantityLabel ?? movement.quantityLabel,
             textDirection: TextDirection.ltr,
             style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800, color: tone),
           ),
@@ -129,10 +131,14 @@ class MovementRow extends StatelessWidget {
   /// draws, because a ledger is read as "in what order, and how far apart".
   String _stamp(DateTime at) => at.stampLabel;
 
-  (IconData, Color) _look(BuildContext context, MovementType type) {
-    final scheme = context.colorScheme;
+}
 
-    return switch (type) {
+/// The glyph and colour a kind of movement wears — here and on the ledger, so the two feeds
+/// never disagree about what an arrival looks like.
+(IconData, Color) movementLook(BuildContext context, MovementType type) {
+  final scheme = context.colorScheme;
+
+  return switch (type) {
       MovementType.purchaseArrival => (AppIcons.download, scheme.tertiary),
       MovementType.internalTransfer => (AppIcons.statusChange, scheme.primary),
       MovementType.orderFulfillment => (AppIcons.orders, scheme.onSurfaceVariant),
@@ -147,6 +153,5 @@ class MovementRow extends StatelessWidget {
       MovementType.scrapLoss => (AppIcons.writeOff, scheme.error),
       // Nothing is claimed about a kind this build has never heard of; its Arabic came with it.
       MovementType.unknown => (AppIcons.more, scheme.onSurfaceVariant),
-    };
-  }
+  };
 }

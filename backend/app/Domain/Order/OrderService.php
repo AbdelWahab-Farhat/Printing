@@ -292,7 +292,13 @@ class OrderService
     {
         return $order->load([
             'customer', 'shop', 'city', 'region', 'creator',
-            'items', 'designs.customerDesign', 'transitions.user',
+            // The product behind each line, with its photographs: the line draws the catalogue's
+            // own card and opens it. Loaded here rather than per line — a four-line order would
+            // otherwise be four queries, and `Model::shouldBeStrict()` would say so.
+            'items', 'items.product.images', 'designs.customerDesign', 'transitions.user',
+            // The shelf behind each line, for the unit its per-unit cost is quoted in — see
+            // OrderItemResource. Two queries for the whole order, not two per line.
+            'items.variant.stockItem',
         ]);
     }
 }

@@ -32,6 +32,14 @@ class OrderTotals extends StatelessWidget {
           // reader is checking a total. Only the *fee* lines hide when empty.
           value: order.deliveryPrice.grouped,
         ),
+        // **After the delivery and before the discount — the server's own order of operations.**
+        // A reader checking the total works down the column, and a charge printed under the
+        // subtraction it comes before turns a correct total into an arithmetic mistake.
+        //
+        // The label alone here: what the charge was *for* is a category and often a sentence,
+        // and that is «التكلفة الإضافية»'s own section under this one.
+        if (order.hasAdditionalCost)
+          _Line(label: 'التكلفة الإضافية', value: '+ ${order.additionalCost.grouped}'),
         if (order.hasDiscount)
           _Line(label: 'الخصم', value: '- ${order.discount.grouped}', tone: scheme.error),
         Padding(

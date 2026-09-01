@@ -318,11 +318,14 @@ class InventoryService
     // ── the ledger ──────────────────────────────────────────────────────────────────────
 
     /**
+     * `$withCost` is whether the reader holds `inventory.view_cost`: the cost columns are
+     * two subqueries per row that are not run for someone who may not be told the answer.
+     *
      * @return LengthAwarePaginator<int, StockMovement>
      */
-    public function paginateMovements(MovementFilters $filters, int $perPage = 15): LengthAwarePaginator
+    public function paginateMovements(MovementFilters $filters, int $perPage = 15, bool $withCost = false): LengthAwarePaginator
     {
-        return ($this->movementListQuery)($filters, $perPage);
+        return ($this->movementListQuery)($filters, $perPage, $withCost);
     }
 
     /**

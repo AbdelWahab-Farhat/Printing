@@ -21,7 +21,20 @@ mixin _$StockMovement {
  String get quantity;/// **The pile that moved, not a product's size.** Two catalogue rows can share one, so a row
 /// here answers «ماذا تحرّك من الرف» and deliberately not «لأي منتج».
 @JsonKey(name: 'stock_item_id') int get stockItemId;@JsonKey(name: 'stock_item') StockItemRef? get item;@JsonKey(name: 'from_warehouse_id') int? get fromWarehouseId;@JsonKey(name: 'from_warehouse') MovementPlace? get fromWarehouse;@JsonKey(name: 'to_warehouse_id') int? get toWarehouseId;@JsonKey(name: 'to_warehouse') MovementPlace? get toWarehouse;/// The order a fulfillment was for, or the purchase an arrival came from.
-@JsonKey(name: 'reference_id') int? get referenceId;@JsonKey(name: 'employee_id') int? get employeeId; MovementActor? get employee; String? get notes;@JsonKey(name: 'created_at') DateTime? get createdAt;
+@JsonKey(name: 'reference_id') int? get referenceId;@JsonKey(name: 'employee_id') int? get employeeId; MovementActor? get employee; String? get notes;/// [quantity] with its sign, **relative to the warehouse the list was read for**: a
+/// transfer is `+200` on the shelf that received it and `-200` on the one that sent it.
+/// Null when the feed was not scoped to a warehouse — there is no sign to give.
+@JsonKey(name: 'signed_quantity') String? get signedQuantity;/// What the shelf held once this row had happened. Null unless the feed was scoped to one
+/// warehouse *and* one shelf; a running total across shelves would be a meaningless number.
+@JsonKey(name: 'balance_after') String? get balanceAfter;/// What the stock on this row cost, for a reader who holds `inventory.view_cost` — the
+/// server leaves all three keys out otherwise, and this build cannot tell that apart from
+/// «not recorded», which is why the row is told separately whether it may draw them.
+///
+/// [unitCost] is dropped by the server whenever part of the row is unpriced: an average
+/// that counts zeros describes nothing, so the row gets the total it can vouch for and the
+/// quantity it cannot. [totalCost] null means «nobody recorded it» — a row older than the
+/// cost ledger — and is read as unknown, never as free.
+@JsonKey(name: 'unit_cost') String? get unitCost;@JsonKey(name: 'total_cost') String? get totalCost;@JsonKey(name: 'uncosted_quantity') String? get uncostedQuantity;@JsonKey(name: 'created_at') DateTime? get createdAt;
 /// Create a copy of StockMovement
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,16 +47,16 @@ $StockMovementCopyWith<StockMovement> get copyWith => _$StockMovementCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockMovement&&(identical(other.id, id) || other.id == id)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.movementTypeLabel, movementTypeLabel) || other.movementTypeLabel == movementTypeLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.item, item) || other.item == item)&&(identical(other.fromWarehouseId, fromWarehouseId) || other.fromWarehouseId == fromWarehouseId)&&(identical(other.fromWarehouse, fromWarehouse) || other.fromWarehouse == fromWarehouse)&&(identical(other.toWarehouseId, toWarehouseId) || other.toWarehouseId == toWarehouseId)&&(identical(other.toWarehouse, toWarehouse) || other.toWarehouse == toWarehouse)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.employee, employee) || other.employee == employee)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockMovement&&(identical(other.id, id) || other.id == id)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.movementTypeLabel, movementTypeLabel) || other.movementTypeLabel == movementTypeLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.item, item) || other.item == item)&&(identical(other.fromWarehouseId, fromWarehouseId) || other.fromWarehouseId == fromWarehouseId)&&(identical(other.fromWarehouse, fromWarehouse) || other.fromWarehouse == fromWarehouse)&&(identical(other.toWarehouseId, toWarehouseId) || other.toWarehouseId == toWarehouseId)&&(identical(other.toWarehouse, toWarehouse) || other.toWarehouse == toWarehouse)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.employee, employee) || other.employee == employee)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.signedQuantity, signedQuantity) || other.signedQuantity == signedQuantity)&&(identical(other.balanceAfter, balanceAfter) || other.balanceAfter == balanceAfter)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.totalCost, totalCost) || other.totalCost == totalCost)&&(identical(other.uncostedQuantity, uncostedQuantity) || other.uncostedQuantity == uncostedQuantity)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,movementType,movementTypeLabel,quantity,stockItemId,item,fromWarehouseId,fromWarehouse,toWarehouseId,toWarehouse,referenceId,employeeId,employee,notes,createdAt);
+int get hashCode => Object.hashAll([runtimeType,id,movementType,movementTypeLabel,quantity,stockItemId,item,fromWarehouseId,fromWarehouse,toWarehouseId,toWarehouse,referenceId,employeeId,employee,notes,signedQuantity,balanceAfter,unitCost,totalCost,uncostedQuantity,createdAt]);
 
 @override
 String toString() {
-  return 'StockMovement(id: $id, movementType: $movementType, movementTypeLabel: $movementTypeLabel, quantity: $quantity, stockItemId: $stockItemId, item: $item, fromWarehouseId: $fromWarehouseId, fromWarehouse: $fromWarehouse, toWarehouseId: $toWarehouseId, toWarehouse: $toWarehouse, referenceId: $referenceId, employeeId: $employeeId, employee: $employee, notes: $notes, createdAt: $createdAt)';
+  return 'StockMovement(id: $id, movementType: $movementType, movementTypeLabel: $movementTypeLabel, quantity: $quantity, stockItemId: $stockItemId, item: $item, fromWarehouseId: $fromWarehouseId, fromWarehouse: $fromWarehouse, toWarehouseId: $toWarehouseId, toWarehouse: $toWarehouse, referenceId: $referenceId, employeeId: $employeeId, employee: $employee, notes: $notes, signedQuantity: $signedQuantity, balanceAfter: $balanceAfter, unitCost: $unitCost, totalCost: $totalCost, uncostedQuantity: $uncostedQuantity, createdAt: $createdAt)';
 }
 
 
@@ -54,7 +67,7 @@ abstract mixin class $StockMovementCopyWith<$Res>  {
   factory $StockMovementCopyWith(StockMovement value, $Res Function(StockMovement) _then) = _$StockMovementCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) MovementType movementType,@JsonKey(name: 'movement_type_label') String movementTypeLabel, String quantity,@JsonKey(name: 'stock_item_id') int stockItemId,@JsonKey(name: 'stock_item') StockItemRef? item,@JsonKey(name: 'from_warehouse_id') int? fromWarehouseId,@JsonKey(name: 'from_warehouse') MovementPlace? fromWarehouse,@JsonKey(name: 'to_warehouse_id') int? toWarehouseId,@JsonKey(name: 'to_warehouse') MovementPlace? toWarehouse,@JsonKey(name: 'reference_id') int? referenceId,@JsonKey(name: 'employee_id') int? employeeId, MovementActor? employee, String? notes,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) MovementType movementType,@JsonKey(name: 'movement_type_label') String movementTypeLabel, String quantity,@JsonKey(name: 'stock_item_id') int stockItemId,@JsonKey(name: 'stock_item') StockItemRef? item,@JsonKey(name: 'from_warehouse_id') int? fromWarehouseId,@JsonKey(name: 'from_warehouse') MovementPlace? fromWarehouse,@JsonKey(name: 'to_warehouse_id') int? toWarehouseId,@JsonKey(name: 'to_warehouse') MovementPlace? toWarehouse,@JsonKey(name: 'reference_id') int? referenceId,@JsonKey(name: 'employee_id') int? employeeId, MovementActor? employee, String? notes,@JsonKey(name: 'signed_quantity') String? signedQuantity,@JsonKey(name: 'balance_after') String? balanceAfter,@JsonKey(name: 'unit_cost') String? unitCost,@JsonKey(name: 'total_cost') String? totalCost,@JsonKey(name: 'uncosted_quantity') String? uncostedQuantity,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -71,7 +84,7 @@ class _$StockMovementCopyWithImpl<$Res>
 
 /// Create a copy of StockMovement
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? movementType = null,Object? movementTypeLabel = null,Object? quantity = null,Object? stockItemId = null,Object? item = freezed,Object? fromWarehouseId = freezed,Object? fromWarehouse = freezed,Object? toWarehouseId = freezed,Object? toWarehouse = freezed,Object? referenceId = freezed,Object? employeeId = freezed,Object? employee = freezed,Object? notes = freezed,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? movementType = null,Object? movementTypeLabel = null,Object? quantity = null,Object? stockItemId = null,Object? item = freezed,Object? fromWarehouseId = freezed,Object? fromWarehouse = freezed,Object? toWarehouseId = freezed,Object? toWarehouse = freezed,Object? referenceId = freezed,Object? employeeId = freezed,Object? employee = freezed,Object? notes = freezed,Object? signedQuantity = freezed,Object? balanceAfter = freezed,Object? unitCost = freezed,Object? totalCost = freezed,Object? uncostedQuantity = freezed,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,movementType: null == movementType ? _self.movementType : movementType // ignore: cast_nullable_to_non_nullable
@@ -87,6 +100,11 @@ as MovementPlace?,referenceId: freezed == referenceId ? _self.referenceId : refe
 as int?,employeeId: freezed == employeeId ? _self.employeeId : employeeId // ignore: cast_nullable_to_non_nullable
 as int?,employee: freezed == employee ? _self.employee : employee // ignore: cast_nullable_to_non_nullable
 as MovementActor?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,signedQuantity: freezed == signedQuantity ? _self.signedQuantity : signedQuantity // ignore: cast_nullable_to_non_nullable
+as String?,balanceAfter: freezed == balanceAfter ? _self.balanceAfter : balanceAfter // ignore: cast_nullable_to_non_nullable
+as String?,unitCost: freezed == unitCost ? _self.unitCost : unitCost // ignore: cast_nullable_to_non_nullable
+as String?,totalCost: freezed == totalCost ? _self.totalCost : totalCost // ignore: cast_nullable_to_non_nullable
+as String?,uncostedQuantity: freezed == uncostedQuantity ? _self.uncostedQuantity : uncostedQuantity // ignore: cast_nullable_to_non_nullable
 as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -221,10 +239,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'signed_quantity')  String? signedQuantity, @JsonKey(name: 'balance_after')  String? balanceAfter, @JsonKey(name: 'unit_cost')  String? unitCost, @JsonKey(name: 'total_cost')  String? totalCost, @JsonKey(name: 'uncosted_quantity')  String? uncostedQuantity, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StockMovement() when $default != null:
-return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.stockItemId,_that.item,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.createdAt);case _:
+return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.stockItemId,_that.item,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.signedQuantity,_that.balanceAfter,_that.unitCost,_that.totalCost,_that.uncostedQuantity,_that.createdAt);case _:
   return orElse();
 
 }
@@ -242,10 +260,10 @@ return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quanti
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'signed_quantity')  String? signedQuantity, @JsonKey(name: 'balance_after')  String? balanceAfter, @JsonKey(name: 'unit_cost')  String? unitCost, @JsonKey(name: 'total_cost')  String? totalCost, @JsonKey(name: 'uncosted_quantity')  String? uncostedQuantity, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _StockMovement():
-return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.stockItemId,_that.item,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.createdAt);case _:
+return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.stockItemId,_that.item,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.signedQuantity,_that.balanceAfter,_that.unitCost,_that.totalCost,_that.uncostedQuantity,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -262,10 +280,10 @@ return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quanti
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown)  MovementType movementType, @JsonKey(name: 'movement_type_label')  String movementTypeLabel,  String quantity, @JsonKey(name: 'stock_item_id')  int stockItemId, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'from_warehouse_id')  int? fromWarehouseId, @JsonKey(name: 'from_warehouse')  MovementPlace? fromWarehouse, @JsonKey(name: 'to_warehouse_id')  int? toWarehouseId, @JsonKey(name: 'to_warehouse')  MovementPlace? toWarehouse, @JsonKey(name: 'reference_id')  int? referenceId, @JsonKey(name: 'employee_id')  int? employeeId,  MovementActor? employee,  String? notes, @JsonKey(name: 'signed_quantity')  String? signedQuantity, @JsonKey(name: 'balance_after')  String? balanceAfter, @JsonKey(name: 'unit_cost')  String? unitCost, @JsonKey(name: 'total_cost')  String? totalCost, @JsonKey(name: 'uncosted_quantity')  String? uncostedQuantity, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _StockMovement() when $default != null:
-return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.stockItemId,_that.item,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.createdAt);case _:
+return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quantity,_that.stockItemId,_that.item,_that.fromWarehouseId,_that.fromWarehouse,_that.toWarehouseId,_that.toWarehouse,_that.referenceId,_that.employeeId,_that.employee,_that.notes,_that.signedQuantity,_that.balanceAfter,_that.unitCost,_that.totalCost,_that.uncostedQuantity,_that.createdAt);case _:
   return null;
 
 }
@@ -277,7 +295,7 @@ return $default(_that.id,_that.movementType,_that.movementTypeLabel,_that.quanti
 @JsonSerializable()
 
 class _StockMovement extends StockMovement {
-  const _StockMovement({required this.id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) required this.movementType, @JsonKey(name: 'movement_type_label') required this.movementTypeLabel, required this.quantity, @JsonKey(name: 'stock_item_id') required this.stockItemId, @JsonKey(name: 'stock_item') this.item, @JsonKey(name: 'from_warehouse_id') this.fromWarehouseId, @JsonKey(name: 'from_warehouse') this.fromWarehouse, @JsonKey(name: 'to_warehouse_id') this.toWarehouseId, @JsonKey(name: 'to_warehouse') this.toWarehouse, @JsonKey(name: 'reference_id') this.referenceId, @JsonKey(name: 'employee_id') this.employeeId, this.employee, this.notes, @JsonKey(name: 'created_at') this.createdAt}): super._();
+  const _StockMovement({required this.id, @JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) required this.movementType, @JsonKey(name: 'movement_type_label') required this.movementTypeLabel, required this.quantity, @JsonKey(name: 'stock_item_id') required this.stockItemId, @JsonKey(name: 'stock_item') this.item, @JsonKey(name: 'from_warehouse_id') this.fromWarehouseId, @JsonKey(name: 'from_warehouse') this.fromWarehouse, @JsonKey(name: 'to_warehouse_id') this.toWarehouseId, @JsonKey(name: 'to_warehouse') this.toWarehouse, @JsonKey(name: 'reference_id') this.referenceId, @JsonKey(name: 'employee_id') this.employeeId, this.employee, this.notes, @JsonKey(name: 'signed_quantity') this.signedQuantity, @JsonKey(name: 'balance_after') this.balanceAfter, @JsonKey(name: 'unit_cost') this.unitCost, @JsonKey(name: 'total_cost') this.totalCost, @JsonKey(name: 'uncosted_quantity') this.uncostedQuantity, @JsonKey(name: 'created_at') this.createdAt}): super._();
   factory _StockMovement.fromJson(Map<String, dynamic> json) => _$StockMovementFromJson(json);
 
 @override final  int id;
@@ -300,6 +318,24 @@ class _StockMovement extends StockMovement {
 @override@JsonKey(name: 'employee_id') final  int? employeeId;
 @override final  MovementActor? employee;
 @override final  String? notes;
+/// [quantity] with its sign, **relative to the warehouse the list was read for**: a
+/// transfer is `+200` on the shelf that received it and `-200` on the one that sent it.
+/// Null when the feed was not scoped to a warehouse — there is no sign to give.
+@override@JsonKey(name: 'signed_quantity') final  String? signedQuantity;
+/// What the shelf held once this row had happened. Null unless the feed was scoped to one
+/// warehouse *and* one shelf; a running total across shelves would be a meaningless number.
+@override@JsonKey(name: 'balance_after') final  String? balanceAfter;
+/// What the stock on this row cost, for a reader who holds `inventory.view_cost` — the
+/// server leaves all three keys out otherwise, and this build cannot tell that apart from
+/// «not recorded», which is why the row is told separately whether it may draw them.
+///
+/// [unitCost] is dropped by the server whenever part of the row is unpriced: an average
+/// that counts zeros describes nothing, so the row gets the total it can vouch for and the
+/// quantity it cannot. [totalCost] null means «nobody recorded it» — a row older than the
+/// cost ledger — and is read as unknown, never as free.
+@override@JsonKey(name: 'unit_cost') final  String? unitCost;
+@override@JsonKey(name: 'total_cost') final  String? totalCost;
+@override@JsonKey(name: 'uncosted_quantity') final  String? uncostedQuantity;
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
 
 /// Create a copy of StockMovement
@@ -315,16 +351,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockMovement&&(identical(other.id, id) || other.id == id)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.movementTypeLabel, movementTypeLabel) || other.movementTypeLabel == movementTypeLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.item, item) || other.item == item)&&(identical(other.fromWarehouseId, fromWarehouseId) || other.fromWarehouseId == fromWarehouseId)&&(identical(other.fromWarehouse, fromWarehouse) || other.fromWarehouse == fromWarehouse)&&(identical(other.toWarehouseId, toWarehouseId) || other.toWarehouseId == toWarehouseId)&&(identical(other.toWarehouse, toWarehouse) || other.toWarehouse == toWarehouse)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.employee, employee) || other.employee == employee)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockMovement&&(identical(other.id, id) || other.id == id)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.movementTypeLabel, movementTypeLabel) || other.movementTypeLabel == movementTypeLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.item, item) || other.item == item)&&(identical(other.fromWarehouseId, fromWarehouseId) || other.fromWarehouseId == fromWarehouseId)&&(identical(other.fromWarehouse, fromWarehouse) || other.fromWarehouse == fromWarehouse)&&(identical(other.toWarehouseId, toWarehouseId) || other.toWarehouseId == toWarehouseId)&&(identical(other.toWarehouse, toWarehouse) || other.toWarehouse == toWarehouse)&&(identical(other.referenceId, referenceId) || other.referenceId == referenceId)&&(identical(other.employeeId, employeeId) || other.employeeId == employeeId)&&(identical(other.employee, employee) || other.employee == employee)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.signedQuantity, signedQuantity) || other.signedQuantity == signedQuantity)&&(identical(other.balanceAfter, balanceAfter) || other.balanceAfter == balanceAfter)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.totalCost, totalCost) || other.totalCost == totalCost)&&(identical(other.uncostedQuantity, uncostedQuantity) || other.uncostedQuantity == uncostedQuantity)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,movementType,movementTypeLabel,quantity,stockItemId,item,fromWarehouseId,fromWarehouse,toWarehouseId,toWarehouse,referenceId,employeeId,employee,notes,createdAt);
+int get hashCode => Object.hashAll([runtimeType,id,movementType,movementTypeLabel,quantity,stockItemId,item,fromWarehouseId,fromWarehouse,toWarehouseId,toWarehouse,referenceId,employeeId,employee,notes,signedQuantity,balanceAfter,unitCost,totalCost,uncostedQuantity,createdAt]);
 
 @override
 String toString() {
-  return 'StockMovement(id: $id, movementType: $movementType, movementTypeLabel: $movementTypeLabel, quantity: $quantity, stockItemId: $stockItemId, item: $item, fromWarehouseId: $fromWarehouseId, fromWarehouse: $fromWarehouse, toWarehouseId: $toWarehouseId, toWarehouse: $toWarehouse, referenceId: $referenceId, employeeId: $employeeId, employee: $employee, notes: $notes, createdAt: $createdAt)';
+  return 'StockMovement(id: $id, movementType: $movementType, movementTypeLabel: $movementTypeLabel, quantity: $quantity, stockItemId: $stockItemId, item: $item, fromWarehouseId: $fromWarehouseId, fromWarehouse: $fromWarehouse, toWarehouseId: $toWarehouseId, toWarehouse: $toWarehouse, referenceId: $referenceId, employeeId: $employeeId, employee: $employee, notes: $notes, signedQuantity: $signedQuantity, balanceAfter: $balanceAfter, unitCost: $unitCost, totalCost: $totalCost, uncostedQuantity: $uncostedQuantity, createdAt: $createdAt)';
 }
 
 
@@ -335,7 +371,7 @@ abstract mixin class _$StockMovementCopyWith<$Res> implements $StockMovementCopy
   factory _$StockMovementCopyWith(_StockMovement value, $Res Function(_StockMovement) _then) = __$StockMovementCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) MovementType movementType,@JsonKey(name: 'movement_type_label') String movementTypeLabel, String quantity,@JsonKey(name: 'stock_item_id') int stockItemId,@JsonKey(name: 'stock_item') StockItemRef? item,@JsonKey(name: 'from_warehouse_id') int? fromWarehouseId,@JsonKey(name: 'from_warehouse') MovementPlace? fromWarehouse,@JsonKey(name: 'to_warehouse_id') int? toWarehouseId,@JsonKey(name: 'to_warehouse') MovementPlace? toWarehouse,@JsonKey(name: 'reference_id') int? referenceId,@JsonKey(name: 'employee_id') int? employeeId, MovementActor? employee, String? notes,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'movement_type', unknownEnumValue: MovementType.unknown) MovementType movementType,@JsonKey(name: 'movement_type_label') String movementTypeLabel, String quantity,@JsonKey(name: 'stock_item_id') int stockItemId,@JsonKey(name: 'stock_item') StockItemRef? item,@JsonKey(name: 'from_warehouse_id') int? fromWarehouseId,@JsonKey(name: 'from_warehouse') MovementPlace? fromWarehouse,@JsonKey(name: 'to_warehouse_id') int? toWarehouseId,@JsonKey(name: 'to_warehouse') MovementPlace? toWarehouse,@JsonKey(name: 'reference_id') int? referenceId,@JsonKey(name: 'employee_id') int? employeeId, MovementActor? employee, String? notes,@JsonKey(name: 'signed_quantity') String? signedQuantity,@JsonKey(name: 'balance_after') String? balanceAfter,@JsonKey(name: 'unit_cost') String? unitCost,@JsonKey(name: 'total_cost') String? totalCost,@JsonKey(name: 'uncosted_quantity') String? uncostedQuantity,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -352,7 +388,7 @@ class __$StockMovementCopyWithImpl<$Res>
 
 /// Create a copy of StockMovement
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? movementType = null,Object? movementTypeLabel = null,Object? quantity = null,Object? stockItemId = null,Object? item = freezed,Object? fromWarehouseId = freezed,Object? fromWarehouse = freezed,Object? toWarehouseId = freezed,Object? toWarehouse = freezed,Object? referenceId = freezed,Object? employeeId = freezed,Object? employee = freezed,Object? notes = freezed,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? movementType = null,Object? movementTypeLabel = null,Object? quantity = null,Object? stockItemId = null,Object? item = freezed,Object? fromWarehouseId = freezed,Object? fromWarehouse = freezed,Object? toWarehouseId = freezed,Object? toWarehouse = freezed,Object? referenceId = freezed,Object? employeeId = freezed,Object? employee = freezed,Object? notes = freezed,Object? signedQuantity = freezed,Object? balanceAfter = freezed,Object? unitCost = freezed,Object? totalCost = freezed,Object? uncostedQuantity = freezed,Object? createdAt = freezed,}) {
   return _then(_StockMovement(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,movementType: null == movementType ? _self.movementType : movementType // ignore: cast_nullable_to_non_nullable
@@ -368,6 +404,11 @@ as MovementPlace?,referenceId: freezed == referenceId ? _self.referenceId : refe
 as int?,employeeId: freezed == employeeId ? _self.employeeId : employeeId // ignore: cast_nullable_to_non_nullable
 as int?,employee: freezed == employee ? _self.employee : employee // ignore: cast_nullable_to_non_nullable
 as MovementActor?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,signedQuantity: freezed == signedQuantity ? _self.signedQuantity : signedQuantity // ignore: cast_nullable_to_non_nullable
+as String?,balanceAfter: freezed == balanceAfter ? _self.balanceAfter : balanceAfter // ignore: cast_nullable_to_non_nullable
+as String?,unitCost: freezed == unitCost ? _self.unitCost : unitCost // ignore: cast_nullable_to_non_nullable
+as String?,totalCost: freezed == totalCost ? _self.totalCost : totalCost // ignore: cast_nullable_to_non_nullable
+as String?,uncostedQuantity: freezed == uncostedQuantity ? _self.uncostedQuantity : uncostedQuantity // ignore: cast_nullable_to_non_nullable
 as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));

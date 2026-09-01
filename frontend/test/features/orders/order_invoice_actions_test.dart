@@ -9,9 +9,9 @@ import 'package:dayaa/features/orders/models/order_message.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/views/order_detail_page.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_customer_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_invoice_actions.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
-import 'package:dayaa/features/orders/presentation/widgets/order_status_bar.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
@@ -24,7 +24,7 @@ import 'package:mocktail/mocktail.dart';
 
 /// Getting the order out of the app and into the customer's chat.
 ///
-/// **Two doors, on purpose.** «نسخ الفاتورة» sits under the status, in the open, because sending
+/// **Two doors, on purpose.** «نسخ الفاتورة» sits under the header, in the open, because sending
 /// the order on is what happens right after somebody reads what state it is in; «مشاركة الفاتورة»
 /// lives on the dial with the rest of the actions, because it opens the phone's own sheet and is
 /// the rarer of the two.
@@ -161,18 +161,19 @@ void main() {
     ),
   );
 
-  testWidgets('the copy button sits under the status, above everything else', (tester) async {
+  testWidgets('the copy button sits under the header, above everything else', (tester) async {
     // Arrange
     await tester.pumpWidget(host());
 
     // Act
     await tester.pumpAndSettle();
-    final status = tester.getRect(find.byType(OrderStatusBar));
+    // The header is a sliver; its flexible space is the box the list starts under.
+    final header = tester.getRect(find.byType(FlexibleSpaceBar));
     final copy = tester.getRect(find.byType(CopyInvoiceButton));
     final money = tester.getRect(find.byType(OrderMoneyRow));
 
     // Assert — nothing between it and the status it follows.
-    expect(copy.top, greaterThanOrEqualTo(status.bottom));
+    expect(copy.top, greaterThanOrEqualTo(header.bottom));
     expect(copy.bottom, lessThanOrEqualTo(money.top));
   });
 
@@ -183,10 +184,10 @@ void main() {
     // Act
     await tester.pumpAndSettle();
 
-    // Assert
+    // Assert — the width of the list's own column, measured against the card under it.
     expect(
       tester.getSize(find.byType(CopyInvoiceButton)).width,
-      tester.getSize(find.byType(OrderStatusBar)).width,
+      tester.getSize(find.byType(OrderCustomerCard)).width,
     );
   });
 

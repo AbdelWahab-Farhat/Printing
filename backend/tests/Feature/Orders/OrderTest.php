@@ -6,6 +6,7 @@ namespace Tests\Feature\Orders;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Customer\Models\Customer;
@@ -1030,6 +1031,29 @@ class OrderTest extends TestCase
         );
     }
 
+    public function test_a_page_of_orders_carries_the_product_behind_every_line(): void
+    {
+        // Arrange — the card in the list shows what is in the order, with its picture. Several
+        // orders deliberately: Eloquent arms its lazy-loading guard only on a multi-row result,
+        // so a one-order fixture proves nothing about a page.
+        foreach (range(1, 2) as $index) {
+            $order = Order::factory()->create();
+            $product = Product::factory()->create();
+            ProductImage::factory()->primary()->for($product)->create();
+            OrderItem::factory()->for($order)->create(['product_id' => $product->getKey()]);
+        }
+
+        $headers = $this->viewer();
+
+        // Act — a lazy load anywhere in here throws under `preventLazyLoading`.
+        $response = $this->withHeaders($headers)->getJson('/api/v1/orders');
+
+        // Assert
+        $response->assertOk();
+        $this->assertNotNull($response->json('data.0.items.0.product_code'));
+        $this->assertNotEmpty($response->json('data.0.items.0.product_image.url'));
+    }
+
     public function test_orders_can_be_filtered_by_status(): void
     {
         // Arrange
@@ -1093,6 +1117,66 @@ class OrderTest extends TestCase
             ->assertJsonCount(1, 'data.items')
             ->assertJsonCount(1, 'data.transitions')
             ->assertJsonPath('data.transitions.0.to_status', 'new');
+    }
+
+    public function test_a_line_carries_the_catalogue_row_behind_it(): void
+    {
+        // Arrange — the snapshot on a line is a name and a size, which is what an old invoice
+        // must keep saying. The card that opens the product needs the live row too: the code
+        // people say out loud, and the one photograph.
+        $order = Order::factory()->create();
+        $product = Product::factory()->create(['name' => 'كيس شحن']);
+        ProductImage::factory()->primary()->for($product)->create();
+        ProductImage::factory()->for($product)->create(['sort_order' => 1]);
+        OrderItem::factory()->for($order)->create(['product_id' => $product->getKey()]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->getKey()}");
+
+        // Assert — the code, and the primary image alone. A line is a row in a list, and the
+        // whole gallery is the product screen's job.
+        $response->assertOk()
+            ->assertJsonPath('data.items.0.product_code', $product->code)
+            ->assertJsonPath('data.items.0.product_image.is_primary', true);
+
+        $this->assertNotEmpty($response->json('data.items.0.product_image.url'));
+    }
+
+    public function test_a_product_with_no_photograph_leaves_the_slot_empty(): void
+    {
+        // Arrange — most of the catalogue, most of the time.
+        $order = Order::factory()->create();
+        $product = Product::factory()->create();
+        OrderItem::factory()->for($order)->create(['product_id' => $product->getKey()]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->getKey()}");
+
+        // Assert — null rather than absent, so the client has one thing to check.
+        $response->assertOk()->assertJsonPath('data.items.0.product_image', null);
+    }
+
+    public function test_the_lines_of_one_order_read_their_products_in_one_query(): void
+    {
+        // Arrange — several lines, each on its own product: a query per line is what turns a
+        // four-line order into a slow screen, and the guard only arms on a multi-row result.
+        $order = Order::factory()->create();
+
+        foreach (range(1, 3) as $index) {
+            $product = Product::factory()->create();
+            ProductImage::factory()->primary()->for($product)->create();
+            OrderItem::factory()->for($order)->create(['product_id' => $product->getKey()]);
+        }
+
+        $headers = $this->viewer();
+
+        // Act & Assert — a lazy load anywhere in here throws under `preventLazyLoading`.
+        $this->withHeaders($headers)
+            ->getJson("/api/v1/orders/{$order->getKey()}")
+            ->assertOk()
+            ->assertJsonCount(3, 'data.items');
     }
 
     public function test_a_missing_order_is_a_404(): void

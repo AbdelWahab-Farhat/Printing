@@ -95,7 +95,6 @@ void main() {
     'returned_at': 'the timeline reads `transitions`, not the per-status columns',
     'cancelled_at': 'the timeline reads `transitions`, not the per-status columns',
 
-    'created_by': 'no screen names who raised an order',
     'sort_order': 'the server sends the lines already in order; the app renders them as sent',
   };
 

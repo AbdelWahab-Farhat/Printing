@@ -1,9 +1,17 @@
 # Additional cost on an order — connecting the Flutter app
 
-> **Status: not started.** The backend is built and green (see
-> [ORDER-ADDITIONAL-COST-BACKEND-CHANGES.md](ORDER-ADDITIONAL-COST-BACKEND-CHANGES.md)); nothing
-> in `frontend/` has been touched. This doc is the plan for wiring the app up, written against
-> the shipped API.
+> **Status: usable — a charge can be shown *and* set, from the order screen.** The reading side
+> landed with the order screen's new header (see
+> [ORDER-DETAIL-HEADER-DESIGN.md](ORDER-DETAIL-HEADER-DESIGN.md)); the writing side landed as a
+> sheet on that same screen — `AppPermission.addOrderAdditionalCost`, the mirror enum, the three
+> fields on `updateInvoice`, and «التكلفة الإضافية» on the dial.
+>
+> **What §4 still owes is the two forms**: «طلبية جديدة» cannot take a charge as the order is
+> written, and «تعديل الطلبية» has no field for one — both go through the sheet on the order
+> screen instead. The checklist at the end says exactly what is ticked.
+>
+> The backend is built and green (see
+> [ORDER-ADDITIONAL-COST-BACKEND-CHANGES.md](ORDER-ADDITIONAL-COST-BACKEND-CHANGES.md)).
 
 ---
 
@@ -18,7 +26,7 @@ open, pay, settle and print correctly; the total is already right, because `gran
 server's arithmetic and this app never re-derives it. What the clerk will not see is *why* the
 total is what it is: the charge is silently inside «الإجمالي» with no line naming it.
 
-**One test does fail, and it is the one designed to.**
+**One test did fail, and it was the one designed to** — it is green as of §2 below.
 `test/features/orders/order_resource_contract_test.dart` compares every key
 `OrderResource` publishes against every key the generated `fromJson` parsers read, and fails when
 the server publishes something the app drops. It will now name four:
@@ -95,15 +103,19 @@ Why an enum here at all, when a single order carries its own `..._label`: the **
 has to draw five chips before anything has been saved, so it needs the list and the Arabic with
 no order in hand. That is the same reason `OrderStatus.label` exists for the filter sheet.
 
-**`order.dart`** — four fields:
+**`order.dart`** — four fields, as shipped:
 
 ```dart
 @JsonKey(name: 'additional_cost') @Default('0.00') String additionalCost,
-@JsonKey(name: 'additional_cost_reason', unknownEnumValue: AdditionalCostReason.unknown)
-AdditionalCostReason? additionalCostReason,
+@JsonKey(name: 'additional_cost_reason') String? additionalCostReason,
 @JsonKey(name: 'additional_cost_reason_label') String? additionalCostReasonLabel,
 @JsonKey(name: 'additional_cost_note') String? additionalCostNote,
 ```
+
+The reason went out as a `String` in the reading slice and **came back as the enum with the
+chips**, which is what the plan said it was owed to: five categories drawn before any order
+exists is a question no per-order label can answer. `additional_cost_reason_contract_test.dart`
+now pins the codes, the Arabic and which one needs a note.
 
 `@Default('0.00')` for the reason `paidAmount` has one: an order from a server that predates this
 was never charged, and zero is exactly what such a server means. `unknownEnumValue` so a reason
@@ -209,7 +221,7 @@ painted under its own control instead of shouted in a snackbar.
 
 | Surface | Where |
 |---|---|
-| `order_totals.dart` | A line **before** «الخصم» — `+ 10.00` — with `additionalCostCaption` as a small second line under the label. Hidden when zero, like the fee lines |
+| `order_totals.dart` | A line **before** «الخصم» — `+ 10.00` — with the plain label. The caption goes in «التكلفة الإضافية»'s own section directly under «الحساب»: a category and a typed sentence do not fit between a label and a number. Hidden when zero, like the fee lines |
 | `order_invoice_pdf.dart` | A totals line before «الخصم», **without** the danger colour: this is a charge, not a deduction, and red beside a figure the customer owes warns about the wrong thing |
 | `order_message.dart` | A line between «التوصيل» and «الخصم» — «التكلفة الإضافية (تغليف خاص): ١٠٫٠٠» |
 
@@ -244,21 +256,53 @@ are the two guards that will tell you when this work is complete.
 
 ## 7. Checklist
 
-- [ ] `AppPermission.addOrderAdditionalCost`
-- [ ] `additional_cost_reason.dart` + its contract test
-- [ ] `Order` — four fields, `hasAdditionalCost`, `additionalCostCaption`
-- [ ] `NewOrder` — three fields
-- [ ] `build_runner`
-- [ ] `TakeOrder` — the amount-carries-the-reason rule
-- [ ] `OrderRepository` / `_impl` / `UpdateOrderInvoice` — echo the charge back on `PUT`
+**Shown (done):**
+
+- [x] `Order` — four fields, `hasAdditionalCost`, `additionalCostCaption`
+- [x] `build_runner`
+- [x] `OrderTotals` — the line after «التوصيل», before «الخصم»
+- [x] `OrderAdditionalCost` — the section that names the category and the note
+- [x] `order_message.dart` — «التكلفة الإضافية (تغليف خاص — علبة كرتون مزدوجة): ١٠ د»
+- [x] `order_invoice_pdf.dart` — the totals line, without the danger colour
+- [x] `order_additional_cost_test.dart` — the caption's four cases, the section, the totals order
+- [x] `order_message_test` / `order_invoice_pdf_test` — a charged order on both copies
+- [x] `order_resource_contract_test.dart` — green: the four keys are read now
+
+**Set (done — from the order screen):**
+
+- [x] `AppPermission.addOrderAdditionalCost` — `permission_contract_test.dart` now names only
+      `inventory.revalue`, which is another feature's debt
+- [x] `additional_cost_reason.dart` + its contract test, and `Order.additionalCostReason` retyped
+      to it
+- [x] `OrderRepository` / `_impl` / `UpdateOrderInvoice` — the three fields, echoed back on a
+      `PUT` that is not about the charge
+- [x] `UpdateOrderInvoice` — the amount-carries-the-reason rule, and «١٠٫٥» normalised on the way
+      out
+- [x] `additional_cost_sheet.dart` — the amount, the five chips and the note, behind the grant
+      and offered until the order is closed (`UpdateOrder`'s own line)
+- [x] the button that opens it, **inside «الحساب» under «الإجمالي»** — beside the line it
+      changes, not on the dial; its word turns from «إضافة» to «تعديل» with the order
+- [x] `additional_cost_button_test.dart` — where it stands, what it says, and the two cases it
+      is absent for
+- [x] `additional_cost_wire_test.dart` — what the `PUT` body actually carries, in both directions
+- [x] `additional_cost_sheet_test.dart` — the two rules, and what the sheet answers
+
+**Still owed — the two forms:**
+
+- [ ] `NewOrder` — three fields, so a charge can be part of taking the order
+- [ ] `TakeOrder` — the same amount-carries-the-reason rule on the way in
 - [ ] `TakeOrderCubit` + `TakeOrderState` — three field errors, `_renderedKey`
 - [ ] `NewOrderPage` — the section, behind the grant
 - [ ] `OrderInvoiceCubit` + state — setters, `estimatedTotal`, `additionalCostIsValid`
-- [ ] `OrderEditPage` — `_AdditionalCostField`
-- [ ] `OrderTotals`, `order_invoice_pdf.dart`, `order_message.dart`
-- [ ] `flutter analyze` clean, `flutter test` green
+- [ ] `OrderEditPage` — `_AdditionalCostField`, or a link to the sheet the order screen has
 
-> **Note on the current tree:** `flutter analyze` already reports one pre-existing error —
-> `order_status_chip.dart:64`, a switch not covering `OrderStatus.readyToPrint`, left by the
-> `ready_to_print` status work. It is unrelated to this feature but will need fixing before the
-> analyzer is clean.
+> **Note on the current tree:** `flutter analyze` is clean. The only red in `flutter test` is
+> `permission_contract_test.dart`, and it now names `inventory.revalue` alone — a different
+> feature's missing grant.
+>
+> **One bug found on the way and fixed only here:** the amount field allows «٫», the decimal
+> separator an Arabic keyboard offers. `Validators.toWesternDigits` has always turned it into a
+> point, but most numeric fields filter it out as it is typed — so «١٠٫٥» becomes «١٠٥» with
+> nothing on screen to show for it. `record_scrap_sheet.dart` and the manufacturing rates form
+> already allow it; `edit_shortages_sheet.dart`, `order_edit_page.dart`,
+> `purchase_order_form_page.dart` and `receive_arrival_sheet.dart` still do not.

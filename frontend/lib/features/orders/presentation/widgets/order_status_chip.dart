@@ -19,6 +19,7 @@ class OrderStatusChip extends StatelessWidget {
     required this.label,
     this.compact = false,
     this.banner = false,
+    this.showIcon = false,
     super.key,
   });
 
@@ -29,6 +30,14 @@ class OrderStatusChip extends StatelessWidget {
 
   /// The list card's size, as opposed to the header's.
   final bool compact;
+
+  /// Whether the status's own glyph leads the word.
+  ///
+  /// Off by default, because on a list of cards the chips stack up and a column of little
+  /// glyphs is noise. On by the one chip standing alone — the order's header — where the shape
+  /// is read before the word is, which is the whole reason [iconFor] exists. [banner] draws it
+  /// too, and does not need this.
+  final bool showIcon;
 
   /// A band across the whole top of a card rather than a chip in its corner.
   ///
@@ -85,6 +94,15 @@ class OrderStatusChip extends StatelessWidget {
                 // At the end of the band, after the word — the side an Arabic line finishes on,
                 // the way the reference card wears its own badge.
                 Icon(iconFor(status), size: 20.sp, color: foreground),
+              ],
+            )
+          : showIcon
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(iconFor(status), size: compact ? 14.sp : 17.sp, color: foreground),
+                SizedBox(width: 6.w),
+                Text(label, style: text),
               ],
             )
           : Text(label, style: text),

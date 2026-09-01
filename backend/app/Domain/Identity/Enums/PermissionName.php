@@ -132,6 +132,11 @@ enum PermissionName: string
     // changes the book value of the business without a shelf being touched, which is a different
     // trust level from recording a transfer somebody can walk over and verify.
     case RevalueStock = 'inventory.revalue';
+    // Knowing how much is on the shelf and knowing what it was bought for are two levels of
+    // trust: the storekeeper counts and does not buy, and the value of the stock is a number
+    // read in a meeting rather than on the loading dock. Not part of `inventory.view`, for the
+    // same reason `users.salary` is not part of `users.manage`.
+    case ViewStockCost = 'inventory.view_cost';
 
     // Vendors. Its own pair rather than folded into inventory.*: agreeing terms with a supplier
     // and receiving a shipment they sent are different jobs, the same split customers.* draws
@@ -207,6 +212,7 @@ enum PermissionName: string
             self::ViewInventory => 'عرض المخازن والأرصدة والحركات',
             self::ManageInventory => 'إدارة المخازن وتسجيل حركات المخزون',
             self::RevalueStock => 'تعديل تكلفة دفعات المخزون',
+            self::ViewStockCost => 'عرض تكلفة المخزون',
             self::ViewVendors => 'عرض الموردين',
             self::ManageVendors => 'إضافة وتعديل الموردين',
             self::ViewPurchaseOrders => 'عرض أوامر الشراء',
@@ -247,7 +253,7 @@ enum PermissionName: string
             self::ManageManufacturingCostRates => 'معدلات تكلفة التصنيع',
 
             self::ViewInventory, self::ManageInventory,
-            self::RevalueStock => 'المخازن والمخزون',
+            self::RevalueStock, self::ViewStockCost => 'المخازن والمخزون',
             self::ViewVendors, self::ManageVendors => 'الموردون',
             self::ViewPurchaseOrders, self::ManagePurchaseOrders => 'أوامر الشراء',
             self::ViewActivityLogs => 'سجل النشاطات',

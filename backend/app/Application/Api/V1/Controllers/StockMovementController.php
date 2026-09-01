@@ -10,6 +10,7 @@ use App\Application\Api\V1\Requests\Inventory\RecordFulfillmentRequest;
 use App\Application\Api\V1\Requests\Inventory\RecordTransferRequest;
 use App\Application\Api\V1\Resources\StockMovementResource;
 use App\Application\Controller;
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Queries\MovementFilters;
@@ -57,7 +58,11 @@ class StockMovementController extends Controller
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
         return $this->successWithPagination(
-            StockMovementResource::collection($this->inventory->paginateMovements($filters, $perPage)),
+            StockMovementResource::collection($this->inventory->paginateMovements(
+                $filters,
+                $perPage,
+                withCost: $request->user()?->can(PermissionName::ViewStockCost->value) === true,
+            )),
         );
     }
 

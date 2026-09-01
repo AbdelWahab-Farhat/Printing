@@ -196,6 +196,7 @@ import 'package:dayaa/features/vendors/usecases/get_vendors.dart';
 import 'package:dayaa/features/vendors/usecases/save_vendor.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/save_warehouse_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_batches_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
@@ -203,6 +204,7 @@ import 'package:dayaa/features/warehouses/presentation/viewmodel/warehouses_cubi
 import 'package:dayaa/features/warehouses/repositories/warehouse_repository.dart';
 import 'package:dayaa/features/warehouses/repositories/warehouse_repository_impl.dart';
 import 'package:dayaa/features/warehouses/usecases/delete_warehouse.dart';
+import 'package:dayaa/features/warehouses/usecases/get_stock_batches.dart';
 import 'package:dayaa/features/warehouses/usecases/get_stock_movements.dart';
 import 'package:dayaa/features/warehouses/usecases/get_stock_summary.dart';
 import 'package:dayaa/features/warehouses/usecases/get_warehouse_stocks.dart';
@@ -1067,6 +1069,9 @@ abstract final class Injector {
       ..registerLazySingleton<GetStockMovements>(
         () => GetStockMovements(sl<WarehouseRepository>()),
       )
+      ..registerLazySingleton<GetStockBatches>(
+        () => GetStockBatches(sl<WarehouseRepository>()),
+      )
       ..registerLazySingleton<RecordStockMovement>(
         () => RecordStockMovement(sl<WarehouseRepository>()),
       )
@@ -1102,6 +1107,16 @@ abstract final class Injector {
           getMovements: sl<GetStockMovements>(),
           warehouseId: warehouseId,
           stockItemId: stockItemId,
+        ),
+      )
+      // The cost layers under one shelf. The record is (warehouse, shelf, remaining?): the
+      // shelf's screen opens one over what is left and, behind a fold, one over what is spent.
+      ..registerFactoryParam<StockBatchesCubit, ({int warehouseId, int stockItemId}), bool>(
+        (shelf, remaining) => StockBatchesCubit(
+          getBatches: sl<GetStockBatches>(),
+          warehouseId: shelf.warehouseId,
+          stockItemId: shelf.stockItemId,
+          remaining: remaining,
         ),
       )
       ..registerFactory<SaveWarehouseCubit>(

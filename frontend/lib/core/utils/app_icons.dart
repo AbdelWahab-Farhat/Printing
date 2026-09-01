@@ -74,6 +74,14 @@ abstract final class AppIcons {
   static IconData get forward =>
       _pick(Icons.chevron_left_rounded, CupertinoIcons.chevron_left);
 
+  /// يفتح ما هو مطويّ تحته، ويطويه. سهمٌ لأسفل ثم لأعلى — والاتجاه هنا لا يقلبه الاتجاه العربي:
+  /// المطويّ *تحت* الزر في الحالتين.
+  static IconData get expand =>
+      _pick(Icons.keyboard_arrow_down_rounded, CupertinoIcons.chevron_down);
+
+  static IconData get collapse =>
+      _pick(Icons.keyboard_arrow_up_rounded, CupertinoIcons.chevron_up);
+
   // ── actions ────────────────────────────────────────────────────────────────
   static IconData get addCustomer =>
       _pick(Icons.person_add_alt_1_rounded, CupertinoIcons.person_add_solid);
@@ -160,6 +168,13 @@ abstract final class AppIcons {
   /// A customer's artwork — the images and PDFs printed on their bags, as a collection.
   static IconData get designs =>
       _pick(Icons.palette_outlined, CupertinoIcons.paintbrush);
+
+  /// What was written on the record itself — «ملاحظات الطلبية».
+  ///
+  /// A page with lines on it, not [comments]' speech bubbles: this is one field filled in by
+  /// whoever took the order, not a conversation between colleagues about it.
+  static IconData get notes =>
+      _pick(Icons.sticky_note_2_outlined, CupertinoIcons.doc_plaintext);
 
   /// What staff have written to each other about a customer.
   ///

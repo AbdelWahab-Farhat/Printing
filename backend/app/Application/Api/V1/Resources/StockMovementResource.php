@@ -28,6 +28,30 @@ class StockMovementResource extends JsonResource
             // this added or removed — see the migration for the four shapes.
             'quantity' => (string) $this->quantity,
 
+            // **The two ledger columns, computed by the list query and only when they mean
+            // something.** The sign is relative to the warehouse the reader asked for — a
+            // transfer is `+` on one shelf and `-` on the other — so it is null when no
+            // warehouse was named; the balance is what one shelf held once this row had
+            // happened, and null unless the request was scoped to a warehouse *and* a shelf.
+            // See MovementListQuery.
+            'signed_quantity' => $this->decimal('signed_quantity', 3),
+            'balance_after' => $this->decimal('balance_after', 3),
+
+            // **What the stock on this row cost, for a reader allowed to know.** Absent rather
+            // than null for everybody else, and the two are different facts: a missing key means
+            // «you may not be told», null means «nobody recorded it» — a movement older than the
+            // cost layers, which the app reads as «غير معروف» and never as free.
+            //
+            // `unit_cost` is dropped whenever part of the row is unpriced: an average that
+            // counts zeros is a number that describes nothing, so the app is handed the total
+            // it can vouch for and the quantity it cannot, and says both.
+            'unit_cost' => $this->when($this->costIsSelected(), fn (): ?string => $this->cost()?->unitCost),
+            'total_cost' => $this->when($this->costIsSelected(), fn (): ?string => $this->cost()?->totalCost),
+            'uncosted_quantity' => $this->when(
+                $this->costIsSelected(),
+                fn (): ?string => $this->cost()?->uncostedQuantity,
+            ),
+
             'stock_item_id' => $this->stock_item_id,
             // What moved: a shelf, not a product's size. Which product a movement was ultimately
             // for is `reference_id` and the order behind it — two products can draw on one pile,
@@ -77,5 +101,84 @@ class StockMovementResource extends JsonResource
             // invite a client to believe it could be.
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * A column the list query may or may not have selected, as a fixed-scale string — or null
+     * when it was not asked for. `getAttributes()` rather than `getAttribute()`: strict mode
+     * throws on a column that was never selected, and on a movement returned straight from a
+     * write none of these are.
+     */
+    private function decimal(string $column, int $scale): ?string
+    {
+        $value = $this->resource->getAttributes()[$column] ?? null;
+
+        return $value === null ? null : bcadd((string) $value, '0', $scale);
+    }
+
+    /**
+     * Whether the query ran the cost aggregates at all — which it does exactly when the reader
+     * holds `inventory.view_cost`. The controller decides; this only reads the consequence.
+     */
+    private function costIsSelected(): bool
+    {
+        return array_key_exists('consumed_quantity', $this->resource->getAttributes());
+    }
+
+    /**
+     * Which side of the cost ledger this row is on, and what it says.
+     *
+     * A row that drew layers down (an issue, a transfer, a scrap, a downward count) is priced
+     * by what FIFO took; a row that opened layers (an arrival, an upward count) by what it was
+     * booked at. A transfer read from the shelf that received it has no layers of its own —
+     * relocated batches keep the arrival's id — and falls through to the consumption side,
+     * which is the same stock at the same cost. A row with neither is older than the cost
+     * ledger, and the honest answer is null.
+     */
+    private function cost(): ?MovementCost
+    {
+        $attributes = $this->resource->getAttributes();
+
+        if (bccomp((string) ($attributes['consumed_quantity'] ?? '0'), '0', 3) > 0) {
+            return MovementCost::of(
+                (string) $attributes['consumed_quantity'],
+                (string) $attributes['consumed_total_cost'],
+                (string) $attributes['consumed_uncosted_quantity'],
+            );
+        }
+
+        if (bccomp((string) ($attributes['batch_quantity'] ?? '0'), '0', 3) > 0) {
+            return MovementCost::of(
+                (string) $attributes['batch_quantity'],
+                (string) $attributes['batch_total_cost'],
+                (string) $attributes['batch_uncosted_quantity'],
+            );
+        }
+
+        return null;
+    }
+}
+
+/**
+ * The three cost figures a ledger row carries, at the scales the rest of the API uses: money to
+ * two places, quantities to three.
+ */
+final readonly class MovementCost
+{
+    private function __construct(
+        public ?string $unitCost,
+        public string $totalCost,
+        public string $uncostedQuantity,
+    ) {}
+
+    public static function of(string $quantity, string $totalCost, string $uncostedQuantity): self
+    {
+        $uncosted = bcadd($uncostedQuantity, '0', 3);
+
+        return new self(
+            unitCost: bccomp($uncosted, '0', 3) > 0 ? null : bcdiv($totalCost, $quantity, 3),
+            totalCost: bcadd($totalCost, '0', 2),
+            uncostedQuantity: $uncosted,
+        );
     }
 }

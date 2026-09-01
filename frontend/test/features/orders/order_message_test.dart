@@ -1,4 +1,5 @@
 import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_message.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
@@ -38,6 +39,10 @@ void main() {
     String designFee = '0.00',
     String deliveryPrice = '0.00',
     String discount = '0.00',
+    String additionalCost = '0.00',
+    AdditionalCostReason? additionalCostReason,
+    String? additionalCostReasonLabel,
+    String? additionalCostNote,
     String paidAmount = '0.00',
     String remainingAmount = '420.00',
     bool isOfficePickup = true,
@@ -62,6 +67,10 @@ void main() {
     designFee: designFee,
     deliveryPrice: deliveryPrice,
     discount: discount,
+    additionalCost: additionalCost,
+    additionalCostReason: additionalCostReason,
+    additionalCostReasonLabel: additionalCostReasonLabel,
+    additionalCostNote: additionalCostNote,
     grandTotal: '420.00',
     paidAmount: paidAmount,
     remainingAmount: remainingAmount,
@@ -331,5 +340,40 @@ void main() {
 
     // Assert
     expect(subject, contains('55'));
+  });
+
+  test('an extra charge is named on the customer\u2019s copy, not just added to it', () {
+    // Arrange
+    final order = orderWith(
+      deliveryPrice: '50.00',
+      additionalCost: '10.00',
+      additionalCostReason: AdditionalCostReason.specialPackaging,
+      additionalCostReasonLabel: 'تغليف خاص',
+      additionalCostNote: 'علبة كرتون مزدوجة',
+      remainingAmount: '480.00',
+    );
+
+    // Act
+    final message = OrderMessage.of(order);
+    final charge = message.indexOf('التكلفة الإضافية');
+
+    // Assert — what it was for, in the same words the order screen uses, and after the
+    // delivery it follows on the server's own running of the sum.
+    expect(
+      message,
+      contains('التكلفة الإضافية (تغليف خاص — علبة كرتون مزدوجة): 10 د'),
+    );
+    expect(charge, greaterThan(message.indexOf('التوصيل')));
+  });
+
+  test('an order charged nothing extra says nothing about it', () {
+    // Arrange
+    final order = orderWith(deliveryPrice: '50.00');
+
+    // Act
+    final message = OrderMessage.of(order);
+
+    // Assert — a charge of nothing is the absence of a fact, like every other zero here.
+    expect(message, isNot(contains('التكلفة الإضافية')));
   });
 }

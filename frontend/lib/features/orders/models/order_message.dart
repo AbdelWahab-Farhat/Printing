@@ -144,10 +144,26 @@ class OrderMessage {
     'المنتجات: ${_amount(order.itemsTotal)}',
     if (order.hasDesignFee) 'التصميم: ${_amount(order.designFee)}',
     if (order.hasDeliveryPrice) 'التوصيل: ${_amount(order.deliveryPrice)}',
+    if (order.hasAdditionalCost) _additionalCost(order),
     if (order.hasDiscount) 'الخصم: - ${_amount(order.discount)}',
     'المدفوع: ${_amount(order.paidAmount)}',
     'المتبقي: ${_amount(order.remainingAmount)}',
   ]);
+
+  /// «التكلفة الإضافية (تغليف خاص — علبة كرتون مزدوجة): ١٠٫٠٠ د».
+  ///
+  /// **Named on the customer's copy, and that is not the delivery's case.** «التوصيل» is off the
+  /// invoice by the owner's own instruction; this is a charge the customer is being asked to pay
+  /// and can see no name for anywhere else, which is exactly the line that gets telephoned about.
+  ///
+  /// The words are [Order.additionalCostCaption]'s — the same sentence the order screen shows,
+  /// so nobody is told two different things about one charge. A charge the server sent with no
+  /// category at all still prints its figure: the amounts have to add up to what is owed.
+  static String _additionalCost(Order order) {
+    final what = order.additionalCostCaption;
+
+    return 'التكلفة الإضافية${what == null ? '' : ' ($what)'}: ${_amount(order.additionalCost)}';
+  }
 
   /// Where the order reaches its owner — lines of the header, not a section of its own.
   ///

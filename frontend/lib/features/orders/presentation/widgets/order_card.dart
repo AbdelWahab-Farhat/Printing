@@ -1,8 +1,10 @@
 import 'package:dayaa/core/theme/app_tones.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
+import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -65,6 +67,11 @@ class OrderCard extends StatelessWidget {
             // تحتاجه للتحديد.
             child: GestureDetector(
               onTap: onTap,
+              // **والبطاقة تُضغط كبطاقة، لا كتسع كلمات.** المُتعرِّف بلا هذا يفحص أبناءه وحدهم،
+              // وأبناؤه هنا هي الحروف: فالفراغ بين العنوان وقيمته، وما بين الصفوف، والخانة
+              // التاسعة الفارغة — كلّها تسقط منه إلى `SelectionArea` فوقه، وهي تبتلع الضغطة
+              // ولا تفتح شيئاً. `opaque` تجعل مساحة البطاقة كلها ضغطةً واحدة تصل الطلبية.
+              behavior: HitTestBehavior.opaque,
               child: Column(
                 // The band takes the full width from this, and the grid rows fill it anyway.
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -149,6 +156,11 @@ class OrderCard extends StatelessWidget {
                       const Expanded(child: SizedBox.shrink()),
                     ],
                   ),
+                  // **آخر ما على البطاقة، لا وسطها.** «طلبية إيه؟» سؤالٌ يأتي بعد «لمن» و«بكام»
+                  // و«فين»، وهو أول ما كان يفتح الموظفُ الطلبية لأجله. صفٌّ واحد لا قائمة:
+                  // البطاقة أصلاً بطول ثلاثة صفوف، وقائمةُ بنودٍ تحتها تُخرج اثنتين من كل ثلاث
+                  // بطاقات خارج الشاشة.
+                  if (order.items case final items? when items.isNotEmpty) _Items(items: items),
                 ],
               ),
             ),
@@ -158,6 +170,135 @@ class OrderCard extends StatelessWidget {
     );
   }
 }
+/// ما في الطلبية، بنداً بنداً، أسفل البطاقة.
+///
+/// **بندٌ في سطر، ومعه كميته.** «أكياس الشحن السادة» وحده لا يقول كم منها، و«طلبية ٢١٬٢٣٢ د.ل»
+/// بلا كمية هي نفس السؤال الذي كانت البطاقة تُفتح لأجله. الكمية هنا هي **المطلوبة** لا
+/// المحتسبة: البطاقة لا تضع سعراً بجانبها يحتاج أن تتّفق معه حسابياً، والرقم الذي اتُّفق عليه
+/// مع الزبون هو ما يبحث عنه من يمرّ على القائمة. النواقص لها سطرها الأحمر في صفحة الطلبية.
+///
+/// **وما زاد عن بندين يُطوى.** خمسة أسطر تحت كل بطاقة تُخرج ما بعدها من الشاشة، فالاثنان
+/// الأولان ظاهران دائماً والبقية خلف زرٍّ يقول عددها.
+///
+/// **صورةٌ لمن له صورة فقط** — والمكان محجوزٌ لها في الطلبية التي فيها صورةٌ واحدة على الأقل،
+/// لتبقى الأسماء على استقامة واحدة. المربّع الرمادي البديل تعلّمت الشاشةُ تخطّيه في
+/// `ProductCard`، وهو هنا أسوأ: مربّعٌ فارغ أسفل كل بطاقة في قائمة تُقرأ سطراً سطراً.
+class _Items extends StatefulWidget {
+  const _Items({required this.items});
+
+  final List<OrderItem> items;
+
+  /// ما يسعه ذيل البطاقة قبل أن تطول: بندان، وما بعدهما بطلبٍ من القارئ.
+  static const int _collapsedCount = 2;
+
+  @override
+  State<_Items> createState() => _ItemsState();
+}
+
+class _ItemsState extends State<_Items> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final items = widget.items;
+    final foldable = items.length > _Items._collapsedCount;
+
+    final shown = _expanded || !foldable
+        ? items
+        : items.take(_Items._collapsedCount).toList();
+
+    // يُحجز مكان الصورة متى كان في الطلبية صورةٌ واحدة على الأقل، فلا تتعرّج الأسماء.
+    final hasAnyImage = items.any((item) => item.productImage != null);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(height: 20.h),
+        Divider(height: 1, thickness: 1, color: scheme.outlineVariant.withValues(alpha: 0.5)),
+        SizedBox(height: 10.h),
+        // الفتح والطيّ حركةٌ واحدة متّصلة، لا قفزة في ارتفاع البطاقة.
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final item in shown) _Line(item: item, reserveImageSlot: hasAnyImage),
+            ],
+          ),
+        ),
+        if (foldable)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              // ضغطته له وحده: البطاقة كلها ضغطةٌ تفتح الطلبية، وهذا الزر أعمق منها في الحلبة.
+              onPressed: () => setState(() => _expanded = !_expanded),
+              icon: Icon(
+                _expanded ? AppIcons.collapse : AppIcons.expand,
+                size: 18.sp,
+              ),
+              // عدداً بين قوسين لا كلمة: «عرض الكل (٥)» لا تحتاج تمييزاً بين بندين وبنود.
+              label: Text(_expanded ? 'إخفاء' : 'عرض الكل (${items.length})'),
+              style: TextButton.styleFrom(
+                foregroundColor: scheme.primary,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.symmetric(horizontal: 8.w),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// سطر واحد: صورته، اسمه، وكم منه.
+class _Line extends StatelessWidget {
+  const _Line({required this.item, required this.reserveImageSlot});
+
+  final OrderItem item;
+
+  /// يبقي الأسماء على استقامة واحدة في طلبيةٍ بعض بنودها مصوَّر وبعضها لا.
+  final bool reserveImageSlot;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final image = item.productImage;
+    final side = 30.w;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 5.h),
+      child: Row(
+        children: [
+          if (image != null)
+            ProductThumbnail(image: image, side: side, radius: 9.r)
+          else if (reserveImageSlot)
+            SizedBox(width: side),
+          if (image != null || reserveImageSlot) SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              item.productName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurface,
+              ),
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Text(
+            '${item.quantity.grouped} ${item.pricingUnitLabel}',
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// One labelled fact — the name above it in bold, the value under it.
 ///
 /// **العنوان هو النصف العريض، لا القيمة.** كان العكس: عنوانٌ رمادي صغير فوق رقمٍ أسود عريض،

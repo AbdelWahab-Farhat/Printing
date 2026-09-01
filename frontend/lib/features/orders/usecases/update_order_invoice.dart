@@ -1,5 +1,7 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -54,7 +56,16 @@ class UpdateOrderInvoice {
     int? cityId,
     int? regionId,
     ({String? number})? recipientPhone,
+    String? additionalCost,
+    AdditionalCostReason? additionalCostReason,
+    String? additionalCostNote,
   }) {
+    // **An amount of nothing takes its reason with it.** The chips can be tapped before the box
+    // is filled, and a reason on its own would be a category for money nobody is charging —
+    // which the server refuses, correctly, with a message about a field the clerk did fill in.
+    final charge = additionalCost == null ? null : _number(additionalCost);
+    final isCharging = (double.tryParse(charge ?? '') ?? 0) > 0;
+
     return _repository.updateInvoice(
       orderId,
       lines: lines,
@@ -62,6 +73,26 @@ class UpdateOrderInvoice {
       cityId: cityId,
       regionId: regionId,
       recipientPhone: recipientPhone,
+      additionalCost: charge,
+      additionalCostReason: isCharging ? additionalCostReason : null,
+      additionalCostNote: isCharging ? _text(additionalCostNote) : null,
     );
+  }
+
+  /// «١٠٫٥» as the keyboard produced it → `10.5`, and an empty box → `'0.00'`.
+  ///
+  /// Zero rather than null, because absent means «leave the charge alone» all the way down: a
+  /// clerk clearing the box means «لا تكلفة إضافية», and that is a number, not a silence.
+  static String _number(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return '0.00';
+
+    return Validators.toWesternDigits(trimmed).replaceAll(',', '.');
+  }
+
+  static String? _text(String? input) {
+    final trimmed = input?.trim();
+
+    return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
   }
 }

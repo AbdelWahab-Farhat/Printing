@@ -56,6 +56,7 @@ class _RecordMovementForm extends StatefulWidget {
 class _RecordMovementFormState extends State<_RecordMovementForm> {
   final _formKey = GlobalKey<FormState>();
   final _quantity = TextEditingController();
+  final _unitCost = TextEditingController();
   final _notes = TextEditingController();
 
   MovementKind _kind = MovementKind.arrival;
@@ -75,6 +76,7 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
   @override
   void dispose() {
     _quantity.dispose();
+    _unitCost.dispose();
     _notes.dispose();
     super.dispose();
   }
@@ -128,6 +130,7 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
       warehouseId: _warehouse!.id,
       fromWarehouseId: _source?.id,
       quantity: _quantity.text,
+      unitCost: _unitCost.text,
       notes: _notes.text,
     );
   }
@@ -194,6 +197,11 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                       // A source belongs to a transfer alone; leaving a stale one selected
                       // would send it with an adjustment the next time the chip changed.
                       if (!kind.needsSource) _source = null;
+                      // Cleared for the same reason, though nothing depends on it: the use case
+                      // drops a cost this kind cannot carry. This is so a figure that vanished
+                      // when the chip moved does not reappear when it moves back — the box was
+                      // emptied, not merely hidden.
+                      if (!kind.opensCostLayer) _unitCost.clear();
                     }),
                   ),
                   SizedBox(height: 14.h),
@@ -246,6 +254,33 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                     errorText: state.quantityError,
                     onChanged: (_) => context.read<RecordMovementCubit>().clearFailure(),
                   ),
+                  if (_kind.opensCostLayer) ...[
+                    SizedBox(height: 14.h),
+                    AppTextField(
+                      controller: _unitCost,
+                      // **Per unit, said out loud.** «التكلفة» alone reads as the price of the
+                      // whole delivery on a form whose previous question was a quantity — and the
+                      // two are three digits apart. The unit is the shelf's own, exactly as the
+                      // quantity box above states it.
+                      label: _unitLabel == null
+                          ? 'تكلفة الوحدة'
+                          : 'تكلفة الوحدة (لكل $_unitLabel)',
+                      // Optional on an arrival whose invoice has not turned up yet: the layer
+                      // opens at zero and waits in the uncosted queue. The stocktake that found
+                      // more than the book said has no such document to wait for, and the API
+                      // refuses it without a price.
+                      hint: _kind.requiresCost ? null : 'اتركها فارغة إن لم يُسجَّل السعر بعد',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      textDirection: TextDirection.ltr,
+                      validator: _kind.requiresCost
+                          ? Validators.decimal(min: 0)
+                          // Zero is allowed where it is typed deliberately — «مجانية» is a real
+                          // claim. What must not happen is an untouched box becoming one.
+                          : Validators.optional(Validators.decimal(min: 0)),
+                      errorText: state.unitCostError,
+                      onChanged: (_) => context.read<RecordMovementCubit>().clearFailure(),
+                    ),
+                  ],
                   SizedBox(height: 14.h),
                   AppTextField(
                     controller: _notes,

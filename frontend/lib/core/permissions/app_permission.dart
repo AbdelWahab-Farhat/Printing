@@ -83,6 +83,14 @@ enum AppPermission {
   // missing on one side is what `permission_contract_test.dart` fails the build for.
   viewInventory('inventory.view', 'عرض المخازن والأرصدة والحركات'),
   manageInventory('inventory.manage', 'إدارة المخازن وتسجيل حركات المخزون'),
+  // Correcting what a cost layer is carried at — its own grant on the backend because it moves
+  // the book value of the business without a shelf being touched.
+  revalueStock('inventory.revalue', 'تعديل تكلفة دفعات المخزون'),
+  // Knowing how much is on the shelf and knowing what it was bought for are two levels of
+  // trust: the storekeeper counts and does not buy. Gates the cost column on the ledger, the
+  // value in its header and the cost layers tab — the app decides by checking this, never by
+  // the absence of a key in the payload.
+  viewStockCost('inventory.view_cost', 'عرض تكلفة المخزون'),
 
   // Who we buy from. Its own pair rather than folded into inventory.*, the same split
   // `customers.*` draws from `products.*`: agreeing terms with a supplier and receiving what
@@ -108,6 +116,10 @@ enum AppPermission {
   viewOrders('orders.view', 'عرض الطلبيات'),
   manageOrders('orders.manage', 'إضافة وتعديل الطلبيات'),
   discountOrders('orders.discount', 'منح خصم على الطلبية'),
+  // Its own grant rather than the discount's — `PermissionName.php`'s own reasoning, and worth
+  // repeating here: one gives money away and the other asks the customer for more, and a
+  // business may reasonably trust a role with exactly one of them.
+  addOrderAdditionalCost('orders.additional_cost', 'إضافة تكلفة إضافية على الطلبية'),
   manageOrderDesigns('orders.designs.manage', 'إدارة تصاميم الطلبية واعتمادها'),
   // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
   // the order to the press. Separate from the two production grants beside it because a

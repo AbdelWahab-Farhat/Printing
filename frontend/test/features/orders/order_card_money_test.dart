@@ -251,6 +251,24 @@ void main() {
       // Assert
       expect(opened, 1);
     });
+
+    testWidgets('and a tap on the space between a name and its value opens it too', (
+      tester,
+    ) async {
+      // Arrange — البطاقة تُضغط كبطاقة، لا كتسع كلمات متفرّقة: الفراغ بين العنوان وقيمته جزء
+      // من الصفّ الذي يُفتح، لا ثقبٌ فيه.
+      var opened = 0;
+      await tester.pumpWidget(host(OrderCard(order: orderWith(), onTap: () => opened++)));
+      final label = tester.getRect(find.text('رقم الفاتورة'));
+      final value = tester.getRect(find.text('#52'));
+
+      // Act
+      await tester.tapAt(Offset(label.center.dx, (label.bottom + value.top) / 2));
+      await tester.pump();
+
+      // Assert
+      expect(opened, 1);
+    });
   });
 
   testWidgets('no rules between the rows', (tester) async {

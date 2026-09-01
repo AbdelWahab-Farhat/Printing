@@ -11,19 +11,22 @@ import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/additional_cost_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/edit_shortages_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_additional_cost.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_cost_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_customer_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_detail_header.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_invoice_actions.dart';
-import 'package:dayaa/features/orders/presentation/widgets/order_line_costs.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_item_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
-import 'package:dayaa/features/orders/presentation/widgets/order_status_bar.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_timeline.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_totals.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_scrap_sheet.dart';
 import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
+import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -37,6 +40,11 @@ import 'package:go_router/go_router.dart';
 /// on the backend and it appears here without an app release; take a permission away and it
 /// disappears. A second copy of those rules in Dart is the one that drifts, and it drifts on the
 /// side that guards the button.
+///
+/// **The screen begins with its header rather than with a stack of cards.** Which order this
+/// is, whose it is, what state it is in and where it goes are the four facts every visit starts
+/// with; they are pinned to the bar — see [OrderDetailHeader] — and the list underneath opens on
+/// the invoice instead of scrolling past them.
 ///
 /// **The route is drawn once, at the bottom.** «سجل الحالات» already says where the order has
 /// been and where it is; a rail across the top said the same thing a second time in a different
@@ -102,15 +110,9 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
             );
           },
         ),
-        appBar: AppBar(
-          title: BlocBuilder<OrderDetailCubit, OrderDetailState>(
-            builder: (context, state) {
-              final order = state.order;
-
-              return Text(order == null ? 'تفاصيل الطلبية' : 'طلبية #${order.code}');
-            },
-          ),
-        ),
+        // No `appBar`: the order's own header *is* the bar — see [OrderDetailHeader] — and it
+        // needs the order to draw itself. The two states that have no order yet put a plain one
+        // of their own on top, so «رجوع» is never missing.
         body: BlocConsumer<OrderDetailCubit, OrderDetailState>(
           listener: (context, state) {
             // Only when there is still a page underneath: with nothing to fall back to, the
@@ -120,10 +122,11 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
             }
           },
           builder: (context, state) => switch (state) {
-            OrderDetailLoading() => const Center(child: CircularProgressIndicator()),
-            OrderDetailFailure(:final failure) when state.order == null => _FailureView(
-              message: failure.message,
-              onRetry: cubit.load,
+            OrderDetailLoading() => const _BeforeTheOrder(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            OrderDetailFailure(:final failure) when state.order == null => _BeforeTheOrder(
+              child: _FailureView(message: failure.message, onRetry: cubit.load),
             ),
             _ => RefreshIndicator(
               onRefresh: cubit.load,
@@ -135,6 +138,10 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                 onOpenCustomer: sl<Session>().can(AppPermission.viewCustomers)
                     ? _openCustomer
                     : null,
+                // The same courtesy the customer card is given, and the same grant logic: the
+                // product screen refuses on its own, so this only decides whether a door is
+                // advertised. Without `products.view` the line still names what was sold.
+                onOpenProduct: sl<Session>().can(AppPermission.viewProducts) ? _openProduct : null,
                 // **`reports.pnl.view`, and there is no closer grant.** The API publishes the
                 // cost side to anybody who may read the order, so this is the app choosing a
                 // line rather than enforcing one — and the line it chooses is the one the
@@ -147,6 +154,23 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                 // it is a movement on the ledger, exactly like booking a shipment in, and the
                 // route is guarded by that same grant rather than by any `orders.*` one.
                 onScrap: sl<Session>().can(AppPermission.manageInventory) ? _recordScrap : null,
+                // **`is_closed`, which is the server's own line rather than one chosen here.**
+                // `UpdateOrder` refuses a closed order and accepts every other, so a button
+                // drawn on that condition never leads to a refusal — and the grant is the
+                // charge's own, not the discount's.
+                onEditAdditionalCost:
+                    sl<Session>().can(AppPermission.addOrderAdditionalCost) &&
+                        !state.order!.isClosed
+                    ? _editAdditionalCost
+                    : null,
+                // Always offered, unlike a sheet that could only ever show the order's own
+                // note: the page gathers what was written at every status too, and «لا توجد
+                // ملاحظات» is an answer worth reaching rather than a button that vanished.
+                onOpenNotes: _openNotes,
+                // `logs.view`, not `orders.view`, and that is the server's own line: a history
+                // shows what everyone has done, including prices the reader may have no other
+                // way to see.
+                onOpenLog: sl<Session>().can(AppPermission.viewActivityLogs) ? _openLog : null,
               ),
             ),
           },
@@ -204,6 +228,46 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
 
         final updated = cubit.state.order;
         if (updated != null) setState(() => _moved = updated);
+      },
+    );
+  }
+
+  /// Charges the customer for something no line on the order describes.
+  ///
+  /// **A sheet rather than a screen**, for the reason «تعديل النواقص» is one: it is a number, a
+  /// category and a sentence, and the person filling it in is standing at the counter having
+  /// just agreed it. The send happens here and not in the sheet — a form's answer is what was
+  /// typed, and what to do about a refusal belongs to the screen that has somewhere to show it.
+  ///
+  /// **`PUT` replaces the whole order**, and the repository re-reads it first so the fields this
+  /// sheet never touches go back as they are — see [OrderRepository.updateInvoice]. Re-read
+  /// afterwards for the reason every other edit here is: `grand_total`, `remaining_amount` and
+  /// `payment_status` are the server's arithmetic, and this screen is the one that has to be
+  /// right about all three.
+  Future<void> _editAdditionalCost(BuildContext context) async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final draft = await showAdditionalCostSheet(context: context, order: order);
+    if (draft == null || !mounted) return;
+
+    final result = await sl<UpdateOrderInvoice>()(
+      order.id,
+      additionalCost: draft.amount,
+      additionalCostReason: draft.reason,
+      additionalCostNote: draft.note,
+    );
+
+    if (!mounted) return;
+
+    await result.fold(
+      // The server's own Arabic — «سبب التكلفة الإضافية مطلوب» names the field, and «ليس لديك
+      // صلاحية…» names the grant. Neither could be written here without guessing.
+      (failure) async => context.showFailure(failure),
+      (updated) async {
+        cubit.replace(updated);
+        setState(() => _moved = updated);
       },
     );
   }
@@ -294,6 +358,40 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     await cubit.load();
   }
 
+  /// Opens the catalogue entry a line was sold from.
+  ///
+  /// Nothing is re-read on the way back: the order's lines are a snapshot taken when it was
+  /// placed, and editing the product over there does not — must not — change what this invoice
+  /// says. The picture and the code beside them are read fresh on the next load.
+  void _openProduct(OrderItem item) {
+    context.push(Routes.product(item.productId)).ignore();
+  }
+
+  /// Opens everything written on the order, each note beside the status it was written at.
+  ///
+  /// The order goes with it rather than its id alone: this screen already has it, and the page
+  /// would otherwise fetch what is in hand. Nothing comes back — it only reads.
+  void _openNotes() {
+    final order = context.read<OrderDetailCubit>().state.order;
+    if (order == null) return;
+
+    context.push(Routes.orderNotes(order.id), extra: order).ignore();
+  }
+
+  /// Opens what has been done to this order — every field anybody changed, and when.
+  ///
+  /// **A record rather than an action**, which is why it sits in the header beside the notes and
+  /// is no longer an arm of the dial: the dial moves the order, edits it and takes money, and
+  /// this only ever opens something to read.
+  void _openLog() {
+    final order = context.read<OrderDetailCubit>().state.order;
+    if (order == null) return;
+
+    // Nothing comes back from a log and nothing is re-read afterwards: it is a screen that only
+    // reads, so there is no result to wait for.
+    context.push(Routes.activityLog(AuditSubject.order, order.id)).ignore();
+  }
+
   /// Hands the move to its own screen, and takes back whatever it did.
   ///
   /// **Nothing about the move is decided here.** The destinations, the fields each of them asks
@@ -316,8 +414,12 @@ class _Body extends StatelessWidget {
   const _Body({
     required this.order,
     required this.onOpenCustomer,
+    required this.onOpenProduct,
     required this.showCosts,
     required this.onScrap,
+    required this.onEditAdditionalCost,
+    required this.onOpenNotes,
+    required this.onOpenLog,
   });
 
   final Order order;
@@ -325,12 +427,25 @@ class _Body extends StatelessWidget {
   /// Null for anybody without `customers.view` — see [OrderCustomerCard].
   final Future<void> Function()? onOpenCustomer;
 
+  /// Null for anybody without `products.view` — see [OrderItemCard].
+  final void Function(OrderItem item)? onOpenProduct;
+
   /// Whether what the job cost us is drawn at all — see the call site for which grant answers
   /// this and why it is that one.
   final bool showCosts;
 
   /// Null for anybody without `inventory.manage`.
   final Future<void> Function(BuildContext context, OrderItem item)? onScrap;
+
+  /// Null without `orders.additional_cost`, and on an order the server would refuse to edit —
+  /// see the call site for the line, which is the server's own.
+  final Future<void> Function(BuildContext context)? onEditAdditionalCost;
+
+  /// Null on an order nobody wrote a note on.
+  final VoidCallback? onOpenNotes;
+
+  /// Null without `logs.view`.
+  final VoidCallback? onOpenLog;
 
   /// Whether spoiling a bag is even possible yet.
   ///
@@ -341,92 +456,157 @@ class _Body extends StatelessWidget {
   /// deduction move from «قيد الطباعة» to «جاهزة» without touching this line.
   bool get _mayScrap => onScrap != null && order.fulfillmentWarehouseId != null;
 
+  /// Whether the delivery section has anything left to say.
+  ///
+  /// **The city and the region are the header's now**, and the note has a button of its own, so
+  /// an office pickup with nothing else recorded would draw an empty card with a title on it.
+  bool get _hasDestinationDetails =>
+      order.customerShopName != null ||
+      order.addressDetails != null ||
+      order.recipientName != null ||
+      order.recipientPhone != null ||
+      order.trackingNumber != null ||
+      order.shippingCompany != null;
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return CustomScrollView(
       // Scrollable even when short, so pull-to-refresh works on every state.
       physics: const AlwaysScrollableScrollPhysics(),
-      // Deep bottom padding: the floating dial hangs over this list, and a total it covers
-      // is a number somebody has to move the screen to read.
-      padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 96.h),
-      children: [
-        // First, across the width, in the status's own colour. It is the question the screen is
-        // opened to answer, and it used to be a chip the size of a list row's sharing a line
-        // with the total.
-        OrderStatusBar(status: order.status, label: order.statusLabel),
-        // Directly under it, and that is the sequence rather than a spare slot: somebody who has
-        // just read what state the order is in is one step from telling the customer so. Buried
-        // on the dial it was a feature people forgot the app had.
-        SizedBox(height: 12.h),
-        CopyInvoiceButton(order: order),
-        SizedBox(height: 16.h),
-        _Header(order: order),
-        SizedBox(height: 16.h),
-        // Who it is for, and the way to them. Second, because "whose is this" is the question
-        // asked right after "what state is it in" — and the phone number here is the one that
-        // gets rung when either answer is a surprise.
-        OrderCustomerCard(order: order, onTap: onOpenCustomer),
-        // Moving the order lives on the floating button. Silence is not an explanation, so an
-        // order that can go nowhere still says which of the two reasons applies: the dial is
-        // simply not rendered, and a finished order and a user without the grant look identical
-        // otherwise.
-        if (!order.hasActions) ...[
-          SizedBox(height: 16.h),
-          _Note(
-            text: order.isFinal
-                ? 'الطلبية ${order.statusLabel} — لا مزيد من الإجراءات'
-                : 'لا تملك صلاحية تغيير حالة هذه الطلبية',
+      slivers: [
+        OrderDetailHeader(order: order, onOpenNotes: onOpenNotes, onOpenLog: onOpenLog),
+        SliverPadding(
+          // Deep bottom padding: the floating dial hangs over this list, and a total it covers
+          // is a number somebody has to move the screen to read.
+          padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
+          sliver: SliverList.list(
+            children: [
+              // First under the header, and that is the sequence rather than a spare slot:
+              // somebody who has just read what state the order is in is one step from telling
+              // the customer so. Buried on the dial it was a feature people forgot the app had.
+              CopyInvoiceButton(order: order),
+              SizedBox(height: 16.h),
+              _Header(order: order),
+              SizedBox(height: 16.h),
+              // Who it is for, and the way to them. The header names them; this is where the
+              // number is rung and the door into their file is.
+              OrderCustomerCard(order: order, onTap: onOpenCustomer),
+              // Moving the order lives on the floating button. Silence is not an explanation, so
+              // an order that can go nowhere still says which of the two reasons applies: the
+              // dial is simply not rendered, and a finished order and a user without the grant
+              // look identical otherwise.
+              if (!order.hasActions) ...[
+                SizedBox(height: 16.h),
+                _Note(
+                  text: order.isFinal
+                      ? 'الطلبية ${order.statusLabel} — لا مزيد من الإجراءات'
+                      : 'لا تملك صلاحية تغيير حالة هذه الطلبية',
+                ),
+              ],
+              if (_hasDestinationDetails) ...[
+                SizedBox(height: 16.h),
+                _Destination(order: order),
+              ],
+              if (order.items != null && order.items!.isNotEmpty) ...[
+                SizedBox(height: 16.h),
+                _Section(
+                  title: 'البنود',
+                  child: _Items(
+                    items: order.items!,
+                    showCosts: showCosts,
+                    onScrap: _mayScrap ? onScrap : null,
+                    onOpenProduct: onOpenProduct,
+                  ),
+                ),
+              ],
+              SizedBox(height: 16.h),
+              _Section(
+                title: 'الحساب',
+                // **The button stands where its line does.** «التكلفة الإضافية» is one of the
+                // four figures this column adds up, and the way to change it belongs beside
+                // them — not on a dial that also moves the order and takes money. Somebody
+                // reading the total is already looking at the number they want to correct.
+                child: Column(
+                  children: [
+                    OrderTotals(order: order),
+                    if (onEditAdditionalCost case final edit?) ...[
+                      SizedBox(height: 14.h),
+                      AppButton.tonal(
+                        // The word changes with the order, because the two are different acts:
+                        // one adds a charge, the other argues with one already on the invoice.
+                        label: order.hasAdditionalCost
+                            ? 'تعديل التكلفة الإضافية'
+                            : 'إضافة تكلفة إضافية',
+                        icon: order.hasAdditionalCost ? AppIcons.edit : AppIcons.add,
+                        onPressed: () => edit(context),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // **Directly under «الحساب», because it explains one of its lines.** The account
+              // says how much was added; this says what for — a category and, often, a sentence
+              // somebody typed, neither of which fits between a label and a number.
+              if (order.hasAdditionalCost) ...[
+                SizedBox(height: 16.h),
+                _Section(
+                  title: 'التكلفة الإضافية',
+                  child: OrderAdditionalCost(order: order),
+                ),
+              ],
+              // **Under «الحساب», never inside it.** What the customer pays is the question this
+              // screen is opened to answer; what the job cost us is the quieter one asked
+              // afterwards, by fewer people — see the grant at the call site — and mixing the two
+              // columns would put a figure nobody reads out to a customer in the middle of the
+              // ones they do.
+              if (showCosts) ...[
+                SizedBox(height: 16.h),
+                _Section(title: 'التكلفة والربح', child: OrderCostSection(order: order)),
+              ],
+              // Shown even when no version exists yet, because that is exactly the order somebody
+              // opens this screen to add one to. Any order may carry artwork — `design_source`
+              // says whose work it was, which is a question about money, not about whether there
+              // is a file.
+              if (order.designs != null) ...[
+                SizedBox(height: 16.h),
+                _Section(
+                  title: 'التصاميم',
+                  // Read here, changed on «تعديل الطلبية». Adding a version and judging one are
+                  // both edits, and this screen having its own copies of them would be a second
+                  // door onto the same room.
+                  child: OrderDesignsSection(designs: order.designs!),
+                ),
+              ],
+              if (order.transitions != null && order.transitions!.isNotEmpty) ...[
+                SizedBox(height: 16.h),
+                _Section(title: 'سجل الحالات', child: OrderTimeline(records: order.transitions!)),
+              ],
+            ],
           ),
-        ],
-        SizedBox(height: 16.h),
-        _Destination(order: order),
-        SizedBox(height: 16.h),
-        if (order.items != null && order.items!.isNotEmpty) ...[
-          _Section(
-            title: 'البنود',
-            child: _Items(
-              items: order.items!,
-              showCosts: showCosts,
-              onScrap: _mayScrap ? onScrap : null,
-            ),
-          ),
-          SizedBox(height: 16.h),
-        ],
-        _Section(
-          title: 'الحساب',
-          child: OrderTotals(order: order),
         ),
-        // **Under «الحساب», never inside it.** What the customer pays is the question this screen
-        // is opened to answer; what the job cost us is the quieter one asked afterwards, by fewer
-        // people — see the grant at the call site — and mixing the two columns would put a figure
-        // nobody reads out to a customer in the middle of the ones they do.
-        if (showCosts) ...[
-          SizedBox(height: 16.h),
-          _Section(
-            title: 'التكلفة والربح',
-            child: OrderCostSection(order: order),
-          ),
-        ],
-        // Shown even when no version exists yet, because that is exactly the order somebody
-        // opens this screen to add one to. Any order may carry artwork — `design_source` says
-        // whose work it was, which is a question about money, not about whether there is a file.
-        if (order.designs != null) ...[
-          SizedBox(height: 16.h),
-          _Section(
-            title: 'التصاميم',
-            // Read here, changed on «تعديل الطلبية». Adding a version and judging one are both
-            // edits, and this screen having its own copies of them would be a second door onto
-            // the same room.
-            child: OrderDesignsSection(designs: order.designs!),
-          ),
-        ],
-        if (order.transitions != null && order.transitions!.isNotEmpty) ...[
-          SizedBox(height: 16.h),
-          _Section(
-            title: 'سجل الحالات',
-            child: OrderTimeline(records: order.transitions!),
-          ),
-        ],
+      ],
+    );
+  }
+}
+
+/// The two states that have no order yet, under a bar of their own.
+///
+/// [OrderDetailHeader] draws the order — its number, its customer, its state — so there is
+/// nothing for it to draw while the request is still out or after it failed. A plain bar keeps
+/// «رجوع» where the thumb expects it in the meantime.
+class _BeforeTheOrder extends StatelessWidget {
+  const _BeforeTheOrder({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      // `always`, so pull-to-refresh reaches a failure that fills the screen.
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        const SliverAppBar(title: Text('تفاصيل الطلبية')),
+        SliverFillRemaining(hasScrollBody: false, child: child),
       ],
     );
   }
@@ -595,6 +775,10 @@ class _Actions extends StatelessWidget {
             onTap: onEditShortages,
           ),
 
+        // «التكلفة الإضافية» used to stand here. It is a button inside «الحساب» now, beside
+        // the line it changes — the dial acts on the *order*, and this argues with one figure
+        // on its invoice. Same reasoning as «تسجيل تلف» living on the line it spoils.
+
         // The other half of «نسخ الفاتورة» — the same message, handed to the phone's own sheet
         // instead of to the clipboard. On the dial rather than beside the button, because the
         // clipboard is the one people reach for a dozen times a day and this is the one for
@@ -618,19 +802,20 @@ class _Actions extends StatelessWidget {
           onTap: onOpenPayments,
         ),
 
-        AppAction(
-          label: 'سجل التعديلات',
-          icon: AppIcons.history,
-          // `logs.view`, not `orders.view`, and that is the server's own line: a history shows
-          // what everyone has done, including prices the reader may have no other way to see.
-          permission: AppPermission.viewActivityLogs,
-          onTap: (context) => context.push(Routes.activityLog(AuditSubject.order, order.id)),
-        ),
+        // «سجل التعديلات» used to stand here. It reads and never writes, which is what the two
+        // buttons in the header are for — see [OrderDetailHeader] — and an action on the dial
+        // that only opens a page to look at was the odd one out among five that change things.
       ],
     );
   }
 }
 
+/// The rest of where it goes — everything the header's one line does not carry.
+///
+/// **The city and the region are not repeated here.** «عنوان توصيل: طرابلس — الحشان» is at the
+/// top of the screen; this section is the branch, the street, who signs for it and which carrier
+/// has it. Nor is the note, which has its own button up there — a paragraph between the address
+/// and the tracking number was read by nobody and scrolled past by everybody.
 class _Destination extends StatelessWidget {
   const _Destination({required this.order});
 
@@ -643,11 +828,6 @@ class _Destination extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Row(
-            icon: order.isOfficePickup ? AppIcons.warehouse : AppIcons.mapPin,
-            label: order.fulfilmentTypeLabel,
-            value: order.destination,
-          ),
           if (order.customerShopName case final shop?)
             _Row(icon: AppIcons.warehouse, label: 'المحل', value: shop),
           if (order.addressDetails case final address?)
@@ -660,8 +840,6 @@ class _Destination extends StatelessWidget {
             _Row(icon: AppIcons.tag, label: 'رقم التتبع', value: tracking),
           if (order.shippingCompany case final company?)
             _Row(icon: AppIcons.warehouse, label: 'شركة الشحن', value: company),
-          if (order.notes case final notes?)
-            _Row(icon: AppIcons.edit, label: 'ملاحظات', value: notes),
         ],
       ),
     );
@@ -669,7 +847,12 @@ class _Destination extends StatelessWidget {
 }
 
 class _Items extends StatelessWidget {
-  const _Items({required this.items, required this.showCosts, required this.onScrap});
+  const _Items({
+    required this.items,
+    required this.showCosts,
+    required this.onScrap,
+    required this.onOpenProduct,
+  });
 
   final List<OrderItem> items;
 
@@ -679,88 +862,24 @@ class _Items extends StatelessWidget {
   /// Null when scrapping is not on offer — no grant, or an order with no shelf behind it yet.
   final Future<void> Function(BuildContext context, OrderItem item)? onScrap;
 
+  /// Null for anybody without `products.view` — see [OrderItemCard].
+  final void Function(OrderItem item)? onOpenProduct;
+
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
     return Column(
       children: [
-        for (final item in items)
-          Padding(
-            padding: EdgeInsets.only(bottom: 10.h),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${item.productName} — ${item.variantLabel}',
-                        style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      SizedBox(height: 2.h),
-                      Text(
-                        // The quantity, its unit and the rate it was priced at — the three
-                        // numbers somebody checking an invoice reads together.
-                        //
-                        // **The quantity here is the one being charged for**, so the line's own
-                        // arithmetic comes out right on screen: «٢٠٠ قطعة × ١٫٥٥٠» beside
-                        // «٣١٠٫٠٠». Printing the ordered 300 against a total built on 200 would
-                        // make every short line look like a pricing error.
-                        '${item.pricedQuantity.grouped} ${item.pricingUnitLabel} '
-                        '× ${item.unitPrice.grouped}',
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                      // On the line it is missing from, because that is the only place the
-                      // number means anything: «ناقص ٤٠» of *which* size. What was ordered is
-                      // said here too — it is no longer on the line above, and «ناقص من كم»
-                      // is the question that follows «ناقص».
-                      if (item.hasShortage) ...[
-                        SizedBox(height: 2.h),
-                        Text(
-                          'ناقص: ${item.shortageQuantity!.grouped} من ${item.quantity.grouped} '
-                          '${item.pricingUnitLabel} — غير محتسب',
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: scheme.error,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                      // Under the price it is being charged at, quietly — see [OrderLineCosts]
-                      // for why an uncosted line draws nothing here rather than «لم يُحتسب بعد».
-                      if (showCosts) ...[
-                        SizedBox(height: 2.h),
-                        OrderLineCosts(item: item),
-                      ],
-                      // A text button rather than an arm on the dial: the dial acts on the
-                      // *order*, and «أي بند تلف؟» is a question the row itself is the answer
-                      // to. It is the same shape «إلغاء الدفعة» takes on a ledger row, for the
-                      // same reason.
-                      if (onScrap case final scrap?)
-                        Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: TextButton.icon(
-                            onPressed: () => scrap(context, item),
-                            icon: Icon(AppIcons.delete, size: 16.sp),
-                            label: const Text('تسجيل تلف'),
-                            style: TextButton.styleFrom(foregroundColor: scheme.error),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Text(
-                  item.lineTotal.grouped,
-                  textDirection: TextDirection.ltr,
-                  style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
+        for (final (index, item) in items.indexed) ...[
+          if (index > 0) SizedBox(height: 10.h),
+          OrderItemCard(
+            item: item,
+            showCosts: showCosts,
+            // Only for a line whose product came with the payload: a card with nothing to open
+            // is the arrow onto a 403 in another costume.
+            onOpenProduct: onOpenProduct == null ? null : () => onOpenProduct!(item),
+            onScrap: onScrap == null ? null : () => onScrap!(context, item).ignore(),
           ),
+        ],
       ],
     );
   }

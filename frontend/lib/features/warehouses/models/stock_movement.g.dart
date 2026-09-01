@@ -35,6 +35,11 @@ _StockMovement _$StockMovementFromJson(
       ? null
       : MovementActor.fromJson(json['employee'] as Map<String, dynamic>),
   notes: json['notes'] as String?,
+  signedQuantity: json['signed_quantity'] as String?,
+  balanceAfter: json['balance_after'] as String?,
+  unitCost: json['unit_cost'] as String?,
+  totalCost: json['total_cost'] as String?,
+  uncostedQuantity: json['uncosted_quantity'] as String?,
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -56,6 +61,11 @@ Map<String, dynamic> _$StockMovementToJson(_StockMovement instance) =>
       'employee_id': instance.employeeId,
       'employee': instance.employee?.toJson(),
       'notes': instance.notes,
+      'signed_quantity': instance.signedQuantity,
+      'balance_after': instance.balanceAfter,
+      'unit_cost': instance.unitCost,
+      'total_cost': instance.totalCost,
+      'uncosted_quantity': instance.uncostedQuantity,
       'created_at': instance.createdAt?.toIso8601String(),
     };
 

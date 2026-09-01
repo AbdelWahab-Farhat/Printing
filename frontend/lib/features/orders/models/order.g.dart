@@ -34,6 +34,14 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   designFee: json['design_fee'] as String,
   deliveryPrice: json['delivery_price'] as String,
   discount: json['discount'] as String,
+  additionalCost: json['additional_cost'] as String? ?? '0.00',
+  additionalCostReason: $enumDecodeNullable(
+    _$AdditionalCostReasonEnumMap,
+    json['additional_cost_reason'],
+    unknownValue: AdditionalCostReason.unknown,
+  ),
+  additionalCostReasonLabel: json['additional_cost_reason_label'] as String?,
+  additionalCostNote: json['additional_cost_note'] as String?,
   grandTotal: json['grand_total'] as String,
   paidAmount: json['paid_amount'] as String? ?? '0.00',
   writtenOffAmount: json['written_off_amount'] as String? ?? '0.00',
@@ -121,6 +129,11 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'design_fee': instance.designFee,
   'delivery_price': instance.deliveryPrice,
   'discount': instance.discount,
+  'additional_cost': instance.additionalCost,
+  'additional_cost_reason':
+      _$AdditionalCostReasonEnumMap[instance.additionalCostReason],
+  'additional_cost_reason_label': instance.additionalCostReasonLabel,
+  'additional_cost_note': instance.additionalCostNote,
   'grand_total': instance.grandTotal,
   'paid_amount': instance.paidAmount,
   'written_off_amount': instance.writtenOffAmount,
@@ -177,6 +190,15 @@ const _$OrderStatusEnumMap = {
   OrderStatus.delivered: 'delivered',
   OrderStatus.settled: 'settled',
   OrderStatus.unknown: 'unknown',
+};
+
+const _$AdditionalCostReasonEnumMap = {
+  AdditionalCostReason.specialPackaging: 'special_packaging',
+  AdditionalCostReason.extraService: 'extra_service',
+  AdditionalCostReason.modification: 'modification',
+  AdditionalCostReason.transport: 'transport',
+  AdditionalCostReason.other: 'other',
+  AdditionalCostReason.unknown: 'unknown',
 };
 
 const _$PaymentStatusEnumMap = {
@@ -247,6 +269,10 @@ _OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => _OrderItem(
   productVariantId: (json['product_variant_id'] as num).toInt(),
   productName: json['product_name'] as String,
   variantLabel: json['variant_label'] as String,
+  productCode: json['product_code'] as String?,
+  productImage: json['product_image'] == null
+      ? null
+      : ProductImage.fromJson(json['product_image'] as Map<String, dynamic>),
   pricingUnitLabel: json['pricing_unit_label'] as String,
   quantity: json['quantity'] as String,
   shortageQuantity: json['shortage_quantity'] as String?,
@@ -258,6 +284,8 @@ _OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => _OrderItem(
   laborCost: json['labor_cost'] as String?,
   overheadCost: json['overhead_cost'] as String?,
   cogs: json['cogs'] as String?,
+  unitMaterialCost: json['unit_material_cost'] as String?,
+  stockUnitLabel: json['stock_unit_label'] as String?,
   notes: json['notes'] as String?,
 );
 
@@ -268,6 +296,8 @@ Map<String, dynamic> _$OrderItemToJson(_OrderItem instance) =>
       'product_variant_id': instance.productVariantId,
       'product_name': instance.productName,
       'variant_label': instance.variantLabel,
+      'product_code': instance.productCode,
+      'product_image': instance.productImage?.toJson(),
       'pricing_unit_label': instance.pricingUnitLabel,
       'quantity': instance.quantity,
       'shortage_quantity': instance.shortageQuantity,
@@ -279,6 +309,8 @@ Map<String, dynamic> _$OrderItemToJson(_OrderItem instance) =>
       'labor_cost': instance.laborCost,
       'overhead_cost': instance.overheadCost,
       'cogs': instance.cogs,
+      'unit_material_cost': instance.unitMaterialCost,
+      'stock_unit_label': instance.stockUnitLabel,
       'notes': instance.notes,
     };
 
@@ -322,6 +354,13 @@ _OrderTransitionRecord _$OrderTransitionRecordFromJson(
 ) => _OrderTransitionRecord(
   id: (json['id'] as num).toInt(),
   fromStatusLabel: json['from_status_label'] as String?,
+  toStatus:
+      $enumDecodeNullable(
+        _$OrderStatusEnumMap,
+        json['to_status'],
+        unknownValue: OrderStatus.unknown,
+      ) ??
+      OrderStatus.unknown,
   toStatusLabel: json['to_status_label'] as String,
   reason: json['reason'] as String?,
   user: json['user'] == null
@@ -337,6 +376,7 @@ Map<String, dynamic> _$OrderTransitionRecordToJson(
 ) => <String, dynamic>{
   'id': instance.id,
   'from_status_label': instance.fromStatusLabel,
+  'to_status': _$OrderStatusEnumMap[instance.toStatus]!,
   'to_status_label': instance.toStatusLabel,
   'reason': instance.reason,
   'user': instance.user?.toJson(),

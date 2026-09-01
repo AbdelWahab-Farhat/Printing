@@ -6,6 +6,7 @@ import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
@@ -105,6 +106,9 @@ class OrderRepositoryImpl implements OrderRepository {
     int? cityId,
     int? regionId,
     ({String? number})? recipientPhone,
+    String? additionalCost,
+    AdditionalCostReason? additionalCostReason,
+    String? additionalCostNote,
   }) async {
     // `PUT` replaces the whole order, so the fields this screen does not touch have to be sent
     // back as they are — omitting `city_id` would be an instruction to clear the destination.
@@ -136,6 +140,19 @@ class OrderRepositoryImpl implements OrderRepository {
             'notes': ?order.notes,
             'design_fee': order.designFee,
             'discount': discount ?? order.discount,
+            // **The three move as one.** An edit that says nothing about the charge sends the
+            // order's own three fields back untouched — the server compares the *amount* and
+            // lets an unchanged one through without the grant, which is what keeps a charged
+            // order editable by everybody else. An edit that does set it sends all three,
+            // because an amount with no reason is refused and a reason with no amount is a
+            // category for money nobody is charging.
+            'additional_cost': additionalCost ?? order.additionalCost,
+            'additional_cost_reason': ?(additionalCost == null
+                ? order.additionalCostReason?.wire
+                : additionalCostReason?.wire),
+            'additional_cost_note': ?(additionalCost == null
+                ? order.additionalCostNote
+                : additionalCostNote),
             'tracking_number': ?order.trackingNumber,
             // Omitted entirely when this edit is not about the lines: `items` is the one field
             // whose absence means "leave them alone" rather than "clear them", which is what

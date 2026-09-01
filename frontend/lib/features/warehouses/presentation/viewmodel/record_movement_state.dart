@@ -29,6 +29,11 @@ extension RecordMovementStateX on RecordMovementState {
   /// this very key. All three belong under the box that picked the shelf.
   String? get stockItemError => _fieldError('stock_item_id');
 
+  /// «تكلفة الوحدة مطلوبة عند تسجيل زيادة» — the refusal this form used to earn every single
+  /// time it recorded a stocktake that found more than the book said, about a box it did not
+  /// draw. It belongs under the box, not behind a generic snackbar.
+  String? get unitCostError => _fieldError('unit_cost');
+
   /// «سبب التسوية مطلوب». Required on an adjustment and on nothing else — the other three
   /// movements explain themselves, so this key only ever arrives for one kind.
   String? get notesError => _fieldError('notes');
@@ -41,6 +46,7 @@ extension RecordMovementStateX on RecordMovementState {
       warehouseError != null ||
       sourceError != null ||
       stockItemError != null ||
+      unitCostError != null ||
       notesError != null;
 
   /// Whether the request may have landed. A movement has no unique key, so this is the one

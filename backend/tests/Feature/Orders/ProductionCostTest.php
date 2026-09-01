@@ -7,7 +7,9 @@ namespace Tests\Feature\Orders;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Order\Enums\ManufacturingCostType;
 use App\Domain\Order\Enums\OrderStatus;
@@ -15,6 +17,7 @@ use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\ProductionCostEntry;
+use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -307,5 +310,138 @@ class ProductionCostTest extends TestCase
         // Assert — the guard refuses to cost it, since `stock_deducted_at` already said stock
         // had already left the warehouse for this order.
         $this->assertSame(0, ProductionCostEntry::query()->where('order_item_id', $item->id)->count());
+    }
+
+    /**
+     * **«كم تكلفتنا القطعة؟» — the question a total of 400.00 does not answer.**
+     *
+     * The line already carries what it cost in full; what nobody could read off the screen was
+     * the rate behind it. It is not stored, and it is not going to be: `material_cost` is a FIFO
+     * draw of the batches the line actually consumed, so the per-unit figure is that draw
+     * divided by what left the shelf — and on a line that ate two layers at different prices, it
+     * is their weighted average, which no single `stock_batches.unit_cost` row states.
+     *
+     * Three decimals, like `unit_price` beside it, because the two are read in one glance.
+     */
+    public function test_the_line_says_what_one_unit_of_material_cost_it(): void
+    {
+        // Arrange — one shelf, one batch at 4.000, a hundred of it sold and printed.
+        $product = Product::factory()->create();
+        $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+        $warehouse = Warehouse::factory()->create();
+        $headers = $this->foreman();
+
+        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
+            'stock_item_id' => $variant->stock_item_id,
+            'to_warehouse_id' => $warehouse->id,
+            'quantity' => 100,
+            'unit_cost' => 4,
+        ])->assertCreated();
+
+        $order = Order::factory()->create();
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'quantity' => '100',
+        ]);
+
+        // Act
+        $this->enterReady($headers, $order, $warehouse);
+
+        // Assert — 400.00 over 100 is the 4.000 the batch was bought at, said per unit and in
+        // the unit the shelf counts in.
+        $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}")
+            ->assertOk()
+            ->assertJsonPath('data.items.0.material_cost', '400.00')
+            ->assertJsonPath('data.items.0.unit_material_cost', '4.000')
+            ->assertJsonPath('data.items.0.stock_unit_label', $product->pricing_unit->label());
+    }
+
+    /**
+     * **The figure is per shelf unit, never per sold unit.**
+     *
+     * 300 bags weighing 12.5 kilograms together cost what those kilograms cost; dividing that by
+     * 300 would invent a per-bag material cost out of a scale reading, and the whole reason
+     * `warehouse_quantity` is typed by hand is that no factor converts the one into the other —
+     * see COST-TRACKING-UNIT-CONVERSION.md §4. So the divisor is what left the warehouse, and
+     * the label sent beside it is the shelf's own unit.
+     */
+    public function test_a_line_weighed_onto_the_scale_is_costed_per_kilogram_not_per_bag(): void
+    {
+        // Arrange — sold by the piece, stocked by the kilo, 12.5 kg off a shelf bought at 8.000.
+        $product = Product::factory()->create(['pricing_unit' => PricingUnit::Piece]);
+        $shelf = StockItem::factory()->unit(PricingUnit::Kilogram)->create();
+        $variant = ProductVariant::factory()->for($product)->create(['stock_item_id' => $shelf->id]);
+        $warehouse = Warehouse::factory()->create();
+        $headers = $this->foreman();
+
+        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
+            'stock_item_id' => $shelf->id,
+            'to_warehouse_id' => $warehouse->id,
+            'quantity' => 100,
+            'unit_cost' => 8,
+        ])->assertCreated();
+
+        $order = Order::factory()->create();
+        $item = OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'pricing_unit' => PricingUnit::Piece,
+            'quantity' => '300',
+        ]);
+
+        // Act — the weight is read off the scale at the handover, which is the only place a line
+        // whose units differ can get one.
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::ReadyToPrint->value,
+            'fields' => [
+                'warehouse_id' => $warehouse->id,
+                TransitionFields::stockQuantityKey($item) => '12.5',
+            ],
+        ])->assertOk();
+
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+        ])->assertOk();
+
+        // Asked once more at «جاهزة» — the press confirms what it actually used, unchanged here.
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Ready->value,
+            'fields' => [TransitionFields::stockQuantityKey($item) => '12.5'],
+        ])->assertOk();
+
+        // Assert — 100.00 over 12.5 kilograms, and «كيلوغرام» said out loud so nobody reads it
+        // as the cost of a bag.
+        $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}")
+            ->assertOk()
+            ->assertJsonPath('data.items.0.material_cost', '100.00')
+            ->assertJsonPath('data.items.0.unit_material_cost', '8.000')
+            ->assertJsonPath('data.items.0.stock_unit_label', PricingUnit::Kilogram->label());
+    }
+
+    /**
+     * Null, not zero, for the same reason every other cost on the line is — and for one more:
+     * there is nothing to divide by either, on a line whose quantity is entirely shortage.
+     */
+    public function test_a_line_that_has_not_been_printed_has_no_unit_cost_either(): void
+    {
+        // Arrange — an order still sitting at «جديدة», nothing deducted, nothing costed.
+        $product = Product::factory()->create();
+        $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+        $headers = $this->foreman();
+
+        $order = Order::factory()->create();
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'quantity' => '100',
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}")->assertOk();
+
+        // Assert
+        $response->assertJsonPath('data.items.0.material_cost', null)
+            ->assertJsonPath('data.items.0.unit_material_cost', null);
     }
 }
