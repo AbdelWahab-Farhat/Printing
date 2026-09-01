@@ -38,7 +38,9 @@ void main() {
     ),
   );
 
-  testWidgets('a tap on empty space takes the focus away from the field', (tester) async {
+  testWidgets('a tap on empty space takes the focus away from the field', (
+    tester,
+  ) async {
     // Arrange
     await tester.pumpWidget(host());
     await tester.tap(find.byType(TextField));
@@ -65,6 +67,31 @@ void main() {
     expect(fieldFocus.hasFocus, isTrue);
   });
 
+  testWidgets('a tap into the shared field is not mistaken for tapping away', (
+    tester,
+  ) async {
+    // Arrange — this is the phone failure mode: the first touch should open the keyboard and
+    // then be left alone by the app-wide listener.
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(430, 932),
+        builder: (context, _) => MaterialApp(
+          home: DismissKeyboard(
+            child: Scaffold(body: AppTextField(focusNode: fieldFocus)),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // Act
+    await tester.tap(find.byType(TextField));
+    await tester.pump();
+
+    // Assert
+    expect(fieldFocus.hasFocus, isTrue);
+  });
+
   testWidgets('a button still gets its own tap', (tester) async {
     // Arrange — the risk of a catch-all tap handler is that it eats the taps meant for
     // something else. It must not: the deeper recogniser wins the arena.
@@ -79,10 +106,11 @@ void main() {
     expect(taps, 1);
   });
 
-  testWidgets('a shared field closes even when something else claims the tap', (tester) async {
-    // Arrange — the wrapper cannot see this tap at all: the button wins the gesture arena, so
-    // its `onTap` never fires. `AppTextField.onTapOutside` is what covers it, because a
-    // `TapRegion` is not in the arena.
+  testWidgets('a shared field closes even when something else claims the tap', (
+    tester,
+  ) async {
+    // Arrange — a button still wins the gesture, but the wrapper observes the pointer without
+    // joining that contest.
     var taps = 0;
     await tester.pumpWidget(
       // AppTextField measures itself with ScreenUtil, so it needs the same frame the app boots
@@ -96,7 +124,10 @@ void main() {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppTextField(focusNode: fieldFocus),
-                  ElevatedButton(onPressed: () => taps++, child: const Text('زر')),
+                  ElevatedButton(
+                    onPressed: () => taps++,
+                    child: const Text('زر'),
+                  ),
                 ],
               ),
             ),
@@ -118,7 +149,9 @@ void main() {
     expect(fieldFocus.hasFocus, isFalse);
   });
 
-  testWidgets('scrolling a list does not count as tapping away', (tester) async {
+  testWidgets('scrolling a list does not count as tapping away', (
+    tester,
+  ) async {
     // Arrange — a drag is not a tap. Dismissing on every scroll would make a long form
     // unusable: reaching the next field would close the keyboard on the way.
     await tester.pumpWidget(host());
@@ -133,7 +166,9 @@ void main() {
     expect(fieldFocus.hasFocus, isTrue);
   });
 
-  testWidgets('a tap away when nothing is focused does nothing at all', (tester) async {
+  testWidgets('a tap away when nothing is focused does nothing at all', (
+    tester,
+  ) async {
     // Arrange
     await tester.pumpWidget(host());
 
