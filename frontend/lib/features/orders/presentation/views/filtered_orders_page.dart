@@ -63,7 +63,7 @@ class _FilteredOrdersView extends StatelessWidget {
                 emptyMessage: 'لا توجد طلبيات في «$title»',
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
-                skeletonHeight: 132.h,
+                skeletonHeight: 380.h,
                 itemBuilder: (context, order, index) => OrderCard(
                   key: ValueKey(order.id),
                   order: order,

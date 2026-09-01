@@ -18,6 +18,7 @@ class OrderStatusChip extends StatelessWidget {
     required this.status,
     required this.label,
     this.compact = false,
+    this.banner = false,
     super.key,
   });
 
@@ -29,27 +30,64 @@ class OrderStatusChip extends StatelessWidget {
   /// The list card's size, as opposed to the header's.
   final bool compact;
 
+  /// A band across the whole top of a card rather than a chip in its corner.
+  ///
+  /// **The state is what the card is scanned for**, so on the orders list it is given the width
+  /// it deserves — the reference card wears its state this way — and the label centres in it.
+  /// Ignored where the chip shrink-wraps beside other things.
+  final bool banner;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final (background, foreground) = toneColour(scheme, status.tone);
+    final text = (compact ? context.textTheme.labelSmall : context.textTheme.labelLarge)?.copyWith(
+      color: foreground,
+      fontWeight: FontWeight.w700,
+    );
 
     return Container(
+      width: banner ? double.infinity : null,
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 8.w : 12.w,
-        vertical: compact ? 4.h : 6.h,
+        vertical: banner
+            ? 10.h
+            : compact
+            ? 4.h
+            : 6.h,
       ),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(compact ? 8.r : 10.r),
-      ),
-      child: Text(
-        label,
-        style: (compact ? context.textTheme.labelSmall : context.textTheme.labelLarge)?.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w700,
+        borderRadius: BorderRadius.circular(
+          banner
+              ? 12.r
+              : compact
+              ? 8.r
+              : 10.r,
         ),
       ),
+      child: banner
+          // The glyph and the word, centred together — the state is the one thing this band is
+          // for, and an icon pinned to the corner of a full-width strip reads as decoration.
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: text,
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                // At the end of the band, after the word — the side an Arabic line finishes on,
+                // the way the reference card wears its own badge.
+                Icon(iconFor(status), size: 20.sp, color: foreground),
+              ],
+            )
+          : Text(label, style: text),
     );
   }
 
