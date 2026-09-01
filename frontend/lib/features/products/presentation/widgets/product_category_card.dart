@@ -99,6 +99,12 @@ class ProductCategoryCard extends StatelessWidget {
 String _subtitle(ProductCategory category) {
   final stopped = category.isActive ? '' : ' · موقوف';
 
+  // Read the same way «موقوف» is: a short tail on the line that already summarises the row, so
+  // the list can be scanned for the headings whose orders skip the press without opening each
+  // sheet in turn. Only this row's own answer — a subheading inheriting a flagged parent is not
+  // marked here, because this is the value its sheet would put back.
+  final skipsProduction = category.skipsProduction ? ' · بدون طباعة' : '';
+
   // A heading holding subheadings says so first: it is why no product can be filed on it, and
   // why the delete button will refuse.
   final children = switch (category.childrenCount ?? 0) {
@@ -119,7 +125,7 @@ String _subtitle(ProductCategory category) {
     _ => '${count.grouped} منتجاً',
   };
 
-  return [?children, ?products].join(' · ') + stopped;
+  return [?children, ?products].join(' · ') + skipsProduction + stopped;
 }
 
 /// The heading's picture, or the glyph that stands in for one.

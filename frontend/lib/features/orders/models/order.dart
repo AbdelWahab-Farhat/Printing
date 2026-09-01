@@ -32,6 +32,19 @@ abstract class Order with _$Order {
     /// reads correctly — see [OrderStatus.unknown].
     @JsonKey(name: 'status_label') required String statusLabel,
 
+    /// The Arabic for the road this order walks — «المسار المعتاد» أو «بدون تصميم وطباعة».
+    ///
+    /// **Carried so a short progress bar can be explained rather than look truncated.** An order
+    /// made entirely of ready-made goods has five steps where every other order has seven, and a
+    /// bar that simply drew two fewer boxes would read as a rendering fault. The rules
+    /// themselves are not here and never should be: `availableTransitions` and `progress` arrive
+    /// already resolved, and which orders take the short road is read off their lines by the
+    /// server — see `ResolveOrderFlow`.
+    ///
+    /// The label rather than the wire value, for the reason [statusLabel] gives: a road this
+    /// build has never heard of still reads correctly.
+    @JsonKey(name: 'production_flow_label') @Default('') String productionFlowLabel,
+
     /// Whether the order is finished — no move of any kind is left.
     ///
     /// **Not the same as [isClosed], and «تم الاستلام» is why.** The customer has the bags, so

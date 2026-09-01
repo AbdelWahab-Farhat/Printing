@@ -19,17 +19,24 @@ class SaveProductCategory {
     String? description,
     int sortOrder = 0,
     bool isActive = true,
+    bool skipsProduction = false,
   }) {
     final trimmed = name.trim();
 
     return categoryId == null
-        ? _repository.create(name: trimmed, description: description, sortOrder: sortOrder)
+        ? _repository.create(
+            name: trimmed,
+            description: description,
+            sortOrder: sortOrder,
+            skipsProduction: skipsProduction,
+          )
         : _repository.update(
             categoryId,
             name: trimmed,
             description: description,
             sortOrder: sortOrder,
             isActive: isActive,
+            skipsProduction: skipsProduction,
           );
   }
 }

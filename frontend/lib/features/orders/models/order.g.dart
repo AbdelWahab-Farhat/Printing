@@ -15,6 +15,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
     unknownValue: OrderStatus.unknown,
   ),
   statusLabel: json['status_label'] as String,
+  productionFlowLabel: json['production_flow_label'] as String? ?? '',
   isFinal: json['is_final'] as bool,
   isClosed: json['is_closed'] as bool? ?? false,
   availableTransitions:
@@ -103,6 +104,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'code': instance.code,
   'status': _$OrderStatusEnumMap[instance.status]!,
   'status_label': instance.statusLabel,
+  'production_flow_label': instance.productionFlowLabel,
   'is_final': instance.isFinal,
   'is_closed': instance.isClosed,
   'available_transitions': instance.availableTransitions
@@ -160,6 +162,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
 
 const _$OrderStatusEnumMap = {
   OrderStatus.taken: 'new',
+  OrderStatus.readyToPrint: 'ready_to_print',
   OrderStatus.designing: 'designing',
   OrderStatus.printing: 'printing',
   OrderStatus.ready: 'ready',

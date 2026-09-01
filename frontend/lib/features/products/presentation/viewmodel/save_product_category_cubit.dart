@@ -33,6 +33,11 @@ class SaveProductCategoryCubit extends Cubit<SaveProductCategoryState> {
   /// the name is unique in the database, so a request that did land before the connection
   /// dropped turns the retry into a readable 422 rather than a second «أكياس».
   ///
+  /// [skipsProduction] is the switch on the sheet: orders made only of this heading's goods go
+  /// from «جديدة» straight to «جاهزة», where their stock leaves the warehouse as it always did.
+  /// The app carries the answer and decides nothing — which orders actually take the short road
+  /// is read from their own lines by the server.
+  ///
   /// [image] is a newly picked file, [removeImage] the request to take the current one off.
   /// They are mutually exclusive by construction — the sheet offers one or the other — and both
   /// happen **after** the save, because a new category has no id to hang a picture on until the
@@ -43,6 +48,7 @@ class SaveProductCategoryCubit extends Cubit<SaveProductCategoryState> {
     String? description,
     int sortOrder = 0,
     bool isActive = true,
+    bool skipsProduction = false,
     PickedFile? image,
     bool removeImage = false,
   }) async {
@@ -58,6 +64,7 @@ class SaveProductCategoryCubit extends Cubit<SaveProductCategoryState> {
       description: description,
       sortOrder: sortOrder,
       isActive: isActive,
+      skipsProduction: skipsProduction,
     );
 
     // The sheet may have been closed while the request was in flight, and emitting into a

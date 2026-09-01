@@ -19,10 +19,14 @@ abstract interface class ProductCategoryRepository {
     int perPage = 20,
   });
 
+  /// [skipsProduction] puts orders made only of this heading's goods on the short road —
+  /// «جديدة» straight to «جاهزة». Required rather than defaulted: a caller that forgets it is a
+  /// caller silently turning the flag off on a heading that had it.
   Future<Either<Failure, ProductCategory>> create({
     required String name,
     String? description,
     required int sortOrder,
+    required bool skipsProduction,
   });
 
   Future<Either<Failure, ProductCategory>> update(
@@ -31,6 +35,7 @@ abstract interface class ProductCategoryRepository {
     String? description,
     required int sortOrder,
     required bool isActive,
+    required bool skipsProduction,
   });
 
   /// Hides a category from the pickers. The products already under it keep it.

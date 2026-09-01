@@ -265,6 +265,7 @@ class _DraggableCategories extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ReorderableListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 96.h),
         itemCount: categories.length,
         onReorderItem: onReorder,

@@ -75,6 +75,8 @@ void main() {
     // The app renders `*_label` — the server's own Arabic — and never the raw enum beside it.
     'fulfilment_type': 'the label is what is drawn; the wire value has no reader',
     'pricing_unit': 'lines show `pricing_unit_label`, the server\'s own word for it',
+    'production_flow': 'the bar explains itself with `production_flow_label`; nothing branches '
+        'on the road in this app, because the server sends the transitions already resolved',
 
     // Nested summaries the app reaches by other means.
     'shop': 'the order carries `customer_shop_id` and `customer_shop_name` flat, and uses those',
@@ -85,6 +87,7 @@ void main() {
 
     // The per-status stamps. The timeline is built from `transitions`, which carries who and
     // when for every move — these columns would be a second, thinner copy of the same history.
+    'ready_to_print_at': 'the timeline reads `transitions`, not the per-status columns',
     'design_started_at': 'the timeline reads `transitions`, not the per-status columns',
     'printing_started_at': 'the timeline reads `transitions`, not the per-status columns',
     'ready_at': 'the timeline reads `transitions`, not the per-status columns',
