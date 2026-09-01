@@ -51,6 +51,7 @@ class _HomeView extends StatelessWidget {
         HomeLoaded(:final user, :final summary) => RefreshIndicator(
           onRefresh: context.read<HomeCubit>().refresh,
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
             children: [
               EmployeeCard(user: user),
@@ -206,15 +207,17 @@ class _HomeSkeleton extends StatelessWidget {
           ],
         ),
         SizedBox(height: 20.h),
+        // The height of a status card, so the board does not grow under the reader's eyes when
+        // the counts land: [StatusBoard] draws each one a little taller than it is wide.
         for (var row = 0; row < 2; row++) ...[
           Row(
             children: [
               Expanded(
-                child: _SkeletonBox(height: 96.h, radius: 20.r),
+                child: _SkeletonBox(height: 148.h, radius: 20.r),
               ),
               SizedBox(width: 12.w),
               Expanded(
-                child: _SkeletonBox(height: 96.h, radius: 20.r),
+                child: _SkeletonBox(height: 148.h, radius: 20.r),
               ),
             ],
           ),

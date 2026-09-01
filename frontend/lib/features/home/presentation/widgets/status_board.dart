@@ -48,7 +48,11 @@ class StatusBoard extends StatelessWidget {
           crossAxisCount: 2,
           mainAxisSpacing: 18.h,
           crossAxisSpacing: 18.w,
-          childAspectRatio: 1.7,
+          // **Taller than its contents need, with the room left at the bottom.** A card sized to
+          // its three lines packs fourteen statuses into a dense ladder where the numbers run
+          // together; giving each one a card's worth of quiet under it is what lets a single
+          // count be read on its own.
+          childAspectRatio: 1.05,
           children: [
             for (final (index, status) in statuses.indexed)
               Appear(
@@ -97,13 +101,23 @@ class _StatusCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        // The number sits at the top of the card and the space falls below it, so the counts
+        // line up across a row whatever length the label under each one runs to.
+        //
+        // `start` and *not* `MainAxisSize.min`: the card has to keep filling its grid tile. A
+        // column sized to its contents shrank the tappable cards alone — they are the ones
+        // wrapped in the `Stack` below, which hands its child loose constraints — so a card
+        // counting something ended up shorter than the empty ones beside it.
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Text(
             status.count.toString(),
             textDirection: TextDirection.ltr,
-            style: context.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
+            // The heaviest weight the family carries, at the largest of the headline sizes: the
+            // count is the one thing on the card that is read from across a room, and the label
+            // under it only says which count it is.
+            style: context.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w900,
               color: scheme.primary,
             ),
           ),
@@ -121,8 +135,8 @@ class _StatusCard extends StatelessWidget {
             status.label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: context.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+            style: context.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
               color: scheme.onSurface,
             ),
           ),
@@ -135,6 +149,9 @@ class _StatusCard extends StatelessWidget {
     // The ink goes *over* the card rather than under it: the card paints its own background and
     // its own shadow, and a Material underneath would draw a second surface behind both.
     return Stack(
+      // Tight constraints back onto the card, which a loose `Stack` would otherwise let
+      // collapse to the height of its three lines.
+      fit: StackFit.expand,
       children: [
         card,
         Positioned.fill(

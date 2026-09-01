@@ -173,6 +173,36 @@ void main() {
       expect(find.text('الطلبات الشهرية'), findsOneWidget);
     });
 
+    testWidgets('four tiles fit the phone they are drawn on', (tester) async {
+      // Arrange — the real screen, not the test's roomy 800x600 default: a tile's height comes
+      // from its width, so only a phone's width tells the truth about whether the word and the
+      // number under it fit inside one.
+      tester.view.physicalSize = const Size(430, 932);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      const summary = HomeSummary(
+        totalOrders: 21013,
+        customersCount: 20089,
+        dailyOrders: 46,
+        monthlyOrders: 2880,
+      );
+
+      // Act — inside the page's own padding, which is what leaves each tile its real width.
+      await tester.pumpWidget(
+        host(
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: SummaryTiles(summary: summary),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Assert — an overflowing tile paints a striped bar across the number it exists to show.
+      expect(tester.takeException(), isNull);
+    });
+
     test('grouping puts a separator every three digits and nowhere else', () {
       // Arrange - Act - Assert
       expect(0.grouped, '0');
@@ -286,6 +316,28 @@ void main() {
       // Assert — a tap that opens «لا توجد طلبيات» teaches the reader nothing the card did not
       // already say.
       expect(taps, isZero);
+    });
+
+    testWidgets('a card that opens something is no shorter than one that does not', (
+      tester,
+    ) async {
+      // Arrange
+      await tester.pumpWidget(
+        host(StatusBoard(statuses: const [shortage, empty], onOpen: (_) {})),
+      );
+      await tester.pumpAndSettle();
+
+      double heightOf(String label) => tester
+          .getSize(find.ancestor(of: find.text(label), matching: find.byType(Container)).first)
+          .height;
+
+      // Act
+      final tappable = heightOf('نواقص');
+      final inert = heightOf('إعادة إرسال');
+
+      // Assert — only the tappable card is wrapped in a `Stack`, which hands its child loose
+      // constraints; a card that collapsed to its three lines sat short beside its neighbours.
+      expect(tappable, inert);
     });
 
     testWidgets('a board with nowhere to go is still readable', (tester) async {

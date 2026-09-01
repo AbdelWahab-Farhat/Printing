@@ -1,4 +1,3 @@
-import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/appear.dart';
@@ -35,13 +34,11 @@ class SummaryTiles extends StatelessWidget {
       _Tile(
         label: 'الطلبات الكلية',
         value: summary.totalOrders,
-        icon: AppIcons.orders,
         onTap: onAllOrders,
       ),
       _Tile(
         label: 'عدد العملاء',
         value: summary.customersCount,
-        icon: AppIcons.customers,
         onTap: onCustomers,
       ),
       // A day or a month with nothing in it opens a screen that says so, which is a tap that
@@ -49,13 +46,11 @@ class SummaryTiles extends StatelessWidget {
       _Tile(
         label: 'الطلبات اليومية',
         value: summary.dailyOrders,
-        icon: AppIcons.today,
         onTap: summary.dailyOrders == 0 ? null : onDay,
       ),
       _Tile(
         label: 'الطلبات الشهرية',
         value: summary.monthlyOrders,
-        icon: AppIcons.month,
         onTap: summary.monthlyOrders == 0 ? null : onMonth,
       ),
     ];
@@ -67,7 +62,10 @@ class SummaryTiles extends StatelessWidget {
       crossAxisCount: 2,
       mainAxisSpacing: 12.h,
       crossAxisSpacing: 12.w,
-      childAspectRatio: 1.55,
+      // Wide and shallow: the tile holds a word and a number stacked in the middle of it, and
+      // the height it used to carry was empty space between an icon at the top and a number
+      // pushed to the bottom corner.
+      childAspectRatio: 2.15,
       children: [
         for (final (index, tile) in tiles.indexed) Appear(index: index, child: tile),
       ],
@@ -76,16 +74,10 @@ class SummaryTiles extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile({
-    required this.label,
-    required this.value,
-    required this.icon,
-    this.onTap,
-  });
+  const _Tile({required this.label, required this.value, this.onTap});
 
   final String label;
   final int value;
-  final IconData icon;
   final VoidCallback? onTap;
 
   @override
@@ -94,39 +86,54 @@ class _Tile extends StatelessWidget {
     final radius = BorderRadius.circular(20.r);
 
     final tile = Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest,
         borderRadius: radius,
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
       ),
+      // The word over the number, both centred, and no icon beside either.
+      //
+      // The icon named the same thing the word already named — «الطلبات اليومية» next to a
+      // calendar — so it spent the width of a glyph saying nothing, and it pulled the label off
+      // centre while the number sat in the opposite corner. Stacked and centred, the four tiles
+      // read as one block of four numbers instead of four little dashboards.
+      // Both lines are `Flexible` and both shrink to fit rather than overflow.
+      //
+      // A tile this shallow is two lines of type inside a box whose height comes from its
+      // width, so the phone, the font and the reader's text-size setting all get a vote in
+      // whether they fit — and when they did not, the answer was a striped bar painted across
+      // the number the tile exists to show. Shrinking a little is the honest failure here.
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 18.sp, color: scheme.primary),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                style: context.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurface,
                 ),
               ),
-            ],
+            ),
           ),
-          Text(
-            // Grouped: 9651 is read as a shape, 9,651 as a number.
-            value.grouped,
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: scheme.onSurface,
+          SizedBox(height: 4.h),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                // Grouped: 9651 is read as a shape, 9,651 as a number.
+                value.grouped,
+                textDirection: TextDirection.ltr,
+                style: context.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: scheme.onSurface,
+                ),
+              ),
             ),
           ),
         ],
@@ -138,6 +145,9 @@ class _Tile extends StatelessWidget {
     // Over the tile rather than under it, for the reason the status cards give: the tile paints
     // its own surface, and a Material beneath would draw a second one behind it.
     return Stack(
+      // Tight constraints back onto the tile: a loose `Stack` lets a centred column collapse to
+      // its two lines, and only the tappable tiles would shrink.
+      fit: StackFit.expand,
       children: [
         tile,
         Positioned.fill(
