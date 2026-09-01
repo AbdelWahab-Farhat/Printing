@@ -8,8 +8,10 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Inventory\Actions\ApplyStockChange;
 use App\Domain\Inventory\Actions\ConsumeStockBatchesFifo;
+use App\Domain\Inventory\Actions\RevalueStockBatch;
 use App\Domain\Inventory\Actions\SetStockUnit;
 use App\Domain\Inventory\Enums\StockBatchSourceType;
+use App\Domain\Inventory\Exceptions\BatchIsFullyConsumed;
 use App\Domain\Vendor\Models\StockArrivalItem;
 use Database\Factories\StockBatchFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -60,6 +62,9 @@ class StockBatch extends Model
             'quantity_remaining' => 'decimal:3',
             'unit' => PricingUnit::class,
             'received_at' => 'datetime',
+            // Null on every layer nobody has corrected, which is almost all of them. Set by
+            // RevalueStockBatch so a list can say «سُعِّرت يدوياً» without joining the ledger.
+            'revalued_at' => 'datetime',
         ];
     }
 
@@ -93,6 +98,35 @@ class StockBatch extends Model
     }
 
     /**
+     * The movement that brought this stock in.
+     *
+     * **The traceability `stock_arrival_item_id` above was reserved for and never got.** Through
+     * it: who recorded it, which document (`stock_movements.reference_id`), and therefore which
+     * purchase order. Null for every layer opened before the column existed — and honestly so,
+     * since matching those by timestamp would be a guess.
+     *
+     * @return BelongsTo<StockMovement, $this>
+     */
+    public function stockMovement(): BelongsTo
+    {
+        return $this->belongsTo(StockMovement::class);
+    }
+
+    /**
+     * The layer this one was split off, when part of a batch was repriced.
+     *
+     * Points *from* the untouched remainder *to* the row that kept the FIFO position and took
+     * the new cost — see {@see RevalueStockBatch} for why that
+     * direction is the useful one.
+     *
+     * @return BelongsTo<StockBatch, $this>
+     */
+    public function splitFrom(): BelongsTo
+    {
+        return $this->belongsTo(StockBatch::class, 'split_from_batch_id');
+    }
+
+    /**
      * Every draw ever made against this layer.
      *
      * @return HasMany<StockBatchConsumption, $this>
@@ -100,5 +134,48 @@ class StockBatch extends Model
     public function consumptions(): HasMany
     {
         return $this->hasMany(StockBatchConsumption::class);
+    }
+
+    /**
+     * Every time somebody changed what this layer is carried at, oldest first — a correction to
+     * a correction reads as the story it is.
+     *
+     * @return HasMany<StockBatchRevaluation, $this>
+     */
+    public function revaluations(): HasMany
+    {
+        return $this->hasMany(StockBatchRevaluation::class)->orderBy('id');
+    }
+
+    /**
+     * How much of this layer has already been drawn off.
+     *
+     * `received − remaining` rather than a sum of the consumption rows: a split moves both
+     * figures together precisely so this subtraction stays true of each row on its own. It
+     * understates after a cancelled order credits stock back, which is the same thing every
+     * reversal in this schema does to a running figure and not something the split introduced.
+     */
+    public function consumedQuantity(): string
+    {
+        return bcsub((string) $this->quantity_received, (string) $this->quantity_remaining, 3);
+    }
+
+    /** Whether anything has been drawn off this layer yet — the line a revaluation warns on. */
+    public function isPartlyConsumed(): bool
+    {
+        return bccomp($this->consumedQuantity(), '0', 3) > 0
+            && bccomp((string) $this->quantity_remaining, '0', 3) > 0;
+    }
+
+    /** Whether there is anything left to reprice. See {@see BatchIsFullyConsumed}. */
+    public function isFullyConsumed(): bool
+    {
+        return bccomp((string) $this->quantity_remaining, '0', 3) <= 0;
+    }
+
+    /** A layer nobody has priced — the reason `GET /stock-batches?uncosted=1` exists. */
+    public function isUncosted(): bool
+    {
+        return bccomp((string) $this->unit_cost, '0', 3) <= 0;
     }
 }

@@ -39,6 +39,14 @@ use Illuminate\Support\Facades\DB;
  * never subtracted from anything — pairing it against COGS would imply a cash-basis margin this
  * model does not have.
  *
+ * **`additional_cost` is deliberately absent from revenue here, as `delivery_price` and
+ * `discount` already are.** All three sit inside `grand_total` and none of them is a product or
+ * a service this statement recognises: they are charges and reliefs on the way to what the
+ * customer pays. Folding the packaging charge into `revenue.service` would make this report
+ * disagree with its own delivery line, which is the inconsistency the omission avoids. A
+ * business that later wants «كم حصّلنا مقابل التغليف؟» answered has the column and its reason
+ * code waiting — that is a new figure on this statement, not a redefinition of an existing one.
+ *
  * `design_fee` carries no cost of its own anywhere in this codebase — see BUSINESS-FIELDS-DESIGN
  * and the plan's own note — so service revenue is, by construction, 100% margin here. Not a bug:
  * a deliberate, already-approved simplification.

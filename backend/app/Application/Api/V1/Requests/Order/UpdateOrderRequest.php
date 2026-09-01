@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Order;
 
+use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 use Illuminate\Validation\Rule;
 
@@ -40,6 +41,24 @@ class UpdateOrderRequest extends StoreOrderRequest
 
             'design_fee' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'discount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+
+            // The same three as on the way in — see StoreOrderRequest for why the reason is
+            // required as soon as there is an amount to explain.
+            'additional_cost' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'additional_cost_reason' => [
+                Rule::requiredIf(fn () => (float) $this->input('additional_cost', 0) > 0),
+                'nullable',
+                Rule::enum(AdditionalCostReason::class),
+            ],
+            'additional_cost_note' => [
+                Rule::requiredIf(
+                    fn () => $this->input('additional_cost_reason') === AdditionalCostReason::Other->value
+                        && (float) $this->input('additional_cost', 0) > 0
+                ),
+                'nullable',
+                'string',
+                'max:500',
+            ],
 
             'tracking_number' => ['nullable', 'string', 'max:100'],
 

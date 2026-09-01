@@ -15,6 +15,7 @@ use App\Domain\Inventory\Actions\DeleteStockItemGroup;
 use App\Domain\Inventory\Actions\DeleteWarehouse;
 use App\Domain\Inventory\Actions\RecordStockMovement;
 use App\Domain\Inventory\Actions\ResolveStockItemForVariant;
+use App\Domain\Inventory\Actions\RevalueStockBatch;
 use App\Domain\Inventory\Actions\SetLowStockThreshold;
 use App\Domain\Inventory\Actions\SetStockItemUnit;
 use App\Domain\Inventory\Actions\UpdateStockItem;
@@ -25,7 +26,10 @@ use App\Domain\Inventory\DTOs\StockItemGroupData;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\DTOs\StockSummary;
 use App\Domain\Inventory\DTOs\WarehouseData;
+use App\Domain\Inventory\Exceptions\BatchIsFullyConsumed;
+use App\Domain\Inventory\Exceptions\RevaluationExceedsRemaining;
 use App\Domain\Inventory\Exceptions\VariantHasNoStockItem;
+use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockItemGroup;
 use App\Domain\Inventory\Models\StockMovement;
@@ -35,6 +39,8 @@ use App\Domain\Inventory\Queries\FindStockItem;
 use App\Domain\Inventory\Queries\FindStockItemGroup;
 use App\Domain\Inventory\Queries\MovementFilters;
 use App\Domain\Inventory\Queries\MovementListQuery;
+use App\Domain\Inventory\Queries\StockBatchFilters;
+use App\Domain\Inventory\Queries\StockBatchListQuery;
 use App\Domain\Inventory\Queries\StockFilters;
 use App\Domain\Inventory\Queries\StockItemFilters;
 use App\Domain\Inventory\Queries\StockItemGroupFilters;
@@ -88,6 +94,8 @@ class InventoryService
         private readonly StockSummaryQuery $stockSummaryQuery,
         private readonly WarehouseBalancesQuery $warehouseBalancesQuery,
         private readonly MovementListQuery $movementListQuery,
+        private readonly StockBatchListQuery $stockBatchListQuery,
+        private readonly RevalueStockBatch $revalueStockBatch,
     ) {}
 
     // ── warehouses ──────────────────────────────────────────────────────────────────────
@@ -326,5 +334,32 @@ class InventoryService
     public function recordMovement(StockMovementData $data): StockMovement
     {
         return ($this->recordStockMovement)($data);
+    }
+
+    // ── cost layers ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * @return LengthAwarePaginator<int, StockBatch>
+     */
+    public function paginateStockBatches(StockBatchFilters $filters, int $perPage = 20): LengthAwarePaginator
+    {
+        return ($this->stockBatchListQuery)($filters, $perPage);
+    }
+
+    /**
+     * Changes what a quantity of stock is carried at — the one write in this domain that moves
+     * money without moving stock. See {@see RevalueStockBatch}.
+     *
+     * @throws BatchIsFullyConsumed
+     * @throws RevaluationExceedsRemaining
+     */
+    public function revalueStockBatch(
+        StockBatch $batch,
+        string $unitCost,
+        string $reason,
+        int $userId,
+        ?string $quantity = null,
+    ): StockBatch {
+        return ($this->revalueStockBatch)($batch, $unitCost, $reason, $userId, $quantity);
     }
 }

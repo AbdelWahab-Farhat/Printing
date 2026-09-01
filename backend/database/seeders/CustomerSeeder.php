@@ -10,7 +10,6 @@ use App\Domain\Customer\Actions\SyncCustomerShops;
 use App\Domain\Customer\DTOs\CustomerShopData;
 use App\Domain\Customer\Models\BusinessField;
 use App\Domain\Customer\Models\Customer;
-use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
 use App\Domain\Identity\Models\User;

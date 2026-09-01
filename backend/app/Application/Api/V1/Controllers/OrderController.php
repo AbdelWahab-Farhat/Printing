@@ -115,7 +115,9 @@ class OrderController extends Controller
      * requires one.
      *
      * A non-zero `discount` needs the `orders.discount` permission and is refused with 403
-     * without it.
+     * without it. A non-zero `additional_cost` needs `orders.additional_cost`, its own grant
+     * rather than the discount's — and it must name a reason, because that is the axis this
+     * money is read along afterwards.
      *
      * `design_ids` attaches artwork from the customer's library as the order is taken — for the
      * customer who arrives with the file already agreed, so the order never has to visit

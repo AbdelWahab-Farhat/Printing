@@ -15,6 +15,7 @@ use App\Domain\Identity\AccessService;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -233,6 +234,24 @@ class ActivityLogTest extends TestCase
         $update = collect($response->assertOk()->json('data'))->firstWhere('event', 'updated');
         $this->assertSame('جديدة', $update['value_labels']['old']['status']);
         $this->assertSame('قيد الطباعة', $update['value_labels']['attributes']['status']);
+    }
+
+    public function test_the_reason_for_an_additional_cost_is_read_in_arabic_too(): void
+    {
+        // Arrange — nothing was added to this file's own vocabulary for it. The column is cast
+        // to an enum with a `label()`, which is the whole of what makes the history readable.
+        $order = Order::factory()->create();
+        $order->additional_cost = '10.00';
+        $order->additional_cost_reason = AdditionalCostReason::SpecialPackaging;
+        $order->save();
+        $headers = $this->auditor();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}/logs");
+
+        // Assert
+        $update = collect($response->assertOk()->json('data'))->firstWhere('event', 'updated');
+        $this->assertSame('تغليف خاص', $update['value_labels']['attributes']['additional_cost_reason']);
     }
 
     public function test_a_foreign_key_is_read_as_the_record_it_names(): void

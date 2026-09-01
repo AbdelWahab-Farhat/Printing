@@ -20,6 +20,12 @@ use App\Domain\Order\Support\Money;
  * A design fee only counts when we did the design. Left as it is on the row rather than blanked,
  * so switching `design_source` back and forth does not lose a number a clerk typed — it simply
  * stops being charged.
+ *
+ * **The additional cost joins the base the discount is measured against, deliberately.** The
+ * ceiling on a discount is what the customer would otherwise pay, and a charge for packaging is
+ * part of that — so an order of 350 carrying a 10 charge may be discounted by 360 and reach
+ * zero, but never below it. The two stay separate columns either side of this sum: an order's
+ * total is read as «هذا ما أُضيف وهذا ما خُصم», not as one net figure that explains neither.
  */
 final class RecalculateOrderTotals
 {
@@ -34,7 +40,12 @@ final class RecalculateOrderTotals
 
         $designFee = $order->design_source->isChargeable() ? (string) $order->design_fee : '0.00';
 
-        $beforeDiscount = Money::sum($itemsTotal, $designFee, (string) $order->delivery_price);
+        $beforeDiscount = Money::sum(
+            $itemsTotal,
+            $designFee,
+            (string) $order->delivery_price,
+            (string) $order->additional_cost,
+        );
         $discount = (string) $order->discount;
 
         // Refused rather than clamped: silently shrinking a discount to fit would charge the

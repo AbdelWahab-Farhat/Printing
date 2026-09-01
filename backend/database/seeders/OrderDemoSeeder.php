@@ -16,6 +16,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderItemData;
 use App\Domain\Order\DTOs\OrderPaymentData;
+use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
@@ -268,6 +269,14 @@ class OrderDemoSeeder extends Seeder
             [OrderStatus::Printing, null],
         ], discount: '5.00');
 
+        // The charge going the other way, beside the discount so the pair can be read together
+        // on one screen: two figures either side of the total, never one net number.
+        $this->walk(-15, 'تكلفة إضافية: تغليف خاص', [
+            [OrderStatus::Printing, null],
+        ], additionalCost: '8.00',
+            additionalCostReason: AdditionalCostReason::SpecialPackaging,
+            additionalCostNote: 'علبة كرتون مزدوجة بطلب العميل');
+
         // A product the catalogue prices «حسب الطلب» — the clerk names the price.
         $this->manuallyPriced();
 
@@ -357,6 +366,9 @@ class OrderDemoSeeder extends Seeder
         DesignSource $designSource = DesignSource::None,
         string $designFee = '0.00',
         string $discount = '0.00',
+        string $additionalCost = '0.00',
+        ?AdditionalCostReason $additionalCostReason = null,
+        ?string $additionalCostNote = null,
         ?City $city = null,
         ?int $region = null,
         bool $shipping = false,
@@ -375,6 +387,9 @@ class OrderDemoSeeder extends Seeder
             notes: $note,
             designFee: $designFee,
             discount: $discount,
+            additionalCost: $additionalCost,
+            additionalCostReason: $additionalCostReason,
+            additionalCostNote: $additionalCostNote,
             // The carrier and the man holding the parcel are no longer taken here: they are
             // asked for at «جاري التوصيل», which is the moment anybody knows them. What is left
             // on the order itself is the number a clerk is given to type in.

@@ -76,6 +76,9 @@ enum PermissionName: string
     case ViewOrders = 'orders.view';
     case ManageOrders = 'orders.manage';
     case DiscountOrders = 'orders.discount';
+    // Its own grant rather than the discount's: one gives money away and the other asks the
+    // customer for more, and a business may reasonably trust a role with exactly one of them.
+    case AddOrderAdditionalCost = 'orders.additional_cost';
     case ManageOrderDesigns = 'orders.designs.manage';
     // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
     // the order to the press. Separate from the two production statuses beside it because a
@@ -125,6 +128,10 @@ enum PermissionName: string
     // order needs to know whether stock exists, while moving it is the storekeeper's job.
     case ViewInventory = 'inventory.view';
     case ManageInventory = 'inventory.manage';
+    // Its own grant rather than part of `inventory.manage`: correcting what stock is carried at
+    // changes the book value of the business without a shelf being touched, which is a different
+    // trust level from recording a transfer somebody can walk over and verify.
+    case RevalueStock = 'inventory.revalue';
 
     // Vendors. Its own pair rather than folded into inventory.*: agreeing terms with a supplier
     // and receiving a shipment they sent are different jobs, the same split customers.* draws
@@ -174,6 +181,7 @@ enum PermissionName: string
             self::ViewOrders => 'عرض الطلبيات',
             self::ManageOrders => 'إضافة وتعديل الطلبيات',
             self::DiscountOrders => 'منح خصم على الطلبية',
+            self::AddOrderAdditionalCost => 'إضافة تكلفة إضافية على الطلبية',
             self::ManageOrderDesigns => 'إدارة تصاميم الطلبية واعتمادها',
             self::MoveOrderToReadyToPrint => 'تحويل الطلبية إلى جاهزة للطباعة',
             self::MoveOrderToDesigning => 'تحويل الطلبية إلى قيد التصميم',
@@ -198,6 +206,7 @@ enum PermissionName: string
 
             self::ViewInventory => 'عرض المخازن والأرصدة والحركات',
             self::ManageInventory => 'إدارة المخازن وتسجيل حركات المخزون',
+            self::RevalueStock => 'تعديل تكلفة دفعات المخزون',
             self::ViewVendors => 'عرض الموردين',
             self::ManageVendors => 'إضافة وتعديل الموردين',
             self::ViewPurchaseOrders => 'عرض أوامر الشراء',
@@ -222,6 +231,7 @@ enum PermissionName: string
             self::ViewDeliveryLocations, self::ManageDeliveryLocations => 'مدن ومناطق التوصيل',
             self::ViewShippingCompanies, self::ManageShippingCompanies => 'شركات التوصيل',
             self::ViewOrders, self::ManageOrders, self::DiscountOrders,
+            self::AddOrderAdditionalCost,
             self::ManageOrderDesigns => 'الطلبيات',
             self::MoveOrderToReadyToPrint,
             self::MoveOrderToDesigning, self::MoveOrderToPrinting, self::MoveOrderToReady,
@@ -236,7 +246,8 @@ enum PermissionName: string
             self::ViewManufacturingCostRates,
             self::ManageManufacturingCostRates => 'معدلات تكلفة التصنيع',
 
-            self::ViewInventory, self::ManageInventory => 'المخازن والمخزون',
+            self::ViewInventory, self::ManageInventory,
+            self::RevalueStock => 'المخازن والمخزون',
             self::ViewVendors, self::ManageVendors => 'الموردون',
             self::ViewPurchaseOrders, self::ManagePurchaseOrders => 'أوامر الشراء',
             self::ViewActivityLogs => 'سجل النشاطات',

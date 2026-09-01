@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Customer\Actions;
 
 use App\Domain\Customer\DTOs\CustomerIdentifier;
+use Database\Seeders\CustomerSeeder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  * and those codes are what staff say on the phone and write on a bag. Importing that book
  * under a different letter would have renamed 600 customers on their first day, so the
  * allocator adopted the business's own scheme rather than the other way round.
- * {@see \Database\Seeders\CustomerSeeder} seeds each row under its sheet id, which is what
+ * {@see CustomerSeeder} seeds each row under its sheet id, which is what
  * keeps `code` = 'A'.`id` true for the imported customers as well as the ones created since.
  *
  * Why reserve the id instead of computing the code after inserting?

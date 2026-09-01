@@ -9,6 +9,7 @@ use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\Exceptions\AdditionalCostRequiresPermission;
 use App\Domain\Order\Exceptions\DestinationCannotChange;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\OrderIsClosed;
@@ -48,6 +49,7 @@ final class UpdateOrder
      * @throws OrderIsClosed
      * @throws DestinationCannotChange
      * @throws DiscountRequiresPermission
+     * @throws AdditionalCostRequiresPermission
      * @throws ShopDoesNotBelongToCustomer
      */
     public function __invoke(Order $order, OrderData $data, ?User $actor = null): Order
@@ -59,6 +61,7 @@ final class UpdateOrder
         }
 
         $this->guardDiscount($order, $data, $actor);
+        $this->guardAdditionalCost($order, $data, $actor);
         $shopName = $this->resolveShop($data, (int) $order->customer_id);
 
         $destinationMoved = (int) $order->city_id !== $data->cityId
@@ -99,6 +102,9 @@ final class UpdateOrder
                 'design_fee' => $data->designFee,
                 'delivery_price' => $destination->deliveryPrice,
                 'discount' => $data->discount,
+                'additional_cost' => $data->additionalCost,
+                'additional_cost_reason' => $data->additionalCostReason,
+                'additional_cost_note' => $data->additionalCostNote,
             ])->save();
 
             if ($data->items !== null) {
@@ -130,6 +136,28 @@ final class UpdateOrder
 
         if (! $actor?->can(PermissionName::DiscountOrders->value)) {
             throw DiscountRequiresPermission::make();
+        }
+    }
+
+    /**
+     * The same rule for the charge going the other way, and only a *change* is guarded.
+     *
+     * **Compared on the amount alone, not on the reason beside it.** Every edit re-sends the
+     * whole order, so a clerk without the grant correcting the notes on an order that already
+     * carries a charge sends its reason back untouched — and refusing that would make such an
+     * order uneditable by everybody else over a field nobody touched. The words cannot move
+     * without the money moving with them, because the app only offers them together.
+     *
+     * @throws AdditionalCostRequiresPermission
+     */
+    private function guardAdditionalCost(Order $order, OrderData $data, ?User $actor): void
+    {
+        if (bccomp($data->additionalCost, (string) $order->additional_cost, Money::SCALE) === 0) {
+            return;
+        }
+
+        if (! $actor?->can(PermissionName::AddOrderAdditionalCost->value)) {
+            throw AdditionalCostRequiresPermission::make();
         }
     }
 

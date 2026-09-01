@@ -214,6 +214,9 @@ final class AuditAttributeLabels
             'items_total' => 'إجمالي البنود',
             'design_fee' => 'رسوم التصميم',
             'discount' => 'الخصم',
+            'additional_cost' => 'التكلفة الإضافية',
+            'additional_cost_reason' => 'سبب التكلفة الإضافية',
+            'additional_cost_note' => 'ملاحظة التكلفة الإضافية',
             'grand_total' => 'الإجمالي',
             'shipping_company' => 'شركة الشحن',
             'tracking_number' => 'رقم التتبّع',
@@ -320,13 +323,23 @@ final class AuditAttributeLabels
         'stock_batch' => [
             'source_type' => 'مصدر الدفعة',
             'stock_arrival_item_id' => 'بند التوريد',
+            'stock_movement_id' => 'الحركة المخزنية',
+            'split_from_batch_id' => 'مقسومة من دفعة',
             'quantity_received' => 'الكمية المستلمة',
             'quantity_remaining' => 'الكمية المتبقية',
             'received_at' => 'تاريخ الاستلام',
+            'revalued_at' => 'تاريخ تعديل التكلفة',
         ],
         'stock_batch_consumption' => [
             'stock_batch_id' => 'دفعة التكلفة',
             'stock_movement_id' => 'الحركة المخزنية',
+        ],
+        'stock_batch_revaluation' => [
+            'stock_batch_id' => 'دفعة التكلفة',
+            'user_id' => 'المستخدم',
+            'old_unit_cost' => 'التكلفة السابقة',
+            'new_unit_cost' => 'التكلفة الجديدة',
+            'reason' => 'سبب التعديل',
         ],
 
         'vendor' => [
