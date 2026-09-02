@@ -28,6 +28,24 @@ enum MovementKind {
   bool get needsSource => this == MovementKind.transfer;
 
   bool get isAdjustment => this == MovementKind.increase || this == MovementKind.decrease;
+
+  /// Whether this kind opens a **new cost layer**, and so may carry a price.
+  ///
+  /// Only two of the four do. A transfer relocates the layers that exist at the prices they
+  /// already hold, and a decrease consumes them — neither creates anything for a cost to attach
+  /// to. **This lives here rather than in the sheet** because hiding a box is decoration, not a
+  /// rule: a figure typed under «زيادة» and then abandoned by tapping «تحويل» has to be dropped
+  /// by something, and a widget that merely stopped drawing it would still be holding it.
+  bool get opensCostLayer => this == MovementKind.arrival || this == MovementKind.increase;
+
+  /// Whether the API **refuses** the movement without one.
+  ///
+  /// The increase alone. An arrival may genuinely not know its price yet — a shipment whose
+  /// invoice has not arrived — and its layer opens at `0.000` in the uncosted queue. A stocktake
+  /// that found more than the book said has no vendor document to fall back on at all, so a
+  /// silent zero there would understate the cost of goods sold with nothing in the record to
+  /// explain why.
+  bool get requiresCost => this == MovementKind.increase;
 }
 
 /// Writes one line into the ledger.
@@ -39,6 +57,11 @@ enum MovementKind {
 /// **The quantity is normalised here and nowhere else.** ٢٥٠ from an Arabic keyboard and «250,5»
 /// with the decimal comma that keyboard offers first both have to reach the API as `250` and
 /// `250.5`, or the storekeeper gets a 422 about a field they filled in correctly.
+///
+/// **The cost is normalised here too, and an empty box is `null` rather than `'0'`.** «لا نعرف
+/// سعرها» and «مجانية» are different claims: the first leaves the layer findable in the uncosted
+/// queue for someone to price later, the second says a person decided it is worth nothing and
+/// takes it out of that queue for good.
 ///
 /// **Retrying after a `Failure.network` is not free**, and this is the one place in the app
 /// where that matters: a movement has no unique key, so a request that landed before the
@@ -55,16 +78,23 @@ class RecordStockMovement {
     required int warehouseId,
     int? fromWarehouseId,
     required String quantity,
+    String? unitCost,
     String? notes,
   }) {
-    final amount = Validators.toWesternDigits(quantity.trim()).replaceAll(',', '.');
-    final trimmedNotes = notes?.trim();
+    final amount = _number(quantity);
+
+    // Dropped for the two kinds that open no layer — **before** the call, not by the form
+    // declining to draw a box.
+    final cost = kind.opensCostLayer ? _optionalNumber(unitCost) : null;
+
+    final trimmedNotes = _optional(notes);
 
     return switch (kind) {
       MovementKind.arrival => _repository.recordArrival(
         stockItemId: stockItemId,
         toWarehouseId: warehouseId,
         quantity: amount,
+        unitCost: cost,
         notes: trimmedNotes,
       ),
       MovementKind.transfer => _repository.recordTransfer(
@@ -81,8 +111,29 @@ class RecordStockMovement {
         warehouseId: warehouseId,
         quantity: amount,
         isIncrease: kind == MovementKind.increase,
+        // Null on a decrease, decided above: the two directions share one call, so this is the
+        // one place that can tell them apart before the payload is built.
+        unitCost: cost,
         notes: trimmedNotes,
       ),
     };
+  }
+
+  /// ٢٥٠ and «250,5» as the API reads them: `250` and `250.5`.
+  static String _number(String input) =>
+      Validators.toWesternDigits(input.trim()).replaceAll(',', '.');
+
+  static String? _optionalNumber(String? input) {
+    final trimmed = _optional(input);
+
+    return trimmed == null ? null : _number(trimmed);
+  }
+
+  /// An untouched box is nothing at all, never an empty string — the repository omits a null key
+  /// and would send `''` for anything else.
+  static String? _optional(String? input) {
+    final trimmed = input?.trim();
+
+    return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
   }
 }

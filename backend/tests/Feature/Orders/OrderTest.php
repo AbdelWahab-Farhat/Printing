@@ -6,6 +6,7 @@ namespace Tests\Feature\Orders;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Customer\Models\Customer;
@@ -15,6 +16,7 @@ use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
@@ -524,6 +526,287 @@ class OrderTest extends TestCase
         $response->assertStatus(422)->assertJsonValidationErrors('discount');
     }
 
+    // ─────────────────────────── the additional cost ───────────────────────────
+
+    public function test_an_additional_cost_needs_its_own_permission(): void
+    {
+        // Arrange
+        $headers = $this->clerk();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'additional_cost' => '10.00',
+            'additional_cost_reason' => AdditionalCostReason::SpecialPackaging->value,
+        ]));
+
+        // Assert — its own grant rather than the discount's: one gives money away and the other
+        // asks for more, and a role may reasonably be trusted with exactly one of them.
+        $response->assertForbidden();
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_a_clerk_with_the_grant_may_add_an_additional_cost(): void
+    {
+        // Arrange
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::AddOrderAdditionalCost,
+        );
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'additional_cost' => '10.00',
+            'additional_cost_reason' => AdditionalCostReason::SpecialPackaging->value,
+            'additional_cost_note' => 'علبة كرتون مزدوجة',
+        ]));
+
+        // Assert — 330.00 + 20.00 + 10.00, and the reason travels with its label.
+        $response->assertCreated()
+            ->assertJsonPath('data.additional_cost', '10.00')
+            ->assertJsonPath('data.additional_cost_reason', 'special_packaging')
+            ->assertJsonPath('data.additional_cost_reason_label', 'تغليف خاص')
+            ->assertJsonPath('data.additional_cost_note', 'علبة كرتون مزدوجة')
+            ->assertJsonPath('data.grand_total', '360.00');
+    }
+
+    public function test_the_worked_example_from_the_brief(): void
+    {
+        // Arrange — «قيمة المنتجات ١٢٠ · التكلفة الإضافية ١٠ · إجمالي الطلب ١٣٠», priced to the
+        // dinar so the arithmetic in the brief is the arithmetic here: 300 × 0.400, collected in
+        // person so nothing else joins the sum.
+        $product = Product::factory()->create([
+            'pricing_mode' => PricingMode::Tiered,
+            'min_order_quantity' => '100',
+        ]);
+        $variant = ProductVariant::factory()->create(['product_id' => $product->getKey()]);
+        ProductPriceTier::factory()->create([
+            'product_variant_id' => $variant->getKey(),
+            'min_quantity' => '100',
+            'unit_price' => '0.400',
+        ]);
+
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::AddOrderAdditionalCost,
+        );
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', [
+            'customer_id' => Customer::factory()->create()->getKey(),
+            'city_id' => City::factory()->officePickup()->create()->getKey(),
+            'items' => [[
+                'product_id' => $variant->product_id,
+                'product_variant_id' => $variant->getKey(),
+                'quantity' => '300',
+            ]],
+            'additional_cost' => '10.00',
+            'additional_cost_reason' => AdditionalCostReason::Transport->value,
+        ]);
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonPath('data.items_total', '120.00')
+            ->assertJsonPath('data.additional_cost', '10.00')
+            ->assertJsonPath('data.grand_total', '130.00');
+    }
+
+    public function test_the_additional_cost_and_the_discount_stay_two_separate_figures(): void
+    {
+        // Arrange
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::DiscountOrders,
+            PermissionName::AddOrderAdditionalCost,
+        );
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'additional_cost' => '10.00',
+            'additional_cost_reason' => AdditionalCostReason::Modification->value,
+            'discount' => '50.00',
+        ]));
+
+        // Assert — 330.00 + 20.00 + 10.00 − 50.00, and neither figure folded into the other:
+        // reading why a total moved needs both halves standing on their own.
+        $response->assertCreated()
+            ->assertJsonPath('data.additional_cost', '10.00')
+            ->assertJsonPath('data.discount', '50.00')
+            ->assertJsonPath('data.grand_total', '310.00');
+    }
+
+    public function test_a_discount_may_reach_the_widened_base(): void
+    {
+        // Arrange — the ceiling on a discount is what the customer would otherwise pay, so an
+        // additional cost raises it by its own amount.
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::DiscountOrders,
+            PermissionName::AddOrderAdditionalCost,
+        );
+
+        // Act — 330.00 + 20.00 + 10.00, taken off in full.
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'additional_cost' => '10.00',
+            'additional_cost_reason' => AdditionalCostReason::ExtraService->value,
+            'discount' => '360.00',
+        ]));
+
+        // Assert
+        $response->assertCreated()->assertJsonPath('data.grand_total', '0.00');
+    }
+
+    public function test_an_additional_cost_without_a_reason_is_refused(): void
+    {
+        // Arrange
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::AddOrderAdditionalCost,
+        );
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'additional_cost' => '10.00',
+        ]));
+
+        // Assert — the reason is the axis this figure will be read along later, and a charge
+        // nobody can account for is what the field exists to prevent.
+        $response->assertStatus(422)->assertJsonValidationErrors('additional_cost_reason');
+    }
+
+    public function test_the_reason_other_needs_words_of_its_own(): void
+    {
+        // Arrange
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::AddOrderAdditionalCost,
+        );
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'additional_cost' => '10.00',
+            'additional_cost_reason' => AdditionalCostReason::Other->value,
+        ]));
+
+        // Assert — «أخرى» on its own carries no information at all.
+        $response->assertStatus(422)->assertJsonValidationErrors('additional_cost_note');
+    }
+
+    public function test_a_reason_outside_the_list_is_refused(): void
+    {
+        // Arrange
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::AddOrderAdditionalCost,
+        );
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'additional_cost' => '10.00',
+            'additional_cost_reason' => 'shipping_insurance',
+        ]));
+
+        // Assert — a closed set, so the column stays something a report can group by.
+        $response->assertStatus(422)->assertJsonValidationErrors('additional_cost_reason');
+    }
+
+    public function test_a_negative_additional_cost_is_refused(): void
+    {
+        // Arrange
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::AddOrderAdditionalCost,
+        );
+
+        // Act — a discount wearing the wrong field's name.
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'additional_cost' => '-10.00',
+            'additional_cost_reason' => AdditionalCostReason::Transport->value,
+        ]));
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('additional_cost');
+    }
+
+    public function test_changing_the_additional_cost_needs_the_grant(): void
+    {
+        // Arrange — an order already carrying a charge. Built by the factory rather than taken
+        // through the endpoint by a second user: one test process authenticates once, so two
+        // requests under two tokens would both run as whoever signed in first.
+        $order = Order::factory()->create([
+            'additional_cost' => '10.00',
+            'additional_cost_reason' => AdditionalCostReason::Transport,
+        ]);
+
+        // Act — a clerk without the grant raising the charge.
+        $response = $this->withHeaders($this->clerk())->putJson("/api/v1/orders/{$order->id}", [
+            'city_id' => $order->city_id,
+            'additional_cost' => '90.00',
+            'additional_cost_reason' => AdditionalCostReason::Transport->value,
+        ]);
+
+        // Assert
+        $response->assertForbidden();
+        $this->assertSame('10.00', (string) $order->fresh()->additional_cost);
+    }
+
+    public function test_an_edit_that_leaves_the_additional_cost_alone_is_not_refused(): void
+    {
+        // Arrange — see the test above for why the order is built rather than posted.
+        $order = Order::factory()->create([
+            'additional_cost' => '10.00',
+            'additional_cost_reason' => AdditionalCostReason::Transport,
+        ]);
+
+        // Act — every edit re-sends the whole order, so the figure comes back untouched beside
+        // the note somebody actually changed.
+        $response = $this->withHeaders($this->clerk())->putJson("/api/v1/orders/{$order->id}", [
+            'city_id' => $order->city_id,
+            'notes' => 'العميل يريدها قبل الخميس',
+            'additional_cost' => '10.00',
+            'additional_cost_reason' => AdditionalCostReason::Transport->value,
+        ]);
+
+        // Assert — refusing this would make an order carrying a charge uneditable by everyone
+        // else, over a number nobody touched.
+        $response->assertOk()->assertJsonPath('data.notes', 'العميل يريدها قبل الخميس');
+    }
+
+    public function test_the_charge_can_be_taken_back_off(): void
+    {
+        // Arrange
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::AddOrderAdditionalCost,
+        );
+        $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'additional_cost' => '10.00',
+            'additional_cost_reason' => AdditionalCostReason::Transport->value,
+        ]));
+        $order = Order::query()->sole();
+
+        // Act — the amount cleared, the reason left where it was: what the form sends when
+        // somebody empties the box without touching the chips.
+        $response = $this->withHeaders($headers)->putJson("/api/v1/orders/{$order->id}", [
+            'city_id' => $order->city_id,
+            'additional_cost' => '0',
+            'additional_cost_reason' => AdditionalCostReason::Transport->value,
+        ]);
+
+        // Assert — nothing is charged, and the sum goes back to 330.00 + 20.00.
+        $response->assertOk()
+            ->assertJsonPath('data.additional_cost', '0.00')
+            ->assertJsonPath('data.grand_total', '350.00');
+    }
+
     public function test_a_design_fee_is_only_charged_when_we_did_the_design(): void
     {
         // Arrange
@@ -748,6 +1031,29 @@ class OrderTest extends TestCase
         );
     }
 
+    public function test_a_page_of_orders_carries_the_product_behind_every_line(): void
+    {
+        // Arrange — the card in the list shows what is in the order, with its picture. Several
+        // orders deliberately: Eloquent arms its lazy-loading guard only on a multi-row result,
+        // so a one-order fixture proves nothing about a page.
+        foreach (range(1, 2) as $index) {
+            $order = Order::factory()->create();
+            $product = Product::factory()->create();
+            ProductImage::factory()->primary()->for($product)->create();
+            OrderItem::factory()->for($order)->create(['product_id' => $product->getKey()]);
+        }
+
+        $headers = $this->viewer();
+
+        // Act — a lazy load anywhere in here throws under `preventLazyLoading`.
+        $response = $this->withHeaders($headers)->getJson('/api/v1/orders');
+
+        // Assert
+        $response->assertOk();
+        $this->assertNotNull($response->json('data.0.items.0.product_code'));
+        $this->assertNotEmpty($response->json('data.0.items.0.product_image.url'));
+    }
+
     public function test_orders_can_be_filtered_by_status(): void
     {
         // Arrange
@@ -811,6 +1117,66 @@ class OrderTest extends TestCase
             ->assertJsonCount(1, 'data.items')
             ->assertJsonCount(1, 'data.transitions')
             ->assertJsonPath('data.transitions.0.to_status', 'new');
+    }
+
+    public function test_a_line_carries_the_catalogue_row_behind_it(): void
+    {
+        // Arrange — the snapshot on a line is a name and a size, which is what an old invoice
+        // must keep saying. The card that opens the product needs the live row too: the code
+        // people say out loud, and the one photograph.
+        $order = Order::factory()->create();
+        $product = Product::factory()->create(['name' => 'كيس شحن']);
+        ProductImage::factory()->primary()->for($product)->create();
+        ProductImage::factory()->for($product)->create(['sort_order' => 1]);
+        OrderItem::factory()->for($order)->create(['product_id' => $product->getKey()]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->getKey()}");
+
+        // Assert — the code, and the primary image alone. A line is a row in a list, and the
+        // whole gallery is the product screen's job.
+        $response->assertOk()
+            ->assertJsonPath('data.items.0.product_code', $product->code)
+            ->assertJsonPath('data.items.0.product_image.is_primary', true);
+
+        $this->assertNotEmpty($response->json('data.items.0.product_image.url'));
+    }
+
+    public function test_a_product_with_no_photograph_leaves_the_slot_empty(): void
+    {
+        // Arrange — most of the catalogue, most of the time.
+        $order = Order::factory()->create();
+        $product = Product::factory()->create();
+        OrderItem::factory()->for($order)->create(['product_id' => $product->getKey()]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->getKey()}");
+
+        // Assert — null rather than absent, so the client has one thing to check.
+        $response->assertOk()->assertJsonPath('data.items.0.product_image', null);
+    }
+
+    public function test_the_lines_of_one_order_read_their_products_in_one_query(): void
+    {
+        // Arrange — several lines, each on its own product: a query per line is what turns a
+        // four-line order into a slow screen, and the guard only arms on a multi-row result.
+        $order = Order::factory()->create();
+
+        foreach (range(1, 3) as $index) {
+            $product = Product::factory()->create();
+            ProductImage::factory()->primary()->for($product)->create();
+            OrderItem::factory()->for($order)->create(['product_id' => $product->getKey()]);
+        }
+
+        $headers = $this->viewer();
+
+        // Act & Assert — a lazy load anywhere in here throws under `preventLazyLoading`.
+        $this->withHeaders($headers)
+            ->getJson("/api/v1/orders/{$order->getKey()}")
+            ->assertOk()
+            ->assertJsonCount(3, 'data.items');
     }
 
     public function test_a_missing_order_is_a_404(): void

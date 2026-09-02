@@ -3,6 +3,7 @@ import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/appear.dart';
+import 'package:dayaa/features/access/models/role.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/roles_cubit.dart';
 import 'package:dayaa/features/access/presentation/widgets/role_card.dart';
 import 'package:flutter/material.dart';
@@ -44,10 +45,11 @@ class _RolesView extends StatelessWidget {
                               // two default-tagged FABs in one subtree is the «multiple heroes» assertion.
                               heroTag: 'fab-roles',
         onPressed: () async {
-          // Whatever the form returns, the list is stale: a created role is not on it, and the
-          // form is also where an existing one gets renamed.
-          await context.push(Routes.newRole);
-          await cubit.refresh();
+          // Re-read, and only when the form actually stored something: this list is in the
+          // server's order, so where a new role belongs is its answer. A form backed out of
+          // changes nothing and the list does not move.
+          final created = await context.push<Role>(Routes.newRole);
+          if (created != null) await cubit.refresh();
         },
         icon: Icon(AppIcons.add),
         label: const Text('دور جديد'),
@@ -64,6 +66,7 @@ class _RolesView extends StatelessWidget {
               : RefreshIndicator(
                   onRefresh: cubit.refresh,
                   child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 96.h),
                     itemCount: roles.length,
                     separatorBuilder: (context, index) => SizedBox(height: 12.h),
@@ -73,10 +76,17 @@ class _RolesView extends StatelessWidget {
                         key: ValueKey(roles[index].id),
                         role: roles[index],
                         onTap: () async {
-                          await context.push(Routes.role(roles[index].id));
-                          // The role screen can rename, re-permission or delete — a list still
-                          // showing the old row is a list nobody trusts.
-                          await cubit.refresh();
+                          // **Only when something was written in there.** The role screen can
+                          // rename, re-permission or delete, and each of those changes the row
+                          // — but «كم موظفاً يحمله» is the server's counting and a delete leaves
+                          // nothing to patch with, so this one re-reads rather than patches.
+                          // Walking in to read the permissions and walking back out changes
+                          // nothing, and used to cost a request all the same.
+                          final changed = await context.push<bool>(
+                            Routes.role(roles[index].id),
+                          );
+
+                          if (changed ?? false) await cubit.refresh();
                         },
                       ),
                     ),

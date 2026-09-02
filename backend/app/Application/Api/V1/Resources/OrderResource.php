@@ -31,6 +31,14 @@ class OrderResource extends JsonResource
 
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
+
+            // **Which road this order walks**, so a client can *explain* a five-step bar rather
+            // than leaving one that looks truncated. It is not a second copy of the rules —
+            // `available_transitions` and `progress` below already have the answers baked in —
+            // it is the reason for them, which is the one thing a screen cannot derive from
+            // either.
+            'production_flow' => $this->production_flow->value,
+            'production_flow_label' => $this->production_flow->label(),
             // Two questions, and «تم الاستلام» answers them differently: nothing about the order
             // may be edited any more (`is_closed`), but it still owes its settlement, so it is
             // not finished (`is_final`).
@@ -105,6 +113,14 @@ class OrderResource extends JsonResource
             'design_fee' => (string) $this->design_fee,
             'delivery_price' => (string) $this->delivery_price,
             'discount' => (string) $this->discount,
+            // Beside the discount and never folded into it: an order's total is read as «هذا ما
+            // أُضيف وهذا ما خُصم», and one net figure explains neither. The reason travels with
+            // its label for the same reason `design_source` does — a client that translated the
+            // code itself would be keeping a second copy of a list this API owns.
+            'additional_cost' => (string) $this->additional_cost,
+            'additional_cost_reason' => $this->additional_cost_reason?->value,
+            'additional_cost_reason_label' => $this->additional_cost_reason?->label(),
+            'additional_cost_note' => $this->additional_cost_note,
             'grand_total' => (string) $this->grand_total,
 
             // The cost side, null until the order has reached printing — see the order_items
@@ -155,6 +171,9 @@ class OrderResource extends JsonResource
             'stock_deducted_at' => $this->stock_deducted_at?->toIso8601String(),
 
             'placed_at' => $this->placed_at?->toIso8601String(),
+            // When the warehouse finished and handed the order to the press — null for every
+            // order taken before that step existed, which is the honest answer for them.
+            'ready_to_print_at' => $this->ready_to_print_at?->toIso8601String(),
             'design_started_at' => $this->design_started_at?->toIso8601String(),
             'printing_started_at' => $this->printing_started_at?->toIso8601String(),
             'ready_at' => $this->ready_at?->toIso8601String(),

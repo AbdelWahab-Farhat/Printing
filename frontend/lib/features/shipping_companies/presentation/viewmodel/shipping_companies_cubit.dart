@@ -22,6 +22,9 @@ class ShippingCompaniesCubit extends PagedCubit<ShippingCompany> {
   final bool _onlyActive;
 
   @override
+  Object identityOf(ShippingCompany item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<ShippingCompany>>> fetchPage({
     String? search,
     required int page,

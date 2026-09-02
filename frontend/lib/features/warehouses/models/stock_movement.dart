@@ -1,4 +1,5 @@
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/utils/fixed_point.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -78,6 +79,27 @@ abstract class StockMovement with _$StockMovement {
 
     String? notes,
 
+    /// [quantity] with its sign, **relative to the warehouse the list was read for**: a
+    /// transfer is `+200` on the shelf that received it and `-200` on the one that sent it.
+    /// Null when the feed was not scoped to a warehouse — there is no sign to give.
+    @JsonKey(name: 'signed_quantity') String? signedQuantity,
+
+    /// What the shelf held once this row had happened. Null unless the feed was scoped to one
+    /// warehouse *and* one shelf; a running total across shelves would be a meaningless number.
+    @JsonKey(name: 'balance_after') String? balanceAfter,
+
+    /// What the stock on this row cost, for a reader who holds `inventory.view_cost` — the
+    /// server leaves all three keys out otherwise, and this build cannot tell that apart from
+    /// «not recorded», which is why the row is told separately whether it may draw them.
+    ///
+    /// [unitCost] is dropped by the server whenever part of the row is unpriced: an average
+    /// that counts zeros describes nothing, so the row gets the total it can vouch for and the
+    /// quantity it cannot. [totalCost] null means «nobody recorded it» — a row older than the
+    /// cost ledger — and is read as unknown, never as free.
+    @JsonKey(name: 'unit_cost') String? unitCost,
+    @JsonKey(name: 'total_cost') String? totalCost,
+    @JsonKey(name: 'uncosted_quantity') String? uncostedQuantity,
+
     @JsonKey(name: 'created_at') DateTime? createdAt,
   }) = _StockMovement;
 
@@ -101,6 +123,93 @@ abstract class StockMovement with _$StockMovement {
     (null, final to?) => 'إلى $to',
     _ => '',
   };
+
+  // ── the ledger reading ─────────────────────────────────────────────────────────────
+
+  /// Whether this row added to the shelf it was read for. Null when the feed was unscoped.
+  bool? get isInbound => signedQuantity == null ? null : !signedQuantity!.startsWith('-');
+
+  /// `+1,000` / `−1,000`. **The sign is never dropped**: a thousand in and a thousand out drawn
+  /// as the same digits was the whole reason the old feed could not be read.
+  String? get signedQuantityLabel {
+    final signed = signedQuantity;
+    if (signed == null) return null;
+
+    return signed.startsWith('-')
+        ? '−${groupedDecimal(signed.substring(1))}'
+        : '+${groupedDecimal(signed)}';
+  }
+
+  String? get balanceAfterLabel => balanceAfter == null ? null : groupedDecimal(balanceAfter!);
+
+  /// What the shelf held *before* a count corrected it — «كان 105,250». The person entered a
+  /// count, not a difference, and the row hands them back the number they saw; the difference
+  /// stays in its own column so the ledger still adds up.
+  String? get balanceBeforeLabel {
+    final after = balanceAfter;
+    final signed = signedQuantity;
+    if (after == null || signed == null) return null;
+
+    return groupedDecimal(subtractDecimals(after, signed));
+  }
+
+  /// The other end of a transfer, seen from [warehouseId] — «← صالة العرض» on the sender's
+  /// ledger, «من المخزن الرئيسي» on the receiver's. Empty for anything that is not a transfer:
+  /// a shelf's own ledger already says where it is, and repeating the place on every row was
+  /// a column of identical words.
+  String otherEndFrom(int warehouseId) {
+    if (movementType != MovementType.internalTransfer) return '';
+
+    return switch ((fromWarehouseId == warehouseId, toWarehouse?.name, fromWarehouse?.name)) {
+      (true, final to?, _) => '← $to',
+      (false, _, final from?) => 'من $from',
+      _ => '',
+    };
+  }
+
+  /// The cost line, or null when there is nothing honest to say — the server sent no figures
+  /// (a row older than the cost ledger), which the row draws as unknown rather than as free.
+  ///
+  /// **One number per row.** Arriving stock shows its unit price, because that is the number a
+  /// person knows is wrong on sight («٣٫٥ للكيلو؟ لا، ٢٫٨») and the total is the balance times
+  /// it; leaving stock shows its total, because that is what actually left. Stock nobody priced
+  /// is *named* in `warn` and never averaged; a row only partly priced carries the total it can
+  /// vouch for and, on a line of its own, how much of it is unpriced.
+  MovementCostLine? costLine(String unitLabel) {
+    final total = totalCost;
+    if (total == null) return null;
+
+    final uncosted = uncostedQuantity ?? '0';
+    final uncostedMilli = thousandths(uncosted);
+
+    if (uncostedMilli > BigInt.zero) {
+      if (uncostedMilli >= thousandths(quantity)) {
+        return const MovementCostLine('بلا تكلفة', warns: true);
+      }
+
+      return MovementCostLine(
+        '${groupedDecimal(total)} د.ل',
+        detail: '${groupedDecimal(uncosted)} بلا تكلفة',
+      );
+    }
+
+    final unit = unitCost;
+    final inbound = isInbound ?? (toWarehouse != null && fromWarehouse == null);
+
+    if (inbound && unit != null) return MovementCostLine('${groupedDecimal(unit)} د.ل/$unitLabel');
+
+    return MovementCostLine('${groupedDecimal(total)} د.ل');
+  }
+}
+
+/// One cost line on a ledger row: the figure, whether the figure itself is a warning
+/// («بلا تكلفة»), and an optional second line that always is — how much of the row is unpriced.
+class MovementCostLine {
+  const MovementCostLine(this.text, {this.warns = false, this.detail});
+
+  final String text;
+  final bool warns;
+  final String? detail;
 }
 
 /// A warehouse as it appears on a ledger row: an id and the name it had.

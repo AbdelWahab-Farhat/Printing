@@ -6,6 +6,7 @@ namespace Tests\Feature\Orders;
 
 use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -36,9 +37,13 @@ class OrderStatusTest extends TestCase
     public static function transitions(): array
     {
         return [
-            'a new order is designed, printed, or found short at intake — and nothing else' => [
+            'a new order is prepped for the press, or found short at intake — and nothing else' => [
                 OrderStatus::New,
-                [OrderStatus::Designing, OrderStatus::Printing, OrderStatus::Shortage],
+                [OrderStatus::ReadyToPrint, OrderStatus::Shortage],
+            ],
+            'the handover leads into the press, either door — or is written off' => [
+                OrderStatus::ReadyToPrint,
+                [OrderStatus::Designing, OrderStatus::Printing, OrderStatus::Cancelled],
             ],
             'a design must pass through printing — never straight to ready' => [
                 OrderStatus::Designing,
@@ -48,9 +53,9 @@ class OrderStatusTest extends TestCase
                 OrderStatus::Printing,
                 [OrderStatus::Ready, OrderStatus::Designing, OrderStatus::Cancelled],
             ],
-            'a shortage rejoins the route it was taken off' => [
+            'a shortage rejoins the route at the handover it was taken off before' => [
                 OrderStatus::Shortage,
-                [OrderStatus::Designing, OrderStatus::Printing, OrderStatus::Cancelled],
+                [OrderStatus::ReadyToPrint, OrderStatus::Cancelled],
             ],
             'ready leaves for the customer or is written off — the bags exist, so it never goes back' => [
                 OrderStatus::Ready,
@@ -108,7 +113,231 @@ class OrderStatusTest extends TestCase
         $this->assertEqualsCanonicalizing($expected, $allowed);
     }
 
+    // ──────────────────────── the second road, for goods already made ────────────────────────
+
+    /**
+     * Every legal move for an order that has nothing to design and nothing to print.
+     *
+     * **Two arms differ and eleven do not**, which is the claim this provider exists to pin. A
+     * parcel comes back from a courier the same way whether it was printed or not; what changes
+     * is only the part of the road that *is* the work. See {@see OrderFlow}.
+     *
+     * @return array<string, array{0: OrderStatus, 1: list<OrderStatus>}>
+     */
+    public static function unprintedTransitions(): array
+    {
+        $shared = self::transitions();
+
+        return [
+            'goods that are already made go straight to the shelf' => [
+                OrderStatus::New,
+                [OrderStatus::Ready, OrderStatus::Shortage],
+            ],
+            'a plain order parked short rejoins at the shelf, not at a design queue' => [
+                OrderStatus::Shortage,
+                [OrderStatus::Ready, OrderStatus::Cancelled],
+            ],
+            // The rest, asserted to be *identical* rather than restated: a copy would be a second
+            // place to edit, and the point of the flow is that it changes as little as it can.
+            'printing is unreachable, but its own arm is untouched' => $shared['printing ends ready, and may go back to the drawing board'],
+            'the shelf leaves the same two ways' => $shared['ready leaves for the customer or is written off — the bags exist, so it never goes back'],
+            'the road is the same' => $shared['an order on the road either arrives or comes back to the courier who carried it'],
+            'the return chain is the same' => $shared['a parcel the courier still holds goes back to the company that sent him'],
+            'the depot is the same' => $shared['from the company, back to our office — or straight out for a second attempt'],
+            'our shelf is the same' => $shared['back on our shelf: collected here, sent out again, or written off'],
+            'a re-send is the same' => $shared['a re-send leaves the same two ways any order leaves'],
+            'the money is still owed' => $shared['the customer has it — all that is left is the money'],
+            'settled is still the end' => $shared['a settled order is finished'],
+            'cancelled is still the end' => $shared['a cancelled order is finished'],
+        ];
+    }
+
+    /**
+     * @param  list<OrderStatus>  $expected
+     */
+    #[DataProvider('unprintedTransitions')]
+    public function test_the_map_for_goods_already_made_is_the_same_road_minus_the_work(
+        OrderStatus $from,
+        array $expected,
+    ): void {
+        // Act
+        $allowed = $from->allowedNext(OrderFlow::NoProduction);
+
+        // Assert
+        $this->assertEqualsCanonicalizing($expected, $allowed);
+    }
+
+    /**
+     * Every status an order on [$flow] can actually end up in, walked from «جديدة».
+     *
+     * **Not the union of every status's arms.** `Printing->allowedNext()` still answers on the
+     * short road — the arm is simply never consulted, because nothing on that road leads to
+     * «قيد الطباعة» in the first place — so unioning the arms would report the press as reachable
+     * by reading the map from a status the order can never be standing in.
+     *
+     * @return list<OrderStatus>
+     */
+    private static function reachableOn(OrderFlow $flow): array
+    {
+        $seen = [OrderStatus::New->value => OrderStatus::New];
+        $queue = [OrderStatus::New];
+
+        while ($queue !== []) {
+            foreach (array_shift($queue)->allowedNext($flow) as $next) {
+                if (! isset($seen[$next->value])) {
+                    $seen[$next->value] = $next;
+                    $queue[] = $next;
+                }
+            }
+        }
+
+        return array_values($seen);
+    }
+
+    public function test_the_press_and_the_design_queue_are_unreachable_for_goods_already_made(): void
+    {
+        // Act
+        $reachable = self::reachableOn(OrderFlow::NoProduction);
+
+        // Assert — not merely absent from «جديدة»: absent from the whole road, by walking it. An
+        // order of ready-made goods that could reach the press from anywhere would be an order
+        // that could be sent to print bags that are already printed.
+        $this->assertNotContains(OrderStatus::Designing, $reachable);
+        $this->assertNotContains(OrderStatus::Printing, $reachable);
+
+        // And the long road still reaches both, so this is a statement about the short one
+        // rather than about a walk that quietly stopped early.
+        $this->assertContains(OrderStatus::Designing, self::reachableOn(OrderFlow::Standard));
+        $this->assertContains(OrderStatus::Printing, self::reachableOn(OrderFlow::Standard));
+    }
+
+    public function test_the_short_road_reaches_every_ending_the_long_one_does(): void
+    {
+        // Act
+        $shortRoad = self::reachableOn(OrderFlow::NoProduction);
+
+        // Assert — dropping two steps must not have stranded anything an order still needs to be
+        // able to become: it can still be shelved, sent out, delivered, settled, returned through
+        // all three links, re-sent and written off.
+        foreach (OrderStatus::cases() as $status) {
+            if ($status->isProduction()) {
+                continue;
+            }
+
+            $this->assertContains(
+                $status,
+                $shortRoad,
+                "«{$status->label()}» cannot be reached by an order of ready-made goods.",
+            );
+        }
+    }
+
+    public function test_the_two_roads_differ_in_exactly_two_places(): void
+    {
+        // Act
+        $differing = array_values(array_filter(
+            OrderStatus::cases(),
+            fn (OrderStatus $s) => $s->allowedNext() !== $s->allowedNext(OrderFlow::NoProduction),
+        ));
+
+        // Assert — the whole cost of the feature, stated as a number. «جديدة» is where the work
+        // is dispatched from and «نواقص» is where it is rejoined; nothing else about an order's
+        // life depends on whether the press ran. A third entry appearing here is a change worth
+        // arguing about rather than one worth discovering later.
+        $this->assertEqualsCanonicalizing([OrderStatus::New, OrderStatus::Shortage], $differing);
+    }
+
+    public function test_a_shorter_road_is_still_a_road(): void
+    {
+        // Act
+        $line = OrderStatus::mainLine(FulfilmentType::Delivery, OrderFlow::NoProduction);
+
+        // Assert — five steps, in the order they happen, and the two that name work are the two
+        // that are gone. A bar drawing «قيد الطباعة» for an order that will never enter it would
+        // claim the order is two sevenths of the way through while it sits ready on the shelf.
+        $this->assertSame([
+            OrderStatus::New,
+            OrderStatus::Ready,
+            OrderStatus::OutForDelivery,
+            OrderStatus::Delivered,
+            OrderStatus::Settled,
+        ], $line);
+
+        // And the destination still decides the fourth step, exactly as it does on the long road.
+        $this->assertContains(
+            OrderStatus::OfficePickup,
+            OrderStatus::mainLine(FulfilmentType::OfficePickup, OrderFlow::NoProduction),
+        );
+    }
+
+    public function test_the_shorter_road_introduces_no_new_detour(): void
+    {
+        // Arrange — what each road can reach, and of that, what its own progress bar cannot place.
+        $detoursOn = fn (OrderFlow $flow): array => array_values(array_filter(
+            self::reachableOn($flow),
+            fn (OrderStatus $s) => $s->mainLinePosition(FulfilmentType::Delivery, $flow) === null,
+        ));
+
+        // Act
+        $shortRoad = $detoursOn(OrderFlow::NoProduction);
+        $longRoad = $detoursOn(OrderFlow::Standard);
+
+        // Assert — a detour is somewhere an order genuinely is but is not a step on the way to
+        // anywhere, and both roads have the same ones. **The failure this guards against is
+        // specific**: drop a step an order still passes through and that step becomes a detour,
+        // so an entirely ordinary order starts drawing an empty bar with nothing marked current.
+        // «قيد التصميم» and «قيد الطباعة» may leave the line only because nothing reaches them.
+        $this->assertEqualsCanonicalizing($longRoad, $shortRoad);
+
+        // Stated outright too, so the comparison above cannot pass by both roads being wrong.
+        $this->assertEqualsCanonicalizing([
+            OrderStatus::Shortage,
+            OrderStatus::OfficePickup,
+            OrderStatus::ReturnedCourier,
+            OrderStatus::ReturnedCarrier,
+            OrderStatus::ReturnedOffice,
+            OrderStatus::Resend,
+            OrderStatus::Cancelled,
+        ], $shortRoad);
+    }
+
     // ─────────────────────────── the rules behind the map ───────────────────────────
+
+    public function test_the_press_is_entered_through_one_door(): void
+    {
+        // Arrange — the two statuses the printing department owns.
+        $press = [OrderStatus::Designing, OrderStatus::Printing];
+
+        // Act — every status inventory owns, and what it can reach.
+        $fromIntake = OrderStatus::New->allowedNext();
+        $fromShortage = OrderStatus::Shortage->allowedNext();
+
+        // Assert — **the whole point of «جاهزة للطباعة».** An order used to cross from the
+        // warehouse to the press invisibly, so the moment inventory finished was recorded
+        // nowhere and the press found out by somebody noticing. Neither of the two statuses
+        // inventory owns may reach a production status directly any more.
+        foreach ($press as $status) {
+            $this->assertNotContains($status, $fromIntake);
+            $this->assertNotContains($status, $fromShortage);
+        }
+
+        $this->assertContains(OrderStatus::ReadyToPrint, $fromIntake);
+        $this->assertContains(OrderStatus::ReadyToPrint, $fromShortage);
+    }
+
+    public function test_the_handover_is_reached_from_intake_and_from_a_resolved_shortage(): void
+    {
+        // Act
+        $waysIn = array_values(array_filter(
+            OrderStatus::cases(),
+            fn (OrderStatus $s) => in_array(OrderStatus::ReadyToPrint, $s->allowedNext(), true),
+        ));
+
+        // Assert — the two places an order can be while inventory still has it. Nothing comes
+        // *back* to the handover: once the press has the order, finishing it is the press's
+        // business and re-handing it over would describe a second delivery that never happened.
+        $this->assertEqualsCanonicalizing([OrderStatus::New, OrderStatus::Shortage], $waysIn);
+    }
 
     public function test_a_design_can_never_skip_printing(): void
     {
@@ -160,11 +389,18 @@ class OrderStatusTest extends TestCase
 
     public function test_a_shortage_is_never_a_dead_end(): void
     {
-        // Act
-        $allowed = OrderStatus::Shortage->allowedNext();
+        // Act & Assert — the gap in the flow as first described: a way in and no way out. Asked
+        // of both roads, because the short one has its own «نواقص» arm: an order of ready-made
+        // goods can still find the shelf empty, and writing that arm as a filter over the long
+        // road rather than as its own would have produced exactly this bug.
+        foreach (OrderFlow::cases() as $flow) {
+            $allowed = OrderStatus::Shortage->allowedNext($flow);
 
-        // Assert — the gap in the flow as first described: a way in and no way out.
-        $this->assertNotEmpty(array_filter($allowed, fn (OrderStatus $s) => ! $s->isFinal()));
+            $this->assertNotEmpty(
+                array_filter($allowed, fn (OrderStatus $s) => ! $s->isFinal()),
+                "«نواقص» is a dead end on the {$flow->value} road.",
+            );
+        }
     }
 
     public function test_a_shortage_is_declared_at_intake_and_nowhere_else(): void
@@ -413,15 +649,20 @@ class OrderStatusTest extends TestCase
 
     public function test_no_status_lists_itself_as_a_next_step(): void
     {
-        // Act
-        $selfLooping = array_filter(
-            OrderStatus::cases(),
-            fn (OrderStatus $s) => in_array($s, $s->allowedNext(), true),
-        );
+        // Act — on every road, so a new one cannot introduce a loop the old one refused.
+        $selfLooping = [];
+
+        foreach (OrderFlow::cases() as $flow) {
+            foreach (OrderStatus::cases() as $status) {
+                if (in_array($status, $status->allowedNext($flow), true)) {
+                    $selfLooping[] = "{$flow->value}: {$status->value}";
+                }
+            }
+        }
 
         // Assert — re-saving an order is not a transition, and treating it as one would write
         // a meaningless row into the history every time somebody pressed save twice.
-        $this->assertSame([], array_values($selfLooping));
+        $this->assertSame([], $selfLooping);
     }
 
     public function test_every_status_except_the_first_can_be_reached(): void
@@ -466,13 +707,16 @@ class OrderStatusTest extends TestCase
         // Arrange
         $disagreements = [];
 
-        // Act — all 144 pairs, so the convenience method can never drift from the map it reads.
-        foreach (OrderStatus::cases() as $from) {
-            foreach (OrderStatus::cases() as $to) {
-                $expected = in_array($to, $from->allowedNext(), true);
+        // Act — all 144 pairs on *each* road, so the convenience method can never drift from the
+        // map it reads, and a road added later cannot quietly be enforced against the wrong one.
+        foreach (OrderFlow::cases() as $flow) {
+            foreach (OrderStatus::cases() as $from) {
+                foreach (OrderStatus::cases() as $to) {
+                    $expected = in_array($to, $from->allowedNext($flow), true);
 
-                if ($from->canMoveTo($to) !== $expected) {
-                    $disagreements[] = "{$from->value} → {$to->value}";
+                    if ($from->canMoveTo($to, $flow) !== $expected) {
+                        $disagreements[] = "{$flow->value}: {$from->value} → {$to->value}";
+                    }
                 }
             }
         }
@@ -506,10 +750,18 @@ class OrderStatusTest extends TestCase
     {
         // Act
         $final = array_filter(OrderStatus::cases(), fn (OrderStatus $s) => $s->isFinal());
-        $leaking = array_filter($final, fn (OrderStatus $s) => $s->allowedNext() !== []);
+        $leaking = [];
 
-        // Assert
+        foreach (OrderFlow::cases() as $flow) {
+            foreach ($final as $status) {
+                if ($status->allowedNext($flow) !== []) {
+                    $leaking[] = "{$flow->value}: {$status->value}";
+                }
+            }
+        }
+
+        // Assert — an ending is an ending on every road.
         $this->assertNotEmpty($final, 'A machine with no final state never finishes an order.');
-        $this->assertSame([], array_values($leaking));
+        $this->assertSame([], $leaking);
     }
 }

@@ -3,6 +3,7 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
@@ -69,6 +70,11 @@ abstract interface class OrderRepository {
   /// have to be expressible and `null` can only carry one of them: **absent** leaves the number
   /// alone, while `(number: null)` *clears* it — a wrong number deleted is a real edit, and
   /// omitting the field on a `PUT` is how the API is told so.
+  ///
+  /// [additionalCost] and its two companions travel together or not at all: sending an amount
+  /// with no reason is a 422, and so is sending an unchanged amount back on an edit that was
+  /// only about the address if its reason is dropped on the way. Absent means «leave the charge
+  /// as it is», and the implementation echoes the order's own three fields back.
   Future<Either<Failure, Order>> updateInvoice(
     int orderId, {
     List<InvoiceLineUpdate>? lines,
@@ -76,6 +82,9 @@ abstract interface class OrderRepository {
     int? cityId,
     int? regionId,
     ({String? number})? recipientPhone,
+    String? additionalCost,
+    AdditionalCostReason? additionalCostReason,
+    String? additionalCostNote,
   });
 
   /// [fields] is whatever the chosen transition asked for, keyed as the server described it —

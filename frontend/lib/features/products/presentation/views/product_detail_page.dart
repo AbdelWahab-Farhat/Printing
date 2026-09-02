@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
@@ -61,56 +62,78 @@ class ProductDetailPage extends StatelessWidget {
   }
 }
 
-class _ProductDetailView extends StatelessWidget {
+class _ProductDetailView extends StatefulWidget {
   const _ProductDetailView();
+
+  @override
+  State<_ProductDetailView> createState() => _ProductDetailViewState();
+}
+
+/// Stateful for one reason: it remembers the product as it changed, so `pop` can hand the
+/// catalogue behind the new row instead of making it re-read a page it already holds. That is
+/// screen lifecycle, not business state — the Cubit owns the product itself.
+class _ProductDetailViewState extends State<_ProductDetailView> {
+  final _changes = Changes<Product>();
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<ProductDetailCubit>();
 
-    return Scaffold(
-      floatingActionButtonLocation: AppSpeedDial.location,
-      appBar: AppBar(
-        title: BlocBuilder<ProductDetailCubit, ProductDetailState>(
-          // The name once it is known, so the bar stops saying something generic the moment it
-          // can say something useful.
-          builder: (context, state) => Text(state.product?.name ?? 'تفاصيل المنتج'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        // Always through here, so the back button and the app bar's arrow return the same thing.
+        context.pop(_changes.result);
+      },
+      child: Scaffold(
+        floatingActionButtonLocation: AppSpeedDial.location,
+        appBar: AppBar(
+          title: BlocBuilder<ProductDetailCubit, ProductDetailState>(
+            // The name once it is known, so the bar stops saying something generic the moment it
+            // can say something useful.
+            builder: (context, state) => Text(state.product?.name ?? 'تفاصيل المنتج'),
+          ),
         ),
-      ),
-      floatingActionButton: BlocBuilder<ProductDetailCubit, ProductDetailState>(
-        builder: (context, state) {
-          final product = state.product;
-          if (product == null) return const SizedBox.shrink();
+        floatingActionButton: BlocBuilder<ProductDetailCubit, ProductDetailState>(
+          builder: (context, state) {
+            final product = state.product;
+            if (product == null) return const SizedBox.shrink();
 
-          return _Actions(
-            product: product,
-            // Re-read rather than trusting what came back: prices are the catalogue's own
-            // arithmetic and this screen is the one that has to be right about them.
-            onEdit: (context) async {
-              final saved = await context.push<bool>(
-                Routes.editProduct(product.id),
-                // Handed over so the form opens filled without a second request for a product
-                // this screen already has.
-                extra: product,
-              );
+            return _Actions(
+              product: product,
+              // What the form hands back is the server's own reading of the product it stored —
+              // prices, variants and all, the same bytes a re-read would return. Null means the
+              // form was left without saving, and nothing on this screen has to move.
+              onEdit: (context) async {
+                final saved = await context.push<Product>(
+                  Routes.editProduct(product.id),
+                  // Handed over so the form opens filled without a second request for a product
+                  // this screen already has.
+                  extra: product,
+                );
 
-              if (saved ?? false) await cubit.load();
-            },
-          );
-        },
-      ),
-      body: BlocBuilder<ProductDetailCubit, ProductDetailState>(
-        builder: (context, state) => switch (state) {
-          ProductDetailLoading() => const Center(child: CircularProgressIndicator()),
-          ProductDetailFailure(:final failure) => _FailureView(
-            message: failure.message,
-            onRetry: cubit.load,
-          ),
-          ProductDetailLoaded(:final product) => RefreshIndicator(
-            onRefresh: cubit.load,
-            child: _Body(product: product),
-          ),
-        },
+                if (saved != null) cubit.show(saved);
+              },
+            );
+          },
+        ),
+        body: BlocConsumer<ProductDetailCubit, ProductDetailState>(
+          // Every reading goes past here, whatever produced it. What differs from the first one
+          // is what the catalogue behind is handed on the way out.
+          listener: (context, state) => _changes.saw(state.product),
+          builder: (context, state) => switch (state) {
+            ProductDetailLoading() => const Center(child: CircularProgressIndicator()),
+            ProductDetailFailure(:final failure) => _FailureView(
+              message: failure.message,
+              onRetry: cubit.load,
+            ),
+            ProductDetailLoaded(:final product) => RefreshIndicator(
+              onRefresh: cubit.load,
+              child: _Body(product: product),
+            ),
+          },
+        ),
       ),
     );
   }

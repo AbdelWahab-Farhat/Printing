@@ -189,7 +189,8 @@ class _AppTextFieldState extends State<AppTextField> {
 
     // A password field carries the lock without being asked; anything else shows what the
     // caller gave it, if it gave one.
-    final leadingIcon = widget.prefixIcon ?? (widget.obscureText ? AppIcons.password : null);
+    final leadingIcon =
+        widget.prefixIcon ?? (widget.obscureText ? AppIcons.password : null);
 
     return TextFormField(
       controller: widget.controller,
@@ -219,14 +220,6 @@ class _AppTextFieldState extends State<AppTextField> {
       onChanged: widget.onChanged,
       onFieldSubmitted: widget.onSubmitted,
       onTap: widget.onTap,
-      // Closes the keyboard when the user taps anywhere else — including somewhere that claims
-      // the tap for itself, like a button or a list row, which the app-wide [DismissKeyboard]
-      // cannot see because the deeper recogniser wins the gesture arena. `TapRegion` is not in
-      // that arena, so this fires either way.
-      //
-      // Flutter's own default only does this on desktop and web; on a phone it deliberately
-      // keeps focus, which is not what anybody here expects.
-      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hint,
@@ -255,8 +248,13 @@ class _AppTextFieldState extends State<AppTextField> {
           color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
           fontWeight: FontWeight.w400,
         ),
-        helperStyle: textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-        errorStyle: textTheme.bodySmall?.copyWith(color: scheme.error, height: 1.4),
+        helperStyle: textTheme.bodySmall?.copyWith(
+          color: scheme.onSurfaceVariant,
+        ),
+        errorStyle: textTheme.bodySmall?.copyWith(
+          color: scheme.error,
+          height: 1.4,
+        ),
         errorMaxLines: 2,
         prefixIcon: leadingIcon == null
             ? null

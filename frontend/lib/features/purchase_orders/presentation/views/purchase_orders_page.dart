@@ -33,20 +33,23 @@ class _PurchaseOrdersView extends StatelessWidget {
   Future<void> _open(BuildContext context, PurchaseOrder order) async {
     final cubit = context.read<PurchaseOrdersCubit>();
 
-    final changed = await context.push<bool>(
+    final changed = await context.push<PurchaseOrder>(
       Routes.purchaseOrder(order.id),
       extra: order,
     );
 
-    if (changed ?? false) await cubit.refresh();
+    // The order itself when something moved, and nothing at all after a screen the user merely
+    // read. The row redraws from what came back — and drops out of the list when the move took
+    // it out of the state on screen.
+    if (changed != null) cubit.replace(changed);
   }
 
   Future<void> _add(BuildContext context) async {
     final cubit = context.read<PurchaseOrdersCubit>();
 
-    final saved = await context.push<bool>(Routes.purchaseOrderForm);
+    final saved = await context.push<PurchaseOrder>(Routes.purchaseOrderForm);
 
-    if (saved ?? false) await cubit.refresh();
+    if (saved != null) cubit.insert(saved);
   }
 
   @override

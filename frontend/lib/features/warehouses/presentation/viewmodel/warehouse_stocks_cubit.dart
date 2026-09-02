@@ -45,6 +45,9 @@ class WarehouseStocksCubit extends PagedCubit<WarehouseStock> {
   StockShelfFilter filter = StockShelfFilter.all;
 
   @override
+  Object identityOf(WarehouseStock item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<WarehouseStock>>> fetchPage({
     String? search,
     required int page,
@@ -66,17 +69,21 @@ class WarehouseStocksCubit extends PagedCubit<WarehouseStock> {
     await load();
   }
 
-  /// Sets or clears the alert level on one shelf, then re-reads: the line's own `is_low_stock`
-  /// is the server's answer, and a locally patched row would disagree with it immediately.
+  /// Sets or clears the alert level on one shelf.
+  ///
+  /// **The endpoint answers with the shelf**, `is_low_stock` recomputed and all — so the row is
+  /// replaced with what came back rather than the whole list re-read. That was never a guess
+  /// this screen was making; it was a second request for an answer already in hand.
   Future<Failure?> setThreshold(WarehouseStock stock, String? threshold) async {
     final result = await _setThreshold(warehouseId, stock.id, threshold: threshold);
 
     if (isClosed) return null;
 
-    final failure = result.fold<Failure?>((failure) => failure, (_) => null);
-    if (failure == null) await refresh();
+    return result.fold<Failure?>((failure) => failure, (updated) {
+      replace(updated);
 
-    return failure;
+      return null;
+    });
   }
 }
 

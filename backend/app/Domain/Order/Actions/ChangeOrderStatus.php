@@ -12,6 +12,7 @@ use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\PaymentRequiresAnActor;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
+use App\Domain\Order\Exceptions\ShortageMustBeResolved;
 use App\Domain\Order\Exceptions\ShortageNeedsAQuantity;
 use App\Domain\Order\Exceptions\TransitionNotAllowed;
 use App\Domain\Order\Exceptions\TransitionRequiresReason;
@@ -55,6 +56,10 @@ final class ChangeOrderStatus
         // Undoes both of the above when a cancellation follows a deduction — see its own
         // docblock.
         private readonly ReverseOrderStockDeduction $reverseStockDeduction,
+        // Puts the shelf right at «جاهزة» when the press used a different amount than the
+        // warehouse pulled — see its own docblock for why a correction is a restatement rather
+        // than a delta movement.
+        private readonly RestateOrderStockDeduction $restateStock,
         // The ledger's own front door, used unchanged — see {@see recordPaymentForOrder()}. Money taken
         // at the counter gets the same lock, the same ceiling and the same row as money taken on
         // the payments screen, because it *is* the same event.
@@ -68,6 +73,7 @@ final class ChangeOrderStatus
      * @throws TransitionNotAllowed
      * @throws TransitionRequiresReason
      * @throws SettlementRequiresFullPayment
+     * @throws ShortageMustBeResolved
      * @throws FulfillmentRequiresAnActor
      * @throws PaymentRequiresAnActor
      */
@@ -86,7 +92,11 @@ final class ChangeOrderStatus
 
         $target = $this->resolve($order, $target);
 
-        if (! $from->canMoveTo($target)) {
+        // **The order's own road, not the general one.** An order made entirely of goods that are
+        // already made walks جديدة → جاهزة — see {@see OrderFlow} — and asking the map without
+        // saying so would refuse the very move `Order::availableTransitionsFor()` had just told
+        // the app it could make, leaving the short road drawn on screen and enforced nowhere.
+        if (! $from->canMoveTo($target, $order->production_flow)) {
             throw TransitionNotAllowed::make($from, $target);
         }
 
@@ -114,13 +124,32 @@ final class ChangeOrderStatus
                 throw SettlementRequiresFullPayment::make($order->remainingAmount());
             }
 
-            // Decided before anything below touches the row: `ready` is reachable only from
-            // `printing` and never revisited once left — see `OrderStatus::allowedNext()` — so an
-            // order reaches it at most once, and stock may leave the warehouse exactly once per
-            // order — see DeductOrderStock. Deducting here rather than on entry to `printing`
-            // also means the lines are already frozen (`Order::itemsAreEditable()` excludes
-            // `ready`), so what gets deducted can no longer be edited out from under it.
-            $deductStock = $target === OrderStatus::Ready && $order->stock_deducted_at === null;
+            // **Two statuses can be the one where stock leaves, and `stock_deducted_at` decides
+            // which.** «جاهزة للطباعة» is the warehouse handing the goods to the press, and it is
+            // the first stop for every printed order. An order of ready-made goods never passes
+            // through it — see {@see OrderFlow} — so for that one «جاهزة» is still the first and
+            // only deduction, exactly as before this status existed.
+            //
+            // Nothing returns to either — see `OrderStatus::allowedNext()` — and the column is
+            // never cleared, so "at most once per order" holds without a second flag. The same
+            // fact drives the form: {@see TransitionFields} offers the warehouse picker on
+            // whichever of the two is still the deducting one, so what is asked for and what is
+            // taken cannot disagree.
+            $deductStock = ($target === OrderStatus::ReadyToPrint || $target === OrderStatus::Ready)
+                && $order->stock_deducted_at === null;
+
+            // **The other half: «جاهزة» reached by an order whose stock already went.** The
+            // warehouse weighed what it pulled; the press knows what the run actually used, and
+            // the second figure is the true one. Only lines whose number moved are touched — see
+            // {@see RestateOrderStockDeduction}.
+            $restateStock = $target === OrderStatus::Ready && $order->stock_deducted_at !== null;
+
+            // **Production is costed the first time an order is called ready, and the fact that
+            // says so is now `ready_at`.** It used to be `stock_deducted_at`, because the two
+            // happened in the same breath — but stock leaves at «جاهزة للطباعة» now, so every
+            // printed order arrives here already deducted and that guard would cost nothing at
+            // all. Read before the save below, which is what stamps the column.
+            $costProduction = $target === OrderStatus::Ready && $order->ready_at === null;
 
             // The mirror image: a cancellation only has anything to undo if stock genuinely left
             // — `stock_deducted_at` is never cleared by a reversal, so this reads the same fact
@@ -189,13 +218,23 @@ final class ChangeOrderStatus
                 $this->attachDesigns($order, $fields);
             }
 
+            // **Before the status moves, for the same reason the artwork sometimes is.** What
+            // arrived of a shortage is a fact about the order as it still stands in «نواقص»,
+            // where its lines are open; the status it is heading for closes them. See the
+            // method's own docblock.
+            $this->recordArrivedShortages($order, $from, $target, $fields);
+
+            // And judged immediately after, so the order is refused on what it actually still
+            // owes rather than on what it owed before the delivery was counted in.
+            $this->guardShortageIsResolved($order, $from, $target);
+
             $order->forceFill($attributes)->save();
 
             if (! $artworkGoesFirst) {
                 $this->attachDesigns($order, $fields);
             }
 
-            $this->recordShortages($order, $from, $target, $fields);
+            $this->recordDeclaredShortages($order, $target, $fields);
 
             $this->guardShortage($order, $target);
 
@@ -206,6 +245,17 @@ final class ChangeOrderStatus
                 ($this->setStockQuantities)($order->loadMissing('items'), $fields);
 
                 $this->deductStockForOrder($order, (int) $fields['warehouse_id'], $actor);
+            }
+
+            if ($restateStock) {
+                $this->restateStockForOrder($order, $fields, $actor);
+            }
+
+            // **Costed at «جاهزة» on both roads, and never at «جاهزة للطباعة».** Labour, machine
+            // runtime and overhead are the press running, which has not happened when the
+            // warehouse hands the order over — and by the time it has, the figure the restatement
+            // above just settled is the corrected one, which is the right basis to cost against.
+            if ($costProduction) {
                 $this->costProductionForOrder($order, $actor);
             }
 
@@ -316,14 +366,30 @@ final class ChangeOrderStatus
      *
      * @param  array<string, mixed>  $fields
      */
-    private function recordShortages(Order $order, OrderStatus $from, OrderStatus $target, array $fields): void
+    private function recordDeclaredShortages(Order $order, OrderStatus $target, array $fields): void
     {
         if ($target === OrderStatus::Shortage) {
             ($this->setShortages)($order, $this->declared($order, $fields));
-
-            return;
         }
+    }
 
+    /**
+     * What arrived of the shortage, written **before** the order leaves «نواقص».
+     *
+     * **The side of the status write this falls on is decided by the same rule the artwork
+     * follows.** {@see SetOrderShortages} refuses an order whose lines are locked, and «نواقص» is
+     * one of the four statuses where they are not — but «جاهزة للطباعة», the status this move
+     * usually lands on, is not: the goods have been weighed and the stock has already left the
+     * warehouse by then, so the lines close there on purpose. Recorded after the save, this would
+     * refuse every delivery that resolved a shortage.
+     *
+     * So it is recorded while the order still stands in the status that permits it — exactly as
+     * `$artworkGoesFirst` decides which side of the write the designs go on.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    private function recordArrivedShortages(Order $order, OrderStatus $from, OrderStatus $target, array $fields): void
+    {
         if ($from === OrderStatus::Shortage && ! $target->isFinal()) {
             ($this->setShortages)($order, $this->remaining($order, $fields));
         }
@@ -423,10 +489,60 @@ final class ChangeOrderStatus
      * `$actor` is never null here: this only ever runs immediately after `deductStockForOrder`,
      * which already refused a null one.
      */
-    private function costProductionForOrder(Order $order, User $actor): void
+    private function costProductionForOrder(Order $order, ?User $actor): void
     {
+        // It used to run only immediately after `deductStockForOrder()`, which had already
+        // refused a null actor, so the parameter could be non-nullable. Costing now happens on
+        // its own at «جاهزة» — after a *restatement* as well as after a first deduction — so the
+        // refusal has to be stated here rather than inherited from a call site next door.
+        if ($actor === null) {
+            throw FulfillmentRequiresAnActor::make();
+        }
+
         ($this->applyManufacturingRates)($order->loadMissing('items'), (int) $actor->getKey());
         ($this->recalculateCogs)($order);
+    }
+
+    /**
+     * Puts the shelf right once the press knows what the run actually used.
+     *
+     * @param  array<string, mixed>  $fields
+     *
+     * @throws FulfillmentRequiresAnActor
+     */
+    private function restateStockForOrder(Order $order, array $fields, ?User $actor): void
+    {
+        if ($actor === null) {
+            throw FulfillmentRequiresAnActor::make();
+        }
+
+        ($this->restateStock)($order->loadMissing('items'), $fields, (int) $actor->getKey());
+    }
+
+    /**
+     * An order still short of something is not ready for the press.
+     *
+     * **Only on the way into «جاهزة للطباعة», and only from «نواقص».** That move is a promise to
+     * another department that the goods are all here; every other move an order short of stock
+     * can make — being written off, having the shortage corrected — is left alone, because none
+     * of them tells anybody the order is complete.
+     *
+     * Reads the lines fresh: `recordShortages()` has just written to them on this same move, and
+     * the whole point is to judge the order as it stands *after* that.
+     *
+     * @throws ShortageMustBeResolved
+     */
+    private function guardShortageIsResolved(Order $order, OrderStatus $from, OrderStatus $target): void
+    {
+        if ($from !== OrderStatus::Shortage || $target !== OrderStatus::ReadyToPrint) {
+            return;
+        }
+
+        $stillShort = $order->load('items')->unresolvedShortages();
+
+        if ($stillShort !== []) {
+            throw ShortageMustBeResolved::make($stillShort);
+        }
     }
 
     /**

@@ -41,51 +41,84 @@ class RoleDetailPage extends StatelessWidget {
   }
 }
 
-class _RoleDetailView extends StatelessWidget {
+class _RoleDetailView extends StatefulWidget {
   const _RoleDetailView();
+
+  @override
+  State<_RoleDetailView> createState() => _RoleDetailViewState();
+}
+
+/// Stateful for one reason: it remembers whether the role was renamed, re-permissioned or
+/// deleted here, so `pop` can tell the list behind whether it is worth re-reading.
+///
+/// **A bool rather than the role itself**, and this is one of the two screens where that is the
+/// honest answer: a delete leaves nothing to hand back, and `users_count` on the row behind is
+/// the server's own counting. So the list is told *that* something moved and re-reads once —
+/// instead of re-reading after every visit, including the ones that only looked.
+class _RoleDetailViewState extends State<_RoleDetailView> {
+  bool _changed = false;
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<RoleDetailCubit>();
 
-    return BlocBuilder<RoleDetailCubit, RoleDetailState>(
-      builder: (context, state) => Scaffold(
-        appBar: AppBar(
-          title: Text(switch (state) {
-            RoleDetailLoaded(:final role) => role.label,
-            _ => 'الدور',
-          }),
-          actions: [
-            if (state is RoleDetailLoaded)
-              _Actions(role: state.role, onChanged: cubit.refresh),
-          ],
-        ),
-        body: switch (state) {
-          RoleDetailLoading() => const Center(child: CircularProgressIndicator()),
-          RoleDetailFailure(:final failure) => _FailureView(
-            message: failure.message,
-            onRetry: cubit.refresh,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        // Always through here, so the back button and the app bar's arrow return the same thing.
+        context.pop(_changed);
+      },
+      child: BlocBuilder<RoleDetailCubit, RoleDetailState>(
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(
+            title: Text(switch (state) {
+              RoleDetailLoaded(:final role) => role.label,
+              _ => 'الدور',
+            }),
+            actions: [
+              if (state is RoleDetailLoaded)
+                _Actions(
+                  role: state.role,
+                  onChanged: () async {
+                    _changed = true;
+                    await cubit.refresh();
+                  },
+                  onDeleted: () {
+                    _changed = true;
+                    context.pop(true);
+                  },
+                ),
+            ],
           ),
-          RoleDetailLoaded(:final role, :final groups) => RefreshIndicator(
-            onRefresh: cubit.refresh,
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 32.h),
-              children: [
-                _Summary(role: role),
-                SizedBox(height: 16.h),
-                if (role.grantsEverything)
-                  const _GrantsEverythingCard()
-                else if (groups.isEmpty)
-                  _NoPermissions(role: role)
-                else ...[
-                  _SectionsHeading(role: role),
-                  SizedBox(height: 8.h),
-                  for (final group in groups) PermissionSection.readOnly(group: group),
-                ],
-              ],
+          body: switch (state) {
+            RoleDetailLoading() => const Center(child: CircularProgressIndicator()),
+            RoleDetailFailure(:final failure) => _FailureView(
+              message: failure.message,
+              onRetry: cubit.refresh,
             ),
-          ),
-        },
+            RoleDetailLoaded(:final role, :final groups) => RefreshIndicator(
+              onRefresh: cubit.refresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 32.h),
+                children: [
+                  _Summary(role: role),
+                  SizedBox(height: 16.h),
+                  if (role.grantsEverything)
+                    const _GrantsEverythingCard()
+                  else if (groups.isEmpty)
+                    _NoPermissions(role: role)
+                  else ...[
+                    _SectionsHeading(role: role),
+                    SizedBox(height: 8.h),
+                    for (final group in groups) PermissionSection.readOnly(group: group),
+                  ],
+                ],
+              ),
+            ),
+          },
+        ),
       ),
     );
   }
@@ -94,10 +127,13 @@ class _RoleDetailView extends StatelessWidget {
 /// Rename, re-permission, delete, and the history — each offered only when the **server** says
 /// it is possible, never when a rule in this file says so.
 class _Actions extends StatelessWidget {
-  const _Actions({required this.role, required this.onChanged});
+  const _Actions({required this.role, required this.onChanged, required this.onDeleted});
 
   final Role role;
   final Future<void> Function() onChanged;
+
+  /// Closes the screen — the role it was about no longer exists.
+  final VoidCallback onDeleted;
 
   @override
   Widget build(BuildContext context) {
@@ -131,8 +167,11 @@ class _Actions extends StatelessWidget {
   Future<void> _run(BuildContext context, _RoleAction action) async {
     switch (action) {
       case _RoleAction.edit:
-        await context.push(Routes.editRole(role.id), extra: role);
-        await onChanged();
+        // Re-read rather than taking the form's copy: this screen shows the permissions cut into
+        // the catalogue's own sections, and that arrangement is built from the *detail* payload
+        // the form does not return. The list behind is told once, on the way out.
+        final saved = await context.push<Role>(Routes.editRole(role.id), extra: role);
+        if (saved != null) await onChanged();
 
       case _RoleAction.history:
         await context.push(Routes.activityLog(AuditSubject.role, role.id), extra: role.label);
@@ -168,7 +207,7 @@ class _Actions extends StatelessWidget {
       context.showFailure,
       (message) {
         context.showSuccess(message);
-        context.pop();
+        onDeleted();
       },
     );
   }

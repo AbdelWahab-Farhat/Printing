@@ -24,6 +24,10 @@ final class UpdateProductCategory
             'description' => $data->description,
             'is_active' => $data->isActive,
             'sort_order' => $data->sortOrder,
+            // **Orders already taken keep the road they were taken under.** Flipping this
+            // re-routes the *next* order under the heading, never one in flight — the flow is
+            // stamped on the order at intake, see `ResolveOrderFlow`.
+            'skips_production' => $data->skipsProduction,
         ]);
 
         return $category->loadCount(['products', 'children']);

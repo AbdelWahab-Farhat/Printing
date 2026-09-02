@@ -19,6 +19,9 @@ class UsersCubit extends PagedCubit<AuthUser> {
   final GetUsers _getUsers;
 
   @override
+  Object identityOf(AuthUser item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<AuthUser>>> fetchPage({
     String? search,
     required int page,

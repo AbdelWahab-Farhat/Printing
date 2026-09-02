@@ -1,9 +1,11 @@
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/models/transition_field.dart';
+import 'package:dayaa/features/products/models/product.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'order.freezed.dart';
@@ -31,6 +33,19 @@ abstract class Order with _$Order {
     /// The Arabic the server chose. Rendered as-is, so a status this build does not know still
     /// reads correctly — see [OrderStatus.unknown].
     @JsonKey(name: 'status_label') required String statusLabel,
+
+    /// The Arabic for the road this order walks — «المسار المعتاد» أو «بدون تصميم وطباعة».
+    ///
+    /// **Carried so a short progress bar can be explained rather than look truncated.** An order
+    /// made entirely of ready-made goods has five steps where every other order has seven, and a
+    /// bar that simply drew two fewer boxes would read as a rendering fault. The rules
+    /// themselves are not here and never should be: `availableTransitions` and `progress` arrive
+    /// already resolved, and which orders take the short road is read off their lines by the
+    /// server — see `ResolveOrderFlow`.
+    ///
+    /// The label rather than the wire value, for the reason [statusLabel] gives: a road this
+    /// build has never heard of still reads correctly.
+    @JsonKey(name: 'production_flow_label') @Default('') String productionFlowLabel,
 
     /// Whether the order is finished — no move of any kind is left.
     ///
@@ -61,6 +76,31 @@ abstract class Order with _$Order {
     @JsonKey(name: 'design_fee') required String designFee,
     @JsonKey(name: 'delivery_price') required String deliveryPrice,
     required String discount,
+
+    /// A charge added to the order that no line on it describes — «تغليف خاص»، «نقل».
+    ///
+    /// **Beside the discount and never folded into it.** A total is read as «هذا ما أُضيف وهذا
+    /// ما خُصم», and one net figure explains neither. `'0.00'` when nothing is charged, and
+    /// defaulted for the reason [paidAmount] is: an order from a server that predates the
+    /// column was never charged, and zero is exactly what such a server means.
+    @JsonKey(name: 'additional_cost') @Default('0.00') String additionalCost,
+
+    /// Which of the five categories it was booked under. Null on an order with no charge.
+    ///
+    /// `unknownEnumValue` rather than a `String`, now that the sheet draws all five: a sixth
+    /// category added on the server after this build shipped parses as
+    /// [AdditionalCostReason.unknown] and the order still prints the label the server sent
+    /// beside it, instead of failing to parse at all.
+    @JsonKey(name: 'additional_cost_reason', unknownEnumValue: AdditionalCostReason.unknown)
+    AdditionalCostReason? additionalCostReason,
+
+    /// The server's own Arabic for that category — «تغليف خاص». Rendered as-is, never mapped
+    /// from the code here: a second copy of that list is the one that drifts.
+    @JsonKey(name: 'additional_cost_reason_label') String? additionalCostReasonLabel,
+
+    /// What was actually done, in the clerk's words. The detail, never the classification.
+    @JsonKey(name: 'additional_cost_note') String? additionalCostNote,
+
     @JsonKey(name: 'grand_total') required String grandTotal,
 
     /// **The numbers the screen puts side by side**, every one the server's arithmetic —
@@ -179,6 +219,13 @@ abstract class Order with _$Order {
     @JsonKey(name: 'delivered_at') DateTime? deliveredAt,
     @JsonKey(name: 'settled_at') DateTime? settledAt,
     @JsonKey(name: 'created_at') DateTime? createdAt,
+
+    /// Who took the order. Null on the list — the server sends it with the full order only —
+    /// and for an order raised by a seeder or a console command.
+    ///
+    /// Read by «ملاحظات الطلبية»: the order's own note is the one note with no transition
+    /// behind it, and this is the closest thing anybody recorded about who wrote it.
+    @JsonKey(name: 'created_by') OrderActor? createdBy,
   }) = _Order;
 
   const Order._();
@@ -212,8 +259,38 @@ abstract class Order with _$Order {
   /// A discount worth showing a line for. `'0.00'` is not one.
   bool get hasDiscount => discount != '0.00';
 
+  /// A charge worth showing a line for. `'0.00'` is not one.
+  bool get hasAdditionalCost => additionalCost != '0.00';
+
+  /// What the charge was for, as one line — «تغليف خاص — علبة كرتون مزدوجة».
+  ///
+  /// **Assembled here rather than at each of the three places that show it.** The order screen,
+  /// the PDF and the WhatsApp message all print this charge; each one deciding for itself how a
+  /// category and a note go together is how «تغليف خاص» ends up on the invoice and «علبة كرتون
+  /// مزدوجة» in the message for the same order.
+  ///
+  /// **Under «أخرى» the note stands alone**, because the word names no category to anybody
+  /// reading it — and the server guarantees the note is there, since that is the one reason it
+  /// refuses without one.
+  String? get additionalCostCaption {
+    if (!hasAdditionalCost) return null;
+
+    final note = additionalCostNote?.trim();
+    final hasNote = note != null && note.isNotEmpty;
+    final label = additionalCostReasonLabel;
+
+    if (additionalCostReason?.needsNote ?? false) return hasNote ? note : label;
+    if (label == null) return hasNote ? note : null;
+
+    return hasNote ? '$label — $note' : label;
+  }
+
   /// Only charged when we did the design, so the server sends `'0.00'` otherwise.
   bool get hasDesignFee => designFee != '0.00';
+
+  /// A delivery that was actually charged for. An office pickup is `'0.00'`, and so is a
+  /// delivery we did not bill — neither is a line on the customer's copy.
+  bool get hasDeliveryPrice => deliveryPrice != '0.00';
 
   /// The name to put on the delivery line — the recipient when there is one, else the customer.
   String? get recipient => recipientName ?? customer?.name;
@@ -332,6 +409,16 @@ abstract class OrderItem with _$OrderItem {
     /// The snapshot, not the catalogue. A product renamed since must not rewrite this invoice.
     @JsonKey(name: 'product_name') required String productName,
     @JsonKey(name: 'variant_label') required String variantLabel,
+
+    /// The live catalogue row behind the line, for the card that opens it.
+    ///
+    /// **Both null on a list payload**, which carries the lines without their products, and on a
+    /// server too old to send them — so the card falls back to the snapshot above and stops
+    /// advertising a picture it does not have. Never mistaken for the snapshot: a product
+    /// renamed or rephotographed since shows its new face here while the invoice keeps saying
+    /// what was sold.
+    @JsonKey(name: 'product_code') String? productCode,
+    @JsonKey(name: 'product_image') ProductImage? productImage,
     @JsonKey(name: 'pricing_unit_label') required String pricingUnitLabel,
     required String quantity,
 
@@ -368,6 +455,20 @@ abstract class OrderItem with _$OrderItem {
     /// The three above, added up by the server. Read rather than summed here for the same reason
     /// [billableQuantity] is.
     String? cogs,
+
+    /// The rate behind [materialCost]: what one unit off the shelf cost us.
+    ///
+    /// **Divided by the server, not here.** `1234.56 / 3` in Dart is `411.51999999999998`, and
+    /// every other figure on this screen is a string the server chose the decimals of. Null
+    /// whenever [materialCost] is.
+    @JsonKey(name: 'unit_material_cost') String? unitMaterialCost,
+
+    /// The unit [unitMaterialCost] is *per* — **the warehouse's, which need not be the one the
+    /// line was sold in.** 300 bags weighed 12.5 kilos onto the order cost what those kilos
+    /// cost, and «تكلفة القطعة» printed over a per-kilo rate is a wrong number, not a rounded
+    /// one. Null on a payload that carries no shelf — a list, or a server too old to send it —
+    /// in which case there is no per-unit figure to label either.
+    @JsonKey(name: 'stock_unit_label') String? stockUnitLabel,
 
     String? notes,
   }) = _OrderItem;
@@ -447,7 +548,22 @@ abstract class OrderTransitionRecord with _$OrderTransitionRecord {
 
     /// Null exactly once per order: the row that records it being taken.
     @JsonKey(name: 'from_status_label') String? fromStatusLabel,
+
+    /// Where the order landed, as a code — so a row can wear the status's own colour and glyph.
+    ///
+    /// The label beside it is what gets *printed*; this is only ever asked for the legend, and
+    /// it falls back to [OrderStatus.unknown] — a status added on the server after this build
+    /// shipped still reads correctly in neutral rather than failing to parse the whole order.
+    @JsonKey(name: 'to_status', unknownEnumValue: OrderStatus.unknown)
+    @Default(OrderStatus.unknown)
+    OrderStatus toStatus,
+
     @JsonKey(name: 'to_status_label') required String toStatusLabel,
+
+    /// What was typed when the order was moved — «العميل غيّر رأيه», «ناقص ٤٠ كيس».
+    ///
+    /// This is the note of a *status*, which is what «ملاحظات الطلبية» is a page of: the order's
+    /// own note says what the job is, and each of these says what happened at one step of it.
     String? reason,
 
     /// Who moved it. Null for a move made by a console command or a seeder — the column is

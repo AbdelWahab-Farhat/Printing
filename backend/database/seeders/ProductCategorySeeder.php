@@ -33,9 +33,14 @@ use Illuminate\Database\Seeder;
 class ProductCategorySeeder extends Seeder
 {
     /**
-     * Name, description and order — the same three the catalogue prints.
+     * Name, description and order — the same three the catalogue prints — plus, for one row, the
+     * answer to «هل يُطبع؟».
      *
-     * @var list<array{name: string, description: string, sort_order: int}>
+     * `skips_production` is omitted everywhere it is false, which is everywhere but «سادة»: the
+     * column defaults to false, and writing it out four times would suggest four decisions were
+     * taken when only one was.
+     *
+     * @var list<array{name: string, description: string, sort_order: int, skips_production?: bool}>
      */
     private const CATEGORIES = [
         [
@@ -63,6 +68,12 @@ class ProductCategorySeeder extends Seeder
             'name' => 'سادة',
             'description' => 'منتجات بلا طباعة، تُباع غالباً بالوزن.',
             'sort_order' => 5,
+            // **The description was already saying it; now something reads it.** «بلا طباعة»
+            // means an order made only of these has nothing to design and nothing to print, so
+            // it goes جديدة → جاهزة — see `ProductCategory::skipsProduction()`. It is the one
+            // seeded heading this is true of, and it is a fact about *this* heading rather than
+            // a rule about headings: one added tomorrow is answered by whoever adds it.
+            'skips_production' => true,
         ],
     ];
 
@@ -75,6 +86,7 @@ class ProductCategorySeeder extends Seeder
                     'description' => $category['description'],
                     'sort_order' => $category['sort_order'],
                     'is_active' => true,
+                    'skips_production' => $category['skips_production'] ?? false,
                 ],
             );
         }

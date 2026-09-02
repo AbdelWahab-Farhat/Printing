@@ -45,6 +45,8 @@ void main() {
     String? laborCost,
     String? overheadCost,
     String? cogs,
+    String? unitMaterialCost,
+    String? stockUnitLabel,
   }) => OrderItem(
     id: 11,
     productId: 1,
@@ -59,6 +61,8 @@ void main() {
     laborCost: laborCost,
     overheadCost: overheadCost,
     cogs: cogs,
+    unitMaterialCost: unitMaterialCost,
+    stockUnitLabel: stockUnitLabel,
   );
 
   testWidgets('a line nobody has printed yet draws nothing at all', (tester) async {
@@ -144,5 +148,54 @@ void main() {
     // Act - Assert
     expect(find.textContaining('التكلفة 119.99'), findsOneWidget);
     expect(find.textContaining('120.00'), findsNothing);
+  });
+
+  testWidgets('a costed line says what one unit of it cost in material', (tester) async {
+    // Arrange — 300 bags at 80.00 of material, which the server divided into 0.267 a bag.
+    await tester.pumpWidget(
+      host(
+        OrderLineCosts(
+          item: line(
+            materialCost: '80.00',
+            cogs: '80.00',
+            unitMaterialCost: '0.267',
+            stockUnitLabel: 'قطعة',
+          ),
+        ),
+      ),
+    );
+
+    // Act - Assert — the question «كم تكلفتنا القطعة؟», answered in words on its own line.
+    expect(find.text('تكلفة المواد للقطعة 0.267'), findsOneWidget);
+  });
+
+  testWidgets('the rate is labelled with the shelf\'s unit, not the one it was sold in', (
+    tester,
+  ) async {
+    // Arrange — sold by the piece, stocked by the kilo: 12.5 kg off the shelf at 8.000 each.
+    await tester.pumpWidget(
+      host(
+        OrderLineCosts(
+          item: line(
+            materialCost: '100.00',
+            cogs: '100.00',
+            unitMaterialCost: '8.000',
+            stockUnitLabel: 'كيلوغرام',
+          ),
+        ),
+      ),
+    );
+
+    // Act - Assert — «تكلفة القطعة ٨٫٠٠٠» would be a wrong number, not an imprecise one.
+    expect(find.text('تكلفة المواد للكيلوغرام 8.000'), findsOneWidget);
+    expect(find.textContaining('للقطعة'), findsNothing);
+  });
+
+  testWidgets('a line with no rate behind it draws no second line', (tester) async {
+    // Arrange — a total arrived without the split, so there is nothing to divide.
+    await tester.pumpWidget(host(OrderLineCosts(item: line(cogs: '120.00'))));
+
+    // Act - Assert
+    expect(find.textContaining('تكلفة المواد'), findsNothing);
   });
 }

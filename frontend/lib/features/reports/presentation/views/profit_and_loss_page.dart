@@ -159,6 +159,7 @@ class _Report extends StatelessWidget {
     final revenue = summary.revenue;
 
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 32.h),
       children: [
         _Totals(summary: summary),

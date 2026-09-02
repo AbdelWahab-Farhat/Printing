@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\DTOs;
 
+use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 
 /**
@@ -11,8 +12,8 @@ use App\Domain\Order\Enums\DesignSource;
  *
  * Money that a client could invent is absent: `items_total` and `grand_total` are derived from
  * the lines, and `delivery_price` is copied from the destination city. What remains — the design
- * fee and the discount — are decisions a person makes, and each is guarded: the fee only counts
- * when we did the design, and the discount needs its own permission.
+ * fee, the discount and the additional cost — are decisions a person makes, and each is guarded:
+ * the fee only counts when we did the design, and the other two need a permission each.
  *
  * `customerId` is read on create and ignored on update: an order belongs to whoever placed it,
  * and moving one between customers would rewrite two histories to fix one typo. Cancel and
@@ -41,6 +42,9 @@ final readonly class OrderData
         public ?string $notes = null,
         public string $designFee = '0.00',
         public string $discount = '0.00',
+        public string $additionalCost = '0.00',
+        public ?AdditionalCostReason $additionalCostReason = null,
+        public ?string $additionalCostNote = null,
         public ?string $trackingNumber = null,
         public ?array $items = null,
         public array $designIds = [],
@@ -68,6 +72,13 @@ final readonly class OrderData
             // Through string, never float: these are added to a total that must stay exact.
             designFee: self::money($validated['design_fee'] ?? null),
             discount: self::money($validated['discount'] ?? null),
+            additionalCost: self::money($validated['additional_cost'] ?? null),
+            // Kept even when the amount is zero, the same way the design fee is: somebody who
+            // clears the box has not necessarily changed their mind about why.
+            additionalCostReason: isset($validated['additional_cost_reason'])
+                ? AdditionalCostReason::from((string) $validated['additional_cost_reason'])
+                : null,
+            additionalCostNote: self::textOrNull($validated['additional_cost_note'] ?? null),
             trackingNumber: self::textOrNull($validated['tracking_number'] ?? null),
             designIds: is_array($validated['design_ids'] ?? null)
                 ? array_values(array_map(intval(...), $validated['design_ids']))

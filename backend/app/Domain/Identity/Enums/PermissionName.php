@@ -76,7 +76,14 @@ enum PermissionName: string
     case ViewOrders = 'orders.view';
     case ManageOrders = 'orders.manage';
     case DiscountOrders = 'orders.discount';
+    // Its own grant rather than the discount's: one gives money away and the other asks the
+    // customer for more, and a business may reasonably trust a role with exactly one of them.
+    case AddOrderAdditionalCost = 'orders.additional_cost';
     case ManageOrderDesigns = 'orders.designs.manage';
+    // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
+    // the order to the press. Separate from the two production statuses beside it because a
+    // different desk does it.
+    case MoveOrderToReadyToPrint = 'orders.status.ready_to_print';
     case MoveOrderToDesigning = 'orders.status.designing';
     case MoveOrderToPrinting = 'orders.status.printing';
     case MoveOrderToReady = 'orders.status.ready';
@@ -121,6 +128,15 @@ enum PermissionName: string
     // order needs to know whether stock exists, while moving it is the storekeeper's job.
     case ViewInventory = 'inventory.view';
     case ManageInventory = 'inventory.manage';
+    // Its own grant rather than part of `inventory.manage`: correcting what stock is carried at
+    // changes the book value of the business without a shelf being touched, which is a different
+    // trust level from recording a transfer somebody can walk over and verify.
+    case RevalueStock = 'inventory.revalue';
+    // Knowing how much is on the shelf and knowing what it was bought for are two levels of
+    // trust: the storekeeper counts and does not buy, and the value of the stock is a number
+    // read in a meeting rather than on the loading dock. Not part of `inventory.view`, for the
+    // same reason `users.salary` is not part of `users.manage`.
+    case ViewStockCost = 'inventory.view_cost';
 
     // Vendors. Its own pair rather than folded into inventory.*: agreeing terms with a supplier
     // and receiving a shipment they sent are different jobs, the same split customers.* draws
@@ -170,7 +186,9 @@ enum PermissionName: string
             self::ViewOrders => 'عرض الطلبيات',
             self::ManageOrders => 'إضافة وتعديل الطلبيات',
             self::DiscountOrders => 'منح خصم على الطلبية',
+            self::AddOrderAdditionalCost => 'إضافة تكلفة إضافية على الطلبية',
             self::ManageOrderDesigns => 'إدارة تصاميم الطلبية واعتمادها',
+            self::MoveOrderToReadyToPrint => 'تحويل الطلبية إلى جاهزة للطباعة',
             self::MoveOrderToDesigning => 'تحويل الطلبية إلى قيد التصميم',
             self::MoveOrderToPrinting => 'تحويل الطلبية إلى قيد الطباعة',
             self::MoveOrderToReady => 'تحويل الطلبية إلى جاهزة',
@@ -193,6 +211,8 @@ enum PermissionName: string
 
             self::ViewInventory => 'عرض المخازن والأرصدة والحركات',
             self::ManageInventory => 'إدارة المخازن وتسجيل حركات المخزون',
+            self::RevalueStock => 'تعديل تكلفة دفعات المخزون',
+            self::ViewStockCost => 'عرض تكلفة المخزون',
             self::ViewVendors => 'عرض الموردين',
             self::ManageVendors => 'إضافة وتعديل الموردين',
             self::ViewPurchaseOrders => 'عرض أوامر الشراء',
@@ -217,7 +237,9 @@ enum PermissionName: string
             self::ViewDeliveryLocations, self::ManageDeliveryLocations => 'مدن ومناطق التوصيل',
             self::ViewShippingCompanies, self::ManageShippingCompanies => 'شركات التوصيل',
             self::ViewOrders, self::ManageOrders, self::DiscountOrders,
+            self::AddOrderAdditionalCost,
             self::ManageOrderDesigns => 'الطلبيات',
+            self::MoveOrderToReadyToPrint,
             self::MoveOrderToDesigning, self::MoveOrderToPrinting, self::MoveOrderToReady,
             self::MoveOrderToShortage, self::DispatchOrders, self::MarkOrdersDelivered,
             self::SettleOrders, self::RecordCourierReturn, self::RecordCarrierReturn,
@@ -230,7 +252,8 @@ enum PermissionName: string
             self::ViewManufacturingCostRates,
             self::ManageManufacturingCostRates => 'معدلات تكلفة التصنيع',
 
-            self::ViewInventory, self::ManageInventory => 'المخازن والمخزون',
+            self::ViewInventory, self::ManageInventory,
+            self::RevalueStock, self::ViewStockCost => 'المخازن والمخزون',
             self::ViewVendors, self::ManageVendors => 'الموردون',
             self::ViewPurchaseOrders, self::ManagePurchaseOrders => 'أوامر الشراء',
             self::ViewActivityLogs => 'سجل النشاطات',

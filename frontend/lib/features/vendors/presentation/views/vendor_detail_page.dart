@@ -1,4 +1,5 @@
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
@@ -64,10 +65,11 @@ class _VendorDetailView extends StatefulWidget {
   State<_VendorDetailView> createState() => _VendorDetailViewState();
 }
 
-/// Stateful for one reason: it remembers whether anything was written, so `pop` can tell the
-/// list behind whether to re-read. That is screen lifecycle, not business state.
+/// Stateful for one reason: it remembers the supplier as it changed, so `pop` can hand the list
+/// behind the new row instead of making it re-read the page. That is screen lifecycle, not
+/// business state — the Cubit owns the supplier itself.
 class _VendorDetailViewState extends State<_VendorDetailView> {
-  bool _changed = false;
+  final _changes = Changes<Vendor>();
 
   /// Whether this reader may see purchase orders at all. Read once: it cannot change while the
   /// screen is open, and it decides both whether the numbers are asked for and whether the
@@ -101,13 +103,12 @@ class _VendorDetailViewState extends State<_VendorDetailView> {
     final vendor = cubit.state.vendor;
     if (vendor == null) return;
 
-    final saved = await context.push<bool>(Routes.vendorForm, extra: vendor);
-    if (saved != true || !mounted) return;
+    final saved = await context.push<Vendor>(Routes.vendorForm, extra: vendor);
+    if (saved == null || !mounted) return;
 
-    setState(() => _changed = true);
-    // Re-read rather than trusting what the form returned: the same seconds may have carried
-    // somebody else's change, and this screen is the one that has to be right.
-    await cubit.load();
+    // What the form hands back is the server's own reading of the supplier it just stored — the
+    // same bytes a re-read would return, a request earlier.
+    cubit.show(saved);
   }
 
   Future<void> _toggleActive(BuildContext context) async {
@@ -143,7 +144,6 @@ class _VendorDetailViewState extends State<_VendorDetailView> {
       return;
     }
 
-    setState(() => _changed = true);
     context.showSuccess(
       vendor.isActive
           ? 'تم تعطيل «${vendor.name}»'
@@ -160,7 +160,7 @@ class _VendorDetailViewState extends State<_VendorDetailView> {
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         // Always through here, so the back button and the app bar's arrow return the same thing.
-        context.pop(_changed);
+        context.pop(_changes.result);
       },
       child: Scaffold(
         floatingActionButtonLocation: AppSpeedDial.location,
@@ -184,7 +184,11 @@ class _VendorDetailViewState extends State<_VendorDetailView> {
             );
           },
         ),
-        body: BlocBuilder<VendorDetailCubit, VendorDetailState>(
+        body: BlocConsumer<VendorDetailCubit, VendorDetailState>(
+          // Every reading goes past here, whatever produced it — the form, the activation
+          // toggle, a pull that picked up somebody else's change. What differs from the first
+          // one is what the list behind is handed on the way out.
+          listener: (context, state) => _changes.saw(state.vendor),
           builder: (context, state) {
             final vendor = state.vendor;
 

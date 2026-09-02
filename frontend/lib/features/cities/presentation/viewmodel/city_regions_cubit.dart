@@ -23,6 +23,9 @@ class CityRegionsCubit extends PagedCubit<Region> {
   final GetCityRegions _getCityRegions;
 
   @override
+  Object identityOf(Region item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<Region>>> fetchPage({
     String? search,
     required int page,

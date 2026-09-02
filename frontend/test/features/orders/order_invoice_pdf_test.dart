@@ -44,7 +44,11 @@ void main() {
     lineTotal: '420.00',
   );
 
-  Order orderWith({List<OrderItem>? items = const [item], Customer? withCustomer = customer}) =>
+  Order orderWith({
+    List<OrderItem>? items = const [item],
+    Customer? withCustomer = customer,
+    String additionalCost = '0.00',
+  }) =>
       Order(
         id: 55,
         code: '55',
@@ -62,6 +66,8 @@ void main() {
         designFee: '25.00',
         deliveryPrice: '0.00',
         discount: '10.00',
+        additionalCost: additionalCost,
+        additionalCostReasonLabel: 'تغليف خاص',
         grandTotal: '435.00',
         paidAmount: '100.00',
         remainingAmount: '335.00',
@@ -102,6 +108,19 @@ void main() {
     final bytes = await OrderInvoicePdf.build(order: order, assets: assets);
 
     // Assert — the magic number, then a size that could only mean an embedded face and a logo.
+    expect(String.fromCharCodes(bytes.sublist(0, 4)), '%PDF');
+    expect(bytes.length, greaterThan(20000));
+  });
+
+  test('an order carrying an extra charge still lays out its totals column', () async {
+    // Arrange — the column gains a line, and the one thing a byte comparison can prove about it
+    // is that the page still comes out.
+    final order = orderWith(additionalCost: '10.00');
+
+    // Act
+    final bytes = await OrderInvoicePdf.build(order: order, assets: assets);
+
+    // Assert
     expect(String.fromCharCodes(bytes.sublist(0, 4)), '%PDF');
     expect(bytes.length, greaterThan(20000));
   });

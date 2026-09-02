@@ -37,6 +37,9 @@ class UpdateProductCategoryRequest extends StoreProductCategoryRequest
             'description' => ['sometimes', 'nullable', 'string', 'max:500'],
             'is_active' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:9999'],
+            // Turning this on affects the *next* order under the heading, never one already
+            // taken — see `UpdateProductCategory` and `ResolveOrderFlow`.
+            'skips_production' => ['sometimes', 'boolean'],
         ];
     }
 

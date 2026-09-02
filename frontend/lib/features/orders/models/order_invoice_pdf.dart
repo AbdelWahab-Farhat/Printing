@@ -405,6 +405,12 @@ class OrderInvoicePdf {
             children: [
               _totalLine('المنتجات', order.itemsTotal),
               if (order.hasDesignFee) _totalLine('التصميم', order.designFee),
+              // **Without the danger colour, unlike the discount under it.** This is a charge
+              // the customer owes; red beside it would warn about the wrong thing. What it was
+              // for is named in the message that carries this file — the label column here is a
+              // column, and a clerk's sentence does not fit in one.
+              if (order.hasAdditionalCost)
+                _totalLine('التكلفة الإضافية', '+ ${order.additionalCost.grouped}'),
               if (order.hasDiscount) _totalLine('الخصم', '- ${order.discount.grouped}', colour: _danger),
               pw.Container(height: 0.5, color: _rule, margin: const pw.EdgeInsets.symmetric(vertical: 5)),
               _totalLine('الإجمالي', order.grandTotal, bold: true),

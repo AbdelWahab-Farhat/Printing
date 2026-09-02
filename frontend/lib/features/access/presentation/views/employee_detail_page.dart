@@ -1,4 +1,5 @@
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
@@ -48,50 +49,73 @@ class EmployeeDetailPage extends StatelessWidget {
   }
 }
 
-class _EmployeeDetailView extends StatelessWidget {
+class _EmployeeDetailView extends StatefulWidget {
   const _EmployeeDetailView();
+
+  @override
+  State<_EmployeeDetailView> createState() => _EmployeeDetailViewState();
+}
+
+/// Stateful for one reason: it remembers the account as it changed — renamed, re-roled, stopped
+/// — so `pop` can hand the list behind the new row instead of making it re-read the page. That
+/// is screen lifecycle, not business state.
+class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
+  final _changes = Changes<AuthUser>();
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<EmployeeDetailCubit>();
 
-    return Scaffold(
-      floatingActionButtonLocation: AppSpeedDial.location,
-      appBar: AppBar(
-        title: BlocBuilder<EmployeeDetailCubit, EmployeeDetailState>(
-          // The name once it is known, so the bar stops saying something generic the moment it
-          // can say something useful.
-          builder: (context, state) => Text(state.user?.name ?? 'تفاصيل الموظف'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        // Always through here, so the back button and the app bar's arrow return the same thing.
+        context.pop(_changes.result);
+      },
+      child: Scaffold(
+        floatingActionButtonLocation: AppSpeedDial.location,
+        appBar: AppBar(
+          title: BlocBuilder<EmployeeDetailCubit, EmployeeDetailState>(
+            // The name once it is known, so the bar stops saying something generic the moment it
+            // can say something useful.
+            builder: (context, state) => Text(state.user?.name ?? 'تفاصيل الموظف'),
+          ),
         ),
-      ),
-      floatingActionButton: BlocBuilder<EmployeeDetailCubit, EmployeeDetailState>(
-        builder: (context, state) {
-          final user = state.user;
-          if (user == null) return const SizedBox.shrink();
+        floatingActionButton: BlocBuilder<EmployeeDetailCubit, EmployeeDetailState>(
+          builder: (context, state) {
+            final user = state.user;
+            if (user == null) return const SizedBox.shrink();
 
-          return _Actions(user: user);
-        },
-      ),
-      body: BlocConsumer<EmployeeDetailCubit, EmployeeDetailState>(
-        listener: (context, state) {
-          // A failure that arrived *beside* the employee — a rejected wage, a refused stop.
-          // The page stays; the reason goes to a snackbar over it, because the sheet that
-          // caused it is usually still open with the value in it.
-          if (state case EmployeeDetailLoaded(:final failure?)) {
-            context.showFailure(failure);
-          }
-        },
-        builder: (context, state) => switch (state) {
-          EmployeeDetailLoading() => const Center(child: CircularProgressIndicator()),
-          EmployeeDetailFailure(:final failure) => _FailureView(
-            message: failure.message,
-            onRetry: cubit.load,
-          ),
-          _ => RefreshIndicator(
-            onRefresh: cubit.load,
-            child: _Body(user: state.user!, isChanging: state.isChanging),
-          ),
-        },
+            return _Actions(user: user);
+          },
+        ),
+        body: BlocConsumer<EmployeeDetailCubit, EmployeeDetailState>(
+          listener: (context, state) {
+            // Every reading goes past here, whatever produced it — the edit form, the roles
+            // sheet, a wage, a stopped account. What differs from the first one is what the list
+            // behind is handed on the way out.
+            _changes.saw(state.user);
+
+            // A failure that arrived *beside* the employee — a rejected wage, a refused stop.
+            // The page stays; the reason goes to a snackbar over it, because the sheet that
+            // caused it is usually still open with the value in it.
+            if (state case EmployeeDetailLoaded(:final failure?)) {
+              context.showFailure(failure);
+            }
+          },
+          builder: (context, state) => switch (state) {
+            EmployeeDetailLoading() => const Center(child: CircularProgressIndicator()),
+            EmployeeDetailFailure(:final failure) => _FailureView(
+              message: failure.message,
+              onRetry: cubit.load,
+            ),
+            _ => RefreshIndicator(
+              onRefresh: cubit.load,
+              child: _Body(user: state.user!, isChanging: state.isChanging),
+            ),
+          },
+        ),
       ),
     );
   }
@@ -412,18 +436,20 @@ class _Actions extends StatelessWidget {
 
   Future<void> _edit(BuildContext context) async {
     final cubit = context.read<EmployeeDetailCubit>();
-    final saved = await context.push(Routes.editEmployee(user.id), extra: user);
+    final saved = await context.push<AuthUser>(Routes.editEmployee(user.id), extra: user);
 
-    // Only when something was actually saved: a form backed out of has changed nothing, and
-    // re-reading anyway costs a request for the same answer.
-    if (saved != null) await cubit.load();
+    // What the form hands back is the server's own reading of the account it stored — the same
+    // bytes a re-read would return, a request earlier. Null means it was backed out of, and
+    // nothing on this screen has to move.
+    if (saved != null) cubit.show(saved);
   }
 
   Future<void> _roles(BuildContext context) async {
     final cubit = context.read<EmployeeDetailCubit>();
     final updated = await showAssignRolesSheet(context: context, user: user);
 
-    if (updated != null) await cubit.load();
+    // The sheet answers with the account as it now stands, roles and all.
+    if (updated != null) cubit.show(updated);
   }
 
   Future<void> _toggleActive(BuildContext context) async {

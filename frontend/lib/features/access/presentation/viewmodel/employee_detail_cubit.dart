@@ -54,6 +54,17 @@ class EmployeeDetailCubit extends Cubit<EmployeeDetailState> {
   /// **The answer replaces the employee on screen exactly as the others do**, and carries no
   /// password with it: the response is the account, and nothing about the credential just set
   /// is ever held in this Cubit.
+  /// Takes a reading the caller already has — the edit form's saved copy, or the one the roles
+  /// sheet answered with, both straight from the server.
+  ///
+  /// The alternative was [load], which is a request for something this screen was just handed.
+  /// A pull still re-reads, and so does the retry on the failure view.
+  void show(AuthUser user) {
+    if (isClosed) return;
+
+    emit(EmployeeDetailState.loaded(user));
+  }
+
   Future<bool> setPassword(String password) {
     return _change(() => _setPassword(userId: _userId, password: password));
   }

@@ -32,6 +32,13 @@ class StockItemGroupsCubit extends PagedCubit<StockItemGroup> {
   bool? isActive;
 
   @override
+  Object identityOf(StockItemGroup item) => item.id;
+
+  /// A material stopped while a picker is showing the live ones leaves the list.
+  @override
+  bool belongs(StockItemGroup item) => isActive == null || item.isActive == isActive;
+
+  @override
   Future<Either<Failure, Paginated<StockItemGroup>>> fetchPage({
     String? search,
     required int page,

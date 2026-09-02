@@ -59,6 +59,9 @@ class _BusinessFieldsView extends StatelessWidget {
                   nextSortOrder: _nextSortOrder(cubit.state),
                 );
 
+                // Re-read: the list is in the business's own order, so where a new field lands
+                // is the server's answer and not one this screen can invent. Editing an
+                // existing one does not re-read — see `_edit`.
                 if (created != null) await cubit.refresh();
               },
               icon: Icon(AppIcons.add),
@@ -114,7 +117,9 @@ class _BusinessFieldsView extends StatelessWidget {
       onDelete: () => _confirmDelete(context, cubit, field),
     );
 
-    if (saved != null) await cubit.refresh();
+    // The renamed field, as the server stored it — the row redraws from that rather than the
+    // whole page being read again for one line of text.
+    if (saved != null) cubit.replace(saved);
   }
 
   /// Confirms, then removes. Answers whether the field is gone, so the sheet knows to close.

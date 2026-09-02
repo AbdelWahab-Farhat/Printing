@@ -33,9 +33,17 @@ class GeneraliseCommentsMigrationTest extends TestCase
      *
      * Every migration added after this one puts another step between here and there — searching
      * for the schema the test is *about* is what keeps it from breaking on unrelated work.
+     *
+     * **The bound is the number of migrations there are, not a number somebody picked.** It used
+     * to be a hand-written 20, which worked until the twenty-first migration landed after this
+     * one and put the schema under test just out of reach — failing with «relation
+     * customer_comments does not exist», which reads as a broken migration rather than a cap
+     * that ran out. Counting the files can never be wrong, and needs nobody to remember it.
      */
-    private function rollBackToTheSchemaThatStillHadCustomerComments(int $mostSteps = 20): void
+    private function rollBackToTheSchemaThatStillHadCustomerComments(): void
     {
+        $mostSteps = count(glob(database_path('migrations/*.php')) ?: []);
+
         for ($step = 0; $step < $mostSteps; $step++) {
             if (Schema::hasTable('customer_comments')) {
                 return;

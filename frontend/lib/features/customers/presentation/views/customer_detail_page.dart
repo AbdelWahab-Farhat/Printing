@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
@@ -59,10 +60,22 @@ class CustomerDetailPage extends StatelessWidget {
   }
 }
 
-class _CustomerDetailView extends StatelessWidget {
+class _CustomerDetailView extends StatefulWidget {
   const _CustomerDetailView({required this.showsOrders});
 
   final bool showsOrders;
+
+  @override
+  State<_CustomerDetailView> createState() => _CustomerDetailViewState();
+}
+
+/// Stateful for one reason: it remembers whether the customer moved while it was open, so `pop`
+/// can hand the list behind the new row. That is screen lifecycle, not business state — the
+/// Cubit owns the customer itself.
+class _CustomerDetailViewState extends State<_CustomerDetailView> {
+  final _changes = Changes<Customer>();
+
+  bool get showsOrders => widget.showsOrders;
 
   /// Both readings at once, so one pull answers the whole screen.
   ///
@@ -79,46 +92,59 @@ class _CustomerDetailView extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<CustomerDetailCubit>();
 
-    return Scaffold(
-      floatingActionButtonLocation: AppSpeedDial.location,
-      appBar: AppBar(
-        title: BlocBuilder<CustomerDetailCubit, CustomerDetailState>(
-          // The name once it is known, so the bar stops saying something generic the moment it
-          // can say something useful.
-          builder: (context, state) => Text(state.customer?.name ?? 'تفاصيل العميل'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        // Always through here, so the back button and the app bar's arrow return the same thing.
+        context.pop(_changes.result);
+      },
+      child: Scaffold(
+        floatingActionButtonLocation: AppSpeedDial.location,
+        appBar: AppBar(
+          title: BlocBuilder<CustomerDetailCubit, CustomerDetailState>(
+            // The name once it is known, so the bar stops saying something generic the moment it
+            // can say something useful.
+            builder: (context, state) => Text(state.customer?.name ?? 'تفاصيل العميل'),
+          ),
         ),
-      ),
-      floatingActionButton: BlocBuilder<CustomerDetailCubit, CustomerDetailState>(
-        builder: (context, state) {
-          final customer = state.customer;
-          if (customer == null) return const SizedBox.shrink();
+        floatingActionButton: BlocBuilder<CustomerDetailCubit, CustomerDetailState>(
+          builder: (context, state) {
+            final customer = state.customer;
+            if (customer == null) return const SizedBox.shrink();
 
-          return _Actions(customer: customer);
-        },
-      ),
-      body: BlocConsumer<CustomerDetailCubit, CustomerDetailState>(
-        listener: (context, state) {
-          // Only when there is still a page underneath. With nothing to fall back to the body
-          // already shows the failure, and a snackbar over it would say the same thing twice.
-          if (state case CustomerDetailFailure(:final failure)) {
-            if (state.customer != null) context.showFailure(failure);
-          }
-        },
-        builder: (context, state) => switch (state) {
-          CustomerDetailLoading() => const Center(child: CircularProgressIndicator()),
-          CustomerDetailFailure(:final failure) => _FailureView(
-            message: failure.message,
-            onRetry: cubit.load,
-          ),
-          _ => RefreshIndicator(
-            onRefresh: () => _refresh(context),
-            child: _Body(
-              customer: state.customer!,
-              isChanging: state.isChanging,
-              showsOrders: showsOrders,
+            return _Actions(customer: customer);
+          },
+        ),
+        body: BlocConsumer<CustomerDetailCubit, CustomerDetailState>(
+          listener: (context, state) {
+            // Every reading goes past here, whatever produced it — the form, the activation
+            // toggle, a pull that picked up somebody else's change. What differs from the first
+            // one is what the list behind is handed on the way out.
+            _changes.saw(state.customer);
+
+            // Only when there is still a page underneath. With nothing to fall back to the body
+            // already shows the failure, and a snackbar over it would say the same thing twice.
+            if (state case CustomerDetailFailure(:final failure)) {
+              if (state.customer != null) context.showFailure(failure);
+            }
+          },
+          builder: (context, state) => switch (state) {
+            CustomerDetailLoading() => const Center(child: CircularProgressIndicator()),
+            CustomerDetailFailure(:final failure) => _FailureView(
+              message: failure.message,
+              onRetry: cubit.load,
             ),
-          ),
-        },
+            _ => RefreshIndicator(
+              onRefresh: () => _refresh(context),
+              child: _Body(
+                customer: state.customer!,
+                isChanging: state.isChanging,
+                showsOrders: showsOrders,
+              ),
+            ),
+          },
+        ),
       ),
     );
   }
@@ -137,11 +163,12 @@ class _Actions extends StatelessWidget {
   Future<void> _edit(BuildContext context) async {
     final cubit = context.read<CustomerDetailCubit>();
 
-    await context.push(Routes.editCustomer(customer.id), extra: customer);
+    final saved = await context.push<Customer>(Routes.editCustomer(customer.id), extra: customer);
 
-    // Re-read rather than trusting what the form returned: the same seconds may have carried
-    // somebody else's change, and this screen is the one that has to be right.
-    await cubit.load();
+    // What the form hands back is the server's own reading of the customer it just stored —
+    // the same bytes a re-read would return, a request earlier. Null means it was left without
+    // saving, and nothing on this screen has to move.
+    if (saved != null) cubit.show(saved);
   }
 
   Future<void> _toggleActive(BuildContext context) async {

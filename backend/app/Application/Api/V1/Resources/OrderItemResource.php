@@ -28,6 +28,19 @@ class OrderItemResource extends JsonResource
             'product_name' => $this->product_name,
             'variant_label' => $this->variant_label,
 
+            // The live catalogue row, for the card a reader taps to reach it: the code said out
+            // loud, and the one photograph. Deliberately *not* part of the snapshot above — a
+            // product renamed or rephotographed since shows its new face here while the invoice
+            // keeps saying what was sold. Absent, never guessed at, when the relation was not
+            // loaded; the primary image alone, because a line is a row and the gallery belongs
+            // to the product screen.
+            'product_code' => $this->whenLoaded('product', fn () => $this->product->code),
+            'product_image' => $this->whenLoaded('product', function () {
+                $image = $this->product->images->first();
+
+                return $image === null ? null : new ProductImageResource($image);
+            }),
+
             // What is missing from this line, in this line's own unit. Null until somebody has
             // counted, which is not the same as nothing being missing.
             'shortage_quantity' => $this->shortage_quantity === null
@@ -63,6 +76,22 @@ class OrderItemResource extends JsonResource
             'labor_cost' => $this->labor_cost === null ? null : (string) $this->labor_cost,
             'overhead_cost' => $this->overhead_cost === null ? null : (string) $this->overhead_cost,
             'cogs' => $this->cogs === null ? null : (string) $this->cogs,
+
+            // The rate behind `material_cost`: what one unit off the shelf cost — see
+            // OrderItem::unitMaterialCost(). Derived on the way out rather than stored, and sent
+            // rather than left to the client to divide, for the reason `billable_quantity` is:
+            // the arithmetic has one home, and a division done in a phone's doubles is how
+            // 1234.56 / 3 reaches a screen as 411.51999999999998.
+            'unit_material_cost' => $this->unitMaterialCost(),
+
+            // **The unit that figure is *per*, and it is the shelf's, not the line's.** A run
+            // sold by the piece can be stocked by the kilo, and «تكلفة القطعة ٨٫٠٠٠» said of a
+            // per-kilogram rate is a wrong number rather than an imprecise one. Absent when the
+            // shelf behind the line was not loaded — a list payload carries no costs to label.
+            'stock_unit_label' => $this->when(
+                $this->relationLoaded('variant') && ($this->variant?->relationLoaded('stockItem') ?? false),
+                fn () => $this->stockUnit()->label(),
+            ),
         ];
     }
 }

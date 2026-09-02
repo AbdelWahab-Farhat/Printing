@@ -9,6 +9,7 @@ use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\Exceptions\AdditionalCostRequiresPermission;
 use App\Domain\Order\Exceptions\DestinationCannotChange;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\OrderIsClosed;
@@ -41,12 +42,14 @@ final class UpdateOrder
         private readonly SyncOrderItems $syncItems,
         private readonly RecalculateOrderTotals $recalculate,
         private readonly CustomerService $customers,
+        private readonly ResolveOrderFlow $resolveFlow,
     ) {}
 
     /**
      * @throws OrderIsClosed
      * @throws DestinationCannotChange
      * @throws DiscountRequiresPermission
+     * @throws AdditionalCostRequiresPermission
      * @throws ShopDoesNotBelongToCustomer
      */
     public function __invoke(Order $order, OrderData $data, ?User $actor = null): Order
@@ -58,6 +61,7 @@ final class UpdateOrder
         }
 
         $this->guardDiscount($order, $data, $actor);
+        $this->guardAdditionalCost($order, $data, $actor);
         $shopName = $this->resolveShop($data, (int) $order->customer_id);
 
         $destinationMoved = (int) $order->city_id !== $data->cityId
@@ -98,11 +102,21 @@ final class UpdateOrder
                 'design_fee' => $data->designFee,
                 'delivery_price' => $destination->deliveryPrice,
                 'discount' => $data->discount,
+                'additional_cost' => $data->additionalCost,
+                'additional_cost_reason' => $data->additionalCostReason,
+                'additional_cost_note' => $data->additionalCostNote,
             ])->save();
 
             if ($data->items !== null) {
                 ($this->syncItems)($order, $data->items);
             }
+
+            // Called unconditionally and idempotent: a set of lines that comes back unchanged
+            // resolves to the flow the order already has and writes nothing. It is a no-op for
+            // anything past «جديدة» too — swapping the last printed line out of an order that is
+            // already at the press does not move it onto a road with no press on it, see
+            // {@see ResolveOrderFlow}.
+            ($this->resolveFlow)($order->load('items'));
 
             return ($this->recalculate)($order->load('items'))->refresh();
         });
@@ -122,6 +136,28 @@ final class UpdateOrder
 
         if (! $actor?->can(PermissionName::DiscountOrders->value)) {
             throw DiscountRequiresPermission::make();
+        }
+    }
+
+    /**
+     * The same rule for the charge going the other way, and only a *change* is guarded.
+     *
+     * **Compared on the amount alone, not on the reason beside it.** Every edit re-sends the
+     * whole order, so a clerk without the grant correcting the notes on an order that already
+     * carries a charge sends its reason back untouched — and refusing that would make such an
+     * order uneditable by everybody else over a field nobody touched. The words cannot move
+     * without the money moving with them, because the app only offers them together.
+     *
+     * @throws AdditionalCostRequiresPermission
+     */
+    private function guardAdditionalCost(Order $order, OrderData $data, ?User $actor): void
+    {
+        if (bccomp($data->additionalCost, (string) $order->additional_cost, Money::SCALE) === 0) {
+            return;
+        }
+
+        if (! $actor?->can(PermissionName::AddOrderAdditionalCost->value)) {
+            throw AdditionalCostRequiresPermission::make();
         }
     }
 

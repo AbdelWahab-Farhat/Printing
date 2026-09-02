@@ -101,7 +101,13 @@ class StockItemController extends Controller
         // The sizes as well as their count, which the listing deliberately does not carry: this is
         // the one response a screen can edit the links from, and it has to draw what is there now.
         return $this->success(
-            new StockItemResource($stockItem->load('variants.product')->loadCount('variants')),
+            new StockItemResource(
+                $stockItem
+                    // The suggestion the arrival form offers. Loaded here and on no listing:
+                    // see StockItemResource for why.
+                    ->load(['variants.product', 'latestCostedBatch'])
+                    ->loadCount('variants'),
+            ),
         );
     }
 

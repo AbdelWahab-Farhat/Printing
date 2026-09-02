@@ -19,7 +19,19 @@ mixin _$ProductCategory {
  String? get description;/// Whether it is still offered when recording a product. A stopped category stays on the
 /// products already under it — it leaves the picker, it does not retract anything.
 @JsonKey(name: 'is_active') bool get isActive;/// Where it sits in the catalogue. The business's own order, not alphabetical.
-@JsonKey(name: 'sort_order') int get sortOrder;/// The heading this one sits under, or null when it is one in its own right.
+@JsonKey(name: 'sort_order') int get sortOrder;/// Whether an order made **only** of goods filed under this heading skips the designer and
+/// the press — «جديدة» leads straight to «جاهزة», where the stock leaves the warehouse
+/// exactly as it does for a printed order.
+///
+/// **This row's own answer, not the effective one.** A subheading that inherits a flagged
+/// parent reads false here, because this is the value the edit sheet puts back: showing the
+/// inherited answer would have somebody save a flag onto a child that never asked for one.
+/// Whether a particular *order* skips production is the server's to decide from its lines —
+/// see `ResolveOrderFlow` — and never this app's.
+///
+/// False by default, so a heading nobody has thought about sends its orders down the road
+/// every order took before this field existed.
+@JsonKey(name: 'skips_production') bool get skipsProduction;/// The heading this one sits under, or null when it is one in its own right.
 ///
 /// The tree is one level deep and this app does not manage it yet — the field exists so a
 /// child arriving from the API is not silently drawn as a root.
@@ -46,16 +58,16 @@ $ProductCategoryCopyWith<ProductCategory> get copyWith => _$ProductCategoryCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductCategory&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.productsCount, productsCount) || other.productsCount == productsCount)&&(identical(other.childrenCount, childrenCount) || other.childrenCount == childrenCount)&&(identical(other.totalProductsCount, totalProductsCount) || other.totalProductsCount == totalProductsCount)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.imageWidthPx, imageWidthPx) || other.imageWidthPx == imageWidthPx)&&(identical(other.imageHeightPx, imageHeightPx) || other.imageHeightPx == imageHeightPx)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductCategory&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.skipsProduction, skipsProduction) || other.skipsProduction == skipsProduction)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.productsCount, productsCount) || other.productsCount == productsCount)&&(identical(other.childrenCount, childrenCount) || other.childrenCount == childrenCount)&&(identical(other.totalProductsCount, totalProductsCount) || other.totalProductsCount == totalProductsCount)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.imageWidthPx, imageWidthPx) || other.imageWidthPx == imageWidthPx)&&(identical(other.imageHeightPx, imageHeightPx) || other.imageHeightPx == imageHeightPx)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,isActive,sortOrder,parentId,productsCount,childrenCount,totalProductsCount,imageUrl,imageWidthPx,imageHeightPx,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,name,description,isActive,sortOrder,skipsProduction,parentId,productsCount,childrenCount,totalProductsCount,imageUrl,imageWidthPx,imageHeightPx,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'ProductCategory(id: $id, name: $name, description: $description, isActive: $isActive, sortOrder: $sortOrder, parentId: $parentId, productsCount: $productsCount, childrenCount: $childrenCount, totalProductsCount: $totalProductsCount, imageUrl: $imageUrl, imageWidthPx: $imageWidthPx, imageHeightPx: $imageHeightPx, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'ProductCategory(id: $id, name: $name, description: $description, isActive: $isActive, sortOrder: $sortOrder, skipsProduction: $skipsProduction, parentId: $parentId, productsCount: $productsCount, childrenCount: $childrenCount, totalProductsCount: $totalProductsCount, imageUrl: $imageUrl, imageWidthPx: $imageWidthPx, imageHeightPx: $imageHeightPx, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -66,7 +78,7 @@ abstract mixin class $ProductCategoryCopyWith<$Res>  {
   factory $ProductCategoryCopyWith(ProductCategory value, $Res Function(ProductCategory) _then) = _$ProductCategoryCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, String? description,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder,@JsonKey(name: 'parent_id') int? parentId,@JsonKey(name: 'products_count') int? productsCount,@JsonKey(name: 'children_count') int? childrenCount,@JsonKey(name: 'total_products_count') int? totalProductsCount,@JsonKey(name: 'image_url') String? imageUrl,@JsonKey(name: 'image_width_px') int? imageWidthPx,@JsonKey(name: 'image_height_px') int? imageHeightPx,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id, String name, String? description,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder,@JsonKey(name: 'skips_production') bool skipsProduction,@JsonKey(name: 'parent_id') int? parentId,@JsonKey(name: 'products_count') int? productsCount,@JsonKey(name: 'children_count') int? childrenCount,@JsonKey(name: 'total_products_count') int? totalProductsCount,@JsonKey(name: 'image_url') String? imageUrl,@JsonKey(name: 'image_width_px') int? imageWidthPx,@JsonKey(name: 'image_height_px') int? imageHeightPx,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -83,14 +95,15 @@ class _$ProductCategoryCopyWithImpl<$Res>
 
 /// Create a copy of ProductCategory
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? isActive = null,Object? sortOrder = null,Object? parentId = freezed,Object? productsCount = freezed,Object? childrenCount = freezed,Object? totalProductsCount = freezed,Object? imageUrl = freezed,Object? imageWidthPx = freezed,Object? imageHeightPx = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? isActive = null,Object? sortOrder = null,Object? skipsProduction = null,Object? parentId = freezed,Object? productsCount = freezed,Object? childrenCount = freezed,Object? totalProductsCount = freezed,Object? imageUrl = freezed,Object? imageWidthPx = freezed,Object? imageHeightPx = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
-as int,parentId: freezed == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
+as int,skipsProduction: null == skipsProduction ? _self.skipsProduction : skipsProduction // ignore: cast_nullable_to_non_nullable
+as bool,parentId: freezed == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
 as int?,productsCount: freezed == productsCount ? _self.productsCount : productsCount // ignore: cast_nullable_to_non_nullable
 as int?,childrenCount: freezed == childrenCount ? _self.childrenCount : childrenCount // ignore: cast_nullable_to_non_nullable
 as int?,totalProductsCount: freezed == totalProductsCount ? _self.totalProductsCount : totalProductsCount // ignore: cast_nullable_to_non_nullable
@@ -184,10 +197,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String? description, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'parent_id')  int? parentId, @JsonKey(name: 'products_count')  int? productsCount, @JsonKey(name: 'children_count')  int? childrenCount, @JsonKey(name: 'total_products_count')  int? totalProductsCount, @JsonKey(name: 'image_url')  String? imageUrl, @JsonKey(name: 'image_width_px')  int? imageWidthPx, @JsonKey(name: 'image_height_px')  int? imageHeightPx, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String? description, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'skips_production')  bool skipsProduction, @JsonKey(name: 'parent_id')  int? parentId, @JsonKey(name: 'products_count')  int? productsCount, @JsonKey(name: 'children_count')  int? childrenCount, @JsonKey(name: 'total_products_count')  int? totalProductsCount, @JsonKey(name: 'image_url')  String? imageUrl, @JsonKey(name: 'image_width_px')  int? imageWidthPx, @JsonKey(name: 'image_height_px')  int? imageHeightPx, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProductCategory() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.isActive,_that.sortOrder,_that.parentId,_that.productsCount,_that.childrenCount,_that.totalProductsCount,_that.imageUrl,_that.imageWidthPx,_that.imageHeightPx,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.name,_that.description,_that.isActive,_that.sortOrder,_that.skipsProduction,_that.parentId,_that.productsCount,_that.childrenCount,_that.totalProductsCount,_that.imageUrl,_that.imageWidthPx,_that.imageHeightPx,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -205,10 +218,10 @@ return $default(_that.id,_that.name,_that.description,_that.isActive,_that.sortO
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String? description, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'parent_id')  int? parentId, @JsonKey(name: 'products_count')  int? productsCount, @JsonKey(name: 'children_count')  int? childrenCount, @JsonKey(name: 'total_products_count')  int? totalProductsCount, @JsonKey(name: 'image_url')  String? imageUrl, @JsonKey(name: 'image_width_px')  int? imageWidthPx, @JsonKey(name: 'image_height_px')  int? imageHeightPx, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String? description, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'skips_production')  bool skipsProduction, @JsonKey(name: 'parent_id')  int? parentId, @JsonKey(name: 'products_count')  int? productsCount, @JsonKey(name: 'children_count')  int? childrenCount, @JsonKey(name: 'total_products_count')  int? totalProductsCount, @JsonKey(name: 'image_url')  String? imageUrl, @JsonKey(name: 'image_width_px')  int? imageWidthPx, @JsonKey(name: 'image_height_px')  int? imageHeightPx, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _ProductCategory():
-return $default(_that.id,_that.name,_that.description,_that.isActive,_that.sortOrder,_that.parentId,_that.productsCount,_that.childrenCount,_that.totalProductsCount,_that.imageUrl,_that.imageWidthPx,_that.imageHeightPx,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.name,_that.description,_that.isActive,_that.sortOrder,_that.skipsProduction,_that.parentId,_that.productsCount,_that.childrenCount,_that.totalProductsCount,_that.imageUrl,_that.imageWidthPx,_that.imageHeightPx,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -225,10 +238,10 @@ return $default(_that.id,_that.name,_that.description,_that.isActive,_that.sortO
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String? description, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'parent_id')  int? parentId, @JsonKey(name: 'products_count')  int? productsCount, @JsonKey(name: 'children_count')  int? childrenCount, @JsonKey(name: 'total_products_count')  int? totalProductsCount, @JsonKey(name: 'image_url')  String? imageUrl, @JsonKey(name: 'image_width_px')  int? imageWidthPx, @JsonKey(name: 'image_height_px')  int? imageHeightPx, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String? description, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'skips_production')  bool skipsProduction, @JsonKey(name: 'parent_id')  int? parentId, @JsonKey(name: 'products_count')  int? productsCount, @JsonKey(name: 'children_count')  int? childrenCount, @JsonKey(name: 'total_products_count')  int? totalProductsCount, @JsonKey(name: 'image_url')  String? imageUrl, @JsonKey(name: 'image_width_px')  int? imageWidthPx, @JsonKey(name: 'image_height_px')  int? imageHeightPx, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _ProductCategory() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.isActive,_that.sortOrder,_that.parentId,_that.productsCount,_that.childrenCount,_that.totalProductsCount,_that.imageUrl,_that.imageWidthPx,_that.imageHeightPx,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.name,_that.description,_that.isActive,_that.sortOrder,_that.skipsProduction,_that.parentId,_that.productsCount,_that.childrenCount,_that.totalProductsCount,_that.imageUrl,_that.imageWidthPx,_that.imageHeightPx,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -240,7 +253,7 @@ return $default(_that.id,_that.name,_that.description,_that.isActive,_that.sortO
 @JsonSerializable()
 
 class _ProductCategory extends ProductCategory {
-  const _ProductCategory({required this.id, required this.name, this.description, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'sort_order') this.sortOrder = 0, @JsonKey(name: 'parent_id') this.parentId, @JsonKey(name: 'products_count') this.productsCount, @JsonKey(name: 'children_count') this.childrenCount, @JsonKey(name: 'total_products_count') this.totalProductsCount, @JsonKey(name: 'image_url') this.imageUrl, @JsonKey(name: 'image_width_px') this.imageWidthPx, @JsonKey(name: 'image_height_px') this.imageHeightPx, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): super._();
+  const _ProductCategory({required this.id, required this.name, this.description, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'sort_order') this.sortOrder = 0, @JsonKey(name: 'skips_production') this.skipsProduction = false, @JsonKey(name: 'parent_id') this.parentId, @JsonKey(name: 'products_count') this.productsCount, @JsonKey(name: 'children_count') this.childrenCount, @JsonKey(name: 'total_products_count') this.totalProductsCount, @JsonKey(name: 'image_url') this.imageUrl, @JsonKey(name: 'image_width_px') this.imageWidthPx, @JsonKey(name: 'image_height_px') this.imageHeightPx, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): super._();
   factory _ProductCategory.fromJson(Map<String, dynamic> json) => _$ProductCategoryFromJson(json);
 
 @override final  int id;
@@ -252,6 +265,19 @@ class _ProductCategory extends ProductCategory {
 @override@JsonKey(name: 'is_active') final  bool isActive;
 /// Where it sits in the catalogue. The business's own order, not alphabetical.
 @override@JsonKey(name: 'sort_order') final  int sortOrder;
+/// Whether an order made **only** of goods filed under this heading skips the designer and
+/// the press — «جديدة» leads straight to «جاهزة», where the stock leaves the warehouse
+/// exactly as it does for a printed order.
+///
+/// **This row's own answer, not the effective one.** A subheading that inherits a flagged
+/// parent reads false here, because this is the value the edit sheet puts back: showing the
+/// inherited answer would have somebody save a flag onto a child that never asked for one.
+/// Whether a particular *order* skips production is the server's to decide from its lines —
+/// see `ResolveOrderFlow` — and never this app's.
+///
+/// False by default, so a heading nobody has thought about sends its orders down the road
+/// every order took before this field existed.
+@override@JsonKey(name: 'skips_production') final  bool skipsProduction;
 /// The heading this one sits under, or null when it is one in its own right.
 ///
 /// The tree is one level deep and this app does not manage it yet — the field exists so a
@@ -289,16 +315,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductCategory&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.productsCount, productsCount) || other.productsCount == productsCount)&&(identical(other.childrenCount, childrenCount) || other.childrenCount == childrenCount)&&(identical(other.totalProductsCount, totalProductsCount) || other.totalProductsCount == totalProductsCount)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.imageWidthPx, imageWidthPx) || other.imageWidthPx == imageWidthPx)&&(identical(other.imageHeightPx, imageHeightPx) || other.imageHeightPx == imageHeightPx)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductCategory&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.skipsProduction, skipsProduction) || other.skipsProduction == skipsProduction)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.productsCount, productsCount) || other.productsCount == productsCount)&&(identical(other.childrenCount, childrenCount) || other.childrenCount == childrenCount)&&(identical(other.totalProductsCount, totalProductsCount) || other.totalProductsCount == totalProductsCount)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.imageWidthPx, imageWidthPx) || other.imageWidthPx == imageWidthPx)&&(identical(other.imageHeightPx, imageHeightPx) || other.imageHeightPx == imageHeightPx)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,isActive,sortOrder,parentId,productsCount,childrenCount,totalProductsCount,imageUrl,imageWidthPx,imageHeightPx,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,name,description,isActive,sortOrder,skipsProduction,parentId,productsCount,childrenCount,totalProductsCount,imageUrl,imageWidthPx,imageHeightPx,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'ProductCategory(id: $id, name: $name, description: $description, isActive: $isActive, sortOrder: $sortOrder, parentId: $parentId, productsCount: $productsCount, childrenCount: $childrenCount, totalProductsCount: $totalProductsCount, imageUrl: $imageUrl, imageWidthPx: $imageWidthPx, imageHeightPx: $imageHeightPx, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'ProductCategory(id: $id, name: $name, description: $description, isActive: $isActive, sortOrder: $sortOrder, skipsProduction: $skipsProduction, parentId: $parentId, productsCount: $productsCount, childrenCount: $childrenCount, totalProductsCount: $totalProductsCount, imageUrl: $imageUrl, imageWidthPx: $imageWidthPx, imageHeightPx: $imageHeightPx, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -309,7 +335,7 @@ abstract mixin class _$ProductCategoryCopyWith<$Res> implements $ProductCategory
   factory _$ProductCategoryCopyWith(_ProductCategory value, $Res Function(_ProductCategory) _then) = __$ProductCategoryCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, String? description,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder,@JsonKey(name: 'parent_id') int? parentId,@JsonKey(name: 'products_count') int? productsCount,@JsonKey(name: 'children_count') int? childrenCount,@JsonKey(name: 'total_products_count') int? totalProductsCount,@JsonKey(name: 'image_url') String? imageUrl,@JsonKey(name: 'image_width_px') int? imageWidthPx,@JsonKey(name: 'image_height_px') int? imageHeightPx,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id, String name, String? description,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder,@JsonKey(name: 'skips_production') bool skipsProduction,@JsonKey(name: 'parent_id') int? parentId,@JsonKey(name: 'products_count') int? productsCount,@JsonKey(name: 'children_count') int? childrenCount,@JsonKey(name: 'total_products_count') int? totalProductsCount,@JsonKey(name: 'image_url') String? imageUrl,@JsonKey(name: 'image_width_px') int? imageWidthPx,@JsonKey(name: 'image_height_px') int? imageHeightPx,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -326,14 +352,15 @@ class __$ProductCategoryCopyWithImpl<$Res>
 
 /// Create a copy of ProductCategory
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? isActive = null,Object? sortOrder = null,Object? parentId = freezed,Object? productsCount = freezed,Object? childrenCount = freezed,Object? totalProductsCount = freezed,Object? imageUrl = freezed,Object? imageWidthPx = freezed,Object? imageHeightPx = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? isActive = null,Object? sortOrder = null,Object? skipsProduction = null,Object? parentId = freezed,Object? productsCount = freezed,Object? childrenCount = freezed,Object? totalProductsCount = freezed,Object? imageUrl = freezed,Object? imageWidthPx = freezed,Object? imageHeightPx = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_ProductCategory(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
-as int,parentId: freezed == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
+as int,skipsProduction: null == skipsProduction ? _self.skipsProduction : skipsProduction // ignore: cast_nullable_to_non_nullable
+as bool,parentId: freezed == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
 as int?,productsCount: freezed == productsCount ? _self.productsCount : productsCount // ignore: cast_nullable_to_non_nullable
 as int?,childrenCount: freezed == childrenCount ? _self.childrenCount : childrenCount // ignore: cast_nullable_to_non_nullable
 as int?,totalProductsCount: freezed == totalProductsCount ? _self.totalProductsCount : totalProductsCount // ignore: cast_nullable_to_non_nullable

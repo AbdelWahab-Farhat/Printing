@@ -129,7 +129,14 @@ void main() {
   testWidgets('the sheet is as tall as its content, not a fraction of the phone', (tester) async {
     // Arrange — a tall screen, so that the fixed-fraction layout this replaced and the
     // content-sized one that took its place cannot land on the same number by accident.
-    useAPhone(tester, height: 1400);
+    //
+    // **Taller than it was**, and the reason is the point of the test rather than a concession
+    // to it: «جاهزة للطباعة» made fifteen chips out of fourteen, and at 1400 the content no
+    // longer fitted inside the 80% the sheet may take. It was returning that 80% exactly — a
+    // fraction of the phone, which is the very thing this test exists to catch — so the number
+    // had stopped being able to tell the two layouts apart. The screen grows; the assertion
+    // does not move.
+    useAPhone(tester, height: 2400);
     await tester.pumpWidget(host());
 
     // Act
@@ -138,9 +145,9 @@ void main() {
 
     // Assert — it stops short of the 80% it is allowed, which is the observable meaning of
     // "measures its own content". The layout this replaced asked for 90% of whatever it was
-    // given and would have come back with 1260 — and this is the *inflated* test font, so a real
+    // given and would have come back with 2160 — and this is the *inflated* test font, so a real
     // phone has more room left over than this number suggests.
-    expect(height, lessThan(1400 * 0.8));
+    expect(height, lessThan(2400 * 0.8));
   });
 
   testWidgets('the options share lines — chips, not a column of full-width rows', (tester) async {

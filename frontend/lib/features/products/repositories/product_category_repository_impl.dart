@@ -45,6 +45,7 @@ class ProductCategoryRepositoryImpl implements ProductCategoryRepository {
     required String name,
     String? description,
     required int sortOrder,
+    required bool skipsProduction,
   }) {
     return safeRequest<ProductCategory>(
       () => _dio.post(
@@ -54,6 +55,10 @@ class ProductCategoryRepositoryImpl implements ProductCategoryRepository {
           'sort_order': sortOrder,
           if (description != null && description.trim().isNotEmpty)
             'description': description.trim(),
+          // Always sent, false included. The API defaults it to false when the key is absent,
+          // so omitting it would agree with the server today and hide the day it stops — and a
+          // POST that carries every answer the form collected is the one a log can be read from.
+          'skips_production': skipsProduction,
         },
       ),
       parse: (data) => ProductCategory.fromJson(data! as Map<String, dynamic>),
@@ -67,6 +72,7 @@ class ProductCategoryRepositoryImpl implements ProductCategoryRepository {
     String? description,
     required int sortOrder,
     required bool isActive,
+    required bool skipsProduction,
   }) {
     return safeRequest<ProductCategory>(
       // A PUT sends the category's whole representation, which is why `is_active` is here and
@@ -82,6 +88,10 @@ class ProductCategoryRepositoryImpl implements ProductCategoryRepository {
           'description': (description?.trim().isEmpty ?? true) ? null : description!.trim(),
           'sort_order': sortOrder,
           'is_active': isActive,
+          // A PUT replaces the whole representation, so leaving this out would take the flag
+          // off every heading that had it on the next rename — the same trap `is_active` is
+          // spelled out for above.
+          'skips_production': skipsProduction,
         },
       ),
       parse: (data) => ProductCategory.fromJson(data! as Map<String, dynamic>),

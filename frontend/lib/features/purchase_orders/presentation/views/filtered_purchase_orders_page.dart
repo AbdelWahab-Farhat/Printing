@@ -56,14 +56,15 @@ class _FilteredPurchaseOrdersView extends StatelessWidget {
             key: ValueKey(order.id),
             order: order,
             onTap: () async {
-              // The detail screen answers `true` when it changed something. Re-read rather than
-              // patch: it hands back nothing to patch with.
-              final changed = await context.push<bool>(
+              // The detail screen hands the order back when it changed one, so the row redraws
+              // itself with no request — and leaves this screen when the change took it out of
+              // the question the screen was opened to ask.
+              final changed = await context.push<PurchaseOrder>(
                 Routes.purchaseOrder(order.id),
                 extra: order,
               );
 
-              if (changed ?? false) await cubit.refresh();
+              if (changed != null) cubit.replace(changed);
             },
           ),
         ),

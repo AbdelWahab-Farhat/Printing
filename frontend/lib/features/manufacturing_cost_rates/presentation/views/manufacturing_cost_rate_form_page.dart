@@ -183,7 +183,9 @@ class _ManufacturingCostRateFormViewState
         switch (state) {
           case SaveManufacturingCostRateSuccess(:final rate):
             // True says the list behind should refresh; a dismissed form returns nothing.
-            Navigator.of(context).pop(true);
+            // The saved rate goes back with it, so the list behind redraws that one row from
+            // what the server stored rather than re-reading the table.
+            Navigator.of(context).pop(rate);
             context.showSuccess(
               _isEditing
                   ? 'تم تحديث معدل ${rate.costTypeLabel}'

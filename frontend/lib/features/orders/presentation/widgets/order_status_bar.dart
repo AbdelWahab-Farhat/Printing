@@ -34,7 +34,7 @@ class OrderStatusBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(OrderStatusChip.iconFor(status), size: 24.sp, color: foreground),
+          Icon(OrderStatusChip.iconFor(status), size: 26.sp, color: foreground),
           SizedBox(width: 12.w),
           Expanded(
             child: Text(

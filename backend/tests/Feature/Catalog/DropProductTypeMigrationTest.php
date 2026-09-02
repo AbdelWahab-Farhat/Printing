@@ -33,9 +33,15 @@ class DropProductTypeMigrationTest extends TestCase
      * It was the last migration on the day this test was written and has not been since — every
      * migration added after it puts another step between here and there. Searching for the
      * schema this test is *about* is what keeps it from breaking on work that has nothing to do
-     * with it; the bound is a guard against a rollback that can never arrive.
+     * with it.
+     *
+     * **The bound is only a guard against a rollback that can never arrive**, so it is deliberately
+     * generous rather than tight. It was 20, and the twentieth migration after the drop turned that
+     * into a failure in this test on work that had nothing to do with «النوع» — which is the very
+     * breakage the search above exists to prevent, reintroduced by the counter meant to bound it. A
+     * loop that ends the moment it finds the column costs nothing for the extra headroom.
      */
-    private function rollBackToTheSchemaThatStillHadTheColumn(int $mostSteps = 20): void
+    private function rollBackToTheSchemaThatStillHadTheColumn(int $mostSteps = 80): void
     {
         for ($step = 0; $step < $mostSteps; $step++) {
             if (Schema::hasColumn('products', 'category')) {

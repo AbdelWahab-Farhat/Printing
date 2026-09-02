@@ -1,100 +1,175 @@
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/features/warehouses/models/stock_batch.dart';
 import 'package:dayaa/features/warehouses/models/stock_movement.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_batches_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/ledger_row.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/movement_row.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/stock_batch_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// The ledger — every movement, newest first.
+/// The ledger, at one of three zoom levels: the whole workshop, one warehouse, or one shelf in
+/// one warehouse.
 ///
-/// **Read at three zoom levels through one screen**, because they are the same list asked a
-/// narrower question each time: the whole workshop, one warehouse, or one shelf in one
-/// warehouse. Three screens would be three copies of a list whose rows are identical.
-///
-/// The narrowest level is the one a storekeeper actually asks — «هذا الصنف، من أين جاء ومن
-/// أخذه؟» — so when it is opened from a shelf it carries that shelf's balance above the rows
-/// that produced it.
-///
-/// Read-only: a row is written by the recording sheet and never edited. A mistake is corrected
-/// by another movement, which is itself a row here — and that is what keeps the ledger and the
-/// balance one story rather than two.
+/// **The last is a different screen.** With a [stock] in hand this is a storekeeper's paper
+/// book for that shelf — every row signed, carrying the balance it left behind, grouped by
+/// day, with a header that says what the shelf holds and (to a reader allowed to know) what it
+/// is worth, and a second tab over the cost layers the next issue will draw from. Without one
+/// it is the feed it always was, with the sign added.
 class StockMovementsPage extends StatelessWidget {
   const StockMovementsPage({this.warehouseId, this.warehouseName, this.stock, super.key});
 
-  /// One warehouse's movements — counting both ends of a transfer — or all of them.
   final int? warehouseId;
 
-  /// Named in the bar when this was opened from a warehouse.
   final String? warehouseName;
 
-  /// The shelf this was opened from: it narrows the feed to that one صنف مخزني and gives the
-  /// header its balance. Null at the wider two levels.
   final WarehouseStock? stock;
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<StockMovementsCubit>(
-      create: (_) =>
-          sl<StockMovementsCubit>(param1: warehouseId, param2: stock?.stockItemId)..load(),
-      child: _MovementsView(warehouseName: warehouseName, stock: stock),
+    final shelf = stock;
+    final warehouse = warehouseId;
+    final showCost = shelf != null && warehouse != null && sl<Session>().can(AppPermission.viewStockCost);
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<StockMovementsCubit>(
+          create: (_) => sl<StockMovementsCubit>(param1: warehouseId, param2: shelf?.stockItemId)..load(),
+        ),
+        // The layers are only fetched for someone who may see them: they are money, and a
+        // request whose answer is never drawn is a request that should not be made.
+        if (showCost)
+          BlocProvider<StockBatchesCubit>(
+            create: (_) => sl<StockBatchesCubit>(
+              param1: (warehouseId: warehouse, stockItemId: shelf.stockItemId),
+              param2: true,
+            )..load(),
+          ),
+      ],
+      child: shelf != null && warehouse != null
+          ? _ShelfLedgerView(
+              stock: shelf,
+              warehouseId: warehouse,
+              warehouseName: warehouseName,
+              showCost: showCost,
+            )
+          : _FeedView(warehouseName: warehouseName),
     );
   }
 }
 
-class _MovementsView extends StatelessWidget {
-  const _MovementsView({this.warehouseName, this.stock});
+// ── the feed: the workshop, or one warehouse ────────────────────────────────────────────
+
+class _FeedView extends StatelessWidget {
+  const _FeedView({this.warehouseName});
 
   final String? warehouseName;
-  final WarehouseStock? stock;
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<StockMovementsCubit>();
-    final subtitle = [?stock?.title, ?warehouseName].join(' · ');
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          children: [
-            const Text('سجل الحركات'),
-            if (subtitle.isNotEmpty)
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-              ),
-          ],
+      appBar: AppBar(title: _Title(subtitle: warehouseName)),
+      body: BlocBuilder<StockMovementsCubit, StockMovementsState>(
+        builder: (context, state) => PagedListView<StockMovement>(
+          state: state,
+          emptyMessage: 'لا توجد حركات مسجّلة بعد',
+          onLoadMore: cubit.loadMore,
+          onRefresh: cubit.refresh,
+          skeletonHeight: 76.h,
+          itemBuilder: (context, movement, index) =>
+              MovementRow(key: ValueKey(movement.id), movement: movement),
         ),
       ),
+    );
+  }
+}
+
+// ── the ledger: one shelf in one warehouse ──────────────────────────────────────────────
+
+class _ShelfLedgerView extends StatefulWidget {
+  const _ShelfLedgerView({
+    required this.stock,
+    required this.warehouseId,
+    required this.showCost,
+    this.warehouseName,
+  });
+
+  final WarehouseStock stock;
+  final int warehouseId;
+  final bool showCost;
+  final String? warehouseName;
+
+  @override
+  State<_ShelfLedgerView> createState() => _ShelfLedgerViewState();
+}
+
+class _ShelfLedgerViewState extends State<_ShelfLedgerView> {
+  static const _segments = ['الحركات', 'الدفعات'];
+
+  var _segment = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = [widget.stock.title, ?widget.warehouseName].join(' · ');
+
+    return Scaffold(
+      appBar: AppBar(title: _Title(subtitle: subtitle)),
       body: Column(
         children: [
-          if (stock case final shelf?) _ShelfHeader(stock: shelf),
-          Expanded(
-            child: BlocBuilder<StockMovementsCubit, StockMovementsState>(
-              builder: (context, state) => PagedListView<StockMovement>(
-                state: state,
-                emptyMessage: stock == null
-                    ? 'لا توجد حركات مسجّلة بعد'
-                    : 'لا توجد حركات على هذه المادة بعد',
-                onLoadMore: cubit.loadMore,
-                onRefresh: cubit.refresh,
-                // One row measured: three lines beside a glyph.
-                skeletonHeight: 76.h,
-                itemBuilder: (context, movement, index) => MovementRow(
-                  key: ValueKey(movement.id),
-                  movement: movement,
-                  // The shelf is the whole feed here, so repeating it on every row would be a
-                  // column of the same three words.
-                  showTitle: stock == null,
+          _ShelfHeader(stock: widget.stock, showCost: widget.showCost),
+          if (widget.showCost) ...[
+            // The same strip the inventory tab uses: a switch under the header, not a
+            // headline, spanning the row so its two words divide it evenly.
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 6.h),
+              child: SizedBox(
+                height: 40.h,
+                child: SegmentedButton<int>(
+                  segments: [
+                    for (var i = 0; i < _segments.length; i++)
+                      ButtonSegment<int>(value: i, label: Text(_segments[i])),
+                  ],
+                  selected: {_segment},
+                  multiSelectionEnabled: false,
+                  emptySelectionAllowed: false,
+                  showSelectedIcon: false,
+                  expandedInsets: EdgeInsets.zero,
+                  style: SegmentedButton.styleFrom(
+                    textStyle: context.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                    padding: EdgeInsets.symmetric(horizontal: 8.w),
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onSelectionChanged: (choice) => setState(() => _segment = choice.first),
                 ),
               ),
+            ),
+          ],
+          Expanded(
+            // IndexedStack, so switching tabs keeps each list's scroll position and pages.
+            child: IndexedStack(
+              index: _segment,
+              children: [
+                _LedgerTab(
+                  stock: widget.stock,
+                  warehouseId: widget.warehouseId,
+                  showCost: widget.showCost,
+                ),
+                if (widget.showCost)
+                  _BatchesTab(warehouseId: widget.warehouseId, stockItemId: widget.stock.stockItemId),
+              ],
             ),
           ),
         ],
@@ -103,20 +178,35 @@ class _MovementsView extends StatelessWidget {
   }
 }
 
-/// What this shelf is and how much of it is here.
-///
-/// The balance sits directly above the ledger that explains it, which is the point of opening
-/// a shelf's history: the rows below are what turned it into this number.
-///
-/// **It no longer leads anywhere, and that is the change rather than an omission.** It used to
-/// open the product, because a shelf was one product's size. A shelf is now a pile that several
-/// products draw on, so there is no single product to open — and offering either of «كيس شحن
-/// سادة» and «كيس شحن مطبوع» here would answer a question nobody asked with a guess. A card that
-/// only reads is a card without an `InkWell`, not a greyed-out one.
+class _Title extends StatelessWidget {
+  const _Title({this.subtitle});
+
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Text('سجل الحركات'),
+        if (subtitle case final text? when text.isNotEmpty)
+          Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textTheme.labelSmall?.copyWith(color: context.colorScheme.onSurfaceVariant),
+          ),
+      ],
+    );
+  }
+}
+
+/// The shelf: code, name, the balance as the one big number, and — for a reader who may know —
+/// what it is worth and how many layers it is made of.
 class _ShelfHeader extends StatelessWidget {
-  const _ShelfHeader({required this.stock});
+  const _ShelfHeader({required this.stock, required this.showCost});
 
   final WarehouseStock stock;
+  final bool showCost;
 
   @override
   Widget build(BuildContext context) {
@@ -129,21 +219,18 @@ class _ShelfHeader extends StatelessWidget {
           color: scheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(16.r),
         ),
-        padding: EdgeInsets.all(14.w),
+        padding: EdgeInsets.all(16.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
-                // The code first and in the accent, exactly where the product's code used to
-                // be: `S7` is what gets read down a phone line, and it names the pile without
-                // claiming which of the products sharing it this row is about.
                 if (stock.code case final code?) ...[
                   Text(
                     code,
                     textDirection: TextDirection.ltr,
-                    style: context.textTheme.titleSmall?.copyWith(
+                    style: context.textTheme.titleMedium?.copyWith(
                       color: scheme.primary,
                       fontWeight: FontWeight.w800,
                     ),
@@ -155,21 +242,330 @@ class _ShelfHeader extends StatelessWidget {
                     stock.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                    style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 4.h),
-            Text(
-              'الرصيد الحالي ${stock.quantityLabel}',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: stock.isLowStock ? scheme.error : scheme.onSurfaceVariant,
-              ),
+            SizedBox(height: 10.h),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  'الرصيد',
+                  style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+                SizedBox(width: 10.w),
+                Text(
+                  stock.quantityLabel,
+                  textDirection: TextDirection.ltr,
+                  style: context.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: stock.isOutOfStock
+                        ? scheme.error
+                        : stock.isLowStock
+                        ? scheme.warn
+                        : scheme.onSurface,
+                  ),
+                ),
+                SizedBox(width: 6.w),
+                Text(
+                  stock.unitLabel,
+                  style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ],
             ),
+            if (showCost) _Valuation(unitLabel: stock.unitLabel),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// «القيمة 1,050 د.ل · 3.500 د.ل/قطعة» and «دفعتان متبقيتان · الأقدم 31 أغسطس», read off the
+/// remaining layers. The five states of INVENTORY-STOCK-SCREEN.md §٦.٢: nothing at all while
+/// the layers load or fail (the balance above still works), a word for unpriced stock, and the
+/// average dropped when any of it is unpriced.
+class _Valuation extends StatelessWidget {
+  const _Valuation({required this.unitLabel});
+
+  final String unitLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return BlocBuilder<StockBatchesCubit, StockBatchesState>(
+      builder: (context, state) {
+        if (state is! StockBatchesLoaded) return const SizedBox.shrink();
+
+        final valuation = ShelfValuation.of(state.page.items);
+        if (valuation.isEmpty) return const SizedBox.shrink();
+
+        final quiet = context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
+        final warn = quiet?.copyWith(color: scheme.warn, fontWeight: FontWeight.w700);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 8.h),
+            Row(
+              children: [
+                Text('القيمة', style: quiet),
+                SizedBox(width: 8.w),
+                Flexible(
+                  child: valuation.isWhollyUncosted
+                      ? Text('بلا تكلفة', style: warn)
+                      : Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '${groupedDecimal(valuation.totalValue)} د.ل',
+                                style: quiet?.copyWith(
+                                  color: scheme.onSurface,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (valuation.averageUnitCost case final average?)
+                                TextSpan(text: ' · ${groupedDecimal(average)} د.ل/$unitLabel')
+                              else if (valuation.hasUncosted)
+                                TextSpan(
+                                  text: ' · ${groupedDecimal(valuation.uncostedQuantity)} $unitLabel بلا تكلفة',
+                                  style: warn,
+                                ),
+                            ],
+                          ),
+                          style: quiet,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                ),
+              ],
+            ),
+            SizedBox(height: 4.h),
+            Text(_layers(valuation), style: quiet),
+          ],
+        );
+      },
+    );
+  }
+
+  /// «دفعة واحدة متبقية» / «دفعتان متبقيتان» / «3 دفعات متبقية», with the oldest one's date —
+  /// because the oldest is what the next issue will be costed at.
+  String _layers(ShelfValuation valuation) {
+    final count = switch (valuation.layerCount) {
+      1 => 'دفعة واحدة متبقية',
+      2 => 'دفعتان متبقيتان',
+      final n when n <= 10 => '$n دفعات متبقية',
+      final n => '$n دفعة متبقية',
+    };
+
+    return [count, if (valuation.oldestReceivedAt case final at?) 'الأقدم ${at.shortDayLabel}'].join(' · ');
+  }
+}
+
+/// The rows, grouped by day, with a hairline between them instead of card gaps.
+class _LedgerTab extends StatelessWidget {
+  const _LedgerTab({required this.stock, required this.warehouseId, required this.showCost});
+
+  final WarehouseStock stock;
+  final int warehouseId;
+  final bool showCost;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<StockMovementsCubit>();
+
+    return BlocBuilder<StockMovementsCubit, StockMovementsState>(
+      builder: (context, state) {
+        final items = state is StockMovementsLoaded ? state.page.items : const <StockMovement>[];
+
+        return PagedListView<StockMovement>(
+          state: state,
+          emptyMessage: 'لا توجد حركات على هذه المادة بعد',
+          onLoadMore: cubit.loadMore,
+          onRefresh: cubit.refresh,
+          skeletonHeight: 72.h,
+          separatorBuilder: (context, index) => const _Hairline(),
+          itemBuilder: (context, movement, index) {
+            final row = LedgerRow(
+              key: ValueKey(movement.id),
+              movement: movement,
+              warehouseId: warehouseId,
+              unitLabel: stock.unitLabel,
+              showCost: showCost,
+            );
+
+            // A day header above the first row of each day. Rows are newest first, so the day
+            // changes when this row's day differs from the one above it.
+            final previous = index > 0 && index - 1 < items.length ? items[index - 1] : null;
+            if (movement.createdAt case final at? when !_sameDay(previous?.createdAt, at)) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [_DayHeader(at: at, first: index == 0), row],
+              );
+            }
+
+            return row;
+          },
+        );
+      },
+    );
+  }
+
+  bool _sameDay(DateTime? a, DateTime b) {
+    if (a == null) return false;
+    final x = a.toLocal();
+    final y = b.toLocal();
+
+    return x.year == y.year && x.month == y.month && x.day == y.day;
+  }
+}
+
+class _DayHeader extends StatelessWidget {
+  const _DayHeader({required this.at, required this.first});
+
+  final DateTime at;
+  final bool first;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(top: first ? 8.h : 22.h, bottom: 4.h),
+      child: Text(
+        at.relativeDayLabel,
+        style: context.textTheme.titleSmall?.copyWith(
+          color: context.colorScheme.primary,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _Hairline extends StatelessWidget {
+  const _Hairline();
+
+  @override
+  Widget build(BuildContext context) =>
+      Divider(height: 1, thickness: 1, color: context.colorScheme.outlineVariant.withValues(alpha: 0.5));
+}
+
+/// The cost layers still on the shelf, in the order they will be drawn, and — behind a fold —
+/// the ones already spent.
+class _BatchesTab extends StatefulWidget {
+  const _BatchesTab({required this.warehouseId, required this.stockItemId});
+
+  final int warehouseId;
+  final int stockItemId;
+
+  @override
+  State<_BatchesTab> createState() => _BatchesTabState();
+}
+
+class _BatchesTabState extends State<_BatchesTab> {
+  var _showSpent = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<StockBatchesCubit>();
+
+    return BlocBuilder<StockBatchesCubit, StockBatchesState>(
+      builder: (context, state) => Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                'الدفعات المتبقية · تُصرف من الأقدم',
+                style: context.textTheme.titleSmall?.copyWith(
+                  color: context.colorScheme.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: PagedListView<StockBatch>(
+              state: state,
+              emptyMessage: 'لا توجد دفعات على هذا الرفّ',
+              onLoadMore: cubit.loadMore,
+              onRefresh: cubit.refresh,
+              skeletonHeight: 72.h,
+              separatorBuilder: (context, index) => const _Hairline(),
+              itemBuilder: (context, batch, index) => StockBatchRow(
+                key: ValueKey(batch.id),
+                batch: batch,
+                position: index + 1,
+                isNext: index == 0,
+              ),
+            ),
+          ),
+          if (_showSpent)
+            Expanded(
+              child: BlocProvider<StockBatchesCubit>(
+                create: (_) => sl<StockBatchesCubit>(
+                  param1: (warehouseId: widget.warehouseId, stockItemId: widget.stockItemId),
+                  param2: false,
+                )..load(),
+                child: const _SpentBatches(),
+              ),
+            )
+          else
+            SafeArea(
+              top: false,
+              child: TextButton(
+                onPressed: () => setState(() => _showSpent = true),
+                child: const Text('عرض الدفعات المستهلكة'),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpentBatches extends StatelessWidget {
+  const _SpentBatches();
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<StockBatchesCubit>();
+
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 4.h),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'الدفعات المستهلكة',
+              style: context.textTheme.titleSmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: BlocBuilder<StockBatchesCubit, StockBatchesState>(
+            builder: (context, state) => PagedListView<StockBatch>(
+              state: state,
+              emptyMessage: 'لم تُستهلك أي دفعة بعد',
+              onLoadMore: cubit.loadMore,
+              onRefresh: cubit.refresh,
+              skeletonHeight: 72.h,
+              separatorBuilder: (context, index) => const _Hairline(),
+              itemBuilder: (context, batch, index) =>
+                  StockBatchRow(key: ValueKey(batch.id), batch: batch, position: index + 1),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

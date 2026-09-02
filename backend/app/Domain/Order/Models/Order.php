@@ -15,7 +15,9 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\AllocateOrderIdentifier;
 use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
+use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
+use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentStatus;
@@ -84,12 +86,24 @@ class Order extends Model implements HasAuditTrail
         return [
             'status' => OrderStatus::class,
             'fulfilment_type' => FulfilmentType::class,
+            // Which road this order walks, stamped at intake by `ResolveOrderFlow` and never
+            // re-read afterwards — see that action for why it is a snapshot. Absent from the
+            // fillable list for the reason `grand_total` is: a request that could post it could
+            // skip the press on paper.
+            'production_flow' => OrderFlow::class,
             'design_source' => DesignSource::class,
             // Strings, not floats: these are summed, and money that is summed must stay exact.
             'items_total' => 'decimal:2',
             'design_fee' => 'decimal:2',
             'delivery_price' => 'decimal:2',
             'discount' => 'decimal:2',
+            // The charge that goes the other way — packaging, transport, a change to what was
+            // agreed. Beside the discount rather than inside it, so «لماذا تغيّر الإجمالي؟» has
+            // two readable halves rather than one net figure that answers nothing.
+            'additional_cost' => 'decimal:2',
+            // Cast, and that is the whole of what makes the change history say «تغليف خاص»
+            // rather than `special_packaging` — see AuditValueLabels, which derives from here.
+            'additional_cost_reason' => AdditionalCostReason::class,
             'grand_total' => 'decimal:2',
             // The cost-side twin of grand_total — written only by RecalculateOrderCogs, and
             // absent from the fillable list for the same reason grand_total is.
@@ -109,6 +123,7 @@ class Order extends Model implements HasAuditTrail
             // answers exactly. See `TransitionFields::money()`.
             'collected_amount' => 'decimal:2',
             'placed_at' => 'datetime',
+            'ready_to_print_at' => 'datetime',
             'design_started_at' => 'datetime',
             'printing_started_at' => 'datetime',
             // Stamped once by ChangeOrderStatus, on the first entry into `ready` — see
@@ -307,6 +322,29 @@ class Order extends Model implements HasAuditTrail
     }
 
     /**
+     * The sizes still missing from this order, by label.
+     *
+     * **What stands between «نواقص» and the press.** «جاهزة للطباعة» tells another department the
+     * goods are all here; an order still short of one size has not made that true — see
+     * `ShortageMustBeResolved`.
+     *
+     * Returns labels rather than a bare boolean because the person refused by it is standing at
+     * the shelves: «ما زال ناقصاً: 25*35» sends them somewhere, «الطلبية غير مكتملة» does not.
+     * Empty means nothing is short, which is what makes it readable as a yes/no at the call site.
+     *
+     * @return list<string>
+     */
+    public function unresolvedShortages(): array
+    {
+        return $this->items
+            ->filter(fn (OrderItem $item) => $item->shortage_quantity !== null
+                && bccomp((string) $item->shortage_quantity, '0', 3) > 0)
+            ->map(fn (OrderItem $item) => (string) $item->variant_label)
+            ->values()
+            ->all();
+    }
+
+    /**
      * Whether another version of the artwork may be put on the order.
      *
      * **Open before the work starts and while it is being done; closed once the press is
@@ -322,6 +360,13 @@ class Order extends Model implements HasAuditTrail
      * {@see CreateOrder} — and «قيد التصميم» remains what it always was: the queue for the
      * orders whose artwork does not exist yet.
      *
+     * **«جاهزة للطباعة» accepts one for the same reason «جديدة» does, and must.** The short path
+     * is an agreed file going on the order and the press starting; that path now runs through the
+     * handover, so refusing artwork here would leave the customer's own file with nowhere to go
+     * but a detour into the designer's queue and straight back out — the exact walk this rule was
+     * loosened to end. The goods being weighed and off the shelf by then changes nothing about
+     * the artwork: the press has not run.
+     *
      * The line stops at «قيد الطباعة» because that is where it means something: the bags are
      * being printed from a settled file, and changing it is going back to design on purpose —
      * a move somebody makes and the timeline records.
@@ -335,7 +380,11 @@ class Order extends Model implements HasAuditTrail
      */
     public function designsAreEditable(): bool
     {
-        return in_array($this->status, [OrderStatus::New, OrderStatus::Designing], true);
+        return in_array(
+            $this->status,
+            [OrderStatus::New, OrderStatus::ReadyToPrint, OrderStatus::Designing],
+            true,
+        );
     }
 
     /**
@@ -383,7 +432,11 @@ class Order extends Model implements HasAuditTrail
 
         $targets = array_map(
             fn (OrderStatus $target) => $target->isDispatch() ? $dispatch : $target,
-            $this->status->allowedNext(),
+            // **Both facts about this order, and neither is its status.** The destination
+            // collapses the dispatch pair below; the flow decides whether the designer and the
+            // press are on this order's road at all — an order of ready-made goods is offered
+            // «جاهزة» from «جديدة» and is never shown two buttons for work nobody will do.
+            $this->status->allowedNext($this->production_flow),
         );
 
         // array_unique keeps the first occurrence, so the collapsed pair leaves one entry in
@@ -416,8 +469,11 @@ class Order extends Model implements HasAuditTrail
      */
     public function progress(): array
     {
-        $line = OrderStatus::mainLine($this->fulfilment_type);
-        $position = $this->status->mainLinePosition($this->fulfilment_type);
+        // The same pair `availableTransitionsFor()` reads, and for the same reason: an order
+        // that skips production draws five steps rather than seven, instead of two steps it will
+        // never reach sitting on the bar claiming it is a third of the way through.
+        $line = OrderStatus::mainLine($this->fulfilment_type, $this->production_flow);
+        $position = $this->status->mainLinePosition($this->fulfilment_type, $this->production_flow);
 
         // A detour has no position of its own, so "how far did it get" comes from the furthest
         // main-line step its timeline actually recorded. Without this an order returned from

@@ -160,11 +160,14 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
     );
   }
 
-  /// Back to wherever this was opened from. `canPop` because the screen has its own route: a
-  /// deep link straight to it has nothing beneath to return to, and `pop` on an empty stack
-  /// leaves the user on a dead end.
-  void _leave(BuildContext context) =>
-      context.canPop() ? context.pop() : context.go(Routes.home);
+  /// Back to wherever this was opened from, carrying [saved] — the customer the *server*
+  /// stored, which is exactly what the screen behind needs to redraw its row without asking for
+  /// it again.
+  ///
+  /// `canPop` because the screen has its own route: a deep link straight to it has nothing
+  /// beneath to return to, and `pop` on an empty stack leaves the user on a dead end.
+  void _leave(BuildContext context, [Customer? saved]) =>
+      context.canPop() ? context.pop(saved) : context.go(Routes.home);
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +191,7 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
                     details: 'رمز العميل: ${customer.code}',
                   );
                 }
-                _leave(context);
+                _leave(context, customer);
 
               case AddCustomerFailure(:final failure):
                 // Field-level errors are rendered under their inputs, so showing them again in

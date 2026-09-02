@@ -83,6 +83,12 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
   /// nothing new was picked.
   bool _removeImage = false;
 
+  /// Whether orders made only of this heading's goods skip the designer and the press.
+  ///
+  /// Seeded from the category being edited, and false for a new one — a heading nobody has
+  /// thought about sends its orders down the road every order took before this switch existed.
+  late bool _skipsProduction = widget.category?.skipsProduction ?? false;
+
   bool get _isEditing => widget.category != null;
 
   /// What the row should look like right now: the file just picked, else what the server has,
@@ -122,6 +128,7 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
       // the catalogue: both travel back exactly as they were.
       sortOrder: widget.category?.sortOrder ?? widget.nextSortOrder,
       isActive: widget.category?.isActive ?? true,
+      skipsProduction: _skipsProduction,
       image: _image,
       removeImage: _removeImage,
     );
@@ -193,7 +200,27 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _submit(),
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 4.h),
+                // **Offered when adding as well as when editing**, unlike «يُعرض في قوائم
+                // الاختيار» on the sibling sheets: a category is created to be used, so its
+                // activation switch has one answer and is a row to read past — but «أكياس سادة»
+                // is created *because* it is not printed, and asking on the second visit would
+                // put the first orders under it through a designer and a press nobody meant to
+                // involve.
+                SwitchListTile.adaptive(
+                  value: _skipsProduction,
+                  onChanged: (value) => setState(() => _skipsProduction = value),
+                  title: const Text('يتخطّى التصميم والطباعة'),
+                  // The consequence, not a restatement of the label: what the switch changes is
+                  // which buttons the order screen offers, and that is what somebody standing
+                  // over this form is deciding about.
+                  subtitle: const Text(
+                    'الطلب المكوّن كلّه من منتجات هذا التصنيف ينتقل من «جديدة» إلى «جاهزة» '
+                    'مباشرة، ويُخصم من المخزون عندها كأي طلب.',
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                SizedBox(height: 4.h),
                 _ImageRow(
                   picked: _image,
                   existingUrl: _showsExistingImage ? widget.category!.imageUrl : null,

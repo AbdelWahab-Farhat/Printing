@@ -137,6 +137,9 @@ final class AuditAttributeLabels
             'name' => 'اسم التصنيف',
             'description' => 'الوصف',
             'parent_id' => 'التصنيف الرئيسي',
+            // Worth a history entry more than most: turning it on changes the road every order
+            // taken under this heading walks from that moment — see `ResolveOrderFlow`.
+            'skips_production' => 'يتخطّى التصميم والطباعة',
             // Four columns for one picture, and all four are read the same way by somebody
             // scanning a history: «تغيّرت الصورة». Naming them separately is what stops the
             // screen printing `image_path` at them.
@@ -211,11 +214,15 @@ final class AuditAttributeLabels
             'items_total' => 'إجمالي البنود',
             'design_fee' => 'رسوم التصميم',
             'discount' => 'الخصم',
+            'additional_cost' => 'التكلفة الإضافية',
+            'additional_cost_reason' => 'سبب التكلفة الإضافية',
+            'additional_cost_note' => 'ملاحظة التكلفة الإضافية',
             'grand_total' => 'الإجمالي',
             'shipping_company' => 'شركة الشحن',
             'tracking_number' => 'رقم التتبّع',
             'courier_name' => 'اسم المندوب',
             'placed_at' => 'تاريخ الطلب',
+            'ready_to_print_at' => 'تاريخ الجاهزية للطباعة',
             'design_started_at' => 'بدء التصميم',
             'printing_started_at' => 'بدء الطباعة',
             'ready_at' => 'تاريخ الجاهزية',
@@ -236,6 +243,10 @@ final class AuditAttributeLabels
             'stock_deducted_at' => 'تاريخ خصم المخزون',
             'fulfillment_warehouse_id' => 'مخزن التنفيذ',
             'total_cogs' => 'إجمالي تكلفة البضاعة',
+            // Its *values* need no dictionary: `OrderFlow` names itself, and AuditValueLabels
+            // translates any enum-cast column whose enum can — so a history row reads «بلا تصميم
+            // وطباعة» rather than `no_production`.
+            'production_flow' => 'مسار التنفيذ',
         ],
         'order_item' => [
             'order_id' => 'الطلبية',
@@ -312,13 +323,23 @@ final class AuditAttributeLabels
         'stock_batch' => [
             'source_type' => 'مصدر الدفعة',
             'stock_arrival_item_id' => 'بند التوريد',
+            'stock_movement_id' => 'الحركة المخزنية',
+            'split_from_batch_id' => 'مقسومة من دفعة',
             'quantity_received' => 'الكمية المستلمة',
             'quantity_remaining' => 'الكمية المتبقية',
             'received_at' => 'تاريخ الاستلام',
+            'revalued_at' => 'تاريخ تعديل التكلفة',
         ],
         'stock_batch_consumption' => [
             'stock_batch_id' => 'دفعة التكلفة',
             'stock_movement_id' => 'الحركة المخزنية',
+        ],
+        'stock_batch_revaluation' => [
+            'stock_batch_id' => 'دفعة التكلفة',
+            'user_id' => 'المستخدم',
+            'old_unit_cost' => 'التكلفة السابقة',
+            'new_unit_cost' => 'التكلفة الجديدة',
+            'reason' => 'سبب التعديل',
         ],
 
         'vendor' => [

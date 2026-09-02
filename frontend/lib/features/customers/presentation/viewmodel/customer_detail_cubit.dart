@@ -36,6 +36,17 @@ class CustomerDetailCubit extends Cubit<CustomerDetailState> {
     emit(result.fold((f) => CustomerDetailState.failure(f), (c) => CustomerDetailState.loaded(c)));
   }
 
+  /// Takes a reading the caller already has — the form's saved copy, straight from the server.
+  ///
+  /// The alternative was [load], which is a request for something this screen was just handed.
+  /// Re-reading is still what a *pull* does, and what the failure view retries; it is only the
+  /// answered case that stops asking.
+  void show(Customer customer) {
+    if (isClosed) return;
+
+    emit(CustomerDetailState.loaded(customer));
+  }
+
   /// Turns the customer on or off.
   ///
   /// The customer stays on screen throughout — [CustomerDetailState.changing] carries them —

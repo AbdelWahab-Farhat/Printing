@@ -47,6 +47,16 @@ class ManufacturingCostRatesCubit extends PagedCubit<ManufacturingCostRate> {
   bool get isFiltered => costType != null || isActive != null;
 
   @override
+  Object identityOf(ManufacturingCostRate item) => item.id;
+
+  /// A rate stopped while «المفعّلة» is showing leaves the list, rather than sitting there
+  /// contradicting the filter above it.
+  @override
+  bool belongs(ManufacturingCostRate item) =>
+      (isActive == null || item.isActive == isActive) &&
+      (costType == null || item.costType == costType);
+
+  @override
   Future<Either<Failure, Paginated<ManufacturingCostRate>>> fetchPage({
     String? search,
     required int page,
@@ -79,10 +89,13 @@ class ManufacturingCostRatesCubit extends PagedCubit<ManufacturingCostRate> {
 
     if (isClosed) return null;
 
-    final failure = result.fold<Failure?>((failure) => failure, (_) => null);
-    if (failure == null) await refresh();
+    // The endpoint answers with the rate it just changed, so the row is replaced with what came
+    // back rather than the table re-read for an answer already in hand.
+    return result.fold<Failure?>((failure) => failure, (updated) {
+      replace(updated);
 
-    return failure;
+      return null;
+    });
   }
 
   /// Removes a rate from the table.

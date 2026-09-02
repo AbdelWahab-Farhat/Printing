@@ -50,6 +50,7 @@ void main() {
         stockItemId: any(named: 'stockItemId'),
         toWarehouseId: any(named: 'toWarehouseId'),
         quantity: any(named: 'quantity'),
+        unitCost: any(named: 'unitCost'),
         notes: any(named: 'notes'),
       ),
     ).thenAnswer((_) async => const Right(written));
@@ -70,6 +71,7 @@ void main() {
         warehouseId: any(named: 'warehouseId'),
         quantity: any(named: 'quantity'),
         isIncrease: any(named: 'isIncrease'),
+        unitCost: any(named: 'unitCost'),
         notes: any(named: 'notes'),
       ),
     ).thenAnswer((_) async => const Right(written));
@@ -137,6 +139,142 @@ void main() {
         notes: 'تلف أثناء التخزين',
       ),
     ).called(1);
+  });
+
+  group('the cost that opens the layer', () {
+    test('an arrival carries it', () async {
+      // Arrange & Act
+      await record(
+        kind: MovementKind.arrival,
+        stockItemId: 3,
+        warehouseId: 1,
+        quantity: '250',
+        unitCost: '3.5',
+      );
+
+      // Assert
+      verify(
+        () => repository.recordArrival(
+          stockItemId: 3,
+          toWarehouseId: 1,
+          quantity: '250',
+          unitCost: '3.5',
+          notes: null,
+        ),
+      ).called(1);
+    });
+
+    test('an increase carries it, alongside the direction', () async {
+      // Arrange — the API refuses an increase without one, which is the 422 staff hit today.
+      await record(
+        kind: MovementKind.increase,
+        stockItemId: 3,
+        warehouseId: 1,
+        quantity: '10',
+        unitCost: '3.5',
+        notes: 'وجدنا أكثر مما في السجل',
+      );
+
+      // Assert
+      verify(
+        () => repository.recordAdjustment(
+          stockItemId: 3,
+          warehouseId: 1,
+          quantity: '10',
+          isIncrease: true,
+          unitCost: '3.5',
+          notes: 'وجدنا أكثر مما في السجل',
+        ),
+      ).called(1);
+    });
+
+    test('a decrease drops a cost that was typed and then abandoned', () async {
+      // Arrange — the two adjustments share one repository call, so nothing but this use case
+      // stands between a figure typed under «زيادة» and a «نقص» that consumes existing layers.
+      // A hidden field is not a rule; this is.
+      await record(
+        kind: MovementKind.decrease,
+        stockItemId: 3,
+        warehouseId: 1,
+        quantity: '4',
+        unitCost: '3.5',
+        notes: 'تلف أثناء التخزين',
+      );
+
+      // Assert
+      verify(
+        () => repository.recordAdjustment(
+          stockItemId: 3,
+          warehouseId: 1,
+          quantity: '4',
+          isIncrease: false,
+          unitCost: null,
+          notes: 'تلف أثناء التخزين',
+        ),
+      ).called(1);
+    });
+
+    test('an empty box sends nothing rather than a zero', () async {
+      // Arrange — «لا نعرف سعرها» leaves the layer findable in the uncosted queue; «صفر» says a
+      // person decided it is worthless and takes it out of that queue for good.
+      await record(
+        kind: MovementKind.arrival,
+        stockItemId: 3,
+        warehouseId: 1,
+        quantity: '250',
+        unitCost: '   ',
+      );
+
+      // Assert
+      verify(
+        () => repository.recordArrival(
+          stockItemId: 3,
+          toWarehouseId: 1,
+          quantity: '250',
+          unitCost: null,
+          notes: null,
+        ),
+      ).called(1);
+    });
+
+    test('Arabic-Indic digits and a decimal comma reach the API as a number', () async {
+      // Arrange — ٣٫٥ is what the keyboard produces and 3,5 is the decimal mark it offers; the
+      // cost goes through the same normalisation the quantity does, and for the same reason.
+      await record(
+        kind: MovementKind.arrival,
+        stockItemId: 3,
+        warehouseId: 1,
+        quantity: '250',
+        unitCost: ' ٣,٥ ',
+      );
+
+      // Assert
+      final captured = verify(
+        () => repository.recordArrival(
+          stockItemId: any(named: 'stockItemId'),
+          toWarehouseId: any(named: 'toWarehouseId'),
+          quantity: any(named: 'quantity'),
+          unitCost: captureAny(named: 'unitCost'),
+          notes: any(named: 'notes'),
+        ),
+      ).captured.single;
+
+      expect(captured, '3.5');
+    });
+
+    test('a transfer has no cost to carry, and cannot be given one', () {
+      // Arrange & Act & Assert — a transfer relocates layers at the prices they already hold, so
+      // `recordTransfer` never took a cost. Stated as a test so the reason survives: the guard
+      // is the contract's shape, and the compiler enforces it on anyone who adds the argument.
+      expect(MovementKind.transfer.opensCostLayer, isFalse);
+      expect(MovementKind.decrease.opensCostLayer, isFalse);
+      expect(MovementKind.arrival.opensCostLayer, isTrue);
+      expect(MovementKind.increase.opensCostLayer, isTrue);
+
+      // Only the increase is refused without one — an arrival may genuinely not know its price.
+      expect(MovementKind.increase.requiresCost, isTrue);
+      expect(MovementKind.arrival.requiresCost, isFalse);
+    });
   });
 
   test('Arabic-Indic digits and a decimal comma both reach the API as a number', () async {
@@ -221,6 +359,9 @@ void main() {
         'to_warehouse_id': 'warehouse',
         'from_warehouse_id': 'source',
         'quantity': 'quantity',
+        // «تكلفة الوحدة مطلوبة عند تسجيل زيادة» is the refusal this whole change exists to
+        // stop; it would be worse than useless behind a generic snackbar.
+        'unit_cost': 'unit cost',
         'notes': 'notes',
       };
 

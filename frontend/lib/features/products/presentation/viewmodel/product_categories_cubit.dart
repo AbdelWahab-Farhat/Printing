@@ -16,9 +16,11 @@ import 'package:dayaa/features/products/usecases/set_product_category_activation
 /// row — stop offering it, or remove it — because both change the list under the user and the
 /// screen must not be left guessing what it now holds.
 ///
-/// **Both reload rather than patch the row in place.** Deactivating changes what a filtered list
-/// should contain, and deleting changes the paging; a locally edited copy would disagree with
-/// the server the moment either happened. The list is short and the request is cheap.
+/// **Deactivating patches the row; deleting and reordering still reload.** The activation
+/// endpoint answers with the category it just changed, so there is nothing left to ask for — and
+/// [belongs] takes the row off a narrowed list rather than leaving it there contradicting the
+/// chip. A delete moves the page boundary, and a reorder is about the order of rows this screen
+/// does not entirely hold; both of those re-read, and say why below.
 class ProductCategoriesCubit extends PagedCubit<ProductCategory> {
   ProductCategoriesCubit({
     required GetProductCategories getCategories,
@@ -45,6 +47,14 @@ class ProductCategoriesCubit extends PagedCubit<ProductCategory> {
   /// and offering one would be offering a choice the server refuses. False for the management
   /// screen, which has to show the whole catalogue to curate it.
   bool leafOnly = false;
+
+  @override
+  Object identityOf(ProductCategory item) => item.id;
+
+  /// A heading stopped while «المعروضة» is showing leaves the list, rather than sitting there
+  /// contradicting the chip above it.
+  @override
+  bool belongs(ProductCategory item) => isActive == null || item.isActive == isActive;
 
   @override
   Future<Either<Failure, Paginated<ProductCategory>>> fetchPage({
@@ -79,10 +89,11 @@ class ProductCategoriesCubit extends PagedCubit<ProductCategory> {
 
     if (isClosed) return null;
 
-    final failure = result.fold<Failure?>((failure) => failure, (_) => null);
-    if (failure == null) await refresh();
+    return result.fold<Failure?>((failure) => failure, (updated) {
+      replace(updated);
 
-    return failure;
+      return null;
+    });
   }
 
   /// Saves the order the cards were dragged into, and re-reads the list from the server.

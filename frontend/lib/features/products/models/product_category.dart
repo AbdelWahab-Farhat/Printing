@@ -30,6 +30,20 @@ abstract class ProductCategory with _$ProductCategory {
     /// Where it sits in the catalogue. The business's own order, not alphabetical.
     @JsonKey(name: 'sort_order') @Default(0) int sortOrder,
 
+    /// Whether an order made **only** of goods filed under this heading skips the designer and
+    /// the press — «جديدة» leads straight to «جاهزة», where the stock leaves the warehouse
+    /// exactly as it does for a printed order.
+    ///
+    /// **This row's own answer, not the effective one.** A subheading that inherits a flagged
+    /// parent reads false here, because this is the value the edit sheet puts back: showing the
+    /// inherited answer would have somebody save a flag onto a child that never asked for one.
+    /// Whether a particular *order* skips production is the server's to decide from its lines —
+    /// see `ResolveOrderFlow` — and never this app's.
+    ///
+    /// False by default, so a heading nobody has thought about sends its orders down the road
+    /// every order took before this field existed.
+    @JsonKey(name: 'skips_production') @Default(false) bool skipsProduction,
+
     /// The heading this one sits under, or null when it is one in its own right.
     ///
     /// The tree is one level deep and this app does not manage it yet — the field exists so a

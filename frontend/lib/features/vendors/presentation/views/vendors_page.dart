@@ -41,22 +41,23 @@ class _VendorsView extends StatelessWidget {
   Future<void> _open(BuildContext context, Vendor vendor) async {
     final cubit = context.read<VendorsCubit>();
 
-    final changed = await context.push<bool>(
+    final changed = await context.push<Vendor>(
       Routes.vendor(vendor.id),
       extra: vendor,
     );
 
-    // Only when something actually changed: a refresh after a screen the user merely read is a
-    // request nobody asked for, and it flickers the list under their thumb.
-    if (changed ?? false) await cubit.refresh();
+    // The supplier itself when something moved, and nothing at all after a screen the user
+    // merely read. The row redraws from what came back — a re-read would fetch a page this
+    // list is already holding, and throw a scrolled one back to the top to do it.
+    if (changed != null) cubit.replace(changed);
   }
 
   Future<void> _add(BuildContext context) async {
     final cubit = context.read<VendorsCubit>();
 
-    final saved = await context.push<bool>(Routes.vendorForm);
+    final saved = await context.push<Vendor>(Routes.vendorForm);
 
-    if (saved ?? false) await cubit.refresh();
+    if (saved != null) cubit.insert(saved);
   }
 
   @override

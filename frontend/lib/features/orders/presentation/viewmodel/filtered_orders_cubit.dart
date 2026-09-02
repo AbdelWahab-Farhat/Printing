@@ -28,6 +28,9 @@ class FilteredOrdersCubit extends PagedCubit<Order> {
   final OrdersFilter _filter;
 
   @override
+  Object identityOf(Order item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<Order>>> fetchPage({String? search, required int page}) {
     // The filter rides along with every page, including the ones `loadMore` asks for: page two
     // of «نواقص» must not arrive as page two of everything — and page two of one customer's
@@ -43,34 +46,17 @@ class FilteredOrdersCubit extends PagedCubit<Order> {
     );
   }
 
-  /// Puts back an order the detail screen moved, or drops it when the move took it out of the
-  /// answer this screen is showing.
+  /// Whether an order still answers the question this screen was opened to ask.
   ///
   /// **Dropping is the point.** Marking the last «نواقص» resolved should empty this screen, not
-  /// leave a row contradicting the title above it until somebody pulls to refresh.
-  void replace(Order updated) {
-    final current = state;
-    if (current is! PagedLoaded<Order>) return;
-
-    // Both axes, for the reason above: an order paid off while this screen is showing «غير
-    // مدفوعة» should leave it, exactly as a resolved «نواقص» does.
-    final belongs =
-        (_filter.statuses.isEmpty || _filter.statuses.contains(updated.status.wire)) &&
-        (_filter.paymentStatuses.isEmpty ||
-            _filter.paymentStatuses.contains(updated.paymentStatus.wire));
-
-    emit(
-      current.copyWith(
-        page: Paginated<Order>(
-          items: <Order>[
-            for (final order in current.page.items)
-              if (order.id != updated.id) order else if (belongs) updated,
-          ],
-          meta: current.page.meta,
-        ),
-      ),
-    );
-  }
+  /// leave a row contradicting the title above it until somebody pulls to refresh — and an
+  /// order paid off while this screen is showing «غير مدفوعة» leaves it the same way.
+  /// [PagedCubit.replace] drops the row when this says no.
+  @override
+  bool belongs(Order item) =>
+      (_filter.statuses.isEmpty || _filter.statuses.contains(item.status.wire)) &&
+      (_filter.paymentStatuses.isEmpty ||
+          _filter.paymentStatuses.contains(item.paymentStatus.wire));
 }
 
 typedef FilteredOrdersState = PagedState<Order>;

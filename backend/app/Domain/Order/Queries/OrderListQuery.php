@@ -37,6 +37,10 @@ final class OrderListQuery
             // any line is sold by the kilo. Left to fetch themselves that is a query per order,
             // which is what a work queue can least afford.
             ->with('items')
+            // And the product behind each line, with its photographs: a card in the list shows
+            // what is in the order — the picture, the code, the name — and only the primary
+            // image is ever serialized, so this is one URL per line and not a gallery per row.
+            ->with('items.product.images')
             ->withCount('items');
 
         return $this->applyFilters($query, $filters)

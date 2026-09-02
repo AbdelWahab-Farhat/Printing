@@ -194,4 +194,38 @@ class OrderItem extends Model
             ? (string) $this->quantity
             : (string) $this->warehouse_quantity;
     }
+
+    /**
+     * What one unit off the shelf cost in material — «كم تكلفتنا القطعة؟» answered.
+     *
+     * **Derived, never stored, and never a column.** {@see $material_cost} is a FIFO draw of the
+     * cost layers this line actually consumed, so the rate behind it is that draw over what left
+     * the warehouse — and a line that ate two layers at different prices has a weighted average
+     * no single `stock_batches.unit_cost` row states. Storing it would be a second answer to a
+     * question `material_cost` and {@see producedQuantity()} already answer together.
+     *
+     * **Per {@see producedQuantity()}, so the figure is in the *shelf's* unit** — see
+     * {@see stockUnit()}. 300 bags weighing 12.5 kilograms together cost what those kilograms
+     * cost; dividing by 300 would invent a per-bag material cost out of a scale reading, which is
+     * the very conversion COST-TRACKING-UNIT-CONVERSION.md §4 refuses to make. Whoever draws this
+     * must say the unit beside it.
+     *
+     * Three decimals, matching `unit_price` rather than the two-place money columns: the two
+     * rates are read in one glance, and a rate rounded to piastres is 0.00 on a bag.
+     *
+     * Null when the line has not been costed — and null too when nothing left the shelf, which
+     * is the only division there is no answer to.
+     */
+    public function unitMaterialCost(): ?string
+    {
+        if ($this->material_cost === null) {
+            return null;
+        }
+
+        $produced = $this->producedQuantity();
+
+        return bccomp($produced, '0', 3) <= 0
+            ? null
+            : bcdiv((string) $this->material_cost, $produced, 3);
+    }
 }

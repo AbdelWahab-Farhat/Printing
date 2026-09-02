@@ -22,6 +22,7 @@ use App\Application\Api\V1\Controllers\RegionController;
 use App\Application\Api\V1\Controllers\RoleController;
 use App\Application\Api\V1\Controllers\ShippingCompanyController;
 use App\Application\Api\V1\Controllers\StockArrivalController;
+use App\Application\Api\V1\Controllers\StockBatchController;
 use App\Application\Api\V1\Controllers\StockItemController;
 use App\Application\Api\V1\Controllers\StockItemGroupController;
 use App\Application\Api\V1\Controllers\StockMovementController;
@@ -261,8 +262,9 @@ Route::prefix('v1')->group(function (): void {
         // ChangeOrderStatusRequest::authorize() looks it up from OrderStatus and answers 403,
         // and the route below only asks that the caller be allowed to see the order at all.
         //
-        // Same reasoning for the discount: `orders.discount` is enforced inside the domain, so
-        // it holds for a console command and a future import too, not only for this endpoint.
+        // Same reasoning for the discount and the additional cost: `orders.discount` and
+        // `orders.additional_cost` are enforced inside the domain, so they hold for a console
+        // command and a future import too, not only for this endpoint.
         // Declared *before* the resource: `apiResource` registers `/orders/{order}`, and
         // implicit binding would try to resolve the word "summary" as an order id and 404.
         Route::get('orders/summary', [OrderController::class, 'statusCounts'])
@@ -542,6 +544,16 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('fulfillments', [StockMovementController::class, 'fulfillments'])->name('fulfillments');
                 Route::post('adjustments', [StockMovementController::class, 'adjustments'])->name('adjustments');
             });
+
+        // The cost layers behind those balances — the first thing in this API that could read
+        // them. `PATCH .../cost` is the only write: it changes what a quantity of stock is
+        // carried at without moving any stock, which is why it has a grant of its own rather
+        // than riding on `inventory.manage`.
+        Route::get('stock-batches', [StockBatchController::class, 'index'])
+            ->middleware('can:inventory.view')->name('stock-batches.index');
+
+        Route::patch('stock-batches/{stock_batch}/cost', [StockBatchController::class, 'revalue'])
+            ->middleware('can:inventory.revalue')->name('stock-batches.revalue');
 
         // Stock arrivals: a vendor-linked document with one or more lines, sitting on top of the
         // ledger above rather than replacing it — each line still posts through

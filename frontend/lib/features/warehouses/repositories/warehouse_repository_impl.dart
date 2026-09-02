@@ -3,6 +3,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/warehouses/models/stock_batch.dart';
 import 'package:dayaa/features/warehouses/models/stock_movement.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
@@ -19,6 +20,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
   @override
   Future<Either<Failure, Paginated<Warehouse>>> warehouses({
     String? search,
+    WarehouseType? type,
     int page = 1,
     int perPage = 20,
   }) {
@@ -31,6 +33,9 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
           // Omitted rather than sent as null: a null in a query string arrives as the literal
           // "null" and the API would filter on it.
           if (search != null && search.isNotEmpty) 'search': search,
+          // `unknown` is a kind this build cannot name, so it is no filter at all — sending it
+          // would ask the server about a word it has never heard of.
+          if (type != null && type != WarehouseType.unknown) 'type': _wire(type),
         },
       ),
       parseItem: Warehouse.fromJson,
@@ -136,17 +141,44 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
   }
 
   @override
+  Future<Either<Failure, Paginated<StockBatch>>> stockBatches({
+    required int warehouseId,
+    required int stockItemId,
+    bool remaining = true,
+    int page = 1,
+    int perPage = 50,
+  }) {
+    return safePaginatedRequest<StockBatch>(
+      () => _dio.get(
+        StockBatchEndpoints.index,
+        queryParameters: <String, dynamic>{
+          'page': page,
+          'per_page': perPage,
+          'warehouse_id': warehouseId,
+          'stock_item_id': stockItemId,
+          'remaining': remaining ? 1 : 0,
+        },
+      ),
+      parseItem: StockBatch.fromJson,
+    );
+  }
+
+  @override
   Future<Either<Failure, StockMovement>> recordArrival({
     required int stockItemId,
     required int toWarehouseId,
     required String quantity,
+    String? unitCost,
     String? notes,
   }) {
     return _record(StockMovementEndpoints.arrivals, <String, dynamic>{
       'stock_item_id': stockItemId,
       'to_warehouse_id': toWarehouseId,
       'quantity': quantity,
-      if (notes != null && notes.isNotEmpty) 'notes': notes,
+      // **Omitted, never sent as null.** An absent key is «لم يُسجّل سعرها» — the layer opens at
+      // `0.000` and stays in the uncosted queue; a null would be a claim about the price.
+      'unit_cost': ?unitCost,
+      'notes': ?notes,
     });
   }
 
@@ -163,7 +195,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
       'from_warehouse_id': fromWarehouseId,
       'to_warehouse_id': toWarehouseId,
       'quantity': quantity,
-      if (notes != null && notes.isNotEmpty) 'notes': notes,
+      'notes': ?notes,
     });
   }
 
@@ -173,6 +205,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
     required int warehouseId,
     required String quantity,
     required bool isIncrease,
+    String? unitCost,
     String? notes,
   }) {
     return _record(StockMovementEndpoints.adjustments, <String, dynamic>{
@@ -182,7 +215,13 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
       // The backend's own enum. The one place the app spells one of its values, because a
       // direction has to exist before any movement is loaded.
       'direction': isIncrease ? 'increase' : 'decrease',
-      if (notes != null && notes.isNotEmpty) 'notes': notes,
+      // Required by the API on an increase, ignored on a decrease. Which of the two this is has
+      // already been decided in [RecordStockMovement] — a decrease arrives here with null.
+      'unit_cost': ?unitCost,
+      // **`notes` is required on both directions** (`min:3`), and this used to be
+      // `if (notes != null && notes.isNotEmpty)` — a guard that silently dropped a field the
+      // server demands. The sheet validates it, so the refusal was only ever one bypass away.
+      'notes': ?notes,
     });
   }
 

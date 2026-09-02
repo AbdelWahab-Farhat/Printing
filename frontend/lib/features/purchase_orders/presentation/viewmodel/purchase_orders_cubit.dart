@@ -22,6 +22,9 @@ class PurchaseOrdersCubit extends PagedCubit<PurchaseOrder> {
   PurchaseOrderStatus? status;
 
   @override
+  Object identityOf(PurchaseOrder item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<PurchaseOrder>>> fetchPage({
     String? search,
     required int page,
@@ -39,26 +42,10 @@ class PurchaseOrdersCubit extends PagedCubit<PurchaseOrder> {
     await load();
   }
 
-  /// Puts back an order the detail screen changed, or drops it when the change took it out of
-  /// the state on screen.
-  void replace(PurchaseOrder updated) {
-    final current = state;
-    if (current is! PagedLoaded<PurchaseOrder>) return;
-
-    final belongs = status == null || status == updated.status;
-
-    emit(
-      current.copyWith(
-        page: Paginated<PurchaseOrder>(
-          items: [
-            for (final order in current.page.items)
-              if (order.id != updated.id) order else if (belongs) updated,
-          ],
-          meta: current.page.meta,
-        ),
-      ),
-    );
-  }
+  /// Whether an order still belongs under the state on screen — [PagedCubit.replace] drops it
+  /// when the change took it out of that state.
+  @override
+  bool belongs(PurchaseOrder item) => status == null || status == item.status;
 }
 
 typedef PurchaseOrdersState = PagedState<PurchaseOrder>;

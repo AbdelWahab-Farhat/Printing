@@ -60,6 +60,7 @@ class OrderTransitionFieldsTest extends TestCase
             PermissionName::ViewOrders->value,
             PermissionName::ManageOrders->value,
             PermissionName::ManageOrderDesigns->value,
+            PermissionName::MoveOrderToReadyToPrint->value,
             PermissionName::MoveOrderToDesigning->value,
             PermissionName::MoveOrderToPrinting->value,
             PermissionName::MoveOrderToReady->value,
@@ -139,7 +140,12 @@ class OrderTransitionFieldsTest extends TestCase
     private function orderNeedingArtwork(): array
     {
         $customer = Customer::factory()->create();
-        $order = Order::factory()->forCustomer($customer)->create([
+
+        // **Standing at the handover, which is where the designer picks an order up.** It used to
+        // be «جديدة»: the press was reached straight from intake, so that was the status these
+        // moves started from. An order now crosses to the printing department through «جاهزة
+        // للطباعة», and «قيد التصميم» is one of the two doors out of it.
+        $order = Order::factory()->forCustomer($customer)->status(OrderStatus::ReadyToPrint)->create([
             'design_source' => DesignSource::Customer,
         ]);
 
@@ -216,8 +222,11 @@ class OrderTransitionFieldsTest extends TestCase
     public function test_even_a_reprint_is_offered_artwork_on_the_way_into_design(): void
     {
         // Arrange — `design_source = none` says whose work the artwork was, which is a question
-        // about money. Whether there is a file to look at is a different question.
-        $order = Order::factory()->create(['design_source' => DesignSource::None]);
+        // about money. Whether there is a file to look at is a different question. At the
+        // handover, because that is where «قيد التصميم» is reached from.
+        $order = Order::factory()->status(OrderStatus::ReadyToPrint)->create([
+            'design_source' => DesignSource::None,
+        ]);
         $headers = $this->foreman();
 
         // Act
@@ -241,13 +250,15 @@ class OrderTransitionFieldsTest extends TestCase
             'status',
         );
 
-        // Assert — the two ways of starting the job, and «نواقص» for the case where it cannot be
-        // started at all. Cancelling is not among them: a job nobody has begun is two taps from
-        // being begun, and an ending competed with the moves that matter.
+        // Assert — the handover to the press, and «نواقص» for the case where the job cannot be
+        // started at all. **Which half of the press it goes to is no longer asked here**: an
+        // order crosses to the printing department through one door, and that department chooses
+        // between designing and printing once it has it. Cancelling is not among them either: a
+        // job nobody has begun is two taps from being begun, and an ending competed with the
+        // moves that matter.
         $this->assertSame(
             [
-                OrderStatus::Designing->value,
-                OrderStatus::Printing->value,
+                OrderStatus::ReadyToPrint->value,
                 OrderStatus::Shortage->value,
             ],
             $offered,
@@ -285,20 +296,21 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertTrue($cancelled['fields'][0]['required']);
     }
 
-    public function test_printing_straight_from_new_carries_the_artwork(): void
+    public function test_printing_straight_from_the_handover_carries_the_artwork(): void
     {
-        // Arrange — still «جديدة»: the order never entered the design conversation, and does not
-        // need to. The customer brought the file with them.
+        // Arrange — the order never entered the design conversation and does not need to: the
+        // customer brought the file with them, and it is standing at the handover.
         [$order] = $this->orderNeedingArtwork();
         $headers = $this->foreman();
 
         // Act
         $printing = $this->transition($this->show($headers, $order), OrderStatus::Printing);
 
-        // Assert — «جديدة» accepts a version, so the move that leaves it may carry one. This is
-        // the whole short path: an agreed file goes on the order and the press starts, without
-        // a detour through a status naming work nobody did. The warehouse is not named here —
-        // stock leaves on the way to «جاهزة», not on the way into printing.
+        // Assert — «جاهزة للطباعة» accepts a version, so the move that leaves it may carry one.
+        // **This is the whole short path**, and it had to survive the handover being inserted in
+        // front of it: an agreed file goes on the order and the press starts, with no detour
+        // through a status naming work nobody did. The warehouse is not named here — the stock
+        // left at the handover, not on the way into printing.
         $this->assertSame(['design_ids', 'reason'], array_column($printing['fields'], 'key'));
         $this->assertFalse($printing['fields'][0]['required']);
         $this->assertFalse($printing['fields'][1]['required']);
@@ -338,9 +350,8 @@ class OrderTransitionFieldsTest extends TestCase
 
     public function test_stock_already_deducted_is_not_asked_for_a_warehouse_again(): void
     {
-        // Arrange — stock already left a warehouse for this order once. `ready` cannot itself be
-        // re-entered (see `OrderStatus::allowedNext()`), but the field's `required` computation
-        // still reads `stock_deducted_at` defensively, the same way it always has.
+        // Arrange — the ordinary printed order: its stock left at «جاهزة للطباعة», and it is now
+        // at the press on its way to «جاهزة».
         $order = Order::factory()->status(OrderStatus::Printing)->create([
             'stock_deducted_at' => now(),
         ]);
@@ -349,10 +360,11 @@ class OrderTransitionFieldsTest extends TestCase
         // Act
         $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
 
-        // Assert — nothing here would do anything with a second warehouse, so it is offered but
-        // not demanded.
-        $this->assertSame('warehouse_id', $ready['fields'][0]['key']);
-        $this->assertFalse($ready['fields'][0]['required']);
+        // Assert — **withheld outright, not offered-and-optional as it once was.** An order
+        // arriving here already deducted is being *corrected*, and a correction goes back to the
+        // shelf the goods came off — `orders.fulfillment_warehouse_id`. A second picker could only
+        // ever send the difference somewhere else and leave two shelves wrong instead of one.
+        $this->assertNotContains('warehouse_id', array_column($ready['fields'], 'key'));
     }
 
     /**
@@ -431,20 +443,25 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertStringContainsString(PricingUnit::Piece->label(), $hint);
     }
 
-    public function test_an_order_whose_stock_already_left_is_told_that_instead_of_a_list(): void
+    public function test_an_order_whose_stock_already_left_is_shown_no_deduction_preview(): void
     {
         // Arrange — listing what "will" be deducted for an order that already deducted would be
         // describing an event in the future tense after it happened.
-        $order = Order::factory()->status(OrderStatus::Printing)->create([
-            'stock_deducted_at' => now(),
-        ]);
+        [$order, $item] = $this->lineStockedIn(PricingUnit::Kilogram, measured: '12.5');
+        $order->forceFill(['stock_deducted_at' => now()])->save();
         $headers = $this->foreman();
 
         // Act
         $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
+        $field = $this->fieldNamed($ready['fields'], "warehouse_quantity_{$item->getKey()}");
 
-        // Assert
-        $this->assertStringContainsString('خُصم المخزون بالفعل', $ready['fields'][0]['hint']);
+        // Assert — the preview went with the warehouse picker: both belong to the move that
+        // *takes* the stock, and this move corrects a draw that already happened. What is said
+        // instead is what actually left, so the foreman is correcting a figure rather than
+        // guessing at one.
+        $this->assertNotContains('warehouse_id', array_column($ready['fields'], 'key'));
+        $this->assertStringContainsString('خرج من المخزن', $field['hint']);
+        $this->assertStringContainsString('12.500', $field['hint']);
     }
 
     // ────────────── what actually leaves the shelf, asked line by line ──────────────
@@ -552,10 +569,9 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertSame('12.500', $field['value']);
     }
 
-    public function test_the_shelf_quantity_is_offered_but_not_demanded_once_stock_has_left(): void
+    public function test_the_shelf_quantity_is_still_demanded_once_stock_has_left(): void
     {
-        // Arrange — stock already gone, so nothing here would act on a second answer. Read from
-        // `stock_deducted_at`, exactly as `warehouse_id` above it is.
+        // Arrange — stock already gone at «جاهزة للطباعة». This move is the *correction*.
         [$order, $item] = $this->lineStockedIn(PricingUnit::Kilogram);
         $order->forceFill(['stock_deducted_at' => now()])->save();
         $headers = $this->foreman();
@@ -564,8 +580,11 @@ class OrderTransitionFieldsTest extends TestCase
         $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
         $field = $this->fieldNamed($ready['fields'], "warehouse_quantity_{$item->getKey()}");
 
-        // Assert
-        $this->assertFalse($field['required']);
+        // Assert — **required, and it did not used to be.** The warehouse weighed what it pulled;
+        // the press knows what the run actually used, and that second figure is the true one. An
+        // emptied box would read as «صفر» against a shelf that has already given the goods up, so
+        // the field opens holding what left and asks to be confirmed or corrected.
+        $this->assertTrue($field['required']);
     }
 
     public function test_an_unweighed_line_is_not_previewed_as_a_figure_nobody_measured(): void
@@ -981,9 +1000,10 @@ class OrderTransitionFieldsTest extends TestCase
             'fields' => ['design_ids' => [$stranger->id]],
         ]);
 
-        // Assert — the whole move rolls back: no half-designed order, no orphan version.
+        // Assert — the whole move rolls back: no half-designed order, no orphan version, and the
+        // order left standing where it was.
         $response->assertStatus(422);
-        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+        $this->assertSame(OrderStatus::ReadyToPrint, $order->fresh()->status);
         $this->assertSame(0, $order->designs()->count());
     }
 

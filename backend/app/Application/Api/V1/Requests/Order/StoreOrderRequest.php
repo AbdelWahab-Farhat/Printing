@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Order;
 
+use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -55,6 +56,32 @@ class StoreOrderRequest extends FormRequest
             // import cannot get past it either.
             'discount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
 
+            // The charge going the other way, behind `orders.additional_cost` and guarded in the
+            // domain for the same reason the discount is.
+            //
+            // **The reason is required the moment there is anything to explain.** It is the axis
+            // this money will be read along later — «كم حصّلنا مقابل التغليف؟» — and a charge
+            // nobody can account for is what the field exists to prevent. A closed set, so the
+            // column stays something a report can group by rather than four spellings of one
+            // category.
+            'additional_cost' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'additional_cost_reason' => [
+                Rule::requiredIf(fn () => (float) $this->input('additional_cost', 0) > 0),
+                'nullable',
+                Rule::enum(AdditionalCostReason::class),
+            ],
+            // «أخرى» on its own carries no information at all, so it is the one reason that has
+            // to bring its own words.
+            'additional_cost_note' => [
+                Rule::requiredIf(
+                    fn () => $this->input('additional_cost_reason') === AdditionalCostReason::Other->value
+                        && (float) $this->input('additional_cost', 0) > 0
+                ),
+                'nullable',
+                'string',
+                'max:500',
+            ],
+
             'tracking_number' => ['nullable', 'string', 'max:100'],
 
             'items' => ['required', 'array', 'min:1', 'max:100'],
@@ -94,6 +121,9 @@ class StoreOrderRequest extends FormRequest
             'items.*.quantity.required' => 'الكمية مطلوبة',
             'items.*.quantity.min' => 'الكمية يجب أن تكون أكبر من صفر',
             'discount.min' => 'الخصم لا يمكن أن يكون سالباً',
+            'additional_cost.min' => 'التكلفة الإضافية لا يمكن أن تكون سالبة',
+            'additional_cost_reason.required' => 'سبب التكلفة الإضافية مطلوب',
+            'additional_cost_note.required' => 'اكتب سبب التكلفة الإضافية عند اختيار «أخرى»',
             'design_fee.min' => 'سعر التصميم لا يمكن أن يكون سالباً',
             'design_ids.*.exists' => 'التصميم غير موجود',
         ];
@@ -116,6 +146,9 @@ class StoreOrderRequest extends FormRequest
             'address_details' => 'تفاصيل العنوان',
             'design_fee' => 'سعر التصميم',
             'discount' => 'الخصم',
+            'additional_cost' => 'التكلفة الإضافية',
+            'additional_cost_reason' => 'سبب التكلفة الإضافية',
+            'additional_cost_note' => 'ملاحظة التكلفة الإضافية',
             'items' => 'بنود الطلبية',
         ];
     }

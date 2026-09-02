@@ -22,6 +22,9 @@ class WarehousesCubit extends PagedCubit<Warehouse> {
   final DeleteWarehouse _deleteWarehouse;
 
   @override
+  Object identityOf(Warehouse item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<Warehouse>>> fetchPage({
     String? search,
     required int page,

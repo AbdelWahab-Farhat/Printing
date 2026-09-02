@@ -50,6 +50,21 @@ class StockItemResource extends JsonResource
             'unit' => $this->unit->value,
             'unit_label' => $this->unit->label(),
 
+            // **The last price recorded for this material — a suggestion for the form that
+            // records an arrival, never a default the server applies.** Dated and sourced, so a
+            // six-month-old figure looks six months old rather than reading as today's price.
+            //
+            // Present only where it was loaded, which is the single-item response and nothing
+            // else: a listing carrying it would run a query per row for a hint no list shows.
+            'last_known_unit_cost' => $this->whenLoaded(
+                'latestCostedBatch',
+                fn (): ?array => $this->latestCostedBatch === null ? null : [
+                    'unit_cost' => (string) $this->latestCostedBatch->unit_cost,
+                    'received_at' => $this->latestCostedBatch->received_at?->toIso8601String(),
+                    'source_type_label' => $this->latestCostedBatch->source_type->label(),
+                ],
+            ),
+
             'description' => $this->description,
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,

@@ -27,6 +27,9 @@ class StockMovementsCubit extends PagedCubit<StockMovement> {
   final int? stockItemId;
 
   @override
+  Object identityOf(StockMovement item) => item.id;
+
+  @override
   Future<Either<Failure, Paginated<StockMovement>>> fetchPage({String? search, required int page}) {
     return _getMovements(warehouseId: warehouseId, stockItemId: stockItemId, page: page);
   }

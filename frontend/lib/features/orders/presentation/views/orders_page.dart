@@ -79,9 +79,9 @@ class _OrdersView extends StatelessWidget {
                 emptyMessage: 'لا توجد طلبيات في هذه القائمة',
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
-                // The measured height of a card: a status chip, a rule and two rows of three
-                // labelled facts.
-                skeletonHeight: 172.h,
+                // The measured height of a card: the status band and three rows of labelled
+                // facts, with the space the reference card keeps between them.
+                skeletonHeight: 380.h,
                 itemBuilder: (context, order, index) => OrderCard(
                   key: ValueKey(order.id),
                   order: order,

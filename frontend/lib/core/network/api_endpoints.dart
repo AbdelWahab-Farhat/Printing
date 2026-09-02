@@ -148,6 +148,15 @@ abstract final class StockMovementEndpoints {
   static const String adjustments = '/stock-movements/adjustments';
 }
 
+/// دفعات التكلفة — the cost layers under a balance: what each arrival was booked at and how
+/// much of it is still on the shelf. Read in consumption order, because that is the order the
+/// next issue will draw them in.
+abstract final class StockBatchEndpoints {
+  static const String index = '/stock-batches';
+
+  static String cost(int batchId) => '/stock-batches/$batchId/cost';
+}
+
 /// الموردون — who the business buys its stock from. Deactivated, never deleted, so there is no
 /// destroy path here: past shipments must keep naming the vendor that sent them.
 abstract final class VendorEndpoints {

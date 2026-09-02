@@ -26,6 +26,7 @@ class RecordMovementCubit extends Cubit<RecordMovementState> {
     required int warehouseId,
     int? fromWarehouseId,
     required String quantity,
+    String? unitCost,
     String? notes,
   }) async {
     if (state.isSubmitting) return;
@@ -38,6 +39,9 @@ class RecordMovementCubit extends Cubit<RecordMovementState> {
       warehouseId: warehouseId,
       fromWarehouseId: fromWarehouseId,
       quantity: quantity,
+      // Passed through as typed. Whether this kind may carry a cost at all is the use case's
+      // rule, and repeating it here would be a second place to get it wrong.
+      unitCost: unitCost,
       notes: notes,
     );
 

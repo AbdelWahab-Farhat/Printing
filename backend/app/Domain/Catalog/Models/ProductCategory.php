@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Storage;
  * anywhere, so it became two rows here and the column was dropped. See PRODUCT-CATEGORIES.md.
  */
 #[UseFactory(ProductCategoryFactory::class)]
-#[Fillable(['name', 'description', 'is_active', 'sort_order', 'parent_id'])]
+#[Fillable(['name', 'description', 'is_active', 'sort_order', 'parent_id', 'skips_production'])]
 class ProductCategory extends Model implements HasAuditTrail
 {
     /** @use HasFactory<ProductCategoryFactory> */
@@ -44,6 +44,7 @@ class ProductCategory extends Model implements HasAuditTrail
     {
         return [
             'is_active' => 'boolean',
+            'skips_production' => 'boolean',
             'sort_order' => 'integer',
             'image_width_px' => 'integer',
             'image_height_px' => 'integer',
@@ -98,6 +99,29 @@ class ProductCategory extends Model implements HasAuditTrail
     public function isRoot(): bool
     {
         return $this->parent_id === null;
+    }
+
+    /**
+     * Whether goods filed here reach the shelf without being designed or printed.
+     *
+     * **What decides an order's road**, by way of `ResolveOrderFlow` — «سادة» is the heading this
+     * was built for, and the seeder already describes it as «منتجات بلا طباعة».
+     * PRODUCT-CATEGORIES.md notes that the مطبوعة/سادة split fed no calculation anywhere when it
+     * became two headings; this is the calculation it now feeds.
+     *
+     * **A parent's answer reaches its children, and it is an OR rather than an override.** Two
+     * things follow from the one-level tree, and both point the same way: a product is filed
+     * under a leaf, so marking «سادة» and later adding «سادة ورقية» beneath it would silently
+     * drop the flag from every product that moved down. And a *printed* product filed under a
+     * plain heading is a filing mistake — something to fix on the product, not a configuration
+     * the child needs a way to express.
+     *
+     * Reads `parent` through the relation, so a caller that has not loaded it gets a query
+     * rather than a wrong answer; `ResolveOrderFlow` eager-loads it for exactly that reason.
+     */
+    public function skipsProduction(): bool
+    {
+        return (bool) $this->skips_production || (bool) ($this->parent?->skips_production ?? false);
     }
 
     public function hasImage(): bool
