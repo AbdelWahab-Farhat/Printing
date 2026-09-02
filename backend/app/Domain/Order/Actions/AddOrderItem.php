@@ -66,7 +66,17 @@ final class AddOrderItem
         // quantity an invoice is built on — see {@see OrderItem::billableQuantity()} — has a
         // single home. A line is born with nothing missing, so this is `quantity` today; it
         // stops being that the moment a shortage is recorded against it.
-        $item->forceFill(['unit_price' => $unitPrice]);
+        // **The cost travels with the price, and for the same reason.** A وسيط size carries what
+        // the vendor charges us; copying it here is what makes a later change to the catalogue
+        // leave this order alone — see OUTSOURCED-PRODUCTS.md §6. Null for everything we make
+        // ourselves, which is costed from what it consumed rather than from a typed number.
+        //
+        // Force-filled beside `unit_price` rather than made fillable: a request that could post
+        // it could name its own margin.
+        $item->forceFill([
+            'unit_price' => $unitPrice,
+            'unit_cost' => $variant->cost_price === null ? null : (string) $variant->cost_price,
+        ]);
         $item->forceFill(['line_total' => $item->deriveLineTotal()])->save();
 
         return $item;

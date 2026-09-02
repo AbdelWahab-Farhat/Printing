@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Resources;
 
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -72,6 +73,23 @@ class OrderItemResource extends JsonResource
             // What this line cost to produce, on the accrual side that mirrors `line_total` on
             // the revenue side — every one of the four null until the line has actually reached
             // printing. See DeductOrderStock and ApplyManufacturingRates.
+            // **What a وسيط line costs us, and the two keys the order clerk never sees.**
+            // `unit_cost` is the copy of `product_variants.cost_price` taken the day the order
+            // was — which is what makes a later change to the catalogue leave this order alone —
+            // and `outsourcing_cost` is what the line came to at «جاهزة». Behind
+            // `products.view_cost`, the same grant that guards the catalogue number they came
+            // from: a clerk who may not see what the shop pays for the goods may not see it here
+            // either, and hiding it on one screen while sending it on another would be a lock on
+            // one door of two.
+            'unit_cost' => $this->when(
+                $request->user()?->can(PermissionName::ViewProductCost->value) === true,
+                fn () => $this->unit_cost === null ? null : (string) $this->unit_cost,
+            ),
+            'outsourcing_cost' => $this->when(
+                $request->user()?->can(PermissionName::ViewProductCost->value) === true,
+                fn () => $this->outsourcing_cost === null ? null : (string) $this->outsourcing_cost,
+            ),
+
             'material_cost' => $this->material_cost === null ? null : (string) $this->material_cost,
             'labor_cost' => $this->labor_cost === null ? null : (string) $this->labor_cost,
             'overhead_cost' => $this->overhead_cost === null ? null : (string) $this->overhead_cost,

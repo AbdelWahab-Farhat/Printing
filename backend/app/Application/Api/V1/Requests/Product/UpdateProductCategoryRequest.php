@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Product;
 
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Catalog\Models\ProductCategory;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
@@ -37,8 +38,11 @@ class UpdateProductCategoryRequest extends StoreProductCategoryRequest
             'description' => ['sometimes', 'nullable', 'string', 'max:500'],
             'is_active' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:9999'],
-            // Turning this on affects the *next* order under the heading, never one already
-            // taken — see `UpdateProductCategory` and `ResolveOrderFlow`.
+            // Changing this affects the *next* order under the heading, never one already
+            // taken — see `UpdateProductCategory` and `ResolveOrderFlow`. The legacy boolean
+            // beside it is translated before any rule runs, and an omitted mode keeps the stored
+            // one — see `StoreProductCategoryRequest::prepareForValidation()`.
+            'production_mode' => ['sometimes', Rule::enum(ProductionMode::class)],
             'skips_production' => ['sometimes', 'boolean'],
         ];
     }

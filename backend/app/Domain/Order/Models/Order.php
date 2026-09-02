@@ -48,7 +48,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 #[UseFactory(OrderFactory::class)]
 #[Fillable([
-    'customer_shop_id', 'customer_shop_name', 'city_id', 'region_id',
+    'customer_shop_id', 'customer_shop_name', 'vendor_id', 'vendor_name', 'city_id', 'region_id',
     'city_name', 'region_name', 'fulfilment_type',
     'design_source', 'recipient_name', 'recipient_phone', 'address_details', 'notes',
     'tracking_number',
@@ -127,6 +127,7 @@ class Order extends Model implements HasAuditTrail
             'ready_to_print_at' => 'datetime',
             'design_started_at' => 'datetime',
             'printing_started_at' => 'datetime',
+            'manufacturing_started_at' => 'datetime',
             // Stamped once by ChangeOrderStatus, on the first entry into `ready` — see
             // DeductOrderStock. Unlike ready_at, never overwritten by a later visit:
             // its whole job is to remember whether stock has already left the warehouse.

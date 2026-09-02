@@ -45,17 +45,55 @@ enum OrderFlow: string
      */
     case NoProduction = 'no_production';
 
+    /**
+     * **وسيط.** دعاية sold it and an outside vendor makes it: the order may be designed here
+     * first, is then sent out, and comes back finished — جديدة → (قيد التصميم) → قيد التصنيع →
+     * جاهزة. See OUTSOURCED-PRODUCTS.md.
+     *
+     * **It is the road that made {@see hasProduction()} unanswerable.** That method was a
+     * boolean over two roads, and the third has work on it — the designer's — while having no
+     * press and no shelf at all. So the map branches on the flow itself now, and the two
+     * questions that were folded into one word are asked separately: {@see deductsStock()} for
+     * the warehouse, and the arm in `OrderStatus::allowedNext()` for the road.
+     */
+    case Outsourced = 'outsourced';
+
     public function label(): string
     {
         return match ($this) {
             self::Standard => 'المسار المعتاد',
             self::NoProduction => 'بلا تصميم وطباعة',
+            self::Outsourced => 'مسار الوسيط',
         };
     }
 
-    /** Whether the press and the designer's queue are on this road at all. */
-    public function hasProduction(): bool
+    /**
+     * Whether anything leaves one of our shelves on this road.
+     *
+     * **Not the same question as «هل يوجد عمل؟», which is why it is its own method.** Goods that
+     * are already made skip the press and are still picked, counted and deducted; goods a vendor
+     * makes for us are never in our warehouse to begin with, so the move into «جاهزة» asks for no
+     * warehouse and takes nothing out of one.
+     *
+     * Read in exactly two places — `ChangeOrderStatus`, which performs the deduction, and
+     * `TransitionFields`, which asks for what it needs — so what is requested on the screen and
+     * what is done to the shelf cannot drift apart.
+     */
+    public function deductsStock(): bool
     {
-        return $this === self::Standard;
+        return $this !== self::Outsourced;
+    }
+
+    /**
+     * Whether the order has to say who is making it.
+     *
+     * The other side of the same coin as {@see deductsStock()}: work that leaves the building has
+     * somebody's name on it, and «أين ذهبت الطلبية؟» is unanswerable afterwards if nobody was
+     * named at the time. Enforced by `CreateOrder` once the road is known — it cannot be a rule on
+     * the request, which sees product ids rather than a road.
+     */
+    public function needsAVendor(): bool
+    {
+        return $this === self::Outsourced;
     }
 }

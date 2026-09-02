@@ -9,6 +9,7 @@ use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
@@ -17,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
@@ -872,5 +874,91 @@ class ProductTest extends TestCase
         // Assert
         $this->assertSame(0, ProductVariant::withTrashed()->count());
         $this->assertSame(0, ProductPriceTier::withTrashed()->count());
+    }
+
+    // ─────────────────────────── سعر التكلفة ───────────────────────────
+    // A cost price belongs to a وسيط size and to nobody else's eyes — OUTSOURCED-PRODUCTS.md §3.
+
+    /** A heading whose goods an outside vendor makes. */
+    private function outsourcedCategoryId(): int
+    {
+        return ProductCategory::factory()->outsourced()->create(['name' => 'وسيط'])->id;
+    }
+
+    /** Somebody who maintains the catalogue but was never shown what the shop pays. */
+    private function priceBlindHeaders(): array
+    {
+        foreach (PermissionName::cases() as $permission) {
+            Permission::findOrCreate($permission->value, 'web');
+        }
+
+        $user = User::factory()->create();
+        $user->givePermissionTo(PermissionName::ViewProducts->value, PermissionName::ManageProducts->value);
+
+        return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+    }
+
+    public function test_a_vendor_made_size_carries_a_cost_price(): void
+    {
+        // Arrange — 50 كرت بزنس: sold at 50, bought at 25.
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->create($headers, [
+            'product_category_id' => $this->outsourcedCategoryId(),
+            'variants' => [[
+                'label' => '9*5',
+                'cost_price' => '25.000',
+                'price_tiers' => [['min_quantity' => 50, 'unit_price' => '50.000']],
+            ]],
+        ]);
+
+        // Assert — both numbers on the same size, which is the only place they can be compared.
+        $response->assertCreated()
+            ->assertJsonPath('data.variants.0.cost_price', '25.000')
+            ->assertJsonPath('data.variants.0.price_tiers.0.unit_price', '50.000');
+    }
+
+    public function test_a_cost_price_is_refused_on_goods_we_make_ourselves(): void
+    {
+        // Act — an ordinary printed heading, with a cost typed onto it.
+        $response = $this->create($this->auth(), [
+            'variants' => [['label' => '25*35', 'cost_price' => '25.000']],
+        ]);
+
+        // Assert — a refusal rather than a silent drop: what we print is costed from what it
+        // consumed, and a second number nothing reads would answer a margin report wrongly and
+        // confidently.
+        $response->assertStatus(422)->assertJsonValidationErrors('variants.0.cost_price');
+    }
+
+    public function test_a_size_under_a_vendor_heading_may_have_no_cost_yet(): void
+    {
+        // Act — the heading is «وسيط», but nobody has agreed a price with the vendor.
+        $response = $this->create($this->auth(), [
+            'product_category_id' => $this->outsourcedCategoryId(),
+            'variants' => [['label' => '9*5']],
+        ]);
+
+        // Assert — null is «لم تُحدَّد بعد», which is a real state a product sits in between being
+        // listed and being priced.
+        $response->assertCreated()->assertJsonPath('data.variants.0.cost_price', null);
+    }
+
+    public function test_the_cost_price_is_withheld_from_whoever_may_not_see_it(): void
+    {
+        // Arrange — a وسيط size with a cost on it. Built here rather than posted: the point of
+        // this test is who reads it, and a create call would authenticate an administrator first,
+        // whose guard would still be resolved when the read below ran.
+        $product = Product::factory()->create(['product_category_id' => $this->outsourcedCategoryId()]);
+        ProductVariant::factory()->for($product)->create(['label' => '9*5', 'cost_price' => '25.000']);
+
+        // Act — read by somebody holding `products.view` and `products.manage`, and not
+        // `products.view_cost`.
+        $response = $this->getJson('/api/v1/products', $this->priceBlindHeaders());
+
+        // Assert — **the key is absent, not null**: null would say «هذا المقاس بلا تكلفة», which
+        // is a claim about the product rather than about the reader.
+        $response->assertOk()->assertJsonMissingPath('data.0.variants.0.cost_price');
     }
 }

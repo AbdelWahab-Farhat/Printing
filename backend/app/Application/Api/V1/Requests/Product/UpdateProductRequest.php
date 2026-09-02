@@ -79,6 +79,9 @@ class UpdateProductRequest extends StoreProductRequest
             'variants.*.height_cm' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'variants.*.is_active' => ['sometimes', 'boolean'],
             'variants.*.sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
+            // Only under a «وسيط» heading — the refusal lives in the parent's `withValidator()`,
+            // which this class inherits, because the answer depends on the category beside it.
+            'variants.*.cost_price' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:9999999.999'],
             'variants.*.price_tiers' => ['sometimes', 'array'],
             'variants.*.price_tiers.*.min_quantity' => ['required', 'numeric', 'min:0.001'],
             'variants.*.price_tiers.*.unit_price' => ['required', 'numeric', 'min:0'],

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Actions;
 
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
@@ -61,7 +62,7 @@ final class ResolveOrderFlow
     /**
      * What the lines say, read once with the whole chain loaded.
      *
-     * `parent` is in the eager set because `ProductCategory::skipsProduction()` reads it — a
+     * `parent` is in the eager set because `ProductCategory::productionMode()` reads it — a
      * heading's answer reaches the headings under it — and strict mode turns a relation touched
      * cold into an exception rather than a query per line.
      */
@@ -76,10 +77,23 @@ final class ResolveOrderFlow
             return OrderFlow::Standard;
         }
 
-        $everyLineSkips = $order->items->every(
-            fn (OrderItem $item) => $item->product?->productCategory?->skipsProduction() ?? false,
-        );
+        // **One mode across every line, or the standard road.** A line that cannot prove what it
+        // is — a product with no category, the column is nullable — answers `in_house`, so a
+        // single unknown line is enough to keep the whole order on the road that asks more of the
+        // shop. That was the rule when this read a boolean and it is unchanged; it just has three
+        // answers to be unanimous about now.
+        $modes = $order->items
+            ->map(fn (OrderItem $item) => $item->product?->productCategory?->productionMode() ?? ProductionMode::InHouse)
+            ->unique();
 
-        return $everyLineSkips ? OrderFlow::NoProduction : OrderFlow::Standard;
+        if ($modes->count() !== 1) {
+            return OrderFlow::Standard;
+        }
+
+        return match ($modes->first()) {
+            ProductionMode::None => OrderFlow::NoProduction,
+            ProductionMode::Outsourced => OrderFlow::Outsourced,
+            ProductionMode::InHouse => OrderFlow::Standard,
+        };
     }
 }

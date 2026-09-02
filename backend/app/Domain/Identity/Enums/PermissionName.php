@@ -55,6 +55,13 @@ enum PermissionName: string
     case ViewProducts = 'products.view';
     case ManageProducts = 'products.manage';
 
+    // What a وسيط product costs us — `product_variants.cost_price`, and the copy of it every
+    // order line keeps. **Split from `products.view` on purpose**: taking an order needs the
+    // price the customer pays and nothing else, so the clerk entering orders is not shown what
+    // the shop paid for the goods. Setting it is `products.manage`, as every other catalogue
+    // number is. The same split `inventory.view_cost` already draws over stock.
+    case ViewProductCost = 'products.view_cost';
+
     // Delivery map — cities and the regions inside them share one pair: a region is never
     // administered by anyone who is not also administering its city.
     case ViewDeliveryLocations = 'cities.view';
@@ -86,6 +93,11 @@ enum PermissionName: string
     case MoveOrderToReadyToPrint = 'orders.status.ready_to_print';
     case MoveOrderToDesigning = 'orders.status.designing';
     case MoveOrderToPrinting = 'orders.status.printing';
+
+    // Sending a وسيط job out to the vendor who makes it, and chasing it until it comes back.
+    // Its own grant rather than the press's: a different desk does it, and «قيد التصنيع» is a
+    // status of its own for the same reason — see OUTSOURCED-PRODUCTS.md.
+    case MoveOrderToManufacturing = 'orders.status.manufacturing';
     case MoveOrderToReady = 'orders.status.ready';
     case MoveOrderToShortage = 'orders.status.shortage';
     case DispatchOrders = 'orders.status.dispatch';
@@ -179,6 +191,7 @@ enum PermissionName: string
             self::ManageBusinessFields => 'إضافة وتعديل مجالات العمل',
             self::ViewProducts => 'عرض المنتجات والأسعار',
             self::ManageProducts => 'إضافة وتعديل المنتجات والأسعار',
+            self::ViewProductCost => 'عرض سعر تكلفة المنتجات الوسيطة',
             self::ViewDeliveryLocations => 'عرض مدن ومناطق التوصيل',
             self::ManageDeliveryLocations => 'إضافة وتعديل مدن ومناطق التوصيل',
             self::ViewShippingCompanies => 'عرض شركات التوصيل',
@@ -191,6 +204,7 @@ enum PermissionName: string
             self::MoveOrderToReadyToPrint => 'تحويل الطلبية إلى جاهزة للطباعة',
             self::MoveOrderToDesigning => 'تحويل الطلبية إلى قيد التصميم',
             self::MoveOrderToPrinting => 'تحويل الطلبية إلى قيد الطباعة',
+            self::MoveOrderToManufacturing => 'تحويل الطلبية إلى قيد التصنيع',
             self::MoveOrderToReady => 'تحويل الطلبية إلى جاهزة',
             self::MoveOrderToShortage => 'تحويل الطلبية إلى نواقص',
             self::DispatchOrders => 'تسليم الطلبية للتوصيل أو للاستلام من المكتب',
@@ -233,14 +247,15 @@ enum PermissionName: string
             self::ViewCustomers, self::ManageCustomers,
             self::ModerateComments => 'الملاحظات',
             self::ViewBusinessFields, self::ManageBusinessFields => 'مجالات العمل',
-            self::ViewProducts, self::ManageProducts => 'المنتجات',
+            self::ViewProducts, self::ManageProducts, self::ViewProductCost => 'المنتجات',
             self::ViewDeliveryLocations, self::ManageDeliveryLocations => 'مدن ومناطق التوصيل',
             self::ViewShippingCompanies, self::ManageShippingCompanies => 'شركات التوصيل',
             self::ViewOrders, self::ManageOrders, self::DiscountOrders,
             self::AddOrderAdditionalCost,
             self::ManageOrderDesigns => 'الطلبيات',
             self::MoveOrderToReadyToPrint,
-            self::MoveOrderToDesigning, self::MoveOrderToPrinting, self::MoveOrderToReady,
+            self::MoveOrderToDesigning, self::MoveOrderToPrinting,
+            self::MoveOrderToManufacturing, self::MoveOrderToReady,
             self::MoveOrderToShortage, self::DispatchOrders, self::MarkOrdersDelivered,
             self::SettleOrders, self::RecordCourierReturn, self::RecordCarrierReturn,
             self::RecordOfficeReturn, self::ResendOrders,

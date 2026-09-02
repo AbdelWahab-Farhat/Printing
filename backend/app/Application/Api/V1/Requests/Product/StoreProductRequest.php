@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Requests\Product;
 use App\Application\Rules\CategoryMustBeALeaf;
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Models\ProductCategory;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -134,6 +135,13 @@ class StoreProductRequest extends FormRequest
             'variants.*.height_cm' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'variants.*.is_active' => ['sometimes', 'boolean'],
             'variants.*.sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
+            // **سعر التكلفة — only under a «وسيط» heading**, and refused elsewhere by
+            // {@see rejectCostPriceOnGoodsWeMakeOurselves()} rather than by a rule here: the
+            // answer depends on the category the same payload names, which a field rule cannot
+            // see. Writing it needs `products.manage` like every other catalogue number; *seeing*
+            // it needs `products.view_cost`, which the clerk taking orders does not hold.
+            'variants.*.cost_price' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:9999999.999'],
+
             'variants.*.price_tiers' => ['sometimes', 'array'],
             'variants.*.price_tiers.*.min_quantity' => ['required', 'numeric', 'min:0.001'],
             'variants.*.price_tiers.*.unit_price' => ['required', 'numeric', 'min:0'],
@@ -148,7 +156,48 @@ class StoreProductRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $this->rejectFractionalMinimumForPieces($validator);
             $this->rejectPricesOnQuoteOnlyProducts($validator);
+            $this->rejectCostPriceOnGoodsWeMakeOurselves($validator);
         });
+    }
+
+    /**
+     * A cost price belongs to a وسيط product and to nothing else.
+     *
+     * **The refusal, not a silent drop.** Storing the number anyway would leave a figure on the
+     * catalogue that nothing reads and that contradicts the costing this product actually gets —
+     * `order_items.material_cost` from the shelf, plus the labour and overhead rates — and the
+     * day somebody built a margin report from it, it would answer confidently and wrongly.
+     *
+     * Read through the *effective* mode so a size under «وسيط ورقي» beneath «وسيط» is allowed one
+     * — the same inheritance every other reader of a heading uses.
+     */
+    private function rejectCostPriceOnGoodsWeMakeOurselves(Validator $validator): void
+    {
+        $priced = array_filter(
+            (array) $this->input('variants', []),
+            fn ($variant) => is_array($variant)
+                && ($variant['cost_price'] ?? null) !== null
+                && $variant['cost_price'] !== '',
+        );
+
+        if ($priced === []) {
+            return;
+        }
+
+        $category = ProductCategory::query()
+            ->with('parent')
+            ->find($this->input('product_category_id'));
+
+        if ($category?->productionMode()->hasCostPrice() === true) {
+            return;
+        }
+
+        foreach (array_keys($priced) as $index) {
+            $validator->errors()->add(
+                "variants.{$index}.cost_price",
+                'سعر التكلفة لا يُسجَّل إلا على المنتجات الوسيطة',
+            );
+        }
     }
 
     private function rejectFractionalMinimumForPieces(Validator $validator): void

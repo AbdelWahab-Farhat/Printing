@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Resources;
 
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Catalog\Models\ProductCategory;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -37,13 +38,21 @@ class ProductCategoryResource extends JsonResource
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,
 
-            // Whether an order made only of goods from this heading skips the designer and the
-            // press. **This row's own answer, not the effective one** — a child that inherits a
-            // flagged parent reads false here, and that is deliberate: this is the value an edit
-            // form puts back, so showing the inherited answer would have somebody save a flag
-            // onto a child that never asked for one. The effective answer is the domain's, and
-            // it is asked through `ProductCategory::skipsProduction()`.
-            'skips_production' => $this->skips_production,
+            // How goods under this heading come to exist — مطبوعة، سادة، أو وسيط. **This row's
+            // own answer, not the effective one** — a child that inherits its parent's mode reads
+            // `in_house` here, and that is deliberate: this is the value an edit form puts back,
+            // so showing the inherited answer would have somebody save a mode onto a child that
+            // never asked for one. The effective answer is the domain's, and it is asked through
+            // `ProductCategory::productionMode()`.
+            'production_mode' => $this->production_mode->value,
+            'production_mode_label' => $this->production_mode->label(),
+
+            // **The boolean this replaced, still sent for the shipped app**, which reads it to
+            // print «بدون طباعة» on a category card — see OUTSOURCED-PRODUCTS.md §8. Derived, and
+            // read-only: «وسيط» is not printed here either, so it answers true, and what an old
+            // build then writes back is guarded in `StoreProductCategoryRequest`. It goes the day
+            // the app stops reading it.
+            'skips_production' => $this->production_mode !== ProductionMode::InHouse,
 
             // Products filed directly on this heading. Zero for a parent by construction — a
             // heading with children is a heading, not a slot.

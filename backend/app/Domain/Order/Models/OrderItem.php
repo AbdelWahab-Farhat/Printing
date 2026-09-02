@@ -66,6 +66,9 @@ class OrderItem extends Model
             // counted — «nothing recorded» is not «nothing missing».
             'shortage_quantity' => 'decimal:3',
             'unit_price' => 'decimal:3',
+            // The copy of what this size cost us on the day — see the migration that added it.
+            // Three places, like the price it sits beside, so the two round the same way.
+            'unit_cost' => 'decimal:3',
             'line_total' => 'decimal:2',
             // Null means "same unit as the warehouse" — see the class docblock.
             'warehouse_quantity' => 'decimal:3',

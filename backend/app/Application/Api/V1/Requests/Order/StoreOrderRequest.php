@@ -82,6 +82,15 @@ class StoreOrderRequest extends FormRequest
                 'max:500',
             ],
 
+            // **Who is making it, for an order a vendor executes.** Chosen from the list the
+            // purchase-order screens already pick from — never a name typed into a box.
+            //
+            // Optional *here* and required by the domain: whether an order owes a vendor depends
+            // on the road it walks, and the road is read off the lines after they are written —
+            // see `CreateOrder` and `OutsourcedOrderNeedsAVendor`. A rule here could only guess at
+            // it from product ids, and would be a second copy of `ResolveOrderFlow` besides.
+            'vendor_id' => ['nullable', 'integer', Rule::exists('vendors', 'id')->withoutTrashed()],
+
             'tracking_number' => ['nullable', 'string', 'max:100'],
 
             'items' => ['required', 'array', 'min:1', 'max:100'],
@@ -126,6 +135,7 @@ class StoreOrderRequest extends FormRequest
             'additional_cost_note.required' => 'اكتب سبب التكلفة الإضافية عند اختيار «أخرى»',
             'design_fee.min' => 'سعر التصميم لا يمكن أن يكون سالباً',
             'design_ids.*.exists' => 'التصميم غير موجود',
+            'vendor_id.exists' => 'المورد المحدد غير موجود',
         ];
     }
 
@@ -149,6 +159,7 @@ class StoreOrderRequest extends FormRequest
             'additional_cost' => 'التكلفة الإضافية',
             'additional_cost_reason' => 'سبب التكلفة الإضافية',
             'additional_cost_note' => 'ملاحظة التكلفة الإضافية',
+            'vendor_id' => 'المورد',
             'items' => 'بنود الطلبية',
         ];
     }

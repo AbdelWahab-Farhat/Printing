@@ -52,6 +52,9 @@ final class ChangeOrderStatus
         // Costs labour, machine runtime and overhead the same moment stock leaves the warehouse
         // — see its own docblock for why it shares DeductOrderStock's guard.
         private readonly ApplyManufacturingRates $applyManufacturingRates,
+        // The وسيط twin of the line above: turns each line's snapshotted unit cost into what the
+        // line cost, at the same moment and for the same reason — see its own docblock.
+        private readonly ApplyOutsourcingCosts $applyOutsourcingCosts,
         private readonly RecalculateOrderCogs $recalculateCogs,
         // Undoes both of the above when a cancellation follows a deduction — see its own
         // docblock.
@@ -135,7 +138,14 @@ final class ChangeOrderStatus
             // fact drives the form: {@see TransitionFields} offers the warehouse picker on
             // whichever of the two is still the deducting one, so what is asked for and what is
             // taken cannot disagree.
+            //
+            // **And one road takes nothing at all.** A وسيط order's goods are made by an outside
+            // vendor and never sit on a shelf of ours, so «جاهزة» there means the vendor handed
+            // them over — not that a warehouse gave anything up. Asked of the flow rather than
+            // written out as a status test, so the day a fourth road arrives it answers for
+            // itself; see {@see OrderFlow::deductsStock()}.
             $deductStock = ($target === OrderStatus::ReadyToPrint || $target === OrderStatus::Ready)
+                && $order->production_flow->deductsStock()
                 && $order->stock_deducted_at === null;
 
             // **The other half: «جاهزة» reached by an order whose stock already went.** The
@@ -500,6 +510,15 @@ final class ChangeOrderStatus
         }
 
         ($this->applyManufacturingRates)($order->loadMissing('items'), (int) $actor->getKey());
+
+        // **Both, unconditionally, and neither asks about the road.** A printed order carries no
+        // `unit_cost` on any line and a وسيط order has no rates to apply, so each action is a
+        // no-op on the other's orders — and a mixed order, which the flow rules make unlikely
+        // rather than impossible, is costed correctly line by line instead of one way or the
+        // other. Asking `production_flow` here would be a third copy of a decision the lines
+        // already carry.
+        ($this->applyOutsourcingCosts)($order);
+
         ($this->recalculateCogs)($order);
     }
 

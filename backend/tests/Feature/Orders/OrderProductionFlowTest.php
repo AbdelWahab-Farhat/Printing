@@ -6,6 +6,7 @@ namespace Tests\Feature\Orders;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductPriceTier;
@@ -103,6 +104,12 @@ class OrderProductionFlowTest extends TestCase
     private function printedCategory(): ProductCategory
     {
         return ProductCategory::factory()->create(['name' => 'مطبوعة']);
+    }
+
+    /** «وسيط» — goods دعاية sells and an outside vendor makes. */
+    private function outsourcedCategory(): ProductCategory
+    {
+        return ProductCategory::factory()->outsourced()->create(['name' => 'وسيط']);
     }
 
     /**
@@ -267,6 +274,49 @@ class OrderProductionFlowTest extends TestCase
         $this->assertSame(OrderFlow::Standard, $order->production_flow);
     }
 
+    public function test_an_order_of_only_outsourced_goods_takes_the_vendor_road(): void
+    {
+        // Arrange — 50 كرت بزنس filed under «وسيط», the worked example from the requirement.
+        $category = $this->outsourcedCategory();
+
+        // Act
+        $order = $this->orderOf([$this->sizeUnder($category)]);
+
+        // Assert — the road is read off the lines and stamped, exactly as the other two are.
+        $this->assertSame(OrderFlow::Outsourced, $order->production_flow);
+    }
+
+    public function test_one_line_we_make_ourselves_keeps_the_whole_order_off_the_vendor_road(): void
+    {
+        // Arrange — a وسيط line beside a printed one.
+        $outsourced = $this->outsourcedCategory();
+        $printed = $this->printedCategory();
+
+        // Act
+        $order = $this->orderOf([$this->sizeUnder($outsourced), $this->sizeUnder($printed)]);
+
+        // Assert — «every line, or none», the same rule the short road already obeys. An order
+        // that took the vendor road with a printed line on it would skip «قيد الطباعة» for work
+        // our own press still has to do.
+        $this->assertSame(OrderFlow::Standard, $order->production_flow);
+    }
+
+    public function test_two_kinds_of_shortcut_on_one_order_cancel_each_other_out(): void
+    {
+        // Arrange — a وسيط line and a سادة line: each *alone* would shorten the road, and they
+        // shorten it in different directions.
+        $outsourced = $this->outsourcedCategory();
+        $blank = $this->blankCategory();
+
+        // Act
+        $order = $this->orderOf([$this->sizeUnder($outsourced), $this->sizeUnder($blank)]);
+
+        // Assert — unanimity, not «some line skips something». The two roads disagree about
+        // whether stock leaves and about which statuses exist, and an order cannot walk half of
+        // each; the standard road is the one that asks more of the shop, so it is the fallback.
+        $this->assertSame(OrderFlow::Standard, $order->production_flow);
+    }
+
     public function test_a_heading_inherits_the_answer_of_the_heading_above_it(): void
     {
         // Arrange — «سادة» marked, and «سادة ورقية» added underneath it later without anybody
@@ -282,8 +332,8 @@ class OrderProductionFlowTest extends TestCase
 
         // Assert — a product is filed under a leaf, so without the inheritance the flag would be
         // silently dropped by every product that moved down into the new subheading.
-        $this->assertFalse($child->skips_production);
-        $this->assertTrue($child->skipsProduction());
+        $this->assertSame(ProductionMode::InHouse, $child->production_mode);
+        $this->assertSame(ProductionMode::None, $child->productionMode());
         $this->assertSame(OrderFlow::NoProduction, $order->production_flow);
     }
 
@@ -523,7 +573,7 @@ class OrderProductionFlowTest extends TestCase
         $headers = $this->foreman();
 
         // Act — somebody decides this heading needs no press after all.
-        $category->update(['skips_production' => true]);
+        $category->update(['production_mode' => ProductionMode::None]);
 
         // Assert — the order keeps the road it was taken under. Re-reading live would have an
         // order already at the press lose «قيد الطباعة» from its own progress bar and start

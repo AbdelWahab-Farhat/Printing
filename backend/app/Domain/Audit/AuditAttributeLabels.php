@@ -137,9 +137,9 @@ final class AuditAttributeLabels
             'name' => 'اسم التصنيف',
             'description' => 'الوصف',
             'parent_id' => 'التصنيف الرئيسي',
-            // Worth a history entry more than most: turning it on changes the road every order
+            // Worth a history entry more than most: changing it changes the road every order
             // taken under this heading walks from that moment — see `ResolveOrderFlow`.
-            'skips_production' => 'يتخطّى التصميم والطباعة',
+            'production_mode' => 'طريقة التنفيذ',
             // Four columns for one picture, and all four are read the same way by somebody
             // scanning a history: «تغيّرت الصورة». Naming them separately is what stops the
             // screen printing `image_path` at them.
@@ -153,6 +153,9 @@ final class AuditAttributeLabels
             'label' => 'المقاس',
             'width_cm' => 'العرض (سم)',
             'height_cm' => 'الارتفاع (سم)',
+            // «من رفع التكلفة؟» is the question this history will be asked, and the answer moves
+            // the margin on every وسيط order taken afterwards — see OUTSOURCED-PRODUCTS.md §6.
+            'cost_price' => 'سعر التكلفة',
         ],
         // The material a family of shelves is made of. Renaming it renames every size of it, so
         // «اسم التصنيف» is the entry somebody scanning a history will see most often.
@@ -203,6 +206,10 @@ final class AuditAttributeLabels
             'customer_id' => 'العميل',
             'customer_shop_id' => 'المحل',
             'customer_shop_name' => 'اسم المحل',
+            // «من غيّر المورد؟» on a job already sent out is a question somebody will ask, and
+            // the pair is stored the way the branch above is — an id and the name at the time.
+            'vendor_id' => 'المورد',
+            'vendor_name' => 'اسم المورد',
             'city_id' => 'المدينة',
             'city_name' => 'اسم المدينة',
             'region_id' => 'المنطقة',
@@ -225,6 +232,7 @@ final class AuditAttributeLabels
             'ready_to_print_at' => 'تاريخ الجاهزية للطباعة',
             'design_started_at' => 'بدء التصميم',
             'printing_started_at' => 'بدء الطباعة',
+            'manufacturing_started_at' => 'بدء التصنيع لدى المورد',
             'ready_at' => 'تاريخ الجاهزية',
             'dispatched_at' => 'تاريخ الإرسال',
             'delivered_at' => 'تاريخ التسليم',
@@ -259,6 +267,10 @@ final class AuditAttributeLabels
             'line_total' => 'إجمالي البند',
             'shortage_quantity' => 'الكمية الناقصة',
             'warehouse_quantity' => 'الكمية من المخزن',
+            // What a vendor charged us for this line, recognised when the job came back — see
+            // OUTSOURCED-PRODUCTS.md §6. The rate behind it is `unit_cost`, which the shared
+            // dictionary above already names.
+            'outsourcing_cost' => 'تكلفة التنفيذ لدى المورد',
             'material_cost' => 'تكلفة الخامات',
             'labor_cost' => 'تكلفة العمالة',
             'overhead_cost' => 'التكاليف غير المباشرة',

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Catalog\DTOs;
 
+use App\Domain\Catalog\Enums\ProductionMode;
+
 final readonly class ProductCategoryData
 {
     public function __construct(
@@ -22,13 +24,16 @@ final readonly class ProductCategoryData
         /** Where it sits in the catalogue. Equal values fall back to the name. */
         public int $sortOrder = 0,
         /**
-         * Whether goods under this heading skip the designer and the press — see
-         * `ProductCategory::skipsProduction()`.
+         * How goods under this heading come to exist — see `ProductCategory::productionMode()`.
          *
-         * Defaults to false, and that is the safe direction: a heading nobody has thought about
-         * yet sends its orders down the road every order took before this existed.
+         * Defaults to `in_house`, and that is the safe direction: a heading nobody has thought
+         * about yet sends its orders down the road every order took before this existed.
+         *
+         * **Always the modern key by the time it reaches here.** A shipped app still writes the
+         * boolean `skips_production` this replaced, and the request translates it — see
+         * `StoreProductCategoryRequest::prepareForValidation()`. The domain speaks one dialect.
          */
-        public bool $skipsProduction = false,
+        public ProductionMode $productionMode = ProductionMode::InHouse,
     ) {}
 
     /**
@@ -50,7 +55,9 @@ final readonly class ProductCategoryData
             description: $description !== '' ? $description : null,
             isActive: (bool) ($validated['is_active'] ?? true),
             sortOrder: (int) ($validated['sort_order'] ?? 0),
-            skipsProduction: (bool) ($validated['skips_production'] ?? false),
+            productionMode: isset($validated['production_mode'])
+                ? ProductionMode::from((string) $validated['production_mode'])
+                : ProductionMode::InHouse,
         );
     }
 }

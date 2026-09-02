@@ -101,6 +101,10 @@ final class SyncProductVariants
             // shelf is «افصله عن المخزون», not «اترك ما كان» — unless the product names a
             // material, in which case that is what fills it in. See resolveStockItemId().
             'stock_item_id' => $this->resolveStockItemId($product, $data),
+            // Sent on every write, like the shelf above it: an omitted cost is «امسحه», not
+            // «اترك ما كان». The product form holds the whole size, so a save that dropped the
+            // box would otherwise leave a stale number behind for order lines to copy.
+            'cost_price' => $data->costPrice,
             'label' => $data->label,
             'width_cm' => $data->widthCm,
             'height_cm' => $data->heightCm,
