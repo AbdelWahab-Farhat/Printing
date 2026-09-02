@@ -105,6 +105,9 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
+  createdBy: json['created_by'] == null
+      ? null
+      : OrderActor.fromJson(json['created_by'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
@@ -171,6 +174,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'delivered_at': instance.deliveredAt?.toIso8601String(),
   'settled_at': instance.settledAt?.toIso8601String(),
   'created_at': instance.createdAt?.toIso8601String(),
+  'created_by': instance.createdBy?.toJson(),
 };
 
 const _$OrderStatusEnumMap = {

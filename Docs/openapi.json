@@ -94,6 +94,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -1022,6 +1023,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -1608,6 +1610,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -2252,6 +2255,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -2761,6 +2765,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -3902,6 +3907,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -4225,7 +4231,7 @@
             },
             "post": {
                 "operationId": "orders.store",
-                "description": "Lines are priced by the catalogue, so `unit_price` is ignored for any product with listed\nprices. A product the catalogue prices on request has no number to fall back on and\nrequires one.\n\nA non-zero `discount` needs the `orders.discount` permission and is refused with 403\nwithout it.\n\n`design_ids` attaches artwork from the customer's library as the order is taken \u2014 for the\ncustomer who arrives with the file already agreed, so the order never has to visit\n\u00ab\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645\u00bb to hold it. Versions are numbered in the order sent. All of it is one\ntransaction: a design belonging to another customer is a 422 and no order is created.",
+                "description": "Lines are priced by the catalogue, so `unit_price` is ignored for any product with listed\nprices. A product the catalogue prices on request has no number to fall back on and\nrequires one.\n\nA non-zero `discount` needs the `orders.discount` permission and is refused with 403\nwithout it. A non-zero `additional_cost` needs `orders.additional_cost`, its own grant\nrather than the discount's \u2014 and it must name a reason, because that is the axis this\nmoney is read along afterwards.\n\n`design_ids` attaches artwork from the customer's library as the order is taken \u2014 for the\ncustomer who arrives with the file already agreed, so the order never has to visit\n\u00ab\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645\u00bb to hold it. Versions are numbered in the order sent. All of it is one\ntransaction: a design belonging to another customer is a 422 and no order is created.",
                 "summary": "Take an order",
                 "tags": [
                     "Order"
@@ -4971,6 +4977,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -5179,6 +5186,10 @@
                                                         "paid_amount": {
                                                             "type": "string"
                                                         },
+                                                        "written_off_amount": {
+                                                            "type": "string",
+                                                            "description": "What was closed without being collected. Published beside the paid total rather\nthan folded into it, because a screen that showed one number could not tell a\ncustomer who paid in full from one whose shortfall was forgiven."
+                                                        },
                                                         "remaining_amount": {
                                                             "type": "string"
                                                         },
@@ -5191,7 +5202,8 @@
                                                                 "\u063a\u064a\u0631 \u0645\u062f\u0641\u0648\u0639\u0629",
                                                                 "\u0645\u062f\u0641\u0648\u0639\u0629 \u062c\u0632\u0626\u064a\u0627\u064b",
                                                                 "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0643\u0627\u0645\u0644",
-                                                                "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0632\u064a\u0627\u062f\u0629"
+                                                                "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0632\u064a\u0627\u062f\u0629",
+                                                                "\u0645\u0634\u0637\u0648\u0628 \u0641\u0631\u0642\u0647\u0627"
                                                             ]
                                                         },
                                                         "has_unrecorded_money": {
@@ -5202,6 +5214,7 @@
                                                     "required": [
                                                         "grand_total",
                                                         "paid_amount",
+                                                        "written_off_amount",
                                                         "remaining_amount",
                                                         "payment_status",
                                                         "payment_status_label",
@@ -5304,6 +5317,10 @@
                                                         "paid_amount": {
                                                             "type": "string"
                                                         },
+                                                        "written_off_amount": {
+                                                            "type": "string",
+                                                            "description": "What was closed without being collected. Published beside the paid total rather\nthan folded into it, because a screen that showed one number could not tell a\ncustomer who paid in full from one whose shortfall was forgiven."
+                                                        },
                                                         "remaining_amount": {
                                                             "type": "string"
                                                         },
@@ -5316,7 +5333,8 @@
                                                                 "\u063a\u064a\u0631 \u0645\u062f\u0641\u0648\u0639\u0629",
                                                                 "\u0645\u062f\u0641\u0648\u0639\u0629 \u062c\u0632\u0626\u064a\u0627\u064b",
                                                                 "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0643\u0627\u0645\u0644",
-                                                                "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0632\u064a\u0627\u062f\u0629"
+                                                                "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0632\u064a\u0627\u062f\u0629",
+                                                                "\u0645\u0634\u0637\u0648\u0628 \u0641\u0631\u0642\u0647\u0627"
                                                             ]
                                                         },
                                                         "has_unrecorded_money": {
@@ -5327,6 +5345,7 @@
                                                     "required": [
                                                         "grand_total",
                                                         "paid_amount",
+                                                        "written_off_amount",
                                                         "remaining_amount",
                                                         "payment_status",
                                                         "payment_status_label",
@@ -5434,6 +5453,10 @@
                                                         "paid_amount": {
                                                             "type": "string"
                                                         },
+                                                        "written_off_amount": {
+                                                            "type": "string",
+                                                            "description": "What was closed without being collected. Published beside the paid total rather\nthan folded into it, because a screen that showed one number could not tell a\ncustomer who paid in full from one whose shortfall was forgiven."
+                                                        },
                                                         "remaining_amount": {
                                                             "type": "string"
                                                         },
@@ -5446,7 +5469,8 @@
                                                                 "\u063a\u064a\u0631 \u0645\u062f\u0641\u0648\u0639\u0629",
                                                                 "\u0645\u062f\u0641\u0648\u0639\u0629 \u062c\u0632\u0626\u064a\u0627\u064b",
                                                                 "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0643\u0627\u0645\u0644",
-                                                                "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0632\u064a\u0627\u062f\u0629"
+                                                                "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0632\u064a\u0627\u062f\u0629",
+                                                                "\u0645\u0634\u0637\u0648\u0628 \u0641\u0631\u0642\u0647\u0627"
                                                             ]
                                                         },
                                                         "has_unrecorded_money": {
@@ -5457,6 +5481,143 @@
                                                     "required": [
                                                         "grand_total",
                                                         "paid_amount",
+                                                        "written_off_amount",
+                                                        "remaining_amount",
+                                                        "payment_status",
+                                                        "payment_status_label",
+                                                        "has_unrecorded_money"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "payment",
+                                                "summary"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/orders/{order}/payments/write-offs": {
+            "post": {
+                "operationId": "orders.payments.write-off",
+                "description": "The five dinars that never came back. Closes what is left of an order's debt **without\nrecording a payment**, so an order that took 105 of 110 can reach \u00ab\u062a\u0645 \u0627\u0644\u062a\u0633\u0648\u064a\u0629\u00bb without\nanybody typing five into the ledger that nobody collected.\n\nIt leaves `grand_total` untouched \u2014 the customer really was billed 110 \u2014 and moves\n`written_off_amount` instead of `paid_amount`, so \u00ab\u0643\u0645 \u0642\u0628\u0636\u0646\u0627\u061f\u00bb keeps meaning cash and the\ngap stays countable later as what it is: a loss.\n\nBounded by what the order still owes, refused on a cancelled order, and `reason` is\nrequired. A write-off decided in error is undone by `reverse` above, which puts the debt\nback exactly where it stood.",
+                "summary": "Write off the difference",
+                "tags": [
+                    "OrderPayment"
+                ],
+                "parameters": [
+                    {
+                        "name": "order",
+                        "in": "path",
+                        "required": true,
+                        "description": "The order ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WriteOffOrderBalanceRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u0634\u0637\u0628 \u0627\u0644\u0641\u0631\u0642"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "payment": {
+                                                    "allOf": [
+                                                        {
+                                                            "$ref": "#/components/schemas/OrderPaymentResource"
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "required": [
+                                                                "reversal",
+                                                                "recorder"
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "summary": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "grand_total": {
+                                                            "type": "string"
+                                                        },
+                                                        "paid_amount": {
+                                                            "type": "string"
+                                                        },
+                                                        "written_off_amount": {
+                                                            "type": "string",
+                                                            "description": "What was closed without being collected. Published beside the paid total rather\nthan folded into it, because a screen that showed one number could not tell a\ncustomer who paid in full from one whose shortfall was forgiven."
+                                                        },
+                                                        "remaining_amount": {
+                                                            "type": "string"
+                                                        },
+                                                        "payment_status": {
+                                                            "type": "string"
+                                                        },
+                                                        "payment_status_label": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "\u063a\u064a\u0631 \u0645\u062f\u0641\u0648\u0639\u0629",
+                                                                "\u0645\u062f\u0641\u0648\u0639\u0629 \u062c\u0632\u0626\u064a\u0627\u064b",
+                                                                "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0643\u0627\u0645\u0644",
+                                                                "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0632\u064a\u0627\u062f\u0629",
+                                                                "\u0645\u0634\u0637\u0648\u0628 \u0641\u0631\u0642\u0647\u0627"
+                                                            ]
+                                                        },
+                                                        "has_unrecorded_money": {
+                                                            "type": "string",
+                                                            "description": "An order that finished without its money accounted for. See Order::hasUnrecordedMoney()."
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "grand_total",
+                                                        "paid_amount",
+                                                        "written_off_amount",
                                                         "remaining_amount",
                                                         "payment_status",
                                                         "payment_status_label",
@@ -5573,6 +5734,10 @@
                                                         "paid_amount": {
                                                             "type": "string"
                                                         },
+                                                        "written_off_amount": {
+                                                            "type": "string",
+                                                            "description": "What was closed without being collected. Published beside the paid total rather\nthan folded into it, because a screen that showed one number could not tell a\ncustomer who paid in full from one whose shortfall was forgiven."
+                                                        },
                                                         "remaining_amount": {
                                                             "type": "string"
                                                         },
@@ -5585,7 +5750,8 @@
                                                                 "\u063a\u064a\u0631 \u0645\u062f\u0641\u0648\u0639\u0629",
                                                                 "\u0645\u062f\u0641\u0648\u0639\u0629 \u062c\u0632\u0626\u064a\u0627\u064b",
                                                                 "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0643\u0627\u0645\u0644",
-                                                                "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0632\u064a\u0627\u062f\u0629"
+                                                                "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0632\u064a\u0627\u062f\u0629",
+                                                                "\u0645\u0634\u0637\u0648\u0628 \u0641\u0631\u0642\u0647\u0627"
                                                             ]
                                                         },
                                                         "has_unrecorded_money": {
@@ -5596,6 +5762,7 @@
                                                     "required": [
                                                         "grand_total",
                                                         "paid_amount",
+                                                        "written_off_amount",
                                                         "remaining_amount",
                                                         "payment_status",
                                                         "payment_status_label",
@@ -6264,6 +6431,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -7100,6 +7268,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -7572,6 +7741,9 @@
                                                 "cash_collected": {
                                                     "type": "string"
                                                 },
+                                                "write_offs": {
+                                                    "type": "string"
+                                                },
                                                 "orders_recognized": {
                                                     "type": "string"
                                                 }
@@ -7582,6 +7754,7 @@
                                                 "cost_of_goods_sold",
                                                 "gross_profit",
                                                 "cash_collected",
+                                                "write_offs",
                                                 "orders_recognized"
                                             ]
                                         }
@@ -8244,6 +8417,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -8883,6 +9057,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -9432,6 +9607,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -10005,6 +10181,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -10492,6 +10669,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -10616,6 +10794,205 @@
                                                 "data"
                                             ]
                                         }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/stock-batches": {
+            "get": {
+                "operationId": "stock-batches.index",
+                "description": "Filter with `warehouse_id`, `stock_item_id`, and `uncosted`. **`uncosted=1` is the work\nlist**: every layer carrying no price with stock still on it, oldest first \u2014 which is to\nsay, in the order they will be drawn into orders at no material cost unless somebody\nprices them.\n\nUsed-up layers are excluded unless `remaining=0` asks for them: a layer with nothing left\ncannot be repriced and is not part of any queue.",
+                "summary": "List cost layers",
+                "tags": [
+                    "StockBatch"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "boolean"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "": {
+                                                            "type": "string"
+                                                        },
+                                                        "current_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "per_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "last_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "total": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        null,
+                                                        "current_page",
+                                                        "per_page",
+                                                        "last_page",
+                                                        "total"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "data",
+                                                "meta"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "boolean"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "allOf": [
+                                                            {
+                                                                "$ref": "#/components/schemas/StockBatchResource"
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "required": [
+                                                                    "warehouse",
+                                                                    "stock_item",
+                                                                    "recorded_by"
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "data"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/stock-batches/{stockBatch}/cost": {
+            "patch": {
+                "operationId": "stock-batches.revalue",
+                "description": "Changes what a quantity of stock is carried at \u2014 all of the layer, or the part named by\n`quantity`, which splits it.\n\n**Prospective, always.** Stock already drawn off this layer recorded its cost when it left,\nand the orders it went into keep that figure. Correcting a layer that is half gone fixes\nthe half that is left; a layer with nothing left is refused outright.\n\n**A layer from a purchase order is corrected like any other.** The list says which ones\nthose are so the app can warn that the invoice may disagree, but refusing would exclude the\ncommonest correction there is.\n\n`reason` is required. This changes the books with no physical event behind it.",
+                "summary": "Correct a cost layer's price",
+                "tags": [
+                    "StockBatch"
+                ],
+                "parameters": [
+                    {
+                        "name": "stockBatch",
+                        "in": "path",
+                        "required": true,
+                        "description": "The stock batch ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RevalueStockBatchRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062a\u0639\u062f\u064a\u0644 \u062a\u0643\u0644\u0641\u0629 \u0627\u0644\u062f\u0641\u0639\u0629 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/StockBatchResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "warehouse",
+                                                        "stock_item",
+                                                        "recorded_by"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
                                     ]
                                 }
                             }
@@ -10768,7 +11145,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "const": "\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0635\u0646\u0641 \u0627\u0644\u0645\u062e\u0632\u0646\u064a \u0628\u0646\u062c\u0627\u062d"
+                                            "const": "\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0645\u0627\u062f\u0629 \u0628\u0646\u062c\u0627\u062d"
                                         },
                                         "data": {
                                             "$ref": "#/components/schemas/StockItemResource"
@@ -10815,7 +11192,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "",
+                        "description": "The sizes as well as their count, which the listing deliberately does not carry: this is\nthe one response a screen can edit the links from, and it has to draw what is there now.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -10829,7 +11206,18 @@
                                             "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
                                         },
                                         "data": {
-                                            "$ref": "#/components/schemas/StockItemResource"
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/StockItemResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "last_known_unit_cost",
+                                                        "variants"
+                                                    ]
+                                                }
+                                            ]
                                         }
                                     },
                                     "required": [
@@ -10893,7 +11281,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "const": "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0627\u0644\u0635\u0646\u0641 \u0627\u0644\u0645\u062e\u0632\u0646\u064a \u0628\u0646\u062c\u0627\u062d"
+                                            "const": "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0627\u0644\u0645\u0627\u062f\u0629 \u0628\u0646\u062c\u0627\u062d"
                                         },
                                         "data": {
                                             "$ref": "#/components/schemas/StockItemResource"
@@ -10953,7 +11341,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "const": "\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0635\u0646\u0641 \u0627\u0644\u0645\u062e\u0632\u0646\u064a \u0628\u0646\u062c\u0627\u062d"
+                                            "const": "\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0645\u0627\u062f\u0629 \u0628\u0646\u062c\u0627\u062d"
                                         },
                                         "data": {
                                             "type": "null"
@@ -11026,6 +11414,88 @@
                                         },
                                         "data": {
                                             "$ref": "#/components/schemas/StockItemResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/stock-items/{stockItem}/variants": {
+            "put": {
+                "operationId": "stock-items.variants",
+                "description": "**The list replaces what was there.** Sizes in it are pointed at this material, sizes that\nwere on it and are missing from it are unlinked, and `[]` empties it deliberately. Sending\nthe whole set is what lets one screen say \u00abthese four and no others\u00bb in one request instead\nof editing four products.\n\n**Moving a size off another material is allowed.** Nothing already in the ledger follows it\n\u2014 a movement is keyed on the material, not on the size that caused it \u2014 so only what this\nsize deducts from next changes. The screen confirms that by name before sending it.\n\nEvery link that actually moves is written to the audit trail, one variant at a time.",
+                "summary": "Set which product sizes draw on a stock item",
+                "tags": [
+                    "StockItem"
+                ],
+                "parameters": [
+                    {
+                        "name": "stockItem",
+                        "in": "path",
+                        "required": true,
+                        "description": "The stock item ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetStockItemVariantsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0627\u0644\u0645\u0642\u0627\u0633\u0627\u062a \u0627\u0644\u0645\u0631\u062a\u0628\u0637\u0629 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/StockItemResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "variants"
+                                                    ]
+                                                }
+                                            ]
                                         }
                                     },
                                     "required": [
@@ -11139,6 +11609,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -11415,7 +11886,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "const": "\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0645\u062c\u0645\u0648\u0639\u0629 \u0627\u0644\u0623\u0635\u0646\u0627\u0641 \u0628\u0646\u062c\u0627\u062d"
+                                            "const": "\u062a\u0645 \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u062a\u0635\u0646\u064a\u0641 \u0628\u0646\u062c\u0627\u062d"
                                         },
                                         "data": {
                                             "$ref": "#/components/schemas/StockItemGroupResource"
@@ -11551,7 +12022,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "const": "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0645\u062c\u0645\u0648\u0639\u0629 \u0627\u0644\u0623\u0635\u0646\u0627\u0641 \u0628\u0646\u062c\u0627\u062d"
+                                            "const": "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0627\u0644\u062a\u0635\u0646\u064a\u0641 \u0628\u0646\u062c\u0627\u062d"
                                         },
                                         "data": {
                                             "$ref": "#/components/schemas/StockItemGroupResource"
@@ -11611,7 +12082,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "const": "\u062a\u0645 \u062d\u0630\u0641 \u0645\u062c\u0645\u0648\u0639\u0629 \u0627\u0644\u0623\u0635\u0646\u0627\u0641 \u0628\u0646\u062c\u0627\u062d"
+                                            "const": "\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u062a\u0635\u0646\u064a\u0641 \u0628\u0646\u062c\u0627\u062d"
                                         },
                                         "data": {
                                             "type": "null"
@@ -11725,6 +12196,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -13014,6 +13486,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -13606,6 +14079,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -14115,6 +14589,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -14690,6 +15165,7 @@
                                 "stock_movement",
                                 "stock_batch",
                                 "stock_batch_consumption",
+                                "stock_batch_revaluation",
                                 "vendor",
                                 "stock_arrival",
                                 "stock_arrival_item",
@@ -15298,6 +15774,18 @@
                     "created_at"
                 ],
                 "title": "ActivityLogResource"
+            },
+            "AdditionalCostReason": {
+                "type": "string",
+                "description": "Why an order is being charged more than its products come to. **A closed set rather than a free-text box, and that is the load-bearing decision.** The obvious version of this feature was an amount and a sentence \u2014 \u00ab\u062a\u063a\u0644\u064a\u0641 \u062e\u0627\u0635\u00bb\u060c \u00ab\u0646\u0642\u0644 \u0644\u0644\u0641\u0631\u0639\u00bb \u2014 typed by whoever took the order. It was rejected for one reason: this figure is money the business collects, and the question asked of collected money is eventually \u00ab\u0643\u0645 \u062d\u0635\u0651\u0644\u0646\u0627 \u0645\u0642\u0627\u0628\u0644 \u0627\u0644\u062a\u063a\u0644\u064a\u0641 \u0647\u0630\u0627 \u0627\u0644\u0631\u0628\u0639\u061f\u00bb. A column filled by hand answers that question with \u00ab\u062a\u063a\u0644\u064a\u0641\u00bb\u060c \u00ab\u062a\u063a\u0644\u064a\u0641 \u062e\u0627\u0635\u00bb\u060c \u00ab\u0643\u0631\u062a\u0648\u0646\u00bb and \u00ab\u062a\u063a\u0644\u064a\u0641!!\u00bb \u2014 four spellings of one category and no way to group them.  So the category is a code and the words beside it are the detail, not the classification. See `Order::$additional_cost_note`.  **It is also what keeps the door open.** Should the business outgrow one charge per order and need a list of them, every existing order can be carried into that table with its category intact \u2014 a backfill from prose could only have guessed. That path is written down in ORDER-ADDITIONAL-COST.md rather than left to be rediscovered.  Cast on {@see Order}, which is the whole of what makes the change history read \u00ab\u062a\u063a\u0644\u064a\u0641 \u062e\u0627\u0635\u00bb instead of `special_packaging` \u2014 see `AuditValueLabels`.\n| |\n|---|\n| `special_packaging` <br/> A box, a wrap, a bag inside the bag \u2014 anything the goods travel in that was asked for. |\n| `extra_service` <br/> Work done for this customer that no line on the order describes. |\n| `modification` <br/> A change to what was already agreed, charged rather than absorbed. |\n| `transport` <br/> Moving the goods somewhere the delivery price does not cover. |\n| `other` <br/> Everything the four above do not name \u2014 and the one case that *requires* the note beside it, because \u00ab\u0623\u062e\u0631\u0649\u00bb on its own carries no information at all. |",
+                "enum": [
+                    "special_packaging",
+                    "extra_service",
+                    "modification",
+                    "transport",
+                    "other"
+                ],
+                "title": "AdditionalCostReason"
             },
             "AdjustmentDirection": {
                 "type": "string",
@@ -16085,6 +16573,20 @@
                     "variant_label": {
                         "type": "string"
                     },
+                    "product_code": {
+                        "type": "string",
+                        "description": "The live catalogue row, for the card a reader taps to reach it: the code said out\nloud, and the one photograph. Deliberately *not* part of the snapshot above \u2014 a\nproduct renamed or rephotographed since shows its new face here while the invoice\nkeeps saying what was sold. Absent, never guessed at, when the relation was not\nloaded; the primary image alone, because a line is a row and the gallery belongs\nto the product screen."
+                    },
+                    "product_image": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductImageResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
                     "shortage_quantity": {
                         "type": [
                             "string",
@@ -16156,6 +16658,21 @@
                             "string",
                             "null"
                         ]
+                    },
+                    "unit_material_cost": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The rate behind `material_cost`: what one unit off the shelf cost \u2014 see\nOrderItem::unitMaterialCost(). Derived on the way out rather than stored, and sent\nrather than left to the client to divide, for the reason `billable_quantity` is:\nthe arithmetic has one home, and a division done in a phone's doubles is how\n1234.56 / 3 reaches a screen as 411.51999999999998."
+                    },
+                    "stock_unit_label": {
+                        "type": "string",
+                        "description": "**The unit that figure is *per*, and it is the shelf's, not the line's.** A run\nsold by the piece can be stocked by the kilo, and \u00ab\u062a\u0643\u0644\u0641\u0629 \u0627\u0644\u0642\u0637\u0639\u0629 \u0668\u066b\u0660\u0660\u0660\u00bb said of a\nper-kilogram rate is a wrong number rather than an imprecise one. Absent when the\nshelf behind the line was not loaded \u2014 a list payload carries no costs to label.",
+                        "enum": [
+                            "\u0642\u0637\u0639\u0629",
+                            "\u0643\u064a\u0644\u0648\u063a\u0631\u0627\u0645"
+                        ]
                     }
                 },
                 "required": [
@@ -16177,7 +16694,8 @@
                     "material_cost",
                     "labor_cost",
                     "overhead_cost",
-                    "cogs"
+                    "cogs",
+                    "unit_material_cost"
                 ],
                 "title": "OrderItemResource"
             },
@@ -16197,8 +16715,9 @@
                         "type": "string",
                         "enum": [
                             "\u062f\u0641\u0639\u0629",
-                            "\u0625\u0644\u063a\u0627\u0621 \u062f\u0641\u0639\u0629",
-                            "\u0631\u062f\u0651 \u0645\u0628\u0644\u063a"
+                            "\u0625\u0644\u063a\u0627\u0621 \u0642\u064a\u062f",
+                            "\u0631\u062f\u0651 \u0645\u0628\u0644\u063a",
+                            "\u0634\u0637\u0628 \u0641\u0631\u0642"
                         ]
                     },
                     "amount": {
@@ -16234,6 +16753,10 @@
                     "has_receipt": {
                         "type": "boolean",
                         "description": "The receipt (\u0627\u0644\u0648\u0627\u0635\u0644) \u2014 always present on a transfer, because nothing else proves\none happened. The URL is built per request rather than stored: the disk is private,\nso in production this is a signed link that expires, and a permanent one sitting in\na JSON payload would be somebody's bank details left on the table."
+                    },
+                    "receipt_is_image": {
+                        "type": "boolean",
+                        "description": "Whether it is a picture the app can draw full screen, or a PDF it hands to the\nphone. Decided here from the stored file, so the app holds no format list."
                     },
                     "receipt_url": {
                         "type": [
@@ -16355,6 +16878,7 @@
                     "method_label",
                     "reference",
                     "has_receipt",
+                    "receipt_is_image",
                     "receipt_url",
                     "receipt_filename",
                     "receipt_size_bytes",
@@ -16385,6 +16909,7 @@
                         "type": "string",
                         "enum": [
                             "\u062c\u062f\u064a\u062f\u0629",
+                            "\u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629",
                             "\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645",
                             "\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629",
                             "\u062c\u0627\u0647\u0632\u0629",
@@ -16398,6 +16923,17 @@
                             "\u0631\u0627\u062c\u0639 \u0645\u0643\u062a\u0628",
                             "\u0625\u0639\u0627\u062f\u0629 \u0625\u0631\u0633\u0627\u0644",
                             "\u0625\u0644\u063a\u0627\u0621 \u062a\u0627\u0645"
+                        ]
+                    },
+                    "production_flow": {
+                        "type": "string",
+                        "description": "**Which road this order walks**, so a client can *explain* a five-step bar rather\nthan leaving one that looks truncated. It is not a second copy of the rules \u2014\n`available_transitions` and `progress` below already have the answers baked in \u2014\nit is the reason for them, which is the one thing a screen cannot derive from\neither."
+                    },
+                    "production_flow_label": {
+                        "type": "string",
+                        "enum": [
+                            "\u0627\u0644\u0645\u0633\u0627\u0631 \u0627\u0644\u0645\u0639\u062a\u0627\u062f",
+                            "\u0628\u0644\u0627 \u062a\u0635\u0645\u064a\u0645 \u0648\u0637\u0628\u0627\u0639\u0629"
                         ]
                     },
                     "is_final": {
@@ -16566,6 +17102,36 @@
                     "discount": {
                         "type": "string"
                     },
+                    "additional_cost": {
+                        "type": "string",
+                        "description": "Beside the discount and never folded into it: an order's total is read as \u00ab\u0647\u0630\u0627 \u0645\u0627\n\u0623\u064f\u0636\u064a\u0641 \u0648\u0647\u0630\u0627 \u0645\u0627 \u062e\u064f\u0635\u0645\u00bb, and one net figure explains neither. The reason travels with\nits label for the same reason `design_source` does \u2014 a client that translated the\ncode itself would be keeping a second copy of a list this API owns."
+                    },
+                    "additional_cost_reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "additional_cost_reason_label": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "\u062a\u063a\u0644\u064a\u0641 \u062e\u0627\u0635",
+                            "\u062e\u062f\u0645\u0629 \u0625\u0636\u0627\u0641\u064a\u0629",
+                            "\u062a\u0639\u062f\u064a\u0644",
+                            "\u0646\u0642\u0644",
+                            "\u0623\u062e\u0631\u0649",
+                            null
+                        ]
+                    },
+                    "additional_cost_note": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "grand_total": {
                         "type": "string"
                     },
@@ -16584,7 +17150,11 @@
                     },
                     "paid_amount": {
                         "type": "string",
-                        "description": "**The three numbers a screen puts side by side**, all three computed here. A\nclient subtracting `grand_total - paid_amount` itself would be a second answer to\none question, and its answer is the one made of doubles. `paid_amount` is the ledger's running total \u2014 see the `order_payments` migration\nfor why the entries are the truth and this is their sum. `remaining_amount` goes\nnegative on an overpaid order rather than flooring, so a screen can say \u00ab\u0632\u0627\u0626\u062f \u0665\u0660\u00bb\nand somebody can refund it."
+                        "description": "**The three numbers a screen puts side by side**, all three computed here. A\nclient subtracting `grand_total - paid_amount` itself would be a second answer to\none question, and its answer is the one made of doubles \u2014 and since a debt can\nalso be closed by writing it off, that subtraction is no longer even the right\none. `remainingAmount()` is. `paid_amount` is the ledger's running total \u2014 see the `order_payments` migration\nfor why the entries are the truth and this is their sum. `remaining_amount` goes\nnegative on an overpaid order rather than flooring, so a screen can say \u00ab\u0632\u0627\u0626\u062f \u0665\u0660\u00bb\nand somebody can refund it."
+                    },
+                    "written_off_amount": {
+                        "type": "string",
+                        "description": "The fourth number, and usually zero: what was closed without being collected. It\nstays out of `paid_amount` so that column never stops meaning cash \u2014 see\nOrderPaymentType::WriteOff."
                     },
                     "remaining_amount": {
                         "type": "string"
@@ -16598,19 +17168,13 @@
                             "\u063a\u064a\u0631 \u0645\u062f\u0641\u0648\u0639\u0629",
                             "\u0645\u062f\u0641\u0648\u0639\u0629 \u062c\u0632\u0626\u064a\u0627\u064b",
                             "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0643\u0627\u0645\u0644",
-                            "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0632\u064a\u0627\u062f\u0629"
+                            "\u0645\u062f\u0641\u0648\u0639\u0629 \u0628\u0627\u0644\u0632\u064a\u0627\u062f\u0629",
+                            "\u0645\u0634\u0637\u0648\u0628 \u0641\u0631\u0642\u0647\u0627"
                         ]
                     },
                     "has_unrecorded_money": {
                         "type": "boolean",
                         "description": "**An order that finished without its money accounted for.** Settling an order\nwrites no ledger entry \u2014 nothing records a payment except the person who took it \u2014\nso this is how that gap is surfaced rather than papered over with an entry nobody\nmade. See Order::hasUnrecordedMoney()."
-                    },
-                    "weight_kg": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "description": "What the parcel weighs, recorded on the way into \u00ab\u062c\u0627\u0647\u0632\u0629\u00bb. Null until it has been\non a scale \u2014 \u00abnot weighed\u00bb and \u00abweighs nothing\u00bb are different facts."
                     },
                     "collected_amount": {
                         "type": [
@@ -16662,6 +17226,13 @@
                             "string",
                             "null"
                         ]
+                    },
+                    "ready_to_print_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "When the warehouse finished and handed the order to the press \u2014 null for every\norder taken before that step existed, which is the honest answer for them."
                     },
                     "design_started_at": {
                         "type": [
@@ -16775,6 +17346,8 @@
                     "code",
                     "status",
                     "status_label",
+                    "production_flow",
+                    "production_flow_label",
                     "is_final",
                     "is_closed",
                     "available_transitions",
@@ -16802,15 +17375,19 @@
                     "design_fee",
                     "delivery_price",
                     "discount",
+                    "additional_cost",
+                    "additional_cost_reason",
+                    "additional_cost_reason_label",
+                    "additional_cost_note",
                     "grand_total",
                     "total_cogs",
                     "gross_profit",
                     "paid_amount",
+                    "written_off_amount",
                     "remaining_amount",
                     "payment_status",
                     "payment_status_label",
                     "has_unrecorded_money",
-                    "weight_kg",
                     "collected_amount",
                     "shipping_company_id",
                     "shipping_company",
@@ -16819,6 +17396,7 @@
                     "fulfillment_warehouse_id",
                     "stock_deducted_at",
                     "placed_at",
+                    "ready_to_print_at",
                     "design_started_at",
                     "printing_started_at",
                     "ready_at",
@@ -16835,9 +17413,10 @@
             },
             "OrderStatus": {
                 "type": "string",
-                "description": "Where an order is, and the only moves it may make from there. **This enum is the state machine.** The map in {@see allowedNext()} is the single definition of what is legal; the API refuses anything else, the app draws its buttons from it, and the permission each move costs is answered here too. Nothing else is allowed to hold an opinion about what follows what \u2014 a second copy of these rules is a second thing to keep in step, and the copy that drifts is always the one guarding the write.  **Adding a status is a `case` and a few lines in the matches below.** That is deliberately a code change rather than a row in a table: half of these statuses carry behaviour a row cannot express \u2014 dispatch is chosen by the server from the city, cancelling demands a reason, the final two are closed, and each one costs a different permission. A `order_statuses` table would offer the *appearance* of runtime extensibility while leaving all of that in PHP anyway. `OrderStatusTest` walks every case and every pair, so an addition that forgets a label, a permission, or a way in fails the build naming exactly what is missing.  Order depends on Delivery and Identity; neither knows this enum exists.\n| |\n|---|\n| `new` <br/> Taken, not started. The only status nothing leads back to. |\n| `designing` <br/> Artwork is being agreed with the customer \u2014 see {@see OrderDesignStatus}. |\n| `printing` <br/>  |\n| `ready` <br/> Finished and on the shelf, waiting to leave. |\n| `shortage` <br/> The stock to start the job is not there. Reachable from \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb and nowhere else \u2014 it describes an order that could not be begun, not a run that came out short. |\n| `office_pickup` <br/> Waiting at one of our branches for the customer to collect. |\n| `out_for_delivery` <br/>  |\n| `returned_courier` <br/>  |\n| `returned_carrier` <br/>  |\n| `returned_office` <br/> Physically back on our shelf. |\n| `resend` <br/> Going out a second time \u2014 off our shelf, or from the carrier's depot without coming back. |\n| `cancelled` <br/>  |\n| `delivered` <br/> The customer has it. Closed to editing, but not finished: the money it was sent out to collect still has to come back \u2014 see {@see Settled}. |\n| `settled` <br/> The money is agreed. The end of the road. |",
+                "description": "Where an order is, and the only moves it may make from there. **This enum is the state machine.** The map in {@see allowedNext()} is the single definition of what is legal; the API refuses anything else, the app draws its buttons from it, and the permission each move costs is answered here too. Nothing else is allowed to hold an opinion about what follows what \u2014 a second copy of these rules is a second thing to keep in step, and the copy that drifts is always the one guarding the write.  **The map reads two things about the order, and neither is a status.** {@see FulfilmentType} decides which of the two dispatch statuses \"it is leaving\" means, and {@see OrderFlow} decides whether the artwork and the press are on this order's road at all \u2014 a \u0643\u064a\u0633 \u0633\u0627\u062f\u0629 is picked off a shelf, so \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb leads straight to \u00ab\u062c\u0627\u0647\u0632\u0629\u00bb. Both are passed *in* rather than looked up: this enum knows the rules and knows nothing about orders, customers or the catalogue, which is what lets `OrderStatusTest` assert the whole machine without touching the database.  **Adding a status is a `case` and a few lines in the matches below.** That is deliberately a code change rather than a row in a table: half of these statuses carry behaviour a row cannot express \u2014 dispatch is chosen by the server from the city, cancelling demands a reason, the final two are closed, and each one costs a different permission. A `order_statuses` table would offer the *appearance* of runtime extensibility while leaving all of that in PHP anyway. `OrderStatusTest` walks every case and every pair, so an addition that forgets a label, a permission, or a way in fails the build naming exactly what is missing.  Order depends on Delivery and Identity; neither knows this enum exists.\n| |\n|---|\n| `new` <br/> Taken, not started. The only status nothing leads back to. |\n| `ready_to_print` <br/> Prepped by the warehouse and handed to the press. **The line between two departments, and the reason this status exists.** \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb and \u00ab\u0646\u0648\u0627\u0642\u0635\u00bb are inventory's \u2014 the goods are being found, counted and weighed \u2014 while \u00ab\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645\u00bb and \u00ab\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629\u00bb belong to printing. An order used to cross that line invisibly, so the press had no queue to read and no moment marked the handover.  **It is also where the stock leaves the warehouse**, which is what makes it more than a label: entering it names a warehouse and a weight, and the shelf drops. \u00ab\u062c\u0627\u0647\u0632\u0629\u00bb later measures again and corrects the difference \u2014 see `RestateOrderStockDeduction`. |\n| `designing` <br/> Artwork is being agreed with the customer \u2014 see {@see OrderDesignStatus}. |\n| `printing` <br/>  |\n| `ready` <br/> Finished and on the shelf, waiting to leave. |\n| `shortage` <br/> The stock to start the job is not there. Reachable from \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb and nowhere else \u2014 it describes an order that could not be begun, not a run that came out short. |\n| `office_pickup` <br/> Waiting at one of our branches for the customer to collect. |\n| `out_for_delivery` <br/>  |\n| `returned_courier` <br/>  |\n| `returned_carrier` <br/>  |\n| `returned_office` <br/> Physically back on our shelf. |\n| `resend` <br/> Going out a second time \u2014 off our shelf, or from the carrier's depot without coming back. |\n| `cancelled` <br/>  |\n| `delivered` <br/> The customer has it. Closed to editing, but not finished: the money it was sent out to collect still has to come back \u2014 see {@see Settled}. |\n| `settled` <br/> The money is agreed. The end of the road. |",
                 "enum": [
                     "new",
+                    "ready_to_print",
                     "designing",
                     "printing",
                     "ready",
@@ -16874,6 +17453,7 @@
                         ],
                         "enum": [
                             "\u062c\u062f\u064a\u062f\u0629",
+                            "\u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629",
                             "\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645",
                             "\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629",
                             "\u062c\u0627\u0647\u0632\u0629",
@@ -16897,6 +17477,7 @@
                         "type": "string",
                         "enum": [
                             "\u062c\u062f\u064a\u062f\u0629",
+                            "\u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629",
                             "\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645",
                             "\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629",
                             "\u062c\u0627\u0647\u0632\u0629",
@@ -17100,6 +17681,10 @@
                     "sort_order": {
                         "type": "integer"
                     },
+                    "skips_production": {
+                        "type": "boolean",
+                        "description": "Whether an order made only of goods from this heading skips the designer and the\npress. **This row's own answer, not the effective one** \u2014 a child that inherits a\nflagged parent reads false here, and that is deliberate: this is the value an edit\nform puts back, so showing the inherited answer would have somebody save a flag\nonto a child that never asked for one. The effective answer is the domain's, and\nit is asked through `ProductCategory::skipsProduction()`."
+                    },
                     "products_count": {
                         "type": "integer",
                         "description": "Products filed directly on this heading. Zero for a parent by construction \u2014 a\nheading with children is a heading, not a slot."
@@ -17151,6 +17736,7 @@
                     "description",
                     "is_active",
                     "sort_order",
+                    "skips_production",
                     "image_url",
                     "image_width_px",
                     "image_height_px",
@@ -17509,6 +18095,25 @@
                             "display_name",
                             "unit",
                             "unit_label"
+                        ]
+                    },
+                    "product": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "Which product this size belongs to, where a caller loaded it. A size is \u00ab\u0627\u0644\u0645\u0646\u062a\u062c \u2014\n\u0627\u0644\u0645\u0642\u0627\u0633\u00bb to a reader and \u00ab25*35\u00bb on its own to nobody, and the one screen that lists\nsizes across several products at once cannot name them without this.",
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
                         ]
                     },
                     "price_tiers": {
@@ -18175,7 +18780,7 @@
                         ],
                         "format": "binary",
                         "contentMediaType": "application/octet-stream",
-                        "description": "**The receipt (\u0627\u0644\u0648\u0627\u0635\u0644), PDF only, and required for a transfer.** `required_if` names the one method that demands it, built from the enum case\nrather than a loose string so renaming the value cannot leave this rule pointing\nat nothing. `PaymentMethod::requiresReceipt()` states the same rule for the\ndomain, and a database CHECK states it a third time \u2014 this copy is the one that\nproduces the friendly field-level 422.\n\n`mimetypes` reads the magic bytes with finfo; `mimes` is a second reading of the\nsame bytes kept because it is the rule whose message names an extension, which is\nwhat a person needs to be told. Neither trusts the client's filename or its\nContent-Type header."
+                        "description": "**The receipt (\u0627\u0644\u0648\u0627\u0635\u0644), PDF or an image, and required for a transfer.** `required_if` names the one method that demands it, built from the enum case\nrather than a loose string so renaming the value cannot leave this rule pointing\nat nothing. `PaymentMethod::requiresReceipt()` states the same rule for the\ndomain, and a database CHECK states it a third time \u2014 this copy is the one that\nproduces the friendly field-level 422.\n\nThe accepted shapes come from `media.payment_receipts`, which is the list the\napp's contract test reads \u2014 a copy typed here would be the one that drifts.\n\n`mimetypes` reads the magic bytes with finfo; `mimes` is a second reading of the\nsame bytes kept because it is the rule whose message names an extension, which is\nwhat a person needs to be told. Neither trusts the client's filename or its\nContent-Type header."
                     }
                 },
                 "required": [
@@ -18298,6 +18903,34 @@
                     "ids"
                 ],
                 "title": "ReorderProductCategoriesRequest"
+            },
+            "RevalueStockBatchRequest": {
+                "type": "object",
+                "description": "Changing what a quantity of stock is carried at.\n\n**`quantity` is optional and is not checked against the layer here.** Omitting it means \"all of\n * what is left\", which is the common case. Naming a smaller figure splits the layer \u2014 and how\nmuch is left is a number that moves: an order going to print between this request being sent\nand the row being locked changes it. So the comparison belongs under the lock, as a business\nrefusal with both numbers in the sentence, not as a validation rule that was true a moment\nago. See `RevaluationExceedsRemaining`.\n\n**`reason` is required**, exactly as it is on a stocktake correction and for the same reason:\nthis changes the books with no physical event behind it, and a figure nobody can account for\nis what the field exists to prevent.",
+                "properties": {
+                    "unit_cost": {
+                        "type": "number",
+                        "description": "`gte:0`, not `gt:0`: zero is a real answer here. Correcting a layer *down* to\nnothing \u2014 stock that turned out to be a sample, or a supplier's freebie \u2014 is a\ndecision somebody may need to record, and the column's CHECK allows it.",
+                        "maximum": 999999999.999
+                    },
+                    "quantity": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "maximum": 999999999.999
+                    },
+                    "reason": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 1000
+                    }
+                },
+                "required": [
+                    "unit_cost",
+                    "reason"
+                ],
+                "title": "RevalueStockBatchRequest"
             },
             "ReverseOrderPaymentRequest": {
                 "type": "object",
@@ -18479,6 +19112,22 @@
                     "unit"
                 ],
                 "title": "SetStockItemUnitRequest"
+            },
+            "SetStockItemVariantsRequest": {
+                "type": "object",
+                "description": "Which product sizes draw on one material \u2014 the whole set, every time.\n\n`present` rather than `required`: an empty array is a real answer here, and `required` would\nrefuse the one payload that says \u00abnothing draws on this any more\u00bb.",
+                "properties": {
+                    "variant_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "required": [
+                    "variant_ids"
+                ],
+                "title": "SetStockItemVariantsRequest"
             },
             "SetUserPasswordRequest": {
                 "type": "object",
@@ -18763,6 +19412,169 @@
                 ],
                 "title": "StockArrivalResource"
             },
+            "StockBatchResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "warehouse_id": {
+                        "type": "integer"
+                    },
+                    "warehouse": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "stock_item_id": {
+                        "type": "integer"
+                    },
+                    "stock_item": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "code": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "display_name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "code",
+                            "name",
+                            "display_name"
+                        ]
+                    },
+                    "unit_cost": {
+                        "type": "string",
+                        "description": "Strings: money and quantities that are summed must reach the client exactly as\nthey were stored."
+                    },
+                    "quantity_received": {
+                        "type": "string"
+                    },
+                    "quantity_remaining": {
+                        "type": "string"
+                    },
+                    "quantity_consumed": {
+                        "type": "string"
+                    },
+                    "unit": {
+                        "type": "string"
+                    },
+                    "unit_label": {
+                        "type": "string",
+                        "enum": [
+                            "\u0642\u0637\u0639\u0629",
+                            "\u0643\u064a\u0644\u0648\u063a\u0631\u0627\u0645"
+                        ]
+                    },
+                    "source_type": {
+                        "type": "string"
+                    },
+                    "source_type_label": {
+                        "type": "string",
+                        "enum": [
+                            "\u062a\u0648\u0631\u064a\u062f",
+                            "\u062a\u0633\u0648\u064a\u0629 \u062c\u0631\u062f",
+                            "\u0631\u0635\u064a\u062f \u0627\u0641\u062a\u062a\u0627\u062d\u064a"
+                        ]
+                    },
+                    "received_at": {
+                        "type": "string",
+                        "description": "**The FIFO key, and the reason this list is ordered the way it is.** Not\n`created_at`: a layer relocated by a transfer keeps the age of the stock it\nactually is, so goods do not get younger by moving shelves."
+                    },
+                    "revalued_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Null on every layer nobody has corrected \u2014 which is almost all of them."
+                    },
+                    "stock_movement_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Where this layer came from, and null for every batch opened before that column\nexisted. \u00ab\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641\u00bb is the honest reading of a null here, not an error."
+                    },
+                    "recorded_by": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "purchase_order_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "**The document behind the layer, read through the movement.** A purchase order\nreached by two hops rather than stored twice: `stock_movements.reference_id` is\nalready the arrival that carries it."
+                    },
+                    "split_from_batch_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "The layer this one was split off when part of a batch was repriced. Null on\neverything else."
+                    },
+                    "can_be_revalued": {
+                        "type": "boolean",
+                        "description": "**Three questions the app must not answer for itself.** Whether a layer may be\nrepriced at all, whether correcting it will only reach part of what arrived, and\nwhether an invoice somewhere says something different."
+                    },
+                    "is_partly_consumed": {
+                        "type": "boolean"
+                    },
+                    "is_uncosted": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "warehouse_id",
+                    "stock_item_id",
+                    "unit_cost",
+                    "quantity_received",
+                    "quantity_remaining",
+                    "quantity_consumed",
+                    "unit",
+                    "unit_label",
+                    "source_type",
+                    "source_type_label",
+                    "received_at",
+                    "revalued_at",
+                    "stock_movement_id",
+                    "purchase_order_id",
+                    "split_from_batch_id",
+                    "can_be_revalued",
+                    "is_partly_consumed",
+                    "is_uncosted",
+                    "created_at"
+                ],
+                "title": "StockBatchResource"
+            },
             "StockItemGroupResource": {
                 "type": "object",
                 "properties": {
@@ -18909,6 +19721,34 @@
                             "\u0643\u064a\u0644\u0648\u063a\u0631\u0627\u0645"
                         ]
                     },
+                    "last_known_unit_cost": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "**The last price recorded for this material \u2014 a suggestion for the form that\nrecords an arrival, never a default the server applies.** Dated and sourced, so a\nsix-month-old figure looks six months old rather than reading as today's price. Present only where it was loaded, which is the single-item response and nothing\nelse: a listing carrying it would run a query per row for a hint no list shows.",
+                        "properties": {
+                            "unit_cost": {
+                                "type": "string"
+                            },
+                            "received_at": {
+                                "type": "string"
+                            },
+                            "source_type_label": {
+                                "type": "string",
+                                "enum": [
+                                    "\u062a\u0648\u0631\u064a\u062f",
+                                    "\u062a\u0633\u0648\u064a\u0629 \u062c\u0631\u062f",
+                                    "\u0631\u0635\u064a\u062f \u0627\u0641\u062a\u062a\u0627\u062d\u064a"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "unit_cost",
+                            "received_at",
+                            "source_type_label"
+                        ]
+                    },
                     "description": {
                         "type": [
                             "string",
@@ -18924,6 +19764,13 @@
                     "variants_count": {
                         "type": "integer",
                         "description": "How many product sizes draw on this shelf \u2014 the number that makes the sharing\nvisible on a listing. Counted by the query, never by loading the variants."
+                    },
+                    "variants": {
+                        "type": "array",
+                        "description": "The sizes themselves \u2014 only where they were loaded, which is `setVariants` and\nnothing else. A listing that carried them would ship the whole catalogue inside the\ninventory list to draw a number `variants_count` already answers.",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductVariantResource"
+                        }
                     },
                     "created_at": {
                         "type": [
@@ -18979,6 +19826,38 @@
                     "quantity": {
                         "type": "string",
                         "description": "Always positive. Which of the two warehouse fields is null is what says whether\nthis added or removed \u2014 see the migration for the four shapes."
+                    },
+                    "signed_quantity": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "**The two ledger columns, computed by the list query and only when they mean\nsomething.** The sign is relative to the warehouse the reader asked for \u2014 a\ntransfer is `+` on one shelf and `-` on the other \u2014 so it is null when no\nwarehouse was named; the balance is what one shelf held once this row had\nhappened, and null unless the request was scoped to a warehouse *and* a shelf.\nSee MovementListQuery."
+                    },
+                    "balance_after": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "unit_cost": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "**What the stock on this row cost, for a reader allowed to know.** Absent rather\nthan null for everybody else, and the two are different facts: a missing key means\n\u00abyou may not be told\u00bb, null means \u00abnobody recorded it\u00bb \u2014 a movement older than the\ncost layers, which the app reads as \u00ab\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641\u00bb and never as free. `unit_cost` is dropped whenever part of the row is unpriced: an average that\ncounts zeros is a number that describes nothing, so the app is handed the total\nit can vouch for and the quantity it cannot, and says both."
+                    },
+                    "total_cost": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "uncosted_quantity": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "stock_item_id": {
                         "type": "integer"
@@ -19121,6 +20000,8 @@
                     "movement_type",
                     "movement_type_label",
                     "quantity",
+                    "signed_quantity",
+                    "balance_after",
                     "stock_item_id",
                     "from_warehouse_id",
                     "to_warehouse_id",
@@ -19440,7 +20321,7 @@
                         ],
                         "format": "binary",
                         "contentMediaType": "application/octet-stream",
-                        "description": "**The receipt (\u0627\u0644\u0648\u0627\u0635\u0644), PDF only, and required for a transfer.** `required_if` names the one method that demands it, built from the enum case\nrather than a loose string so renaming the value cannot leave this rule pointing\nat nothing. `PaymentMethod::requiresReceipt()` states the same rule for the\ndomain, and a database CHECK states it a third time \u2014 this copy is the one that\nproduces the friendly field-level 422.\n\n`mimetypes` reads the magic bytes with finfo; `mimes` is a second reading of the\nsame bytes kept because it is the rule whose message names an extension, which is\nwhat a person needs to be told. Neither trusts the client's filename or its\nContent-Type header."
+                        "description": "**The receipt (\u0627\u0644\u0648\u0627\u0635\u0644), PDF or an image, and required for a transfer.** `required_if` names the one method that demands it, built from the enum case\nrather than a loose string so renaming the value cannot leave this rule pointing\nat nothing. `PaymentMethod::requiresReceipt()` states the same rule for the\ndomain, and a database CHECK states it a third time \u2014 this copy is the one that\nproduces the friendly field-level 422.\n\nThe accepted shapes come from `media.payment_receipts`, which is the list the\napp's contract test reads \u2014 a copy typed here would be the one that drifts.\n\n`mimetypes` reads the magic bytes with finfo; `mimes` is a second reading of the\nsame bytes kept because it is the rule whose message names an extension, which is\nwhat a person needs to be told. Neither trusts the client's filename or its\nContent-Type header."
                     }
                 },
                 "required": [
@@ -19528,6 +20409,33 @@
                         "minimum": 0,
                         "maximum": 9999999999.99
                     },
+                    "additional_cost": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "The charge going the other way, behind `orders.additional_cost` and guarded in the\ndomain for the same reason the discount is. *The reason is required the moment there is anything to explain.** It is the axis\nthis money will be read along later \u2014 \u00ab\u0643\u0645 \u062d\u0635\u0651\u0644\u0646\u0627 \u0645\u0642\u0627\u0628\u0644 \u0627\u0644\u062a\u063a\u0644\u064a\u0641\u061f\u00bb \u2014 and a charge\nnobody can account for is what the field exists to prevent. A closed set, so the\ncolumn stays something a report can group by rather than four spellings of one\ncategory.",
+                        "minimum": 0,
+                        "maximum": 9999999999.99
+                    },
+                    "additional_cost_reason": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/AdditionalCostReason"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "additional_cost_note": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "\u00ab\u0623\u062e\u0631\u0649\u00bb on its own carries no information at all, so it is the one reason that has\nto bring its own words.",
+                        "maxLength": 500
+                    },
                     "tracking_number": {
                         "type": [
                             "string",
@@ -19571,14 +20479,6 @@
                                     "type": "integer",
                                     "minimum": 0,
                                     "maximum": 65535
-                                },
-                                "warehouse_quantity": {
-                                    "type": [
-                                        "number",
-                                        "null"
-                                    ],
-                                    "description": "Only when the sales unit and the warehouse unit genuinely differ \u2014 see the\ndocblock on OrderItem::warehouse_quantity. Left null, DeductOrderStock deducts\n`quantity` unchanged.",
-                                    "maximum": 999999999
                                 }
                             },
                             "required": [
@@ -19629,6 +20529,10 @@
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 9999
+                    },
+                    "skips_production": {
+                        "type": "boolean",
+                        "description": "Whether an order made entirely of goods from this heading may go straight from\n\u00ab\u062c\u062f\u064a\u062f\u0629\u00bb to \u00ab\u062c\u0627\u0647\u0632\u0629\u00bb \u2014 see `ProductCategory::skipsProduction()`. Optional and false\nby default: a heading nobody has thought about sends its orders down the road\nevery order took before this field existed."
                     }
                 },
                 "required": [
@@ -19694,7 +20598,7 @@
                             "integer",
                             "null"
                         ],
-                        "description": "What the product is made of \u2014 \u00ab\u0645\u062c\u0645\u0648\u0639\u0629 \u0623\u0635\u0646\u0627\u0641\u00bb. Optional, and the reason most\nproducts never need to name a shelf size by size: with a material set, every\nvariant resolves to that material's item at the same size, created on the spot if\nthe material has not reached it yet. An explicit `variants[].stock_item_id` still\nwins over it."
+                        "description": "What the product is made of \u2014 \u00ab\u0627\u0644\u062a\u0635\u0646\u064a\u0641\u00bb. Optional, and the reason most\nproducts never need to name a shelf size by size: with a material set, every\nvariant resolves to that material's item at the same size, created on the spot if\nthe material has not reached it yet. An explicit `variants[].stock_item_id` still\nwins over it."
                     },
                     "pricing_unit": {
                         "$ref": "#/components/schemas/PricingUnit"
@@ -19959,7 +20863,9 @@
                                 "orders.view",
                                 "orders.manage",
                                 "orders.discount",
+                                "orders.additional_cost",
                                 "orders.designs.manage",
+                                "orders.status.ready_to_print",
                                 "orders.status.designing",
                                 "orders.status.printing",
                                 "orders.status.ready",
@@ -19975,10 +20881,13 @@
                                 "orders.payments.view",
                                 "orders.payments.record",
                                 "orders.payments.reverse",
+                                "orders.payments.write_off",
                                 "manufacturing_cost_rates.view",
                                 "manufacturing_cost_rates.manage",
                                 "inventory.view",
                                 "inventory.manage",
+                                "inventory.revalue",
+                                "inventory.view_cost",
                                 "vendors.view",
                                 "vendors.manage",
                                 "purchase_orders.view",
@@ -20615,6 +21524,32 @@
                         "minimum": 0,
                         "maximum": 9999999999.99
                     },
+                    "additional_cost": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "The same three as on the way in \u2014 see StoreOrderRequest for why the reason is\nrequired as soon as there is an amount to explain.",
+                        "minimum": 0,
+                        "maximum": 9999999999.99
+                    },
+                    "additional_cost_reason": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/AdditionalCostReason"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "additional_cost_note": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 500
+                    },
                     "tracking_number": {
                         "type": [
                             "string",
@@ -20658,13 +21593,6 @@
                                     "type": "integer",
                                     "minimum": 0,
                                     "maximum": 65535
-                                },
-                                "warehouse_quantity": {
-                                    "type": [
-                                        "number",
-                                        "null"
-                                    ],
-                                    "maximum": 999999999
                                 }
                             },
                             "required": [
@@ -20711,6 +21639,10 @@
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 9999
+                    },
+                    "skips_production": {
+                        "type": "boolean",
+                        "description": "Turning this on affects the *next* order under the heading, never one already\ntaken \u2014 see `UpdateProductCategory` and `ResolveOrderFlow`."
                     }
                 },
                 "required": [
@@ -20753,7 +21685,11 @@
                 "description": "Same shape as creating, plus `variants.*.id` so an existing size can be edited in place.\n\nThe rules are written out in full rather than merged onto the parent's: Scramble reads this\nmethod statically to build the OpenAPI request body and cannot follow\n`array_merge(parent::rules(), \u2026)`, which would leave this endpoint published with no body.",
                 "properties": {
                     "slug": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "**Optional, exactly as on creating.** The app stopped collecting a slug once the\nserver started generating them, so an edit sends no `slug` key at all \u2014 `required`\nhere made every save from the product form a 422 saying \u00ab\u0627\u0644\u0645\u0639\u0631\u0641 \u0645\u0637\u0644\u0648\u0628\u00bb about a\nfield the screen does not have. Absent means \"leave the existing one alone\", which\n{@see \\App\\Domain\\Catalog\\Actions\\UpdateProduct} already implements. Still fully validated when it *is* sent, and still unique among the other\nproducts: optional is not the same as unchecked.",
                         "pattern": "^[a-z0-9-]+$",
                         "maxLength": 80
                     },
@@ -20882,7 +21818,6 @@
                     }
                 },
                 "required": [
-                    "slug",
                     "name",
                     "product_category_id",
                     "pricing_unit",
@@ -21069,7 +22004,9 @@
                                 "orders.view",
                                 "orders.manage",
                                 "orders.discount",
+                                "orders.additional_cost",
                                 "orders.designs.manage",
+                                "orders.status.ready_to_print",
                                 "orders.status.designing",
                                 "orders.status.printing",
                                 "orders.status.ready",
@@ -21085,10 +22022,13 @@
                                 "orders.payments.view",
                                 "orders.payments.record",
                                 "orders.payments.reverse",
+                                "orders.payments.write_off",
                                 "manufacturing_cost_rates.view",
                                 "manufacturing_cost_rates.manage",
                                 "inventory.view",
                                 "inventory.manage",
+                                "inventory.revalue",
+                                "inventory.view_cost",
                                 "vendors.view",
                                 "vendors.manage",
                                 "purchase_orders.view",
@@ -21678,6 +22618,27 @@
                     "showroom"
                 ],
                 "title": "WarehouseType"
+            },
+            "WriteOffOrderBalanceRequest": {
+                "type": "object",
+                "description": "Forgiving what is left of an order's debt.\n\n**Two fields, and both are required.** The amount, because a write-off is rarely the whole\nremainder \u2014 it is usually the five dinars that came back short \u2014 and the domain bounds it by\nwhat is actually owed. The reason, because this is the one entry in the ledger that turns a\nshortfall into a loss, and a loss with a blank beside it is the row an auditor stops at.\n\n**Nothing else is asked for.** No method: no money moved in either direction, and the table's\nCHECK refuses a write-off that names one. No date: a payment may be back-dated because the\ncash genuinely moved on Thursday, but a decision is taken when it is taken, and a\nback-datable one is a way to move this month's loss into last month's books.\n\nThe upper bound lives in the domain rather than here \u2014 see `WriteOffExceedsRemaining` \u2014 because\nit is a fact about the order, not about the payload, and validation cannot see the order.",
+                "properties": {
+                    "amount": {
+                        "type": "number",
+                        "description": "The same shape the payment endpoint accepts, down to the ceiling: one money\nfield should not be stricter than another on the screen beside it.",
+                        "maximum": 9999999999
+                    },
+                    "reason": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 1000
+                    }
+                },
+                "required": [
+                    "amount",
+                    "reason"
+                ],
+                "title": "WriteOffOrderBalanceRequest"
             }
         },
         "responses": {

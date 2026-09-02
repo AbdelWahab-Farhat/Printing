@@ -1,6 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
@@ -19,9 +20,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// way into «نواقص», «العميل غيّر رأيه» on the way into «ملغاة». Those were readable only inside
 /// the timeline, mixed with names and timestamps.
 ///
-/// So this page is the answer to one question — «ماذا كُتب على هذه الطلبية؟» — and it shows the
-/// two things that question wants: the words, and which status they were written at. Who wrote
-/// them and when is the timeline's job, and «سجل الحالات» is still on the order screen.
+/// So this page is the answer to one question — «ماذا كُتب على هذه الطلبية؟» — and it shows what
+/// that question wants: the words, which status they were written at, and — under them, in the
+/// timeline's own words — who wrote them and when. The first cut left the last two to «سجل
+/// الحالات», and the owner read a card saying «FUCKFF» with no way of telling from the page who
+/// had written it or on which day.
 ///
 /// **It fetches nothing when it does not have to.** The screen that opens it already holds the
 /// order, so it hands it over; a cold deep link arrives with nothing and loads it the same way
@@ -102,18 +105,30 @@ class _Notes extends StatelessWidget {
   }
 }
 
-/// One thing written on the order, and where it was written.
+/// One thing written on the order — where it was written, by whom, and when.
 ///
 /// [status] is null for the order's own note alone: it is edited from «تعديل الطلبية» at any
 /// point in the job, so pinning it to a status would be claiming something nobody recorded.
+///
+/// **[author] and [at] are what was recorded, never a guess.** A move carries the user who made
+/// it and the moment it was made; the order's own note carries the user who took the order and
+/// the moment it was taken, which is when that note is written in practice. Neither is filled
+/// in from whoever happens to be reading the screen: a seeder or a console command moves an
+/// order with nobody signed in, and a gap there is the truth.
 class OrderNote {
-  const OrderNote({required this.text, this.status, this.statusLabel});
+  const OrderNote({required this.text, this.status, this.statusLabel, this.author, this.at});
 
   final String text;
   final OrderStatus? status;
 
   /// The server's Arabic for that status — rendered as-is, like everywhere else.
   final String? statusLabel;
+
+  /// Who wrote it, by name. Null when nobody was recorded.
+  final String? author;
+
+  /// When it was written. Null when the server did not say.
+  final DateTime? at;
 
   /// Everything written on one order: its own note first, then one per move that carried words.
   ///
@@ -123,11 +138,25 @@ class OrderNote {
   /// A note of nothing but spaces is not a note — the server keeps what was typed, and a card
   /// drawn around a blank is a row that says something was written when nothing was.
   static List<OrderNote> on(Order order) => [
-    if (order.notes?.trim() case final note? when note.isNotEmpty) OrderNote(text: note),
+    if (order.notes?.trim() case final note? when note.isNotEmpty)
+      OrderNote(text: note, author: order.createdBy?.name, at: order.placedAt ?? order.createdAt),
     for (final record in order.transitions ?? const <OrderTransitionRecord>[])
       if (record.reason?.trim() case final reason? when reason.isNotEmpty)
-        OrderNote(text: reason, status: record.toStatus, statusLabel: record.toStatusLabel),
+        OrderNote(
+          text: reason,
+          status: record.toStatus,
+          statusLabel: record.toStatusLabel,
+          author: record.user?.name,
+          at: record.createdAt,
+        ),
   ];
+
+  /// «2 أغسطس 2026 · 2:30 م · بواسطة أحمد» — the timeline's own line, word for word, so the
+  /// same fact reads the same on both screens. Empty when there is nothing recorded to say.
+  String get signature => [
+    if (at case final at?) at.stampLabel,
+    if (author case final name?) 'بواسطة $name',
+  ].join(' · ');
 }
 
 class _Note extends StatelessWidget {
@@ -184,6 +213,16 @@ class _Note extends StatelessWidget {
           // Prose, so it wraps and is never cut: a note nobody can read the end of is worse
           // than no note.
           Text(note.text, style: context.textTheme.titleSmall?.copyWith(height: 1.5)),
+          // Who and when, under the words and quieter than them — the note is what the reader
+          // came for; this is what lets them ring the right person about it. Not drawn at all
+          // when nothing was recorded: a blank line under a note is a line asking a question.
+          if (note.signature case final signature when signature.isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            Text(
+              signature,
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ],
         ],
       ),
     );

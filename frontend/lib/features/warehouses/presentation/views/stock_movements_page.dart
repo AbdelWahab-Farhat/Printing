@@ -1,5 +1,4 @@
 import 'package:dayaa/core/di/injector.dart';
-import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/theme/app_tones.dart';
@@ -136,7 +135,7 @@ class _ShelfLedgerViewState extends State<_ShelfLedgerView> {
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 6.h),
               child: SizedBox(
-                height: 34.h,
+                height: 40.h,
                 child: SegmentedButton<int>(
                   segments: [
                     for (var i = 0; i < _segments.length; i++)
@@ -148,7 +147,7 @@ class _ShelfLedgerViewState extends State<_ShelfLedgerView> {
                   showSelectedIcon: false,
                   expandedInsets: EdgeInsets.zero,
                   style: SegmentedButton.styleFrom(
-                    textStyle: context.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+                    textStyle: context.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
                     padding: EdgeInsets.symmetric(horizontal: 8.w),
                     visualDensity: VisualDensity.compact,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -220,7 +219,7 @@ class _ShelfHeader extends StatelessWidget {
           color: scheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(16.r),
         ),
-        padding: EdgeInsets.all(14.w),
+        padding: EdgeInsets.all(16.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -231,7 +230,7 @@ class _ShelfHeader extends StatelessWidget {
                   Text(
                     code,
                     textDirection: TextDirection.ltr,
-                    style: context.textTheme.titleSmall?.copyWith(
+                    style: context.textTheme.titleMedium?.copyWith(
                       color: scheme.primary,
                       fontWeight: FontWeight.w800,
                     ),
@@ -243,25 +242,25 @@ class _ShelfHeader extends StatelessWidget {
                     stock.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                    style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 6.h),
+            SizedBox(height: 10.h),
             Row(
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
                 Text(
                   'الرصيد',
-                  style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                  style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                 ),
-                SizedBox(width: 8.w),
+                SizedBox(width: 10.w),
                 Text(
                   stock.quantityLabel,
                   textDirection: TextDirection.ltr,
-                  style: context.textTheme.headlineSmall?.copyWith(
+                  style: context.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: stock.isOutOfStock
                         ? scheme.error
@@ -270,10 +269,10 @@ class _ShelfHeader extends StatelessWidget {
                         : scheme.onSurface,
                   ),
                 ),
-                SizedBox(width: 4.w),
+                SizedBox(width: 6.w),
                 Text(
                   stock.unitLabel,
-                  style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                  style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -305,14 +304,14 @@ class _Valuation extends StatelessWidget {
         final valuation = ShelfValuation.of(state.page.items);
         if (valuation.isEmpty) return const SizedBox.shrink();
 
-        final quiet = context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
+        final quiet = context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
         final warn = quiet?.copyWith(color: scheme.warn, fontWeight: FontWeight.w700);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(height: 4.h),
+            SizedBox(height: 8.h),
             Row(
               children: [
                 Text('القيمة', style: quiet),
@@ -331,7 +330,7 @@ class _Valuation extends StatelessWidget {
                                 ),
                               ),
                               if (valuation.averageUnitCost case final average?)
-                                TextSpan(text: ' · ${average.grouped} د.ل/$unitLabel')
+                                TextSpan(text: ' · ${groupedDecimal(average)} د.ل/$unitLabel')
                               else if (valuation.hasUncosted)
                                 TextSpan(
                                   text: ' · ${groupedDecimal(valuation.uncostedQuantity)} $unitLabel بلا تكلفة',
@@ -346,7 +345,7 @@ class _Valuation extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: 2.h),
+            SizedBox(height: 4.h),
             Text(_layers(valuation), style: quiet),
           ],
         );
@@ -389,7 +388,7 @@ class _LedgerTab extends StatelessWidget {
           emptyMessage: 'لا توجد حركات على هذه المادة بعد',
           onLoadMore: cubit.loadMore,
           onRefresh: cubit.refresh,
-          skeletonHeight: 56.h,
+          skeletonHeight: 72.h,
           separatorBuilder: (context, index) => const _Hairline(),
           itemBuilder: (context, movement, index) {
             final row = LedgerRow(
@@ -435,10 +434,10 @@ class _DayHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(top: first ? 6.h : 14.h, bottom: 2.h),
+      padding: EdgeInsets.only(top: first ? 8.h : 22.h, bottom: 4.h),
       child: Text(
         at.relativeDayLabel,
-        style: context.textTheme.labelMedium?.copyWith(
+        style: context.textTheme.titleSmall?.copyWith(
           color: context.colorScheme.primary,
           fontWeight: FontWeight.w800,
         ),
@@ -478,12 +477,12 @@ class _BatchesTabState extends State<_BatchesTab> {
       builder: (context, state) => Column(
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 0),
+            padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
             child: Align(
               alignment: AlignmentDirectional.centerStart,
               child: Text(
                 'الدفعات المتبقية · تُصرف من الأقدم',
-                style: context.textTheme.labelMedium?.copyWith(
+                style: context.textTheme.titleSmall?.copyWith(
                   color: context.colorScheme.primary,
                   fontWeight: FontWeight.w800,
                 ),
@@ -496,7 +495,7 @@ class _BatchesTabState extends State<_BatchesTab> {
               emptyMessage: 'لا توجد دفعات على هذا الرفّ',
               onLoadMore: cubit.loadMore,
               onRefresh: cubit.refresh,
-              skeletonHeight: 56.h,
+              skeletonHeight: 72.h,
               separatorBuilder: (context, index) => const _Hairline(),
               itemBuilder: (context, batch, index) => StockBatchRow(
                 key: ValueKey(batch.id),
@@ -540,12 +539,12 @@ class _SpentBatches extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 0),
+          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 4.h),
           child: Align(
             alignment: AlignmentDirectional.centerStart,
             child: Text(
               'الدفعات المستهلكة',
-              style: context.textTheme.labelMedium?.copyWith(
+              style: context.textTheme.titleSmall?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w800,
               ),
@@ -559,7 +558,7 @@ class _SpentBatches extends StatelessWidget {
               emptyMessage: 'لم تُستهلك أي دفعة بعد',
               onLoadMore: cubit.loadMore,
               onRefresh: cubit.refresh,
-              skeletonHeight: 56.h,
+              skeletonHeight: 72.h,
               separatorBuilder: (context, index) => const _Hairline(),
               itemBuilder: (context, batch, index) =>
                   StockBatchRow(key: ValueKey(batch.id), batch: batch, position: index + 1),

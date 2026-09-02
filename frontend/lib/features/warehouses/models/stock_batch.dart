@@ -62,9 +62,8 @@ abstract class StockBatch with _$StockBatch {
 
   String get receivedLabel => groupedDecimal(quantityReceived);
 
-  /// `3.500`, kept to three places: the price is the one number on this row a person checks
-  /// digit by digit, and trimming `3.500` to `3.5` makes it look like a different precision.
-  String get unitCostLabel => unitCost.grouped;
+  /// `3.500` → `3.5`: trailing zeros carry nothing, and the screen is read at a glance.
+  String get unitCostLabel => groupedDecimal(unitCost);
 
   /// What is left of this layer, at its price — money to two places.
   String get remainingValue => multiplyToMoney(quantityRemaining, unitCost);

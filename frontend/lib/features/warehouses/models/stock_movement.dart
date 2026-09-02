@@ -170,9 +170,11 @@ abstract class StockMovement with _$StockMovement {
   /// The cost line, or null when there is nothing honest to say — the server sent no figures
   /// (a row older than the cost ledger), which the row draws as unknown rather than as free.
   ///
-  /// Arriving stock leads with the unit price, because that is the number a person knows is
-  /// wrong on sight («٣٫٥ للكيلو؟ لا، ٢٫٨»); leaving stock leads with the total, because that is
-  /// what actually left. Stock nobody priced is *named* in `warn` and never averaged.
+  /// **One number per row.** Arriving stock shows its unit price, because that is the number a
+  /// person knows is wrong on sight («٣٫٥ للكيلو؟ لا، ٢٫٨») and the total is the balance times
+  /// it; leaving stock shows its total, because that is what actually left. Stock nobody priced
+  /// is *named* in `warn` and never averaged; a row only partly priced carries the total it can
+  /// vouch for and, on a line of its own, how much of it is unpriced.
   MovementCostLine? costLine(String unitLabel) {
     final total = totalCost;
     if (total == null) return null;
@@ -186,30 +188,28 @@ abstract class StockMovement with _$StockMovement {
       }
 
       return MovementCostLine(
-        '${groupedDecimal(total)} د.ل · ${groupedDecimal(uncosted)} $unitLabel بلا تكلفة',
-        warns: true,
+        '${groupedDecimal(total)} د.ل',
+        detail: '${groupedDecimal(uncosted)} بلا تكلفة',
       );
     }
 
     final unit = unitCost;
     final inbound = isInbound ?? (toWarehouse != null && fromWarehouse == null);
 
-    if (unit == null) return MovementCostLine('${groupedDecimal(total)} د.ل');
+    if (inbound && unit != null) return MovementCostLine('${groupedDecimal(unit)} د.ل/$unitLabel');
 
-    return MovementCostLine(
-      inbound
-          ? '${unit.grouped} د.ل/$unitLabel · ${groupedDecimal(total)} د.ل'
-          : '${groupedDecimal(total)} د.ل (${unit.grouped}/$unitLabel)',
-    );
+    return MovementCostLine('${groupedDecimal(total)} د.ل');
   }
 }
 
-/// One cost line on a ledger row, and whether it is a warning («بلا تكلفة») or a plain fact.
+/// One cost line on a ledger row: the figure, whether the figure itself is a warning
+/// («بلا تكلفة»), and an optional second line that always is — how much of the row is unpriced.
 class MovementCostLine {
-  const MovementCostLine(this.text, {this.warns = false});
+  const MovementCostLine(this.text, {this.warns = false, this.detail});
 
   final String text;
   final bool warns;
+  final String? detail;
 }
 
 /// A warehouse as it appears on a ledger row: an id and the name it had.

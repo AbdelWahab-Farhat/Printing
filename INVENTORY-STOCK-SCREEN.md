@@ -293,6 +293,10 @@ $costs = DB::table('stock_batches')
 
 ### ٦.٧ الصلاحية: `inventory.view_cost`
 
+> **مبنيّة** مع دفتر المادة (انظر [STOCK-ITEM-LEDGER-SCREEN.md](STOCK-ITEM-LEDGER-SCREEN.md)):
+> `PermissionName::ViewStockCost` و`AppPermission.viewStockCost` موجودان، ولا يمنحهما `RoleSeeder`
+> لأحد سوى ما تمنحه البوابة للمدير. ما يبقى من §٦ — التكلفة على صفّ الرصيد — يستعملها كما هي.
+
 منحة مستقلّة — `PermissionName::ViewStockCost = 'inventory.view_cost'`، «عرض تكلفة المخزون» — لا
 جزء من `inventory.view`.
 

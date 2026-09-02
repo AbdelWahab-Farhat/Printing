@@ -28,12 +28,12 @@ class StockBatchRow extends StatelessWidget {
     final scheme = context.colorScheme;
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 10.h),
+      padding: EdgeInsets.symmetric(vertical: 14.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _Position(position: position, highlighted: isNext),
-          SizedBox(width: 10.w),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,14 +46,14 @@ class StockBatchRow extends StatelessWidget {
                         _source(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                        style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
                     SizedBox(width: 8.w),
                     if (batch.isUncosted)
                       Text(
                         'بلا تكلفة',
-                        style: context.textTheme.labelMedium?.copyWith(
+                        style: context.textTheme.bodyLarge?.copyWith(
                           color: scheme.warn,
                           fontWeight: FontWeight.w800,
                         ),
@@ -62,11 +62,11 @@ class StockBatchRow extends StatelessWidget {
                       Text(
                         '${batch.unitCostLabel} د.ل/${batch.unitLabel}',
                         textDirection: TextDirection.rtl,
-                        style: context.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
+                        style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
                       ),
                   ],
                 ),
-                SizedBox(height: 2.h),
+                SizedBox(height: 4.h),
                 Row(
                   children: [
                     Expanded(
@@ -76,7 +76,7 @@ class StockBatchRow extends StatelessWidget {
                             : 'متبقي ${batch.remainingLabel} من ${batch.receivedLabel}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: context.textTheme.labelSmall?.copyWith(
+                        style: context.textTheme.bodyMedium?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
                       ),
@@ -86,7 +86,7 @@ class StockBatchRow extends StatelessWidget {
                       Text(
                         '${_money(batch.remainingValue)} د.ل',
                         textDirection: TextDirection.rtl,
-                        style: context.textTheme.labelSmall?.copyWith(
+                        style: context.textTheme.bodyMedium?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
                       ),
@@ -94,14 +94,14 @@ class StockBatchRow extends StatelessWidget {
                     if (isNext) ...[
                       SizedBox(width: 8.w),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.h),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
                         decoration: BoxDecoration(
                           color: scheme.primaryContainer,
                           borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Text(
                           'التالية للصرف',
-                          style: context.textTheme.labelSmall?.copyWith(
+                          style: context.textTheme.labelMedium?.copyWith(
                             color: scheme.onPrimaryContainer,
                             fontWeight: FontWeight.w700,
                           ),
@@ -111,10 +111,10 @@ class StockBatchRow extends StatelessWidget {
                   ],
                 ),
                 if (batch.revaluedAt case final at?) ...[
-                  SizedBox(height: 2.h),
+                  SizedBox(height: 4.h),
                   Text(
                     'عُدّلت تكلفتها ${at.shortDayLabel}',
-                    style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                    style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                   ),
                 ],
               ],
@@ -149,8 +149,8 @@ class _Position extends StatelessWidget {
     final scheme = context.colorScheme;
 
     return Container(
-      width: 22.w,
-      height: 22.w,
+      width: 26.w,
+      height: 26.w,
       margin: EdgeInsets.only(top: 1.h),
       alignment: Alignment.center,
       decoration: BoxDecoration(
@@ -160,7 +160,7 @@ class _Position extends StatelessWidget {
       child: Text(
         '$position',
         textDirection: TextDirection.ltr,
-        style: context.textTheme.labelSmall?.copyWith(
+        style: context.textTheme.labelMedium?.copyWith(
           color: highlighted ? scheme.onPrimary : scheme.onSurfaceVariant,
           fontWeight: FontWeight.w800,
         ),

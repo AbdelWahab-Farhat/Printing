@@ -32,7 +32,12 @@ class OrderCustomerCard extends StatelessWidget {
 
     return Material(
       color: scheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(20.r),
+      // `shape` rather than `borderRadius`: the card needs the same hairline the sections
+      // beside it carry, and `Material` only draws a side through a shape.
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20.r),
+        side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20.r),

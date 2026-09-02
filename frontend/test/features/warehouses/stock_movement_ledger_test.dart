@@ -92,7 +92,7 @@ void main() {
   });
 
   group('the cost line', () {
-    test('arriving stock leads with its price, leaving stock with its total', () {
+    test('arriving stock shows its price, leaving stock its total — one number each', () {
       // Arrange
       final arrival = movement(
         signed: '300.000',
@@ -112,9 +112,9 @@ void main() {
       );
 
       // Act + Assert
-      expect(arrival.costLine('قطعة')?.text, '3.500 د.ل/قطعة · 1,050 د.ل');
+      expect(arrival.costLine('قطعة')?.text, '3.5 د.ل/قطعة');
       expect(arrival.costLine('قطعة')?.warns, isFalse);
-      expect(issue.costLine('قطعة')?.text, '3,500 د.ل (3.500/قطعة)');
+      expect(issue.costLine('قطعة')?.text, '3,500 د.ل');
     });
 
     test('stock nobody priced is a word, never a zero', () {
@@ -145,9 +145,10 @@ void main() {
       // Act
       final line = issue.costLine('قطعة');
 
-      // Assert — and no unit price: an average that counts zeros describes nothing
-      expect(line?.text, '250 د.ل · 100 قطعة بلا تكلفة');
-      expect(line?.warns, isTrue);
+      // Assert — the total on its line, the unpriced part on its own, and no unit price: an
+      // average that counts zeros describes nothing
+      expect(line?.text, '250 د.ل');
+      expect(line?.detail, '100 بلا تكلفة');
       expect(line?.text, isNot(contains('/')));
     });
 
