@@ -52,6 +52,24 @@ return [
 
     'channels' => [
 
+        /*
+         * Every request and response to and from the carrier, on its own file.
+         *
+         * Its own channel rather than the stack because of what it is for: an integration built
+         * against an observed contract nobody has verified will be wrong about something, and the
+         * only way to find out what is to be able to read exactly what was sent and exactly what
+         * came back. Mixed into the application log that is unreadable within a day.
+         *
+         * Credentials never reach it — `NawrisClient` scrubs them before writing.
+         */
+        'nawris' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/nawris.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => (int) env('NAWRIS_LOG_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', (string) env('LOG_STACK', 'single')),

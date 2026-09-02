@@ -18,6 +18,7 @@ use App\Application\Api\V1\Resources\OrderResource;
 use App\Application\Api\V1\Resources\ProductionCostEntryResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
+use App\Domain\Carrier\CarrierService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\Enums\OrderDesignStatus;
@@ -52,7 +53,13 @@ class OrderController extends Controller
 {
     use ReadsAuditTrail, ResponseTrait;
 
-    public function __construct(private readonly OrderService $orders) {}
+    public function __construct(
+        private readonly OrderService $orders,
+        // **The carrier is wired in here rather than inside the domain**, because `Order` may not
+        // import `Carrier` — dependencies run one way — and because a carrier outage must never
+        // roll back a status change that describes something physical.
+        private readonly CarrierService $carrier,
+    ) {}
 
     /**
      * List orders
@@ -194,10 +201,35 @@ class OrderController extends Controller
             (array) $request->validated('fields', []),
         );
 
+        $this->tellTheCarrier($updated);
+
         return $this->success(
             new OrderResource($this->orders->loadForDisplay($updated)),
             "تم نقل الطلبية إلى «{$updated->status->label()}»",
         );
+    }
+
+    /**
+     * Hands the parcel to Nawris once the move has already committed.
+     *
+     * **After the status change, never inside it**, and the ordering is the point: the order is
+     * physically going out, so a carrier that is down, misconfigured or refusing must not undo
+     * that. If lodging fails the exception surfaces — the clerk needs to know the parcel is not
+     * with the carrier — and the order stays dispatched, findable through
+     * `CarrierService::ordersNotLodged()` and retryable.
+     *
+     * Silent for everything that is not a Nawris delivery: an office pickup, an unmapped city, or
+     * a deployment with no credentials yet. None of those is an error.
+     */
+    private function tellTheCarrier(Order $order): void
+    {
+        if (! $this->carrier->shouldDispatch($order)) {
+            return;
+        }
+
+        if ($order->status === OrderStatus::OutForDelivery && $this->carrier->openParcelFor($order) === null) {
+            $this->carrier->dispatchOrder($order);
+        }
     }
 
     /**

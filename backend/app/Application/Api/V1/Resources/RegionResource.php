@@ -24,6 +24,7 @@ class RegionResource extends JsonResource
             'name' => $this->name,
             'code' => $this->code,
             'darb_branch' => $this->darb_branch,
+            'nawris_area_id' => $this->nawris_area_id,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'created_at' => $this->created_at?->toIso8601String(),

@@ -7,6 +7,7 @@ namespace Tests\Feature\Audit;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Audit\Models\ActivityLog;
+use App\Domain\Carrier\Models\NawrisWebhookEvent;
 use App\Domain\Identity\Models\Role;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -39,6 +40,11 @@ class ModelConventionsTest extends TestCase
      */
     private const NOT_A_BUSINESS_RECORD = [
         ActivityLog::class,
+        // The carrier's inbound webhook log. Same reasoning as the audit trail above: it
+        // is already an immutable record of an external event, so auditing it would write
+        // a second row saying the first arrived, and soft-deleting it would defeat the
+        // point of keeping it. It is also the only table here that grows with traffic.
+        NawrisWebhookEvent::class,
     ];
 
     public function test_every_domain_model_soft_deletes(): void

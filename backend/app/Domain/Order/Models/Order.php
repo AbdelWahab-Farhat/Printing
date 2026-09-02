@@ -116,6 +116,16 @@ class Order extends Model implements HasAuditTrail
             // Same writer, same reason for staying out of the fillable list — and kept apart
             // from `paid_amount` so that column never stops meaning cash.
             'written_off_amount' => 'decimal:2',
+            // The third thing that closes a debt: what the customer handed the courier instead of
+            // us, because our delivery fee was taken off the COD before the parcel went out. Same
+            // writer, same reason for staying out of the fillable list — and kept apart from both
+            // of the others so `paid_amount` never stops meaning cash and `written_off_amount`
+            // never stops meaning a loss. See OrderPaymentType::CarrierSettled.
+            'carrier_settled_amount' => 'decimal:2',
+            // The idempotence flag behind both money entries a delivery webhook writes. On the
+            // order rather than the parcel so it survives the parcel being deleted, re-created or
+            // re-dispatched under a new code — see its migration.
+            'carrier_collection_recorded_at' => 'datetime',
             // **Retired, and kept for the orders written before it was.** Nothing fills it any
             // more: settling used to ask «المبلغ المستلم» and write the answer here, a number no
             // total ever read — so an order could carry «المدفوع ٥٠٠» and «المستلم فعلياً ٤٥٠»
@@ -227,11 +237,14 @@ class Order extends Model implements HasAuditTrail
     /**
      * What is still owed on this order.
      *
-     * **Two things close a debt: money collected, and money the business decided not to
-     * collect.** Both are subtracted here, which is what lets an order of 110 that took 105 and
-     * wrote off the difference reach «تم التسوية» — see {@see OrderPaymentType::WriteOff}. They
-     * remain two columns rather than one running total precisely so this method is the only
-     * place they are added together, and `paid_amount` never has to mean anything but cash.
+     * **Three things close a debt: money collected, money the business decided not to collect,
+     * and money the customer handed the courier instead of us.** All three are subtracted here,
+     * which is what lets an order of 110 that took 105 and wrote off the difference reach «تم
+     * التسوية» — see {@see OrderPaymentType::WriteOff} — and what lets one dispatched through
+     * Nawris reach it without a write-off at all, see {@see OrderPaymentType::CarrierSettled}.
+     * They remain three columns rather than one running total precisely so this method is the
+     * only place they are added together: `paid_amount` never has to mean anything but cash, and
+     * `written_off_amount` never has to mean anything but a loss.
      *
      * **Negative when the order is overpaid, and deliberately not floored here.** A screen wants
      * to say «زائد ٥٠» so somebody refunds it; the *payment* path floors it at zero separately,
@@ -240,7 +253,11 @@ class Order extends Model implements HasAuditTrail
      */
     public function remainingAmount(): string
     {
-        $covered = bcadd((string) $this->paid_amount, (string) $this->written_off_amount, 8);
+        $covered = bcadd(
+            bcadd((string) $this->paid_amount, (string) $this->written_off_amount, 8),
+            (string) $this->carrier_settled_amount,
+            8,
+        );
 
         return Money::round(bcsub((string) $this->grand_total, $covered, 8));
     }

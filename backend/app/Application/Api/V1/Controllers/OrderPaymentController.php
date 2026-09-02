@@ -10,6 +10,7 @@ use App\Application\Api\V1\Requests\Order\StoreOrderPaymentRequest;
 use App\Application\Api\V1\Requests\Order\WriteOffOrderBalanceRequest;
 use App\Application\Api\V1\Resources\OrderPaymentResource;
 use App\Application\Controller;
+use App\Domain\Carrier\CarrierService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Models\Order;
@@ -45,7 +46,11 @@ class OrderPaymentController extends Controller
 {
     use ResponseTrait;
 
-    public function __construct(private readonly OrderService $orders) {}
+    public function __construct(
+        private readonly OrderService $orders,
+        // Told about money that moves while a parcel is out — see {@see tellTheCarrier()}.
+        private readonly CarrierService $carrier,
+    ) {}
 
     /**
      * An order's ledger
@@ -87,10 +92,37 @@ class OrderPaymentController extends Controller
             $this->actor($request),
         );
 
+        $this->tellTheCarrier($order);
+
         return $this->created(
             $this->entry($payment, $order),
             'تم تسجيل الدفعة بنجاح',
         );
+    }
+
+    /**
+     * Lowers the COD Nawris is holding when money arrives after the parcel left.
+     *
+     * **The one edit trigger there is.** A live parcel's address and recipient phone are frozen by
+     * `Order::destinationIsEditable()`, and `receiver` is the order code rather than a name — so
+     * money is the only thing that can change while a parcel is out. It is also the change that
+     * matters most: a COD that still asks for a deposit the customer already paid bills them
+     * twice, which is the contract's first field rule.
+     *
+     * **Wrapped in `rescue()`, and that asymmetry is deliberate.** A failed dispatch surfaces,
+     * because the clerk needs to know the parcel is not lodged. A failed *edit* must not: the
+     * payment is real, it is already written, and refusing to acknowledge it because a carrier's
+     * API is down would lose the more important of the two facts. It is reported, so it is visible
+     * in the log rather than silently swallowed — `rescue` is the escape hatch RULES.md §5 allows
+     * exactly here, where a `try`/`catch` is forbidden.
+     */
+    private function tellTheCarrier(Order $order): void
+    {
+        if (! $this->carrier->shouldDispatch($order)) {
+            return;
+        }
+
+        rescue(fn () => $this->carrier->syncMoneyFor($order->fresh()), rescue: null, report: true);
     }
 
     /**

@@ -53,6 +53,22 @@ enum OrderPaymentType: string
      */
     case WriteOff = 'write_off';
 
+    /**
+     * The customer paid this part to the courier, not to us.
+     *
+     * **The fifth, and the second that moves no cash of ours — but for the opposite reason to a
+     * write-off.** A write-off says the money is not coming. This says it came, in full, and went
+     * somewhere else by arrangement: we subtract our `delivery_price` from the COD before a
+     * parcel is handed to Nawris, so the carrier collects that amount at the door on their own
+     * account. See NAWRIS-INTEGRATION.md §5.2.
+     *
+     * Recording it as a {@see Payment} would put money in the drawer report that never reached
+     * the drawer. Recording it as a {@see WriteOff} would post a loss for every delivery, when a
+     * completed sale is the one thing that did happen. So it moves
+     * {@see Order::$carrier_settled_amount}, a third total, and «كم قبضنا؟» keeps meaning cash.
+     */
+    case CarrierSettled = 'carrier_settled';
+
     public function label(): string
     {
         return match ($this) {
@@ -60,6 +76,7 @@ enum OrderPaymentType: string
             self::Reversal => 'إلغاء قيد',
             self::Refund => 'ردّ مبلغ',
             self::WriteOff => 'شطب فرق',
+            self::CarrierSettled => 'سُدِّدت لدى الناقل',
         };
     }
 
@@ -82,23 +99,40 @@ enum OrderPaymentType: string
     }
 
     /**
-     * Whether this entry increases the total it belongs to, rather than reducing it.
+     * Whether this entry adds to what the carrier collected on its own account.
      *
-     * A payment adds to what was paid and a write-off adds to what was forgiven; a refund and a
-     * reversal take back off whichever of the two their row belongs to. Which total that is, is
-     * a separate question — see {@see isWriteOff()}.
+     * The third total, and the same shape of question {@see isWriteOff()} answers for the second.
+     * **A reversal of one answers for the row it undoes** — see
+     * {@see OrderPayment::affectsCarrierSettlement()}, which is what callers actually ask.
      */
-    public function isCredit(): bool
+    public function isCarrierSettled(): bool
     {
-        return $this === self::Payment || $this === self::WriteOff;
+        return $this === self::CarrierSettled;
     }
 
     /**
-     * Whether this entry moved real money.
+     * Whether this entry increases the total it belongs to, rather than reducing it.
      *
-     * Neither a reversal nor a write-off did — the first describes an event that never happened,
-     * the second an amount that was never collected — which is why a cash-drawer report reads
-     * this rather than counting every row that is not a payment.
+     * A payment adds to what was paid, a write-off to what was forgiven, and a carrier settlement
+     * to what the courier took at the door; a refund and a reversal take back off whichever of
+     * the three their row belongs to. Which total that is, is a separate question — see
+     * {@see isWriteOff()} and {@see isCarrierSettled()}.
+     */
+    public function isCredit(): bool
+    {
+        return $this === self::Payment
+            || $this === self::WriteOff
+            || $this === self::CarrierSettled;
+    }
+
+    /**
+     * Whether this entry moved real money **into our hands**.
+     *
+     * Three of the five did not: a reversal describes an event that never happened, a write-off
+     * an amount that was never collected, and a carrier settlement an amount collected by
+     * somebody else. That last one is why this cannot be read as "is it a credit" — a carrier
+     * settlement is a credit and is emphatically not cash, and a drawer report that counted it
+     * would claim the delivery fee of every parcel.
      */
     public function movedCash(): bool
     {
@@ -108,9 +142,9 @@ enum OrderPaymentType: string
     /**
      * Whether an entry of this type names the method money moved by.
      *
-     * A payment and a refund do; a reversal and a write-off cannot, because no money moved for
-     * them to have one. The `order_payments_shape` CHECK states the same rule in SQL, so no
-     * path can write a row this would call malformed.
+     * A payment and a refund do; a reversal, a write-off and a carrier settlement cannot, because
+     * no money of ours moved for them to have one. The `order_payments_shape` CHECK states the
+     * same rule in SQL, so no path can write a row this would call malformed.
      */
     public function namesAMethod(): bool
     {

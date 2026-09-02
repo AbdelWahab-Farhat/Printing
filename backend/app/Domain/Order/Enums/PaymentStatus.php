@@ -89,23 +89,39 @@ enum PaymentStatus: string
             (string) $order->paid_amount,
             (string) $order->grand_total,
             (string) $order->written_off_amount,
+            (string) $order->carrier_settled_amount,
         );
     }
 
     /**
-     * **What closes a debt is cash plus what was forgiven**, so both are weighed against the
-     * total — an order is no longer owed once the two together reach it. They stay two numbers
-     * rather than one because the difference between them is the whole point: see
-     * {@see WrittenOff}.
+     * **What closes a debt is cash, plus what was forgiven, plus what the carrier collected at
+     * the door**, so all three are weighed against the total — an order is no longer owed once
+     * they together reach it. They stay three numbers rather than one because the differences
+     * between them are the whole point: see {@see WrittenOff} and
+     * {@see OrderPaymentType::CarrierSettled}.
+     *
+     * **Only the forgiven one changes which state this answers.** An order closed partly by a
+     * carrier settlement reads «مدفوعة بالكامل», and that is correct rather than a shortcut: the
+     * customer paid every dinar they were billed, and part of it went to the courier by
+     * arrangement. A write-off is the opposite fact — money that never arrived — which is why it,
+     * and not this, gets a state of its own.
      *
      * The comparison against the total comes *before* the one against zero, so an order that
      * costs nothing — an office pickup with no lines yet — reads «مدفوعة بالكامل» rather than
      * «غير مدفوعة». Nothing is owed on it, and «غير مدفوعة» would put it in the list of orders
      * somebody is meant to chase.
+     *
+     * **This rule is written twice**, here and in {@see PaymentStatusExpression} for the list and
+     * the counts. `OrderPaymentStatusFilterTest` asserts the SQL against this enum, so the pair
+     * cannot drift.
      */
-    public static function between(string $paid, string $grandTotal, string $writtenOff = '0'): self
-    {
-        $covered = bcadd($paid, $writtenOff, Money::SCALE);
+    public static function between(
+        string $paid,
+        string $grandTotal,
+        string $writtenOff = '0',
+        string $carrierSettled = '0',
+    ): self {
+        $covered = bcadd(bcadd($paid, $writtenOff, Money::SCALE), $carrierSettled, Money::SCALE);
         $forgiven = bccomp($writtenOff, '0', Money::SCALE) > 0;
 
         return match (true) {

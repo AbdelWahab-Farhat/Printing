@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Now both are recoverable, and the trail records who did it.
  */
 #[UseFactory(CityFactory::class)]
-#[Fillable(['name', 'fulfilment_type', 'is_region_required', 'delivery_price', 'darb_branch', 'latitude', 'longitude'])]
+#[Fillable(['name', 'fulfilment_type', 'is_region_required', 'delivery_price', 'darb_branch', 'nawris_government_id', 'latitude', 'longitude'])]
 class City extends Model implements HasAuditTrail
 {
     /** @use HasFactory<CityFactory> */

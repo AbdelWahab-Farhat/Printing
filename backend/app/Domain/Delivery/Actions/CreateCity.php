@@ -20,6 +20,7 @@ final class CreateCity
             'is_region_required' => $data->isRegionRequired,
             'delivery_price' => $data->deliveryPrice,
             'darb_branch' => $data->darbBranch,
+            'nawris_government_id' => $data->nawrisGovernmentId,
             'latitude' => $data->latitude,
             'longitude' => $data->longitude,
         ]);

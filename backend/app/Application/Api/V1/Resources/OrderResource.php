@@ -144,6 +144,12 @@ class OrderResource extends JsonResource
             // stays out of `paid_amount` so that column never stops meaning cash — see
             // OrderPaymentType::WriteOff.
             'written_off_amount' => (string) $this->written_off_amount,
+            // The fifth, and zero on everything that did not go out through a carrier who
+            // collected our delivery fee at the door. Carried beside the other two because
+            // `remaining_amount` is now derived from all three: a screen showing 100 paid against
+            // a 120 order with nothing outstanding needs the twenty to be visible somewhere, or
+            // the arithmetic on screen reads as a bug. See OrderPaymentType::CarrierSettled.
+            'carrier_settled_amount' => (string) $this->carrier_settled_amount,
             'remaining_amount' => $this->remainingAmount(),
             'payment_status' => $this->paymentStatus()->value,
             'payment_status_label' => $this->paymentStatus()->label(),

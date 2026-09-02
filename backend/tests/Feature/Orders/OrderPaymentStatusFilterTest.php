@@ -56,14 +56,19 @@ class OrderPaymentStatusFilterTest extends TestCase
      * larger than what is outstanding, so an overpaid order only ever arises from a total that
      * dropped afterwards.
      */
-    private function order(string $grandTotal, string $paid, string $writtenOff = '0.00'): Order
-    {
+    private function order(
+        string $grandTotal,
+        string $paid,
+        string $writtenOff = '0.00',
+        string $carrierSettled = '0.00',
+    ): Order {
         return Order::factory()->create([
             'items_total' => $grandTotal,
             'delivery_price' => '0.00',
             'grand_total' => $grandTotal,
             'paid_amount' => $paid,
             'written_off_amount' => $writtenOff,
+            'carrier_settled_amount' => $carrierSettled,
         ]);
     }
 
@@ -141,6 +146,46 @@ class OrderPaymentStatusFilterTest extends TestCase
         // Assert
         $this->assertSame(PaymentStatus::Paid, $free->paymentStatus());
         $response->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_an_order_closed_at_the_carrier_reads_paid_in_sql_too(): void
+    {
+        // Arrange — the third total joined the rule when the Nawris integration landed, and it
+        // had to join it in *both* languages. An order of 450 whose customer paid 430 to us and
+        // 20 to the courier owes nothing, and the list must say so.
+        //
+        // Note it reads «مدفوعة بالكامل» and not «مشطوب فرقها»: nothing was forgiven here, which
+        // is exactly the branch a carrier settlement deliberately does not take.
+        $order = $this->order('450.00', '430.00', '0.00', '20.00');
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson('/api/v1/orders?payment_status='.PaymentStatus::Paid->value);
+
+        // Assert — the enum first, then the SQL against it.
+        $this->assertSame(PaymentStatus::Paid, $order->paymentStatus());
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $order->id)
+            ->assertJsonPath('data.0.payment_status', PaymentStatus::Paid->value);
+    }
+
+    public function test_a_part_paid_order_stays_part_paid_when_the_carrier_covers_only_some(): void
+    {
+        // Arrange — the guard against the new column closing an order it has not closed: 300 of
+        // 450 collected and 20 taken at the door still leaves 130 owed.
+        $order = $this->order('450.00', '300.00', '0.00', '20.00');
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson('/api/v1/orders?payment_status='.PaymentStatus::PartiallyPaid->value);
+
+        // Assert
+        $this->assertSame(PaymentStatus::PartiallyPaid, $order->paymentStatus());
+        $this->assertSame('130.00', $order->remainingAmount());
+        $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $order->id);
     }
 
     public function test_the_filter_is_repeatable(): void

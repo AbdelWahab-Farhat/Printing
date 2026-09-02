@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Domain\Audit\Enums\AuditSubject;
+use App\Domain\Carrier\Actions\BuildNawrisPayload;
+use App\Domain\Carrier\Actions\ResolveNawrisDestination;
+use App\Domain\Carrier\Support\NawrisClient;
 use App\Domain\Customer\Queries\CustomerOrderActivity;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Queries\OrderCustomerActivity;
@@ -22,6 +25,27 @@ class AppServiceProvider extends ServiceProvider
         // by the orders without depending on them. `Order` already points at `Customer`; the two
         // pointing at each other would be a cycle. This line is the only place the two meet.
         $this->app->bind(CustomerOrderActivity::class, OrderCustomerActivity::class);
+
+        // The carrier client takes its whole configuration as one array, so nothing inside it
+        // reaches for `config()` — which is what lets a test hand it a different base URL or a
+        // dry-run flag without touching global state.
+        // The three carrier classes that need configuration take it as one array, so nothing
+        // inside them reaches for `config()` — which is what lets a test hand them a different
+        // base URL, a different fallback phone or a dry-run flag without touching global state.
+        $this->app->singleton(
+            NawrisClient::class,
+            fn ($app) => new NawrisClient((array) $app['config']->get('services.nawris', [])),
+        );
+
+        $this->app->bind(
+            BuildNawrisPayload::class,
+            fn ($app) => new BuildNawrisPayload((array) $app['config']->get('services.nawris', [])),
+        );
+
+        $this->app->bind(
+            ResolveNawrisDestination::class,
+            fn ($app) => new ResolveNawrisDestination((array) $app['config']->get('services.nawris', [])),
+        );
     }
 
     /**

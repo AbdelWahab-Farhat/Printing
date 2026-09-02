@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * the key.
  */
 #[UseFactory(RegionFactory::class)]
-#[Fillable(['name', 'code', 'darb_branch', 'latitude', 'longitude'])]
+#[Fillable(['name', 'code', 'darb_branch', 'nawris_area_id', 'latitude', 'longitude'])]
 class Region extends Model implements HasAuditTrail
 {
     /** @use HasFactory<RegionFactory> */

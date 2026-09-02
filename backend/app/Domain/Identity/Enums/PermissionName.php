@@ -65,6 +65,12 @@ enum PermissionName: string
     case ViewShippingCompanies = 'shipping_companies.view';
     case ManageShippingCompanies = 'shipping_companies.manage';
 
+    // The carrier integration's own operations surface. Separate from `shipping_companies.*`,
+    // which is the address book: this is the queue of parcels, the webhooks that never matched,
+    // and the delivery conflicts a person has to close.
+    case ViewCarrierParcels = 'carrier.view';
+    case ManageCarrierParcels = 'carrier.manage';
+
     // Orders. One permission per status the machine can move *into*, so the business composes
     // a designer, a printer and a delivery coordinator out of this list without any of those
     // jobs being named in the code. See OrderStatus::permission().
@@ -178,6 +184,8 @@ enum PermissionName: string
             self::ManageDeliveryLocations => 'إضافة وتعديل مدن ومناطق التوصيل',
             self::ViewShippingCompanies => 'عرض شركات التوصيل',
             self::ManageShippingCompanies => 'إضافة وتعديل شركات التوصيل',
+            self::ViewCarrierParcels => 'عرض طرود شركة نورس وسجل الإشعارات',
+            self::ManageCarrierParcels => 'إعادة الإرسال وإغلاق التعارضات',
             self::ViewOrders => 'عرض الطلبيات',
             self::ManageOrders => 'إضافة وتعديل الطلبيات',
             self::DiscountOrders => 'منح خصم على الطلبية',
@@ -230,6 +238,7 @@ enum PermissionName: string
             self::ViewProducts, self::ManageProducts => 'المنتجات',
             self::ViewDeliveryLocations, self::ManageDeliveryLocations => 'مدن ومناطق التوصيل',
             self::ViewShippingCompanies, self::ManageShippingCompanies => 'شركات التوصيل',
+            self::ViewCarrierParcels, self::ManageCarrierParcels => 'شحنات نورس',
             self::ViewOrders, self::ManageOrders, self::DiscountOrders,
             self::AddOrderAdditionalCost,
             self::ManageOrderDesigns => 'الطلبيات',

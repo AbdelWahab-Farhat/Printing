@@ -24,6 +24,8 @@ final readonly class CityData
         /** null means "no rate agreed yet" — never "free". Free is the string '0.00'. */
         public ?string $deliveryPrice = null,
         public ?string $darbBranch = null,
+        /** Nawris's own id for this destination. Null means the city is not one of theirs. */
+        public ?string $nawrisGovernmentId = null,
         public ?float $latitude = null,
         public ?float $longitude = null,
     ) {}
@@ -51,6 +53,7 @@ final readonly class CityData
             // must not pick up binary drift on the way in.
             deliveryPrice: $price !== null && $price !== '' ? number_format((float) $price, 2, '.', '') : null,
             darbBranch: self::textOrNull($validated['darb_branch'] ?? null),
+            nawrisGovernmentId: self::textOrNull($validated['nawris_government_id'] ?? null),
             latitude: isset($validated['latitude']) ? (float) $validated['latitude'] : null,
             longitude: isset($validated['longitude']) ? (float) $validated['longitude'] : null,
         );
