@@ -175,9 +175,11 @@ class OrderResource extends JsonResource
             // Order::totalWeight() for what null means, which is «no weight to state» rather than
             // zero, and why a shelf counted in pieces contributes nothing to it.
             //
-            // Only where the lines are in the payload. The list endpoint does not load them, and
-            // an order's weight computed by fetching four lines apiece for a page of twenty is
-            // the query this key would otherwise smuggle in.
+            // Only where the lines are in the payload, which is both endpoints: the list eager-
+            // loads them for the moves it offers per row, and the card states the weight beside
+            // the money. What the key must not do is fetch them — an order weighed by pulling
+            // four lines apiece for a page of twenty is a query per row, so OrderListQuery loads
+            // the shelf behind each line too and this costs nothing wherever it is read.
             'total_weight' => $this->when(
                 $this->resource->relationLoaded('items'),
                 fn () => $this->totalWeight(),

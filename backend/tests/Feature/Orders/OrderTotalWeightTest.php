@@ -13,6 +13,7 @@ use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -186,7 +187,7 @@ class OrderTotalWeightTest extends TestCase
         $response->assertOk()->assertJsonPath('data.total_weight', '12.500');
     }
 
-    public function test_the_list_carries_no_weight_rather_than_a_query_per_order(): void
+    public function test_the_list_carries_the_weight_beside_every_order(): void
     {
         // Arrange
         $order = Order::factory()->create();
@@ -198,8 +199,53 @@ class OrderTotalWeightTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->getJson('/api/v1/orders');
 
-        // Assert — the lines are not in that payload, and weighing an order without them would
-        // mean fetching them one order at a time.
-        $response->assertOk()->assertJsonMissingPath('data.0.total_weight');
+        // Assert — the same string the detail endpoint sends, so the card and the page cannot
+        // disagree about what the parcel weighs.
+        $response->assertOk()->assertJsonPath('data.0.total_weight', '12.500');
+    }
+
+    public function test_weighing_the_list_costs_no_query_per_order(): void
+    {
+        // Arrange — the same page asked for twice, once holding three times as many orders. The
+        // shelf behind every line is what the sum needs and what an unguarded `loadMissing()`
+        // would fetch one order at a time.
+        $user = User::factory()->create();
+        $user->givePermissionTo(PermissionName::ViewOrders->value);
+        $headers = ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+        $weighed = $this->sellableSize(PricingUnit::Piece, PricingUnit::Kilogram);
+        $this->line(Order::factory()->create(), $weighed, '300', '12.500');
+        // One request first, uncounted: the permission cache and the token's own lookups are
+        // cold on the very first call and would show up as a difference between the two
+        // measurements that has nothing to do with how many orders are on the page.
+        $this->withHeaders($headers)->getJson('/api/v1/orders');
+
+        // Act
+        $one = $this->countQueries(fn () => $this->withHeaders($headers)->getJson('/api/v1/orders'));
+
+        foreach (range(1, 2) as $ignored) {
+            $this->line(Order::factory()->create(), $weighed, '300', '12.500');
+        }
+
+        $three = $this->countQueries(fn () => $this->withHeaders($headers)->getJson('/api/v1/orders'));
+
+        // Assert — eager-loaded, so the count is the same whether the page holds one order or
+        // three. It is the growth that is the bug, not the number itself.
+        $this->assertSame($one, $three);
+    }
+
+    /**
+     * How many queries [$request] runs.
+     */
+    private function countQueries(callable $request): int
+    {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $request();
+
+        $count = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $count;
     }
 }

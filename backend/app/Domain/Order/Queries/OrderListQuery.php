@@ -41,6 +41,12 @@ final class OrderListQuery
             // what is in the order — the picture, the code, the name — and only the primary
             // image is ever serialized, so this is one URL per line and not a gallery per row.
             ->with('items.product.images')
+            // And the shelf behind each line, because the card states what the order weighs and
+            // the sum is over the *stock* unit — a run sold by the piece off a pile counted by
+            // the kilo weighs something, one off a shelf counted in pieces does not. See
+            // Order::totalWeight(). Without it that method's own `loadMissing()` fetches the
+            // pair one order at a time, which is the query per row this list is built to avoid.
+            ->with('items.variant.stockItem')
             ->withCount('items');
 
         return $this->applyFilters($query, $filters)

@@ -151,9 +151,17 @@ class OrderCard extends StatelessWidget {
                       Expanded(
                         child: _Cell(label: 'تاريخ الإنشاء', value: order.placedAgo),
                       ),
-                      // The third column of a three-column grid, empty: two cells spread
-                      // across the whole width would sit under nothing above them.
-                      const Expanded(child: SizedBox.shrink()),
+                      // **الخانة الثالثة، وقد صار لها ما تقوله.** كانت فارغةً محجوزةً لتستقيم
+                      // الأعمدة — خانتان تتمدّدان على عرض البطاقة تقفان تحت لا شيء — والوزن
+                      // يملؤها دون أن يطيل البطاقة بسطر. ويغيب بغياب الجواب: `weightLabel` تعود
+                      // `null` في طلبيةٍ لا شيء فيها يُوزن وفي طلبيةٍ لم تُوزن بعد، و«٠ كيلوغرام»
+                      // تحت اسمٍ عريض تُقرأ كوزنٍ قيس فوجد صفراً. فتعود الخانة فارغةً كما كانت.
+                      Expanded(
+                        child: switch (order.weightLabel) {
+                          final label? => _Cell(label: 'وزن الطلبية', value: label),
+                          null => const SizedBox.shrink(),
+                        },
+                      ),
                     ],
                   ),
                   // **آخر ما على البطاقة، لا وسطها.** «طلبية إيه؟» سؤالٌ يأتي بعد «لمن» و«بكام»

@@ -227,8 +227,12 @@ abstract class Order with _$Order {
     /// **Null is «لا يوجد وزن», never «صفر»** — and it covers two cases the screen does not need
     /// to tell apart: nothing on the order comes off a shelf counted by the kilo, or something
     /// does and it has not been weighed yet. Either way there is no weight to print, and a
-    /// half-summed one under «الوزن» would be read as the whole parcel's. Absent on the list
-    /// endpoint, which does not carry the lines.
+    /// half-summed one under «الوزن» would be read as the whole parcel's.
+    ///
+    /// **Sent on the list as well as the detail**, so [OrderCard] states it beside the money
+    /// without opening the order. It was absent from the list once, when weighing a page meant
+    /// fetching the lines an order at a time; the list eager-loads the shelf behind each line
+    /// now and the figure costs it nothing.
     @JsonKey(name: 'total_weight') String? totalWeight,
 
     @JsonKey(name: 'placed_at') DateTime? placedAt,
