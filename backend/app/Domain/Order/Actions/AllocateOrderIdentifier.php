@@ -8,7 +8,11 @@ use App\Domain\Order\DTOs\OrderIdentifier;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Reserves the next order id and builds its number: 1, 2, 3 …
+ * Reserves the next order id and builds its number: 1200, 1201, 1202 …
+ *
+ * Where the count *appears* to begin is the business's choice, not this action's — the sequence
+ * was wound forward to 1200 by `start_order_numbering_at_1200`, and nothing here knows or cares
+ * what number comes back.
  *
  * The same mechanism customers and products use, with one difference: **no letter prefix.** A
  * customer is C7 and a product is P7 because those codes are said out loud alongside each other
