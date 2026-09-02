@@ -170,6 +170,19 @@ class OrderResource extends JsonResource
             'fulfillment_warehouse_id' => $this->fulfillment_warehouse_id,
             'stock_deducted_at' => $this->stock_deducted_at?->toIso8601String(),
 
+            // **What the parcel weighs, summed from the lines** — the order has no weight column
+            // any more, and the one it had was a number nobody derived anything from. See
+            // Order::totalWeight() for what null means, which is «no weight to state» rather than
+            // zero, and why a shelf counted in pieces contributes nothing to it.
+            //
+            // Only where the lines are in the payload. The list endpoint does not load them, and
+            // an order's weight computed by fetching four lines apiece for a page of twenty is
+            // the query this key would otherwise smuggle in.
+            'total_weight' => $this->when(
+                $this->resource->relationLoaded('items'),
+                fn () => $this->totalWeight(),
+            ),
+
             'placed_at' => $this->placed_at?->toIso8601String(),
             // When the warehouse finished and handed the order to the press — null for every
             // order taken before that step existed, which is the honest answer for them.

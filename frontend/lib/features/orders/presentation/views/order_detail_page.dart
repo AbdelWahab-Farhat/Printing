@@ -513,6 +513,8 @@ class _Body extends StatelessWidget {
                   title: 'البنود',
                   child: _Items(
                     items: order.items!,
+                    // The lines' own sum, under the lines — see [_Items].
+                    weight: order.weightLabel,
                     showCosts: showCosts,
                     onScrap: _mayScrap ? onScrap : null,
                     onOpenProduct: onOpenProduct,
@@ -847,15 +849,28 @@ class _Destination extends StatelessWidget {
   }
 }
 
+/// The lines, and what they weigh together.
+///
+/// **The weight belongs here and nowhere else on the screen.** It is not a fact about the order
+/// the way its number or its customer is — it is the sum of what the warehouse recorded against
+/// these lines, and the order itself stopped carrying a weight of its own when `weight_kg` was
+/// dropped. Under «الحساب» it would sit among the money and read as another figure on the
+/// invoice; in the header it would claim to be true of orders that have never been near a scale.
 class _Items extends StatelessWidget {
   const _Items({
     required this.items,
+    required this.weight,
     required this.showCosts,
     required this.onScrap,
     required this.onOpenProduct,
   });
 
   final List<OrderItem> items;
+
+  /// «12.5 كيلوغرام», or null on an order with no weight to state — see [Order.totalWeight],
+  /// where null covers both «nothing here is weighed» and «nothing has been weighed yet». The
+  /// server decides which; the screen only draws the line when there is one.
+  final String? weight;
 
   /// Whether each line says what it cost to make, under what it is charged at.
   final bool showCosts;
@@ -879,6 +894,30 @@ class _Items extends StatelessWidget {
             // is the arrow onto a 403 in another costume.
             onOpenProduct: onOpenProduct == null ? null : () => onOpenProduct!(item),
             onScrap: onScrap == null ? null : () => onScrap!(context, item).ignore(),
+          ),
+        ],
+        if (weight case final label?) ...[
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.h),
+            child: Divider(height: 1, color: context.colorScheme.outlineVariant),
+          ),
+          Row(
+            children: [
+              Text(
+                'وزن الطلبية',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const Spacer(),
+              // No `textDirection` override: «12.5 كيلوغرام» is a number *and* an Arabic word,
+              // and forcing the run left-to-right would put the unit on the wrong side of it.
+              // The overrides elsewhere on this screen are for bare figures.
+              Text(
+                label,
+                style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
           ),
         ],
       ],

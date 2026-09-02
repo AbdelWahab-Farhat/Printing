@@ -6,6 +6,7 @@ namespace App\Domain\Order\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
+use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Enums\FulfilmentType;
@@ -342,6 +343,57 @@ class Order extends Model implements HasAuditTrail
             ->map(fn (OrderItem $item) => (string) $item->variant_label)
             ->values()
             ->all();
+    }
+
+    /**
+     * What the whole order weighs, in kilograms — «كم تزن الطلبية؟».
+     *
+     * **Summed here rather than stored, because the column that stored it was wrong.** `orders`
+     * carried a `weight_kg` a clerk typed on the way into «جاهزة»; nothing was ever computed from
+     * it, it could disagree with the lines beneath it, and it went — see the 2026_08_23 migration.
+     * The weight the warehouse actually recorded is per line, in {@see OrderItem::$warehouse_quantity},
+     * and adding those up is the only figure that cannot drift from what left the shelf.
+     *
+     * **The shelf's unit decides which lines count, not the invoice's.** A run sold by the piece
+     * off a pile counted by the kilo weighs something; a shelf counted in pieces does not have a
+     * weight at all, and multiplying a bag count by nothing to reach one is the conversion
+     * COST-TRACKING-UNIT-CONVERSION.md §4 refuses to make. So the sum is over the kilogram lines
+     * and the rest are simply not part of the answer.
+     *
+     * **Null in two different situations, and both mean «لا يوجد وزن ليُقال».** No line comes off
+     * a weighed shelf — there is no weight to state. Or one does and nobody has been near a scale
+     * yet: {@see OrderItem::producedQuantity()} falls back to the sold quantity, which on such a
+     * line is a piece count wearing a kilogram label, and a partial sum printed under «الوزن»
+     * reads as the whole parcel's. Null is the honest answer until every weighed line has been
+     * measured — that happens in one go, on the way into «جاهزة».
+     */
+    public function totalWeight(): ?string
+    {
+        // `stockUnit()` falls back to the *selling* unit when the shelf behind a line was not
+        // loaded, and a fallback is not an answer to weigh an order on. `loadForDisplay()` has
+        // already loaded both, so this costs nothing where it is actually read.
+        $this->loadMissing(['items.variant.stockItem']);
+
+        $weighed = $this->items->filter(
+            fn (OrderItem $item) => $item->stockUnit() === PricingUnit::Kilogram,
+        );
+
+        if ($weighed->isEmpty()) {
+            return null;
+        }
+
+        $unmeasured = $weighed->contains(
+            fn (OrderItem $item) => $item->isStockedInAnotherUnit() && $item->warehouse_quantity === null,
+        );
+
+        if ($unmeasured) {
+            return null;
+        }
+
+        return $weighed->reduce(
+            fn (string $carry, OrderItem $item) => bcadd($carry, $item->producedQuantity(), 3),
+            '0.000',
+        );
     }
 
     /**

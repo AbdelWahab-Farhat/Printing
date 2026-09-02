@@ -93,6 +93,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   stockDeductedAt: json['stock_deducted_at'] == null
       ? null
       : DateTime.parse(json['stock_deducted_at'] as String),
+  totalWeight: json['total_weight'] as String?,
   placedAt: json['placed_at'] == null
       ? null
       : DateTime.parse(json['placed_at'] as String),
@@ -170,6 +171,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'gross_profit': instance.grossProfit,
   'fulfillment_warehouse_id': instance.fulfillmentWarehouseId,
   'stock_deducted_at': instance.stockDeductedAt?.toIso8601String(),
+  'total_weight': instance.totalWeight,
   'placed_at': instance.placedAt?.toIso8601String(),
   'delivered_at': instance.deliveredAt?.toIso8601String(),
   'settled_at': instance.settledAt?.toIso8601String(),

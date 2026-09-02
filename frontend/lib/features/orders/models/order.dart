@@ -1,4 +1,5 @@
 import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
@@ -215,6 +216,21 @@ abstract class Order with _$Order {
     @JsonKey(name: 'fulfillment_warehouse_id') int? fulfillmentWarehouseId,
     @JsonKey(name: 'stock_deducted_at') DateTime? stockDeductedAt,
 
+    /// What the parcel weighs, in kilograms — the lines' own scale readings added up by the
+    /// server.
+    ///
+    /// **The order has no weight of its own any more.** It once carried a `weight_kg` somebody
+    /// typed on the way into «جاهزة»; nothing was computed from it and it could disagree with the
+    /// lines under it, so it went. This is built back out of what the warehouse actually
+    /// recorded per line.
+    ///
+    /// **Null is «لا يوجد وزن», never «صفر»** — and it covers two cases the screen does not need
+    /// to tell apart: nothing on the order comes off a shelf counted by the kilo, or something
+    /// does and it has not been weighed yet. Either way there is no weight to print, and a
+    /// half-summed one under «الوزن» would be read as the whole parcel's. Absent on the list
+    /// endpoint, which does not carry the lines.
+    @JsonKey(name: 'total_weight') String? totalWeight,
+
     @JsonKey(name: 'placed_at') DateTime? placedAt,
     @JsonKey(name: 'delivered_at') DateTime? deliveredAt,
     @JsonKey(name: 'settled_at') DateTime? settledAt,
@@ -284,6 +300,13 @@ abstract class Order with _$Order {
 
     return hasNote ? '$label — $note' : label;
   }
+
+  /// The weight as one line — «12.5 كيلوغرام» — or null on an order with none to state.
+  ///
+  /// Trimmed like every other quantity the app draws: the three decimals are the column's
+  /// padding, not a precision anybody weighed to. See [totalWeight] for what null means.
+  String? get weightLabel =>
+      totalWeight == null ? null : '${groupedDecimal(totalWeight!)} كيلوغرام';
 
   /// Only charged when we did the design, so the server sends `'0.00'` otherwise.
   bool get hasDesignFee => designFee != '0.00';
