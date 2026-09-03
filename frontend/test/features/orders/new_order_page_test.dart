@@ -315,4 +315,39 @@ void main() {
     );
     expect(find.text('إجمالي البنود (تقديري)'), findsOneWidget);
   });
+
+  testWidgets('the phone sits with the place, under one «الاستلام» heading', (tester) async {
+    // Arrange — where it goes and who answers for it are two halves of one question; the
+    // number used to sit three sections lower under a heading of its own.
+    session.adopt(userWith(['orders.manage']));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('الاستلام'), findsOneWidget);
+    expect(find.text('مكان الاستلام'), findsNothing);
+    final place = tester.getTopLeft(find.text('المدينة')).dy;
+    final phone = tester.getTopLeft(find.widgetWithText(TextField, '0913334444')).dy;
+    final lines = tester.getTopLeft(find.text('البنود')).dy;
+    expect(phone, greaterThan(place));
+    expect(phone, lessThan(lines));
+  });
+
+  testWidgets('adding a product is a small action on the «البنود» heading', (tester) async {
+    // Arrange — not a full-width button under the list, which cost the form a row and read
+    // louder than «إنشاء الطلبية» itself.
+    session.adopt(userWith(['orders.manage']));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — on the same line as the heading.
+    final action = find.widgetWithText(TextButton, 'إضافة منتج');
+    expect(action, findsOneWidget);
+    final heading = tester.getCenter(find.text('البنود')).dy;
+    expect(tester.getCenter(action).dy, moreOrLessEquals(heading, epsilon: 12));
+  });
 }

@@ -363,11 +363,34 @@ class _NewOrderViewState extends State<_NewOrderView> {
                 _Section(title: 'المحل', child: _shops(shops)),
               ],
 
+              // Where it goes and who answers the phone for it, together: they are the two
+              // halves of one question, and the number used to sit three sections lower under a
+              // heading of its own.
               SizedBox(height: 14.h),
-              _Section(title: 'مكان الاستلام', child: _destination(submission)),
+              _Section(
+                title: 'الاستلام',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _destination(submission),
+                    SizedBox(height: 10.h),
+                    _recipient(submission),
+                  ],
+                ),
+              ),
 
               SizedBox(height: 14.h),
-              _Section(title: 'البنود', child: _linesSection(submission)),
+              _Section(
+                title: 'البنود',
+                // On the heading, not a full-width button under the list — see [_Section.action].
+                action: TextButton.icon(
+                  onPressed: _addLine,
+                  icon: Icon(AppIcons.add, size: 18.sp),
+                  label: const Text('إضافة منتج'),
+                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                ),
+                child: _linesSection(submission),
+              ),
 
               // Under the lines, because the lines are what decide whether it is asked at all.
               if (_vendorRequirement.isOffered) ...[
@@ -377,9 +400,6 @@ class _NewOrderViewState extends State<_NewOrderView> {
 
               SizedBox(height: 14.h),
               _Section(title: 'التصميم', child: _design(submission)),
-
-              SizedBox(height: 14.h),
-              _Section(title: 'الاستلام', child: _recipient(submission)),
 
               if (_mayDiscount) ...[
                 SizedBox(height: 14.h),
@@ -529,7 +549,6 @@ class _NewOrderViewState extends State<_NewOrderView> {
             },
             onRemove: () => _removeLine(line),
           ),
-        AppButton.tonal(label: 'إضافة منتج', icon: AppIcons.add, onPressed: _addLine),
         if (itemsError != null) ...[
           SizedBox(height: 6.h),
           Text(itemsError, style: context.textTheme.bodySmall?.copyWith(color: scheme.error)),
@@ -559,22 +578,18 @@ class _NewOrderViewState extends State<_NewOrderView> {
         PlacePickerTile(
           caption: 'المورد',
           // Named when there is one, invited when there is not — and the invitation says
-          // whether the form will send without it.
+          // whether the form will send without it. That word is the whole explanation; the
+          // road the order takes is the server's business and is read off the order afterwards.
           value: _vendor?.name ?? (required ? 'مطلوب' : 'اختياري'),
           isChosen: _vendor != null,
           icon: AppIcons.vendors,
           onTap: _pickVendor,
         ),
-        SizedBox(height: 6.h),
-        Text(
-          error ??
-              (required
-                  ? 'كل بنود الطلبية لدى مورد خارجي — تمرّ بـ«قيد التصنيع» ولا تُخصم من أي مخزن'
-                  : 'بعض البنود لدى مورد خارجي — تحديد المورد اختياري لطلبية مطبوعة'),
-          style: context.textTheme.bodySmall?.copyWith(
-            color: error != null ? scheme.error : scheme.onSurfaceVariant,
-          ),
-        ),
+        // Only the server's refusal, when there is one — nothing is said under the tile otherwise.
+        if (error != null) ...[
+          SizedBox(height: 6.h),
+          Text(error, style: context.textTheme.bodySmall?.copyWith(color: scheme.error)),
+        ],
       ],
     );
   }
@@ -849,21 +864,33 @@ enum _DesignSource {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child});
+  const _Section({required this.title, required this.child, this.action});
 
   final String title;
   final Widget child;
+
+  /// A small control at the far end of the title row — «إضافة منتج» beside «البنود». On the
+  /// heading rather than under the list, so it costs the form no row of its own and is found
+  /// where a reader's eye already is when they decide the list is short.
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ),
+            ?action,
+          ],
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: action == null ? 8.h : 4.h),
         child,
       ],
     );
