@@ -631,15 +631,8 @@ class _NewOrderViewState extends State<_NewOrderView> {
             errorText: submission.designFeeError,
           ),
         ],
-        if (_designSource == _DesignSource.none) ...[
-          SizedBox(height: 6.h),
-          Text(
-            'طلبية بلا تصميم — إعادة طباعة لما اتُّفق عليه، أو أكياس سادة',
-            style: context.textTheme.bodySmall?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ] else ...[
+        // Nothing is said under «بدون تصميم»: the segment is the whole answer.
+        if (_designSource != _DesignSource.none) ...[
           SizedBox(height: 10.h),
           if (_designs.isNotEmpty) ...[
             for (final design in _designs)
@@ -659,16 +652,14 @@ class _NewOrderViewState extends State<_NewOrderView> {
             icon: AppIcons.add,
             onPressed: _pickDesigns,
           ),
-          SizedBox(height: 6.h),
-          Text(
-            designsError ??
-                'من مكتبة العميل، أو ارفع ملفاً جديداً — ويمكن تركها وإضافتها لاحقاً',
-            style: context.textTheme.bodySmall?.copyWith(
-              color: designsError != null
-                  ? context.colorScheme.error
-                  : context.colorScheme.onSurfaceVariant,
+          // Only the server's refusal, when there is one.
+          if (designsError != null) ...[
+            SizedBox(height: 6.h),
+            Text(
+              designsError,
+              style: context.textTheme.bodySmall?.copyWith(color: context.colorScheme.error),
             ),
-          ),
+          ],
         ],
       ],
     );

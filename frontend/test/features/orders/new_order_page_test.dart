@@ -203,12 +203,9 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
+    // Assert — and nothing is said about it either: the segment is the whole answer.
     expect(find.text('اختيار التصميم'), findsNothing);
-    expect(
-      find.text('طلبية بلا تصميم — إعادة طباعة لما اتُّفق عليه، أو أكياس سادة'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('طلبية بلا تصميم'), findsNothing);
   });
 
   testWidgets('an order with no line cannot be sent', (tester) async {
