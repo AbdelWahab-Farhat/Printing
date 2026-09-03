@@ -99,8 +99,8 @@ void main() {
     // Assert — one segment per mode, the row as wide as the fields above it.
     final picker = find.byType(SegmentedButton<ProductionMode>);
     expect(picker, findsOneWidget);
-    expect(find.text('تصميم وطباعة'), findsOneWidget);
-    expect(find.text('بدون طباعة'), findsOneWidget);
+    expect(find.text('مطبوعة'), findsOneWidget);
+    expect(find.text('سادة'), findsWidgets);
     expect(find.text('وسيط'), findsOneWidget);
 
     final fieldWidth = tester.getSize(find.byType(TextField).first).width;
