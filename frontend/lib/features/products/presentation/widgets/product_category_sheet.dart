@@ -360,11 +360,12 @@ class _ProductionModeField extends StatelessWidget {
     );
   }
 
-  /// One word per segment — three of them have to share a phone's width. The server's own
-  /// longer label is what the card prints.
+  /// Short enough for three to share a phone's width, and each an answer to «طريقة التنفيذ»
+  /// rather than a name for the goods: «مطبوعة» and «سادة» were what the two old headings were
+  /// *called*, not what is done to them. The server's own longer label is what the card prints.
   static String _shortLabel(ProductionMode mode) => switch (mode) {
-    ProductionMode.inHouse => 'مطبوعة',
-    ProductionMode.none => 'سادة',
+    ProductionMode.inHouse => 'تصميم وطباعة',
+    ProductionMode.none => 'بدون طباعة',
     ProductionMode.outsourced => 'وسيط',
     ProductionMode.unknown => mode.label,
   };
