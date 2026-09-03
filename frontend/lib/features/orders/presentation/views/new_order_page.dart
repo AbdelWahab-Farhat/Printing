@@ -489,6 +489,11 @@ class _NewOrderViewState extends State<_NewOrderView> {
                 caption: 'المدينة',
                 value: city?.name ?? 'مطلوبة',
                 isChosen: city != null,
+                // The delivery price, inside the box of the city it comes from. The server
+                // adds it to the total; nothing here needs to say so.
+                trailing: city != null && city.hasDeliveryPrice
+                    ? '${city.deliveryPrice!.grouped} د.ل'
+                    : null,
                 onTap: _pickCity,
               ),
             ),
@@ -505,16 +510,11 @@ class _NewOrderViewState extends State<_NewOrderView> {
             ),
           ],
         ),
-        SizedBox(height: 6.h),
-        Text(
-          error ??
-              (city != null && city.hasDeliveryPrice
-                  ? 'سعر التوصيل ${city.deliveryPrice!.grouped} د.ل، يضيفه الخادم إلى الإجمالي'
-                  : 'سعر التوصيل يأتي من المدينة المختارة'),
-          style: context.textTheme.bodySmall?.copyWith(
-            color: error != null ? scheme.error : scheme.onSurfaceVariant,
-          ),
-        ),
+        // Only the server's refusal, when there is one.
+        if (error != null) ...[
+          SizedBox(height: 6.h),
+          Text(error, style: context.textTheme.bodySmall?.copyWith(color: scheme.error)),
+        ],
       ],
     );
   }

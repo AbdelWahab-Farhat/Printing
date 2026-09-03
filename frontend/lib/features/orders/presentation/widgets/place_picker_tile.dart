@@ -21,8 +21,16 @@ class PlacePickerTile extends StatelessWidget {
     required this.isChosen,
     required this.onTap,
     this.icon,
+    this.trailing,
     super.key,
   });
+
+  /// A short figure at the far end of the tile — «15 د.ل» beside the city it belongs to.
+  ///
+  /// Drawn in the primary colour, so it reads as a fact about the answer rather than as a
+  /// second answer: the price comes *from* the city and lives in its box, not on a line of
+  /// prose under it that has to say so.
+  final String? trailing;
 
   /// «المدينة» / «المنطقة» — which of the two this is, said once and quietly.
   final String caption;
@@ -85,6 +93,17 @@ class PlacePickerTile extends StatelessWidget {
                   ],
                 ),
               ),
+              if (trailing case final figure?) ...[
+                SizedBox(width: 6.w),
+                Text(
+                  figure,
+                  textDirection: TextDirection.ltr,
+                  style: context.textTheme.labelMedium?.copyWith(
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

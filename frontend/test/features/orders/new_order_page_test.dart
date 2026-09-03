@@ -297,7 +297,9 @@ void main() {
     expect(find.widgetWithText(TextField, '0925556666'), findsOneWidget);
   });
 
-  testWidgets('the delivery price is described, never added up here', (tester) async {
+  testWidgets('the delivery price is never added up here, and never explained', (
+    tester,
+  ) async {
     // Arrange
     session.adopt(userWith(['orders.manage']));
 
@@ -305,8 +307,10 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — the estimate covers the lines only, and says it is an estimate.
-    expect(find.text('سعر التوصيل يأتي من المدينة المختارة'), findsOneWidget);
+    // Assert — no sentence about the delivery price under the place: when a city is chosen
+    // its price sits inside the city's own tile (see `PlacePickerTile.trailing`), and before
+    // one is chosen there is nothing to say. The estimate covers the lines only, and says so.
+    expect(find.textContaining('سعر التوصيل'), findsNothing);
 
     await tester.dragUntilVisible(
       find.text('إجمالي البنود (تقديري)'),

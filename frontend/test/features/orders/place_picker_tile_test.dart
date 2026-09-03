@@ -136,4 +136,44 @@ void main() {
     expect(text.maxLines, 1);
     expect(text.overflow, TextOverflow.ellipsis);
   });
+
+  testWidgets('a figure at the far end wears the primary colour', (tester) async {
+    // Arrange — the delivery price, inside the box of the city it comes from, rather than on a
+    // line of prose under the pair that has to say where it came from.
+    await tester.pumpWidget(
+      host(
+        PlacePickerTile(
+          caption: 'المدينة',
+          value: 'طرابلس',
+          isChosen: true,
+          trailing: '15 د.ل',
+          onTap: () {},
+        ),
+      ),
+    );
+
+    // Act
+    await tester.pump();
+
+    // Assert
+    final figure = find.text('15 د.ل');
+    expect(figure, findsOneWidget);
+    final context = tester.element(figure);
+    expect(tester.widget<Text>(figure).style?.color, Theme.of(context).colorScheme.primary);
+    // At the far end: past the value in reading order.
+    expect(tester.getCenter(figure).dx, lessThan(tester.getCenter(find.text('طرابلس')).dx));
+  });
+
+  testWidgets('a tile with nothing to add says nothing at the end', (tester) async {
+    // Arrange
+    await tester.pumpWidget(
+      host(PlacePickerTile(caption: 'المدينة', value: 'مطلوبة', isChosen: false, onTap: () {})),
+    );
+
+    // Act
+    await tester.pump();
+
+    // Assert
+    expect(find.textContaining('د.ل'), findsNothing);
+  });
 }
