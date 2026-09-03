@@ -6,11 +6,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// What was added to the order that no line on it describes — «تغليف خاص — علبة كرتون مزدوجة».
 ///
-/// **A section of its own, beside «الحساب» rather than inside it.** The account answers «كيف
-/// وصلنا إلى هذا الإجمالي», and the charge is one of its lines — it is printed there, in the
-/// order the server adds it, or the arithmetic on screen would not come out. What that line
-/// cannot carry is *why*: a category and a sentence somebody typed do not fit in the gap between
-/// a label and a number. So the total says how much, and this says what for.
+/// **«تعديل الطلبية»'s, and no longer the order screen's.** The account there prints the charge
+/// and names it on the same line — one charge answered in one place — so this is what stands
+/// above the button that argues with it: what is being changed, before it is changed.
 ///
 /// **The words are [Order.additionalCostCaption]'s and not this widget's.** The same sentence
 /// goes on the PDF and into the WhatsApp message; three surfaces each joining a label to a note

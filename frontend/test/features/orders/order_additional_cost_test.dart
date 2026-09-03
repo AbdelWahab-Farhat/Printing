@@ -185,6 +185,44 @@ void main() {
     expect(find.text('+ 10.00'), findsOneWidget);
   });
 
+  testWidgets('the account names the charge on the line it belongs to, once', (tester) async {
+    // Arrange
+    await tester.pumpWidget(
+      host(
+        OrderTotals(
+          order: order(
+            cost: '10.00',
+            reason: AdditionalCostReason.transport,
+            label: 'نقل',
+            note: 'سيارة أجرة',
+          ),
+        ),
+      ),
+    );
+
+    // Act
+    await tester.pump();
+
+    // Assert — «كم» and «على ماذا» are one fact and are read in one place. A second section
+    // repeating the same figure under the account was the same answer twice.
+    expect(find.text('التكلفة الإضافية'), findsOneWidget);
+    expect(find.text('نقل — سيارة أجرة'), findsOneWidget);
+    expect(find.text('+ 10.00'), findsOneWidget);
+  });
+
+  testWidgets('a charge the server sent with no category still gets its line', (tester) async {
+    // Arrange — no reason and no note, which the server's own validation refuses; the figure
+    // still has to be in the column or «الإجمالي» stops adding up.
+    await tester.pumpWidget(host(OrderTotals(order: order(cost: '10.00'))));
+
+    // Act
+    await tester.pump();
+
+    // Assert
+    expect(find.text('التكلفة الإضافية'), findsOneWidget);
+    expect(find.text('+ 10.00'), findsOneWidget);
+  });
+
   testWidgets('an order with no charge draws no line for one', (tester) async {
     // Arrange
     await tester.pumpWidget(host(OrderTotals(order: order())));

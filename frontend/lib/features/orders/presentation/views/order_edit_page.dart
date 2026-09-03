@@ -10,17 +10,21 @@ import 'package:dayaa/features/cities/models/city.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/additional_cost_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_additional_cost.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
+import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-/// Everything about one order that can be changed: its lines, its discount, and its artwork.
+/// Everything about one order that can be changed: its lines, its discount, the charge added to
+/// it, and its artwork.
 ///
 /// **A screen, not a sheet.** It was a sheet while it held two numbers; it now holds a design
 /// picker that opens a sheet of its own, and a sheet stacked on a sheet under a keyboard is
@@ -95,6 +99,45 @@ class _OrderEditViewState extends State<_OrderEditView> {
     }
   }
 
+  /// Charges the customer for something no line on the order describes.
+  ///
+  /// **A sheet rather than fields on this form**, because it is a number, a category and a
+  /// sentence, and the person filling it in has just agreed it at the counter. The send happens
+  /// here and not in the sheet — a form's answer is what was typed, and what to do about a
+  /// refusal belongs to the screen that has somewhere to show it.
+  ///
+  /// **Sent on its own, not with «حفظ التعديلات».** `PUT` replaces the whole order and the
+  /// repository re-reads it first, so the fields this sheet never touches go back as they are —
+  /// see [OrderRepository.updateInvoice]. Quantities typed and not yet saved live in
+  /// [OrderInvoiceCubit] and are untouched by it, exactly as adding a version is.
+  Future<void> _editAdditionalCost() async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final draft = await showAdditionalCostSheet(context: context, order: order);
+    if (draft == null || !mounted) return;
+
+    final result = await sl<UpdateOrderInvoice>()(
+      order.id,
+      additionalCost: draft.amount,
+      additionalCostReason: draft.reason,
+      additionalCostNote: draft.note,
+    );
+
+    if (!mounted) return;
+
+    result.fold(
+      // The server's own Arabic — «سبب التكلفة الإضافية مطلوب» names the field, and «ليس لديك
+      // صلاحية…» names the grant. Neither could be written here without guessing.
+      context.showFailure,
+      (updated) {
+        cubit.replace(updated);
+        setState(() => _changed = true);
+      },
+    );
+  }
+
   Future<void> _reviewDesign(
     OrderDesign design, {
     required bool isApproved,
@@ -160,6 +203,14 @@ class _OrderEditViewState extends State<_OrderEditView> {
                 // A third line, and later than the other two: the address stays correctable
                 // until somebody is driving to it.
                 mayEditDestination: session.can(AppPermission.manageOrders),
+                // **`is_closed`, which is the server's own line rather than one chosen here.**
+                // `UpdateOrder` refuses a closed order and accepts every other, so a button
+                // drawn on that condition never leads to a refusal — and the grant is the
+                // charge's own, not the discount's, because the two are different acts.
+                onEditAdditionalCost:
+                    session.can(AppPermission.addOrderAdditionalCost) && !order.isClosed
+                    ? _editAdditionalCost
+                    : null,
                 onSaved: () => setState(() => _changed = true),
                 // Both lines come from the server — `designs_are_editable` closes when the
                 // press starts, which `items_are_editable` deliberately does not.
@@ -189,6 +240,7 @@ class _Form extends StatelessWidget {
     required this.mayDiscount,
     required this.mayEditItems,
     required this.mayEditDestination,
+    required this.onEditAdditionalCost,
     required this.onSaved,
     required this.onAddDesign,
     required this.onReviewDesign,
@@ -205,6 +257,11 @@ class _Form extends StatelessWidget {
   /// The address closes later than the lines do — only when somebody is driving to it — so it
   /// gets its own permission check rather than riding on [mayEditItems].
   final bool mayEditDestination;
+
+  /// Null without `orders.additional_cost`, and on an order the server would refuse to edit —
+  /// see the call site for the line, which is the server's own. Its own grant, so a clerk who
+  /// may correct a quantity is not thereby allowed to add money to the invoice.
+  final Future<void> Function()? onEditAdditionalCost;
 
   final VoidCallback onSaved;
   final Future<void> Function()? onAddDesign;
@@ -281,6 +338,41 @@ class _Form extends StatelessWidget {
                 ],
                 SizedBox(height: 16.h),
                 _Estimate(total: state.estimatedTotal),
+
+                // **Under the estimate, never above it.** The charge is not part of that
+                // arithmetic — it is sent on its own the moment the sheet is answered, and the
+                // total it lands in is the server's — so a line for it above «الإجمالي
+                // التقريبي» would read as one of the figures being added up there.
+                //
+                // **Here rather than on the order screen**, which is what «تعديل» means: the
+                // order screen prints the charge inside «الحساب» and names it on that line, and
+                // every way of changing the invoice is on this one screen.
+                if (onEditAdditionalCost case final edit?) ...[
+                  SizedBox(height: 16.h),
+                  _Section(
+                    title: 'التكلفة الإضافية',
+                    child: Column(
+                      children: [
+                        // What is being argued with, in the words the order screen and the
+                        // invoice use for it — see [OrderAdditionalCost].
+                        if (order.hasAdditionalCost) ...[
+                          OrderAdditionalCost(order: order),
+                          SizedBox(height: 14.h),
+                        ],
+                        AppButton.tonal(
+                          // The word changes with the order, because the two are different
+                          // acts: one adds a charge, the other argues with one already on the
+                          // invoice.
+                          label: order.hasAdditionalCost
+                              ? 'تعديل التكلفة الإضافية'
+                              : 'إضافة تكلفة إضافية',
+                          icon: order.hasAdditionalCost ? AppIcons.edit : AppIcons.add,
+                          onPressed: edit,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
                 // **Only in «قيد التصميم», and absent everywhere else.** The status is named
                 // after this work: outside it there is nothing to do here — a «جديدة» order

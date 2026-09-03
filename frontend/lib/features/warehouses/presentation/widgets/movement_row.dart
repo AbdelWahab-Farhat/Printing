@@ -5,132 +5,149 @@ import 'package:dayaa/features/warehouses/models/stock_movement.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// One line of the ledger.
+/// One line of the feed — the whole workshop's ledger, or one warehouse's.
 ///
-/// **The kind decides the colour, and the words come from the server.** Stock arriving is the
-/// only thing here worth reading as good news; a fulfillment and a downward adjustment both
-/// take stock away and are drawn alike, because to a storekeeper checking a balance they are
-/// the same event with different paperwork.
+/// Read the way [LedgerRow] is read, because it is the same book at a wider zoom: on the
+/// reading side **what moved** (the shelf, by code and name), **what happened** to it and for
+/// which order, and the time and the hand that signed it; on the other, **how much, with its
+/// sign, in its unit**. The day is on the header above the group, not repeated on every row.
+///
+/// **Big type, few words, no card.** The old feed drew three lines of caption-size type inside
+/// a box, and the number that mattered was unsigned and unitless: «1.6» of what, which way?
+/// Here the number is the largest thing on the row, its unit sits under it, and a row that came
+/// out of an order opens that order when tapped — the thing a reader of the feed most often
+/// wants next.
 class MovementRow extends StatelessWidget {
-  const MovementRow({required this.movement, this.showTitle = true, super.key});
+  const MovementRow({required this.movement, this.onOpenOrder, super.key});
 
   final StockMovement movement;
 
-  /// Whether to name the shelf on the row. False on a feed that is *about* one shelf — there the
-  /// header says it once, and repeating it per row is a column of identical words.
-  final bool showTitle;
+  /// Called with the order's id when a row that belongs to an order is tapped. A row with no
+  /// order behind it is not tappable at all, whatever is passed here.
+  final ValueChanged<int>? onOpenOrder;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final (icon, tone) = movementLook(context, movement.movementType);
+    final quiet = context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
+    final orderId = movement.orderId;
+    final open = onOpenOrder;
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
-      ),
+    final row = Padding(
+      padding: EdgeInsets.symmetric(vertical: 14.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18.sp, color: tone),
-          SizedBox(width: 10.w),
+          Padding(
+            padding: EdgeInsets.only(top: 4.h),
+            child: Icon(icon, size: 20.sp, color: tone),
+          ),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (showTitle) ...[
-                  Row(
-                    children: [
-                      // The shelf's code, in the accent a code wears everywhere in this app —
-                      // «S7» is what is said out loud and searched for. Not a product's: the
-                      // pile is shared, and this row moved all of it at once.
-                      if (movement.code case final code?) ...[
-                        Text(
-                          code,
-                          textDirection: TextDirection.ltr,
-                          style: context.textTheme.labelMedium?.copyWith(
-                            color: scheme.primary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        SizedBox(width: 6.w),
-                      ],
-                      Flexible(
-                        child: Text(
-                          movement.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                Row(
+                  children: [
+                    // The shelf's code, in the accent a code wears everywhere in this app —
+                    // «S7» is what is said out loud and searched for. Not a product's: the
+                    // pile is shared, and this row moved all of it at once.
+                    if (movement.code case final code?) ...[
+                      Text(
+                        code,
+                        textDirection: TextDirection.ltr,
+                        style: context.textTheme.titleMedium?.copyWith(
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
+                      SizedBox(width: 8.w),
                     ],
-                  ),
-                  SizedBox(height: 2.h),
-                ],
+                    Flexible(
+                      child: Text(
+                        movement.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4.h),
                 Text(
-                  // «توريد · من المخزن الرئيسي ← صالة العرض» — what happened and where, in one
-                  // line, with the halves that do not exist simply absent.
-                  [
-                    movement.movementTypeLabel,
-                    if (movement.route.isNotEmpty) movement.route,
-                  ].join(' · '),
+                  // «صرف لطلب #1242 · من المخزن الرئيسي» — what happened, for what, and where,
+                  // in one line, with the halves that do not exist simply absent.
+                  _what(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                  style: quiet,
                 ),
-                if (_meta(movement) case final meta when meta.isNotEmpty) ...[
-                  SizedBox(height: 2.h),
-                  Text(
-                    meta,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
-                  ),
+                if (_whenAndWho() case final line when line.isNotEmpty) ...[
+                  SizedBox(height: 4.h),
+                  Text(line, maxLines: 1, overflow: TextOverflow.ellipsis, style: quiet),
                 ],
                 if (movement.notes case final notes?) ...[
                   SizedBox(height: 4.h),
-                  Text(
-                    notes,
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
+                  Text(notes, style: quiet?.copyWith(fontStyle: FontStyle.italic)),
                 ],
               ],
             ),
           ),
-          SizedBox(width: 8.w),
-          Text(
-            // Signed for the warehouse the feed was read for, when it was read for one: the
-            // direction is otherwise a preposition halfway along the line above.
-            movement.signedQuantityLabel ?? movement.quantityLabel,
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800, color: tone),
+          SizedBox(width: 12.w),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                movement.directedQuantityLabel,
+                textDirection: TextDirection.ltr,
+                style: context.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: tone,
+                  height: 1.1,
+                ),
+              ),
+              if (movement.unitLabel case final unit?) ...[
+                SizedBox(height: 2.h),
+                Text(unit, style: quiet),
+              ],
+            ],
           ),
+          if (orderId != null && open != null) ...[
+            SizedBox(width: 4.w),
+            Padding(
+              padding: EdgeInsets.only(top: 6.h),
+              child: Icon(AppIcons.forward, size: 16.sp, color: scheme.onSurfaceVariant),
+            ),
+          ],
         ],
       ),
     );
+
+    if (orderId == null || open == null) return row;
+
+    return InkWell(onTap: () => open(orderId), child: row);
   }
 
-  /// When it happened and who recorded it — the two questions asked of a ledger line that the
-  /// quantity does not answer.
-  String _meta(StockMovement movement) => [
-    if (movement.createdAt case final at?) _stamp(at),
-    if (movement.employee?.name case final name?) 'بواسطة $name',
-    if (movement.referenceId case final reference?) 'مرجع #$reference',
-  ].join(' · ');
+  /// «صرف لطلب #1242 · من المخزن الرئيسي», «تحويل داخلي · المخزن الرئيسي ← مخزن التشغيل»,
+  /// «توريد · إلى المخزن الرئيسي».
+  String _what() => [_kind(), if (movement.route.isNotEmpty) movement.route].join(' · ');
 
-  /// «6 أغسطس 2026 · 2:30 م», in the device's own local time — the one stamp the whole app
-  /// draws, because a ledger is read as "in what order, and how far apart".
-  String _stamp(DateTime at) => at.stampLabel;
+  /// The kind with its reference. An issue and a reversal already say «طلب» in their own
+  /// words, so only the number is added — «صرف لطلب #1242» rather than «صرف لطلب · طلب #1242»;
+  /// anything else names what the number is the number of: «تلف أثناء الإنتاج · طلب #1229»,
+  /// «توريد · مرجع #5».
+  String _kind() => switch ((movement.movementType, movement.referenceId)) {
+    (_, null) => movement.movementTypeLabel,
+    (MovementType.orderFulfillment || MovementType.orderReversal, final reference) =>
+      '${movement.movementTypeLabel} #$reference',
+    _ => '${movement.movementTypeLabel} · ${movement.referenceLabel}',
+  };
 
+  /// The day is on the header above the group; the row keeps only the time.
+  String _whenAndWho() => [?movement.createdAt?.timeLabel, ?movement.employee?.name].join(' · ');
 }
 
 /// The glyph and colour a kind of movement wears — here and on the ledger, so the two feeds

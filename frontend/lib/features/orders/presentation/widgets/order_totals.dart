@@ -36,10 +36,17 @@ class OrderTotals extends StatelessWidget {
         // A reader checking the total works down the column, and a charge printed under the
         // subtraction it comes before turns a correct total into an arithmetic mistake.
         //
-        // The label alone here: what the charge was *for* is a category and often a sentence,
-        // and that is «التكلفة الإضافية»'s own section under this one.
+        // **What it was for is on the same line, not in a section under this one.** «كم» and
+        // «على ماذا» are one fact about one charge; answering them in two places printed the
+        // same figure twice, one card apart, and left the reader checking whether they matched.
+        // The words are [Order.additionalCostCaption]'s — the same sentence the invoice and the
+        // WhatsApp message carry, which is what stops one charge being described three ways.
         if (order.hasAdditionalCost)
-          _Line(label: 'التكلفة الإضافية', value: '+ ${order.additionalCost.grouped}'),
+          _Line(
+            label: 'التكلفة الإضافية',
+            note: order.additionalCostCaption,
+            value: '+ ${order.additionalCost.grouped}',
+          ),
         if (order.hasDiscount)
           _Line(label: 'الخصم', value: '- ${order.discount.grouped}', tone: scheme.error),
         Padding(
@@ -56,12 +63,20 @@ class _Line extends StatelessWidget {
   const _Line({
     required this.label,
     required this.value,
+    this.note,
     this.tone,
     this.isTotal = false,
   });
 
   final String label;
   final String value;
+
+  /// What this line was for, when the label alone does not say it — «نقل — سيارة أجرة».
+  ///
+  /// Null on every line whose label is the whole answer, which is all of them but the added
+  /// charge: «المنتجات» needs no explaining and a note under it would be a sentence invented to
+  /// fill a slot.
+  final String? note;
   final Color? tone;
   final bool isTotal;
 
@@ -76,13 +91,36 @@ class _Line extends StatelessWidget {
       padding: EdgeInsets.only(bottom: 6.h),
       child: Row(
         children: [
-          Text(
-            label,
-            style: style?.copyWith(
-              color: isTotal ? null : scheme.onSurfaceVariant,
+          // Expanded rather than a `Spacer` beside a bare label: the note is a clerk's own
+          // sentence, so the label side has to be the part that gives way, and the number stays
+          // where the column expects it however long the sentence runs.
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: style?.copyWith(
+                    color: isTotal ? null : scheme.onSurfaceVariant,
+                  ),
+                ),
+                if (note case final note?)
+                  Padding(
+                    padding: EdgeInsets.only(top: 2.h),
+                    child: Text(
+                      note,
+                      // Two lines, because «أخرى» puts the clerk's own sentence here.
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
-          const Spacer(),
+          SizedBox(width: 8.w),
           Text(
             // Grouped by the caller: «الخصم» carries a leading sign, and the separator is added
             // to the number rather than to the sentence around it.

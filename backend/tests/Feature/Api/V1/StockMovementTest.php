@@ -741,6 +741,28 @@ class StockMovementTest extends TestCase
             ]);
     }
 
+    public function test_a_ledger_row_says_what_its_quantity_is_counted_in(): void
+    {
+        // Arrange — a shelf counted by weight, where «1.6» on its own could be anything
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->weighedVariant();
+        $this->withHeaders($this->manager())->postJson('/api/v1/stock-movements/arrivals', [
+            'stock_item_id' => $variant->id,
+            'to_warehouse_id' => $warehouse->id,
+            'quantity' => 1.6,
+        ]);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/stock-movements');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.0.quantity', '1.600')
+            ->assertJsonPath('data.0.unit', 'kilogram')
+            ->assertJsonPath('data.0.unit_label', 'كيلوغرام');
+    }
+
     public function test_reading_the_ledger_needs_authentication(): void
     {
         // Act

@@ -181,11 +181,11 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
 
 const _$OrderStatusEnumMap = {
   OrderStatus.taken: 'new',
-  OrderStatus.readyToPrint: 'ready_to_print',
+  OrderStatus.shortage: 'shortage',
   OrderStatus.designing: 'designing',
+  OrderStatus.readyToPrint: 'ready_to_print',
   OrderStatus.printing: 'printing',
   OrderStatus.ready: 'ready',
-  OrderStatus.shortage: 'shortage',
   OrderStatus.officePickup: 'office_pickup',
   OrderStatus.outForDelivery: 'out_for_delivery',
   OrderStatus.returnedCourier: 'returned_courier',

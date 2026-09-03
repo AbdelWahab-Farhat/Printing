@@ -7,23 +7,28 @@ import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:dayaa/features/orders/presentation/views/order_detail_page.dart';
+import 'package:dayaa/features/orders/presentation/views/order_edit_page.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_additional_cost.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_totals.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
+import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-/// The way to set the charge, standing where the charge itself is printed.
+/// The way to set the charge, on «تعديل الطلبية» with the rest of what can be changed.
 ///
-/// **Inside «الحساب», not on the dial.** The dial acts on the *order* — it moves it, edits it,
-/// takes money; this argues with one figure on its invoice, and the person about to change it is
-/// already reading the column it is in. Same reasoning as «تسجيل تلف» living on the line it
-/// spoils rather than on the dial.
+/// **Changed on the edit screen, read on the order screen** — the same split the artwork
+/// follows. The order screen prints the figure inside «الحساب» and names it underneath, because
+/// that is the column it belongs to; the button that argues with it lives where every other
+/// correction to the invoice does, and the order screen keeps one door onto editing instead of
+/// two.
 ///
 /// Arrange - Act - Assert throughout.
 class _MockOrderRepository extends Mock implements OrderRepository {}
@@ -80,6 +85,11 @@ void main() {
             ),
           ),
       )
+      ..registerLazySingleton<UpdateOrderInvoice>(() => UpdateOrderInvoice(repository))
+      ..registerFactoryParam<OrderInvoiceCubit, Order, void>(
+        (order, _) =>
+            OrderInvoiceCubit(order: order, updateInvoice: sl<UpdateOrderInvoice>()),
+      )
       ..registerFactoryParam<OrderDetailCubit, int, void>(
         (orderId, _) => OrderDetailCubit(
           orderId: orderId,
@@ -90,39 +100,44 @@ void main() {
       );
   }
 
-  Widget host() => ScreenUtilInit(
+  Widget host(Widget page) => ScreenUtilInit(
     designSize: const Size(430, 932),
-    builder: (context, _) => const MaterialApp(
-      locale: Locale('ar'),
-      supportedLocales: [Locale('ar')],
-      localizationsDelegates: [
+    builder: (context, _) => MaterialApp(
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar')],
+      localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: OrderDetailPage(orderId: 55),
+      home: page,
     ),
   );
 
+  Widget edit() => host(const OrderEditPage(orderId: 55));
+
+  Widget detail() => host(const OrderDetailPage(orderId: 55));
+
   tearDown(Injector.reset);
 
-  testWidgets('it stands under the column it changes', (tester) async {
+  testWidgets('it stands on the edit screen, spanning it', (tester) async {
     // Arrange
     await sign(['orders.view', 'orders.additional_cost'], order());
 
     // Act
-    await tester.pumpWidget(host());
+    await tester.pumpWidget(edit());
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.byType(OrderTotals), 200);
-    final totals = tester.getRect(find.byType(OrderTotals));
-    final button = tester.getRect(find.widgetWithText(AppButton, 'إضافة تكلفة إضافية'));
+    final button = find.widgetWithText(AppButton, 'إضافة تكلفة إضافية');
+    await tester.scrollUntilVisible(button, 200);
 
-    // Assert — inside «الحساب», directly under «الإجمالي».
-    expect(button.top, greaterThanOrEqualTo(totals.bottom));
-    expect(button.width, closeTo(totals.width, 1));
+    // Assert — the section's whole width, like every other action in the app.
+    expect(button, findsOneWidget);
+    expect(tester.getRect(button).width, greaterThan(300));
   });
 
-  testWidgets('an order already carrying a charge is argued with, not added to', (tester) async {
+  testWidgets('an order already carrying a charge is argued with, not added to', (
+    tester,
+  ) async {
     // Arrange
     await sign(
       ['orders.view', 'orders.additional_cost'],
@@ -130,13 +145,18 @@ void main() {
     );
 
     // Act
-    await tester.pumpWidget(host());
+    await tester.pumpWidget(edit());
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.byType(OrderTotals), 200);
+    await tester.scrollUntilVisible(
+      find.widgetWithText(AppButton, 'تعديل التكلفة الإضافية'),
+      200,
+    );
 
-    // Assert — the word says which of the two acts this is.
+    // Assert — the word says which of the two acts this is, and the charge being argued with
+    // is named above it.
     expect(find.text('تعديل التكلفة الإضافية'), findsOneWidget);
     expect(find.text('إضافة تكلفة إضافية'), findsNothing);
+    expect(find.text('نقل'), findsOneWidget);
   });
 
   testWidgets('it opens the sheet, seeded with what the order carries', (tester) async {
@@ -145,7 +165,7 @@ void main() {
       ['orders.view', 'orders.additional_cost'],
       order(cost: '10.00', reason: AdditionalCostReason.specialPackaging),
     );
-    await tester.pumpWidget(host());
+    await tester.pumpWidget(edit());
     await tester.pumpAndSettle();
 
     // Act
@@ -166,12 +186,14 @@ void main() {
     expect(find.text('10'), findsOneWidget);
   });
 
-  testWidgets('without the grant there is no button, and no dial arm either', (tester) async {
+  testWidgets('without the grant there is no button, and no section either', (
+    tester,
+  ) async {
     // Arrange — reading an order says nothing about being allowed to charge for one.
     await sign(['orders.view'], order());
 
     // Act
-    await tester.pumpWidget(host());
+    await tester.pumpWidget(edit());
     await tester.pumpAndSettle();
 
     // Assert — absent, not greyed.
@@ -186,10 +208,35 @@ void main() {
     await sign(['orders.view', 'orders.additional_cost'], order(isClosed: true));
 
     // Act
-    await tester.pumpWidget(host());
+    await tester.pumpWidget(edit());
     await tester.pumpAndSettle();
 
     // Assert
     expect(find.text('إضافة تكلفة إضافية'), findsNothing);
+  });
+
+  testWidgets('the order screen prints the charge and offers no button for it', (
+    tester,
+  ) async {
+    // Arrange — the grant is held, so an absent button is a decision about the screen and not
+    // about this reader.
+    await sign(
+      ['orders.view', 'orders.additional_cost'],
+      order(cost: '10.00', reason: AdditionalCostReason.transport),
+    );
+
+    // Act
+    await tester.pumpWidget(detail());
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.byType(OrderTotals), 200);
+
+    // Assert — «الحساب» adds up and names the charge on the line it belongs to. The section
+    // that used to repeat the figure a card below it is gone, so «نقل» is read once; changing
+    // the charge is still «تعديل الطلبية»'s business.
+    expect(find.byType(OrderTotals), findsOneWidget);
+    expect(find.byType(OrderAdditionalCost), findsNothing);
+    expect(find.text('نقل'), findsOneWidget);
+    expect(find.text('إضافة تكلفة إضافية'), findsNothing);
+    expect(find.text('تعديل التكلفة الإضافية'), findsNothing);
   });
 }

@@ -35,8 +35,27 @@ use App\Domain\Identity\Enums\PermissionName;
  */
 enum OrderStatus: string
 {
+    // ── the six the workshop lives in, in the order the board reads them ─────────────────────
+    // **Two cards to a row on the phone, and each row is a pair.** «جديدة»/«نواقص» is what came
+    // in beside what could not be started; «قيد التصميم»/«جاهزة للطباعة» is the artwork beside
+    // the queue it feeds; «قيد الطباعة»/«جاهزة» is the press beside its shelf. That is the shop
+    // asking «ما الذي عندي الآن؟», and it is not the order the state machine walks — «جاهزة
+    // للطباعة» comes *before* «قيد التصميم» in {@see allowedNext()} and after it here. Both are
+    // right: one answers what may follow what, the other answers what a person reads down a
+    // phone. The app holds no list of its own, so this sequence is the board — see
+    // `HomeSummaryResource`.
+
     /** Taken, not started. The only status nothing leads back to. */
     case New = 'new';
+
+    /**
+     * The stock to start the job is not there. Reachable from «جديدة» and nowhere else — it
+     * describes an order that could not be begun, not a run that came out short.
+     */
+    case Shortage = 'shortage';
+
+    /** Artwork is being agreed with the customer — see {@see OrderDesignStatus}. */
+    case Designing = 'designing';
 
     /**
      * Prepped by the warehouse and handed to the press.
@@ -52,19 +71,10 @@ enum OrderStatus: string
      */
     case ReadyToPrint = 'ready_to_print';
 
-    /** Artwork is being agreed with the customer — see {@see OrderDesignStatus}. */
-    case Designing = 'designing';
-
     case Printing = 'printing';
 
     /** Finished and on the shelf, waiting to leave. */
     case Ready = 'ready';
-
-    /**
-     * The stock to start the job is not there. Reachable from «جديدة» and nowhere else — it
-     * describes an order that could not be begun, not a run that came out short.
-     */
-    case Shortage = 'shortage';
 
     /** Waiting at one of our branches for the customer to collect. */
     case OfficePickup = 'office_pickup';
@@ -84,12 +94,9 @@ enum OrderStatus: string
     case Cancelled = 'cancelled';
 
     // ── the two that are over ────────────────────────────────────────────────────────────────
-    // **Last, and last on purpose.** This order is what the home screen draws: the app maps
-    // `cases()` straight to its board, so the sequence here is the sequence a person reads down
-    // the phone. The statuses that still need somebody to *do* something come first, and the
-    // two that are already finished sit at the bottom where a full board can be skimmed past
-    // them. It is no longer the order the state machine walks — {@see allowedNext()} is, and it
-    // says so in one place.
+    // **Last, and last on purpose.** Everything above still needs somebody to do something; a
+    // full board is skimmed past the finished work rather than through it. See the note at the
+    // top of the cases for why this sequence is a reading order rather than the machine's.
 
     /**
      * The customer has it. Closed to editing, but not finished: the money it was sent out to

@@ -21,6 +21,8 @@ _StockMovement _$StockMovementFromJson(
   item: json['stock_item'] == null
       ? null
       : StockItemRef.fromJson(json['stock_item'] as Map<String, dynamic>),
+  unit: json['unit'] as String?,
+  unitLabel: json['unit_label'] as String?,
   fromWarehouseId: (json['from_warehouse_id'] as num?)?.toInt(),
   fromWarehouse: json['from_warehouse'] == null
       ? null
@@ -53,6 +55,8 @@ Map<String, dynamic> _$StockMovementToJson(_StockMovement instance) =>
       'quantity': instance.quantity,
       'stock_item_id': instance.stockItemId,
       'stock_item': instance.item?.toJson(),
+      'unit': instance.unit,
+      'unit_label': instance.unitLabel,
       'from_warehouse_id': instance.fromWarehouseId,
       'from_warehouse': instance.fromWarehouse?.toJson(),
       'to_warehouse_id': instance.toWarehouseId,

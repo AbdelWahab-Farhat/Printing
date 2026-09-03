@@ -66,6 +66,12 @@ abstract class StockMovement with _$StockMovement {
     @JsonKey(name: 'stock_item_id') required int stockItemId,
     @JsonKey(name: 'stock_item') StockItemRef? item,
 
+    /// What [quantity] is counted in — «قطعة», «كيلوغرام». On the row itself rather than on
+    /// [item], because a feed that mixes bags and kilos is not readable without it and «1.6»
+    /// on its own is not a number. Null on a row returned straight from a write.
+    String? unit,
+    @JsonKey(name: 'unit_label') String? unitLabel,
+
     @JsonKey(name: 'from_warehouse_id') int? fromWarehouseId,
     @JsonKey(name: 'from_warehouse') MovementPlace? fromWarehouse,
     @JsonKey(name: 'to_warehouse_id') int? toWarehouseId,
@@ -139,6 +145,41 @@ abstract class StockMovement with _$StockMovement {
         ? '−${groupedDecimal(signed.substring(1))}'
         : '+${groupedDecimal(signed)}';
   }
+
+  /// The quantity with the direction the whole workshop sees, for a feed no warehouse was
+  /// named on and the server therefore sent no sign: `+` for stock entering the business, `−`
+  /// for stock leaving it, and bare for a transfer, which changes no total — it is the same
+  /// stock in a different room. [signedQuantityLabel] wins when there is one.
+  String get directedQuantityLabel {
+    if (signedQuantityLabel case final signed?) return signed;
+
+    return switch ((fromWarehouseId ?? fromWarehouse?.id, toWarehouseId ?? toWarehouse?.id)) {
+      (null, _?) => '+$quantityLabel',
+      (_?, null) => '−$quantityLabel',
+      _ => quantityLabel,
+    };
+  }
+
+  /// Whether this row came out of an order: an issue for it, its reversal after a
+  /// cancellation, or material spoiled making it. Those three carry the order's number in
+  /// [referenceId]; an arrival's reference is a receiving document's, which nobody says out loud.
+  bool get isForOrder => switch (movementType) {
+    MovementType.orderFulfillment || MovementType.orderReversal || MovementType.scrapLoss => true,
+    _ => false,
+  };
+
+  /// The order behind this row, when there is one — the thing a reader of the feed most often
+  /// wants to open next.
+  int? get orderId => isForOrder ? referenceId : null;
+
+  /// «طلب #1242» for a row that belongs to an order, «مرجع #5» for any other reference, and
+  /// nothing at all when there is none. The word matters: «مرجع #1242» told the reader there
+  /// was a number without telling them what it was the number of.
+  String? get referenceLabel => switch (referenceId) {
+    null => null,
+    final reference when isForOrder => 'طلب #$reference',
+    final reference => 'مرجع #$reference',
+  };
 
   String? get balanceAfterLabel => balanceAfter == null ? null : groupedDecimal(balanceAfter!);
 

@@ -11,9 +11,7 @@ import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
-import 'package:dayaa/features/orders/presentation/widgets/additional_cost_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/edit_shortages_sheet.dart';
-import 'package:dayaa/features/orders/presentation/widgets/order_additional_cost.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_cost_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_customer_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
@@ -26,7 +24,6 @@ import 'package:dayaa/features/orders/presentation/widgets/order_totals.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_scrap_sheet.dart';
 import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
-import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -154,15 +151,6 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                 // it is a movement on the ledger, exactly like booking a shipment in, and the
                 // route is guarded by that same grant rather than by any `orders.*` one.
                 onScrap: sl<Session>().can(AppPermission.manageInventory) ? _recordScrap : null,
-                // **`is_closed`, which is the server's own line rather than one chosen here.**
-                // `UpdateOrder` refuses a closed order and accepts every other, so a button
-                // drawn on that condition never leads to a refusal — and the grant is the
-                // charge's own, not the discount's.
-                onEditAdditionalCost:
-                    sl<Session>().can(AppPermission.addOrderAdditionalCost) &&
-                        !state.order!.isClosed
-                    ? _editAdditionalCost
-                    : null,
                 // Always offered, unlike a sheet that could only ever show the order's own
                 // note: the page gathers what was written at every status too, and «لا توجد
                 // ملاحظات» is an answer worth reaching rather than a button that vanished.
@@ -228,46 +216,6 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
 
         final updated = cubit.state.order;
         if (updated != null) setState(() => _moved = updated);
-      },
-    );
-  }
-
-  /// Charges the customer for something no line on the order describes.
-  ///
-  /// **A sheet rather than a screen**, for the reason «تعديل النواقص» is one: it is a number, a
-  /// category and a sentence, and the person filling it in is standing at the counter having
-  /// just agreed it. The send happens here and not in the sheet — a form's answer is what was
-  /// typed, and what to do about a refusal belongs to the screen that has somewhere to show it.
-  ///
-  /// **`PUT` replaces the whole order**, and the repository re-reads it first so the fields this
-  /// sheet never touches go back as they are — see [OrderRepository.updateInvoice]. Re-read
-  /// afterwards for the reason every other edit here is: `grand_total`, `remaining_amount` and
-  /// `payment_status` are the server's arithmetic, and this screen is the one that has to be
-  /// right about all three.
-  Future<void> _editAdditionalCost(BuildContext context) async {
-    final cubit = context.read<OrderDetailCubit>();
-    final order = cubit.state.order;
-    if (order == null) return;
-
-    final draft = await showAdditionalCostSheet(context: context, order: order);
-    if (draft == null || !mounted) return;
-
-    final result = await sl<UpdateOrderInvoice>()(
-      order.id,
-      additionalCost: draft.amount,
-      additionalCostReason: draft.reason,
-      additionalCostNote: draft.note,
-    );
-
-    if (!mounted) return;
-
-    await result.fold(
-      // The server's own Arabic — «سبب التكلفة الإضافية مطلوب» names the field, and «ليس لديك
-      // صلاحية…» names the grant. Neither could be written here without guessing.
-      (failure) async => context.showFailure(failure),
-      (updated) async {
-        cubit.replace(updated);
-        setState(() => _moved = updated);
       },
     );
   }
@@ -417,7 +365,6 @@ class _Body extends StatelessWidget {
     required this.onOpenProduct,
     required this.showCosts,
     required this.onScrap,
-    required this.onEditAdditionalCost,
     required this.onOpenNotes,
     required this.onOpenLog,
   });
@@ -436,10 +383,6 @@ class _Body extends StatelessWidget {
 
   /// Null for anybody without `inventory.manage`.
   final Future<void> Function(BuildContext context, OrderItem item)? onScrap;
-
-  /// Null without `orders.additional_cost`, and on an order the server would refuse to edit —
-  /// see the call site for the line, which is the server's own.
-  final Future<void> Function(BuildContext context)? onEditAdditionalCost;
 
   /// Null on an order nobody wrote a note on.
   final VoidCallback? onOpenNotes;
@@ -522,40 +465,15 @@ class _Body extends StatelessWidget {
                 ),
               ],
               SizedBox(height: 16.h),
-              _Section(
-                title: 'الحساب',
-                // **The button stands where its line does.** «التكلفة الإضافية» is one of the
-                // four figures this column adds up, and the way to change it belongs beside
-                // them — not on a dial that also moves the order and takes money. Somebody
-                // reading the total is already looking at the number they want to correct.
-                child: Column(
-                  children: [
-                    OrderTotals(order: order),
-                    if (onEditAdditionalCost case final edit?) ...[
-                      SizedBox(height: 14.h),
-                      AppButton.tonal(
-                        // The word changes with the order, because the two are different acts:
-                        // one adds a charge, the other argues with one already on the invoice.
-                        label: order.hasAdditionalCost
-                            ? 'تعديل التكلفة الإضافية'
-                            : 'إضافة تكلفة إضافية',
-                        icon: order.hasAdditionalCost ? AppIcons.edit : AppIcons.add,
-                        onPressed: () => edit(context),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              // **Directly under «الحساب», because it explains one of its lines.** The account
-              // says how much was added; this says what for — a category and, often, a sentence
-              // somebody typed, neither of which fits between a label and a number.
-              if (order.hasAdditionalCost) ...[
-                SizedBox(height: 16.h),
-                _Section(
-                  title: 'التكلفة الإضافية',
-                  child: OrderAdditionalCost(order: order),
-                ),
-              ],
+              // **Read here, changed on «تعديل الطلبية».** Every figure in this column is one
+              // the edit screen writes — the lines, the discount, the added charge — and a
+              // second door onto any of them would be a second place to keep right.
+              // **The added charge is one of its lines and is named there.** It had a section of
+              // its own under this one, which printed the same figure a card away from the
+              // column it belongs to — one charge, answered twice. What that section carried and
+              // the account did not is *what for*, and that sentence now sits under the line
+              // itself; «تعديل الطلبية» is still where it is argued with.
+              _Section(title: 'الحساب', child: OrderTotals(order: order)),
               // **Under «الحساب», never inside it.** What the customer pays is the question this
               // screen is opened to answer; what the job cost us is the quieter one asked
               // afterwards, by fewer people — see the grant at the call site — and mixing the two

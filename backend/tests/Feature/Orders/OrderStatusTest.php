@@ -624,6 +624,42 @@ class OrderStatusTest extends TestCase
         $this->assertSame([], array_values($shared));
     }
 
+    // ─────────────────────────── the order the board reads ───────────────────────────
+
+    public function test_the_board_opens_on_the_six_statuses_the_workshop_lives_in(): void
+    {
+        // Act — `cases()` is what the home screen draws, in the order it draws them: the app
+        // holds no list of its own, so this sequence *is* the board.
+        $opening = array_map(
+            fn (OrderStatus $s) => $s->value,
+            array_slice(OrderStatus::cases(), 0, 6),
+        );
+
+        // Assert — two cards to a row on the phone, and each row pairs the work with the thing
+        // that stands beside it: جديدة/نواقص is what came in and what could not be started,
+        // قيد التصميم/جاهزة للطباعة is the artwork and the queue it feeds, قيد الطباعة/جاهزة is
+        // the press and its shelf. This is the shop's own reading order, not the machine's —
+        // «جاهزة للطباعة» comes after «قيد التصميم» here and before it in allowedNext(), and
+        // both are right about different questions.
+        $this->assertSame([
+            'new', 'shortage',
+            'designing', 'ready_to_print',
+            'printing', 'ready',
+        ], $opening);
+    }
+
+    public function test_the_two_that_are_over_sit_at_the_bottom_of_the_board(): void
+    {
+        // Act
+        $last = array_map(
+            fn (OrderStatus $s) => $s->value,
+            array_slice(OrderStatus::cases(), -2),
+        );
+
+        // Assert — a full board is skimmed past the finished work, not through it.
+        $this->assertSame(['delivered', 'settled'], $last);
+    }
+
     // ─────────────────────── structural: the next status added ───────────────────────
 
     public function test_every_status_has_an_arabic_label(): void

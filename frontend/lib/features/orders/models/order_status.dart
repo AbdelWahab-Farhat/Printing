@@ -16,8 +16,17 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 /// `available_transitions` already narrowed to what the signed-in user may do, so a copy of the
 /// map here would be a second source of truth with nothing keeping it honest.
 enum OrderStatus {
+  // The six the workshop lives in, in the order the home board draws them — two cards to a row,
+  // each row a pair: جديدة/نواقص، قيد التصميم/جاهزة للطباعة، قيد الطباعة/جاهزة. Copied from
+  // `OrderStatus.php`'s declaration order so the filter sheet reads down the way the board does.
+  // It is *not* the order the state machine walks; the server sends the moves, so this app never
+  // needs that one.
   @JsonValue('new')
   taken('new', 'جديدة'),
+  @JsonValue('shortage')
+  shortage('shortage', 'نواقص'),
+  @JsonValue('designing')
+  designing('designing', 'قيد التصميم'),
 
   /// Prepped and weighed by the warehouse, waiting for the press to pick it up.
   ///
@@ -26,14 +35,10 @@ enum OrderStatus {
   /// server describes for the move.
   @JsonValue('ready_to_print')
   readyToPrint('ready_to_print', 'جاهزة للطباعة'),
-  @JsonValue('designing')
-  designing('designing', 'قيد التصميم'),
   @JsonValue('printing')
   printing('printing', 'قيد الطباعة'),
   @JsonValue('ready')
   ready('ready', 'جاهزة'),
-  @JsonValue('shortage')
-  shortage('shortage', 'نواقص'),
   @JsonValue('office_pickup')
   officePickup('office_pickup', 'استلام مكتب'),
   @JsonValue('out_for_delivery')
@@ -72,7 +77,7 @@ enum OrderStatus {
   /// on this enum.
   final String label;
 
-  /// The rows the filter offers, in the order the state machine walks them.
+  /// The rows the filter offers, in the order the home board draws them.
   ///
   /// [unknown] is left out: it is this app's own invention for a status the server added after
   /// this build shipped, and sending it as a filter would ask for something that does not exist.

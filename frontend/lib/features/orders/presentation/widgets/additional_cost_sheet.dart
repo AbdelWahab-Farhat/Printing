@@ -29,11 +29,12 @@ class AdditionalCostDraft {
 
 /// Charging the customer for something no line on the order describes — «تغليف خاص»، «نقل».
 ///
-/// **A sheet from the order screen rather than a field on «تعديل الطلبية», and that is the
-/// point.** The charge is usually agreed after the order was taken — a box asked for at the
-/// counter, a run to a second address — and it is one number, a category and a sentence. The
-/// edit screen is where the *order* is rewritten: its lines, its artwork, where it goes. Sending
-/// somebody through all of that to add ten dinars is how a feature goes unused.
+/// **A sheet on «تعديل الطلبية» rather than fields in its form.** Changing the invoice is what
+/// that screen is for, so the way in is there with the lines and the discount — the order screen
+/// prints the charge and names it, and keeps one door onto editing rather than two. A sheet
+/// rather than three more boxes on the form, because the charge is agreed in one moment — a box
+/// asked for at the counter, a run to a second address — and it is answered and sent in that
+/// moment, not held until «حفظ التعديلات».
 ///
 /// **The five chips are the whole vocabulary, and they are not this app's.** They mirror
 /// `AdditionalCostReason.php` because the figure is read along that axis afterwards — «كم حصّلنا

@@ -113,7 +113,24 @@ mixin _$Order {
 /// never rewritten after. That is later than it used to be, and deliberately: an order's
 /// lines are frozen by «جاهزة» but still editable through «قيد الطباعة», so stock now leaves
 /// the warehouse against quantities nobody can still change underneath it.
-@JsonKey(name: 'fulfillment_warehouse_id') int? get fulfillmentWarehouseId;@JsonKey(name: 'stock_deducted_at') DateTime? get stockDeductedAt;@JsonKey(name: 'total_weight') String? get totalWeight;@JsonKey(name: 'placed_at') DateTime? get placedAt;@JsonKey(name: 'delivered_at') DateTime? get deliveredAt;@JsonKey(name: 'settled_at') DateTime? get settledAt;@JsonKey(name: 'created_at') DateTime? get createdAt;/// Who took the order. Null on the list — the server sends it with the full order only —
+@JsonKey(name: 'fulfillment_warehouse_id') int? get fulfillmentWarehouseId;@JsonKey(name: 'stock_deducted_at') DateTime? get stockDeductedAt;/// What the parcel weighs, in kilograms — the lines' own scale readings added up by the
+/// server.
+///
+/// **The order has no weight of its own any more.** It once carried a `weight_kg` somebody
+/// typed on the way into «جاهزة»; nothing was computed from it and it could disagree with the
+/// lines under it, so it went. This is built back out of what the warehouse actually
+/// recorded per line.
+///
+/// **Null is «لا يوجد وزن», never «صفر»** — and it covers two cases the screen does not need
+/// to tell apart: nothing on the order comes off a shelf counted by the kilo, or something
+/// does and it has not been weighed yet. Either way there is no weight to print, and a
+/// half-summed one under «الوزن» would be read as the whole parcel's.
+///
+/// **Sent on the list as well as the detail**, so [OrderCard] states it beside the money
+/// without opening the order. It was absent from the list once, when weighing a page meant
+/// fetching the lines an order at a time; the list eager-loads the shelf behind each line
+/// now and the figure costs it nothing.
+@JsonKey(name: 'total_weight') String? get totalWeight;@JsonKey(name: 'placed_at') DateTime? get placedAt;@JsonKey(name: 'delivered_at') DateTime? get deliveredAt;@JsonKey(name: 'settled_at') DateTime? get settledAt;@JsonKey(name: 'created_at') DateTime? get createdAt;/// Who took the order. Null on the list — the server sends it with the full order only —
 /// and for an order raised by a seeder or a console command.
 ///
 /// Read by «ملاحظات الطلبية»: the order's own note is the one note with no transition
@@ -597,6 +614,23 @@ class _Order extends Order {
 /// the warehouse against quantities nobody can still change underneath it.
 @override@JsonKey(name: 'fulfillment_warehouse_id') final  int? fulfillmentWarehouseId;
 @override@JsonKey(name: 'stock_deducted_at') final  DateTime? stockDeductedAt;
+/// What the parcel weighs, in kilograms — the lines' own scale readings added up by the
+/// server.
+///
+/// **The order has no weight of its own any more.** It once carried a `weight_kg` somebody
+/// typed on the way into «جاهزة»; nothing was computed from it and it could disagree with the
+/// lines under it, so it went. This is built back out of what the warehouse actually
+/// recorded per line.
+///
+/// **Null is «لا يوجد وزن», never «صفر»** — and it covers two cases the screen does not need
+/// to tell apart: nothing on the order comes off a shelf counted by the kilo, or something
+/// does and it has not been weighed yet. Either way there is no weight to print, and a
+/// half-summed one under «الوزن» would be read as the whole parcel's.
+///
+/// **Sent on the list as well as the detail**, so [OrderCard] states it beside the money
+/// without opening the order. It was absent from the list once, when weighing a page meant
+/// fetching the lines an order at a time; the list eager-loads the shelf behind each line
+/// now and the figure costs it nothing.
 @override@JsonKey(name: 'total_weight') final  String? totalWeight;
 @override@JsonKey(name: 'placed_at') final  DateTime? placedAt;
 @override@JsonKey(name: 'delivered_at') final  DateTime? deliveredAt;

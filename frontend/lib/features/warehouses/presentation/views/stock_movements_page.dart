@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -11,12 +12,14 @@ import 'package:dayaa/features/warehouses/models/stock_movement.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_batches_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/day_header.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/ledger_row.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/movement_row.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/stock_batch_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 /// The ledger, at one of three zoom levels: the whole workshop, one warehouse, or one shelf in
 /// one warehouse.
@@ -82,15 +85,31 @@ class _FeedView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: _Title(subtitle: warehouseName)),
       body: BlocBuilder<StockMovementsCubit, StockMovementsState>(
-        builder: (context, state) => PagedListView<StockMovement>(
-          state: state,
-          emptyMessage: 'لا توجد حركات مسجّلة بعد',
-          onLoadMore: cubit.loadMore,
-          onRefresh: cubit.refresh,
-          skeletonHeight: 76.h,
-          itemBuilder: (context, movement, index) =>
-              MovementRow(key: ValueKey(movement.id), movement: movement),
-        ),
+        builder: (context, state) {
+          final items = state is StockMovementsLoaded ? state.page.items : const <StockMovement>[];
+
+          // Read like the shelf's ledger below: grouped by day with a hairline between rows,
+          // because the feed is the same book at a wider zoom and a list of cards had lost
+          // the one thing a ledger is for — the order things happened in.
+          return PagedListView<StockMovement>(
+            state: state,
+            emptyMessage: 'لا توجد حركات مسجّلة بعد',
+            onLoadMore: cubit.loadMore,
+            onRefresh: cubit.refresh,
+            skeletonHeight: 84.h,
+            separatorBuilder: (context, index) => const _Hairline(),
+            itemBuilder: (context, movement, index) => _groupedByDay(
+              items: items,
+              index: index,
+              movement: movement,
+              row: MovementRow(
+                key: ValueKey(movement.id),
+                movement: movement,
+                onOpenOrder: (id) => context.push(Routes.order(id)),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -399,51 +418,31 @@ class _LedgerTab extends StatelessWidget {
               showCost: showCost,
             );
 
-            // A day header above the first row of each day. Rows are newest first, so the day
-            // changes when this row's day differs from the one above it.
-            final previous = index > 0 && index - 1 < items.length ? items[index - 1] : null;
-            if (movement.createdAt case final at? when !_sameDay(previous?.createdAt, at)) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [_DayHeader(at: at, first: index == 0), row],
-              );
-            }
-
-            return row;
+            return _groupedByDay(items: items, index: index, movement: movement, row: row);
           },
         );
       },
     );
   }
-
-  bool _sameDay(DateTime? a, DateTime b) {
-    if (a == null) return false;
-    final x = a.toLocal();
-    final y = b.toLocal();
-
-    return x.year == y.year && x.month == y.month && x.day == y.day;
-  }
 }
 
-class _DayHeader extends StatelessWidget {
-  const _DayHeader({required this.at, required this.first});
-
-  final DateTime at;
-  final bool first;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(top: first ? 8.h : 22.h, bottom: 4.h),
-      child: Text(
-        at.relativeDayLabel,
-        style: context.textTheme.titleSmall?.copyWith(
-          color: context.colorScheme.primary,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
+/// [row], with a day header above it when it is the first of its day. Rows are newest first,
+/// so the day changes when this row's day differs from the one above it.
+Widget _groupedByDay({
+  required List<StockMovement> items,
+  required int index,
+  required StockMovement movement,
+  required Widget row,
+}) {
+  final previous = index > 0 && index - 1 < items.length ? items[index - 1] : null;
+  if (movement.createdAt case final at? when startsNewDay(previous?.createdAt, at)) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [DayHeader(at: at, first: index == 0), row],
     );
   }
+
+  return row;
 }
 
 class _Hairline extends StatelessWidget {

@@ -1,14 +1,17 @@
 # Additional cost on an order — connecting the Flutter app
 
-> **Status: usable — a charge can be shown *and* set, from the order screen.** The reading side
-> landed with the order screen's new header (see
-> [ORDER-DETAIL-HEADER-DESIGN.md](ORDER-DETAIL-HEADER-DESIGN.md)); the writing side landed as a
-> sheet on that same screen — `AppPermission.addOrderAdditionalCost`, the mirror enum, the three
-> fields on `updateInvoice`, and «التكلفة الإضافية» on the dial.
+> **Status: usable — a charge is read on the order screen and set on «تعديل الطلبية».** The
+> reading side landed with the order screen's new header (see
+> [ORDER-DETAIL-HEADER-DESIGN.md](ORDER-DETAIL-HEADER-DESIGN.md)); the writing side is a sheet
+> opened from the edit screen — `AppPermission.addOrderAdditionalCost`, the mirror enum, the
+> three fields on `updateInvoice`, and a «التكلفة الإضافية» section under the estimate.
 >
-> **What §4 still owes is the two forms**: «طلبية جديدة» cannot take a charge as the order is
-> written, and «تعديل الطلبية» has no field for one — both go through the sheet on the order
-> screen instead. The checklist at the end says exactly what is ticked.
+> **The button moved off the order screen on 2026-09-02**, at the owner's word: every other way
+> of changing the invoice is on «تعديل الطلبية», and two doors onto one figure is one too many.
+> The order screen still prints the charge in «الحساب» and says what it was for underneath.
+>
+> **What §4 still owes is «طلبية جديدة»**: a charge cannot be part of taking the order, so it is
+> added afterwards through the edit screen. The checklist at the end says exactly what is ticked.
 >
 > The backend is built and green (see
 > [ORDER-ADDITIONAL-COST-BACKEND-CHANGES.md](ORDER-ADDITIONAL-COST-BACKEND-CHANGES.md)).
@@ -280,10 +283,11 @@ are the two guards that will tell you when this work is complete.
       out
 - [x] `additional_cost_sheet.dart` — the amount, the five chips and the note, behind the grant
       and offered until the order is closed (`UpdateOrder`'s own line)
-- [x] the button that opens it, **inside «الحساب» under «الإجمالي»** — beside the line it
-      changes, not on the dial; its word turns from «إضافة» to «تعديل» with the order
-- [x] `additional_cost_button_test.dart` — where it stands, what it says, and the two cases it
-      is absent for
+- [x] the button that opens it, **on «تعديل الطلبية», under «الإجمالي التقريبي»** — where every
+      other edit to the invoice is; its word turns from «إضافة» to «تعديل» with the order, and
+      the charge it argues with is named above it
+- [x] `additional_cost_button_test.dart` — where it stands, what it says, the two cases it is
+      absent for, and that the order screen prints the charge without offering a button
 - [x] `additional_cost_wire_test.dart` — what the `PUT` body actually carries, in both directions
 - [x] `additional_cost_sheet_test.dart` — the two rules, and what the sheet answers
 
@@ -293,8 +297,10 @@ are the two guards that will tell you when this work is complete.
 - [ ] `TakeOrder` — the same amount-carries-the-reason rule on the way in
 - [ ] `TakeOrderCubit` + `TakeOrderState` — three field errors, `_renderedKey`
 - [ ] `NewOrderPage` — the section, behind the grant
-- [ ] `OrderInvoiceCubit` + state — setters, `estimatedTotal`, `additionalCostIsValid`
-- [ ] `OrderEditPage` — `_AdditionalCostField`, or a link to the sheet the order screen has
+- [x] `OrderEditPage` — the sheet, reached from a section of its own; the send is the screen's,
+      like adding a design, and does not wait for «حفظ التعديلات»
+- [ ] `OrderInvoiceCubit` + state — only if the charge ever moves *into* «حفظ التعديلات»: it
+      would need setters, a place in `estimatedTotal` and `additionalCostIsValid`
 
 > **Note on the current tree:** `flutter analyze` is clean. The only red in `flutter test` is
 > `permission_contract_test.dart`, and it now names `inventory.revalue` alone — a different

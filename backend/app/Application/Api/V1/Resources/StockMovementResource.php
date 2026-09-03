@@ -53,6 +53,12 @@ class StockMovementResource extends JsonResource
             ),
 
             'stock_item_id' => $this->stock_item_id,
+            // What the quantity is counted in. «1.6» on a feed that mixes bags and kilos is
+            // not a number until this says which. Read off the item rather than the balance
+            // line: past creation the unit is only ever rewritten by SetStockItemUnit, which
+            // restates every balance with it, so the two never disagree.
+            'unit' => $this->whenLoaded('stockItem', fn (): string => $this->stockItem->unit->value),
+            'unit_label' => $this->whenLoaded('stockItem', fn (): string => $this->stockItem->unit->label()),
             // What moved: a shelf, not a product's size. Which product a movement was ultimately
             // for is `reference_id` and the order behind it — two products can draw on one pile,
             // so the item alone was never going to say.
