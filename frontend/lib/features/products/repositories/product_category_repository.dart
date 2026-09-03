@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/models/production_mode.dart';
 
 /// Reading and curating التصنيفات, stated without saying how.
 abstract interface class ProductCategoryRepository {
@@ -19,14 +20,15 @@ abstract interface class ProductCategoryRepository {
     int perPage = 20,
   });
 
-  /// [skipsProduction] puts orders made only of this heading's goods on the short road —
-  /// «جديدة» straight to «جاهزة». Required rather than defaulted: a caller that forgets it is a
-  /// caller silently turning the flag off on a heading that had it.
+  /// [productionMode] decides which road orders made only of this heading's goods take —
+  /// مطبوعة through the press, سادة straight to «جاهزة», وسيط out to a vendor. Required rather
+  /// than defaulted: a caller that forgets it is a caller silently putting a heading back on
+  /// the printed road.
   Future<Either<Failure, ProductCategory>> create({
     required String name,
     String? description,
     required int sortOrder,
-    required bool skipsProduction,
+    required ProductionMode productionMode,
   });
 
   Future<Either<Failure, ProductCategory>> update(
@@ -35,7 +37,7 @@ abstract interface class ProductCategoryRepository {
     String? description,
     required int sortOrder,
     required bool isActive,
-    required bool skipsProduction,
+    required ProductionMode productionMode,
   });
 
   /// Hides a category from the pickers. The products already under it keep it.

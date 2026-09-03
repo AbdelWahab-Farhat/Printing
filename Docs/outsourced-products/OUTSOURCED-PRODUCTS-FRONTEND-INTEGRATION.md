@@ -8,6 +8,11 @@
 > **The backend is merged and the app still runs.** Every key added is additive and the old
 > `skips_production` is still spoken in both directions, so nothing here is urgent *except* §1 —
 > two enum entries the frontend test suite already fails without.
+>
+> **Status (2026-09-03): §1 through §7 are done on this branch.** The app writes
+> `production_mode` and never `skips_production`; the cost box, the vendor row and «المورد» on
+> the order screen are wired as described below; `vendorRequirementFor` mirrors the
+> every-line-or-none rule. One thing the backend still owes — see §10.
 
 ---
 
@@ -347,3 +352,12 @@ Steps 3 and 4 are independent of each other; both depend on 2.
 - **Nothing that already exists changed.** Existing orders keep their road, their numbers and
   their costs; existing categories were mapped `سادة → none`, everything else `→ in_house`; stock
   was not touched at all. See [OUTSOURCED-PRODUCTS.md §7](OUTSOURCED-PRODUCTS.md).
+
+- **⚠️ Open on the backend: a save by somebody without `products.view_cost` wipes the costs.**
+  The two rules above collide for exactly one reader — a holder of `products.manage` who lacks
+  `products.view_cost`. The app never receives `cost_price` for them, so it (correctly) sends no
+  key; and `SyncProductVariants` reads an absent key as «امسحه». Editing a وسيط product's name
+  from such an account therefore clears every size's cost. The app cannot fix this — it has no
+  number to send back. The fix belongs in `SyncProductVariants`: leave `cost_price` alone when the
+  key is absent *and* the caller cannot see it. Until then, give `products.view_cost` to every
+  role that holds `products.manage`.

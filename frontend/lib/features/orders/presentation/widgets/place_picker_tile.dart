@@ -20,11 +20,16 @@ class PlacePickerTile extends StatelessWidget {
     required this.value,
     required this.isChosen,
     required this.onTap,
+    this.icon,
     super.key,
   });
 
   /// «المدينة» / «المنطقة» — which of the two this is, said once and quietly.
   final String caption;
+
+  /// The glyph before the caption. A pin unless the tile is asked to stand for something that
+  /// is not a place — «المورد» on the new-order form borrows the tile and brings the storefront.
+  final IconData? icon;
 
   final String value;
 
@@ -53,7 +58,7 @@ class PlacePickerTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(AppIcons.mapPin, size: 17.sp, color: scheme.onSurfaceVariant),
+              Icon(icon ?? AppIcons.mapPin, size: 17.sp, color: scheme.onSurfaceVariant),
               SizedBox(width: 8.w),
               Expanded(
                 child: Column(

@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/models/production_mode.dart';
 import 'package:dayaa/features/products/usecases/save_product_category.dart';
 import 'package:dayaa/features/products/usecases/set_product_category_image.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,10 +34,9 @@ class SaveProductCategoryCubit extends Cubit<SaveProductCategoryState> {
   /// the name is unique in the database, so a request that did land before the connection
   /// dropped turns the retry into a readable 422 rather than a second «أكياس».
   ///
-  /// [skipsProduction] is the switch on the sheet: orders made only of this heading's goods go
-  /// from «جديدة» straight to «جاهزة», where their stock leaves the warehouse as it always did.
-  /// The app carries the answer and decides nothing — which orders actually take the short road
-  /// is read from their own lines by the server.
+  /// [productionMode] is the three-way answer on the sheet — مطبوعة، سادة، أو وسيط: which road
+  /// orders made only of this heading's goods take. The app carries the answer and decides
+  /// nothing — which orders actually take which road is read from their own lines by the server.
   ///
   /// [image] is a newly picked file, [removeImage] the request to take the current one off.
   /// They are mutually exclusive by construction — the sheet offers one or the other — and both
@@ -48,7 +48,7 @@ class SaveProductCategoryCubit extends Cubit<SaveProductCategoryState> {
     String? description,
     int sortOrder = 0,
     bool isActive = true,
-    bool skipsProduction = false,
+    ProductionMode productionMode = ProductionMode.inHouse,
     PickedFile? image,
     bool removeImage = false,
   }) async {
@@ -64,7 +64,7 @@ class SaveProductCategoryCubit extends Cubit<SaveProductCategoryState> {
       description: description,
       sortOrder: sortOrder,
       isActive: isActive,
-      skipsProduction: skipsProduction,
+      productionMode: productionMode,
     );
 
     // The sheet may have been closed while the request was in flight, and emitting into a

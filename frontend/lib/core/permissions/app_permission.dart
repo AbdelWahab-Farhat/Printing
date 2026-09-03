@@ -66,6 +66,11 @@ enum AppPermission {
   // Catalogue
   viewProducts('products.view', 'عرض المنتجات والأسعار'),
   manageProducts('products.manage', 'إضافة وتعديل المنتجات والأسعار'),
+  // What the shop pays a vendor for a وسيط size, on the product **and** on the order line.
+  // Split from `viewProducts` on purpose: taking an order needs the price the customer pays and
+  // nothing else, so the server omits the key entirely for anybody without this — the same
+  // arrangement `inventory.view_cost` has with the ledger.
+  viewProductCost('products.view_cost', 'عرض سعر تكلفة المنتجات الوسيطة'),
 
   // Delivery map — cities and regions share one pair; a region is never administered by
   // somebody who is not also administering its city.
@@ -135,6 +140,12 @@ enum AppPermission {
   moveOrderToPrinting(
     'orders.status.printing',
     'تحويل الطلبية إلى قيد الطباعة',
+  ),
+  // The وسيط road's own step: the job has gone out to the vendor. Its own grant rather than the
+  // press's, because a different person sends work out than runs the machine.
+  moveOrderToManufacturing(
+    'orders.status.manufacturing',
+    'تحويل الطلبية إلى قيد التصنيع',
   ),
   moveOrderToReady('orders.status.ready', 'تحويل الطلبية إلى جاهزة'),
   moveOrderToShortage('orders.status.shortage', 'تحويل الطلبية إلى نواقص'),

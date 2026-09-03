@@ -150,6 +150,13 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                 // alone. A clerk taking orders reads the invoice; what the bags cost us is not
                 // part of that job.
                 showCosts: sl<Session>().can(AppPermission.viewProfitAndLossReport),
+                // **`products.view_cost`, and this one *is* enforced by the API**: the vendor's
+                // figures on a وسيط line are omitted from the payload without it, so the grant
+                // is checked rather than the null — a null here also means «not a وسيط line».
+                // The same grant that guards the catalogue number the line's cost was copied
+                // from, because hiding a figure on one screen and sending it on another is a
+                // lock on one door of two.
+                showOutsourcingCosts: sl<Session>().can(AppPermission.viewProductCost),
                 // `inventory.manage`, because scrapping draws stock and posts its FIFO cost —
                 // it is a movement on the ledger, exactly like booking a shipment in, and the
                 // route is guarded by that same grant rather than by any `orders.*` one.
@@ -416,6 +423,7 @@ class _Body extends StatelessWidget {
     required this.onOpenCustomer,
     required this.onOpenProduct,
     required this.showCosts,
+    required this.showOutsourcingCosts,
     required this.onScrap,
     required this.onEditAdditionalCost,
     required this.onOpenNotes,
@@ -433,6 +441,9 @@ class _Body extends StatelessWidget {
   /// Whether what the job cost us is drawn at all — see the call site for which grant answers
   /// this and why it is that one.
   final bool showCosts;
+
+  /// Whether a وسيط line says what the vendor charges — `products.view_cost`.
+  final bool showOutsourcingCosts;
 
   /// Null for anybody without `inventory.manage`.
   final Future<void> Function(BuildContext context, OrderItem item)? onScrap;
@@ -516,6 +527,7 @@ class _Body extends StatelessWidget {
                     // The lines' own sum, under the lines — see [_Items].
                     weight: order.weightLabel,
                     showCosts: showCosts,
+                    showOutsourcingCosts: showOutsourcingCosts,
                     onScrap: _mayScrap ? onScrap : null,
                     onOpenProduct: onOpenProduct,
                   ),
@@ -861,6 +873,7 @@ class _Items extends StatelessWidget {
     required this.items,
     required this.weight,
     required this.showCosts,
+    required this.showOutsourcingCosts,
     required this.onScrap,
     required this.onOpenProduct,
   });
@@ -874,6 +887,9 @@ class _Items extends StatelessWidget {
 
   /// Whether each line says what it cost to make, under what it is charged at.
   final bool showCosts;
+
+  /// Whether a وسيط line says what the vendor charges — see [OrderLineCosts].
+  final bool showOutsourcingCosts;
 
   /// Null when scrapping is not on offer — no grant, or an order with no shelf behind it yet.
   final Future<void> Function(BuildContext context, OrderItem item)? onScrap;
@@ -890,6 +906,7 @@ class _Items extends StatelessWidget {
           OrderItemCard(
             item: item,
             showCosts: showCosts,
+            showOutsourcingCosts: showOutsourcingCosts,
             // Only for a line whose product came with the payload: a card with nothing to open
             // is the arrow onto a 403 in another costume.
             onOpenProduct: onOpenProduct == null ? null : () => onOpenProduct!(item),

@@ -94,6 +94,10 @@ class SaveProduct {
             // save, so a link the form was merely *showing* has to be sent back or it is lost —
             // see NewProductVariant.stockItemId, which is the whole argument.
             stockItemId: variant.stockItemId,
+            // The same round trip, with a sharper edge: a size sent without its cost is saved
+            // with none. Normalised like every other number, and a blank box becomes an absent
+            // key — which is also the only thing a size under a printed heading may send.
+            costPrice: _optionalNumber(variant.costPrice),
             label: variant.label.trim(),
             widthCm: _dimension(variant.widthCm),
             heightCm: _dimension(variant.heightCm),
@@ -120,6 +124,13 @@ class SaveProduct {
   static String _number(String input) =>
       Validators.toWesternDigits(input.trim()).replaceAll(',', '.');
 
+  /// [_number] for a box that may be empty: blank is null, never `''`.
+  static String? _optionalNumber(String? input) {
+    if (input == null || input.trim().isEmpty) return null;
+
+    return _number(input);
+  }
+
   static int? _dimension(String? input) {
     if (input == null || input.trim().isEmpty) return null;
 
@@ -143,10 +154,16 @@ class DraftVariant {
     required this.label,
     this.id,
     this.stockItemId,
+    this.costPrice,
     this.widthCm,
     this.heightCm,
     this.priceTiers = const [],
   });
+
+  /// «سعر التكلفة» as typed, for a size under a وسيط heading — and null for every other size,
+  /// because the server refuses a cost anywhere else and the form clears the box on the way
+  /// out. Text like the prices, for the same keyboard reason.
+  final String? costPrice;
 
   /// Null for a size being added; the existing row's id when one is being corrected.
   final int? id;

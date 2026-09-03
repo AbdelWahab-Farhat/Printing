@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/models/production_mode.dart';
 import 'package:dayaa/features/products/repositories/product_category_repository.dart';
 
 /// Adds a heading to the catalogue, or edits one that is already on it.
@@ -13,13 +14,16 @@ class SaveProductCategory {
 
   final ProductCategoryRepository _repository;
 
+  /// [productionMode] is the three-way answer on the sheet — مطبوعة، سادة، أو وسيط. Defaulted
+  /// to printed here, the road every order took before the answer existed, so a caller that
+  /// says nothing asks the most of the shop rather than the least.
   Future<Either<Failure, ProductCategory>> call({
     int? categoryId,
     required String name,
     String? description,
     int sortOrder = 0,
     bool isActive = true,
-    bool skipsProduction = false,
+    ProductionMode productionMode = ProductionMode.inHouse,
   }) {
     final trimmed = name.trim();
 
@@ -28,7 +32,7 @@ class SaveProductCategory {
             name: trimmed,
             description: description,
             sortOrder: sortOrder,
-            skipsProduction: skipsProduction,
+            productionMode: productionMode,
           )
         : _repository.update(
             categoryId,
@@ -36,7 +40,7 @@ class SaveProductCategory {
             description: description,
             sortOrder: sortOrder,
             isActive: isActive,
-            skipsProduction: skipsProduction,
+            productionMode: productionMode,
           );
   }
 }

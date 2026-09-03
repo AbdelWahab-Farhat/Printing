@@ -46,6 +46,11 @@ class TakeOrder {
     String? recipientPhone,
     String? notes,
     List<int> designIds = const [],
+
+    /// Who will make it — the vendor the picker answered with, or null when the form did not
+    /// offer one. Carried, never judged: whether the server *requires* it is a fact about the
+    /// lines, mirrored by `vendorRequirementFor` on the form and enforced in the domain.
+    int? vendorId,
   }) {
     final fee = _number(designFee);
     final artwork = designSource == noDesign ? const <int>[] : designIds;
@@ -64,6 +69,7 @@ class TakeOrder {
         // list would be the app claiming it does.
         designIds: artwork.isEmpty ? null : artwork,
         discount: _number(discount),
+        vendorId: vendorId,
         recipientPhone: _text(recipientPhone),
         notes: _text(notes),
         items: [

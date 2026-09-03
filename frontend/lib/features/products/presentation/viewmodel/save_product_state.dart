@@ -49,6 +49,11 @@ extension SaveProductStateX on SaveProductState {
   /// The server's complaint about one size's name — `variants.2.label`.
   String? variantLabelError(int index) => _fieldError('variants.$index.label');
 
+  /// One size's «سعر التكلفة» — `variants.2.cost_price`. Two refusals land here: a number that
+  /// is not one, and «سعر التكلفة لا يُسجَّل إلا على المنتجات الوسيطة», which the form guards
+  /// against by clearing the boxes when the heading changes and this catches if it ever slips.
+  String? variantCostPriceError(int index) => _fieldError('variants.$index.cost_price');
+
   /// A price cell's complaint, addressed the way Laravel addresses it.
   String? priceError(int variant, int tier) =>
       _fieldError('variants.$variant.price_tiers.$tier.unit_price');
@@ -92,6 +97,7 @@ final RegExp _renderedKey = RegExp(
   r'^(name|min_order_quantity|image|stock_item_group_id'
   r'|variants\.\d+\.label'
   r'|variants\.\d+\.stock_item_id'
+  r'|variants\.\d+\.cost_price'
   r'|variants\.\d+\.price_tiers\.\d+\.unit_price)$',
 );
 

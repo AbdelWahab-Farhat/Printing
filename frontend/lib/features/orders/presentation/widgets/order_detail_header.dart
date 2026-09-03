@@ -65,9 +65,11 @@ class OrderDetailHeader extends StatelessWidget {
     final chip = math.max(text.scale(20), 17.sp) + 12.h;
     final customer = math.max(math.max(text.scale(24), glyph), chip);
     final address = text.scale(20);
+    // One more line of the same height, only on an order a vendor is making.
+    final vendor = order.vendorName == null ? 0.0 : text.scale(20) + 4.h;
     final records = math.max(text.scale(22), glyph) + 22.h;
 
-    return kToolbarHeight + 8.h + customer + 10.h + address + 12.h + records + 14.h;
+    return kToolbarHeight + 8.h + customer + 10.h + address + vendor + 12.h + records + 14.h;
   }
 
   @override
@@ -141,6 +143,12 @@ class _Header extends StatelessWidget {
             _Customer(order: order),
             SizedBox(height: 10.h),
             _Address(order: order),
+            // Who is making it — only on an order somebody else makes. The fourth fact a visit
+            // to a وسيط order begins with, and absent rather than «—» on every other.
+            if (order.vendorName case final vendor?) ...[
+              SizedBox(height: 4.h),
+              _Vendor(name: vendor),
+            ],
             SizedBox(height: 12.h),
             _Records(
               onOpenNotes: onOpenNotes,
@@ -231,6 +239,32 @@ class _Address extends StatelessWidget {
       style: context.textTheme.bodyMedium?.copyWith(
         // Quieter than the name above it without leaving the one readable foreground this
         // ground has.
+        color: scheme.onPrimary.withValues(alpha: 0.85),
+      ),
+    );
+  }
+}
+
+/// Who is making the goods, for an order a vendor executes.
+///
+/// **The order's own snapshot, never a lookup.** `vendor_name` is what this order said on the
+/// day; a vendor renamed since keeps the new name everywhere except here, which is the whole
+/// reason the column exists. Drawn the way the address above it is — a label that is the
+/// question and a value that is the answer.
+class _Vendor extends StatelessWidget {
+  const _Vendor({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Text(
+      'المورد: $name',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: context.textTheme.bodyMedium?.copyWith(
         color: scheme.onPrimary.withValues(alpha: 0.85),
       ),
     );

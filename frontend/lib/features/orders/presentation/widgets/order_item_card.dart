@@ -31,6 +31,7 @@ class OrderItemCard extends StatelessWidget {
   const OrderItemCard({
     required this.item,
     required this.showCosts,
+    this.showOutsourcingCosts = false,
     this.onOpenProduct,
     this.onScrap,
     super.key,
@@ -43,6 +44,10 @@ class OrderItemCard extends StatelessWidget {
 
   /// Whether the line says what it cost to make, under what it is charged at.
   final bool showCosts;
+
+  /// Whether a وسيط line says what the vendor charges — a different grant from [showCosts], see
+  /// [OrderLineCosts].
+  final bool showOutsourcingCosts;
 
   /// Null without `products.view`, and on a payload that did not carry the product.
   final VoidCallback? onOpenProduct;
@@ -78,7 +83,11 @@ class OrderItemCard extends StatelessWidget {
               // answers, and the only rule drawn on it.
               Divider(height: 1, thickness: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
               SizedBox(height: 10.h),
-              _Figures(item: item, showCosts: showCosts),
+              _Figures(
+                item: item,
+                showCosts: showCosts,
+                showOutsourcingCosts: showOutsourcingCosts,
+              ),
               // A text button rather than an arm on the dial: the dial acts on the *order*, and
               // «أي بند تلف؟» is a question the line itself is the answer to. It is the same
               // shape «إلغاء الدفعة» takes on a ledger row, for the same reason — and its own
@@ -181,10 +190,15 @@ class _Identity extends StatelessWidget {
 
 /// What it costs: the rate it was priced at, what is missing from it, and the line's own total.
 class _Figures extends StatelessWidget {
-  const _Figures({required this.item, required this.showCosts});
+  const _Figures({
+    required this.item,
+    required this.showCosts,
+    required this.showOutsourcingCosts,
+  });
 
   final OrderItem item;
   final bool showCosts;
+  final bool showOutsourcingCosts;
 
   @override
   Widget build(BuildContext context) {
@@ -234,9 +248,13 @@ class _Figures extends StatelessWidget {
         ],
         // Under the price it is being charged at, quietly — see [OrderLineCosts] for why an
         // uncosted line draws nothing here rather than «لم يُحتسب بعد».
-        if (showCosts) ...[
+        if (showCosts || showOutsourcingCosts) ...[
           SizedBox(height: 4.h),
-          OrderLineCosts(item: item),
+          OrderLineCosts(
+            item: item,
+            showProduction: showCosts,
+            showOutsourcing: showOutsourcingCosts,
+          ),
         ],
       ],
     );

@@ -43,6 +43,7 @@ _NewProductVariant _$NewProductVariantFromJson(Map<String, dynamic> json) =>
     _NewProductVariant(
       id: (json['id'] as num?)?.toInt(),
       stockItemId: (json['stock_item_id'] as num?)?.toInt(),
+      costPrice: json['cost_price'] as String?,
       label: json['label'] as String,
       widthCm: (json['width_cm'] as num?)?.toInt(),
       heightCm: (json['height_cm'] as num?)?.toInt(),
@@ -57,6 +58,7 @@ Map<String, dynamic> _$NewProductVariantToJson(_NewProductVariant instance) =>
     <String, dynamic>{
       'id': ?instance.id,
       'stock_item_id': ?instance.stockItemId,
+      'cost_price': ?instance.costPrice,
       'label': instance.label,
       'width_cm': ?instance.widthCm,
       'height_cm': ?instance.heightCm,

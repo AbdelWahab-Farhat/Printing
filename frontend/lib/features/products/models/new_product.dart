@@ -96,6 +96,19 @@ abstract class NewProductVariant with _$NewProductVariant {
     /// omitted from the body rather than sent as `null`.
     @JsonKey(name: 'stock_item_id', includeIfNull: false) int? stockItemId,
 
+    /// «سعر التكلفة» — what a vendor charges us for this size. Only a size under a وسيط heading
+    /// may carry one; the server refuses it anywhere else with a 422 on `variants.N.cost_price`.
+    ///
+    /// ⚠️ **Sent on every write, or it is cleared** — the same rule as [stockItemId], and for a
+    /// stronger reason: `PUT /products/{id}` replaces the whole variant set, and a size sent
+    /// without this key is saved with no cost. The form seeds every row from
+    /// `data.variants[].cost_price` and sends it back untouched, or the first price edit wipes
+    /// the costs of every other size. Omitted from the body when null so «لم تُحدَّد» stays
+    /// distinguishable from «امسحها» in a log.
+    ///
+    /// A decimal string, normalised in [SaveProduct] like every other number on the form.
+    @JsonKey(name: 'cost_price', includeIfNull: false) String? costPrice,
+
     required String label,
 
     /// Strings, not `int`s, and deliberately.

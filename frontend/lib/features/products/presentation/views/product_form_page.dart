@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/validators.dart';
@@ -12,6 +14,7 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/products/models/pricing_unit.dart';
 import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/product_categories_cubit.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/save_product_cubit.dart';
 import 'package:dayaa/features/products/presentation/widgets/product_category_picker.dart';
@@ -108,6 +111,38 @@ class _ProductFormViewState extends State<_ProductFormView> {
 
   /// Shown under the picker after a submit with nothing chosen. Cleared as soon as one is.
   String? _categoryError;
+
+  /// The heading currently chosen, as something that can be asked how its goods are made.
+  ///
+  /// **The product's own heading is read off the product, not off the list.** The list sends
+  /// each row's *own* mode — a subheading inheriting a وسيط parent reads `in_house` there, on
+  /// purpose, because that is what its edit sheet puts back — while the `product_category`
+  /// nested on a product is the *effective* answer with the parent applied. A heading picked
+  /// fresh has only the list to go on. Null while nothing is picked or the list has not come.
+  ProductCategory? _chosenCategory(ProductCategoriesState categories) {
+    final id = _productCategoryId;
+    if (id == null) return null;
+
+    final own = _editing?.productCategory;
+    if (own != null && own.id == id) return own;
+
+    return switch (categories) {
+      ProductCategoriesLoaded(:final page) =>
+        page.items.where((category) => category.id == id).firstOrNull,
+      _ => null,
+    };
+  }
+
+  /// Whether «سعر التكلفة» is drawn on each size — **both** gates, and each is a rule.
+  ///
+  /// The heading's: a cost on a size under anything but a وسيط heading is a 422 on
+  /// `variants.N.cost_price` that fails the whole save. The grant's: without
+  /// `products.view_cost` the key never arrives, so a form that drew the box would show an
+  /// empty one and save `null` over a real cost.
+  bool _showsCost(ProductCategoriesState categories) =>
+      (_chosenCategory(categories)?.productionMode.hasCostPrice ?? false) &&
+      sl<Session>().can(AppPermission.viewProductCost);
+
   late PricingUnit _unit = PricingUnit.fromWire(_editing?.pricingUnit);
 
   /// «المادة» — **the whole stock feature, from the user's side, is this one field.**
@@ -421,6 +456,12 @@ class _ProductFormViewState extends State<_ProductFormView> {
       return;
     }
 
+    // Branched on the heading, not on what is visible — the same reason the prices are: a
+    // cost under a printed heading refuses the whole list, and the boxes may hold a number
+    // from before the heading was switched. Also what keeps a reader without the grant from
+    // sending back the empty boxes they were never shown.
+    final sendsCost = _showsCost(context.read<ProductCategoriesCubit>().state);
+
     context.read<SaveProductCubit>().submit(
       id: _editing?.id,
       image: _image,
@@ -444,6 +485,9 @@ class _ProductFormViewState extends State<_ProductFormView> {
             // out here would be gone after a save that only touched a price — and nothing would
             // say so until an order was refused at «جاهزة».
             stockItemId: size.stockItemId,
+            // Round-tripped like the shelf, and for a sharper reason: `PUT /products` replaces
+            // the whole variant set, and a size sent without its cost is saved with none.
+            costPrice: sendsCost ? size.cost.text : null,
             label: size.label.text,
             widthCm: size.width.text,
             heightCm: size.height.text,
@@ -517,6 +561,10 @@ class _ProductFormViewState extends State<_ProductFormView> {
           },
           builder: (context, state) {
             final cubit = context.read<SaveProductCubit>();
+            // Watched, not read: the list arrives after the first frame, and the cost boxes on
+            // a وسيط product have to appear with it rather than on the next keystroke.
+            final categories = context.watch<ProductCategoriesCubit>().state;
+            final showsCost = _showsCost(categories);
 
             return AbsorbPointer(
               // Locks the whole form while the request is in flight, so what is on screen
@@ -569,6 +617,15 @@ class _ProductFormViewState extends State<_ProductFormView> {
                         onChanged: (id) => setState(() {
                           _productCategoryId = id;
                           _categoryError = null;
+                          // A cost on a size under a printed heading refuses the whole save,
+                          // so the boxes are emptied the moment the heading stops being a وسيط
+                          // one — while the number is still on screen to be seen going, not
+                          // after a 422 about a field nobody can find.
+                          if (!_showsCost(categories)) {
+                            for (final size in _sizes) {
+                              size.cost.clear();
+                            }
+                          }
                         }),
                       ),
                       SizedBox(height: 16.h),
@@ -679,9 +736,12 @@ class _ProductFormViewState extends State<_ProductFormView> {
                           showPrices: _hasPrices,
                           // Folded away for almost everybody — see [_showShelves].
                           showShelf: _showShelves,
+                          // Two gates — the heading's and the grant's — see [_showsCost].
+                          showCost: showsCost,
                           hasMaterial: _material != null,
                           labelError: state.variantLabelError(index),
                           shelfError: state.variantStockItemError(index),
+                          costError: state.variantCostPriceError(index),
                           priceErrorOf: (column) =>
                               state.priceError(index, column),
                           onPickShelf: () => _pickShelf(index),
@@ -812,9 +872,11 @@ class _SizeCard extends StatelessWidget {
     required this.ordinal,
     required this.showPrices,
     required this.showShelf,
+    required this.showCost,
     required this.hasMaterial,
     required this.labelError,
     required this.shelfError,
+    required this.costError,
     required this.priceErrorOf,
     required this.onPickShelf,
     required this.onClearShelf,
@@ -831,6 +893,11 @@ class _SizeCard extends StatelessWidget {
   /// every save regardless, which is the only reason folding it away is safe.
   final bool showShelf;
 
+  /// Whether «سعر التكلفة» is asked for — only under a وسيط heading, and only of somebody who
+  /// may see it. Unlike the shelf, what it holds is sent only while it is drawn: a number
+  /// under any other heading refuses the save.
+  final bool showCost;
+
   /// Whether the product names a material. It decides what an *empty* shelf row means: with one,
   /// «يُحدَّد من المادة عند الحفظ»; without, «بلا صنف مخزني», which is a real limitation worth
   /// saying rather than a blank.
@@ -838,6 +905,7 @@ class _SizeCard extends StatelessWidget {
 
   final String? labelError;
   final String? shelfError;
+  final String? costError;
   final String? Function(int column) priceErrorOf;
   final VoidCallback onPickShelf;
   final VoidCallback onClearShelf;
@@ -901,6 +969,26 @@ class _SizeCard extends StatelessWidget {
               ),
             ],
           ),
+          if (showCost) ...[
+            SizedBox(height: 10.h),
+            TextFormField(
+              controller: row.cost,
+              textDirection: TextDirection.ltr,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => onChanged(),
+              // Optional: a size may be listed before the vendor has quoted for it. A number
+              // when present — `٢٥` is accepted here and converted in the use case.
+              validator: Validators.optional(Validators.decimal()),
+              decoration: InputDecoration(
+                isDense: true,
+                labelText: 'سعر التكلفة',
+                // Said beside the box rather than in a note under the section: this box exists
+                // for this heading and no other, and the reason belongs with it.
+                helperText: 'ما يتقاضاه المورد عن الوحدة — يُنسخ على الطلب يوم أخذه',
+                errorText: costError,
+              ),
+            ),
+          ],
           if (showShelf) ...[
             SizedBox(height: 10.h),
             _ShelfRow(
@@ -1122,6 +1210,7 @@ class _SizeRow {
       label = TextEditingController(),
       width = TextEditingController(),
       height = TextEditingController(),
+      cost = TextEditingController(),
       prices = List.generate(
         columns,
         (_) => TextEditingController(),
@@ -1144,7 +1233,10 @@ class _SizeRow {
       prices = [for (final price in prices) TextEditingController(text: price)],
       label = TextEditingController(text: variant.label),
       width = TextEditingController(text: variant.widthCm?.toString() ?? ''),
-      height = TextEditingController(text: variant.heightCm?.toString() ?? '');
+      height = TextEditingController(text: variant.heightCm?.toString() ?? ''),
+      // Seeded whether or not the box will be drawn, so a وسيط size keeps its number across a
+      // save about something else — the whole variant set is replaced on every PUT.
+      cost = TextEditingController(text: variant.costPrice ?? '');
 
   final int? id;
 
@@ -1160,12 +1252,17 @@ class _SizeRow {
   final TextEditingController label;
   final TextEditingController width;
   final TextEditingController height;
+
+  /// «سعر التكلفة» — drawn only under a وسيط heading, held for every size regardless.
+  final TextEditingController cost;
+
   final List<TextEditingController> prices;
 
   void dispose() {
     label.dispose();
     width.dispose();
     height.dispose();
+    cost.dispose();
 
     for (final price in prices) {
       price.dispose();

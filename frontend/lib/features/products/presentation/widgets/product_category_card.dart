@@ -2,6 +2,7 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/models/production_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -100,10 +101,15 @@ String _subtitle(ProductCategory category) {
   final stopped = category.isActive ? '' : ' · موقوف';
 
   // Read the same way «موقوف» is: a short tail on the line that already summarises the row, so
-  // the list can be scanned for the headings whose orders skip the press without opening each
-  // sheet in turn. Only this row's own answer — a subheading inheriting a flagged parent is not
-  // marked here, because this is the value its sheet would put back.
-  final skipsProduction = category.skipsProduction ? ' · بدون طباعة' : '';
+  // the list can be scanned for the headings whose orders leave the press without opening each
+  // sheet in turn. The printed road is the quiet default and says nothing; سادة and وسيط each
+  // say their own word — the server's — because the boolean that used to stand here called
+  // both «بدون طباعة» and could not tell a shelf from a vendor. Only this row's own answer: a
+  // subheading inheriting its parent's mode is not marked, because this is the value its sheet
+  // would put back.
+  final mode = category.productionMode == ProductionMode.inHouse
+      ? ''
+      : ' · ${category.productionModeCaption}';
 
   // A heading holding subheadings says so first: it is why no product can be filed on it, and
   // why the delete button will refuse.
@@ -125,7 +131,7 @@ String _subtitle(ProductCategory category) {
     _ => '${count.grouped} منتجاً',
   };
 
-  return [?children, ?products].join(' · ') + skipsProduction + stopped;
+  return [?children, ?products].join(' · ') + mode + stopped;
 }
 
 /// The heading's picture, or the glyph that stands in for one.

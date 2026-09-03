@@ -57,6 +57,12 @@ abstract class NewOrder with _$NewOrder {
     /// without the grant; that is the suggestion, and the refusal is the rule.
     @JsonKey(includeIfNull: false) String? discount,
 
+    /// Who will make it. **Required by the server for an order whose lines are all وسيط**, and
+    /// refused as a 422 on `vendor_id` when missing — the road is read off the lines, so the app
+    /// cannot be told by a field rule and has to look at the products itself. See
+    /// `vendorRequirementFor`. Accepted on any order, so a mixed one may name one too.
+    @JsonKey(name: 'vendor_id', includeIfNull: false) int? vendorId,
+
     @JsonKey(name: 'recipient_name', includeIfNull: false) String? recipientName,
     @JsonKey(name: 'recipient_phone', includeIfNull: false) String? recipientPhone,
     @JsonKey(name: 'address_details', includeIfNull: false) String? addressDetails,

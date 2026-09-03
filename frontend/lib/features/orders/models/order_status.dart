@@ -30,6 +30,12 @@ enum OrderStatus {
   designing('designing', 'قيد التصميم'),
   @JsonValue('printing')
   printing('printing', 'قيد الطباعة'),
+
+  /// The job is with an outside vendor, being made. Only وسيط orders reach it — see
+  /// OUTSOURCED-PRODUCTS.md §4. It is not «قيد الطباعة» under another name: one status, one
+  /// word, and the server sends the word.
+  @JsonValue('manufacturing')
+  manufacturing('manufacturing', 'قيد التصنيع'),
   @JsonValue('ready')
   ready('ready', 'جاهزة'),
   @JsonValue('shortage')
@@ -142,7 +148,9 @@ enum OrderStatus {
     // from being finished goods.
     OrderStatus.readyToPrint ||
     OrderStatus.designing ||
-    OrderStatus.printing => OrderStatusTone.working,
+    OrderStatus.printing ||
+    // On a vendor's bench rather than our press, but the same answer to «هل هي في يد أحد؟».
+    OrderStatus.manufacturing => OrderStatusTone.working,
     OrderStatus.ready => OrderStatusTone.ready,
     OrderStatus.shortage => OrderStatusTone.attention,
     OrderStatus.officePickup || OrderStatus.outForDelivery => OrderStatusTone.moving,

@@ -30,23 +30,48 @@ import 'package:flutter/material.dart';
 /// One quiet line in the muted colour, deliberately: the revenue side is what an invoice is read
 /// for, and a cost printed at the same weight beside it would compete with the number the
 /// customer is being asked to pay.
+///
+/// **A وسيط line has a fourth figure and a second reader.** `outsourcing_cost` — what the vendor
+/// charged for the line, recognised at «جاهزة» and folded into `cogs` by the server — sits in the
+/// same run as the three above for whoever reads the production figures. And `unit_cost`, the
+/// rate agreed with the vendor the day the order was taken, is drawn for a holder of
+/// `products.view_cost`, the grant that guards the catalogue number it was copied from. The
+/// server omits both keys without that grant; the widget is told which reader it has rather than
+/// guessing from the nulls, because a null here has two meanings.
 class OrderLineCosts extends StatelessWidget {
-  const OrderLineCosts({required this.item, super.key});
+  const OrderLineCosts({
+    required this.item,
+    this.showProduction = true,
+    this.showOutsourcing = false,
+    super.key,
+  });
 
   final OrderItem item;
+
+  /// The production figures — material, labour, overhead and their total. `reports.pnl.view`.
+  final bool showProduction;
+
+  /// The vendor's figures — the agreed rate and what the line came to. `products.view_cost`.
+  final bool showOutsourcing;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
     final parts = <String>[
-      if (item.materialCost case final material?) 'مواد ${material.grouped}',
-      if (item.laborCost case final labor?) 'عمالة ${labor.grouped}',
-      if (item.overheadCost case final overhead?) 'مصاريف ${overhead.grouped}',
+      if (showProduction) ...[
+        if (item.materialCost case final material?) 'مواد ${material.grouped}',
+        if (item.laborCost case final labor?) 'عمالة ${labor.grouped}',
+        if (item.overheadCost case final overhead?) 'مصاريف ${overhead.grouped}',
+      ],
+      // Part of the total for the production reader, and the whole story for the vendor's.
+      if (showProduction || showOutsourcing)
+        if (item.outsourcingCost case final outsourcing?) 'تصنيع خارجي ${outsourcing.grouped}',
     ];
 
-    final total = item.cogs;
-    if (total == null && parts.isEmpty) return const SizedBox.shrink();
+    final total = showProduction ? item.cogs : null;
+    final vendorRate = showOutsourcing ? item.unitCost : null;
+    if (total == null && parts.isEmpty && vendorRate == null) return const SizedBox.shrink();
 
     final line = [
       if (total != null) 'التكلفة ${total.grouped}',
@@ -54,12 +79,16 @@ class OrderLineCosts extends StatelessWidget {
     ].join(' — ');
 
     final style = context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
-    final unitCost = item.unitMaterialCost;
+    final unitCost = showProduction ? item.unitMaterialCost : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(line, style: style),
+        if (line.isNotEmpty) Text(line, style: style),
+        // The rate the vendor agreed, per the unit the line is sold in — which for a وسيط line
+        // *is* the unit the vendor prices by, since nothing here ever crosses a shelf.
+        if (vendorRate != null)
+          Text('تكلفة المورد لل${item.pricingUnitLabel} ${vendorRate.grouped}', style: style),
         // Its own line rather than a parenthesis inside the one above: three figures and a rate
         // in one run of text is a paragraph, and this is the one a reader came for.
         //

@@ -20,6 +20,7 @@ _NewOrder _$NewOrderFromJson(Map<String, dynamic> json) => _NewOrder(
       ?.map((e) => (e as num).toInt())
       .toList(),
   discount: json['discount'] as String?,
+  vendorId: (json['vendor_id'] as num?)?.toInt(),
   recipientName: json['recipient_name'] as String?,
   recipientPhone: json['recipient_phone'] as String?,
   addressDetails: json['address_details'] as String?,
@@ -36,6 +37,7 @@ Map<String, dynamic> _$NewOrderToJson(_NewOrder instance) => <String, dynamic>{
   'design_fee': ?instance.designFee,
   'design_ids': ?instance.designIds,
   'discount': ?instance.discount,
+  'vendor_id': ?instance.vendorId,
   'recipient_name': ?instance.recipientName,
   'recipient_phone': ?instance.recipientPhone,
   'address_details': ?instance.addressDetails,
