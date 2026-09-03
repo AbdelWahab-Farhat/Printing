@@ -688,7 +688,6 @@ class _NewOrderViewState extends State<_NewOrderView> {
     return AppTextField(
       controller: _recipientPhone,
       label: 'هاتف الاستلام',
-      helperText: 'رقم العميل — غيّره إن كان الاستلام على رقم آخر',
       keyboardType: TextInputType.phone,
       textDirection: TextDirection.ltr,
       errorText: submission.recipientPhoneError,
