@@ -5,7 +5,7 @@ Monorepo for the **Printing** product — a Laravel API with a Flutter client.
 ```
 backend/    Laravel 13 API  ·  PostgreSQL  ·  Sanctum  ·  OpenAPI 3.1 via Scramble
 frontend/   Flutter app     ·  MVVM-Clean, Cubit as the ViewModel (see frontend/README.md)
-Docs/       generated openapi.json
+Docs/       feature documentation, one folder per feature  ·  generated openapi.json
 ```
 
 Remote: `github.com/AbdelWahab-Farhat/Printing` (branch `main`).
@@ -128,3 +128,6 @@ Three things do not travel with a deploy, all on purpose:
   repository; `RULES.md` wins where the two overlap.
 - **[frontend/RULES.md](frontend/RULES.md)** — the binding Flutter standard. Read it before
   writing any Dart.
+- **[Docs/](Docs/README.md)** — one folder per feature, each holding that feature's design
+  documents. Start at [Docs/README.md](Docs/README.md); deferred work lives in
+  [Docs/BACKLOG.md](Docs/BACKLOG.md).

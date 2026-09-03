@@ -2,8 +2,8 @@
 
 > Backend only. The Flutter app is a follow-up; §8 says exactly what it will need and what the
 > API does to keep the shipped build working in the meantime.
-> Completes [ORDERS-STATUS-FLOW.md](../../ORDERS-STATUS-FLOW.md) and
-> [PRODUCT-CATEGORIES.md](../../PRODUCT-CATEGORIES.md); cancels nothing in either.
+> Completes [ORDERS-STATUS-FLOW.md](../orders/ORDERS-STATUS-FLOW.md) and
+> [PRODUCT-CATEGORIES.md](../products/PRODUCT-CATEGORIES.md); cancels nothing in either.
 > Wiring the app up to it: [OUTSOURCED-PRODUCTS-FRONTEND-INTEGRATION.md](OUTSOURCED-PRODUCTS-FRONTEND-INTEGRATION.md).
 
 ---
@@ -30,7 +30,7 @@ Four requirements, and everything below is one of them:
 ## 2. The type is a third value on the category, not a new column
 
 «النوع» stopped being a column on the product when مطبوعة/سادة became two headings — see
-[PRODUCT-CATEGORIES.md](../../PRODUCT-CATEGORIES.md). وسيط joins them there, which means the boolean
+[PRODUCT-CATEGORIES.md](../products/PRODUCT-CATEGORIES.md). وسيط joins them there, which means the boolean
 that answered «هل يُطبع؟» now has three answers and has to say which:
 
 | `production_mode` | التصنيف | what it means |
