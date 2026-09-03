@@ -3,6 +3,7 @@
 use App\Application\Api\V1\Controllers\ActivityLogController;
 use App\Application\Api\V1\Controllers\AuthController;
 use App\Application\Api\V1\Controllers\BusinessFieldController;
+use App\Application\Api\V1\Controllers\CarrierController;
 use App\Application\Api\V1\Controllers\CityController;
 use App\Application\Api\V1\Controllers\CustomerCommentController;
 use App\Application\Api\V1\Controllers\CustomerController;
@@ -10,6 +11,7 @@ use App\Application\Api\V1\Controllers\CustomerDesignController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
 use App\Application\Api\V1\Controllers\ManufacturingCostRateController;
+use App\Application\Api\V1\Controllers\NawrisWebhookController;
 use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\OrderPaymentController;
 use App\Application\Api\V1\Controllers\PermissionController;
@@ -31,6 +33,7 @@ use App\Application\Api\V1\Controllers\VendorCommentController;
 use App\Application\Api\V1\Controllers\VendorController;
 use App\Application\Api\V1\Controllers\WarehouseController;
 use App\Application\Api\V1\Controllers\WarehouseStockController;
+use App\Application\Api\V1\Middleware\VerifyNawrisWebhook;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -46,6 +49,19 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('health', HealthController::class)->name('health');
+
+    /*
+     * The carrier's webhook. Outside `auth:sanctum` because Nawris holds no token of ours — it is
+     * guarded instead by a shared secret compared in constant time *and* an IP allowlist, both in
+     * `VerifyNawrisWebhook`. The contract this integration was built from records a system where
+     * the allowlist was written and never attached; here it is on the route.
+     *
+     * Throttled as well: an endpoint that moves orders and writes to the ledger should not be a
+     * free retry loop for anyone holding the token.
+     */
+    Route::post('webhooks/nawris', NawrisWebhookController::class)
+        ->middleware([VerifyNawrisWebhook::class, 'throttle:120,1'])
+        ->name('webhooks.nawris');
 
     Route::prefix('auth')->name('auth.')->group(function (): void {
         // Throttled: unauthenticated and worth brute-forcing.
@@ -308,6 +324,29 @@ Route::prefix('v1')->group(function (): void {
         Route::post('orders/{order}/items/{item}/scrap', [OrderController::class, 'storeScrapLoss'])
             ->scopeBindings()
             ->middleware('can:inventory.manage')->name('orders.items.scrap');
+
+        // ── the carrier ─────────────────────────────────────────────────────────────────
+        // Two queues that exist because this integration can fail quietly: webhooks that arrived
+        // and were never processed, and orders dispatched but never lodged. Reading is its own
+        // permission from acting: seeing that a parcel is stuck is not the same authority as
+        // re-lodging it or closing a delivery conflict.
+        Route::get('carrier/events', [CarrierController::class, 'events'])
+            ->middleware('can:carrier.view')->name('carrier.events');
+
+        Route::get('carrier/parcels', [CarrierController::class, 'parcels'])
+            ->middleware('can:carrier.view')->name('carrier.parcels');
+
+        Route::get('carrier/not-lodged', [CarrierController::class, 'notLodged'])
+            ->middleware('can:carrier.view')->name('carrier.not-lodged');
+
+        Route::post('carrier/orders/{order}/lodge', [CarrierController::class, 'lodge'])
+            ->middleware('can:carrier.manage')->name('carrier.lodge');
+
+        Route::post('carrier/orders/{order}/cancel-shipment', [CarrierController::class, 'cancelShipment'])
+            ->middleware('can:carrier.manage')->name('carrier.cancel-shipment');
+
+        Route::post('carrier/parcels/{parcel}/resolve-conflict', [CarrierController::class, 'resolveConflict'])
+            ->middleware('can:carrier.manage')->name('carrier.resolve-conflict');
 
         // ── an order's money ────────────────────────────────────────────────────────────
         // A ledger, not a balance. There is deliberately no PUT and no DELETE: an entry is

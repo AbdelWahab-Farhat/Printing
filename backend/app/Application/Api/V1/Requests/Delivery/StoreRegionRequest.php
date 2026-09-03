@@ -30,6 +30,7 @@ class StoreRegionRequest extends FormRequest
             // شركة درب's zone code. Theirs, so it is stored as given and never generated here.
             'code' => ['nullable', 'string', 'max:20'],
             'darb_branch' => ['nullable', 'string', 'max:255'],
+            'nawris_area_id' => ['nullable', 'string', 'max:40'],
 
             // Both or neither — half a pin cannot be placed on a map.
             'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
@@ -61,6 +62,7 @@ class StoreRegionRequest extends FormRequest
             'name.unique' => 'اسم المنطقة مستخدم مسبقاً في هذه المدينة',
             'code.max' => 'رمز المنطقة طويل جداً',
             'darb_branch.max' => 'اسم الفرع طويل جداً',
+            'nawris_area_id.max' => 'معرّف منطقة نورس طويل جداً',
             'latitude.required_with' => 'خط العرض مطلوب مع خط الطول',
             'latitude.between' => 'خط العرض يجب أن يكون بين -90 و 90',
             'longitude.required_with' => 'خط الطول مطلوب مع خط العرض',
@@ -77,6 +79,7 @@ class StoreRegionRequest extends FormRequest
             'name' => 'اسم المنطقة',
             'code' => 'رمز المنطقة',
             'darb_branch' => 'فرع درب',
+            'nawris_area_id' => 'منطقة نورس',
             'latitude' => 'خط العرض',
             'longitude' => 'خط الطول',
         ];

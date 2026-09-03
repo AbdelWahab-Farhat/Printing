@@ -193,13 +193,43 @@ final class AuditAttributeLabels
         'city' => [
             'name' => 'اسم المدينة',
             'is_region_required' => 'المنطقة إلزامية',
+            'nawris_government_id' => 'محافظة نورس',
         ],
         'region' => [
             'city_id' => 'المدينة',
             'name' => 'اسم المنطقة',
+            'nawris_area_id' => 'منطقة نورس',
         ],
         'shipping_company' => [
             'name' => 'اسم شركة التوصيل',
+        ],
+
+        // The carrier side. Everything Nawris knows a parcel by, in their words and ours — a
+        // history screen here is read by whoever is chasing a parcel, not by a developer.
+        'nawris_parcel' => [
+            // **`code` is deliberately absent**, and the shared «الكود» serves it. Overriding it
+            // here would make the word differ by one row, which is exactly what stops
+            // `AuditAttributeLabelsTest` treating `code` as shared vocabulary — and every table
+            // without one would then be read as a table missing a label. The `unit` note above
+            // records the same trap.
+            'reference' => 'مرجعنا لدى نورس',
+            'bar_code' => 'الباركود',
+            'government' => 'المحافظة',
+            'area' => 'المنطقة',
+            'amount_to_collect' => 'المبلغ المطلوب تحصيله',
+            'delivery_price_deducted' => 'أجرة التوصيل المخصومة',
+            'collected_amount' => 'المبلغ المحصّل',
+            'remote_status_code' => 'رمز حالة نورس',
+            'remote_status_text' => 'حالة نورس',
+            'shipping_company_id' => 'شركة التوصيل',
+            'conflict_raised_at' => 'تاريخ رفع التعارض',
+            'conflict_resolved_at' => 'تاريخ إغلاق التعارض',
+            'dispatched_at' => 'تاريخ التسليم للناقل',
+            'closed_at' => 'تاريخ إغلاق الطرد',
+        ],
+        'nawris_parcel_order' => [
+            'nawris_parcel_id' => 'الطرد',
+            'amount_to_collect' => 'حصة الطلبية من التحصيل',
         ],
 
         'order' => [
@@ -242,6 +272,8 @@ final class AuditAttributeLabels
             'created_by' => 'أنشأها',
             'paid_amount' => 'المدفوع',
             'written_off_amount' => 'المشطوب',
+            'carrier_settled_amount' => 'المسدَّد لدى الناقل',
+            'carrier_collection_recorded_at' => 'تاريخ تسجيل تحصيل الناقل',
             'collected_amount' => 'المبلغ المحصّل',
             'settled_at' => 'تاريخ التسوية',
             // «شركة التوصيل» beside the older free-text `shipping_company`، وهما لا يجتمعان في

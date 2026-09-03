@@ -36,6 +36,11 @@ class StoreCityRequest extends FormRequest
 
             'darb_branch' => ['nullable', 'string', 'max:255'],
 
+            // Nawris's own id for this destination. Unvalidated beyond its length for the
+            // reason `darb_branch` is: the vocabulary is theirs, and a format we guessed at
+            // would refuse a value their API accepts.
+            'nawris_government_id' => ['nullable', 'string', 'max:40'],
+
             // Both or neither: half a pin cannot be placed on a map, so each requires the other.
             'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
@@ -58,6 +63,7 @@ class StoreCityRequest extends FormRequest
             'delivery_price.min' => 'سعر التوصيل لا يمكن أن يكون سالباً',
             'delivery_price.max' => 'سعر التوصيل أكبر من الحد المسموح',
             'darb_branch.max' => 'اسم الفرع طويل جداً',
+            'nawris_government_id.max' => 'معرّف محافظة نورس طويل جداً',
             'latitude.required_with' => 'خط العرض مطلوب مع خط الطول',
             'latitude.between' => 'خط العرض يجب أن يكون بين -90 و 90',
             'longitude.required_with' => 'خط الطول مطلوب مع خط العرض',
@@ -76,6 +82,7 @@ class StoreCityRequest extends FormRequest
             'is_region_required' => 'اشتراط المنطقة',
             'delivery_price' => 'سعر التوصيل',
             'darb_branch' => 'فرع درب',
+            'nawris_government_id' => 'محافظة نورس',
             'latitude' => 'خط العرض',
             'longitude' => 'خط الطول',
         ];

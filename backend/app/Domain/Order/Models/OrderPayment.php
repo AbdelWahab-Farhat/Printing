@@ -207,6 +207,31 @@ class OrderPayment extends Model
     }
 
     /**
+     * Whether this entry moves what the carrier collected at the door rather than either of the
+     * other two totals.
+     *
+     * The exact shape of {@see affectsWriteOff()}, one total along, and it exists for the same
+     * reason: **a reversal answers for the row it undoes.** A reversal of a carrier settlement
+     * must come back off `carrier_settled_amount` — taking it off `paid_amount` would leave an
+     * order claiming cash it never had, and off `written_off_amount` would leave it claiming a
+     * loss nobody decided on.
+     *
+     * Reads what was loaded before it asks the database, like {@see affectsWriteOff()}.
+     */
+    public function affectsCarrierSettlement(): bool
+    {
+        if ($this->type->isCarrierSettled()) {
+            return true;
+        }
+
+        if ($this->type !== OrderPaymentType::Reversal) {
+            return false;
+        }
+
+        return $this->reversedPayment?->type->isCarrierSettled() ?? false;
+    }
+
+    /**
      * What this entry does to the total it belongs to, signed.
      *
      * The one place the direction of a row is turned into arithmetic, so no caller has to

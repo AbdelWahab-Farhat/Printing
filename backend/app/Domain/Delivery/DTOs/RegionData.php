@@ -11,6 +11,8 @@ final readonly class RegionData
         /** شركة درب's own zone code, e.g. `s18`. Null until they publish one. */
         public ?string $code = null,
         public ?string $darbBranch = null,
+        /** Nawris's own id for this area, sent beside the city's government. */
+        public ?string $nawrisAreaId = null,
         public ?float $latitude = null,
         public ?float $longitude = null,
     ) {}
@@ -27,6 +29,7 @@ final readonly class RegionData
             name: trim((string) $validated['name']),
             code: self::textOrNull($validated['code'] ?? null),
             darbBranch: self::textOrNull($validated['darb_branch'] ?? null),
+            nawrisAreaId: self::textOrNull($validated['nawris_area_id'] ?? null),
             latitude: isset($validated['latitude']) ? (float) $validated['latitude'] : null,
             longitude: isset($validated['longitude']) ? (float) $validated['longitude'] : null,
         );

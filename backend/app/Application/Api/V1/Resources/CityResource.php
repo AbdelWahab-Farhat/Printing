@@ -38,6 +38,11 @@ class CityResource extends JsonResource
 
             'darb_branch' => $this->darb_branch,
 
+            // Nawris's own name for this destination, frozen onto a parcel at dispatch. Null
+            // means the city is not a Nawris destination, which dispatch refuses by name
+            // rather than by sending a null the carrier would reject unreadably.
+            'nawris_government_id' => $this->nawris_government_id,
+
             // Numbers, so a map SDK can use them without parsing.
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Audit\Enums;
 
+use App\Domain\Carrier\Models\NawrisParcel;
+use App\Domain\Carrier\Models\NawrisParcelOrder;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductImage;
@@ -95,6 +97,11 @@ enum AuditSubject: string
     case Region = 'region';
     case ShippingCompany = 'shipping_company';
 
+    // The carrier side. `nawris_webhook_event` is deliberately absent: it is not a
+    // business record and is exempt from the audit rules entirely — see the model.
+    case NawrisParcel = 'nawris_parcel';
+    case NawrisParcelOrder = 'nawris_parcel_order';
+
     // Inventory
     case StockItemGroup = 'stock_item_group';
     case StockItem = 'stock_item';
@@ -143,6 +150,8 @@ enum AuditSubject: string
             self::City => City::class,
             self::Region => Region::class,
             self::ShippingCompany => ShippingCompany::class,
+            self::NawrisParcel => NawrisParcel::class,
+            self::NawrisParcelOrder => NawrisParcelOrder::class,
             self::StockItemGroup => StockItemGroup::class,
             self::StockItem => StockItem::class,
             self::Warehouse => Warehouse::class,
@@ -188,6 +197,8 @@ enum AuditSubject: string
             self::City => 'مدينة',
             self::Region => 'منطقة',
             self::ShippingCompany => 'شركة توصيل',
+            self::NawrisParcel => 'طرد نورس',
+            self::NawrisParcelOrder => 'طلبية في طرد نورس',
             self::StockItemGroup => 'تصنيف',
             self::StockItem => 'مادة',
             self::Warehouse => 'مخزن',

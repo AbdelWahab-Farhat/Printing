@@ -19,6 +19,7 @@ final class UpdateRegion
             'name' => $data->name,
             'code' => $data->code,
             'darb_branch' => $data->darbBranch,
+            'nawris_area_id' => $data->nawrisAreaId,
             'latitude' => $data->latitude,
             'longitude' => $data->longitude,
         ]);

@@ -35,15 +35,17 @@ final class PaymentStatusExpression
         $unpaid = PaymentStatus::Unpaid->value;
         $partial = PaymentStatus::PartiallyPaid->value;
 
-        // What closes a debt is cash plus what was forgiven, so the comparison is against their
-        // sum — and the two are still told apart afterwards, which is the branch that keeps an
-        // order whose shortfall was written off out of «مدفوعة بالكامل».
+        // What closes a debt is cash, plus what was forgiven, plus what the carrier collected at
+        // the door — so the comparison is against all three. Only the forgiven one is told apart
+        // afterwards, which is the branch that keeps an order whose shortfall was written off out
+        // of «مدفوعة بالكامل»; a carrier settlement deliberately does not get that branch, because
+        // the customer did pay in full. Mirrors PaymentStatus::between() exactly.
         return <<<SQL
             CASE
-                WHEN paid_amount + written_off_amount > grand_total THEN '{$overpaid}'
-                WHEN paid_amount + written_off_amount = grand_total AND written_off_amount > 0 THEN '{$writtenOff}'
-                WHEN paid_amount + written_off_amount = grand_total THEN '{$paid}'
-                WHEN paid_amount + written_off_amount <= 0 THEN '{$unpaid}'
+                WHEN paid_amount + written_off_amount + carrier_settled_amount > grand_total THEN '{$overpaid}'
+                WHEN paid_amount + written_off_amount + carrier_settled_amount = grand_total AND written_off_amount > 0 THEN '{$writtenOff}'
+                WHEN paid_amount + written_off_amount + carrier_settled_amount = grand_total THEN '{$paid}'
+                WHEN paid_amount + written_off_amount + carrier_settled_amount <= 0 THEN '{$unpaid}'
                 ELSE '{$partial}'
             END
             SQL;
