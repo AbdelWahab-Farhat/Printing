@@ -380,7 +380,18 @@ mixin _$NewProductVariant {
 /// and sends it back untouched, so an explicit link survives an edit that had nothing to do
 /// with it. Null is therefore a real answer here — «اترك المادة تقرر» — which is why it is
 /// omitted from the body rather than sent as `null`.
-@JsonKey(name: 'stock_item_id', includeIfNull: false) int? get stockItemId; String get label;/// Strings, not `int`s, and deliberately.
+@JsonKey(name: 'stock_item_id', includeIfNull: false) int? get stockItemId;/// «سعر التكلفة» — what a vendor charges us for this size. Only a size under a وسيط heading
+/// may carry one; the server refuses it anywhere else with a 422 on `variants.N.cost_price`.
+///
+/// ⚠️ **Sent on every write, or it is cleared** — the same rule as [stockItemId], and for a
+/// stronger reason: `PUT /products/{id}` replaces the whole variant set, and a size sent
+/// without this key is saved with no cost. The form seeds every row from
+/// `data.variants[].cost_price` and sends it back untouched, or the first price edit wipes
+/// the costs of every other size. Omitted from the body when null so «لم تُحدَّد» stays
+/// distinguishable from «امسحها» in a log.
+///
+/// A decimal string, normalised in [SaveProduct] like every other number on the form.
+@JsonKey(name: 'cost_price', includeIfNull: false) String? get costPrice; String get label;/// Strings, not `int`s, and deliberately.
 ///
 /// `٢٥` is what a Libyan keyboard produces and `int.tryParse('٢٥')` is null. Parsing in the
 /// page would drop the dimension silently — the server accepts a null width, so nothing
@@ -399,16 +410,16 @@ $NewProductVariantCopyWith<NewProductVariant> get copyWith => _$NewProductVarian
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&const DeepCollectionEquality().equals(other.priceTiers, priceTiers));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&const DeepCollectionEquality().equals(other.priceTiers, priceTiers));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,stockItemId,label,widthCm,heightCm,const DeepCollectionEquality().hash(priceTiers));
+int get hashCode => Object.hash(runtimeType,id,stockItemId,costPrice,label,widthCm,heightCm,const DeepCollectionEquality().hash(priceTiers));
 
 @override
 String toString() {
-  return 'NewProductVariant(id: $id, stockItemId: $stockItemId, label: $label, widthCm: $widthCm, heightCm: $heightCm, priceTiers: $priceTiers)';
+  return 'NewProductVariant(id: $id, stockItemId: $stockItemId, costPrice: $costPrice, label: $label, widthCm: $widthCm, heightCm: $heightCm, priceTiers: $priceTiers)';
 }
 
 
@@ -419,7 +430,7 @@ abstract mixin class $NewProductVariantCopyWith<$Res>  {
   factory $NewProductVariantCopyWith(NewProductVariant value, $Res Function(NewProductVariant) _then) = _$NewProductVariantCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(includeIfNull: false) int? id,@JsonKey(name: 'stock_item_id', includeIfNull: false) int? stockItemId, String label,@JsonKey(name: 'width_cm', includeIfNull: false) int? widthCm,@JsonKey(name: 'height_cm', includeIfNull: false) int? heightCm,@JsonKey(name: 'price_tiers') List<NewPriceTier> priceTiers
+@JsonKey(includeIfNull: false) int? id,@JsonKey(name: 'stock_item_id', includeIfNull: false) int? stockItemId,@JsonKey(name: 'cost_price', includeIfNull: false) String? costPrice, String label,@JsonKey(name: 'width_cm', includeIfNull: false) int? widthCm,@JsonKey(name: 'height_cm', includeIfNull: false) int? heightCm,@JsonKey(name: 'price_tiers') List<NewPriceTier> priceTiers
 });
 
 
@@ -436,11 +447,12 @@ class _$NewProductVariantCopyWithImpl<$Res>
 
 /// Create a copy of NewProductVariant
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? stockItemId = freezed,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? priceTiers = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? stockItemId = freezed,Object? costPrice = freezed,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? priceTiers = null,}) {
   return _then(_self.copyWith(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int?,stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
-as int?,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as int?,costPrice: freezed == costPrice ? _self.costPrice : costPrice // ignore: cast_nullable_to_non_nullable
+as String?,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
 as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
 as int?,priceTiers: null == priceTiers ? _self.priceTiers : priceTiers // ignore: cast_nullable_to_non_nullable
@@ -529,10 +541,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id, @JsonKey(name: 'stock_item_id', includeIfNull: false)  int? stockItemId,  String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id, @JsonKey(name: 'stock_item_id', includeIfNull: false)  int? stockItemId, @JsonKey(name: 'cost_price', includeIfNull: false)  String? costPrice,  String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NewProductVariant() when $default != null:
-return $default(_that.id,_that.stockItemId,_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
+return $default(_that.id,_that.stockItemId,_that.costPrice,_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
   return orElse();
 
 }
@@ -550,10 +562,10 @@ return $default(_that.id,_that.stockItemId,_that.label,_that.widthCm,_that.heigh
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id, @JsonKey(name: 'stock_item_id', includeIfNull: false)  int? stockItemId,  String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id, @JsonKey(name: 'stock_item_id', includeIfNull: false)  int? stockItemId, @JsonKey(name: 'cost_price', includeIfNull: false)  String? costPrice,  String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)  $default,) {final _that = this;
 switch (_that) {
 case _NewProductVariant():
-return $default(_that.id,_that.stockItemId,_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
+return $default(_that.id,_that.stockItemId,_that.costPrice,_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -570,10 +582,10 @@ return $default(_that.id,_that.stockItemId,_that.label,_that.widthCm,_that.heigh
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  int? id, @JsonKey(name: 'stock_item_id', includeIfNull: false)  int? stockItemId,  String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  int? id, @JsonKey(name: 'stock_item_id', includeIfNull: false)  int? stockItemId, @JsonKey(name: 'cost_price', includeIfNull: false)  String? costPrice,  String label, @JsonKey(name: 'width_cm', includeIfNull: false)  int? widthCm, @JsonKey(name: 'height_cm', includeIfNull: false)  int? heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers)?  $default,) {final _that = this;
 switch (_that) {
 case _NewProductVariant() when $default != null:
-return $default(_that.id,_that.stockItemId,_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
+return $default(_that.id,_that.stockItemId,_that.costPrice,_that.label,_that.widthCm,_that.heightCm,_that.priceTiers);case _:
   return null;
 
 }
@@ -585,7 +597,7 @@ return $default(_that.id,_that.stockItemId,_that.label,_that.widthCm,_that.heigh
 @JsonSerializable()
 
 class _NewProductVariant implements NewProductVariant {
-  const _NewProductVariant({@JsonKey(includeIfNull: false) this.id, @JsonKey(name: 'stock_item_id', includeIfNull: false) this.stockItemId, required this.label, @JsonKey(name: 'width_cm', includeIfNull: false) this.widthCm, @JsonKey(name: 'height_cm', includeIfNull: false) this.heightCm, @JsonKey(name: 'price_tiers') final  List<NewPriceTier> priceTiers = const <NewPriceTier>[]}): _priceTiers = priceTiers;
+  const _NewProductVariant({@JsonKey(includeIfNull: false) this.id, @JsonKey(name: 'stock_item_id', includeIfNull: false) this.stockItemId, @JsonKey(name: 'cost_price', includeIfNull: false) this.costPrice, required this.label, @JsonKey(name: 'width_cm', includeIfNull: false) this.widthCm, @JsonKey(name: 'height_cm', includeIfNull: false) this.heightCm, @JsonKey(name: 'price_tiers') final  List<NewPriceTier> priceTiers = const <NewPriceTier>[]}): _priceTiers = priceTiers;
   factory _NewProductVariant.fromJson(Map<String, dynamic> json) => _$NewProductVariantFromJson(json);
 
 /// **The id of a size that already exists, and the reason editing works at all.**
@@ -612,6 +624,18 @@ class _NewProductVariant implements NewProductVariant {
 /// with it. Null is therefore a real answer here — «اترك المادة تقرر» — which is why it is
 /// omitted from the body rather than sent as `null`.
 @override@JsonKey(name: 'stock_item_id', includeIfNull: false) final  int? stockItemId;
+/// «سعر التكلفة» — what a vendor charges us for this size. Only a size under a وسيط heading
+/// may carry one; the server refuses it anywhere else with a 422 on `variants.N.cost_price`.
+///
+/// ⚠️ **Sent on every write, or it is cleared** — the same rule as [stockItemId], and for a
+/// stronger reason: `PUT /products/{id}` replaces the whole variant set, and a size sent
+/// without this key is saved with no cost. The form seeds every row from
+/// `data.variants[].cost_price` and sends it back untouched, or the first price edit wipes
+/// the costs of every other size. Omitted from the body when null so «لم تُحدَّد» stays
+/// distinguishable from «امسحها» in a log.
+///
+/// A decimal string, normalised in [SaveProduct] like every other number on the form.
+@override@JsonKey(name: 'cost_price', includeIfNull: false) final  String? costPrice;
 @override final  String label;
 /// Strings, not `int`s, and deliberately.
 ///
@@ -642,16 +666,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&const DeepCollectionEquality().equals(other._priceTiers, _priceTiers));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&const DeepCollectionEquality().equals(other._priceTiers, _priceTiers));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,stockItemId,label,widthCm,heightCm,const DeepCollectionEquality().hash(_priceTiers));
+int get hashCode => Object.hash(runtimeType,id,stockItemId,costPrice,label,widthCm,heightCm,const DeepCollectionEquality().hash(_priceTiers));
 
 @override
 String toString() {
-  return 'NewProductVariant(id: $id, stockItemId: $stockItemId, label: $label, widthCm: $widthCm, heightCm: $heightCm, priceTiers: $priceTiers)';
+  return 'NewProductVariant(id: $id, stockItemId: $stockItemId, costPrice: $costPrice, label: $label, widthCm: $widthCm, heightCm: $heightCm, priceTiers: $priceTiers)';
 }
 
 
@@ -662,7 +686,7 @@ abstract mixin class _$NewProductVariantCopyWith<$Res> implements $NewProductVar
   factory _$NewProductVariantCopyWith(_NewProductVariant value, $Res Function(_NewProductVariant) _then) = __$NewProductVariantCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(includeIfNull: false) int? id,@JsonKey(name: 'stock_item_id', includeIfNull: false) int? stockItemId, String label,@JsonKey(name: 'width_cm', includeIfNull: false) int? widthCm,@JsonKey(name: 'height_cm', includeIfNull: false) int? heightCm,@JsonKey(name: 'price_tiers') List<NewPriceTier> priceTiers
+@JsonKey(includeIfNull: false) int? id,@JsonKey(name: 'stock_item_id', includeIfNull: false) int? stockItemId,@JsonKey(name: 'cost_price', includeIfNull: false) String? costPrice, String label,@JsonKey(name: 'width_cm', includeIfNull: false) int? widthCm,@JsonKey(name: 'height_cm', includeIfNull: false) int? heightCm,@JsonKey(name: 'price_tiers') List<NewPriceTier> priceTiers
 });
 
 
@@ -679,11 +703,12 @@ class __$NewProductVariantCopyWithImpl<$Res>
 
 /// Create a copy of NewProductVariant
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? stockItemId = freezed,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? priceTiers = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? stockItemId = freezed,Object? costPrice = freezed,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? priceTiers = null,}) {
   return _then(_NewProductVariant(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int?,stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
-as int?,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as int?,costPrice: freezed == costPrice ? _self.costPrice : costPrice // ignore: cast_nullable_to_non_nullable
+as String?,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
 as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
 as int?,priceTiers: null == priceTiers ? _self._priceTiers : priceTiers // ignore: cast_nullable_to_non_nullable

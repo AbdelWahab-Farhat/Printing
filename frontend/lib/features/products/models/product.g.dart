@@ -92,6 +92,7 @@ _ProductVariant _$ProductVariantFromJson(Map<String, dynamic> json) =>
           : VariantStockItem.fromJson(
               json['stock_item'] as Map<String, dynamic>,
             ),
+      costPrice: json['cost_price'] as String?,
       priceTiers:
           (json['price_tiers'] as List<dynamic>?)
               ?.map((e) => ProductPriceTier.fromJson(e as Map<String, dynamic>))
@@ -109,6 +110,7 @@ Map<String, dynamic> _$ProductVariantToJson(_ProductVariant instance) =>
       'sort_order': instance.sortOrder,
       'stock_item_id': instance.stockItemId,
       'stock_item': instance.stockItem?.toJson(),
+      'cost_price': instance.costPrice,
       'price_tiers': instance.priceTiers.map((e) => e.toJson()).toList(),
     };
 

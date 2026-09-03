@@ -56,7 +56,7 @@ final class UpdateProduct
                 ($this->syncVariants)($product, $data->variants);
             }
 
-            return $product->load(['variants.priceTiers', 'variants.stockItem', 'images', 'productCategory', 'stockItemGroup']);
+            return $product->load(['variants.priceTiers', 'variants.stockItem', 'images', 'productCategory.parent', 'stockItemGroup']);
         });
     }
 }

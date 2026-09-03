@@ -335,6 +335,13 @@ abstract final class AppIcons {
   static IconData get manufacturingCostRates =>
       _pick(Icons.price_change_outlined, CupertinoIcons.money_dollar);
 
+  /// «قيد التصنيع» — the job is on an outside vendor's bench. A workshop tool rather than
+  /// [printedProduct]'s press: the press is ours and this is not, and the two statuses sit on
+  /// different roads. Deliberately not [vendors]' storefront either — that glyph names *who*,
+  /// and a status chip is about *where the work is*.
+  static IconData get manufacturing =>
+      _pick(Icons.precision_manufacturing_outlined, CupertinoIcons.hammer);
+
   /// A report read for its figures rather than its records — الأرباح والخسائر today.
   ///
   /// Deliberately not [settled]: Material draws that as the same receipt the الطلبات tab uses,

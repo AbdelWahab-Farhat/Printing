@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Catalog\Models\ProductCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -28,7 +29,7 @@ class ProductCategoryFactory extends Factory
             'sort_order' => 0,
             // The road every order took before flows existed, which is what an unremarkable
             // category should still mean.
-            'skips_production' => false,
+            'production_mode' => ProductionMode::InHouse,
         ];
     }
 
@@ -44,6 +45,17 @@ class ProductCategoryFactory extends Factory
      */
     public function skipsProduction(): static
     {
-        return $this->state(fn () => ['skips_production' => true]);
+        return $this->state(fn () => ['production_mode' => ProductionMode::None]);
+    }
+
+    /**
+     * «وسيط» — goods an outside vendor makes for us.
+     *
+     * An order made only of these walks جديدة → (قيد التصميم) → قيد التصنيع → جاهزة, deducts no
+     * stock, and owes a vendor; see OUTSOURCED-PRODUCTS.md.
+     */
+    public function outsourced(): static
+    {
+        return $this->state(fn () => ['production_mode' => ProductionMode::Outsourced]);
     }
 }

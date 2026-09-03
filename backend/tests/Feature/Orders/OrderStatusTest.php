@@ -247,6 +247,101 @@ class OrderStatusTest extends TestCase
         $this->assertEqualsCanonicalizing([OrderStatus::New, OrderStatus::Shortage], $differing);
     }
 
+    // ── the وسيط road ────────────────────────────────────────────────────────────────────────
+    // Goods دعاية sells and an outside vendor makes. Four business requirements, one test each,
+    // and all four are about which buttons the screen may offer — see OUTSOURCED-PRODUCTS.md §4.
+
+    public function test_an_outsourced_order_is_sent_to_the_vendor_from_intake_or_after_design(): void
+    {
+        // Act
+        $fromIntake = OrderStatus::New->allowedNext(OrderFlow::Outsourced);
+
+        // Assert — «يمكن الانتقال من جديدة مباشرة إلى قيد التصنيع»، و«يمكن المرور بقيد التصميم
+        // أولاً إذا كان الطلب يحتاج تصميماً». Two doors, and nothing else at intake.
+        $this->assertSame([OrderStatus::Designing, OrderStatus::Manufacturing], $fromIntake);
+
+        // And the design queue leads to the vendor rather than to a press of ours.
+        $this->assertSame(
+            [OrderStatus::Manufacturing, OrderStatus::Cancelled],
+            OrderStatus::Designing->allowedNext(OrderFlow::Outsourced),
+        );
+    }
+
+    public function test_the_outsourced_road_has_no_handover_to_a_press_of_ours(): void
+    {
+        // Act
+        $reachable = self::reachableOn(OrderFlow::Outsourced);
+
+        // Assert — «عدم إضافة حالة جاهز للتصنيع»: دعاية does not run the manufacturing, so there
+        // is nothing to be ready *for*. Absent from the whole road by walking it, not merely
+        // missing from «جديدة». «قيد الطباعة» goes with it: the press is not on this road either.
+        $this->assertNotContains(OrderStatus::ReadyToPrint, $reachable);
+        $this->assertNotContains(OrderStatus::Printing, $reachable);
+
+        // The two that *are* the work here, so this is a statement about which road is walked
+        // rather than about a walk that quietly stopped early.
+        $this->assertContains(OrderStatus::Designing, $reachable);
+        $this->assertContains(OrderStatus::Manufacturing, $reachable);
+    }
+
+    public function test_an_outsourced_order_is_never_parked_short(): void
+    {
+        // Act
+        $reachable = self::reachableOn(OrderFlow::Outsourced);
+
+        // Assert — we hold no stock of a وسيط product, so there is nothing to be short of. A
+        // vendor taking his time is «قيد التصنيع» lasting a while, which is a different sentence
+        // and a different screen.
+        $this->assertNotContains(OrderStatus::Shortage, $reachable);
+    }
+
+    public function test_the_vendor_hands_the_job_back_and_the_road_rejoins(): void
+    {
+        // Act
+        $fromVendor = OrderStatus::Manufacturing->allowedNext(OrderFlow::Outsourced);
+
+        // Assert — forward to the shelf, back to the artwork when a proof comes back wrong, or
+        // written off. From «جاهزة» on, every road is the same road.
+        $this->assertSame(
+            [OrderStatus::Ready, OrderStatus::Designing, OrderStatus::Cancelled],
+            $fromVendor,
+        );
+
+        $this->assertSame(
+            OrderStatus::Ready->allowedNext(),
+            OrderStatus::Ready->allowedNext(OrderFlow::Outsourced),
+        );
+    }
+
+    public function test_the_outsourced_road_is_drawn_as_the_road_it_walks(): void
+    {
+        // Act
+        $line = OrderStatus::mainLine(FulfilmentType::Delivery, OrderFlow::Outsourced);
+
+        // Assert — six steps: taken, designed, made by the vendor, on our shelf, out, received,
+        // settled — with «جاهزة للطباعة» absent. A bar drawing a step this order will never enter
+        // would report it as further behind than it is, for its whole life.
+        $this->assertSame([
+            OrderStatus::New,
+            OrderStatus::Designing,
+            OrderStatus::Manufacturing,
+            OrderStatus::Ready,
+            OrderStatus::OutForDelivery,
+            OrderStatus::Delivered,
+            OrderStatus::Settled,
+        ], $line);
+    }
+
+    public function test_only_the_outsourced_road_takes_nothing_off_a_shelf(): void
+    {
+        // Assert — the two roads that produce or pick goods here both deduct; the one whose goods
+        // were never ours does not. `ChangeOrderStatus` and `TransitionFields` both read this, so
+        // the warehouse picker and the deduction cannot disagree about a move.
+        $this->assertTrue(OrderFlow::Standard->deductsStock());
+        $this->assertTrue(OrderFlow::NoProduction->deductsStock());
+        $this->assertFalse(OrderFlow::Outsourced->deductsStock());
+    }
+
     public function test_a_shorter_road_is_still_a_road(): void
     {
         // Act
@@ -626,25 +721,29 @@ class OrderStatusTest extends TestCase
 
     // ─────────────────────────── the order the board reads ───────────────────────────
 
-    public function test_the_board_opens_on_the_six_statuses_the_workshop_lives_in(): void
+    public function test_the_board_opens_on_the_seven_statuses_the_workshop_lives_in(): void
     {
         // Act — `cases()` is what the home screen draws, in the order it draws them: the app
         // holds no list of its own, so this sequence *is* the board.
         $opening = array_map(
             fn (OrderStatus $s) => $s->value,
-            array_slice(OrderStatus::cases(), 0, 6),
+            array_slice(OrderStatus::cases(), 0, 7),
         );
 
         // Assert — two cards to a row on the phone, and each row pairs the work with the thing
         // that stands beside it: جديدة/نواقص is what came in and what could not be started,
-        // قيد التصميم/جاهزة للطباعة is the artwork and the queue it feeds, قيد الطباعة/جاهزة is
-        // the press and its shelf. This is the shop's own reading order, not the machine's —
-        // «جاهزة للطباعة» comes after «قيد التصميم» here and before it in allowedNext(), and
-        // both are right about different questions.
+        // قيد التصميم/جاهزة للطباعة is the artwork and the queue it feeds, قيد الطباعة/قيد
+        // التصنيع is the two production roads side by side — our press and the vendor's bench —
+        // and «جاهزة» opens the next row. This is the shop's own reading order, not the
+        // machine's — «جاهزة للطباعة» comes after «قيد التصميم» here and before it in
+        // allowedNext(), and both are right about different questions. Seven rather than six
+        // since «قيد التصنيع» arrived (OUTSOURCED-PRODUCTS.md §4); it earns a board slot because
+        // it is work somebody is waiting on, exactly like the press.
         $this->assertSame([
             'new', 'shortage',
             'designing', 'ready_to_print',
-            'printing', 'ready',
+            'printing', 'manufacturing',
+            'ready',
         ], $opening);
     }
 
@@ -703,12 +802,17 @@ class OrderStatusTest extends TestCase
 
     public function test_every_status_except_the_first_can_be_reached(): void
     {
-        // Arrange
+        // Arrange — **across every road, not only the standard one.** «قيد التصنيع» is reached by
+        // وسيط orders and by nothing else, so a sweep of one map would call it dead code while it
+        // is the whole of a road that exists. What the invariant means is «nothing leads here,
+        // anywhere», and that is what this now asks.
         $reachable = [];
 
-        foreach (OrderStatus::cases() as $status) {
-            foreach ($status->allowedNext() as $next) {
-                $reachable[$next->value] = true;
+        foreach (OrderFlow::cases() as $flow) {
+            foreach (OrderStatus::cases() as $status) {
+                foreach ($status->allowedNext($flow) as $next) {
+                    $reachable[$next->value] = true;
+                }
             }
         }
 

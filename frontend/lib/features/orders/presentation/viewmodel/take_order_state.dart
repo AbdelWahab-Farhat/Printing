@@ -54,6 +54,12 @@ extension TakeOrderStateX on TakeOrderState {
 
   String? get recipientPhoneError => _fieldError('recipient_phone');
 
+  /// Why the vendor was refused, under the picker. The validator's «المورد المحدد غير موجود» and
+  /// the domain's «الطلبية الوسيطة تحتاج مورداً» both arrive on this key — the second is the
+  /// one the form guards against, and the one it paints if a mixed-up product list ever lets
+  /// it through.
+  String? get vendorError => _fieldError('vendor_id');
+
   /// True when the server complained about something this form has nowhere to put.
   ///
   /// Those are the only cases that need a snackbar — anything rendered inline would otherwise
@@ -102,7 +108,7 @@ final RegExp _designEntryKey = RegExp(r'^design_ids\.\d+$');
 
 /// The exact keys the form paints under an input. Everything else goes to a snackbar.
 final RegExp _renderedKey = RegExp(
-  r'^(items|city_id|region_id|discount|design_fee|recipient_phone'
+  r'^(items|city_id|region_id|discount|design_fee|recipient_phone|vendor_id'
   r'|customer_design_id|design_ids'
   r'|items\.\d+\.quantity'
   r'|items\.\d+\.unit_price'

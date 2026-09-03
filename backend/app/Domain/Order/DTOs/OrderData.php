@@ -45,6 +45,13 @@ final readonly class OrderData
         public string $additionalCost = '0.00',
         public ?AdditionalCostReason $additionalCostReason = null,
         public ?string $additionalCostNote = null,
+        /**
+         * Who is making it, for an order دعاية sells and somebody else executes.
+         *
+         * An id from the vendor list, never a name typed into a box — see OUTSOURCED-PRODUCTS.md
+         * §5. Null on every other order, and refused by `CreateOrder` on a وسيط one.
+         */
+        public ?int $vendorId = null,
         public ?string $trackingNumber = null,
         public ?array $items = null,
         public array $designIds = [],
@@ -79,6 +86,7 @@ final readonly class OrderData
                 ? AdditionalCostReason::from((string) $validated['additional_cost_reason'])
                 : null,
             additionalCostNote: self::textOrNull($validated['additional_cost_note'] ?? null),
+            vendorId: isset($validated['vendor_id']) ? (int) $validated['vendor_id'] : null,
             trackingNumber: self::textOrNull($validated['tracking_number'] ?? null),
             designIds: is_array($validated['design_ids'] ?? null)
                 ? array_values(array_map(intval(...), $validated['design_ids']))

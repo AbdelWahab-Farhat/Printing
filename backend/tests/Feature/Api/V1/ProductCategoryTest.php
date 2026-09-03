@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Identity\Enums\PermissionName;
@@ -740,5 +741,103 @@ class ProductCategoryTest extends TestCase
         // Assert
         $response->assertOk()->assertJsonPath('data.image_url', null);
         Storage::disk('public')->assertMissing($path);
+    }
+
+    // ─────────── طريقة التنفيذ، والمفتاح القديم الذي ما زال التطبيق يكتبه ───────────
+    // The boolean `skips_production` became a three-valued `production_mode`, and the shipped app
+    // still speaks the boolean in both directions — see OUTSOURCED-PRODUCTS.md §2 and §8.
+
+    public function test_a_heading_can_be_marked_as_made_by_an_outside_vendor(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->postJson('/api/v1/product-categories', [
+            'name' => 'وسيط',
+            'production_mode' => 'outsourced',
+        ], $headers);
+
+        // Assert — the mode round-trips with its Arabic, so a screen names it without keeping a
+        // dictionary of its own.
+        $response->assertCreated()
+            ->assertJsonPath('data.production_mode', 'outsourced')
+            ->assertJsonPath('data.production_mode_label', 'وسيط — لدى مورد خارجي');
+    }
+
+    public function test_a_heading_nobody_decided_about_is_made_here(): void
+    {
+        // Act
+        $response = $this->postJson('/api/v1/product-categories', ['name' => 'أكياس'], $this->auth());
+
+        // Assert — the road every order took before any of this existed.
+        $response->assertCreated()->assertJsonPath('data.production_mode', 'in_house');
+    }
+
+    public function test_the_old_boolean_still_says_what_it_always_said(): void
+    {
+        // Arrange — a build that has never heard of `production_mode`.
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->postJson('/api/v1/product-categories', [
+            'name' => 'سادة',
+            'skips_production' => true,
+        ], $headers);
+
+        // Assert — «سادة», and the key it was sent under still comes back, for the card that
+        // prints «بدون طباعة».
+        $response->assertCreated()
+            ->assertJsonPath('data.production_mode', 'none')
+            ->assertJsonPath('data.skips_production', true);
+    }
+
+    public function test_an_old_build_cannot_demote_a_heading_it_has_no_words_for(): void
+    {
+        // Arrange — «وسيط», then an edit from a build whose sheet holds only a switch, sending
+        // that switch off because it has no way to describe what it is looking at.
+        $headers = $this->auth();
+        $category = ProductCategory::factory()->outsourced()->create(['name' => 'وسيط']);
+
+        // Act
+        $response = $this->putJson("/api/v1/product-categories/{$category->id}", [
+            'name' => 'وسيط',
+            'skips_production' => false,
+        ], $headers);
+
+        // Assert — left exactly as it was. Reading that `false` as «مطبوعة» would quietly take
+        // every order taken afterwards off the vendor road, cost prices and all.
+        $response->assertOk()->assertJsonPath('data.production_mode', 'outsourced');
+        $this->assertSame(ProductionMode::Outsourced, $category->fresh()->production_mode);
+    }
+
+    public function test_an_edit_that_says_nothing_about_the_mode_changes_nothing(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+        $category = ProductCategory::factory()->skipsProduction()->create(['name' => 'سادة']);
+
+        // Act — a rename, and not a word about roads.
+        $response = $this->putJson(
+            "/api/v1/product-categories/{$category->id}",
+            ['name' => 'سادة ورقية'],
+            $headers,
+        );
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.production_mode', 'none');
+    }
+
+    public function test_a_mode_nobody_has_heard_of_is_refused(): void
+    {
+        // Act
+        $response = $this->postJson('/api/v1/product-categories', [
+            'name' => 'تصنيف',
+            'production_mode' => 'subcontracted',
+        ], $this->auth());
+
+        // Assert — a closed set, so the column stays something a report can group by rather than
+        // four spellings of one idea.
+        $response->assertStatus(422)->assertJsonValidationErrors('production_mode');
     }
 }

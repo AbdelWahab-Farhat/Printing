@@ -128,6 +128,8 @@ class OrderStatusChip extends StatelessWidget {
     OrderStatus.designing => AppIcons.designs,
     // The press itself, where «قيد الطباعة» actually is — not the bag it will become.
     OrderStatus.printing => AppIcons.printedProduct,
+    // A vendor's bench, not our press: the وسيط road's own step, with its own tool.
+    OrderStatus.manufacturing => AppIcons.manufacturing,
     // Done in the workshop: an outlined tick. Its pair is `delivered`'s filled one — finished
     // *here* against finished *there*.
     OrderStatus.ready => AppIcons.activate,

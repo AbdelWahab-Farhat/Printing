@@ -32,6 +32,12 @@ class OrderResource extends JsonResource
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
 
+            // Who is making it, for an order a vendor executes. The name travels with the id
+            // because it is what this order said at the time — a vendor renamed since keeps its
+            // new name everywhere except here. Null on every order that is made in-house.
+            'vendor_id' => $this->vendor_id,
+            'vendor_name' => $this->vendor_name,
+
             // **Which road this order walks**, so a client can *explain* a five-step bar rather
             // than leaving one that looks truncated. It is not a second copy of the rules —
             // `available_transitions` and `progress` below already have the answers baked in —
@@ -191,6 +197,7 @@ class OrderResource extends JsonResource
             'ready_to_print_at' => $this->ready_to_print_at?->toIso8601String(),
             'design_started_at' => $this->design_started_at?->toIso8601String(),
             'printing_started_at' => $this->printing_started_at?->toIso8601String(),
+            'manufacturing_started_at' => $this->manufacturing_started_at?->toIso8601String(),
             'ready_at' => $this->ready_at?->toIso8601String(),
             'dispatched_at' => $this->dispatched_at?->toIso8601String(),
             'delivered_at' => $this->delivered_at?->toIso8601String(),

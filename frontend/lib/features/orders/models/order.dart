@@ -216,6 +216,18 @@ abstract class Order with _$Order {
     @JsonKey(name: 'fulfillment_warehouse_id') int? fulfillmentWarehouseId,
     @JsonKey(name: 'stock_deducted_at') DateTime? stockDeductedAt,
 
+    /// Who is making it, for an order a vendor executes. Null on everything we make ourselves.
+    @JsonKey(name: 'vendor_id') int? vendorId,
+
+    /// The vendor's name **as this order said it**, snapshotted the way [cityName] is. A vendor
+    /// renamed since keeps its new name everywhere except here, which is the point of storing
+    /// it — show this, never a lookup.
+    @JsonKey(name: 'vendor_name') String? vendorName,
+
+    /// When the job went out to the vendor. Null until it does, and forever on an order that
+    /// never walks the وسيط road.
+    @JsonKey(name: 'manufacturing_started_at') DateTime? manufacturingStartedAt,
+
     /// What the parcel weighs, in kilograms — the lines' own scale readings added up by the
     /// server.
     ///
@@ -496,6 +508,17 @@ abstract class OrderItem with _$OrderItem {
     /// one. Null on a payload that carries no shelf — a list, or a server too old to send it —
     /// in which case there is no per-unit figure to label either.
     @JsonKey(name: 'stock_unit_label') String? stockUnitLabel,
+
+    /// The copy of the size's «سعر التكلفة» taken the day this order was made — what makes a
+    /// later change to the catalogue leave this order alone. Null on every line we make
+    /// ourselves, and **absent** for anybody without `products.view_cost`, so the screen gates
+    /// on the grant rather than on the null.
+    @JsonKey(name: 'unit_cost') String? unitCost,
+
+    /// What the line cost in total, written when the vendor handed the job over («جاهزة»). Null
+    /// before that: a price agreed with a vendor is not a cost incurred. Folded into [cogs] by
+    /// the server, so it is read here and never added in again.
+    @JsonKey(name: 'outsourcing_cost') String? outsourcingCost,
 
     String? notes,
   }) = _OrderItem;

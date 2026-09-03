@@ -60,6 +60,11 @@ class UpdateOrderRequest extends StoreOrderRequest
                 'max:500',
             ],
 
+            // Who is making it. Changeable while the order is open — the vendor a job was sent
+            // to is exactly the kind of thing that turns out to be the wrong one on the day —
+            // and re-snapshotted with its name when it moves; see `UpdateOrder`.
+            'vendor_id' => ['nullable', 'integer', Rule::exists('vendors', 'id')->withoutTrashed()],
+
             'tracking_number' => ['nullable', 'string', 'max:100'],
 
             // Optional here: omit to leave the lines untouched, send to replace the whole set.

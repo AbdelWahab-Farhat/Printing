@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Product;
 
+use App\Domain\Catalog\Enums\ProductionMode;
+use App\Domain\Catalog\Models\ProductCategory;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,6 +14,51 @@ class StoreProductCategoryRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Translates the boolean this field used to be into the vocabulary it is now.
+     *
+     * **The shipped app still writes `skips_production`**, and it will keep writing it until an
+     * app release replaces the switch on its sheet with a picker — see OUTSOURCED-PRODUCTS.md §8.
+     * Translating at the boundary is what lets the domain speak one dialect: `ProductCategoryData`
+     * and everything under it know only `production_mode`.
+     *
+     * Three rules, in order:
+     *
+     * 1. `production_mode` sent → it wins, whatever else came with it.
+     * 2. Only the boolean sent → `true` is «سادة». `false` is «مطبوعة» — **unless the heading is
+     *    already «وسيط»**, in which case it is left alone. That exception is the whole point: an
+     *    old build has no way to *say* «وسيط», so its `false` means «لم يُسأل عني», not «حوّلني
+     *    إلى مطبوعة», and reading it the other way would silently demote a heading somebody had
+     *    deliberately set — losing the cost prices under it from every order taken afterwards.
+     * 3. Neither sent, on an update → the stored mode, so a partial write changes nothing it did
+     *    not mention. On a create there is nothing stored, and the default is «مطبوعة».
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('production_mode')) {
+            return;
+        }
+
+        $category = $this->route('product_category');
+        $stored = $category instanceof ProductCategory ? $category->production_mode : null;
+
+        if ($this->has('skips_production')) {
+            $this->merge([
+                'production_mode' => match (true) {
+                    $this->boolean('skips_production') => ProductionMode::None->value,
+                    $stored === ProductionMode::Outsourced => ProductionMode::Outsourced->value,
+                    default => ProductionMode::InHouse->value,
+                },
+            ]);
+
+            return;
+        }
+
+        if ($stored !== null) {
+            $this->merge(['production_mode' => $stored->value]);
+        }
     }
 
     /**
@@ -50,10 +97,15 @@ class StoreProductCategoryRequest extends FormRequest
 
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:9999'],
 
-            // Whether an order made entirely of goods from this heading may go straight from
-            // «جديدة» to «جاهزة» — see `ProductCategory::skipsProduction()`. Optional and false
-            // by default: a heading nobody has thought about sends its orders down the road
-            // every order took before this field existed.
+            // How goods under this heading come to exist, and therefore which road an order made
+            // only of them walks — see `ProductCategory::productionMode()`. Optional and
+            // `in_house` by default: a heading nobody has thought about sends its orders down the
+            // road every order took before this field existed.
+            'production_mode' => ['sometimes', Rule::enum(ProductionMode::class)],
+
+            // **The boolean this replaced, still accepted for the shipped app.** Never read past
+            // this class — `prepareForValidation()` turns it into `production_mode` before any
+            // rule runs, and the domain is never shown it.
             'skips_production' => ['sometimes', 'boolean'],
         ];
     }
@@ -86,6 +138,7 @@ class StoreProductCategoryRequest extends FormRequest
             'description' => 'وصف التصنيف',
             'is_active' => 'الحالة',
             'sort_order' => 'الترتيب',
+            'production_mode' => 'طريقة التنفيذ',
             'skips_production' => 'يتخطّى التصميم والطباعة',
         ];
     }

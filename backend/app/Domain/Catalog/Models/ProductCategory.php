@@ -6,6 +6,7 @@ namespace App\Domain\Catalog\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
+use App\Domain\Catalog\Enums\ProductionMode;
 use Database\Factories\ProductCategoryFactory;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -31,7 +32,7 @@ use Illuminate\Support\Facades\Storage;
  * anywhere, so it became two rows here and the column was dropped. See PRODUCT-CATEGORIES.md.
  */
 #[UseFactory(ProductCategoryFactory::class)]
-#[Fillable(['name', 'description', 'is_active', 'sort_order', 'parent_id', 'skips_production'])]
+#[Fillable(['name', 'description', 'is_active', 'sort_order', 'parent_id', 'production_mode'])]
 class ProductCategory extends Model implements HasAuditTrail
 {
     /** @use HasFactory<ProductCategoryFactory> */
@@ -44,7 +45,7 @@ class ProductCategory extends Model implements HasAuditTrail
     {
         return [
             'is_active' => 'boolean',
-            'skips_production' => 'boolean',
+            'production_mode' => ProductionMode::class,
             'sort_order' => 'integer',
             'image_width_px' => 'integer',
             'image_height_px' => 'integer',
@@ -102,26 +103,32 @@ class ProductCategory extends Model implements HasAuditTrail
     }
 
     /**
-     * Whether goods filed here reach the shelf without being designed or printed.
+     * How goods filed here come to exist — the effective answer, parent included.
      *
-     * **What decides an order's road**, by way of `ResolveOrderFlow` — «سادة» is the heading this
-     * was built for, and the seeder already describes it as «منتجات بلا طباعة».
-     * PRODUCT-CATEGORIES.md notes that the مطبوعة/سادة split fed no calculation anywhere when it
-     * became two headings; this is the calculation it now feeds.
+     * **What decides an order's road**, by way of `ResolveOrderFlow`. «سادة» is the heading this
+     * was built for and «وسيط» is the one that made it an enum; PRODUCT-CATEGORIES.md notes that
+     * the مطبوعة/سادة split fed no calculation anywhere when it became two headings, and this is
+     * the calculation it now feeds.
      *
-     * **A parent's answer reaches its children, and it is an OR rather than an override.** Two
-     * things follow from the one-level tree, and both point the same way: a product is filed
-     * under a leaf, so marking «سادة» and later adding «سادة ورقية» beneath it would silently
-     * drop the flag from every product that moved down. And a *printed* product filed under a
-     * plain heading is a filing mistake — something to fix on the product, not a configuration
-     * the child needs a way to express.
+     * **A parent's answer reaches its children, and only where the child has not given one.**
+     * That was an OR while this was a boolean, and it is the same rule stated for three values:
+     * a child left at the default — `in_house`, what every heading is until somebody decides
+     * otherwise — takes its parent's mode. Two things follow from the one-level tree and both
+     * point this way: a product is filed under a leaf, so marking «سادة» and later adding «سادة
+     * ورقية» beneath it must not silently drop the answer from every product that moved down;
+     * and a child that *does* name a mode has been decided about, so nothing above it overrules
+     * that.
      *
      * Reads `parent` through the relation, so a caller that has not loaded it gets a query
      * rather than a wrong answer; `ResolveOrderFlow` eager-loads it for exactly that reason.
      */
-    public function skipsProduction(): bool
+    public function productionMode(): ProductionMode
     {
-        return (bool) $this->skips_production || (bool) ($this->parent?->skips_production ?? false);
+        if ($this->production_mode !== ProductionMode::InHouse) {
+            return $this->production_mode;
+        }
+
+        return $this->parent?->production_mode ?? ProductionMode::InHouse;
     }
 
     public function hasImage(): bool

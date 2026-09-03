@@ -12,6 +12,7 @@ import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
+import 'package:dayaa/features/orders/models/vendor_requirement.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.dart';
@@ -20,6 +21,8 @@ import 'package:dayaa/features/orders/presentation/widgets/order_line_row.dart';
 import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
 import 'package:dayaa/features/orders/presentation/widgets/product_picker_sheet.dart';
 import 'package:dayaa/features/orders/usecases/take_order.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/presentation/widgets/vendor_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -104,6 +107,15 @@ class _NewOrderViewState extends State<_NewOrderView> {
   Region? _region;
   int? _shopId;
 
+  /// Who will make it, for an order a vendor executes. Held as the model rather than an id so
+  /// the tile can print the name without a second read of the list.
+  Vendor? _vendor;
+
+  /// Whether this order needs, is offered, or has no use for a vendor — read off the products
+  /// on its lines, by the server's own rule. See [vendorRequirementFor].
+  VendorRequirement get _vendorRequirement =>
+      vendorRequirementFor([for (final line in _lines) line.product]);
+
   _DesignSource _designSource = _DesignSource.none;
 
   /// The files chosen from the customer's library, in the order they were picked — which is the
@@ -154,8 +166,27 @@ class _NewOrderViewState extends State<_NewOrderView> {
   }
 
   void _removeLine(OrderLineDraft line) {
-    setState(() => _lines.remove(line));
+    setState(() {
+      _lines.remove(line);
+      // The vendor belonged to the وسيط lines. With the last of them gone the row disappears,
+      // and an id kept behind a row nobody can see would be sent with nothing to explain it.
+      if (!_vendorRequirement.isOffered) _vendor = null;
+    });
     line.dispose();
+  }
+
+  /// Opens the same picker the purchase-order screens use — the vendors we still deal with.
+  ///
+  /// **Never a free-text box.** The field is `exists:vendors,id` on the server, and the name on
+  /// the order is snapshotted from the row chosen here, not typed.
+  Future<void> _pickVendor() async {
+    final vendor = await showVendorPicker(context: context);
+    if (vendor == null || !mounted) return;
+
+    setState(() => _vendor = vendor);
+    // A refusal about the vendor disappears as the choice changes, rather than lingering under
+    // a tile that no longer shows what was refused.
+    context.read<TakeOrderCubit>().clearFailure();
   }
 
   /// Opens the customer's library, where a file may also be uploaded into it.
@@ -207,13 +238,15 @@ class _NewOrderViewState extends State<_NewOrderView> {
     if (region != null && mounted) setState(() => _region = region);
   }
 
-  /// Every line has a quantity, every hand-priced line has a price, and there is a city.
+  /// Every line has a quantity, every hand-priced line has a price, there is a city — and a
+  /// vendor, where every line is a vendor's work.
   ///
   /// The button is disabled rather than the boxes marked red: nothing has been submitted yet,
   /// and an error under a field somebody has not reached is an accusation.
   bool get _isComplete =>
       _lines.isNotEmpty &&
       _city != null &&
+      (!_vendorRequirement.isRequired || _vendor != null) &&
       _lines.every(
         (line) =>
             line.quantity.text.trim().isNotEmpty &&
@@ -236,6 +269,8 @@ class _NewOrderViewState extends State<_NewOrderView> {
       // Not merely hidden: a clerk without the grant sends no discount at all, so the server
       // has nothing to refuse.
       discount: _mayDiscount ? _discount.text : null,
+      // Only while the row is on screen — the same rule the discount follows.
+      vendorId: _vendorRequirement.isOffered ? _vendor?.id : null,
       recipientPhone: _recipientPhone.text,
       notes: _notes.text,
       lines: [
@@ -333,6 +368,12 @@ class _NewOrderViewState extends State<_NewOrderView> {
 
               SizedBox(height: 14.h),
               _Section(title: 'البنود', child: _linesSection(submission)),
+
+              // Under the lines, because the lines are what decide whether it is asked at all.
+              if (_vendorRequirement.isOffered) ...[
+                SizedBox(height: 14.h),
+                _Section(title: 'المورد', child: _vendorSection(submission)),
+              ],
 
               SizedBox(height: 14.h),
               _Section(title: 'التصميم', child: _design(submission)),
@@ -493,6 +534,47 @@ class _NewOrderViewState extends State<_NewOrderView> {
           SizedBox(height: 6.h),
           Text(itemsError, style: context.textTheme.bodySmall?.copyWith(color: scheme.error)),
         ],
+      ],
+    );
+  }
+
+  /// Who will make it — drawn only when something on the order is a vendor's work.
+  ///
+  /// **Required where the server requires it, and nowhere else.** Every line وسيط puts the
+  /// order on the vendor road, and `CreateOrder` refuses it without one — «الطلبية الوسيطة
+  /// تحتاج مورداً». One printed line beside four وسيط ones is a printed order on the standard
+  /// road, where a vendor is accepted and not owed; requiring it here would refuse an order the
+  /// server would have taken. The tile says which of the two this is.
+  ///
+  /// The clerk **never sees or types a cost** on this screen. That is not a layout decision —
+  /// the payload does not carry one for them.
+  Widget _vendorSection(TakeOrderState submission) {
+    final scheme = context.colorScheme;
+    final required = _vendorRequirement.isRequired;
+    final error = submission.vendorError;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        PlacePickerTile(
+          caption: 'المورد',
+          // Named when there is one, invited when there is not — and the invitation says
+          // whether the form will send without it.
+          value: _vendor?.name ?? (required ? 'مطلوب' : 'اختياري'),
+          isChosen: _vendor != null,
+          icon: AppIcons.vendors,
+          onTap: _pickVendor,
+        ),
+        SizedBox(height: 6.h),
+        Text(
+          error ??
+              (required
+                  ? 'كل بنود الطلبية لدى مورد خارجي — تمرّ بـ«قيد التصنيع» ولا تُخصم من أي مخزن'
+                  : 'بعض البنود لدى مورد خارجي — تحديد المورد اختياري لطلبية مطبوعة'),
+          style: context.textTheme.bodySmall?.copyWith(
+            color: error != null ? scheme.error : scheme.onSurfaceVariant,
+          ),
+        ),
       ],
     );
   }

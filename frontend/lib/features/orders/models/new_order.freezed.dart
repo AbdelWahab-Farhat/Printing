@@ -30,7 +30,11 @@ mixin _$NewOrder {
 /// Omitted when empty: «بدون تصميم» sends no key at all.
 @JsonKey(name: 'design_ids', includeIfNull: false) List<int>? get designIds;/// Guarded by `orders.discount` on the server. The field is hidden in the app for staff
 /// without the grant; that is the suggestion, and the refusal is the rule.
-@JsonKey(includeIfNull: false) String? get discount;@JsonKey(name: 'recipient_name', includeIfNull: false) String? get recipientName;@JsonKey(name: 'recipient_phone', includeIfNull: false) String? get recipientPhone;@JsonKey(name: 'address_details', includeIfNull: false) String? get addressDetails;@JsonKey(includeIfNull: false) String? get notes;
+@JsonKey(includeIfNull: false) String? get discount;/// Who will make it. **Required by the server for an order whose lines are all وسيط**, and
+/// refused as a 422 on `vendor_id` when missing — the road is read off the lines, so the app
+/// cannot be told by a field rule and has to look at the products itself. See
+/// `vendorRequirementFor`. Accepted on any order, so a mixed one may name one too.
+@JsonKey(name: 'vendor_id', includeIfNull: false) int? get vendorId;@JsonKey(name: 'recipient_name', includeIfNull: false) String? get recipientName;@JsonKey(name: 'recipient_phone', includeIfNull: false) String? get recipientPhone;@JsonKey(name: 'address_details', includeIfNull: false) String? get addressDetails;@JsonKey(includeIfNull: false) String? get notes;
 /// Create a copy of NewOrder
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -43,16 +47,16 @@ $NewOrderCopyWith<NewOrder> get copyWith => _$NewOrderCopyWithImpl<NewOrder>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrder&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.designSource, designSource) || other.designSource == designSource)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&const DeepCollectionEquality().equals(other.designIds, designIds)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrder&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.designSource, designSource) || other.designSource == designSource)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&const DeepCollectionEquality().equals(other.designIds, designIds)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.notes, notes) || other.notes == notes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,customerId,cityId,designSource,const DeepCollectionEquality().hash(items),customerShopId,regionId,designFee,const DeepCollectionEquality().hash(designIds),discount,recipientName,recipientPhone,addressDetails,notes);
+int get hashCode => Object.hash(runtimeType,customerId,cityId,designSource,const DeepCollectionEquality().hash(items),customerShopId,regionId,designFee,const DeepCollectionEquality().hash(designIds),discount,vendorId,recipientName,recipientPhone,addressDetails,notes);
 
 @override
 String toString() {
-  return 'NewOrder(customerId: $customerId, cityId: $cityId, designSource: $designSource, items: $items, customerShopId: $customerShopId, regionId: $regionId, designFee: $designFee, designIds: $designIds, discount: $discount, recipientName: $recipientName, recipientPhone: $recipientPhone, addressDetails: $addressDetails, notes: $notes)';
+  return 'NewOrder(customerId: $customerId, cityId: $cityId, designSource: $designSource, items: $items, customerShopId: $customerShopId, regionId: $regionId, designFee: $designFee, designIds: $designIds, discount: $discount, vendorId: $vendorId, recipientName: $recipientName, recipientPhone: $recipientPhone, addressDetails: $addressDetails, notes: $notes)';
 }
 
 
@@ -63,7 +67,7 @@ abstract mixin class $NewOrderCopyWith<$Res>  {
   factory $NewOrderCopyWith(NewOrder value, $Res Function(NewOrder) _then) = _$NewOrderCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'customer_id') int customerId,@JsonKey(name: 'city_id') int cityId,@JsonKey(name: 'design_source') String designSource, List<NewOrderItem> items,@JsonKey(name: 'customer_shop_id', includeIfNull: false) int? customerShopId,@JsonKey(name: 'region_id', includeIfNull: false) int? regionId,@JsonKey(name: 'design_fee', includeIfNull: false) String? designFee,@JsonKey(name: 'design_ids', includeIfNull: false) List<int>? designIds,@JsonKey(includeIfNull: false) String? discount,@JsonKey(name: 'recipient_name', includeIfNull: false) String? recipientName,@JsonKey(name: 'recipient_phone', includeIfNull: false) String? recipientPhone,@JsonKey(name: 'address_details', includeIfNull: false) String? addressDetails,@JsonKey(includeIfNull: false) String? notes
+@JsonKey(name: 'customer_id') int customerId,@JsonKey(name: 'city_id') int cityId,@JsonKey(name: 'design_source') String designSource, List<NewOrderItem> items,@JsonKey(name: 'customer_shop_id', includeIfNull: false) int? customerShopId,@JsonKey(name: 'region_id', includeIfNull: false) int? regionId,@JsonKey(name: 'design_fee', includeIfNull: false) String? designFee,@JsonKey(name: 'design_ids', includeIfNull: false) List<int>? designIds,@JsonKey(includeIfNull: false) String? discount,@JsonKey(name: 'vendor_id', includeIfNull: false) int? vendorId,@JsonKey(name: 'recipient_name', includeIfNull: false) String? recipientName,@JsonKey(name: 'recipient_phone', includeIfNull: false) String? recipientPhone,@JsonKey(name: 'address_details', includeIfNull: false) String? addressDetails,@JsonKey(includeIfNull: false) String? notes
 });
 
 
@@ -80,7 +84,7 @@ class _$NewOrderCopyWithImpl<$Res>
 
 /// Create a copy of NewOrder
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? customerId = null,Object? cityId = null,Object? designSource = null,Object? items = null,Object? customerShopId = freezed,Object? regionId = freezed,Object? designFee = freezed,Object? designIds = freezed,Object? discount = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? addressDetails = freezed,Object? notes = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? customerId = null,Object? cityId = null,Object? designSource = null,Object? items = null,Object? customerShopId = freezed,Object? regionId = freezed,Object? designFee = freezed,Object? designIds = freezed,Object? discount = freezed,Object? vendorId = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? addressDetails = freezed,Object? notes = freezed,}) {
   return _then(_self.copyWith(
 customerId: null == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
 as int,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
@@ -91,7 +95,8 @@ as int?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cas
 as int?,designFee: freezed == designFee ? _self.designFee : designFee // ignore: cast_nullable_to_non_nullable
 as String?,designIds: freezed == designIds ? _self.designIds : designIds // ignore: cast_nullable_to_non_nullable
 as List<int>?,discount: freezed == discount ? _self.discount : discount // ignore: cast_nullable_to_non_nullable
-as String?,recipientName: freezed == recipientName ? _self.recipientName : recipientName // ignore: cast_nullable_to_non_nullable
+as String?,vendorId: freezed == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
+as int?,recipientName: freezed == recipientName ? _self.recipientName : recipientName // ignore: cast_nullable_to_non_nullable
 as String?,recipientPhone: freezed == recipientPhone ? _self.recipientPhone : recipientPhone // ignore: cast_nullable_to_non_nullable
 as String?,addressDetails: freezed == addressDetails ? _self.addressDetails : addressDetails // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
@@ -180,10 +185,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource,  List<NewOrderItem> items, @JsonKey(name: 'customer_shop_id', includeIfNull: false)  int? customerShopId, @JsonKey(name: 'region_id', includeIfNull: false)  int? regionId, @JsonKey(name: 'design_fee', includeIfNull: false)  String? designFee, @JsonKey(name: 'design_ids', includeIfNull: false)  List<int>? designIds, @JsonKey(includeIfNull: false)  String? discount, @JsonKey(name: 'recipient_name', includeIfNull: false)  String? recipientName, @JsonKey(name: 'recipient_phone', includeIfNull: false)  String? recipientPhone, @JsonKey(name: 'address_details', includeIfNull: false)  String? addressDetails, @JsonKey(includeIfNull: false)  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource,  List<NewOrderItem> items, @JsonKey(name: 'customer_shop_id', includeIfNull: false)  int? customerShopId, @JsonKey(name: 'region_id', includeIfNull: false)  int? regionId, @JsonKey(name: 'design_fee', includeIfNull: false)  String? designFee, @JsonKey(name: 'design_ids', includeIfNull: false)  List<int>? designIds, @JsonKey(includeIfNull: false)  String? discount, @JsonKey(name: 'vendor_id', includeIfNull: false)  int? vendorId, @JsonKey(name: 'recipient_name', includeIfNull: false)  String? recipientName, @JsonKey(name: 'recipient_phone', includeIfNull: false)  String? recipientPhone, @JsonKey(name: 'address_details', includeIfNull: false)  String? addressDetails, @JsonKey(includeIfNull: false)  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NewOrder() when $default != null:
-return $default(_that.customerId,_that.cityId,_that.designSource,_that.items,_that.customerShopId,_that.regionId,_that.designFee,_that.designIds,_that.discount,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes);case _:
+return $default(_that.customerId,_that.cityId,_that.designSource,_that.items,_that.customerShopId,_that.regionId,_that.designFee,_that.designIds,_that.discount,_that.vendorId,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes);case _:
   return orElse();
 
 }
@@ -201,10 +206,10 @@ return $default(_that.customerId,_that.cityId,_that.designSource,_that.items,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource,  List<NewOrderItem> items, @JsonKey(name: 'customer_shop_id', includeIfNull: false)  int? customerShopId, @JsonKey(name: 'region_id', includeIfNull: false)  int? regionId, @JsonKey(name: 'design_fee', includeIfNull: false)  String? designFee, @JsonKey(name: 'design_ids', includeIfNull: false)  List<int>? designIds, @JsonKey(includeIfNull: false)  String? discount, @JsonKey(name: 'recipient_name', includeIfNull: false)  String? recipientName, @JsonKey(name: 'recipient_phone', includeIfNull: false)  String? recipientPhone, @JsonKey(name: 'address_details', includeIfNull: false)  String? addressDetails, @JsonKey(includeIfNull: false)  String? notes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource,  List<NewOrderItem> items, @JsonKey(name: 'customer_shop_id', includeIfNull: false)  int? customerShopId, @JsonKey(name: 'region_id', includeIfNull: false)  int? regionId, @JsonKey(name: 'design_fee', includeIfNull: false)  String? designFee, @JsonKey(name: 'design_ids', includeIfNull: false)  List<int>? designIds, @JsonKey(includeIfNull: false)  String? discount, @JsonKey(name: 'vendor_id', includeIfNull: false)  int? vendorId, @JsonKey(name: 'recipient_name', includeIfNull: false)  String? recipientName, @JsonKey(name: 'recipient_phone', includeIfNull: false)  String? recipientPhone, @JsonKey(name: 'address_details', includeIfNull: false)  String? addressDetails, @JsonKey(includeIfNull: false)  String? notes)  $default,) {final _that = this;
 switch (_that) {
 case _NewOrder():
-return $default(_that.customerId,_that.cityId,_that.designSource,_that.items,_that.customerShopId,_that.regionId,_that.designFee,_that.designIds,_that.discount,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes);case _:
+return $default(_that.customerId,_that.cityId,_that.designSource,_that.items,_that.customerShopId,_that.regionId,_that.designFee,_that.designIds,_that.discount,_that.vendorId,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -221,10 +226,10 @@ return $default(_that.customerId,_that.cityId,_that.designSource,_that.items,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource,  List<NewOrderItem> items, @JsonKey(name: 'customer_shop_id', includeIfNull: false)  int? customerShopId, @JsonKey(name: 'region_id', includeIfNull: false)  int? regionId, @JsonKey(name: 'design_fee', includeIfNull: false)  String? designFee, @JsonKey(name: 'design_ids', includeIfNull: false)  List<int>? designIds, @JsonKey(includeIfNull: false)  String? discount, @JsonKey(name: 'recipient_name', includeIfNull: false)  String? recipientName, @JsonKey(name: 'recipient_phone', includeIfNull: false)  String? recipientPhone, @JsonKey(name: 'address_details', includeIfNull: false)  String? addressDetails, @JsonKey(includeIfNull: false)  String? notes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'customer_id')  int customerId, @JsonKey(name: 'city_id')  int cityId, @JsonKey(name: 'design_source')  String designSource,  List<NewOrderItem> items, @JsonKey(name: 'customer_shop_id', includeIfNull: false)  int? customerShopId, @JsonKey(name: 'region_id', includeIfNull: false)  int? regionId, @JsonKey(name: 'design_fee', includeIfNull: false)  String? designFee, @JsonKey(name: 'design_ids', includeIfNull: false)  List<int>? designIds, @JsonKey(includeIfNull: false)  String? discount, @JsonKey(name: 'vendor_id', includeIfNull: false)  int? vendorId, @JsonKey(name: 'recipient_name', includeIfNull: false)  String? recipientName, @JsonKey(name: 'recipient_phone', includeIfNull: false)  String? recipientPhone, @JsonKey(name: 'address_details', includeIfNull: false)  String? addressDetails, @JsonKey(includeIfNull: false)  String? notes)?  $default,) {final _that = this;
 switch (_that) {
 case _NewOrder() when $default != null:
-return $default(_that.customerId,_that.cityId,_that.designSource,_that.items,_that.customerShopId,_that.regionId,_that.designFee,_that.designIds,_that.discount,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes);case _:
+return $default(_that.customerId,_that.cityId,_that.designSource,_that.items,_that.customerShopId,_that.regionId,_that.designFee,_that.designIds,_that.discount,_that.vendorId,_that.recipientName,_that.recipientPhone,_that.addressDetails,_that.notes);case _:
   return null;
 
 }
@@ -236,7 +241,7 @@ return $default(_that.customerId,_that.cityId,_that.designSource,_that.items,_th
 @JsonSerializable()
 
 class _NewOrder implements NewOrder {
-  const _NewOrder({@JsonKey(name: 'customer_id') required this.customerId, @JsonKey(name: 'city_id') required this.cityId, @JsonKey(name: 'design_source') required this.designSource, required final  List<NewOrderItem> items, @JsonKey(name: 'customer_shop_id', includeIfNull: false) this.customerShopId, @JsonKey(name: 'region_id', includeIfNull: false) this.regionId, @JsonKey(name: 'design_fee', includeIfNull: false) this.designFee, @JsonKey(name: 'design_ids', includeIfNull: false) final  List<int>? designIds, @JsonKey(includeIfNull: false) this.discount, @JsonKey(name: 'recipient_name', includeIfNull: false) this.recipientName, @JsonKey(name: 'recipient_phone', includeIfNull: false) this.recipientPhone, @JsonKey(name: 'address_details', includeIfNull: false) this.addressDetails, @JsonKey(includeIfNull: false) this.notes}): _items = items,_designIds = designIds;
+  const _NewOrder({@JsonKey(name: 'customer_id') required this.customerId, @JsonKey(name: 'city_id') required this.cityId, @JsonKey(name: 'design_source') required this.designSource, required final  List<NewOrderItem> items, @JsonKey(name: 'customer_shop_id', includeIfNull: false) this.customerShopId, @JsonKey(name: 'region_id', includeIfNull: false) this.regionId, @JsonKey(name: 'design_fee', includeIfNull: false) this.designFee, @JsonKey(name: 'design_ids', includeIfNull: false) final  List<int>? designIds, @JsonKey(includeIfNull: false) this.discount, @JsonKey(name: 'vendor_id', includeIfNull: false) this.vendorId, @JsonKey(name: 'recipient_name', includeIfNull: false) this.recipientName, @JsonKey(name: 'recipient_phone', includeIfNull: false) this.recipientPhone, @JsonKey(name: 'address_details', includeIfNull: false) this.addressDetails, @JsonKey(includeIfNull: false) this.notes}): _items = items,_designIds = designIds;
   factory _NewOrder.fromJson(Map<String, dynamic> json) => _$NewOrderFromJson(json);
 
 @override@JsonKey(name: 'customer_id') final  int customerId;
@@ -283,6 +288,11 @@ class _NewOrder implements NewOrder {
 /// Guarded by `orders.discount` on the server. The field is hidden in the app for staff
 /// without the grant; that is the suggestion, and the refusal is the rule.
 @override@JsonKey(includeIfNull: false) final  String? discount;
+/// Who will make it. **Required by the server for an order whose lines are all وسيط**, and
+/// refused as a 422 on `vendor_id` when missing — the road is read off the lines, so the app
+/// cannot be told by a field rule and has to look at the products itself. See
+/// `vendorRequirementFor`. Accepted on any order, so a mixed one may name one too.
+@override@JsonKey(name: 'vendor_id', includeIfNull: false) final  int? vendorId;
 @override@JsonKey(name: 'recipient_name', includeIfNull: false) final  String? recipientName;
 @override@JsonKey(name: 'recipient_phone', includeIfNull: false) final  String? recipientPhone;
 @override@JsonKey(name: 'address_details', includeIfNull: false) final  String? addressDetails;
@@ -301,16 +311,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrder&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.designSource, designSource) || other.designSource == designSource)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&const DeepCollectionEquality().equals(other._designIds, _designIds)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrder&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.designSource, designSource) || other.designSource == designSource)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&const DeepCollectionEquality().equals(other._designIds, _designIds)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.notes, notes) || other.notes == notes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,customerId,cityId,designSource,const DeepCollectionEquality().hash(_items),customerShopId,regionId,designFee,const DeepCollectionEquality().hash(_designIds),discount,recipientName,recipientPhone,addressDetails,notes);
+int get hashCode => Object.hash(runtimeType,customerId,cityId,designSource,const DeepCollectionEquality().hash(_items),customerShopId,regionId,designFee,const DeepCollectionEquality().hash(_designIds),discount,vendorId,recipientName,recipientPhone,addressDetails,notes);
 
 @override
 String toString() {
-  return 'NewOrder(customerId: $customerId, cityId: $cityId, designSource: $designSource, items: $items, customerShopId: $customerShopId, regionId: $regionId, designFee: $designFee, designIds: $designIds, discount: $discount, recipientName: $recipientName, recipientPhone: $recipientPhone, addressDetails: $addressDetails, notes: $notes)';
+  return 'NewOrder(customerId: $customerId, cityId: $cityId, designSource: $designSource, items: $items, customerShopId: $customerShopId, regionId: $regionId, designFee: $designFee, designIds: $designIds, discount: $discount, vendorId: $vendorId, recipientName: $recipientName, recipientPhone: $recipientPhone, addressDetails: $addressDetails, notes: $notes)';
 }
 
 
@@ -321,7 +331,7 @@ abstract mixin class _$NewOrderCopyWith<$Res> implements $NewOrderCopyWith<$Res>
   factory _$NewOrderCopyWith(_NewOrder value, $Res Function(_NewOrder) _then) = __$NewOrderCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'customer_id') int customerId,@JsonKey(name: 'city_id') int cityId,@JsonKey(name: 'design_source') String designSource, List<NewOrderItem> items,@JsonKey(name: 'customer_shop_id', includeIfNull: false) int? customerShopId,@JsonKey(name: 'region_id', includeIfNull: false) int? regionId,@JsonKey(name: 'design_fee', includeIfNull: false) String? designFee,@JsonKey(name: 'design_ids', includeIfNull: false) List<int>? designIds,@JsonKey(includeIfNull: false) String? discount,@JsonKey(name: 'recipient_name', includeIfNull: false) String? recipientName,@JsonKey(name: 'recipient_phone', includeIfNull: false) String? recipientPhone,@JsonKey(name: 'address_details', includeIfNull: false) String? addressDetails,@JsonKey(includeIfNull: false) String? notes
+@JsonKey(name: 'customer_id') int customerId,@JsonKey(name: 'city_id') int cityId,@JsonKey(name: 'design_source') String designSource, List<NewOrderItem> items,@JsonKey(name: 'customer_shop_id', includeIfNull: false) int? customerShopId,@JsonKey(name: 'region_id', includeIfNull: false) int? regionId,@JsonKey(name: 'design_fee', includeIfNull: false) String? designFee,@JsonKey(name: 'design_ids', includeIfNull: false) List<int>? designIds,@JsonKey(includeIfNull: false) String? discount,@JsonKey(name: 'vendor_id', includeIfNull: false) int? vendorId,@JsonKey(name: 'recipient_name', includeIfNull: false) String? recipientName,@JsonKey(name: 'recipient_phone', includeIfNull: false) String? recipientPhone,@JsonKey(name: 'address_details', includeIfNull: false) String? addressDetails,@JsonKey(includeIfNull: false) String? notes
 });
 
 
@@ -338,7 +348,7 @@ class __$NewOrderCopyWithImpl<$Res>
 
 /// Create a copy of NewOrder
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? customerId = null,Object? cityId = null,Object? designSource = null,Object? items = null,Object? customerShopId = freezed,Object? regionId = freezed,Object? designFee = freezed,Object? designIds = freezed,Object? discount = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? addressDetails = freezed,Object? notes = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? customerId = null,Object? cityId = null,Object? designSource = null,Object? items = null,Object? customerShopId = freezed,Object? regionId = freezed,Object? designFee = freezed,Object? designIds = freezed,Object? discount = freezed,Object? vendorId = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? addressDetails = freezed,Object? notes = freezed,}) {
   return _then(_NewOrder(
 customerId: null == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
 as int,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
@@ -349,7 +359,8 @@ as int?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cas
 as int?,designFee: freezed == designFee ? _self.designFee : designFee // ignore: cast_nullable_to_non_nullable
 as String?,designIds: freezed == designIds ? _self._designIds : designIds // ignore: cast_nullable_to_non_nullable
 as List<int>?,discount: freezed == discount ? _self.discount : discount // ignore: cast_nullable_to_non_nullable
-as String?,recipientName: freezed == recipientName ? _self.recipientName : recipientName // ignore: cast_nullable_to_non_nullable
+as String?,vendorId: freezed == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
+as int?,recipientName: freezed == recipientName ? _self.recipientName : recipientName // ignore: cast_nullable_to_non_nullable
 as String?,recipientPhone: freezed == recipientPhone ? _self.recipientPhone : recipientPhone // ignore: cast_nullable_to_non_nullable
 as String?,addressDetails: freezed == addressDetails ? _self.addressDetails : addressDetails // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable

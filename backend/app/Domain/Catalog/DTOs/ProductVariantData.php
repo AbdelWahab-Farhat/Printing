@@ -18,6 +18,15 @@ final readonly class ProductVariantData
          * normally name the same one: كيس شحن سادة 25*35 and كيس شحن مطبوع 25*35 are one pile.
          */
         public ?int $stockItemId = null,
+        /**
+         * What this size costs us when a vendor makes it — «سعر التكلفة».
+         *
+         * Null everywhere but under a «وسيط» heading: goods we make ourselves are costed from
+         * what they consumed, so a second number typed onto the catalogue would be an unowned
+         * answer to a question `production_cost_entries` already answers. The request refuses it
+         * elsewhere, which is why nothing here has to ask.
+         */
+        public ?string $costPrice = null,
         public ?int $widthCm = null,
         public ?int $heightCm = null,
         public bool $isActive = true,
@@ -36,6 +45,9 @@ final readonly class ProductVariantData
             label: (string) $variant['label'],
             stockItemId: isset($variant['stock_item_id']) && $variant['stock_item_id'] !== ''
                 ? (int) $variant['stock_item_id']
+                : null,
+            costPrice: isset($variant['cost_price']) && $variant['cost_price'] !== ''
+                ? (string) $variant['cost_price']
                 : null,
             widthCm: isset($variant['width_cm']) ? (int) $variant['width_cm'] : null,
             heightCm: isset($variant['height_cm']) ? (int) $variant['height_cm'] : null,

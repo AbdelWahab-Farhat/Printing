@@ -1,3 +1,4 @@
+import 'package:dayaa/features/products/models/production_mode.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'product_category.freezed.dart';
@@ -30,18 +31,29 @@ abstract class ProductCategory with _$ProductCategory {
     /// Where it sits in the catalogue. The business's own order, not alphabetical.
     @JsonKey(name: 'sort_order') @Default(0) int sortOrder,
 
-    /// Whether an order made **only** of goods filed under this heading skips the designer and
-    /// the press — «جديدة» leads straight to «جاهزة», where the stock leaves the warehouse
-    /// exactly as it does for a printed order.
+    /// How goods under this heading come to exist — مطبوعة، سادة، أو وسيط.
     ///
-    /// **This row's own answer, not the effective one.** A subheading that inherits a flagged
-    /// parent reads false here, because this is the value the edit sheet puts back: showing the
-    /// inherited answer would have somebody save a flag onto a child that never asked for one.
-    /// Whether a particular *order* skips production is the server's to decide from its lines —
-    /// see `ResolveOrderFlow` — and never this app's.
+    /// **This row's own answer, not the effective one.** A subheading that inherits its parent's
+    /// mode reads `in_house` here, because this is the value the edit sheet puts back: showing
+    /// the inherited answer would save a mode onto a child that never asked for one. What a
+    /// particular *order* does is the server's to decide from its lines — see `ResolveOrderFlow`
+    /// — and never this app's. The one place the *effective* answer arrives is the
+    /// `product_category` object nested on a product, and the product form reads it from there.
     ///
-    /// False by default, so a heading nobody has thought about sends its orders down the road
-    /// every order took before this field existed.
+    /// `in_house` by default, so a heading nobody has thought about sends its orders down the
+    /// road every order took before this field existed.
+    @JsonKey(name: 'production_mode', unknownEnumValue: ProductionMode.unknown)
+    @Default(ProductionMode.inHouse)
+    ProductionMode productionMode,
+
+    /// The server's own Arabic for [productionMode] — «وسيط — لدى مورد خارجي». Drawn as sent
+    /// where it arrives, so a mode this build has never heard of still reads right on a card.
+    @JsonKey(name: 'production_mode_label') String? productionModeLabel,
+
+    /// **Deprecated, and still sent by the server for this build.** True for سادة *and* for وسيط
+    /// — neither is printed here — so it can no longer tell them apart. Read [productionMode];
+    /// this app stopped writing it the day the sheet learned the three-way answer, and it goes
+    /// the release after. See OUTSOURCED-PRODUCTS.md §8.
     @JsonKey(name: 'skips_production') @Default(false) bool skipsProduction,
 
     /// The heading this one sits under, or null when it is one in its own right.
@@ -95,4 +107,7 @@ abstract class ProductCategory with _$ProductCategory {
   int? get shownProductsCount => totalProductsCount ?? productsCount;
 
   bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;
+
+  /// The word a card prints for the mode — the server's when it came, this app's otherwise.
+  String get productionModeCaption => productionModeLabel ?? productionMode.label;
 }

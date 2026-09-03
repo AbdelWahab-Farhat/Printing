@@ -13,9 +13,11 @@ use App\Domain\Order\Exceptions\AdditionalCostRequiresPermission;
 use App\Domain\Order\Exceptions\DestinationCannotChange;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\OrderIsClosed;
+use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
 use App\Domain\Order\Exceptions\RecipientPhoneCannotChange;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Support\Money;
+use App\Domain\Vendor\VendorService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -43,6 +45,7 @@ final class UpdateOrder
         private readonly RecalculateOrderTotals $recalculate,
         private readonly CustomerService $customers,
         private readonly ResolveOrderFlow $resolveFlow,
+        private readonly VendorService $vendors,
     ) {}
 
     /**
@@ -81,10 +84,18 @@ final class UpdateOrder
 
         $destination = ($this->resolveDestination)($data->cityId, $data->regionId);
 
-        return DB::transaction(function () use ($order, $data, $destination, $shopName): Order {
+        // Re-read on every edit, like the city name beside it: moving the job to another vendor
+        // moves the name with it, and clearing the vendor clears both.
+        $vendorName = $data->vendorId === null
+            ? null
+            : (string) $this->vendors->find($data->vendorId)->name;
+
+        return DB::transaction(function () use ($order, $data, $destination, $shopName, $vendorName): Order {
             $order->update([
                 'customer_shop_id' => $data->customerShopId,
                 'customer_shop_name' => $shopName,
+                'vendor_id' => $data->vendorId,
+                'vendor_name' => $vendorName,
                 'city_id' => $destination->cityId,
                 'region_id' => $destination->regionId,
                 'city_name' => $destination->cityName,
@@ -117,6 +128,15 @@ final class UpdateOrder
             // already at the press does not move it onto a road with no press on it, see
             // {@see ResolveOrderFlow}.
             ($this->resolveFlow)($order->load('items'));
+
+            // **The same question `CreateOrder` asks, asked again for the same reason.** An edit
+            // can put an order onto the vendor road — swapping the last printed line out of an
+            // order still in «جديدة» does exactly that — and an order that arrived there with no
+            // vendor named would be one nobody could chase. Refused whole, inside the
+            // transaction, so the lines are not left rewritten around a hole.
+            if ($order->production_flow->needsAVendor() && $order->vendor_id === null) {
+                throw OutsourcedOrderNeedsAVendor::make();
+            }
 
             return ($this->recalculate)($order->load('items'))->refresh();
         });

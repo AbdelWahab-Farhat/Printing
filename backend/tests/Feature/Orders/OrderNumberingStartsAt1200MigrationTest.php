@@ -33,11 +33,36 @@ class OrderNumberingStartsAt1200MigrationTest extends TestCase
 {
     use DatabaseMigrations;
 
+    private const RENUMBERING = '2026_08_30_100000_start_order_numbering_at_1200';
+
+    /**
+     * Undoes the renumbering itself, and nothing else.
+     *
+     * **It used to be `migrate:rollback --step 1`, which was right for one day.** That rolls back
+     * whichever migration is newest, and this stopped being it — so the orders below were created
+     * under the very numbering the test meant to have undone, and every assertion about 1200 was
+     * being made against a database that had never left it.
+     *
+     * Rolling back *far enough* to reach it is no better: the steps in between add columns the
+     * order factory writes, and stripping them fails the arrange rather than the assert. So the
+     * migration is asked to undo itself and its row is removed, which is what makes `migrate`
+     * below run it again. Safe precisely because it owns no schema — it is a renumbering and a
+     * `setval`, and its own `down()` is written as the same operation aimed back at 1.
+     */
+    private function rollBackTheRenumbering(): void
+    {
+        $migration = require database_path('migrations/'.self::RENUMBERING.'.php');
+
+        $migration->down();
+
+        DB::table('migrations')->where('migration', self::RENUMBERING)->delete();
+    }
+
     public function test_it_renumbers_existing_orders_from_1200_and_carries_their_lines_with_them(): void
     {
         // Arrange — back to the numbering that started at 1, and three orders taken in a known
         // sequence, each with a line of its own.
-        Artisan::call('migrate:rollback', ['--step' => 1]);
+        $this->rollBackTheRenumbering();
 
         $orders = collect(range(1, 3))->map(fn () => Order::factory()->has(OrderItem::factory(), 'items')->create());
 
@@ -71,7 +96,7 @@ class OrderNumberingStartsAt1200MigrationTest extends TestCase
     public function test_the_next_order_taken_continues_from_the_last_renumbered_one(): void
     {
         // Arrange — one order under the old numbering, renumbered by the migration.
-        Artisan::call('migrate:rollback', ['--step' => 1]);
+        $this->rollBackTheRenumbering();
         Order::factory()->create();
         Artisan::call('migrate');
 
@@ -100,7 +125,7 @@ class OrderNumberingStartsAt1200MigrationTest extends TestCase
     {
         // Arrange — an order under the old numbering with a fulfillment movement naming it, and
         // an arrival whose reference is a stock arrival that happens to carry the same number.
-        Artisan::call('migrate:rollback', ['--step' => 1]);
+        $this->rollBackTheRenumbering();
 
         $order = Order::factory()->create();
         $warehouse = Warehouse::factory()->create();

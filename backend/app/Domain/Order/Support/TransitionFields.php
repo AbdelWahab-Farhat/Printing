@@ -132,7 +132,13 @@ final class TransitionFields
         // road.** That is the same fact `ChangeOrderStatus` decides the deduction itself on, so
         // the form and the deduction cannot disagree about whether this move takes stock out — and
         // a third road added later needs no new branch here.
-        if ($target === OrderStatus::ReadyToPrint || $target === OrderStatus::Ready) {
+        //
+        // **And an order whose goods a vendor made is asked neither question.** Nothing of ours
+        // is on a shelf for it, so «جاهزة» there records that the vendor handed the job over.
+        // Asked of the flow, exactly as `ChangeOrderStatus` asks it — the form and the deduction
+        // read one fact, so a warehouse picker can never appear over a move that will not use it.
+        if (($target === OrderStatus::ReadyToPrint || $target === OrderStatus::Ready)
+            && $order->production_flow->deductsStock()) {
             // `items.product` for the labels, and `items.variant.stockItem` because the unit a
             // line is stocked in now lives on the shelf — see {@see OrderItem::stockUnit()}.
             // Asked for once here rather than three times below, and eagerly because strict mode

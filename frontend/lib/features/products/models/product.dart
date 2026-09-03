@@ -181,6 +181,19 @@ abstract class ProductVariant with _$ProductVariant {
     /// in practice.
     @JsonKey(name: 'stock_item') VariantStockItem? stockItem,
 
+    /// What this size costs us when a vendor makes it — «سعر التكلفة».
+    ///
+    /// **Absent from the payload, not null, for anybody without `products.view_cost`** — so
+    /// `null` here means one of two things and the screen must not claim it means «بلا تكلفة».
+    /// Gate the row on the permission, not on the value.
+    ///
+    /// A decimal string, never a `double`: it is multiplied by a quantity on the server and
+    /// compared against a price that is also a string.
+    ///
+    /// ⚠️ **Replaced along with the rest of the size on `PUT /products`** — a size sent without
+    /// it is saved with none. See `NewProductVariant.costPrice`.
+    @JsonKey(name: 'cost_price') String? costPrice,
+
     @JsonKey(name: 'price_tiers') @Default(<ProductPriceTier>[]) List<ProductPriceTier> priceTiers,
   }) = _ProductVariant;
 

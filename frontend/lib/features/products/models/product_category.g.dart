@@ -13,6 +13,14 @@ _ProductCategory _$ProductCategoryFromJson(Map<String, dynamic> json) =>
       description: json['description'] as String?,
       isActive: json['is_active'] as bool? ?? true,
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
+      productionMode:
+          $enumDecodeNullable(
+            _$ProductionModeEnumMap,
+            json['production_mode'],
+            unknownValue: ProductionMode.unknown,
+          ) ??
+          ProductionMode.inHouse,
+      productionModeLabel: json['production_mode_label'] as String?,
       skipsProduction: json['skips_production'] as bool? ?? false,
       parentId: (json['parent_id'] as num?)?.toInt(),
       productsCount: (json['products_count'] as num?)?.toInt(),
@@ -36,6 +44,8 @@ Map<String, dynamic> _$ProductCategoryToJson(_ProductCategory instance) =>
       'description': instance.description,
       'is_active': instance.isActive,
       'sort_order': instance.sortOrder,
+      'production_mode': _$ProductionModeEnumMap[instance.productionMode]!,
+      'production_mode_label': instance.productionModeLabel,
       'skips_production': instance.skipsProduction,
       'parent_id': instance.parentId,
       'products_count': instance.productsCount,
@@ -47,3 +57,10 @@ Map<String, dynamic> _$ProductCategoryToJson(_ProductCategory instance) =>
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
     };
+
+const _$ProductionModeEnumMap = {
+  ProductionMode.inHouse: 'in_house',
+  ProductionMode.none: 'none',
+  ProductionMode.outsourced: 'outsourced',
+  ProductionMode.unknown: 'unknown',
+};

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources;
 
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Identity\Enums\PermissionName;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -25,6 +26,17 @@ class ProductVariantResource extends JsonResource
             'height_cm' => $this->height_cm,
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,
+
+            // **سعر التكلفة، and the key is absent rather than null without the grant.** Null
+            // would read as «هذا المقاس بلا تكلفة» — a fact about the product — where the truth
+            // is «لست ممن يرونها»; a screen cannot tell those apart from the same value. The
+            // clerk taking an order holds `products.view` and not this, so the number the shop
+            // pays never reaches the order form. Same split `inventory.view_cost` draws over
+            // stock, and the same reason.
+            'cost_price' => $this->when(
+                $request->user()?->can(PermissionName::ViewProductCost->value) === true,
+                fn () => $this->cost_price === null ? null : (string) $this->cost_price,
+            ),
 
             // Which shelf this size draws from. Null for a size that is never stocked — a
             // quote-only product has no pile behind it, and every stock path refuses such a size

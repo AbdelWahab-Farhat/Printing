@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
 use Illuminate\Database\Seeder;
@@ -36,11 +37,11 @@ class ProductCategorySeeder extends Seeder
      * Name, description and order — the same three the catalogue prints — plus, for one row, the
      * answer to «هل يُطبع؟».
      *
-     * `skips_production` is omitted everywhere it is false, which is everywhere but «سادة»: the
-     * column defaults to false, and writing it out four times would suggest four decisions were
-     * taken when only one was.
+     * `production_mode` is omitted everywhere it is `in_house`, which is everywhere but «سادة»
+     * and «وسيط»: the column defaults to it, and writing it out four times would suggest four
+     * decisions were taken when only two were.
      *
-     * @var list<array{name: string, description: string, sort_order: int, skips_production?: bool}>
+     * @var list<array{name: string, description: string, sort_order: int, production_mode?: ProductionMode}>
      */
     private const CATEGORIES = [
         [
@@ -70,10 +71,20 @@ class ProductCategorySeeder extends Seeder
             'sort_order' => 5,
             // **The description was already saying it; now something reads it.** «بلا طباعة»
             // means an order made only of these has nothing to design and nothing to print, so
-            // it goes جديدة → جاهزة — see `ProductCategory::skipsProduction()`. It is the one
-            // seeded heading this is true of, and it is a fact about *this* heading rather than
-            // a rule about headings: one added tomorrow is answered by whoever adds it.
-            'skips_production' => true,
+            // it goes جديدة → جاهزة — see `ProductCategory::productionMode()`. It is a fact about
+            // *this* heading rather than a rule about headings: one added tomorrow is answered by
+            // whoever adds it.
+            'production_mode' => ProductionMode::None,
+        ],
+        [
+            'name' => 'وسيط',
+            'description' => 'منتجات تبيعها دعاية وينفّذها مورد خارجي، وتُتابَع حتى تصبح جاهزة.',
+            'sort_order' => 6,
+            // An order made only of these goes جديدة → (قيد التصميم) → قيد التصنيع → جاهزة, names
+            // the vendor it was sent to, and takes nothing off our shelf — see
+            // OUTSOURCED-PRODUCTS.md. Seeded because the business asked for the heading by name;
+            // the products under it, and their cost prices, are theirs to add.
+            'production_mode' => ProductionMode::Outsourced,
         ],
     ];
 
@@ -86,7 +97,7 @@ class ProductCategorySeeder extends Seeder
                     'description' => $category['description'],
                     'sort_order' => $category['sort_order'],
                     'is_active' => true,
-                    'skips_production' => $category['skips_production'] ?? false,
+                    'production_mode' => $category['production_mode'] ?? ProductionMode::InHouse,
                 ],
             );
         }

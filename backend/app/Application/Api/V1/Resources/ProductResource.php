@@ -43,6 +43,13 @@ class ProductResource extends JsonResource
                 fn () => $this->productCategory === null ? null : [
                     'id' => $this->productCategory->id,
                     'name' => $this->productCategory->name,
+                    // **The effective mode, not the row's own** — the opposite of what
+                    // `ProductCategoryResource` sends, and deliberately so. That one feeds an edit
+                    // form, which must put back what the row itself says; this one answers «كيف
+                    // يُنفَّذ هذا المنتج؟», where a heading's answer reaches the headings under it.
+                    // It is what tells a screen to ask for a vendor and to show a cost box at all.
+                    'production_mode' => $this->productCategory->productionMode()->value,
+                    'production_mode_label' => $this->productCategory->productionMode()->label(),
                 ],
             ),
             'product_category_id' => $this->product_category_id,

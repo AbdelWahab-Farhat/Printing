@@ -93,6 +93,11 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   stockDeductedAt: json['stock_deducted_at'] == null
       ? null
       : DateTime.parse(json['stock_deducted_at'] as String),
+  vendorId: (json['vendor_id'] as num?)?.toInt(),
+  vendorName: json['vendor_name'] as String?,
+  manufacturingStartedAt: json['manufacturing_started_at'] == null
+      ? null
+      : DateTime.parse(json['manufacturing_started_at'] as String),
   totalWeight: json['total_weight'] as String?,
   placedAt: json['placed_at'] == null
       ? null
@@ -171,6 +176,10 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'gross_profit': instance.grossProfit,
   'fulfillment_warehouse_id': instance.fulfillmentWarehouseId,
   'stock_deducted_at': instance.stockDeductedAt?.toIso8601String(),
+  'vendor_id': instance.vendorId,
+  'vendor_name': instance.vendorName,
+  'manufacturing_started_at': instance.manufacturingStartedAt
+      ?.toIso8601String(),
   'total_weight': instance.totalWeight,
   'placed_at': instance.placedAt?.toIso8601String(),
   'delivered_at': instance.deliveredAt?.toIso8601String(),
@@ -185,6 +194,7 @@ const _$OrderStatusEnumMap = {
   OrderStatus.designing: 'designing',
   OrderStatus.readyToPrint: 'ready_to_print',
   OrderStatus.printing: 'printing',
+  OrderStatus.manufacturing: 'manufacturing',
   OrderStatus.ready: 'ready',
   OrderStatus.officePickup: 'office_pickup',
   OrderStatus.outForDelivery: 'out_for_delivery',
@@ -292,6 +302,8 @@ _OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => _OrderItem(
   cogs: json['cogs'] as String?,
   unitMaterialCost: json['unit_material_cost'] as String?,
   stockUnitLabel: json['stock_unit_label'] as String?,
+  unitCost: json['unit_cost'] as String?,
+  outsourcingCost: json['outsourcing_cost'] as String?,
   notes: json['notes'] as String?,
 );
 
@@ -317,6 +329,8 @@ Map<String, dynamic> _$OrderItemToJson(_OrderItem instance) =>
       'cogs': instance.cogs,
       'unit_material_cost': instance.unitMaterialCost,
       'stock_unit_label': instance.stockUnitLabel,
+      'unit_cost': instance.unitCost,
+      'outsourcing_cost': instance.outsourcingCost,
       'notes': instance.notes,
     };
 

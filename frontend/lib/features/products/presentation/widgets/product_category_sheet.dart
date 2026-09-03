@@ -11,6 +11,7 @@ import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/models/production_mode.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/save_product_category_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -83,11 +84,20 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
   /// nothing new was picked.
   bool _removeImage = false;
 
-  /// Whether orders made only of this heading's goods skip the designer and the press.
+  /// How goods under this heading come to exist — مطبوعة، سادة، أو وسيط — which is the road
+  /// orders made only of them take.
   ///
-  /// Seeded from the category being edited, and false for a new one — a heading nobody has
-  /// thought about sends its orders down the road every order took before this switch existed.
-  late bool _skipsProduction = widget.category?.skipsProduction ?? false;
+  /// Seeded from the category being edited, and printed for a new one — a heading nobody has
+  /// thought about sends its orders down the road every order took before this choice existed.
+  /// A mode this build has never heard of is seeded as printed too, and the sheet says so below
+  /// the picker rather than silently offering to overwrite it.
+  late ProductionMode _productionMode = switch (widget.category?.productionMode) {
+    null || ProductionMode.unknown => ProductionMode.inHouse,
+    final ProductionMode mode => mode,
+  };
+
+  /// Whether the row arrived with a mode this build cannot name — see [_productionMode].
+  bool get _modeIsUnknown => widget.category?.productionMode == ProductionMode.unknown;
 
   bool get _isEditing => widget.category != null;
 
@@ -128,7 +138,7 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
       // the catalogue: both travel back exactly as they were.
       sortOrder: widget.category?.sortOrder ?? widget.nextSortOrder,
       isActive: widget.category?.isActive ?? true,
-      skipsProduction: _skipsProduction,
+      productionMode: _productionMode,
       image: _image,
       removeImage: _removeImage,
     );
@@ -200,27 +210,19 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _submit(),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 12.h),
                 // **Offered when adding as well as when editing**, unlike «يُعرض في قوائم
                 // الاختيار» on the sibling sheets: a category is created to be used, so its
                 // activation switch has one answer and is a row to read past — but «أكياس سادة»
-                // is created *because* it is not printed, and asking on the second visit would
-                // put the first orders under it through a designer and a press nobody meant to
-                // involve.
-                SwitchListTile.adaptive(
-                  value: _skipsProduction,
-                  onChanged: (value) => setState(() => _skipsProduction = value),
-                  title: const Text('يتخطّى التصميم والطباعة'),
-                  // The consequence, not a restatement of the label: what the switch changes is
-                  // which buttons the order screen offers, and that is what somebody standing
-                  // over this form is deciding about.
-                  subtitle: const Text(
-                    'الطلب المكوّن كلّه من منتجات هذا التصنيف ينتقل من «جديدة» إلى «جاهزة» '
-                    'مباشرة، ويُخصم من المخزون عندها كأي طلب.',
-                  ),
-                  contentPadding: EdgeInsets.zero,
+                // is created *because* it is not printed, and «كروت بزنس» *because* a vendor
+                // makes them; asking on the second visit would put the first orders under
+                // either through a designer and a press nobody meant to involve.
+                _ProductionModeField(
+                  value: _productionMode,
+                  isUnknown: _modeIsUnknown,
+                  onChanged: (mode) => setState(() => _productionMode = mode),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 12.h),
                 _ImageRow(
                   picked: _image,
                   existingUrl: _showsExistingImage ? widget.category!.imageUrl : null,
@@ -249,6 +251,87 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
       },
     );
   }
+}
+
+/// «طريقة التنفيذ» — the three roads, and what choosing each one does to an order.
+///
+/// **Three segments where a switch used to be.** The switch asked «هل يُطبع؟» and the shop has
+/// three kinds of work: printed here, picked off a shelf, or made by a vendor. The last two both
+/// answer «لا» to the old question and take different roads, which is why the boolean went.
+///
+/// The line under the segments is the consequence, not a restatement of the label: what the
+/// choice changes is which buttons the order screen offers and whether a warehouse is asked
+/// for, and that is what somebody standing over this form is deciding about.
+class _ProductionModeField extends StatelessWidget {
+  const _ProductionModeField({
+    required this.value,
+    required this.isUnknown,
+    required this.onChanged,
+  });
+
+  final ProductionMode value;
+
+  /// The row came with a mode this build has no word for. Said out loud, because saving would
+  /// overwrite it with whichever segment is lit.
+  final bool isUnknown;
+
+  final ValueChanged<ProductionMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'طريقة التنفيذ',
+          style: context.textTheme.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+        SizedBox(height: 6.h),
+        SegmentedButton<ProductionMode>(
+          segments: [
+            for (final mode in ProductionMode.choices)
+              ButtonSegment<ProductionMode>(value: mode, label: Text(_shortLabel(mode))),
+          ],
+          selected: {value},
+          showSelectedIcon: false,
+          onSelectionChanged: (choice) => onChanged(choice.first),
+        ),
+        SizedBox(height: 6.h),
+        Text(
+          isUnknown
+              ? 'هذا التصنيف بطريقة تنفيذ لا يعرفها هذا الإصدار من التطبيق — الحفظ سيستبدلها '
+                    'بالخيار المحدد.'
+              : _consequence(value),
+          style: context.textTheme.bodySmall?.copyWith(
+            color: isUnknown ? scheme.error : scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// One word per segment — three of them have to share a phone's width. The server's own
+  /// longer label is what the card prints.
+  static String _shortLabel(ProductionMode mode) => switch (mode) {
+    ProductionMode.inHouse => 'مطبوعة',
+    ProductionMode.none => 'سادة',
+    ProductionMode.outsourced => 'وسيط',
+    ProductionMode.unknown => mode.label,
+  };
+
+  static String _consequence(ProductionMode mode) => switch (mode) {
+    ProductionMode.inHouse =>
+      'نصمّمها ونطبعها هنا — الطلب يمرّ بالتصميم والطباعة، ويُخصم من المخزون عند «جاهزة».',
+    ProductionMode.none =>
+      'جاهزة من الرفّ — الطلب المكوّن كلّه من منتجات هذا التصنيف ينتقل من «جديدة» إلى '
+          '«جاهزة» مباشرة، ويُخصم من المخزون عندها كأي طلب.',
+    ProductionMode.outsourced =>
+      'يصنعها مورد خارجي — لكل مقاس سعر تكلفة، ويُختار المورد عند أخذ الطلب، ويمرّ الطلب '
+          'بـ«قيد التصنيع» دون أن يلمس أي مخزن.',
+    ProductionMode.unknown => '',
+  };
 }
 
 /// The picture the catalogue prints above the heading — pick one, replace it, or take it off.

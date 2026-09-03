@@ -3,6 +3,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/products/models/new_product.dart';
 import 'package:dayaa/features/products/models/product.dart';
 import 'package:dayaa/features/products/models/product_category.dart';
@@ -100,6 +101,9 @@ class _StubCategoryRepository implements ProductCategoryRepository {
 /// Arrange - Act - Assert throughout.
 void main() {
   setUp(() {
+    // The form asks whether the reader may see «سعر التكلفة»; an empty session answers no,
+    // which is the ordinary reader and the one every test here is written for.
+    sl.registerSingleton<Session>(Session());
     sl.registerLazySingleton<SaveProduct>(() => SaveProduct(_StubRepository()));
     sl.registerFactory<SaveProductCubit>(
       () => SaveProductCubit(saveProduct: sl<SaveProduct>()),

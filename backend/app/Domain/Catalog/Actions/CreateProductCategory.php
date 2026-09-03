@@ -17,7 +17,7 @@ final class CreateProductCategory
             'description' => $data->description,
             'is_active' => $data->isActive,
             'sort_order' => $data->sortOrder,
-            'skips_production' => $data->skipsProduction,
+            'production_mode' => $data->productionMode,
         ]);
 
         // A brand-new category has none, but the count must still be present: the resource

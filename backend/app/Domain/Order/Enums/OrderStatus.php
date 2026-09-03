@@ -73,6 +73,20 @@ enum OrderStatus: string
 
     case Printing = 'printing';
 
+    /**
+     * The job is with an outside vendor, being made — «قيد التصنيع».
+     *
+     * **Only on the وسيط road, and it is the whole of that road's work.** دعاية sells the goods
+     * and somebody else makes them: there is nothing here to prepare, nothing to weigh and no
+     * press of ours to queue for, so this status has no «جاهز للتصنيع» in front of it. Sending
+     * the job out *is* the move. See OUTSOURCED-PRODUCTS.md.
+     *
+     * **Not «قيد الطباعة» wearing a different word.** One status, one word, wherever it is drawn
+     * — a label that changed with the road would fork the chip, the filter, the audit dictionary
+     * and the home board, all four of which read {@see label()}.
+     */
+    case Manufacturing = 'manufacturing';
+
     /** Finished and on the shelf, waiting to leave. */
     case Ready = 'ready';
 
@@ -114,6 +128,7 @@ enum OrderStatus: string
             self::ReadyToPrint => 'جاهزة للطباعة',
             self::Designing => 'قيد التصميم',
             self::Printing => 'قيد الطباعة',
+            self::Manufacturing => 'قيد التصنيع',
             self::Ready => 'جاهزة',
             self::Shortage => 'نواقص',
             self::OfficePickup => 'استلام مكتب',
@@ -144,46 +159,99 @@ enum OrderStatus: string
      * **The line it stops at is «جاهزة».** Once the bags exist there is nothing to rewind to:
      * every move after that describes where a physical parcel is.
      *
-     * **[$flow] is the second thing the map reads, and only two arms look at it.** An order made
-     * entirely of goods that are not printed has no artwork to agree and no press to run, so
-     * «جديدة» offers «جاهزة» directly and «نواقص» rejoins there too — see {@see OrderFlow}. The
-     * other eleven arms are the same road whatever is in the bags: a parcel comes back from a
-     * courier the same way whether it was printed or not.
+     * **[$flow] is the second thing the map reads, and each road answers for itself.** An order
+     * made entirely of goods that are not printed has no artwork to agree and no press to run, so
+     * «جديدة» offers «جاهزة» directly; an order a vendor makes for us is sent out instead of
+     * printed, so «جديدة» offers «قيد التصنيع» — see {@see OrderFlow}. Everything past «جاهزة» is
+     * the same road whatever is in the bags: a parcel comes back from a courier the same way
+     * whether it was printed, pulled off a shelf, or made by somebody else.
      *
      * **The default is not a convenience.** `Standard` is what every order in the system was
      * before this parameter existed, so a caller that does not know about flows — a console
      * command, `OrderStatusTest`'s structural sweeps — keeps getting exactly the map it always
-     * got, and the new road is something a caller opts into by naming it.
+     * got, and a new road is something a caller opts into by naming it.
      *
      * @return list<self>
      */
     public function allowedNext(OrderFlow $flow = OrderFlow::Standard): array
     {
-        // **Both arms that branch are about the same absent thing: the work.** «جديدة» is where
-        // an order is sent to the designer or the press; «نواقص» is where it goes when it could
-        // not be started and is where it rejoins from. Neither has anything to offer an order
-        // whose goods are already made, and offering it anyway would put two buttons on the
-        // screen that describe work nobody is going to do — which is the whole complaint this
-        // flow was added to answer.
-        if (! $flow->hasProduction()) {
-            return match ($this) {
-                // Straight to the shelf. «نواقص» stays, and it is not an oversight: the stock
-                // for a plain bag is exactly the thing that can turn out not to be there, which
-                // is what that status has always meant — see the arm below.
-                self::New => [self::Ready, self::Shortage],
+        // **A `match` over the roads rather than an `if` over a boolean, and «وسيط» is why.**
+        // The question used to be «هل يوجد إنتاج؟», which two roads could answer between them.
+        // The third has a designer's queue on it and no press at all, so there is no one word
+        // left to branch on — each road names its own arms, and shares the rest by falling
+        // through to the standard map.
+        return match ($flow) {
+            OrderFlow::Standard => $this->standardNext(),
+            OrderFlow::NoProduction => $this->noProductionNext(),
+            OrderFlow::Outsourced => $this->outsourcedNext(),
+        };
+    }
 
-                // The way back on is «جاهزة» rather than the two production statuses, because
-                // those are not on this order's road at all. Written as its own arm rather than
-                // as a filter over the standard one: a filter would silently produce an empty
-                // list the day a status is added, and an order with no way out of a shortage is
-                // the exact gap `test_a_shortage_is_never_a_dead_end` exists to catch.
-                self::Shortage => [self::Ready, self::Cancelled],
+    /**
+     * Goods that are already made: nothing is designed, nothing is printed, and «جديدة» leads
+     * straight to the shelf.
+     *
+     * **Both arms that differ are about the same absent thing: the work.** «جديدة» is where an
+     * order is sent to the designer or the press; «نواقص» is where it goes when it could not be
+     * started and is where it rejoins from. Neither has anything to offer an order whose goods
+     * are already made, and offering it anyway would put two buttons on the screen that describe
+     * work nobody is going to do.
+     *
+     * @return list<self>
+     */
+    private function noProductionNext(): array
+    {
+        return match ($this) {
+            // Straight to the shelf. «نواقص» stays, and it is not an oversight: the stock for a
+            // plain bag is exactly the thing that can turn out not to be there, which is what
+            // that status has always meant — see the arm below.
+            self::New => [self::Ready, self::Shortage],
 
-                default => $this->standardNext(),
-            };
-        }
+            // The way back on is «جاهزة» rather than the two production statuses, because those
+            // are not on this order's road at all. Written as its own arm rather than as a filter
+            // over the standard one: a filter would silently produce an empty list the day a
+            // status is added, and an order with no way out of a shortage is the exact gap
+            // `test_a_shortage_is_never_a_dead_end` exists to catch.
+            self::Shortage => [self::Ready, self::Cancelled],
 
-        return $this->standardNext();
+            default => $this->standardNext(),
+        };
+    }
+
+    /**
+     * The وسيط road: designed here if it needs designing, made by somebody else, back on our
+     * shelf when the vendor is done.
+     *
+     * @return list<self>
+     */
+    private function outsourcedNext(): array
+    {
+        return match ($this) {
+            // **Two ways out, and no «جاهزة للطباعة» between them.** That status is the door into
+            // *our* press and the moment *our* warehouse lets the goods go, and neither happens
+            // on this road — the business named its absence as a requirement. So the job either
+            // goes to the designer first, or straight out to the vendor.
+            //
+            // **«نواقص» is absent too**, and for the plainer reason: we hold no stock of a وسيط
+            // product, so there is nothing to be short of. The vendor being slow is «قيد
+            // التصنيع» taking a while, not a shortage.
+            self::New => [self::Designing, self::Manufacturing],
+
+            // Out of the designer's queue there is one place to go: the vendor.
+            self::Designing => [self::Manufacturing, self::Cancelled],
+
+            // Back to design for a correction, exactly as «قيد الطباعة» already allows — the
+            // vendor sends a proof back and the logo moves. Forward is the finished job.
+            self::Manufacturing => [self::Ready, self::Designing, self::Cancelled],
+
+            // **Unreachable, and answered anyway.** Nothing on this road offers «نواقص», but a
+            // status that could be *stood in* with no way out is the dead end
+            // `test_a_shortage_is_never_a_dead_end` exists to catch — and falling through to the
+            // standard arm would answer «جاهزة للطباعة», the one status this road denies.
+            self::Shortage => [self::Manufacturing, self::Cancelled],
+
+            default => $this->standardNext(),
+        };
     }
 
     /**
@@ -217,6 +285,14 @@ enum OrderStatus: string
             self::Designing => [self::Printing, self::Cancelled],
 
             self::Printing => [self::Ready, self::Designing, self::Cancelled],
+
+            // **Off this road, and answered anyway** — the mirror of «نواقص» on the وسيط road.
+            // Nothing here offers «قيد التصنيع»: an order only reaches it by being made of goods
+            // a vendor makes, and that order is not walking this map. But a status with no moves
+            // reads as an ending, and the structural sweeps are right to refuse one — so the
+            // answer is the one being-made always has, wherever the machine stood: forward to the
+            // shelf, back to the artwork, or written off.
+            self::Manufacturing => [self::Ready, self::Designing, self::Cancelled],
 
             // **Out, or written off. Nothing goes back from here.** «جاهزة» means the bags are
             // made, counted and on the shelf; the two ways out are the dispatch pair, and the
@@ -363,6 +439,10 @@ enum OrderStatus: string
             self::ReadyToPrint => PermissionName::MoveOrderToReadyToPrint,
             self::Designing => PermissionName::MoveOrderToDesigning,
             self::Printing => PermissionName::MoveOrderToPrinting,
+            // Its own grant rather than the press's: sending a job to a vendor and chasing it is
+            // a different desk from running a machine, and the business composes the two roles
+            // however it likes — which is the whole reason there is one permission per status.
+            self::Manufacturing => PermissionName::MoveOrderToManufacturing,
             self::Ready => PermissionName::MoveOrderToReady,
             self::Shortage => PermissionName::MoveOrderToShortage,
             self::OfficePickup, self::OutForDelivery => PermissionName::DispatchOrders,
@@ -404,6 +484,10 @@ enum OrderStatus: string
             self::ReadyToPrint => 'ready_to_print_at',
             self::Designing => 'design_started_at',
             self::Printing => 'printing_started_at',
+            // «كم يوماً تقعد الطلبية عند المورد؟» is the first question this road will be asked,
+            // and it is not answerable from `printing_started_at` — sharing the column would put
+            // two different events under one name and lose which of them a date meant.
+            self::Manufacturing => 'manufacturing_started_at',
             self::Ready => 'ready_at',
             self::OfficePickup, self::OutForDelivery => 'dispatched_at',
             self::Delivered => 'delivered_at',
@@ -443,20 +527,33 @@ enum OrderStatus: string
      * to go — the same lie the detour handling above exists to prevent, told about the road
      * instead of about the order.
      *
+     * **Each road names its middle, rather than the long one being filtered down.** A filter
+     * could say which steps to *remove*; it could not say that the وسيط road has a step the
+     * others do not, and a line assembled by subtraction has no way to add «قيد التصنيع» back.
+     * Both ends are shared, because every order is taken the same way and every order finishes
+     * the same way.
+     *
      * @return list<self>
      */
     public static function mainLine(FulfilmentType $fulfilment, OrderFlow $flow = OrderFlow::Standard): array
     {
-        return array_values(array_filter([
+        $work = match ($flow) {
+            OrderFlow::Standard => [self::ReadyToPrint, self::Designing, self::Printing],
+            // Nothing between being taken and being on the shelf: that is the road.
+            OrderFlow::NoProduction => [],
+            // Design is on this road and «جاهزة للطباعة» is not — the job is sent out, not
+            // prepared for a press of ours.
+            OrderFlow::Outsourced => [self::Designing, self::Manufacturing],
+        };
+
+        return [
             self::New,
-            self::ReadyToPrint,
-            self::Designing,
-            self::Printing,
+            ...$work,
             self::Ready,
             self::dispatchFor($fulfilment),
             self::Delivered,
             self::Settled,
-        ], fn (self $status) => $flow->hasProduction() || ! $status->isProduction()));
+        ];
     }
 
     /**
@@ -470,12 +567,18 @@ enum OrderStatus: string
      * **«جاهزة للطباعة» counts as production**, and that is what keeps it off the blank-goods
      * line: it is the door into the press, so an order that never goes near the press never goes
      * near it either.
+     *
+     * **«قيد التصنيع» counts too, and it is work nobody here does.** The question this answers is
+     * «هل هذه الحالة هي الشغل نفسه؟» — being made is being made, whether the machine is ours or a
+     * vendor's. What it is *not* is a question about our press or our shelf: those are asked of
+     * the road, by {@see mainLine()} and `OrderFlow::deductsStock()` respectively.
      */
     public function isProduction(): bool
     {
         return $this === self::ReadyToPrint
             || $this === self::Designing
-            || $this === self::Printing;
+            || $this === self::Printing
+            || $this === self::Manufacturing;
     }
 
     /**

@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Audited; its entries are read through the product that owns it.
  */
 #[UseFactory(ProductVariantFactory::class)]
-#[Fillable(['stock_item_id', 'label', 'width_cm', 'height_cm', 'is_active', 'sort_order'])]
+#[Fillable(['stock_item_id', 'cost_price', 'label', 'width_cm', 'height_cm', 'is_active', 'sort_order'])]
 class ProductVariant extends Model
 {
     /** @use HasFactory<ProductVariantFactory> */
@@ -38,6 +38,10 @@ class ProductVariant extends Model
             'width_cm' => 'integer',
             'height_cm' => 'integer',
             'is_active' => 'boolean',
+            // String, not float, and to the same three places as the price it is set against:
+            // this number is multiplied by a quantity and copied onto an order line, which is
+            // exactly where a float stops being the figure somebody typed.
+            'cost_price' => 'decimal:3',
         ];
     }
 

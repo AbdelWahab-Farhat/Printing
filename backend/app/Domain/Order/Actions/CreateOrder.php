@@ -14,8 +14,10 @@ use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Exceptions\AdditionalCostRequiresPermission;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\OrderNeedsAtLeastOneItem;
+use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Support\Money;
+use App\Domain\Vendor\VendorService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -36,6 +38,10 @@ final class CreateOrder
         // Which road the order walks, read off its lines' categories — the flow twin of
         // `ResolveOrderDestination` above.
         private readonly ResolveOrderFlow $resolveFlow,
+        // Who is making it, for the road where somebody else does — read through the Service
+        // rather than the model, per RULES.md §3: cross-context work goes through the other
+        // module's front door.
+        private readonly VendorService $vendors,
     ) {}
 
     /**
@@ -43,6 +49,7 @@ final class CreateOrder
      * @throws DiscountRequiresPermission
      * @throws AdditionalCostRequiresPermission
      * @throws ShopDoesNotBelongToCustomer
+     * @throws OutsourcedOrderNeedsAVendor
      */
     public function __invoke(OrderData $data, ?User $actor = null): Order
     {
@@ -66,7 +73,14 @@ final class CreateOrder
 
         $destination = ($this->resolveDestination)($data->cityId, $data->regionId);
 
-        return DB::transaction(function () use ($data, $destination, $customer, $shopName, $actor): Order {
+        // Looked up before the transaction like the shop and the city are, and for the same
+        // reason: the name is a snapshot, and reading it here means the write below has every
+        // value it needs in hand. A vendor that does not exist is already refused by the request.
+        $vendorName = $data->vendorId === null
+            ? null
+            : (string) $this->vendors->find($data->vendorId)->name;
+
+        return DB::transaction(function () use ($data, $destination, $customer, $shopName, $vendorName, $actor): Order {
             $order = new Order;
 
             $order->fill([
@@ -74,6 +88,10 @@ final class CreateOrder
                 // Snapshotted like the city and the region: a renamed branch must not rewrite
                 // where an old order said it was going.
                 'customer_shop_name' => $shopName,
+                // Chosen from the vendor list, and its name kept beside it for the same reason
+                // the branch above keeps one — see OUTSOURCED-PRODUCTS.md §5.
+                'vendor_id' => $data->vendorId,
+                'vendor_name' => $vendorName,
                 'city_id' => $destination->cityId,
                 'region_id' => $destination->regionId,
                 'city_name' => $destination->cityName,
@@ -138,6 +156,16 @@ final class CreateOrder
             // set: an order is only put on the short road when *every* line is goods that are
             // already made.
             ($this->resolveFlow)($order);
+
+            // **Asked here and nowhere earlier, because here is the first place it can be
+            // asked.** Whether an order owes a vendor depends on the road it walks, and the road
+            // is read off the lines that were written moments ago — a rule in the request would
+            // have to guess at it from product ids. Inside the transaction, so an order that
+            // should have named a vendor is rolled back whole rather than left standing without
+            // one.
+            if ($order->production_flow->needsAVendor() && $order->vendor_id === null) {
+                throw OutsourcedOrderNeedsAVendor::make();
+            }
 
             // `from` is null exactly once per order, which is what makes "when was this taken"
             // a query on the timeline rather than a special case somewhere else.

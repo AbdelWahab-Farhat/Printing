@@ -52,7 +52,7 @@ final class CreateProduct
             // the same trade DeleteProductImage makes in the other direction.
             ($this->uploadImage)($product, $image, $altText);
 
-            return $product->load(['variants.priceTiers', 'variants.stockItem', 'images', 'productCategory', 'stockItemGroup']);
+            return $product->load(['variants.priceTiers', 'variants.stockItem', 'images', 'productCategory.parent', 'stockItemGroup']);
         });
     }
 }

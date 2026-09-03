@@ -488,7 +488,18 @@ mixin _$ProductVariant {
 @JsonKey(name: 'stock_item_id') int? get stockItemId;/// The shelf itself, for showing what a size draws on without a second request. Loaded on
 /// every product-returning path, so `null` alongside a non-null [stockItemId] does not happen
 /// in practice.
-@JsonKey(name: 'stock_item') VariantStockItem? get stockItem;@JsonKey(name: 'price_tiers') List<ProductPriceTier> get priceTiers;
+@JsonKey(name: 'stock_item') VariantStockItem? get stockItem;/// What this size costs us when a vendor makes it — «سعر التكلفة».
+///
+/// **Absent from the payload, not null, for anybody without `products.view_cost`** — so
+/// `null` here means one of two things and the screen must not claim it means «بلا تكلفة».
+/// Gate the row on the permission, not on the value.
+///
+/// A decimal string, never a `double`: it is multiplied by a quantity on the server and
+/// compared against a price that is also a string.
+///
+/// ⚠️ **Replaced along with the rest of the size on `PUT /products`** — a size sent without
+/// it is saved with none. See `NewProductVariant.costPrice`.
+@JsonKey(name: 'cost_price') String? get costPrice;@JsonKey(name: 'price_tiers') List<ProductPriceTier> get priceTiers;
 /// Create a copy of ProductVariant
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -501,16 +512,16 @@ $ProductVariantCopyWith<ProductVariant> get copyWith => _$ProductVariantCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&const DeepCollectionEquality().equals(other.priceTiers, priceTiers));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&const DeepCollectionEquality().equals(other.priceTiers, priceTiers));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,widthCm,heightCm,isActive,sortOrder,stockItemId,stockItem,const DeepCollectionEquality().hash(priceTiers));
+int get hashCode => Object.hash(runtimeType,id,label,widthCm,heightCm,isActive,sortOrder,stockItemId,stockItem,costPrice,const DeepCollectionEquality().hash(priceTiers));
 
 @override
 String toString() {
-  return 'ProductVariant(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, isActive: $isActive, sortOrder: $sortOrder, stockItemId: $stockItemId, stockItem: $stockItem, priceTiers: $priceTiers)';
+  return 'ProductVariant(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, isActive: $isActive, sortOrder: $sortOrder, stockItemId: $stockItemId, stockItem: $stockItem, costPrice: $costPrice, priceTiers: $priceTiers)';
 }
 
 
@@ -521,7 +532,7 @@ abstract mixin class $ProductVariantCopyWith<$Res>  {
   factory $ProductVariantCopyWith(ProductVariant value, $Res Function(ProductVariant) _then) = _$ProductVariantCopyWithImpl;
 @useResult
 $Res call({
- int id, String label,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder,@JsonKey(name: 'stock_item_id') int? stockItemId,@JsonKey(name: 'stock_item') VariantStockItem? stockItem,@JsonKey(name: 'price_tiers') List<ProductPriceTier> priceTiers
+ int id, String label,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder,@JsonKey(name: 'stock_item_id') int? stockItemId,@JsonKey(name: 'stock_item') VariantStockItem? stockItem,@JsonKey(name: 'cost_price') String? costPrice,@JsonKey(name: 'price_tiers') List<ProductPriceTier> priceTiers
 });
 
 
@@ -538,7 +549,7 @@ class _$ProductVariantCopyWithImpl<$Res>
 
 /// Create a copy of ProductVariant
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? isActive = null,Object? sortOrder = null,Object? stockItemId = freezed,Object? stockItem = freezed,Object? priceTiers = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? isActive = null,Object? sortOrder = null,Object? stockItemId = freezed,Object? stockItem = freezed,Object? costPrice = freezed,Object? priceTiers = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
@@ -548,7 +559,8 @@ as int?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_n
 as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
 as int,stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
 as int?,stockItem: freezed == stockItem ? _self.stockItem : stockItem // ignore: cast_nullable_to_non_nullable
-as VariantStockItem?,priceTiers: null == priceTiers ? _self.priceTiers : priceTiers // ignore: cast_nullable_to_non_nullable
+as VariantStockItem?,costPrice: freezed == costPrice ? _self.costPrice : costPrice // ignore: cast_nullable_to_non_nullable
+as String?,priceTiers: null == priceTiers ? _self.priceTiers : priceTiers // ignore: cast_nullable_to_non_nullable
 as List<ProductPriceTier>,
   ));
 }
@@ -646,10 +658,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'stock_item_id')  int? stockItemId, @JsonKey(name: 'stock_item')  VariantStockItem? stockItem, @JsonKey(name: 'price_tiers')  List<ProductPriceTier> priceTiers)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'stock_item_id')  int? stockItemId, @JsonKey(name: 'stock_item')  VariantStockItem? stockItem, @JsonKey(name: 'cost_price')  String? costPrice, @JsonKey(name: 'price_tiers')  List<ProductPriceTier> priceTiers)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProductVariant() when $default != null:
-return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.isActive,_that.sortOrder,_that.stockItemId,_that.stockItem,_that.priceTiers);case _:
+return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.isActive,_that.sortOrder,_that.stockItemId,_that.stockItem,_that.costPrice,_that.priceTiers);case _:
   return orElse();
 
 }
@@ -667,10 +679,10 @@ return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.isActive
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'stock_item_id')  int? stockItemId, @JsonKey(name: 'stock_item')  VariantStockItem? stockItem, @JsonKey(name: 'price_tiers')  List<ProductPriceTier> priceTiers)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'stock_item_id')  int? stockItemId, @JsonKey(name: 'stock_item')  VariantStockItem? stockItem, @JsonKey(name: 'cost_price')  String? costPrice, @JsonKey(name: 'price_tiers')  List<ProductPriceTier> priceTiers)  $default,) {final _that = this;
 switch (_that) {
 case _ProductVariant():
-return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.isActive,_that.sortOrder,_that.stockItemId,_that.stockItem,_that.priceTiers);case _:
+return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.isActive,_that.sortOrder,_that.stockItemId,_that.stockItem,_that.costPrice,_that.priceTiers);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -687,10 +699,10 @@ return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.isActive
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String label, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'stock_item_id')  int? stockItemId, @JsonKey(name: 'stock_item')  VariantStockItem? stockItem, @JsonKey(name: 'price_tiers')  List<ProductPriceTier> priceTiers)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String label, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'sort_order')  int sortOrder, @JsonKey(name: 'stock_item_id')  int? stockItemId, @JsonKey(name: 'stock_item')  VariantStockItem? stockItem, @JsonKey(name: 'cost_price')  String? costPrice, @JsonKey(name: 'price_tiers')  List<ProductPriceTier> priceTiers)?  $default,) {final _that = this;
 switch (_that) {
 case _ProductVariant() when $default != null:
-return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.isActive,_that.sortOrder,_that.stockItemId,_that.stockItem,_that.priceTiers);case _:
+return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.isActive,_that.sortOrder,_that.stockItemId,_that.stockItem,_that.costPrice,_that.priceTiers);case _:
   return null;
 
 }
@@ -702,7 +714,7 @@ return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.isActive
 @JsonSerializable()
 
 class _ProductVariant extends ProductVariant {
-  const _ProductVariant({required this.id, required this.label, @JsonKey(name: 'width_cm') this.widthCm, @JsonKey(name: 'height_cm') this.heightCm, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'sort_order') this.sortOrder = 0, @JsonKey(name: 'stock_item_id') this.stockItemId, @JsonKey(name: 'stock_item') this.stockItem, @JsonKey(name: 'price_tiers') final  List<ProductPriceTier> priceTiers = const <ProductPriceTier>[]}): _priceTiers = priceTiers,super._();
+  const _ProductVariant({required this.id, required this.label, @JsonKey(name: 'width_cm') this.widthCm, @JsonKey(name: 'height_cm') this.heightCm, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'sort_order') this.sortOrder = 0, @JsonKey(name: 'stock_item_id') this.stockItemId, @JsonKey(name: 'stock_item') this.stockItem, @JsonKey(name: 'cost_price') this.costPrice, @JsonKey(name: 'price_tiers') final  List<ProductPriceTier> priceTiers = const <ProductPriceTier>[]}): _priceTiers = priceTiers,super._();
   factory _ProductVariant.fromJson(Map<String, dynamic> json) => _$ProductVariantFromJson(json);
 
 @override final  int id;
@@ -732,6 +744,18 @@ class _ProductVariant extends ProductVariant {
 /// every product-returning path, so `null` alongside a non-null [stockItemId] does not happen
 /// in practice.
 @override@JsonKey(name: 'stock_item') final  VariantStockItem? stockItem;
+/// What this size costs us when a vendor makes it — «سعر التكلفة».
+///
+/// **Absent from the payload, not null, for anybody without `products.view_cost`** — so
+/// `null` here means one of two things and the screen must not claim it means «بلا تكلفة».
+/// Gate the row on the permission, not on the value.
+///
+/// A decimal string, never a `double`: it is multiplied by a quantity on the server and
+/// compared against a price that is also a string.
+///
+/// ⚠️ **Replaced along with the rest of the size on `PUT /products`** — a size sent without
+/// it is saved with none. See `NewProductVariant.costPrice`.
+@override@JsonKey(name: 'cost_price') final  String? costPrice;
  final  List<ProductPriceTier> _priceTiers;
 @override@JsonKey(name: 'price_tiers') List<ProductPriceTier> get priceTiers {
   if (_priceTiers is EqualUnmodifiableListView) return _priceTiers;
@@ -753,16 +777,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&const DeepCollectionEquality().equals(other._priceTiers, _priceTiers));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&const DeepCollectionEquality().equals(other._priceTiers, _priceTiers));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,widthCm,heightCm,isActive,sortOrder,stockItemId,stockItem,const DeepCollectionEquality().hash(_priceTiers));
+int get hashCode => Object.hash(runtimeType,id,label,widthCm,heightCm,isActive,sortOrder,stockItemId,stockItem,costPrice,const DeepCollectionEquality().hash(_priceTiers));
 
 @override
 String toString() {
-  return 'ProductVariant(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, isActive: $isActive, sortOrder: $sortOrder, stockItemId: $stockItemId, stockItem: $stockItem, priceTiers: $priceTiers)';
+  return 'ProductVariant(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, isActive: $isActive, sortOrder: $sortOrder, stockItemId: $stockItemId, stockItem: $stockItem, costPrice: $costPrice, priceTiers: $priceTiers)';
 }
 
 
@@ -773,7 +797,7 @@ abstract mixin class _$ProductVariantCopyWith<$Res> implements $ProductVariantCo
   factory _$ProductVariantCopyWith(_ProductVariant value, $Res Function(_ProductVariant) _then) = __$ProductVariantCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String label,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder,@JsonKey(name: 'stock_item_id') int? stockItemId,@JsonKey(name: 'stock_item') VariantStockItem? stockItem,@JsonKey(name: 'price_tiers') List<ProductPriceTier> priceTiers
+ int id, String label,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'sort_order') int sortOrder,@JsonKey(name: 'stock_item_id') int? stockItemId,@JsonKey(name: 'stock_item') VariantStockItem? stockItem,@JsonKey(name: 'cost_price') String? costPrice,@JsonKey(name: 'price_tiers') List<ProductPriceTier> priceTiers
 });
 
 
@@ -790,7 +814,7 @@ class __$ProductVariantCopyWithImpl<$Res>
 
 /// Create a copy of ProductVariant
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? isActive = null,Object? sortOrder = null,Object? stockItemId = freezed,Object? stockItem = freezed,Object? priceTiers = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? isActive = null,Object? sortOrder = null,Object? stockItemId = freezed,Object? stockItem = freezed,Object? costPrice = freezed,Object? priceTiers = null,}) {
   return _then(_ProductVariant(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
@@ -800,7 +824,8 @@ as int?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_n
 as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
 as int,stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
 as int?,stockItem: freezed == stockItem ? _self.stockItem : stockItem // ignore: cast_nullable_to_non_nullable
-as VariantStockItem?,priceTiers: null == priceTiers ? _self._priceTiers : priceTiers // ignore: cast_nullable_to_non_nullable
+as VariantStockItem?,costPrice: freezed == costPrice ? _self.costPrice : costPrice // ignore: cast_nullable_to_non_nullable
+as String?,priceTiers: null == priceTiers ? _self._priceTiers : priceTiers // ignore: cast_nullable_to_non_nullable
 as List<ProductPriceTier>,
   ));
 }
