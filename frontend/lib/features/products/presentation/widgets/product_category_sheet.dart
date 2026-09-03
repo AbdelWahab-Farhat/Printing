@@ -181,14 +181,22 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
                   _isEditing ? 'تعديل التصنيف' : 'تصنيف جديد',
                   style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
-                SizedBox(height: 4.h),
-                Text(
-                  'العنوان الذي تُعرض تحته المنتجات — أكياس، علب وكراتين، ستيكرات…',
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                ),
                 SizedBox(height: 16.h),
+                // First, because it is what the catalogue shows first: the picture is the
+                // heading's face on the products screen, and the owner asked for it to open the
+                // sheet rather than close it.
+                _ImageRow(
+                  picked: _image,
+                  existingUrl: _showsExistingImage ? widget.category!.imageUrl : null,
+                  onPick: () => unawaited(_pickImage()),
+                  onClear: () => setState(() {
+                    _image = null;
+                    // Only a picture the *server* holds needs removing; discarding one picked a
+                    // moment ago is just putting the sheet back where it was.
+                    _removeImage = widget.category?.hasImage ?? false;
+                  }),
+                ),
+                SizedBox(height: 12.h),
                 AppTextField(
                   controller: _name,
                   label: 'اسم التصنيف',
@@ -222,18 +230,6 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
                   isUnknown: _modeIsUnknown,
                   onChanged: (mode) => setState(() => _productionMode = mode),
                 ),
-                SizedBox(height: 12.h),
-                _ImageRow(
-                  picked: _image,
-                  existingUrl: _showsExistingImage ? widget.category!.imageUrl : null,
-                  onPick: () => unawaited(_pickImage()),
-                  onClear: () => setState(() {
-                    _image = null;
-                    // Only a picture the *server* holds needs removing; discarding one picked a
-                    // moment ago is just putting the sheet back where it was.
-                    _removeImage = widget.category?.hasImage ?? false;
-                  }),
-                ),
                 SizedBox(height: 20.h),
                 AppButton(
                   label: _isEditing ? 'حفظ' : 'إضافة',
@@ -259,9 +255,11 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
 /// three kinds of work: printed here, picked off a shelf, or made by a vendor. The last two both
 /// answer «لا» to the old question and take different roads, which is why the boolean went.
 ///
-/// The line under the segments is the consequence, not a restatement of the label: what the
-/// choice changes is which buttons the order screen offers and whether a warehouse is asked
-/// for, and that is what somebody standing over this form is deciding about.
+/// **What each answer does is one tap or one long press away, never printed under the row.**
+/// The consequence — which buttons the order screen offers, whether a warehouse is asked for —
+/// is what somebody choosing for the first time needs and what everybody else reads past; so
+/// it sits behind the question mark beside the label, all three together for comparing, and
+/// behind a long press on any one segment for a quick check.
 class _ProductionModeField extends StatelessWidget {
   const _ProductionModeField({
     required this.value,
@@ -284,31 +282,81 @@ class _ProductionModeField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'طريقة التنفيذ',
-          style: context.textTheme.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
+        Row(
+          children: [
+            Text(
+              'طريقة التنفيذ',
+              style: context.textTheme.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            SizedBox(width: 2.w),
+            IconButton(
+              key: const Key('production-mode-help'),
+              onPressed: () => _explain(context),
+              icon: Icon(AppIcons.about, size: 18.sp, color: scheme.onSurfaceVariant),
+              tooltip: 'ما الفرق؟',
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(minWidth: 28.w, minHeight: 28.w),
+            ),
+          ],
         ),
-        SizedBox(height: 6.h),
+        SizedBox(height: 4.h),
         SegmentedButton<ProductionMode>(
           segments: [
             for (final mode in ProductionMode.choices)
-              ButtonSegment<ProductionMode>(value: mode, label: Text(_shortLabel(mode))),
+              ButtonSegment<ProductionMode>(
+                value: mode,
+                label: Text(_shortLabel(mode)),
+                // A long press on the segment says what choosing it does.
+                tooltip: _consequence(mode),
+              ),
           ],
           selected: {value},
           showSelectedIcon: false,
+          // The full width of the sheet, like every field above it: three short words on a
+          // shrink-wrapped pill read as an afterthought beside boxes that span the phone.
+          expandedInsets: EdgeInsets.zero,
           onSelectionChanged: (choice) => onChanged(choice.first),
         ),
-        SizedBox(height: 6.h),
-        Text(
-          isUnknown
-              ? 'هذا التصنيف بطريقة تنفيذ لا يعرفها هذا الإصدار من التطبيق — الحفظ سيستبدلها '
-                    'بالخيار المحدد.'
-              : _consequence(value),
-          style: context.textTheme.bodySmall?.copyWith(
-            color: isUnknown ? scheme.error : scheme.onSurfaceVariant,
+        if (isUnknown) ...[
+          SizedBox(height: 6.h),
+          Text(
+            'هذا التصنيف بطريقة تنفيذ لا يعرفها هذا الإصدار من التطبيق — الحفظ سيستبدلها '
+            'بالخيار المحدد.',
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
           ),
-        ),
+        ],
       ],
+    );
+  }
+
+  /// The three answers side by side, so the choice is compared rather than read one at a time.
+  Future<void> _explain(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('طريقة التنفيذ'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final mode in ProductionMode.choices) ...[
+              Text(
+                _shortLabel(mode),
+                style: dialog.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 2.h),
+              Text(_consequence(mode), style: dialog.textTheme.bodySmall),
+              if (mode != ProductionMode.choices.last) SizedBox(height: 12.h),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialog).pop(), child: const Text('حسناً')),
+        ],
+      ),
     );
   }
 
