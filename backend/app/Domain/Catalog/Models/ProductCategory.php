@@ -46,6 +46,7 @@ class ProductCategory extends Model implements HasAuditTrail
         return [
             'is_active' => 'boolean',
             'production_mode' => ProductionMode::class,
+            'is_investable' => 'boolean',
             'sort_order' => 'integer',
             'image_width_px' => 'integer',
             'image_height_px' => 'integer',
@@ -129,6 +130,24 @@ class ProductCategory extends Model implements HasAuditTrail
         }
 
         return $this->parent?->production_mode ?? ProductionMode::InHouse;
+    }
+
+    /**
+     * Whether a deal may be opened against products filed under this heading.
+     *
+     * Shaped like {@see ProductionMode()} and for the same reason — the child's own answer wins
+     * and the parent is the fallback — but three-state rather than two, because a boolean
+     * defaulting to `false` cannot distinguish «لا» from «اسأل أبي». Without that distinction a
+     * leaf deliberately excluded from an investable family («أكياس نايلون خاصة بالشركة» under an
+     * investable «أكياس») would still answer yes, and by the time anyone noticed the goods would
+     * have arrived and the shares frozen.
+     *
+     * A heading nobody has decided about is not investable: fail-closed, like every other guard
+     * of this kind here.
+     */
+    public function isInvestable(): bool
+    {
+        return $this->is_investable ?? ($this->parent?->is_investable ?? false);
     }
 
     public function hasImage(): bool

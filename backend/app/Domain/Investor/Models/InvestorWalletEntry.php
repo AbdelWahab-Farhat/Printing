@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -69,6 +70,20 @@ class InvestorWalletEntry extends Model
     public function reversedEntry(): BelongsTo
     {
         return $this->belongsTo(self::class, 'reverses_entry_id');
+    }
+
+    /**
+     * The row that undid this one, if any.
+     *
+     * `HasOne` because the partial unique index behind `reverses_entry_id` makes a second one
+     * impossible. It is the useful direction for a report — «every row that still stands» is
+     * `whereDoesntHave('reversedBy')`, with no flag on the original for anybody to forget.
+     *
+     * @return HasOne<self, $this>
+     */
+    public function reversedBy(): HasOne
+    {
+        return $this->hasOne(self::class, 'reverses_entry_id');
     }
 
     /**

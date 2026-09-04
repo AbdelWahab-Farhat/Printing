@@ -8,6 +8,7 @@ use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\PaymentRequiresAnActor;
@@ -274,6 +275,17 @@ final class ChangeOrderStatus
             }
 
             ($this->record)($order, $from, $target, $reason, $actor);
+
+            // **The moment this order's money stops moving.** From «تم الاستلام» the state
+            // machine offers only «تم التسوية», and `UpdateOrder` refuses every edit on a closed
+            // order — so `grand_total` and `total_cogs` are both frozen and the profit is final.
+            //
+            // Announced rather than acted on: Orders does not know that investors exist, and a
+            // direct call would close a dependency loop the container cannot build. See
+            // {@see OrderProfitFinalised}.
+            if ($target === OrderStatus::Delivered || $target === OrderStatus::Settled) {
+                OrderProfitFinalised::dispatch((int) $order->getKey());
+            }
 
             return $order->refresh();
         });

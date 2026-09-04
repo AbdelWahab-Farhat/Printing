@@ -7,6 +7,7 @@ namespace App\Domain\Inventory\Actions;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\Enums\StockAdjustmentReason;
+use App\Domain\Inventory\Exceptions\StockItemIsFundedByADeal;
 use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\WarehouseStock;
@@ -62,6 +63,20 @@ final class SetStockItemUnit
         // common "opened the sheet, changed nothing" path takes no locks at all.
         if ($item->unit === $unit) {
             return $item;
+        }
+
+        // **Refused while somebody else's money is on this shelf.** `discardBalances()` below
+        // posts a real decreasing adjustment for every warehouse holding the item, which would
+        // FIFO-consume a deal's entire holding and book it as a loss nobody caused. The unit
+        // waits until the shelf is empty of funded stock.
+        $funded = StockBatch::query()
+            ->where('stock_item_id', $item->getKey())
+            ->whereNotNull('investor_deal_id')
+            ->where('quantity_remaining', '>', 0)
+            ->exists();
+
+        if ($funded) {
+            throw StockItemIsFundedByADeal::make();
         }
 
         // **Outside the transaction, and before the unit changes.** `RecordStockMovement` opens

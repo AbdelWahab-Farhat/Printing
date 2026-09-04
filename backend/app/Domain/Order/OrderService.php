@@ -37,6 +37,7 @@ use App\Domain\Order\Queries\OrderListQuery;
 use App\Domain\Order\Queries\OrderPaymentStatusCountsQuery;
 use App\Domain\Order\Queries\OrderStatusCountsQuery;
 use App\Domain\Order\Queries\OrderTotalsQuery;
+use App\Domain\Order\Queries\ProfitAttributionQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -65,6 +66,7 @@ class OrderService
         private readonly UpdateManufacturingCostRate $updateManufacturingCostRate,
         private readonly RecordScrapLoss $recordScrapLoss,
         private readonly OrderListQuery $listQuery,
+        private readonly ProfitAttributionQuery $profitAttribution,
         private readonly OrderStatusCountsQuery $statusCounts,
         private readonly OrderPaymentStatusCountsQuery $paymentStatusCounts,
         private readonly OrderTotalsQuery $totals,
@@ -300,5 +302,18 @@ class OrderService
             // OrderItemResource. Two queries for the whole order, not two per line.
             'items.variant.stockItem',
         ]);
+    }
+
+    /**
+     * One order's figures, flattened for another context to split.
+     *
+     * The only thing Investment ever asks Orders. Returns plain arrays rather than models, so
+     * the dependency stays one-way and Orders can change its internals without a ripple.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function profitAttributionFor(int $orderId): ?array
+    {
+        return ($this->profitAttribution)($orderId);
     }
 }

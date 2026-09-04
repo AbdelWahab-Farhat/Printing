@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Inventory\Actions;
 
 use App\Domain\Inventory\Exceptions\BatchIsFullyConsumed;
+use App\Domain\Inventory\Exceptions\BatchIsFundedByADeal;
 use App\Domain\Inventory\Exceptions\RevaluationExceedsRemaining;
 use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockBatchRevaluation;
@@ -96,6 +97,16 @@ final class RevalueStockBatch
                 throw BatchIsFullyConsumed::make((int) $batch->getKey());
             }
 
+            // **A layer somebody else paid for is not repriced by us.** Raising the cost of a
+            // funded layer lowers the investor's share of every future sale from it and lowering
+            // it inflates his — one party to the arrangement moving a number the other party is
+            // paid on, behind a grant («تصحيح التكلفة») that was never about that. The business
+            // decision is that a deal's cost is agreed once; a late invoice becomes a deal
+            // expense instead, which is visible on his own statement.
+            if ($batch->investor_deal_id !== null) {
+                throw BatchIsFundedByADeal::make((int) $batch->getKey());
+            }
+
             $repriced = $quantity ?? $remaining;
 
             if (bccomp($repriced, $remaining, 3) > 0) {
@@ -141,6 +152,11 @@ final class RevalueStockBatch
         $child->source_type = $batch->source_type;
         $child->stock_arrival_item_id = $batch->stock_arrival_item_id;
         $child->stock_movement_id = $batch->stock_movement_id;
+        // The third and last place `investor_deal_id` is written. Funded layers are refused
+        // revaluation outright, so this line should be unreachable for them — it is here because
+        // «should be unreachable» is exactly the assumption that turns a deal's stock into the
+        // company's the day somebody relaxes the guard above.
+        $child->investor_deal_id = $batch->investor_deal_id;
         $child->split_from_batch_id = $batch->getKey();
         $child->unit_cost = $batch->unit_cost;
         $child->quantity_received = $quantity;

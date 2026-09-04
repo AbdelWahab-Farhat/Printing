@@ -130,6 +130,9 @@ final class RecordStockMovement
                 // available at this moment, and it reaches the same document by one more hop.
                 stockArrivalItemId: null,
                 stockMovementId: $movementId,
+                // Resolved by Investment before the goods arrived, and null for everything the
+                // company bought for itself — which is almost all of it.
+                investorDealId: $data->investorDealId,
             );
         }
     }

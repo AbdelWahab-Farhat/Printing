@@ -54,6 +54,12 @@ final readonly class StockMovementData
          * themselves by their type. See {@see StockAdjustmentReason}.
          */
         public ?StockAdjustmentReason $adjustmentReason = null,
+        /**
+         * Which deal financed the stock this movement brings in. Only meaningful on an arrival,
+         * resolved by Investment from a claim made before the goods left the supplier — never
+         * chosen by the person receiving them.
+         */
+        public ?int $investorDealId = null,
     ) {}
 
     /**
@@ -73,6 +79,7 @@ final readonly class StockMovementData
             referenceId: self::intOrNull($validated['reference_id'] ?? null),
             notes: self::textOrNull($validated['notes'] ?? null),
             unitCost: self::costOrNull($validated['unit_cost'] ?? null),
+            investorDealId: self::intOrNull($validated['investor_deal_id'] ?? null),
         );
     }
 

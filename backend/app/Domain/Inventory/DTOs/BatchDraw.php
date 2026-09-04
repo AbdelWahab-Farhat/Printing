@@ -33,5 +33,12 @@ final readonly class BatchDraw
          * original `received_at`. Null for every layer opened before that column existed.
          */
         public ?int $stockMovementId = null,
+        /**
+         * Who financed the layer this was drawn from — carried for the same reason
+         * `receivedAt` is: a transfer's destination layer must keep it, or the stock silently
+         * changes owner by moving shelves. Null means the company's own stock, which is most of
+         * every shelf.
+         */
+        public ?int $investorDealId = null,
     ) {}
 }
