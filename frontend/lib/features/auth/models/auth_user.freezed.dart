@@ -50,7 +50,16 @@ mixin _$AuthUser {
 /// An administrator's access is granted by a rule on the backend, not by permission rows,
 /// so "is this person an admin" is the backend's answer to give. Re-deriving it in the app
 /// would mean two places to change the day that rule moves.
-@JsonKey(name: 'is_admin') bool get isAdmin;
+@JsonKey(name: 'is_admin') bool get isAdmin;/// Whether this account belongs to an investor rather than to an employee.
+///
+/// **A fact about a row, not the name of a role.** The server answers it from the
+/// `investors.user_id` link, so renaming the «مستثمر» role — which is ordinary data the
+/// business may edit — cannot strand somebody on a screen built for staff.
+///
+/// It decides where the app lands after sign-in and nothing else. The boundary is
+/// `can:investor_portal.view` on the route and the query behind it, which resolves the
+/// account from the signed-in user and never from anything the app sends.
+@JsonKey(name: 'is_investor') bool get isInvestor;
 /// Create a copy of AuthUser
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -63,16 +72,16 @@ $AuthUserCopyWith<AuthUser> get copyWith => _$AuthUserCopyWithImpl<AuthUser>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other.roles, roles)&&const DeepCollectionEquality().equals(other.permissions, permissions)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.salary, salary) || other.salary == salary)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other.roles, roles)&&const DeepCollectionEquality().equals(other.permissions, permissions)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.salary, salary) || other.salary == salary)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin)&&(identical(other.isInvestor, isInvestor) || other.isInvestor == isInvestor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,email,employeeCode,const DeepCollectionEquality().hash(roles),const DeepCollectionEquality().hash(permissions),isActive,salary,isAdmin);
+int get hashCode => Object.hash(runtimeType,id,name,phone,email,employeeCode,const DeepCollectionEquality().hash(roles),const DeepCollectionEquality().hash(permissions),isActive,salary,isAdmin,isInvestor);
 
 @override
 String toString() {
-  return 'AuthUser(id: $id, name: $name, phone: $phone, email: $email, employeeCode: $employeeCode, roles: $roles, permissions: $permissions, isActive: $isActive, salary: $salary, isAdmin: $isAdmin)';
+  return 'AuthUser(id: $id, name: $name, phone: $phone, email: $email, employeeCode: $employeeCode, roles: $roles, permissions: $permissions, isActive: $isActive, salary: $salary, isAdmin: $isAdmin, isInvestor: $isInvestor)';
 }
 
 
@@ -83,7 +92,7 @@ abstract mixin class $AuthUserCopyWith<$Res>  {
   factory $AuthUserCopyWith(AuthUser value, $Res Function(AuthUser) _then) = _$AuthUserCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, String phone, String? email,@JsonKey(name: 'employee_code') String? employeeCode, List<UserRole> roles, List<String>? permissions,@JsonKey(name: 'is_active') bool isActive, String? salary,@JsonKey(name: 'is_admin') bool isAdmin
+ int id, String name, String phone, String? email,@JsonKey(name: 'employee_code') String? employeeCode, List<UserRole> roles, List<String>? permissions,@JsonKey(name: 'is_active') bool isActive, String? salary,@JsonKey(name: 'is_admin') bool isAdmin,@JsonKey(name: 'is_investor') bool isInvestor
 });
 
 
@@ -100,7 +109,7 @@ class _$AuthUserCopyWithImpl<$Res>
 
 /// Create a copy of AuthUser
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? employeeCode = freezed,Object? roles = null,Object? permissions = freezed,Object? isActive = null,Object? salary = freezed,Object? isAdmin = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? employeeCode = freezed,Object? roles = null,Object? permissions = freezed,Object? isActive = null,Object? salary = freezed,Object? isAdmin = null,Object? isInvestor = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -112,6 +121,7 @@ as List<UserRole>,permissions: freezed == permissions ? _self.permissions : perm
 as List<String>?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,salary: freezed == salary ? _self.salary : salary // ignore: cast_nullable_to_non_nullable
 as String?,isAdmin: null == isAdmin ? _self.isAdmin : isAdmin // ignore: cast_nullable_to_non_nullable
+as bool,isInvestor: null == isInvestor ? _self.isInvestor : isInvestor // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -197,10 +207,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles,  List<String>? permissions, @JsonKey(name: 'is_active')  bool isActive,  String? salary, @JsonKey(name: 'is_admin')  bool isAdmin)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles,  List<String>? permissions, @JsonKey(name: 'is_active')  bool isActive,  String? salary, @JsonKey(name: 'is_admin')  bool isAdmin, @JsonKey(name: 'is_investor')  bool isInvestor)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AuthUser() when $default != null:
-return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.permissions,_that.isActive,_that.salary,_that.isAdmin);case _:
+return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.permissions,_that.isActive,_that.salary,_that.isAdmin,_that.isInvestor);case _:
   return orElse();
 
 }
@@ -218,10 +228,10 @@ return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles,  List<String>? permissions, @JsonKey(name: 'is_active')  bool isActive,  String? salary, @JsonKey(name: 'is_admin')  bool isAdmin)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles,  List<String>? permissions, @JsonKey(name: 'is_active')  bool isActive,  String? salary, @JsonKey(name: 'is_admin')  bool isAdmin, @JsonKey(name: 'is_investor')  bool isInvestor)  $default,) {final _that = this;
 switch (_that) {
 case _AuthUser():
-return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.permissions,_that.isActive,_that.salary,_that.isAdmin);case _:
+return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.permissions,_that.isActive,_that.salary,_that.isAdmin,_that.isInvestor);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -238,10 +248,10 @@ return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles,  List<String>? permissions, @JsonKey(name: 'is_active')  bool isActive,  String? salary, @JsonKey(name: 'is_admin')  bool isAdmin)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String phone,  String? email, @JsonKey(name: 'employee_code')  String? employeeCode,  List<UserRole> roles,  List<String>? permissions, @JsonKey(name: 'is_active')  bool isActive,  String? salary, @JsonKey(name: 'is_admin')  bool isAdmin, @JsonKey(name: 'is_investor')  bool isInvestor)?  $default,) {final _that = this;
 switch (_that) {
 case _AuthUser() when $default != null:
-return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.permissions,_that.isActive,_that.salary,_that.isAdmin);case _:
+return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_that.roles,_that.permissions,_that.isActive,_that.salary,_that.isAdmin,_that.isInvestor);case _:
   return null;
 
 }
@@ -253,7 +263,7 @@ return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_
 @JsonSerializable()
 
 class _AuthUser extends AuthUser {
-  const _AuthUser({required this.id, required this.name, required this.phone, this.email, @JsonKey(name: 'employee_code') this.employeeCode, final  List<UserRole> roles = const <UserRole>[], final  List<String>? permissions, @JsonKey(name: 'is_active') this.isActive = true, this.salary, @JsonKey(name: 'is_admin') this.isAdmin = false}): _roles = roles,_permissions = permissions,super._();
+  const _AuthUser({required this.id, required this.name, required this.phone, this.email, @JsonKey(name: 'employee_code') this.employeeCode, final  List<UserRole> roles = const <UserRole>[], final  List<String>? permissions, @JsonKey(name: 'is_active') this.isActive = true, this.salary, @JsonKey(name: 'is_admin') this.isAdmin = false, @JsonKey(name: 'is_investor') this.isInvestor = false}): _roles = roles,_permissions = permissions,super._();
   factory _AuthUser.fromJson(Map<String, dynamic> json) => _$AuthUserFromJson(json);
 
 @override final  int id;
@@ -327,6 +337,16 @@ class _AuthUser extends AuthUser {
 /// so "is this person an admin" is the backend's answer to give. Re-deriving it in the app
 /// would mean two places to change the day that rule moves.
 @override@JsonKey(name: 'is_admin') final  bool isAdmin;
+/// Whether this account belongs to an investor rather than to an employee.
+///
+/// **A fact about a row, not the name of a role.** The server answers it from the
+/// `investors.user_id` link, so renaming the «مستثمر» role — which is ordinary data the
+/// business may edit — cannot strand somebody on a screen built for staff.
+///
+/// It decides where the app lands after sign-in and nothing else. The boundary is
+/// `can:investor_portal.view` on the route and the query behind it, which resolves the
+/// account from the signed-in user and never from anything the app sends.
+@override@JsonKey(name: 'is_investor') final  bool isInvestor;
 
 /// Create a copy of AuthUser
 /// with the given fields replaced by the non-null parameter values.
@@ -341,16 +361,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other._roles, _roles)&&const DeepCollectionEquality().equals(other._permissions, _permissions)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.salary, salary) || other.salary == salary)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other._roles, _roles)&&const DeepCollectionEquality().equals(other._permissions, _permissions)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.salary, salary) || other.salary == salary)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin)&&(identical(other.isInvestor, isInvestor) || other.isInvestor == isInvestor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,email,employeeCode,const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_permissions),isActive,salary,isAdmin);
+int get hashCode => Object.hash(runtimeType,id,name,phone,email,employeeCode,const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_permissions),isActive,salary,isAdmin,isInvestor);
 
 @override
 String toString() {
-  return 'AuthUser(id: $id, name: $name, phone: $phone, email: $email, employeeCode: $employeeCode, roles: $roles, permissions: $permissions, isActive: $isActive, salary: $salary, isAdmin: $isAdmin)';
+  return 'AuthUser(id: $id, name: $name, phone: $phone, email: $email, employeeCode: $employeeCode, roles: $roles, permissions: $permissions, isActive: $isActive, salary: $salary, isAdmin: $isAdmin, isInvestor: $isInvestor)';
 }
 
 
@@ -361,7 +381,7 @@ abstract mixin class _$AuthUserCopyWith<$Res> implements $AuthUserCopyWith<$Res>
   factory _$AuthUserCopyWith(_AuthUser value, $Res Function(_AuthUser) _then) = __$AuthUserCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, String phone, String? email,@JsonKey(name: 'employee_code') String? employeeCode, List<UserRole> roles, List<String>? permissions,@JsonKey(name: 'is_active') bool isActive, String? salary,@JsonKey(name: 'is_admin') bool isAdmin
+ int id, String name, String phone, String? email,@JsonKey(name: 'employee_code') String? employeeCode, List<UserRole> roles, List<String>? permissions,@JsonKey(name: 'is_active') bool isActive, String? salary,@JsonKey(name: 'is_admin') bool isAdmin,@JsonKey(name: 'is_investor') bool isInvestor
 });
 
 
@@ -378,7 +398,7 @@ class __$AuthUserCopyWithImpl<$Res>
 
 /// Create a copy of AuthUser
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? employeeCode = freezed,Object? roles = null,Object? permissions = freezed,Object? isActive = null,Object? salary = freezed,Object? isAdmin = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? employeeCode = freezed,Object? roles = null,Object? permissions = freezed,Object? isActive = null,Object? salary = freezed,Object? isAdmin = null,Object? isInvestor = null,}) {
   return _then(_AuthUser(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -390,6 +410,7 @@ as List<UserRole>,permissions: freezed == permissions ? _self._permissions : per
 as List<String>?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,salary: freezed == salary ? _self.salary : salary // ignore: cast_nullable_to_non_nullable
 as String?,isAdmin: null == isAdmin ? _self.isAdmin : isAdmin // ignore: cast_nullable_to_non_nullable
+as bool,isInvestor: null == isInvestor ? _self.isInvestor : isInvestor // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

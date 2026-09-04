@@ -63,6 +63,17 @@ abstract class AuthUser with _$AuthUser {
     /// so "is this person an admin" is the backend's answer to give. Re-deriving it in the app
     /// would mean two places to change the day that rule moves.
     @JsonKey(name: 'is_admin') @Default(false) bool isAdmin,
+
+    /// Whether this account belongs to an investor rather than to an employee.
+    ///
+    /// **A fact about a row, not the name of a role.** The server answers it from the
+    /// `investors.user_id` link, so renaming the «مستثمر» role — which is ordinary data the
+    /// business may edit — cannot strand somebody on a screen built for staff.
+    ///
+    /// It decides where the app lands after sign-in and nothing else. The boundary is
+    /// `can:investor_portal.view` on the route and the query behind it, which resolves the
+    /// account from the signed-in user and never from anything the app sends.
+    @JsonKey(name: 'is_investor') @Default(false) bool isInvestor,
   }) = _AuthUser;
 
   const AuthUser._();

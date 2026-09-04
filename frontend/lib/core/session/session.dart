@@ -77,6 +77,16 @@ class Session {
   /// day creating staff is delegated, this call site becomes a `can(...)` and this getter goes.
   bool get isAdmin => _user?.isAdmin ?? false;
 
+  /// Whether this account belongs to an investor rather than to an employee.
+  ///
+  /// The one thing the router branches on. Fail-closed like everything else here: an unfilled
+  /// session is not an investor, so nobody is bounced to the portal before the truth arrives.
+  ///
+  /// **A courtesy, never a boundary** — the same sentence this whole file carries. The boundary
+  /// is `can:investor_portal.view` on the Laravel route and the query behind it, which resolves
+  /// the account from the signed-in user's own link and takes no id from the app at all.
+  bool get isInvestor => _user?.isInvestor ?? false;
+
   /// Names the server granted that this build has no case for.
   ///
   /// Kept rather than dropped, and that is why [_granted] holds strings and not

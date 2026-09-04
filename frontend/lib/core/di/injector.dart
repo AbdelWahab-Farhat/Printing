@@ -88,6 +88,10 @@ import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/repositories/home_repository.dart';
 import 'package:dayaa/features/home/repositories/home_repository_impl.dart';
 import 'package:dayaa/features/home/usecases/get_home_summary.dart';
+import 'package:dayaa/features/investor_portal/presentation/viewmodel/investor_portal_cubit.dart';
+import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository.dart';
+import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository_impl.dart';
+import 'package:dayaa/features/investor_portal/usecases/get_investor_portfolio.dart';
 import 'package:dayaa/features/location/presentation/viewmodel/pick_location_cubit.dart';
 import 'package:dayaa/features/location/repositories/geocoding_repository.dart';
 import 'package:dayaa/features/location/repositories/geocoding_repository_impl.dart';
@@ -300,6 +304,7 @@ abstract final class Injector {
     _registerAuth();
     _registerLocation();
     _registerHome();
+    _registerInvestorPortal();
     _registerProducts();
     _registerCities();
     _registerBusinessFields();
@@ -523,6 +528,22 @@ abstract final class Injector {
           getCurrentUser: sl<GetCurrentUser>(),
           getHomeSummary: sl<GetHomeSummary>(),
         ),
+      );
+  }
+
+  /// The investor's own screen. One repository, one use case, one Cubit — he has exactly one
+  /// endpoint, and there is nothing else in the system he can reach.
+  static void _registerInvestorPortal() {
+    sl
+      ..registerLazySingleton<InvestorPortalRepository>(
+        () => InvestorPortalRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetInvestorPortfolio>(
+        () => GetInvestorPortfolio(sl<InvestorPortalRepository>()),
+      )
+      // Factory: the screen owns its Cubit and closes it on dispose.
+      ..registerFactory<InvestorPortalCubit>(
+        () => InvestorPortalCubit(getPortfolio: sl<GetInvestorPortfolio>()),
       );
   }
 

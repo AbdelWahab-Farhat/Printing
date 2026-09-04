@@ -26,6 +26,7 @@ import 'package:dayaa/features/customers/presentation/views/customer_designs_pag
 import 'package:dayaa/features/customers/presentation/views/customer_detail_page.dart';
 import 'package:dayaa/features/customers/presentation/views/customers_page.dart';
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
+import 'package:dayaa/features/investor_portal/presentation/views/investor_portal_page.dart';
 import 'package:dayaa/features/location/presentation/views/pick_location_page.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rate_form_page.dart';
@@ -86,6 +87,13 @@ abstract final class Routes {
   /// The four tabs inside the shell. Each is the first location of its own branch, so
   /// `context.go(Routes.warehouse)` selects that tab rather than covering the shell.
   static const String home = '/';
+
+  /// The investor's whole application.
+  ///
+  /// **Declared outside the shell**, unlike every tab: reaching [home] builds the bottom
+  /// navigation bar and the drawer behind it, which are full of screens an investor must not
+  /// have. Conditioning that screen would leave him one bug away from the staff app.
+  static const String investorPortal = '/investor';
   static const String orders = '/orders';
 
   /// The orders behind one number on the home screen. Takes an [OrdersFilter] as `extra` — the
@@ -371,6 +379,12 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.splash,
         builder: (context, state) => const SplashPage(),
+      ),
+      // Top level, beside the splash and the login screen rather than inside the shell — the
+      // investor gets a page and no way out of it.
+      GoRoute(
+        path: Routes.investorPortal,
+        builder: (context, state) => const InvestorPortalPage(),
       ),
       GoRoute(
         path: Routes.login,
@@ -1006,10 +1020,28 @@ abstract final class AppRouter {
       final at = state.matchedLocation;
       if (at == Routes.splash || at == Routes.login) return null;
 
-      if (!sl<Session>().isSignedIn) {
+      final session = sl<Session>();
+
+      if (!session.isSignedIn) {
         return sl<TokenStorage>().hasTokenInMemory
             ? Routes.splash
             : Routes.login;
+      }
+
+      // **An investor never reaches the staff shell.** Placed after the sign-in check because a
+      // cold deep link arrives with an empty session, which must go through the splash to be
+      // filled first — asking this of an empty session would bounce everybody.
+      //
+      // Narrowed by «cannot read orders» rather than by a role name, so an administrator who
+      // also happens to be an investor still gets the board he came for. And it catches the two
+      // places that land on `/` — the splash and the login screen — so neither has to know.
+      //
+      // A courtesy, never a boundary: the boundary is `can:investor_portal.view` on the route
+      // and the query behind it.
+      if (session.isInvestor &&
+          !session.can(AppPermission.viewOrders) &&
+          at != Routes.investorPortal) {
+        return Routes.investorPortal;
       }
 
       return null;
