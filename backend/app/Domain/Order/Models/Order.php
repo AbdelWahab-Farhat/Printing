@@ -479,6 +479,42 @@ class Order extends Model implements HasAuditTrail
     }
 
     /**
+     * Where a cancelled order stood before it was written off, or null.
+     *
+     * **Read from the timeline, because that is the only place the answer exists.** «إلغاء تام»
+     * is reachable from eight different statuses, and `orders` keeps no column saying which one
+     * this order came from — `order_status_transitions` does, on the row the cancellation wrote.
+     * It is what {@see \App\Domain\Order\Actions\ReinstateCancelledOrder} puts the order back
+     * to, and the reason that action lets nobody name a destination.
+     *
+     * **The last cancellation, not the first.** An order may be written off, put back, and
+     * written off again from somewhere else entirely; the move being undone is the most recent
+     * one, so the search walks the history backwards.
+     *
+     * Uses the loaded relation when there is one — the order screen loads `transitions` for its
+     * timeline anyway — and queries only when there is not, so this never becomes a second read
+     * per row on a list.
+     */
+    public function statusBeforeCancellation(): ?OrderStatus
+    {
+        if ($this->status !== OrderStatus::Cancelled) {
+            return null;
+        }
+
+        $transitions = $this->relationLoaded('transitions')
+            ? $this->transitions->sortByDesc('id')
+            : $this->transitions()->reorder('id', 'desc')->get();
+
+        foreach ($transitions as $transition) {
+            if ($transition->to_status === OrderStatus::Cancelled) {
+                return $transition->from_status;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The moves this order may make, as *choices a person makes*, narrowed to those the given
      * user may actually make.
      *

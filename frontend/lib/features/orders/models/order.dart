@@ -180,6 +180,22 @@ abstract class Order with _$Order {
 
     @JsonKey(name: 'cancellation_reason') String? cancellationReason,
 
+    /// Where «تراجع عن الإلغاء» would put this order back, or null when the undo is not on
+    /// offer at all — the order is not cancelled, this user lacks the grant, or the server
+    /// cannot tell what it was cancelled from.
+    ///
+    /// **A status rather than a flag, because the button names its destination.** The undo has
+    /// nothing to choose: the server reads the order's own timeline and puts it back exactly
+    /// where the cancellation took it from, so the screen's job is to say where that is before
+    /// somebody taps rather than after. Sent only with a single order, never on a list — see
+    /// `OrderResource` for why the list does not pay for the timeline read.
+    @JsonKey(name: 'reinstate_to', unknownEnumValue: OrderStatus.unknown)
+    OrderStatus? reinstateTo,
+
+    /// The Arabic the server chose for [reinstateTo]. Rendered as-is, for the reason
+    /// [statusLabel] gives: a status this build has never heard of still reads correctly.
+    @JsonKey(name: 'reinstate_to_label') String? reinstateToLabel,
+
     /// The journey, in the domain's own order — see [OrderProgress].
     @Default(OrderProgress.unknown) OrderProgress progress,
 
@@ -283,6 +299,14 @@ abstract class Order with _$Order {
   /// open order and hold none of its permissions, and «لا توجد إجراءات» is the honest thing to
   /// say to them.
   bool get hasActions => availableTransitions.isNotEmpty;
+
+  /// Whether this screen may offer to undo the cancellation.
+  ///
+  /// Read from the server's own answer rather than from [isFinal] and a permission check here,
+  /// exactly as [hasActions] is: the three conditions — cancelled, granted, and a timeline that
+  /// records where it was cancelled from — are the server's, and a copy of them in Dart is the
+  /// copy that drifts.
+  bool get canReinstate => reinstateTo != null;
 
   /// Whether «تعديل النواقص» has anything to do on this order right now.
   ///

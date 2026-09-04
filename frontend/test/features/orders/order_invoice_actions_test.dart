@@ -15,6 +15,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart'
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
+import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -108,6 +109,7 @@ void main() {
           getOrder: GetOrder(repository),
           addDesign: AddOrderDesign(repository),
           reviewDesign: ReviewOrderDesign(repository),
+          reinstateOrder: ReinstateOrder(repository),
         ),
       );
   });

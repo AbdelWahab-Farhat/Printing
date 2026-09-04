@@ -87,6 +87,17 @@ abstract interface class OrderRepository {
     String? additionalCostNote,
   });
 
+  /// Undoes a cancellation made by mistake, and answers with the order as the server left it.
+  ///
+  /// **There is no destination to pass, and that is the rule rather than an omission.** The
+  /// server puts the order back in the status its own timeline says it was cancelled from; an
+  /// undo that let the caller name one would be a second way into statuses the state machine
+  /// makes unreachable from «إلغاء تام». [reason] is an optional note on the row.
+  ///
+  /// No stock moves either way: the cancellation already credited the goods back to the shelf,
+  /// and putting the warehouse right afterwards is done by hand.
+  Future<Either<Failure, Order>> reinstate(int orderId, {String? reason});
+
   /// [fields] is whatever the chosen transition asked for, keyed as the server described it —
   /// see `TransitionField`. Nothing here knows what those keys mean.
   Future<Either<Failure, Order>> changeStatus(

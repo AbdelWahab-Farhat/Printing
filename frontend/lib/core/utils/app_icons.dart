@@ -152,6 +152,15 @@ abstract final class AppIcons {
   static IconData get refund =>
       _pick(Icons.undo_rounded, CupertinoIcons.arrow_uturn_left);
 
+  /// Putting an order back after a cancellation made by mistake — «تراجع عن الإلغاء».
+  ///
+  /// A clock with an arrow turning back through it: what is being undone is a *move already
+  /// recorded*, not a direction of travel. Deliberately not [refund]'s bare turning arrow, which
+  /// this screen also draws for money going the other way, and not [history]'s plain clock,
+  /// which opens a log rather than changing anything.
+  static IconData get undo =>
+      _pick(Icons.settings_backup_restore_rounded, CupertinoIcons.arrow_counterclockwise);
+
   /// Closing a debt nobody is going to collect — «شطب الفرق».
   ///
   /// Money with a line struck through it: the amount was real and is being crossed out, which is

@@ -2,6 +2,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
+import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -29,16 +30,25 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
     required GetOrder getOrder,
     required AddOrderDesign addDesign,
     required ReviewOrderDesign reviewDesign,
+    required ReinstateOrder reinstateOrder,
   }) : _orderId = orderId,
        _getOrder = getOrder,
        _addDesign = addDesign,
        _reviewDesign = reviewDesign,
+       _reinstateOrder = reinstateOrder,
        super(const OrderDetailState.loading());
 
   final int _orderId;
   final GetOrder _getOrder;
   final AddOrderDesign _addDesign;
   final ReviewOrderDesign _reviewDesign;
+
+  /// **The one status this Cubit does write**, and the exception that proves the rule above it.
+  /// Moving an order belongs to [OrderStatusCubit] because a move asks for whatever its
+  /// destination wants; undoing a cancellation asks for nothing and offers no choice — the
+  /// server reads where the order goes off its own timeline — so sending somebody to a screen
+  /// that would draw one button and no fields is a screen for the sake of symmetry.
+  final ReinstateOrder _reinstateOrder;
 
   Future<void> load() async {
     // Keeps whatever is on screen: this is also the pull-to-refresh handler, and blanking the
@@ -93,6 +103,41 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
     await load();
 
     return null;
+  }
+
+  /// Undoes a cancellation made by mistake, putting the order back where it stood.
+  ///
+  /// **Answers with the failure rather than parking it in the state**, like [addDesigns]: the
+  /// order underneath is still perfectly drawable, and the screen has a snackbar for the
+  /// server's sentence.
+  ///
+  /// The order comes back changed in more than its status — it is no longer final, its
+  /// `available_transitions` are a real list again, and the cancellation banner is gone — so the
+  /// response replaces what is on screen rather than being followed by a re-read.
+  Future<Failure?> reinstate({String? reason}) async {
+    final order = state.order;
+    if (order == null || state.isWorking) return null;
+
+    emit(OrderDetailState.loaded(order: order, isWorking: true));
+
+    final result = await _reinstateOrder(_orderId, reason: reason);
+
+    if (isClosed) return null;
+
+    return result.fold(
+      (failure) {
+        // Back to the order exactly as it was: nothing about it changed, and leaving the screen
+        // spinning over a refusal is how a tap looks like it worked.
+        emit(OrderDetailState.loaded(order: order));
+
+        return failure;
+      },
+      (updated) {
+        emit(OrderDetailState.loaded(order: updated));
+
+        return null;
+      },
+    );
   }
 
   /// Approves a version, or turns it down with the sentence why.

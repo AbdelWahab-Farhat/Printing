@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Resources;
 
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
@@ -21,6 +22,11 @@ class OrderResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Read once: two keys below describe the same answer, and finding it means walking the
+        // order's timeline. Null on every order that is not a cancellation this user may undo,
+        // which is nearly all of them.
+        $reinstateTo = $this->reinstatableToFor($request);
+
         return [
             'id' => $this->id,
 
@@ -74,6 +80,17 @@ class OrderResource extends JsonResource
                 ],
                 $this->availableTransitionsFor($request->user()),
             ),
+
+            // **The way out of «إلغاء تام», and the only one there is.** An order written off by
+            // mistake is put back exactly where it stood — the destination is read from the
+            // timeline, never chosen — so what travels here is not a list of moves but the one
+            // status the undo will land on, named so the app can say «ترجع إلى «استلام مكتب»»
+            // on the button instead of asking somebody to tap and find out. Null whenever the
+            // undo is not on offer: the order is not cancelled, this user lacks the grant, or
+            // the timeline does not record what it was cancelled from. See
+            // {@see \App\Domain\Order\Actions\ReinstateCancelledOrder}.
+            'reinstate_to' => $reinstateTo?->value,
+            'reinstate_to_label' => $reinstateTo?->label(),
 
             // The journey, in the domain's own order. Shipped with the order for the same
             // reason `available_transitions` is: which status follows which is knowledge this
@@ -236,5 +253,39 @@ class OrderResource extends JsonResource
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * The status «تراجع عن الإلغاء» would put this order back into, for this reader, or null.
+     *
+     * **Three conditions, and the app is told the answer rather than the conditions.** The order
+     * must be standing in «إلغاء تام»; the reader must hold the cancellation's own grant, which
+     * is what the route guards the write with; and the timeline must record what the order was
+     * cancelled *from*, because that is the destination and there is no other source for it.
+     * Answering with the status itself rather than with a boolean is what lets the button name
+     * where the order is going.
+     *
+     * The timeline read is what the last condition costs, and it is why this is not offered to
+     * a list: `loadForDisplay()` eager-loads `transitions` for the order screen, and
+     * {@see Order::statusBeforeCancellation()} uses the loaded relation when it is there.
+     */
+    private function reinstatableToFor(Request $request): ?OrderStatus
+    {
+        if ($this->status !== OrderStatus::Cancelled) {
+            return null;
+        }
+
+        if (! $request->user()?->can(PermissionName::CancelOrders->value)) {
+            return null;
+        }
+
+        // **Only where the timeline is already in hand.** The order screen loads it — see
+        // `OrderService::loadForDisplay()` — and a list does not, so asking here would be a
+        // second query per cancelled row to fill a key no list draws. Null there, which is what
+        // every other order in the list answers anyway: «no undo offered», the same thing a
+        // client does with it either way.
+        return $this->relationLoaded('transitions')
+            ? $this->statusBeforeCancellation()
+            : null;
     }
 }

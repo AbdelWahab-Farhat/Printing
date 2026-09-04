@@ -8,6 +8,7 @@ use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
 use App\Application\Api\V1\Requests\Order\RecordScrapLossRequest;
+use App\Application\Api\V1\Requests\Order\ReinstateOrderRequest;
 use App\Application\Api\V1\Requests\Order\ReviewOrderDesignRequest;
 use App\Application\Api\V1\Requests\Order\SetOrderShortagesRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderDesignRequest;
@@ -230,6 +231,40 @@ class OrderController extends Controller
         if ($order->status === OrderStatus::OutForDelivery && $this->carrier->openParcelFor($order) === null) {
             $this->carrier->dispatchOrder($order);
         }
+    }
+
+    /**
+     * Undo a cancellation
+     *
+     * Puts an order written off by mistake back **exactly where it stood** when it was
+     * cancelled, read from its own timeline. There is no destination to send: an undo that let
+     * a caller name one would be a second, unguarded way into statuses the state machine
+     * deliberately makes unreachable from «إلغاء تام». Read `reinstate_to_label` on the order to
+     * show somebody where it is going before they tap.
+     *
+     * **No stock moves.** The cancellation already credited the goods back to the shelf, and
+     * this does not take them out again — putting the warehouse right afterwards is done by
+     * hand, on purpose.
+     *
+     * The cancellation stays in the order's history with its reason; this move is written above
+     * it, and the order stops carrying `cancelled_at` and `cancellation_reason`. `reason` here
+     * is an optional note on that row.
+     *
+     * Refused with 422 on an order that is not cancelled, and on one whose timeline does not
+     * record what it was cancelled from.
+     */
+    public function reinstate(ReinstateOrderRequest $request, Order $order): JsonResponse
+    {
+        $updated = $this->orders->reinstate(
+            $order,
+            $request->validated('reason'),
+            $this->actor($request),
+        );
+
+        return $this->success(
+            new OrderResource($this->orders->loadForDisplay($updated)),
+            "تم التراجع عن الإلغاء، وأُعيدت الطلبية إلى «{$updated->status->label()}»",
+        );
     }
 
     /**

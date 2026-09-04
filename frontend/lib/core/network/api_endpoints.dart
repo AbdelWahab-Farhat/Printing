@@ -273,6 +273,14 @@ abstract final class OrderEndpoints {
   /// well as changing the field, so it is an event rather than an edit to a value.
   static String status(int orderId) => '/orders/$orderId/status';
 
+  /// Undoing a cancellation made by mistake. A POST for the same reason [status] is one: the
+  /// order's timeline gains a row.
+  ///
+  /// **It carries no destination, and there is none to send.** The server puts the order back
+  /// in the status its own timeline says it was cancelled from — read `reinstateTo` off the
+  /// order to name that status on the button. An optional `reason` is a note on the row.
+  static String reinstate(int orderId) => '/orders/$orderId/reinstate';
+
   /// What is missing from each line — and so what the customer is charged, since a line is
   /// billed for what is left of it. A PATCH rather than a POST: nothing is recorded on the
   /// timeline, a number on the order is corrected.

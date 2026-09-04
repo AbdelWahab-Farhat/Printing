@@ -7,6 +7,7 @@ import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
+import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -52,6 +53,7 @@ void main() {
       getOrder: GetOrder(repository),
       addDesign: AddOrderDesign(repository),
       reviewDesign: ReviewOrderDesign(repository),
+      reinstateOrder: ReinstateOrder(repository),
     );
   });
 

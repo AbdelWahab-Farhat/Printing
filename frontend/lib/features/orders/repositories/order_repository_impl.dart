@@ -166,6 +166,19 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
+  Future<Either<Failure, Order>> reinstate(int orderId, {String? reason}) {
+    return safeRequest<Order>(
+      () async => _dio.post(
+        OrderEndpoints.reinstate(orderId),
+        // An empty note is left out rather than sent as null, the same way [changeStatus]
+        // treats its own: a field somebody did not fill is not a field set to nothing.
+        data: <String, dynamic>{if (reason != null && reason.isNotEmpty) 'reason': reason},
+      ),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, Order>> changeStatus(
     int orderId, {
     required OrderStatus status,

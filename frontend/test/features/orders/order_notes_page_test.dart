@@ -8,6 +8,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dar
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
+import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -91,6 +92,7 @@ void main() {
         getOrder: GetOrder(repository),
         addDesign: AddOrderDesign(repository),
         reviewDesign: ReviewOrderDesign(repository),
+        reinstateOrder: ReinstateOrder(repository),
       ),
     );
   }

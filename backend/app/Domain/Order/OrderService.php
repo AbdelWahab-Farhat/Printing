@@ -12,6 +12,7 @@ use App\Domain\Order\Actions\CreateOrder;
 use App\Domain\Order\Actions\RecordOrderPayment;
 use App\Domain\Order\Actions\RecordScrapLoss;
 use App\Domain\Order\Actions\RefundOrderPayment;
+use App\Domain\Order\Actions\ReinstateCancelledOrder;
 use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\ReviewOrderDesign;
 use App\Domain\Order\Actions\SetOrderShortages;
@@ -54,6 +55,9 @@ class OrderService
         private readonly CreateOrder $createOrder,
         private readonly UpdateOrder $updateOrder,
         private readonly ChangeOrderStatus $changeStatus,
+        // The only writer of a status that does not go through the one above — see its docblock
+        // for why undoing a cancellation is not a move on the map.
+        private readonly ReinstateCancelledOrder $reinstateOrder,
         private readonly SetOrderShortages $setShortages,
         private readonly AddOrderDesign $addDesign,
         private readonly ReviewOrderDesign $reviewDesign,
@@ -138,6 +142,17 @@ class OrderService
         array $fields = [],
     ): Order {
         return ($this->changeStatus)($order, $target, $reason, $actor, $fields);
+    }
+
+    /**
+     * Undo a cancellation made by mistake, putting the order back exactly where it stood.
+     *
+     * The destination is read from the order's own timeline rather than accepted from the
+     * caller, and no stock moves — see {@see ReinstateCancelledOrder}.
+     */
+    public function reinstate(Order $order, ?string $reason = null, ?User $actor = null): Order
+    {
+        return ($this->reinstateOrder)($order, $reason, $actor);
     }
 
     /**

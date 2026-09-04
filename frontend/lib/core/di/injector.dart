@@ -118,6 +118,7 @@ import 'package:dayaa/features/orders/usecases/get_orders.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_payments.dart';
 import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
+import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
 import 'package:dayaa/features/orders/usecases/save_order_invoice_pdf.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
 import 'package:dayaa/features/orders/usecases/take_order.dart';
@@ -613,6 +614,12 @@ abstract final class Injector {
       ..registerLazySingleton<ChangeOrderStatus>(
         () => ChangeOrderStatus(sl<OrderRepository>()),
       )
+      // Undoing a cancellation. Its own use case rather than an arm of ChangeOrderStatus: the
+      // server treats it as the undo of a recorded move rather than a move on the map, and it
+      // takes no destination — see [ReinstateOrder].
+      ..registerLazySingleton<ReinstateOrder>(
+        () => ReinstateOrder(sl<OrderRepository>()),
+      )
       ..registerLazySingleton<SetOrderShortages>(
         () => SetOrderShortages(sl<OrderRepository>()),
       )
@@ -709,6 +716,7 @@ abstract final class Injector {
           getOrder: sl<GetOrder>(),
           addDesign: sl<AddOrderDesign>(),
           reviewDesign: sl<ReviewOrderDesign>(),
+          reinstateOrder: sl<ReinstateOrder>(),
         ),
       )
       // The move screen fetches the order itself rather than being handed one: it is reachable

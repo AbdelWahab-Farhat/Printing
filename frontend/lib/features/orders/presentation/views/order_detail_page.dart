@@ -31,6 +31,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart'
 import 'package:dayaa/features/orders/presentation/widgets/order_timeline.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_totals.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_scrap_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/reinstate_order_dialog.dart';
 import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
 import 'package:flutter/material.dart';
@@ -190,6 +191,12 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                 onUnlinkShipment: sl<Session>().can(AppPermission.manageCarrierParcels)
                     ? _unlinkShipment
                     : null,
+                // **Not gated here, and that is the point.** Whether the undo is on offer is
+                // three conditions the server already answered — cancelled, granted, and a
+                // timeline that records what it was cancelled from — and it sent the answer as
+                // `reinstateTo`. A permission check in Dart beside it would be a fourth opinion
+                // with nothing keeping it honest.
+                onReinstate: state.order!.canReinstate ? _reinstate : null,
               ),
             ),
           },
@@ -379,6 +386,49 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     );
   }
 
+  /// Puts an order back after a cancellation made by mistake.
+  ///
+  /// **The only status this screen writes**, and the exception to the rule at the top of the
+  /// file that every move goes through «تغيير الحالة». That screen draws
+  /// `available_transitions`, and «إلغاء تام» has none — nothing follows it on the server's map,
+  /// which is exactly why the note above the button says so. This is not a move on the map; it
+  /// is the undo of one recorded move, it offers no destination to choose and no fields to fill,
+  /// so a whole screen for it would be a screen with one button on it.
+  ///
+  /// The confirmation lives in the dialog because there are two things to say before the tap and
+  /// neither fits on a button: where the order lands, and that the stock does **not** come back
+  /// off the shelf with it. The send happens here rather than in the dialog, for the reason
+  /// every other form on this screen works that way — a form's answer is what was typed, and
+  /// what to do about a refusal belongs to the screen that has somewhere to show it.
+  ///
+  /// Nothing is re-read afterwards: the response *is* the order, with its status, its timeline
+  /// and — the one this screen cannot guess — a real `available_transitions` again.
+  Future<void> _reinstate(BuildContext context) async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final draft = await showReinstateOrderDialog(context: context, order: order);
+    if (draft == null || !mounted) return;
+
+    final failure = await cubit.reinstate(reason: draft.reason);
+    if (!mounted) return;
+
+    if (failure != null) {
+      // The server's own Arabic. «لا يوجد في سجل الطلبية الحالة التي أُلغيت منها» names what is
+      // wrong and could not be written here without guessing at the timeline.
+      context.showFailure(failure);
+
+      return;
+    }
+
+    final updated = cubit.state.order;
+    if (updated == null) return;
+
+    context.showSuccess('رجعت الطلبية إلى «${updated.statusLabel}»');
+    setState(() => _moved = updated);
+  }
+
   /// Writes off bags that were ruined making this line.
   ///
   /// **Nothing is re-read afterwards, and that is not an oversight.** A scrap loss is a separate
@@ -531,6 +581,7 @@ class _Body extends StatelessWidget {
     required this.onResendShipment,
     required this.onDeleteShipment,
     required this.onUnlinkShipment,
+    required this.onReinstate,
   });
 
   final Order order;
@@ -567,6 +618,9 @@ class _Body extends StatelessWidget {
 
   /// Null without `logs.view`.
   final VoidCallback? onOpenLog;
+
+  /// Null unless the server said this order's cancellation may be undone — see the call site.
+  final Future<void> Function(BuildContext context)? onReinstate;
 
   /// Whether spoiling a bag is even possible yet.
   ///
@@ -667,10 +721,33 @@ class _Body extends StatelessWidget {
               if (!order.hasActions) ...[
                 SizedBox(height: 16.h),
                 _Note(
-                  text: order.isFinal
+                  // **A cancellation that may be undone is not «لا مزيد من الإجراءات».** The
+                  // sentence under it is about to be followed by a button, and a note claiming
+                  // the road ends here would be arguing with it.
+                  text: order.canReinstate
+                      ? 'الطلبية ${order.statusLabel} — والإلغاء وحده ما يمكن التراجع عنه'
+                      : order.isFinal
                       ? 'الطلبية ${order.statusLabel} — لا مزيد من الإجراءات'
                       : 'لا تملك صلاحية تغيير حالة هذه الطلبية',
                 ),
+                // **The one action that is not on the dial, and it belongs here rather than
+                // there.** The dial draws `available_transitions`, and «إلغاء تام» has none —
+                // that is what the note above says. Undoing the cancellation is the answer to
+                // exactly the sentence somebody has just read, so it stands under it.
+                if (onReinstate case final reinstate?) ...[
+                  SizedBox(height: 12.h),
+                  AppButton.tonal(
+                    // Named with its destination, because the undo offers no choice of one: the
+                    // server puts the order back where it was cancelled from, and saying so on
+                    // the button beats saying so only after the tap.
+                    label: switch (order.reinstateToLabel) {
+                      final to? when to.isNotEmpty => 'تراجع عن الإلغاء — ترجع إلى «$to»',
+                      _ => 'تراجع عن الإلغاء',
+                    },
+                    icon: AppIcons.undo,
+                    onPressed: () => reinstate(context),
+                  ),
+                ],
               ],
               if (_hasDestinationDetails) ...[
                 SizedBox(height: 16.h),

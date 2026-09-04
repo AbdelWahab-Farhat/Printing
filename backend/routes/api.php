@@ -300,6 +300,14 @@ Route::prefix('v1')->group(function (): void {
         Route::post('orders/{order}/status', [OrderController::class, 'changeStatus'])
             ->middleware('can:orders.view')->name('orders.status');
 
+        // Undoing one. `can:` sits here rather than in the request for the same reason the
+        // shortage route's does: unlike a status change this endpoint costs one fixed grant
+        // whatever the body says. It is the cancellation's own — whoever the business trusts to
+        // write an order off is who it trusts to say the write-off was a mistake — and the
+        // destination is never in the payload, so there is nothing else for a guard to read.
+        Route::post('orders/{order}/reinstate', [OrderController::class, 'reinstate'])
+            ->middleware('can:orders.status.cancelled')->name('orders.reinstate');
+
         // What is missing from each line — and therefore what the customer is charged, since a
         // line is billed for what is left of it. `can:` sits here rather than in the request
         // because unlike a status change this endpoint costs the same grant whatever it says:
