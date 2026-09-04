@@ -24,6 +24,15 @@ class StockMovementResource extends JsonResource
             'movement_type' => $this->movement_type->value,
             'movement_type_label' => $this->movement_type->label(),
 
+            // Only ever filled on an adjustment that removed stock. Null everywhere else says
+            // «this row explains itself by its type», which is the truth for the other five.
+            'adjustment_reason' => $this->adjustment_reason?->value,
+            'adjustment_reason_label' => $this->adjustment_reason?->label(),
+
+            // Which fulfillment this credited back. Published so a ledger screen can mark the
+            // pair rather than leaving two rows that look like unrelated traffic.
+            'reverses_movement_id' => $this->reverses_movement_id,
+
             // Always positive. Which of the two warehouse fields is null is what says whether
             // this added or removed — see the migration for the four shapes.
             'quantity' => (string) $this->quantity,

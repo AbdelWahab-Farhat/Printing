@@ -6,6 +6,7 @@ namespace App\Domain\Inventory\Actions;
 
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Inventory\DTOs\StockMovementData;
+use App\Domain\Inventory\Enums\StockAdjustmentReason;
 use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\WarehouseStock;
@@ -124,6 +125,11 @@ final class SetStockItemUnit
                     'quantity' => (string) $balance->quantity,
                     'notes' => 'تصفير الرصيد عند تغيير وحدة المخزون من '
                         .$item->unit->label().' — الكمية كانت محسوبة بالوحدة القديمة',
+                    // Not a loss anybody caused, and now the ledger says so rather than leaving
+                    // it to be read as one. It is also the reason the shape CHECK on
+                    // `stock_movements` can require a reason on every decrease: without this the
+                    // constraint would reject the one write the system makes for itself.
+                    'adjustment_reason' => StockAdjustmentReason::UnitChange->value,
                 ],
                 $actorId,
             ));

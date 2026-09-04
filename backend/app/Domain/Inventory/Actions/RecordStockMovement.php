@@ -70,6 +70,14 @@ final class RecordStockMovement
             $movement->reference_id = $data->referenceId;
             $movement->employee_id = $data->employeeId;
 
+            // **The two that used to be carried and never written down.** `reversedMovementId`
+            // has always steered `creditBack()` and then vanished, so afterwards nothing said a
+            // movement had been reversed and `SUM(stock_batch_consumptions)` counted a cancelled
+            // sale forever. The partial UNIQUE behind this column turns a second credit-back of
+            // the same movement into a database error rather than a silently doubled shelf.
+            $movement->reverses_movement_id = $data->reversedMovementId;
+            $movement->adjustment_reason = $data->adjustmentReason;
+
             // Saved before the balances move — not after, as before batch costing landed —
             // because consuming a cost layer needs this row's own id to attach the
             // stock_batch_consumptions it produces to. Still one transaction: a balance failure

@@ -53,7 +53,8 @@ class StockMovementController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = MovementFilters::fromArray($request->only([
-            'warehouse_id', 'stock_item_id', 'movement_type', 'employee_id', 'reference_id', 'from', 'to',
+            'warehouse_id', 'stock_item_id', 'movement_type', 'adjustment_reason',
+            'employee_id', 'reference_id', 'from', 'to',
         ]));
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
