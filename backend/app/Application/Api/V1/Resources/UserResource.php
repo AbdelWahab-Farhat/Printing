@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Resources;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Investor\Models\Investor;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -52,6 +53,15 @@ class UserResource extends JsonResource
 
             // The client should not have to know that "admin" is special — it asks the server.
             'is_admin' => $this->when($this->relationLoaded('roles'), fn () => $this->isAdmin()),
+
+            // **Whether this account belongs to an investor** — read off the `investors.user_id`
+            // link, which is a fact about a row rather than the name of a role. The app routes
+            // on it, so renaming the «مستثمر» role cannot strand somebody on a screen meant for
+            // employees.
+            'is_investor' => Investor::query()
+                ->where('user_id', $this->id)
+                ->where('is_active', true)
+                ->exists(),
 
             // What this account may do, as the gate answers it — not as its pivot table reads.
             //

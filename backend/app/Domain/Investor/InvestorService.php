@@ -30,8 +30,12 @@ use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorDealExpense;
 use App\Domain\Investor\Models\InvestorDealSupply;
 use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Investor\Queries\DealListQuery;
+use App\Domain\Investor\Queries\DealStockPosition;
 use App\Domain\Investor\Queries\InvestorBalances;
+use App\Domain\Investor\Queries\InvestorListQuery;
 use App\Domain\Investor\Support\Money;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * The door to everything about investors — and the only one other contexts knock on.
@@ -58,6 +62,9 @@ final class InvestorService
         private readonly ClaimDealSupply $claimSupply,
         private readonly PostDealEarningsForOrder $postEarnings,
         private readonly InvestorBalances $balances,
+        private readonly InvestorListQuery $investorList,
+        private readonly DealListQuery $dealList,
+        private readonly DealStockPosition $stockPosition,
     ) {}
 
     // ── people ───────────────────────────────────────────────────────────────
@@ -192,6 +199,34 @@ final class InvestorService
     public function postEarningsForOrder(int $orderId): array
     {
         return ($this->postEarnings)($orderId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, Investor>
+     */
+    public function paginateInvestors(array $filters, int $perPage = 15)
+    {
+        return ($this->investorList)($filters, $perPage);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, InvestorDeal>
+     */
+    public function paginateDeals(array $filters, int $perPage = 15)
+    {
+        return ($this->dealList)($filters, $perPage);
+    }
+
+    /**
+     * What a deal's goods are doing — arrived, left, sold, damaged, short.
+     *
+     * @return array<string, mixed>
+     */
+    public function dealStock(int $dealId): array
+    {
+        return ($this->stockPosition)($dealId);
     }
 
     /** Rounding, exposed so a controller never reimplements it. */

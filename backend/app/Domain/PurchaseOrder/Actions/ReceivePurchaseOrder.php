@@ -80,7 +80,7 @@ final class ReceivePurchaseOrder
                 warehouseId: $order->warehouse_id,
                 receivedBy: $data->receivedBy,
                 items: array_map(
-                    function (ReceivePurchaseOrderItemData $line) use ($items): StockArrivalItemData {
+                    function (ReceivePurchaseOrderItemData $line) use ($items, $order): StockArrivalItemData {
                         /** @var PurchaseOrderItem $orderedLine */
                         $orderedLine = $items->get($line->stockItemId);
                         $unitCost = $orderedLine->final_unit_cost === null ? null : (string) $orderedLine->final_unit_cost;

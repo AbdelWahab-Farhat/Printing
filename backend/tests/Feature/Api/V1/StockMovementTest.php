@@ -458,6 +458,7 @@ class StockMovementTest extends TestCase
             'warehouse_id' => $warehouse->id,
             'direction' => 'decrease',
             'quantity' => 15,
+            'adjustment_reason' => 'damage',
             'notes' => 'تلف أثناء التخزين',
         ]);
 
@@ -486,6 +487,7 @@ class StockMovementTest extends TestCase
             'warehouse_id' => $warehouse->id,
             'direction' => 'decrease',
             'quantity' => 11,
+            'adjustment_reason' => 'count_correction',
             'notes' => 'جرد',
         ]);
 
