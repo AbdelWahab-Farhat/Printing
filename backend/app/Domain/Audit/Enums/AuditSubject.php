@@ -29,6 +29,13 @@ use App\Domain\Inventory\Models\StockItemGroup;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
+use App\Domain\Investor\Models\Investor;
+use App\Domain\Investor\Models\InvestorDeal;
+use App\Domain\Investor\Models\InvestorDealExpense;
+use App\Domain\Investor\Models\InvestorDealItem;
+use App\Domain\Investor\Models\InvestorDealShare;
+use App\Domain\Investor\Models\InvestorDealSupply;
+use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
@@ -39,6 +46,7 @@ use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderAdditionalCost;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
+use App\Domain\Settings\Models\CompanySetting;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\Models\StockArrivalItem;
 use App\Domain\Vendor\Models\Vendor;
@@ -122,6 +130,18 @@ enum AuditSubject: string
     case PurchaseOrderItem = 'purchase_order_item';
     case PurchaseOrderAdditionalCost = 'purchase_order_additional_cost';
 
+    // Investors
+    case Investor = 'investor';
+    case InvestorDeal = 'investor_deal';
+    case InvestorDealItem = 'investor_deal_item';
+    case InvestorDealShare = 'investor_deal_share';
+    case InvestorDealSupply = 'investor_deal_supply';
+    case InvestorDealExpense = 'investor_deal_expense';
+    case InvestorWalletEntry = 'investor_wallet_entry';
+
+    // Company-wide settings
+    case CompanySetting = 'company_setting';
+
     /**
      * @return class-string<Model>
      */
@@ -166,6 +186,14 @@ enum AuditSubject: string
             self::PurchaseOrder => PurchaseOrder::class,
             self::PurchaseOrderItem => PurchaseOrderItem::class,
             self::PurchaseOrderAdditionalCost => PurchaseOrderAdditionalCost::class,
+            self::Investor => Investor::class,
+            self::InvestorDeal => InvestorDeal::class,
+            self::InvestorDealItem => InvestorDealItem::class,
+            self::InvestorDealShare => InvestorDealShare::class,
+            self::InvestorDealSupply => InvestorDealSupply::class,
+            self::InvestorDealExpense => InvestorDealExpense::class,
+            self::InvestorWalletEntry => InvestorWalletEntry::class,
+            self::CompanySetting => CompanySetting::class,
         };
     }
 
@@ -213,6 +241,14 @@ enum AuditSubject: string
             self::PurchaseOrder => 'أمر شراء',
             self::PurchaseOrderItem => 'بند أمر شراء',
             self::PurchaseOrderAdditionalCost => 'تكلفة إضافية لأمر شراء',
+            self::Investor => 'مستثمر',
+            self::InvestorDeal => 'صفقة استثمار',
+            self::InvestorDealItem => 'مادة في صفقة',
+            self::InvestorDealShare => 'حصة مستثمر',
+            self::InvestorDealSupply => 'إقرار تمويل',
+            self::InvestorDealExpense => 'مصروف صفقة',
+            self::InvestorWalletEntry => 'حركة محفظة مستثمر',
+            self::CompanySetting => 'إعدادات الشركة',
         };
     }
 

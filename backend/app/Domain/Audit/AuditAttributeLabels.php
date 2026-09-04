@@ -140,6 +140,9 @@ final class AuditAttributeLabels
             // Worth a history entry more than most: changing it changes the road every order
             // taken under this heading walks from that moment — see `ResolveOrderFlow`.
             'production_mode' => 'طريقة التنفيذ',
+            // Three-state on purpose: null inherits from the parent heading, so «فارغ» in a
+            // history entry means «كما الأب» rather than «لا».
+            'is_investable' => 'قابل للاستثمار',
             // Four columns for one picture, and all four are read the same way by somebody
             // scanning a history: «تغيّرت الصورة». Naming them separately is what stops the
             // screen printing `image_path` at them.
@@ -363,9 +366,12 @@ final class AuditAttributeLabels
             'movement_type' => 'نوع الحركة',
             'reference_id' => 'المرجع',
             'employee_id' => 'الموظف',
+            'reverses_movement_id' => 'تعكس الحركة',
+            'adjustment_reason' => 'نوع النقص',
         ],
         'stock_batch' => [
             'source_type' => 'مصدر الدفعة',
+            'investor_deal_id' => 'صفقة المستثمر',
             'stock_arrival_item_id' => 'بند التوريد',
             'stock_movement_id' => 'الحركة المخزنية',
             'split_from_batch_id' => 'مقسومة من دفعة',
@@ -428,6 +434,71 @@ final class AuditAttributeLabels
             // Not the shared «الاسم»: this names what the charge was for — التوصيل، الجمارك —
             // which is what the form asks for and what the invoice calls it.
             'name' => 'البيان',
+        ],
+        'investor' => [
+            'name' => 'اسم المستثمر',
+            'user_id' => 'حساب الدخول',
+            'created_by' => 'أضافه',
+        ],
+        'investor_deal' => [
+            'name' => 'اسم الصفقة',
+            'product_id' => 'المنتج',
+            // Frozen once the deal opens: it is the arrangement the investors agreed to, and
+            // moving it afterwards would rewrite what somebody has already been paid against.
+            'investor_profit_share_percent' => 'نسبة المستثمرين من الربح',
+            'opened_on' => 'تاريخ الصفقة',
+            'opened_at' => 'وقت الفتح',
+            'closed_at' => 'وقت الإغلاق',
+            'cancellation_reason' => 'سبب الإلغاء',
+            'created_by' => 'أنشأها',
+        ],
+        'investor_deal_item' => [
+            'investor_deal_id' => 'الصفقة',
+            'quantity_expected' => 'الكمية المتوقعة',
+            'expected_unit_cost' => 'تكلفة الوحدة المتوقعة',
+            'expected_unit_price' => 'سعر البيع المتوقع',
+        ],
+        'investor_deal_share' => [
+            'investor_deal_id' => 'الصفقة',
+            'investor_id' => 'المستثمر',
+            // The subscription the percentage was agreed against — not what arrived, which is a
+            // walk of the wallet ledger and is shown beside it rather than merged with it.
+            'capital_amount' => 'رأس المال المكتتب',
+            'share_percent' => 'النسبة من حصة المستثمرين',
+            'joined_at' => 'تاريخ الانضمام',
+        ],
+        'investor_deal_supply' => [
+            'investor_deal_id' => 'الصفقة',
+            'source_type' => 'نوع المستند',
+            'source_id' => 'رقم المستند',
+            'claimed_by' => 'أقرّها',
+        ],
+        'investor_deal_expense' => [
+            'investor_deal_id' => 'الصفقة',
+            'kind' => 'نوع المصروف',
+            'name' => 'بيان المصروف',
+            // The column somebody must be able to see change: a landed cost is already inside
+            // the goods, so it is logged and never subtracted a second time.
+            'is_landed' => 'داخل تكلفة البضاعة',
+            'incurred_on' => 'تاريخ المصروف',
+            'source_type' => 'نوع المستند',
+            'source_id' => 'رقم المستند',
+            'reverses_expense_id' => 'يعكس المصروف',
+        ],
+        'investor_wallet_entry' => [
+            'investor_id' => 'المستثمر',
+            'investor_deal_id' => 'الصفقة',
+            'type' => 'نوع الحركة',
+            'method' => 'طريقة الدفع',
+            'reference' => 'المرجع',
+            'source_type' => 'نوع المصدر',
+            'source_id' => 'رقم المصدر',
+            'occurred_at' => 'تاريخ الحركة',
+            'reverses_entry_id' => 'تعكس الحركة',
+        ],
+        'company_setting' => [
+            'investor_profit_share_percent' => 'نسبة المستثمرين من الربح (الافتراضية)',
+            'updated_by' => 'عدّلها',
         ],
     ];
 
