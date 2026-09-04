@@ -20,16 +20,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * `investor_profit_share_percent` — so the owner's «50% للمستثمرين» and «أحمد 60%» are two
  * multiplications rather than one number doing both jobs.
  *
- * `capital_amount` is the **subscription**: the figure the percentage was agreed against. What
- * actually arrived is a walk of the wallet ledger, and the two are shown side by side and never
- * quietly reconciled — an investor who pledged 30,000 and handed over 25,000 should see both
- * numbers, not an average of them.
+ * `committed_amount` is the **pledge**: the figure the percentage was agreed against. What he
+ * actually has in the deal is `Σ allocation − Σ release` on his wallet ledger, and the two are
+ * shown side by side and never quietly reconciled — a man who pledged 30,000 and handed over
+ * 25,000 should see both numbers, not an average of them. **Nothing in any profit or capital
+ * computation reads this column.**
  *
  * A model rather than a pivot, because a pivot fires no events and keeps no history, and «من
  * غيّر نسبة أحمد؟» is exactly the question this table will be asked.
  */
 #[UseFactory(InvestorDealShareFactory::class)]
-#[Fillable(['capital_amount', 'share_percent', 'notes'])]
+#[Fillable(['committed_amount', 'share_percent', 'notes'])]
 class InvestorDealShare extends Model
 {
     /** @use HasFactory<InvestorDealShareFactory> */
@@ -41,7 +42,7 @@ class InvestorDealShare extends Model
     protected function casts(): array
     {
         return [
-            'capital_amount' => 'decimal:2',
+            'committed_amount' => 'decimal:2',
             'share_percent' => 'decimal:4',
             'joined_at' => 'datetime',
         ];

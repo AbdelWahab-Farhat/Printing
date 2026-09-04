@@ -16,9 +16,9 @@ use Illuminate\Support\Facades\Schema;
  * A real model rather than a bare pivot: a pivot fires no model events and therefore keeps no
  * history, and «من غيّر نسبة أحمد؟» is precisely the question somebody will ask.
  *
- * `capital_amount` is the **subscription** — the number the percentage was agreed against. What
- * actually arrived is a walk of `investor_wallet_entries`, and the two are shown side by side
- * and never silently reconciled.
+ * `committed_amount` is the **subscription** — the number the percentage was agreed against.
+ * What actually arrived is a walk of `investor_wallet_entries`, and the two are shown side by
+ * side and never silently reconciled: one dinar of fact, one dinar of promise.
  */
 return new class extends Migration
 {
@@ -30,7 +30,13 @@ return new class extends Migration
             $table->foreignId('investor_deal_id')->constrained('investor_deals')->cascadeOnDelete();
             $table->foreignId('investor_id')->constrained('investors')->restrictOnDelete();
 
-            $table->decimal('capital_amount', 14, 2);
+            // **The pledge, not the money.** What an investor actually has in this deal is
+            // Σ allocation − Σ release on his wallet ledger, and the two are allowed to differ:
+            // a man may agree to 40,000 and hand over 25,000. Naming this column `capital`
+            // invited every screen to add it up as though it were cash, which is why it says
+            // `committed` instead — and why nothing in any profit or capital computation reads
+            // it. Zero is legal: a share can be agreed before a dinar moves.
+            $table->decimal('committed_amount', 14, 2)->default('0.00');
             $table->decimal('share_percent', 7, 4);
 
             $table->timestamp('joined_at');
@@ -51,7 +57,7 @@ return new class extends Migration
         DB::statement(<<<'SQL'
             ALTER TABLE investor_deal_shares
             ADD CONSTRAINT investor_deal_shares_positive
-            CHECK (capital_amount > 0 AND share_percent > 0 AND share_percent <= 100)
+            CHECK (committed_amount >= 0 AND share_percent > 0 AND share_percent <= 100)
         SQL);
     }
 

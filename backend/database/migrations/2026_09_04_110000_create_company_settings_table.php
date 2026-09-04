@@ -46,6 +46,15 @@ return new class extends Migration
             CHECK (investor_profit_share_percent >= 0 AND investor_profit_share_percent <= 100)
         SQL);
 
+        // «The setting», singular, is a claim the database should be making rather than a
+        // convention the reader hopes holds. Without it a second row is insertable and nothing
+        // says which one a deal reads — and the reader would then have to guess a default it
+        // exists precisely in order not to hardcode.
+        DB::statement(<<<'SQL'
+            ALTER TABLE company_settings
+            ADD CONSTRAINT company_settings_singleton CHECK (id = 1)
+        SQL);
+
         // The singleton, written here rather than in a seeder: a deploy that ran migrations and
         // not seeders would otherwise leave every deal creation reading a row that is not there.
         DB::table('company_settings')->insert([

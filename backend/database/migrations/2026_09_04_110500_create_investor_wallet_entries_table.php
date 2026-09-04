@@ -20,10 +20,17 @@ use Illuminate\Support\Facades\Schema;
  *
  * ```
  * capital in wallet = deposit − withdrawal − allocation + release
- * capital in deal D = allocation(D) − release(D)
- * profit in deal D  = profit(D) − loss(D) − profit_release(D)
+ * capital in deal D = allocation(D) − release(D) − capital_writedown(D)
+ * profit in deal D  = profit(D) − loss(D) + capital_writedown(D)
+ *                     + loss_absorbed_by_company(D) − profit_release(D)
  * profit in wallet  = profit_release − profit_withdrawal
  * ```
+ *
+ * **`capital_writedown` is what makes a losing deal closable.** Every amount here is positive by
+ * CHECK, so a deal whose investor share came out at −6,500 has no negative release to give: the
+ * loss is taken out of his capital *in that deal* and nowhere else — 30,000 becomes 23,500, and
+ * 23,500 is what returns to his wallet. `loss_absorbed_by_company` is the remainder on the day a
+ * loss exceeds what he put in, written as a visible line rather than left to vanish.
  *
  * **The withdrawal rule is structural, not a check somebody remembers.** Money only leaves
  * through `withdrawal` and `profit_withdrawal`, and both are wallet rows; profit only reaches
@@ -62,6 +69,12 @@ return new class extends Migration
             $table->string('source_type', 40)->nullable();
             $table->unsignedBigInteger('source_id')->nullable();
 
+            // **Which attempt at this source this row is.** A mis-attribution is corrected by a
+            // reversal plus a fresh row, and the fresh row names the same order — so a unique
+            // key that did not carry this would refuse the correction and leave the wrong figure
+            // standing as the only one the database would accept.
+            $table->smallInteger('source_sequence')->default(1);
+
             // When the money moved, not when somebody typed it in — the `order_payments` rule.
             // A profit row is stamped by the system and is never hand-dated.
             $table->timestamp('occurred_at');
@@ -93,12 +106,19 @@ return new class extends Migration
             WHERE reverses_entry_id IS NOT NULL AND deleted_at IS NULL
         SQL);
 
-        // One order produces at most one earning row per deal. The same law
+        // One order pays one investor once for one deal — the law
         // `journal_entries (source_type, source_id, kind)` states in the accounting design:
-        // «لا يُرحَّل الحدث الواحد مرتين». Without it, a status walked twice pays twice.
+        // «لا يُرحَّل الحدث الواحد مرتين». Without it a status walked twice pays twice, and the
+        // deal row lock is only as reliable as every future writer remembering to take it.
+        //
+        // **`type` is deliberately not in the key.** With it, one order could book both a
+        // `profit` row and a `loss` row for the same investor and both would be accepted — and
+        // a correction, which must name the same order again, would be refused. The sequence
+        // carries the correction instead, and «at most one live unreversed row per source» is
+        // held in PHP under the deal lock, the way Σ share_percent = 100 is.
         DB::statement(<<<'SQL'
             CREATE UNIQUE INDEX investor_wallet_entries_one_earning_per_source
-            ON investor_wallet_entries (investor_id, investor_deal_id, source_type, source_id, type)
+            ON investor_wallet_entries (investor_id, investor_deal_id, source_type, source_id, source_sequence)
             WHERE source_type IS NOT NULL AND deleted_at IS NULL
         SQL);
 
@@ -109,7 +129,8 @@ return new class extends Migration
                 (type IN ('deposit', 'withdrawal', 'profit_withdrawal')
                     AND investor_deal_id IS NULL AND method IS NOT NULL
                     AND reverses_entry_id IS NULL AND source_type IS NULL)
-                OR (type IN ('allocation', 'release', 'profit_release')
+                OR (type IN ('allocation', 'release', 'profit_release',
+                             'capital_writedown', 'loss_absorbed_by_company')
                     AND investor_deal_id IS NOT NULL AND method IS NULL
                     AND reverses_entry_id IS NULL AND source_type IS NULL)
                 OR (type IN ('profit', 'loss')

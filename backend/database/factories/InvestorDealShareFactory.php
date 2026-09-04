@@ -23,7 +23,7 @@ class InvestorDealShareFactory extends Factory
         return [
             'investor_deal_id' => InvestorDeal::factory(),
             'investor_id' => Investor::factory(),
-            'capital_amount' => '10000.00',
+            'committed_amount' => '10000.00',
             'share_percent' => '100.0000',
             'joined_at' => now(),
         ];

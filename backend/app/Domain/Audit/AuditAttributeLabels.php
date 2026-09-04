@@ -463,7 +463,7 @@ final class AuditAttributeLabels
             'investor_id' => 'المستثمر',
             // The subscription the percentage was agreed against — not what arrived, which is a
             // walk of the wallet ledger and is shown beside it rather than merged with it.
-            'capital_amount' => 'رأس المال المكتتب',
+            'committed_amount' => 'رأس المال المتعهَّد به',
             'share_percent' => 'النسبة من حصة المستثمرين',
             'joined_at' => 'تاريخ الانضمام',
         ],
@@ -493,6 +493,7 @@ final class AuditAttributeLabels
             'reference' => 'المرجع',
             'source_type' => 'نوع المصدر',
             'source_id' => 'رقم المصدر',
+            'source_sequence' => 'رقم المحاولة على المصدر',
             'occurred_at' => 'تاريخ الحركة',
             'reverses_entry_id' => 'تعكس الحركة',
         ],

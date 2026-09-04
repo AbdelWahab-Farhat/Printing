@@ -172,6 +172,25 @@ enum PermissionName: string
     case ViewPurchaseOrders = 'purchase_orders.view';
     case ManagePurchaseOrders = 'purchase_orders.manage';
 
+    // Investors. Reading and administering the deals is the usual pair; the three money verbs
+    // are split off it for the same reason `orders.payments.*` splits three ways — recording a
+    // deposit, paying an investor out and undoing either are different levels of trust, and the
+    // person who edits a deal's name is not necessarily the person who hands over cash.
+    case ViewInvestors = 'investors.view';
+    case ManageInvestors = 'investors.manage';
+    case RecordInvestorMoney = 'investors.money.record';
+    case ReverseInvestorMoney = 'investors.money.reverse';
+    case RecordDealExpenses = 'investor_deals.expenses.record';
+    // What an investor's own account holds, and nothing else in the system. Granted to the
+    // «مستثمر» role and to no employee — an investor holding `orders.view` would read every
+    // order's cost and profit, which OrderResource publishes to anyone who has it.
+    case ViewInvestorPortal = 'investor_portal.view';
+
+    // The company's editable defaults. Its own pair rather than riding on an existing one:
+    // everybody's screens read them and almost nobody should change them.
+    case ViewCompanySettings = 'settings.view';
+    case ManageCompanySettings = 'settings.manage';
+
     // The audit trail. One permission, not a pair: nothing writes to it by hand, so there is
     // nothing to manage — and reading it is its own decision, because it exposes every change
     // anyone has made to records the reader may not otherwise be allowed to see.
@@ -239,6 +258,14 @@ enum PermissionName: string
             self::ManageVendors => 'إضافة وتعديل الموردين',
             self::ViewPurchaseOrders => 'عرض أوامر الشراء',
             self::ManagePurchaseOrders => 'إنشاء وتعديل أوامر الشراء وإرسالها وإلغاؤها',
+            self::ViewInvestors => 'عرض المستثمرين وصفقاتهم',
+            self::ManageInvestors => 'إضافة وتعديل المستثمرين والصفقات',
+            self::RecordInvestorMoney => 'تسجيل إيداع أو تمويل أو سحب لمستثمر',
+            self::ReverseInvestorMoney => 'عكس حركة مالية لمستثمر',
+            self::RecordDealExpenses => 'تسجيل مصاريف الصفقة',
+            self::ViewInvestorPortal => 'بوابة المستثمر — رأس ماله وأرباحه وحدها',
+            self::ViewCompanySettings => 'عرض إعدادات الشركة',
+            self::ManageCompanySettings => 'تعديل إعدادات الشركة',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
             self::ViewProfitAndLossReport => 'عرض تقرير الأرباح والخسائر',
         };
@@ -280,6 +307,10 @@ enum PermissionName: string
             self::RevalueStock, self::ViewStockCost => 'المخازن والمخزون',
             self::ViewVendors, self::ManageVendors => 'الموردون',
             self::ViewPurchaseOrders, self::ManagePurchaseOrders => 'أوامر الشراء',
+            self::ViewInvestors, self::ManageInvestors,
+            self::RecordInvestorMoney, self::ReverseInvestorMoney,
+            self::RecordDealExpenses, self::ViewInvestorPortal => 'المستثمرون',
+            self::ViewCompanySettings, self::ManageCompanySettings => 'إعدادات الشركة',
             self::ViewActivityLogs => 'سجل النشاطات',
             self::ViewProfitAndLossReport => 'التقارير المالية',
         };

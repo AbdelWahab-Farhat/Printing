@@ -45,6 +45,24 @@ enum WalletEntryType: string
     /** A share of one order's loss, borne by a deal. */
     case Loss = 'loss';
 
+    /**
+     * A losing deal's shortfall taken out of the capital the investor put **into that deal**.
+     *
+     * Every amount in this table is positive, so there is no negative release to hand back with.
+     * A deal whose share of the losses came to −6,500 against 30,000 of capital returns 23,500,
+     * and this row is the 6,500 — visible, named, and touching no other deal's money.
+     */
+    case CapitalWritedown = 'capital_writedown';
+
+    /**
+     * The part of a loss that exceeded what the investor had in the deal.
+     *
+     * Nothing in the arrangement makes him owe more than he put in, so the remainder is the
+     * company's. Written as its own line so it appears on his statement instead of quietly
+     * disappearing into a rounding difference.
+     */
+    case LossAbsorbedByCompany = 'loss_absorbed_by_company';
+
     /** The deal's net profit moving to the wallet at close — where it becomes withdrawable. */
     case ProfitRelease = 'profit_release';
 
@@ -63,6 +81,8 @@ enum WalletEntryType: string
             self::Release => 'إرجاع رأس المال من الصفقة',
             self::Profit => 'ربح من طلبية',
             self::Loss => 'خسارة من طلبية',
+            self::CapitalWritedown => 'خصم خسارة من رأس المال',
+            self::LossAbsorbedByCompany => 'خسارة تحمّلتها الشركة',
             self::ProfitRelease => 'إتاحة أرباح الصفقة للسحب',
             self::ProfitWithdrawal => 'سحب أرباح',
             self::Reversal => 'عكس حركة',
@@ -78,6 +98,35 @@ enum WalletEntryType: string
         };
     }
 
+    /**
+     * How this row moves each of the four buckets, as multipliers on its amount.
+     *
+     * **One table, read by every balance, every ceiling and every statement row.** Three of the
+     * types move two buckets at once — a writedown takes from capital in the deal and gives to
+     * profit in it — which is exactly why a single `pot` column on the row would have been a
+     * lie: it would have to name one of the two, and the row would then vanish from the
+     * statement of whichever it did not name.
+     *
+     * @return array{capital_wallet: int, capital_deal: int, profit_deal: int, profit_wallet: int}
+     */
+    public function deltas(): array
+    {
+        return match ($this) {
+            self::Deposit => ['capital_wallet' => 1, 'capital_deal' => 0, 'profit_deal' => 0, 'profit_wallet' => 0],
+            self::Withdrawal => ['capital_wallet' => -1, 'capital_deal' => 0, 'profit_deal' => 0, 'profit_wallet' => 0],
+            self::Allocation => ['capital_wallet' => -1, 'capital_deal' => 1, 'profit_deal' => 0, 'profit_wallet' => 0],
+            self::Release => ['capital_wallet' => 1, 'capital_deal' => -1, 'profit_deal' => 0, 'profit_wallet' => 0],
+            self::Profit => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 1, 'profit_wallet' => 0],
+            self::Loss => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => -1, 'profit_wallet' => 0],
+            self::CapitalWritedown => ['capital_wallet' => 0, 'capital_deal' => -1, 'profit_deal' => 1, 'profit_wallet' => 0],
+            self::LossAbsorbedByCompany => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 1, 'profit_wallet' => 0],
+            self::ProfitRelease => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => -1, 'profit_wallet' => 1],
+            self::ProfitWithdrawal => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 0, 'profit_wallet' => -1],
+            // A reversal has no deltas of its own — it takes the negation of the row it undoes.
+            self::Reversal => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 0, 'profit_wallet' => 0],
+        };
+    }
+
     /** Whether real money crossed the counter — the rows that must name a method. */
     public function movedCash(): bool
     {
@@ -90,7 +139,8 @@ enum WalletEntryType: string
     public function belongsToADeal(): bool
     {
         return match ($this) {
-            self::Allocation, self::Release, self::Profit, self::Loss, self::ProfitRelease => true,
+            self::Allocation, self::Release, self::Profit, self::Loss,
+            self::CapitalWritedown, self::LossAbsorbedByCompany, self::ProfitRelease => true,
             default => false,
         };
     }
