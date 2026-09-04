@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Actions;
 
 use App\Domain\Order\DTOs\OrderItemData;
+use App\Domain\Order\Exceptions\FulfilledLineCannotBeReplaced;
 use App\Domain\Order\Exceptions\OrderItemsAreLocked;
 use App\Domain\Order\Exceptions\OrderNeedsAtLeastOneItem;
 use App\Domain\Order\Models\Order;
@@ -21,6 +22,12 @@ use App\Domain\Order\Models\OrderItem;
  * nothing, leaving a hole in the history exactly where somebody will look for "who took the
  * 25*35 off this order?". The set is a handful of rows; a few statements is a cheap price for a
  * trail with no gaps.
+ *
+ * **And a line whose bags already left is not replaceable at all.** `itemsAreEditable()` reopens
+ * the set at «قيد الطباعة», which is after the draw at «جاهزة للطباعة» — so the status check
+ * above is not enough on its own. Trashing a row that carries a
+ * `fulfillment_stock_movement_id` hides it from `ReverseOrderStockDeduction`, which walks
+ * `$order->items`, and the stock is then never credited back to the shelf.
  */
 final class SyncOrderItems
 {
@@ -31,6 +38,7 @@ final class SyncOrderItems
      *
      * @throws OrderItemsAreLocked
      * @throws OrderNeedsAtLeastOneItem
+     * @throws FulfilledLineCannotBeReplaced
      */
     public function __invoke(Order $order, array $items): Order
     {
@@ -42,7 +50,15 @@ final class SyncOrderItems
             throw OrderNeedsAtLeastOneItem::make();
         }
 
-        $order->items()->get()->each(fn (OrderItem $item) => $item->delete());
+        $existing = $order->items()->get();
+
+        $fulfilled = $existing->first(fn (OrderItem $item) => $item->fulfillment_stock_movement_id !== null);
+
+        if ($fulfilled !== null) {
+            throw FulfilledLineCannotBeReplaced::make((string) $fulfilled->variant_label);
+        }
+
+        $existing->each(fn (OrderItem $item) => $item->delete());
 
         foreach ($items as $data) {
             ($this->addItem)($order, $data);
