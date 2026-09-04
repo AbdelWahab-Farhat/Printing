@@ -80,7 +80,8 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 
 | Document | |
 |---|---|
-| [INVESTOR-DEALS-DESIGN.md](investor-deals/INVESTOR-DEALS-DESIGN.md) | نظام المستثمرين — الصفقات والـ FIFO والأرباح. **مقترح** ينتظر أجوبة §١١؛ الفرع `investor_deals`. |
+| [INVESTOR-DEALS-HOW-IT-WORKS.md](investor-deals/INVESTOR-DEALS-HOW-IT-WORKS.md) | كيف يعمل النظام: حياة صفقة، وكيف يُحسب كل رقم. **مُنفَّذ.** ابدأ من هنا. |
+| [INVESTOR-DEALS-DESIGN.md](investor-deals/INVESTOR-DEALS-DESIGN.md) | المواصفة والقرارات وأسئلة §١١ وأجوبتها؛ الفرع `investor_deals`. |
 
 ## [nawris/](nawris/)
 
