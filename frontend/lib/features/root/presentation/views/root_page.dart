@@ -258,6 +258,24 @@ class _RootDrawer extends StatelessWidget {
                 onTap: () => context.push(Routes.vendors),
               ),
             ),
+            // The people whose money finances the stock, and the deals it finances. One grant
+            // covers both screens: whoever may see an investor may see what he is in.
+            PermissionGate(
+              permission: AppPermission.viewInvestors,
+              child: _DrawerLink(
+                icon: AppIcons.investors,
+                label: 'المستثمرون',
+                onTap: () => context.push(Routes.investors),
+              ),
+            ),
+            PermissionGate(
+              permission: AppPermission.viewInvestors,
+              child: _DrawerLink(
+                icon: AppIcons.investorDeals,
+                label: 'صفقات المستثمرين',
+                onTap: () => context.push(Routes.investorDeals),
+              ),
+            ),
             // The paperwork raised against those suppliers. Its own grant, not vendors.*:
             // agreeing terms with a supplier and raising an order against them are two jobs.
             PermissionGate(

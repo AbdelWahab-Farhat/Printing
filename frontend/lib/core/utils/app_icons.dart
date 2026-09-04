@@ -49,6 +49,15 @@ abstract final class AppIcons {
   static IconData get receiveShipment =>
       _pick(Icons.move_to_inbox_rounded, CupertinoIcons.tray_arrow_down_fill);
 
+  /// Whose money is in the stock. A handshake rather than a person or a coin: an investor is a
+  /// partner in a purchase, which is neither a customer nor a payment.
+  static IconData get investors =>
+      _pick(Icons.handshake_rounded, CupertinoIcons.person_2_square_stack_fill);
+
+  /// One financed purchase — the paperwork behind the handshake.
+  static IconData get investorDeals =>
+      _pick(Icons.account_balance_wallet_rounded, CupertinoIcons.money_dollar_circle_fill);
+
   static IconData get products =>
       _pick(Icons.shopping_bag_rounded, CupertinoIcons.bag_fill);
 

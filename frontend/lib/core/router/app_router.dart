@@ -27,6 +27,10 @@ import 'package:dayaa/features/customers/presentation/views/customer_detail_page
 import 'package:dayaa/features/customers/presentation/views/customers_page.dart';
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
 import 'package:dayaa/features/investor_portal/presentation/views/investor_portal_page.dart';
+import 'package:dayaa/features/investors/presentation/views/deal_detail_page.dart';
+import 'package:dayaa/features/investors/presentation/views/deals_page.dart';
+import 'package:dayaa/features/investors/presentation/views/investor_detail_page.dart';
+import 'package:dayaa/features/investors/presentation/views/investors_page.dart';
 import 'package:dayaa/features/location/presentation/views/pick_location_page.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rate_form_page.dart';
@@ -94,6 +98,14 @@ abstract final class Routes {
   /// navigation bar and the drawer behind it, which are full of screens an investor must not
   /// have. Conditioning that screen would leave him one bug away from the staff app.
   static const String investorPortal = '/investor';
+
+  /// The staff screens for investors and their deals.
+  static const String investors = '/investors';
+  static const String investorDeals = '/investor-deals';
+
+  static String investor(int id) => '/investors/$id';
+
+  static String investorDeal(int id) => '/investor-deals/$id';
   static const String orders = '/orders';
 
   /// The orders behind one number on the home screen. Takes an [OrdersFilter] as `extra` — the
@@ -385,6 +397,27 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.investorPortal,
         builder: (context, state) => const InvestorPortalPage(),
+      ),
+      // The staff screens, top level like every other detail screen in this file.
+      GoRoute(
+        path: Routes.investors,
+        builder: (context, state) => const InvestorsPage(),
+      ),
+      GoRoute(
+        path: '/investors/:id',
+        builder: (context, state) => InvestorDetailPage(
+          investorId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: Routes.investorDeals,
+        builder: (context, state) => const InvestorDealsPage(),
+      ),
+      GoRoute(
+        path: '/investor-deals/:id',
+        builder: (context, state) => InvestorDealDetailPage(
+          dealId: int.parse(state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: Routes.login,
