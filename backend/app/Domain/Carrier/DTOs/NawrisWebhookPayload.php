@@ -60,12 +60,6 @@ final readonly class NawrisWebhookPayload
         return NawrisStatusCode::tryFromCode($this->statusCode);
     }
 
-    /** Code 4 is meaningless without one — see {@see NawrisStatusCode::Ambiguous}. */
-    public function hasReturnReason(): bool
-    {
-        return $this->returnReason !== null;
-    }
-
     /**
      * A stable hash of the fields that make this event *this* event.
      *

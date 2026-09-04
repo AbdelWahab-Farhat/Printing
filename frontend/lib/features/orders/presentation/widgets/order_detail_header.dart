@@ -30,11 +30,25 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// It carries no doors of its own beyond the two buttons: the customer's file is opened from the
 /// card below, which is also where their phone number is.
 class OrderDetailHeader extends StatelessWidget {
-  const OrderDetailHeader({required this.order, this.onOpenNotes, this.onOpenLog, super.key});
+  const OrderDetailHeader({
+    required this.order,
+    this.onOpenNotes,
+    this.onOpenLog,
+    this.onSendToCarrier,
+    this.onResendShipment,
+    this.onDeleteShipment,
+    this.onUnlinkShipment,
+    super.key,
+  });
 
-  /// Let tests reach the two buttons without matching on Arabic that may be reworded.
+  /// Let tests reach the buttons without matching on Arabic that may be reworded.
   static const Key notesKey = Key('order-header-notes');
   static const Key logKey = Key('order-header-log');
+  static const Key overflowKey = Key('order-header-overflow');
+  static const Key sendToCarrierKey = Key('order-header-send-to-carrier');
+  static const Key resendShipmentKey = Key('order-header-resend-shipment');
+  static const Key deleteShipmentKey = Key('order-header-delete-shipment');
+  static const Key unlinkShipmentKey = Key('order-header-unlink-shipment');
 
   final Order order;
 
@@ -45,6 +59,36 @@ class OrderDetailHeader extends StatelessWidget {
   /// Null without `logs.view`, for the reason the customer card's chevron is: an affordance
   /// promising a screen that would answer 403 is worse than no affordance.
   final VoidCallback? onOpenLog;
+
+  /// «إرسال للنورس» — null unless this particular order can actually go.
+  ///
+  /// **In the overflow rather than on the dial, and that is the request rather than the
+  /// convention.** The dial is where this screen's acts live; a hand-over to the carrier is one,
+  /// and it would sit there naturally. It is here because it was asked for here, and moving it is
+  /// deleting this menu and adding one `AppAction`.
+  ///
+  /// **Null-to-hide, exactly as the two buttons above are**: the three conditions behind it —
+  /// «جاهزة», a delivery rather than «استلام مكتب», and `carrier.manage` — are answered on the
+  /// screen, and an order failing any of them gets no menu at all rather than a greyed line.
+  final VoidCallback? onSendToCarrier;
+
+  /// «إعادة الإرسال» — asks the carrier to try delivering the same parcel again.
+  ///
+  /// **Offered on a returned order, never on «جاهزة».** The two are opposite moments: sending is
+  /// for goods that have not left, re-sending is for goods that came back — and the carrier can
+  /// only repeat a journey whose parcel is still open at their end.
+  final VoidCallback? onResendShipment;
+
+  /// «حذف الشحنة من النورس» — deletes it at their end and frees the order.
+  final VoidCallback? onDeleteShipment;
+
+  /// «فكّ الربط» — for a parcel somebody deleted in *their* portal.
+  ///
+  /// **Offered beside the delete rather than instead of it**, because the app cannot tell the two
+  /// situations apart: nothing in the order payload says whether a parcel still exists at Nawris,
+  /// and the only way to find out is to ask them. The server answers either honestly — «لا توجد
+  /// شحنة مفتوحة» when there is nothing to let go of.
+  final VoidCallback? onUnlinkShipment;
 
   /// How tall the bar has to be to hold what is in it.
   ///
@@ -93,10 +137,139 @@ class OrderDetailHeader extends StatelessWidget {
           fontWeight: FontWeight.w800,
         ),
       ),
+      actions: [
+        _CarrierMenu(
+          onSend: onSendToCarrier,
+          onResend: onResendShipment,
+          onDelete: onDeleteShipment,
+          onUnlink: onUnlinkShipment,
+        ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         // `background` rather than `title`, because this is a block of facts and not a heading:
         // it fades out as the bar collapses, leaving the order's number behind it.
         background: _Header(order: order, onOpenNotes: onOpenNotes, onOpenLog: onOpenLog),
+      ),
+    );
+  }
+}
+
+/// The carrier's own actions, behind the three dots.
+///
+/// **Behind a menu rather than on the dial, and that is the request rather than the convention.**
+/// The dial is where this screen's acts live and a hand-over would sit there naturally; these are
+/// here because they were asked for here. Moving them is deleting this widget and adding three
+/// `AppAction`s.
+///
+/// **Absent when it would open onto nothing.** A menu button with no items is a door into a wall,
+/// so the button itself is only drawn once something is passed to it — the same null-to-hide rule
+/// the note and log segments follow.
+///
+/// **Opened under the button, not over the title.** The default anchors the sheet at the tap and
+/// it lands across «طلبية #200», which reads as a rendering fault rather than a menu.
+class _CarrierMenu extends StatelessWidget {
+  const _CarrierMenu({this.onSend, this.onResend, this.onDelete, this.onUnlink});
+
+  final VoidCallback? onSend;
+  final VoidCallback? onResend;
+  final VoidCallback? onDelete;
+  final VoidCallback? onUnlink;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final items = <PopupMenuEntry<void>>[
+      if (onSend case final send?)
+        _item(
+          context,
+          key: OrderDetailHeader.sendToCarrierKey,
+          icon: AppIcons.outForDelivery,
+          label: 'إرسال للنورس',
+          onTap: send,
+        ),
+
+      if (onResend case final again?)
+        _item(
+          context,
+          key: OrderDetailHeader.resendShipmentKey,
+          icon: AppIcons.resend,
+          label: 'إعادة الإرسال',
+          onTap: again,
+        ),
+
+      // A rule between putting goods on the road and the two ways of taking a hand-over back: the
+      // lines above make a journey happen and the lines below undo one, and a reader should not
+      // have to parse four labels to see that.
+      if ((onSend != null || onResend != null) && (onDelete != null || onUnlink != null))
+        const PopupMenuDivider(),
+
+      if (onDelete case final remove?)
+        _item(
+          context,
+          key: OrderDetailHeader.deleteShipmentKey,
+          icon: AppIcons.delete,
+          label: 'حذف الشحنة من النورس',
+          onTap: remove,
+          // The one here that reaches out and destroys something at their end.
+          tone: scheme.error,
+        ),
+      if (onUnlink case final unlink?)
+        _item(
+          context,
+          key: OrderDetailHeader.unlinkShipmentKey,
+          icon: AppIcons.unlink,
+          label: 'فكّ الربط',
+          onTap: unlink,
+        ),
+    ];
+
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return PopupMenuButton<void>(
+      key: OrderDetailHeader.overflowKey,
+      tooltip: 'إجراءات الشحن',
+      // The bar paints its own teal and every foreground on it is `onPrimary` — see the class
+      // comment on [OrderDetailHeader] for why that is load-bearing rather than a choice.
+      iconColor: scheme.onPrimary,
+      // Under the button, so the sheet never lands on the order's number.
+      position: PopupMenuPosition.under,
+      color: scheme.surfaceContainerLowest,
+      // The app's own corner, not Material's 4dp — every plate on this screen is rounder.
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+      itemBuilder: (context) => items,
+    );
+  }
+
+  PopupMenuItem<void> _item(
+    BuildContext context, {
+    required Key key,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? tone,
+  }) {
+    final colour = tone ?? context.colorScheme.onSurface;
+
+    return PopupMenuItem<void>(
+      key: key,
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, size: 19.sp, color: colour),
+          SizedBox(width: 12.w),
+          // **`Flexible`, and it is not cosmetic**: the menu is given a maximum width, and
+          // «حذف الشحنة من النورس» is wider than it. A bare `Text` overflowed the row by 82
+          // pixels — the sheet still sizes itself to the longest label that fits.
+          Flexible(
+            child: Text(
+              label,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: colour,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

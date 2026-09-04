@@ -1,4 +1,8 @@
+// `show Either` rather than `hide Order`: dartz also exports a `State`, and in a widget file
+// that one collides with Flutter's. Only the one type this file names is taken.
+import 'package:dartz/dartz.dart' show Either;
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
@@ -6,10 +10,15 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/carrier/models/nawris_parcel.dart';
+import 'package:dayaa/features/carrier/usecases/lodge_order.dart';
+import 'package:dayaa/features/carrier/usecases/release_shipment.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/edit_shortages_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_cost_section.dart';
@@ -166,11 +175,154 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                 // shows what everyone has done, including prices the reader may have no other
                 // way to see.
                 onOpenLog: sl<Session>().can(AppPermission.viewActivityLogs) ? _openLog : null,
+                // «إرسال للنورس». `carrier.manage` is the grant — a different one from
+                // `orders.manage`, because handing goods to a courier is not editing paperwork.
+                // The other two conditions are the order's own and are read in [_Body].
+                onSendToCarrier: sl<Session>().can(AppPermission.manageCarrierParcels)
+                    ? _sendToCarrier
+                    : null,
+                onResendShipment: sl<Session>().can(AppPermission.manageCarrierParcels)
+                    ? _resendShipment
+                    : null,
+                onDeleteShipment: sl<Session>().can(AppPermission.manageCarrierParcels)
+                    ? _deleteShipment
+                    : null,
+                onUnlinkShipment: sl<Session>().can(AppPermission.manageCarrierParcels)
+                    ? _unlinkShipment
+                    : null,
               ),
             ),
           },
         ),
       ),
+    );
+  }
+
+  /// Hands the order to Nawris.
+  ///
+  /// **Asked first, because this one leaves the building.** Every other button on this screen
+  /// writes to our own database; this creates a parcel in the carrier's system, and an accidental
+  /// tap is undone by phoning them. The dialog names the destination, which is the fact worth
+  /// checking before a courier is sent to it.
+  ///
+  /// **The order's status is deliberately left alone.** It stays «جاهزة» until Nawris reports a
+  /// courier is holding the parcel, and their webhook moves it then — see `NawrisStatusCode`
+  /// case 4. Advancing it here would be this screen claiming a journey had begun on the strength
+  /// of an API call.
+  Future<void> _sendToCarrier() async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final destination = [order.cityName, ?order.regionName].join(' — ');
+
+    final confirmed = await showCustomDialog(
+      context: context,
+      title: 'إرسال الطلبية للنورس؟',
+      description: destination.isEmpty
+          ? 'ستُنشأ شحنة لدى النورس لهذه الطلبية.'
+          : 'ستُنشأ شحنة لدى النورس إلى $destination.',
+      confirmLabel: 'إرسال',
+    );
+
+    if (!(confirmed ?? false) || !mounted) return;
+
+    final result = await sl<LodgeOrder>()(order.id);
+
+    if (!mounted) return;
+
+    result.fold(
+      // The server's own Arabic. This endpoint's refusals are written to be read by the person
+      // who pressed the button — «الطلبية ١٢٣ استلام مكتب»، «مدينة ... غير مربوطة بنورس» — so a
+      // sentence of ours on top of one of theirs would only bury it.
+      (failure) => context.showFailure(failure),
+      // Their code, because it is the one fact in the exchange nobody here can reconstruct: it
+      // is what a colleague reads down the phone to Nawris.
+      (parcel) => context.showSuccess(
+        'أُرسلت للنورس — رقم الشحنة ${parcel.code}',
+        details: 'الحالة تبقى «جاهزة» حتى يستلمها المندوب',
+      ),
+    );
+  }
+
+  /// Asks the carrier to deliver the same parcel again.
+  ///
+  /// **Not destructive, and not undoable either** — it puts goods back on a van. Asked plainly,
+  /// and the answer names the new parcel's code, because a re-send makes a new one.
+  Future<void> _resendShipment() => _releaseShipment(
+    title: 'إعادة إرسال الشحنة؟',
+    description: 'سيُطلب من النورس توصيلها مرة أخرى بنفس البيانات، وتُفتح شحنة جديدة برقم جديد.',
+    confirmLabel: 'إعادة الإرسال',
+    destructive: false,
+    send: (id) => sl<ResendCarrierShipment>()(id),
+    done: 'أُعيد إرسال الشحنة',
+    nothing: 'لا توجد شحنة مفتوحة لهذه الطلبية',
+  );
+
+  /// Deletes the parcel at Nawris, freeing the order to be sent again.
+  ///
+  /// **Destructive at their end, so it is asked destructively.** Everything else this screen does
+  /// is undone by doing it again; this one reaches into the carrier's system and removes a record
+  /// only they can restore.
+  Future<void> _deleteShipment() => _releaseShipment(
+    title: 'حذف الشحنة من النورس؟',
+    description: 'ستُحذف الشحنة لديهم وتتحرّر الطلبية لإرسالها من جديد.',
+    confirmLabel: 'حذف',
+    destructive: true,
+    send: (id) => sl<DeleteCarrierShipment>()(id),
+    done: 'حُذفت الشحنة من النورس',
+    nothing: 'لا توجد شحنة مفتوحة لهذه الطلبية',
+  );
+
+  /// Drops our claim on a parcel without telling Nawris anything.
+  Future<void> _unlinkShipment() => _releaseShipment(
+    title: 'فكّ ربط الشحنة؟',
+    description:
+        'لن يُبلَّغ النورس بشيء — هذا للشحنة التي حُذفت من بوابتهم. تتحرّر الطلبية لإرسالها من جديد.',
+    confirmLabel: 'فكّ الربط',
+    destructive: false,
+    send: (id) => sl<UnlinkCarrierShipment>()(id),
+    done: 'فُكّ الربط — يمكن إرسالها من جديد',
+    nothing: 'لا توجد شحنة مرتبطة بهذه الطلبية',
+  );
+
+  /// The shape both releases share: ask, send, say which of the two things happened.
+  ///
+  /// **A null parcel is an answer, not a failure.** The server says «لا توجد شحنة» rather than
+  /// refusing, because pressing either of these twice is a person checking — so the success arm
+  /// has two sentences and neither of them is red.
+  Future<void> _releaseShipment({
+    required String title,
+    required String description,
+    required String confirmLabel,
+    required bool destructive,
+    required Future<Either<Failure, NawrisParcel?>> Function(int orderId) send,
+    required String done,
+    required String nothing,
+  }) async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final ask = destructive ? showDestructiveDialog : showCustomDialog;
+    final confirmed = await ask(
+      context: context,
+      title: title,
+      description: description,
+      confirmLabel: confirmLabel,
+    );
+
+    if (!(confirmed ?? false) || !mounted) return;
+
+    final result = await send(order.id);
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) => context.showFailure(failure),
+      (parcel) => parcel == null
+          ? context.showSuccess(nothing)
+          : context.showSuccess('$done — رقم الشحنة ${parcel.code}'),
     );
   }
 
@@ -375,6 +527,10 @@ class _Body extends StatelessWidget {
     required this.onScrap,
     required this.onOpenNotes,
     required this.onOpenLog,
+    required this.onSendToCarrier,
+    required this.onResendShipment,
+    required this.onDeleteShipment,
+    required this.onUnlinkShipment,
   });
 
   final Order order;
@@ -398,6 +554,17 @@ class _Body extends StatelessWidget {
   /// Null on an order nobody wrote a note on.
   final VoidCallback? onOpenNotes;
 
+  /// Null without `carrier.manage`. **The grant is only one of three conditions** — see
+  /// [_maySendToCarrier] for the two the order itself answers.
+  final Future<void> Function()? onSendToCarrier;
+
+  /// Null without `carrier.manage` — and offered on a *returned* order, not on «جاهزة».
+  final Future<void> Function()? onResendShipment;
+
+  /// The two ways of taking a hand-over back. Same grant, same three conditions.
+  final Future<void> Function()? onDeleteShipment;
+  final Future<void> Function()? onUnlinkShipment;
+
   /// Null without `logs.view`.
   final VoidCallback? onOpenLog;
 
@@ -409,6 +576,44 @@ class _Body extends StatelessWidget {
   /// the shop to no purpose. Reading the warehouse rather than the status is also what let the
   /// deduction move from «قيد الطباعة» to «جاهزة» without touching this line.
   bool get _mayScrap => onScrap != null && order.fulfillmentWarehouseId != null;
+
+  /// Whether this order can be handed to Nawris at all.
+  ///
+  /// **«جاهزة» and a delivery, and both for the same reason: the bags exist and they are
+  /// going somewhere.** An order still in production has nothing for a courier to carry, and an
+  /// «استلام مكتب» never leaves the building — the server refuses both by name, and this only
+  /// decides whether to offer a button that would earn one of those refusals.
+  ///
+  /// **«إعادة إرسال» is deliberately not offered here** even though the server accepts it: a
+  /// returned order goes out again through the status screen, and a second door onto the same
+  /// act is a second thing to keep in step. The retry after a failed hand-over is the
+  /// not-lodged queue's job, which is a screen this app does not have yet.
+  bool get _maySendToCarrier =>
+      onSendToCarrier != null &&
+      order.status == OrderStatus.ready &&
+      !order.isOfficePickup;
+
+  /// Either moment: goods about to go, or goods that came back.
+  bool get _mayTouchTheCarrier => _maySendToCarrier || _mayResendToCarrier;
+
+  /// Whether this order is one the carrier could be asked to deliver again.
+  ///
+  /// **The mirror of [_maySendToCarrier], and never true at the same time.** Sending is for goods
+  /// that have not left; re-sending is for goods that came back and are going out once more. The
+  /// four return statuses are exactly the window in which that request means anything — before
+  /// them nothing has come back, and «تم الاستلام» is the end.
+  ///
+  /// Whether the parcel is *still open* at their end is the server's question, not this one's: it
+  /// answers «لا توجد شحنة مفتوحة» when the return chain has already closed it.
+  bool get _mayResendToCarrier =>
+      onResendShipment != null &&
+      !order.isOfficePickup &&
+      const {
+        OrderStatus.returnedCourier,
+        OrderStatus.returnedCarrier,
+        OrderStatus.returnedOffice,
+        OrderStatus.resend,
+      }.contains(order.status);
 
   /// Whether the delivery section has anything left to say.
   ///
@@ -428,7 +633,17 @@ class _Body extends StatelessWidget {
       // Scrollable even when short, so pull-to-refresh works on every state.
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        OrderDetailHeader(order: order, onOpenNotes: onOpenNotes, onOpenLog: onOpenLog),
+        OrderDetailHeader(
+          order: order,
+          onOpenNotes: onOpenNotes,
+          onOpenLog: onOpenLog,
+          onSendToCarrier: _maySendToCarrier ? onSendToCarrier : null,
+          onResendShipment: _mayResendToCarrier ? onResendShipment : null,
+          // Offered wherever either of the two above is: whichever moment the order is in, a
+          // hand-over may need taking back.
+          onDeleteShipment: _mayTouchTheCarrier ? onDeleteShipment : null,
+          onUnlinkShipment: _mayTouchTheCarrier ? onUnlinkShipment : null,
+        ),
         SliverPadding(
           // Deep bottom padding: the floating dial hangs over this list, and a total it covers
           // is a number somebody has to move the screen to read.
@@ -581,6 +796,25 @@ class _Header extends StatelessWidget {
               hasUnrecordedMoney: order.hasUnrecordedMoney,
             ),
           ),
+          // The delivery fee the customer handed the courier at the door.
+          //
+          // **A sentence rather than a fourth figure**, for the reason the write-off line is
+          // one: three money cells already share a narrow row. And **deliberately not added to
+          // «المدفوع»** — that number means cash we hold, and this never reached the drawer.
+          // Without the line, though, the row above is arithmetic that does not add up: an
+          // order of 120 showing 100 paid and nothing outstanding reads as a bug.
+          if (order.carrierSettledAmount != '0.00') ...[
+            SizedBox(height: 10.h),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                'سُدِّدت لدى الناقل ${order.carrierSettledAmount.grouped} — لم تصل الصندوق',
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
           // Only ever present when it disagrees with the total above — that is the whole reason
           // the server records it — so it is drawn as a discrepancy rather than as a second
           // number in a list. Somebody reading this screen needs to see the gap, not hunt for it.

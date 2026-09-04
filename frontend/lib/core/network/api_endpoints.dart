@@ -343,3 +343,29 @@ abstract final class ReportEndpoints {
   /// a question nobody asked.
   static const String profitAndLoss = '/reports/profit-loss';
 }
+
+/// شحنات نورس — the carrier integration's operations surface.
+///
+/// **Separate from `ShippingCompanyEndpoints`**, which maintains the list of companies. This is
+/// what happens to a parcel after one of them has it.
+///
+/// Only [lodge] is called today: the read-only monitoring endpoints — the event queue, the parcel
+/// list, the not-lodged queue — have no screen yet, and naming them here before one exists would
+/// advertise routes nothing reaches.
+abstract final class CarrierEndpoints {
+  /// Hands the order to Nawris and answers with the parcel.
+  ///
+  /// **Creates a parcel; it does not move the order.** The status changes when the carrier
+  /// reports a courier is holding it, through the webhook.
+  static String lodge(int orderId) => '/carrier/orders/$orderId/lodge';
+
+  /// Sends a returned parcel out again — closes the old one, opens a new one.
+  static String resend(int orderId) => '/carrier/orders/$orderId/resend';
+
+  /// Deletes the parcel at Nawris and closes ours — for one that never went anywhere.
+  static String deleteShipment(int orderId) =>
+      '/carrier/orders/$orderId/delete-shipment';
+
+  /// Drops our claim on a parcel **without telling Nawris**, for one they deleted themselves.
+  static String unlink(int orderId) => '/carrier/orders/$orderId/unlink';
+}

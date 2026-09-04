@@ -122,6 +122,19 @@ abstract class Order with _$Order {
     /// had nothing written off, and zero is exactly what such a server means.
     @JsonKey(name: 'written_off_amount') @Default('0.00') String writtenOffAmount,
 
+    /// What the customer paid **to the courier** for delivery, remitted to the carrier rather
+    /// than to us.
+    ///
+    /// **Never part of any cash total, and that is the whole reason it is its own column.** It
+    /// never reached the drawer, so adding it to `paidAmount` would put money in «كم قبضنا
+    /// اليوم؟» that went into a courier's pocket. It is here because without it the payments
+    /// card is arithmetic that does not add up: an order of 120 showing 100 paid and nothing
+    /// outstanding reads as a bug.
+    ///
+    /// Defaulted like its two neighbours: an order from a server that predates the carrier
+    /// integration had nothing settled at one, and zero is what such a server means.
+    @JsonKey(name: 'carrier_settled_amount') @Default('0.00') String carrierSettledAmount,
+
     /// What is still owed — the invoice less what was collected **and** what was forgiven.
     /// **Negative on an overpaid order**, so «زائد ٥٠» can be said rather than floored away.
     @JsonKey(name: 'remaining_amount') @Default('0.00') String remainingAmount,

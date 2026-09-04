@@ -106,6 +106,13 @@ abstract final class AppIcons {
   static IconData get delete =>
       _pick(Icons.delete_outline_rounded, CupertinoIcons.delete);
 
+  /// Lets go of a tie between two records without destroying either.
+  ///
+  /// **A broken chain, never a bin.** «فكّ الربط» is exactly the act of *not* deleting: the
+  /// parcel stays, the order stays, and only our claim that they belong together is dropped.
+  static IconData get unlink =>
+      _pick(Icons.link_off_rounded, CupertinoIcons.link);
+
   /// A machine-readable name — a slug, a code.
   static IconData get tag => _pick(Icons.tag_rounded, CupertinoIcons.tag);
 

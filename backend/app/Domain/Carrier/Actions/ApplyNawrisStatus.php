@@ -58,7 +58,7 @@ final class ApplyNawrisStatus
             return;
         }
 
-        $target = $code->target($payload->hasReturnReason());
+        $target = $code->target();
 
         if ($target === null) {
             return;

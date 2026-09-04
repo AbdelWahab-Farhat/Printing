@@ -18,11 +18,11 @@ use Illuminate\Support\Facades\DB;
  * then may differ, because a payment may have been taken while the goods were back on the shelf.
  * That is exactly what the link table's `(parcel_id, order_id)` key is for.
  *
- * **One thing here is unverifiable until a real call.** The contract describes `order_code` on
- * this endpoint as *a new local order id*, because the system it was compiled from mints a fresh
- * order for a re-send. We do not — «إعادة إرسال» is the same order — so we send the same code.
- * Whether Nawris accepts a repeated value is unknown; if it refuses, the fallback is a suffixed
- * value, and this is the only place that would change.
+ * **`order_code` is deliberately not sent**, and that is a correction rather than an omission.
+ * The contract this was first built from described it as a new local order id, so every re-send
+ * carried our order's code in it; their own published table calls it «كود الطرد الجديد» — a
+ * *parcel* code — and marks it needed only when `type` is 2. We send `type` 1, so the field has
+ * no business in the request.
  */
 final class ResendNawrisParcel
 {
@@ -41,7 +41,7 @@ final class ResendNawrisParcel
             return $parcel;
         }
 
-        $response = $this->client->resendRequest($parcel->code, (string) $order->code);
+        $response = $this->client->resendRequest($parcel->code);
 
         $code = $response->code();
 

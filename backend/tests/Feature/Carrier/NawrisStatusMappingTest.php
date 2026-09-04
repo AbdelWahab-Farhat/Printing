@@ -365,11 +365,11 @@ class NawrisStatusMappingTest extends TestCase
         $this->assertStringContainsString('غير معروف', (string) NawrisWebhookEvent::query()->sole()->error);
     }
 
-    public function test_code_four_is_ignored_without_a_return_reason(): void
+    public function test_code_four_puts_a_lodged_order_on_the_road(): void
     {
-        // Arrange — meaningless on its own, and the one code whose meaning depends on another
-        // field.
-        [$order] = $this->outForDelivery();
+        // Arrange — «مع المندوب» in their table. A parcel is lodged while the order is «جاهزة»,
+        // and this is the code that reports a courier now holds it.
+        [$order] = $this->outForDelivery(OrderStatus::Ready);
 
         // Act
         $this->send($this->body(['to_status_code' => 4, 'order_price' => null]));
@@ -378,9 +378,23 @@ class NawrisStatusMappingTest extends TestCase
         $this->assertSame(OrderStatus::OutForDelivery, $order->fresh()->status);
     }
 
-    public function test_code_four_with_a_reason_is_read_as_a_return(): void
+    public function test_code_four_repeated_on_an_order_already_out_changes_nothing(): void
     {
-        // Arrange
+        // Arrange — the state a parcel spends most of its life in, so it arrives again and again.
+        [$order] = $this->outForDelivery();
+
+        // Act
+        $this->send($this->body(['to_status_code' => 4, 'order_price' => null]));
+
+        // Assert
+        $this->assertSame(OrderStatus::OutForDelivery, $order->fresh()->status);
+        $this->assertNull(NawrisWebhookEvent::query()->sole()->error);
+    }
+
+    public function test_code_four_with_a_return_reason_is_still_not_a_return(): void
+    {
+        // Arrange — the reading this replaces treated a reason on code 4 as a return, which
+        // turned the ordinary out-for-delivery notice into a false «راجع لدى المندوب».
         [$order] = $this->outForDelivery();
 
         // Act
@@ -391,7 +405,77 @@ class NawrisStatusMappingTest extends TestCase
         ]));
 
         // Assert
-        $this->assertSame(OrderStatus::ReturnedCourier, $order->fresh()->status);
+        $this->assertSame(OrderStatus::OutForDelivery, $order->fresh()->status);
+    }
+
+    public function test_code_three_at_their_company_moves_nothing(): void
+    {
+        // Arrange — «في الشركة» is their warehouse, not the road. Only a courier holding the
+        // parcel makes it «جاري التوصيل», and that is code 4.
+        [$order, $parcel] = $this->outForDelivery(OrderStatus::Ready);
+
+        // Act
+        $this->send($this->body(['to_status_code' => 3, 'to_status_text' => 'في الشركة', 'order_price' => null]));
+
+        // Assert
+        $this->assertSame(OrderStatus::Ready, $order->fresh()->status);
+        $this->assertSame(3, $parcel->fresh()->remote_status_code);
+        $this->assertSame('في الشركة', $parcel->fresh()->remote_status_text);
+    }
+
+    public function test_code_five_is_a_return_the_carrier_is_holding(): void
+    {
+        // Arrange — «مرتجع مع الشركة». The link before it in our chain has already been walked.
+        [$order] = $this->outForDelivery(OrderStatus::ReturnedCourier);
+
+        // Act
+        $this->send($this->body(['to_status_code' => 5, 'order_price' => null]));
+
+        // Assert
+        $this->assertSame(OrderStatus::ReturnedCarrier, $order->fresh()->status);
+    }
+
+    public function test_code_five_from_the_road_is_parked_rather_than_skipping_a_link(): void
+    {
+        // Arrange — the chain of custody is walked one link at a time; the carrier does not walk
+        // it for us.
+        [$order] = $this->outForDelivery();
+
+        // Act
+        $this->send($this->body(['to_status_code' => 5, 'order_price' => null]));
+
+        // Assert
+        $this->assertSame(OrderStatus::OutForDelivery, $order->fresh()->status);
+        $this->assertStringContainsString('نقلة غير مسموحة', (string) NawrisWebhookEvent::query()->sole()->error);
+    }
+
+    public function test_their_settlement_does_not_settle_our_order(): void
+    {
+        // Arrange — «تم التسوية» on their side is a statement about their books. Ours is our own
+        // decision about ours, and the carrier does not get the last word on when we consider
+        // ourselves paid.
+        [$order] = $this->outForDelivery(OrderStatus::Delivered);
+
+        // Act
+        $this->send($this->body(['to_status_code' => 8, 'to_status_text' => 'تم التسوية', 'order_price' => null]));
+
+        // Assert
+        $this->assertSame(OrderStatus::Delivered, $order->fresh()->status);
+    }
+
+    public function test_their_settlement_is_recorded_rather_than_called_unknown(): void
+    {
+        // Arrange — ignored is not the same as unrecognised: their label lands on the parcel and
+        // no error is written, which is what separates code 8 from a code they invented.
+        [$order, $parcel] = $this->outForDelivery(OrderStatus::Delivered);
+
+        // Act
+        $this->send($this->body(['to_status_code' => 8, 'to_status_text' => 'تم التسوية', 'order_price' => null]));
+
+        // Assert
+        $this->assertSame(8, $parcel->fresh()->remote_status_code);
+        $this->assertSame('تم التسوية', $parcel->fresh()->remote_status_text);
+        $this->assertNull(NawrisWebhookEvent::query()->sole()->error);
     }
 
     public function test_a_write_off_cancels_even_though_the_webhook_carries_no_reason(): void

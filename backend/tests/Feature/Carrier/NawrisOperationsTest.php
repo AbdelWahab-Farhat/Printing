@@ -174,6 +174,106 @@ class NawrisOperationsTest extends TestCase
 
     // ── re-sending ───────────────────────────────────────────────────────────────────────
 
+    // ── getting an order free again ──────────────────────────────────────────────────────
+
+    public function test_deleting_a_shipment_tells_nawris_and_frees_the_order(): void
+    {
+        // Arrange — the ordinary "wrong parcel, start over" case, while it is still theirs to
+        // delete.
+        Http::fake(['*' => Http::response(['success' => 1, 'result' => []], 200)]);
+        [$order, $parcel] = $this->dispatched();
+
+        // Act
+        $response = $this->withHeaders($this->auth(PermissionName::ManageCarrierParcels))
+            ->postJson("/api/v1/carrier/orders/{$order->id}/delete-shipment");
+
+        // Assert — closed, so the "one open parcel" guard lets the order go out again.
+        $response->assertOk();
+        $this->assertNotNull($parcel->fresh()->closed_at);
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'delete-order'));
+    }
+
+    public function test_unlinking_never_speaks_to_nawris(): void
+    {
+        // Arrange — the case this exists for: somebody deleted the parcel in *their* portal, so
+        // asking them to delete it again would only earn an error about a parcel that is gone.
+        Http::fake();
+        [$order] = $this->dispatched();
+
+        // Act
+        $response = $this->withHeaders($this->auth(PermissionName::ManageCarrierParcels))
+            ->postJson("/api/v1/carrier/orders/{$order->id}/unlink");
+
+        // Assert
+        $response->assertOk();
+        Http::assertNothingSent();
+    }
+
+    public function test_unlinking_lets_the_order_be_sent_again(): void
+    {
+        // Arrange
+        Http::fake();
+        [$order] = $this->dispatched();
+
+        // Act
+        $this->withHeaders($this->auth(PermissionName::ManageCarrierParcels))
+            ->postJson("/api/v1/carrier/orders/{$order->id}/unlink");
+
+        // Assert — the guard reads the link rows, and this one is gone from them.
+        $this->assertNull(app(CarrierService::class)->openParcelFor($order->fresh()));
+    }
+
+    public function test_unlinking_keeps_the_link_as_history(): void
+    {
+        // Arrange — a parcel that was really lodged is a thing that really happened, and the
+        // reference we minted for it is how their support finds it.
+        Http::fake();
+        [$order, $parcel] = $this->dispatched();
+
+        // Act
+        $this->withHeaders($this->auth(PermissionName::ManageCarrierParcels))
+            ->postJson("/api/v1/carrier/orders/{$order->id}/unlink");
+
+        // Assert — soft-deleted, not destroyed.
+        $this->assertDatabaseHas('nawris_parcel_orders', ['order_id' => $order->id]);
+        $this->assertSoftDeleted('nawris_parcel_orders', ['order_id' => $order->id]);
+        $this->assertNotNull(NawrisParcel::withTrashed()->find($parcel->id));
+    }
+
+    public function test_an_order_with_nothing_out_is_told_so_rather_than_refused(): void
+    {
+        // Arrange — pressing either of these twice is a person checking, not an error.
+        Http::fake();
+        $order = Order::factory()->create();
+
+        // Act
+        $delete = $this->withHeaders($this->auth(PermissionName::ManageCarrierParcels))
+            ->postJson("/api/v1/carrier/orders/{$order->id}/delete-shipment");
+        $unlink = $this->withHeaders($this->auth(PermissionName::ManageCarrierParcels))
+            ->postJson("/api/v1/carrier/orders/{$order->id}/unlink");
+
+        // Assert
+        $delete->assertOk();
+        $unlink->assertOk();
+        Http::assertNothingSent();
+    }
+
+    public function test_neither_is_open_to_the_view_permission_alone(): void
+    {
+        // Arrange — both throw away a hand-over; reading that one exists is not that authority.
+        Http::fake();
+        [$order] = $this->dispatched();
+        $headers = $this->auth(PermissionName::ViewCarrierParcels);
+
+        // Act
+        $delete = $this->withHeaders($headers)->postJson("/api/v1/carrier/orders/{$order->id}/delete-shipment");
+        $unlink = $this->withHeaders($headers)->postJson("/api/v1/carrier/orders/{$order->id}/unlink");
+
+        // Assert
+        $delete->assertForbidden();
+        $unlink->assertForbidden();
+    }
+
     public function test_a_resend_closes_the_old_parcel_and_opens_a_new_one(): void
     {
         // Arrange — a second journey is a second parcel row, which is what keeps the first one's
@@ -194,6 +294,77 @@ class NawrisOperationsTest extends TestCase
         $this->assertSame('3702994N', $fresh->code);
         $this->assertNotSame($parcel->reference, $fresh->reference);
         $this->assertSame('5', $fresh->government);
+    }
+
+    public function test_a_resend_sends_their_documented_fields_and_no_others(): void
+    {
+        // Arrange — their published table: `code` and `type` are mandatory, and `order_code` is
+        // «كود الطرد الجديد» — a *parcel* code, wanted only when `type = 2`. The first version of
+        // this sent our order's code in it on every call, which is a different thing entirely.
+        Http::fake(['*' => Http::response([
+            'success' => 1,
+            'result' => ['code' => '3702994N'],
+        ], 200)]);
+        [$order] = $this->dispatched();
+
+        // Act
+        app(CarrierService::class)->resendFor($order);
+
+        // Assert
+        Http::assertSent(function ($request) {
+            $body = $request->data();
+
+            return str_contains($request->url(), 'resend-request')
+                && ($body['type'] ?? null) === '1'
+                && ! array_key_exists('order_code', $body);
+        });
+    }
+
+    public function test_a_resend_is_reachable_over_http(): void
+    {
+        // Arrange
+        Http::fake(['*' => Http::response([
+            'success' => 1,
+            'result' => ['code' => '3702994N'],
+        ], 200)]);
+        [$order] = $this->dispatched();
+
+        // Act
+        $response = $this->withHeaders($this->auth(PermissionName::ManageCarrierParcels))
+            ->postJson("/api/v1/carrier/orders/{$order->id}/resend");
+
+        // Assert — 201: a re-send makes a parcel, exactly as lodging one does.
+        $response->assertCreated();
+    }
+
+    public function test_a_resend_needs_more_than_the_view_permission(): void
+    {
+        // Arrange — sending goods out a second time is an act, not a reading.
+        Http::fake();
+        [$order] = $this->dispatched();
+
+        // Act
+        $response = $this->withHeaders($this->auth(PermissionName::ViewCarrierParcels))
+            ->postJson("/api/v1/carrier/orders/{$order->id}/resend");
+
+        // Assert
+        $response->assertForbidden();
+        Http::assertNothingSent();
+    }
+
+    public function test_a_resend_with_nothing_out_is_told_so(): void
+    {
+        // Arrange — the same courtesy the other two releases extend.
+        Http::fake();
+        $order = Order::factory()->create();
+
+        // Act
+        $response = $this->withHeaders($this->auth(PermissionName::ManageCarrierParcels))
+            ->postJson("/api/v1/carrier/orders/{$order->id}/resend");
+
+        // Assert
+        $response->assertOk();
+        Http::assertNothingSent();
     }
 
     // ── the queues ───────────────────────────────────────────────────────────────────────

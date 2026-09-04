@@ -12,6 +12,8 @@ use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisParcelOrder;
 use App\Domain\Carrier\Support\NawrisClient;
 use App\Domain\Delivery\Enums\FulfilmentType;
+use App\Domain\Order\Enums\OrderFlow;
+use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -126,6 +128,25 @@ final class DispatchToNawris
     {
         if ($order->fulfilment_type !== FulfilmentType::Delivery) {
             throw OrderCannotBeDispatchedToNawris::notADelivery((string) $order->code);
+        }
+
+        // **"On the road, or one step from it" — asked of the machine rather than listed here.**
+        // «جاهزة» is where the button lives and «إعادة إرسال» is the same moment for an order
+        // that came back; both are one move from «جاري التوصيل», so the state machine already
+        // knows the answer and a hand-written list of statuses could only drift from it. An order
+        // already out is included on purpose: that is the retry the not-lodged queue exists for,
+        // and refusing it would strip the one screen built to fix a failed hand-over.
+        $onTheRoad = $order->status === OrderStatus::OutForDelivery;
+
+        // The column's own default, spelled out: a model built and not refreshed carries no flow
+        // yet, and the road this asks about is the standard one in every case but «وسيط».
+        $flow = $order->production_flow ?? OrderFlow::Standard;
+
+        if (! $onTheRoad && ! $order->status->canMoveTo(OrderStatus::OutForDelivery, $flow)) {
+            throw OrderCannotBeDispatchedToNawris::notOnItsWay(
+                (string) $order->code,
+                $order->status->label(),
+            );
         }
     }
 

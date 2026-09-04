@@ -7,7 +7,13 @@ namespace App\Domain\Carrier\Enums;
 use App\Domain\Order\Enums\OrderStatus;
 
 /**
- * The nine codes Nawris sends that mean something to us, and what each one means.
+ * The codes Nawris sends that mean something to us, and what each one means.
+ *
+ * **Read from their own status table, not inferred.** The first version of this map was compiled
+ * from another codebase's observed behaviour, and three of its nine readings were wrong once the
+ * carrier's published table was in hand — codes 3, 4 and 5, which is to say the whole ordinary
+ * delivery path. Their table is quoted against each case below; a case with no quote is a case
+ * nobody has checked.
  *
  * **This enum is the blast radius.** `OrderStatus::permission()` is enforced in a FormRequest, so
  * it guards the HTTP route and not the action — and the webhook job calls `ChangeOrderStatus`
@@ -18,51 +24,66 @@ use App\Domain\Order\Enums\OrderStatus;
  *
  * **Anything not listed changes no state.** An unmapped code updates the stored raw label and is
  * logged, which is the only safe default: a carrier that invents a code must never have it
- * guessed at. The contract is explicit that unmapped codes exist and their meanings are unknown.
- *
- * Codes 6 and 12 were a bug in the system this was compiled from — they fell through as unmapped,
- * so an order that had reported "delivered" stayed delivered forever while the goods sat back in
- * the warehouse. We have exact statuses for both.
+ * guessed at. Fourteen of their twenty-three are deliberately unmapped.
  */
 enum NawrisStatusCode: int
 {
-    /** Out with the courier. Usually a no-op — the order is already there. */
-    case OutForDelivery = 3;
+    /**
+     * «في الشركة» — sitting in their warehouse.
+     *
+     * **Not the road, so not «جاري التوصيل».** This was the first map's worst forward move: it
+     * stamped `dispatched_at` and told the screen a courier was carrying a parcel still on their
+     * shelf. Only code 4 puts an order out for delivery.
+     */
+    case AtTheirCompany = 3;
 
     /**
-     * Meaningless on its own.
+     * «مع المندوب» — a courier is holding it.
      *
-     * **Only ever read together with `return_reason`**, and ignored entirely without one. Straight
-     * from the contract, and the one code whose meaning depends on another field.
+     * **The state a parcel spends most of its life in, and the one the first map inverted**: it
+     * read this as ambiguous and, whenever a `return_reason` happened to ride along, turned an
+     * ordinary delivery notice into «راجع لدى المندوب». A false return on a parcel on its way to
+     * the customer, and one our chain then makes you walk back by hand.
      */
-    case Ambiguous = 4;
+    case WithTheCourier = 4;
 
     /**
-     * Delivery cancelled.
+     * «مرتجع مع الشركة» — the return is held by the carrier.
      *
-     * **Mapped to «راجع لدى المندوب», not to «إلغاء تام»**, and that is a deliberate reading. Our
-     * machine refuses to write an order off while it is physically outside the building — the
-     * parcel is with the courier and is coming back, which is what this status says. The carrier's
-     * own label is stored verbatim beside it either way.
+     * Their company, not their courier: the link *after* «راجع لدى المندوب» in our chain. Sent
+     * while the order is still on the road it is parked rather than forced, which is the chain
+     * doing its job.
      */
-    case DeliveryCancelled = 5;
+    case ReturnWithCompany = 5;
 
-    /** The return reached their branch and came back to us. */
+    /** «مرتجع تم استلامه» — the return reached their branch and came back to us. */
     case ReturnReceived = 6;
 
-    /** Delivered, and the money collected. The only code that writes to the ledger. */
+    /** «تم التسليم» — delivered, and the money collected. The only code that writes to the ledger. */
     case Delivered = 7;
 
-    /** A return went out again. */
+    /**
+     * «تم التسوية» — their books say the account between us is closed.
+     *
+     * **Named so it is not mistaken for unknown, and mapped to nothing on purpose.** Our «تم
+     * التسوية» is our own decision about our own ledger; theirs is a statement about theirs, and
+     * the two settle on different days over different figures. Letting this code close our order
+     * would hand the carrier the last word on when we consider ourselves paid.
+     *
+     * Recorded like every other code — their label lands on the parcel — and nothing moves.
+     */
+    case TheirSettlement = 8;
+
+    /** «مرتجع معاد إرساله» — a return went out again. */
     case ReturnSentAgain = 10;
 
-    /** The return was written off. Terminal. */
+    /** «مرتجع معدوم» — the return was written off. Terminal. */
     case ReturnWrittenOff = 12;
 
-    /** On its way back, still with the courier. */
+    /** «مرتجع مع المندوب» — on its way back, still with the courier. */
     case ComingBack = 15;
 
-    /** Sitting at the carrier's branch. */
+    /** «مرتجع في الفرع» — sitting at the carrier's branch. */
     case ReturnAtBranch = 19;
 
     /**
@@ -72,19 +93,17 @@ enum NawrisStatusCode: int
      * `OrderStatus::canMoveTo()` from wherever the order actually is, and parks the event when the
      * move is not legal — our return chain is walked one link at a time on purpose, and Nawris
      * does not walk it. See NAWRIS-INTEGRATION.md §3.2.
-     *
-     * `$hasReturnReason` exists solely for code 4.
      */
-    public function target(bool $hasReturnReason = false): ?OrderStatus
+    public function target(): ?OrderStatus
     {
         return match ($this) {
-            self::OutForDelivery => OrderStatus::OutForDelivery,
+            // Their warehouse says nothing about our order beyond "they have it", and their
+            // settlement says nothing about ours.
+            self::AtTheirCompany, self::TheirSettlement => null,
 
-            // Read as a return only when a reason came with it; otherwise it says nothing.
-            self::Ambiguous => $hasReturnReason ? OrderStatus::ReturnedCourier : null,
-
-            self::DeliveryCancelled, self::ComingBack => OrderStatus::ReturnedCourier,
-            self::ReturnAtBranch => OrderStatus::ReturnedCarrier,
+            self::WithTheCourier => OrderStatus::OutForDelivery,
+            self::ReturnWithCompany, self::ReturnAtBranch => OrderStatus::ReturnedCarrier,
+            self::ComingBack => OrderStatus::ReturnedCourier,
             self::ReturnReceived => OrderStatus::ReturnedOffice,
             self::Delivered => OrderStatus::Delivered,
             self::ReturnSentAgain => OrderStatus::Resend,

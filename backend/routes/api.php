@@ -345,6 +345,17 @@ Route::prefix('v1')->group(function (): void {
         Route::post('carrier/orders/{order}/cancel-shipment', [CarrierController::class, 'cancelShipment'])
             ->middleware('can:carrier.manage')->name('carrier.cancel-shipment');
 
+        Route::post('carrier/orders/{order}/resend', [CarrierController::class, 'resend'])
+            ->middleware('can:carrier.manage')->name('carrier.resend');
+
+        // Two ways to get an order free again, and which one you want depends on whether the
+        // parcel still exists at their end.
+        Route::post('carrier/orders/{order}/delete-shipment', [CarrierController::class, 'deleteShipment'])
+            ->middleware('can:carrier.manage')->name('carrier.delete-shipment');
+
+        Route::post('carrier/orders/{order}/unlink', [CarrierController::class, 'unlink'])
+            ->middleware('can:carrier.manage')->name('carrier.unlink');
+
         Route::post('carrier/parcels/{parcel}/resolve-conflict', [CarrierController::class, 'resolveConflict'])
             ->middleware('can:carrier.manage')->name('carrier.resolve-conflict');
 

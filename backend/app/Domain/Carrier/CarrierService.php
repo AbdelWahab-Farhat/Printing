@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Carrier;
 
 use App\Domain\Carrier\Actions\CancelNawrisParcel;
+use App\Domain\Carrier\Actions\DeleteNawrisParcel;
+use App\Domain\Carrier\Actions\DetachNawrisParcel;
 use App\Domain\Carrier\Actions\DispatchToNawris;
 use App\Domain\Carrier\Actions\EditNawrisParcel;
 use App\Domain\Carrier\Actions\ResendNawrisParcel;
@@ -29,6 +31,8 @@ final class CarrierService
 {
     public function __construct(
         private readonly DispatchToNawris $dispatch,
+        private readonly DeleteNawrisParcel $delete,
+        private readonly DetachNawrisParcel $detach,
         private readonly EditNawrisParcel $edit,
         private readonly CancelNawrisParcel $cancel,
         private readonly ResendNawrisParcel $resend,
@@ -86,6 +90,29 @@ final class CarrierService
         $parcel = $this->openParcelFor($order);
 
         return $parcel !== null ? ($this->edit)($parcel) : null;
+    }
+
+    /**
+     * Delete the parcel at the carrier and close ours, freeing the order to be sent again.
+     *
+     * Answers `null` when there is nothing out, so pressing it twice is a person checking rather
+     * than an error — the same courtesy {@see cancelShipmentFor} extends.
+     */
+    public function deleteShipmentFor(Order $order): ?NawrisParcel
+    {
+        $parcel = $this->openParcelFor($order);
+
+        return $parcel !== null ? ($this->delete)($parcel) : null;
+    }
+
+    /**
+     * Let go of the parcel without telling the carrier, for one they already deleted themselves.
+     */
+    public function detachParcelFrom(Order $order): ?NawrisParcel
+    {
+        $parcel = $this->openParcelFor($order);
+
+        return $parcel !== null ? ($this->detach)($parcel, $order) : null;
     }
 
     /**

@@ -98,11 +98,15 @@ final class NawrisClient
      * do not — «إعادة إرسال» is the same order here. Whether they accept a repeated value is one
      * of the things only a real call can settle.
      */
-    public function resendRequest(string $code, string $orderCode): NawrisResponse
+    public function resendRequest(string $code): NawrisResponse
     {
         return $this->post(
             'resend-request',
-            ['code' => $code, 'order_code' => $orderCode, 'type' => '1'],
+            // **`type` 1 — the same parcel again — so `order_code` is not sent at all.** Their
+            // published table calls it «كود الطرد الجديد» and marks it needed only when `type`
+            // is 2, which is the "send it as a brand-new parcel" case we do not use: our second
+            // journey is a new row on our side and the same goods on theirs.
+            ['code' => $code, 'type' => '1'],
             'إعادة إرسال الشحنة',
         );
     }

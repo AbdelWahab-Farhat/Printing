@@ -179,6 +179,14 @@ enum AppPermission {
   reverseOrderPayments('orders.payments.reverse', 'إلغاء دفعة أو ردّ مبلغ'),
   writeOffOrderPayments('orders.payments.write_off', 'شطب فرق مبلغ الطلبية'),
 
+  // The carrier integration's own surface, and separate from `shipping_companies.*`: that pair
+  // maintains the list of companies, this one hands parcels to one of them and answers for what
+  // comes back. Split in two because seeing that a parcel is stuck is not the authority to
+  // declare a delivery conflict resolved — `carrier.manage` gates exactly three buttons: lodge,
+  // cancel a shipment, resolve a conflict.
+  viewCarrierParcels('carrier.view', 'عرض شحنات الناقل'),
+  manageCarrierParcels('carrier.manage', 'إدارة شحنات الناقل'),
+
   // What a unit of production standard-costs at. The rates are applied automatically the moment
   // an order enters printing, so this pair guards only the table that maintains them — the same
   // split `purchase_orders.*` draws between the paperwork and the ledger it feeds.

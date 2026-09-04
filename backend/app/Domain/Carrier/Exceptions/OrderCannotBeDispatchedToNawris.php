@@ -19,4 +19,9 @@ final class OrderCannotBeDispatchedToNawris extends DomainException
     {
         return new self("الطلبية {$code} استلام مكتب، ولا تُسلَّم لشركة توصيل");
     }
+
+    public static function notOnItsWay(string $code, string $status): self
+    {
+        return new self("الطلبية {$code} في «{$status}»، ولا تُسلَّم لشركة توصيل قبل «جاهزة»");
+    }
 }

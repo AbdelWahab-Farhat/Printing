@@ -47,6 +47,10 @@ import 'package:dayaa/features/business_fields/usecases/delete_business_field.da
 import 'package:dayaa/features/business_fields/usecases/get_business_fields.dart';
 import 'package:dayaa/features/business_fields/usecases/save_business_field.dart';
 import 'package:dayaa/features/business_fields/usecases/set_business_field_activation.dart';
+import 'package:dayaa/features/carrier/repositories/carrier_repository.dart';
+import 'package:dayaa/features/carrier/repositories/carrier_repository_impl.dart';
+import 'package:dayaa/features/carrier/usecases/lodge_order.dart';
+import 'package:dayaa/features/carrier/usecases/release_shipment.dart';
 import 'package:dayaa/features/cities/presentation/viewmodel/cities_cubit.dart';
 import 'package:dayaa/features/cities/presentation/viewmodel/city_regions_cubit.dart';
 import 'package:dayaa/features/cities/repositories/city_repository.dart';
@@ -622,6 +626,25 @@ abstract final class Injector {
       )
       ..registerLazySingleton<ReviewOrderDesign>(
         () => ReviewOrderDesign(sl<OrderRepository>()),
+      )
+      // Handing an order to Nawris. Its own repository for the same reason the payments one is
+      // separate: `carrier.manage` is a different grant from `orders.manage`, and the routes sit
+      // under `/carrier` rather than under the order.
+      ..registerLazySingleton<CarrierRepository>(
+        () => CarrierRepositoryImpl(sl<Dio>()),
+      )
+      // A use case rather than a Cubit, for the reason RecordScrapLoss is one: the menu item
+      // asks, sends, and shows what came back — there is no state left over to hold.
+      ..registerLazySingleton<LodgeOrder>(() => LodgeOrder(sl<CarrierRepository>()))
+      ..registerLazySingleton<ResendCarrierShipment>(
+        () => ResendCarrierShipment(sl<CarrierRepository>()),
+      )
+      // The two ways back out: one tells Nawris, one deliberately does not.
+      ..registerLazySingleton<DeleteCarrierShipment>(
+        () => DeleteCarrierShipment(sl<CarrierRepository>()),
+      )
+      ..registerLazySingleton<UnlinkCarrierShipment>(
+        () => UnlinkCarrierShipment(sl<CarrierRepository>()),
       )
       // An order's money. Its own repository rather than four more methods on the one above,
       // because it is guarded by its own permissions: a screen allowed to read an order is not

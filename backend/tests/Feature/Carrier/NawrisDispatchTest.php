@@ -72,6 +72,8 @@ class NawrisDispatchTest extends TestCase
             'city_id' => $city->id,
             'region_id' => $region->id,
             'city_name' => $city->name,
+            // Where an order stands when «إرسال للنورس» is pressed.
+            'status' => OrderStatus::Ready,
             'fulfilment_type' => FulfilmentType::Delivery,
             'items_total' => '100.00',
             'delivery_price' => '20.00',
@@ -83,6 +85,50 @@ class NawrisDispatchTest extends TestCase
     private function carrier(): CarrierService
     {
         return app(CarrierService::class);
+    }
+
+    // ── what may be handed over ──────────────────────────────────────────────────────────
+
+    public function test_an_order_still_in_production_is_not_handed_to_a_courier(): void
+    {
+        // Arrange — the bags are not made yet, so there is nothing for a courier to carry.
+        $this->accepted();
+        $order = $this->order();
+        $order->forceFill(['status' => OrderStatus::Printing])->save();
+
+        // Assert
+        $this->expectException(OrderCannotBeDispatchedToNawris::class);
+
+        // Act
+        $this->carrier()->dispatchOrder($order);
+    }
+
+    public function test_a_ready_order_is_handed_over(): void
+    {
+        // Arrange — «جاهزة» is one step from the road, which is the moment the button exists for.
+        $this->accepted();
+        $order = $this->order();
+
+        // Act
+        $parcel = $this->carrier()->dispatchOrder($order);
+
+        // Assert
+        $this->assertSame('3702994', $parcel->code);
+    }
+
+    public function test_a_returned_order_going_out_again_may_be_handed_over(): void
+    {
+        // Arrange — «إعادة إرسال» is the other status one step from the road, and an order that
+        // came back and is going out again needs a second parcel.
+        $this->accepted();
+        $order = $this->order();
+        $order->forceFill(['status' => OrderStatus::Resend])->save();
+
+        // Act
+        $parcel = $this->carrier()->dispatchOrder($order);
+
+        // Assert
+        $this->assertSame('3702994', $parcel->code);
     }
 
     // ── the money ────────────────────────────────────────────────────────────────────────
@@ -313,6 +359,7 @@ class NawrisDispatchTest extends TestCase
         $order = Order::factory()->create([
             'city_id' => $city->id,
             'city_name' => $city->name,
+            'status' => OrderStatus::Ready,
             'fulfilment_type' => FulfilmentType::Delivery,
         ]);
 
