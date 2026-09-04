@@ -55,7 +55,9 @@ return new class extends Migration
             $table->foreignId('investor_deal_id')->nullable()
                 ->constrained('investor_deals')->restrictOnDelete();
 
-            $table->string('type', 20);
+            // 30, not 20: `loss_absorbed_by_company` is twenty-four characters, and a value the
+            // enum can produce must fit the column that stores it.
+            $table->string('type', 30);
 
             $table->decimal('amount', 14, 2);
 

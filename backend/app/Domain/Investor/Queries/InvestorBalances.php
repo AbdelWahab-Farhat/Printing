@@ -73,13 +73,11 @@ final class InvestorBalances
                 'capital' => Money::round($wallet['capital']),
                 'profit' => Money::round($wallet['profit']),
             ],
-            'deals' => array_map(
-                fn (array $pots): array => [
-                    'capital' => Money::round($pots['capital']),
-                    'profit' => Money::round($pots['profit']),
-                ],
-                $deals,
-            ),
+            // A loop rather than `array_map`, and it matters: `array_map` preserves *string*
+            // keys and renumbers integer ones, so mapping over a map keyed by deal id silently
+            // relabels deal 7 as deal 0. Every figure stays correct and lands against the wrong
+            // deal — which is exactly the class of bug this table exists to make impossible.
+            'deals' => $this->rounded($deals),
         ];
     }
 
@@ -125,14 +123,28 @@ final class InvestorBalances
         return [
             'capital' => Money::round($capital),
             'profit' => Money::round($profit),
-            'per_investor' => array_map(
-                fn (array $pots): array => [
-                    'capital' => Money::round($pots['capital']),
-                    'profit' => Money::round($pots['profit']),
-                ],
-                $perInvestor,
-            ),
+            'per_investor' => $this->rounded($perInvestor),
         ];
+    }
+
+    /**
+     * Rounds a map of pots, keeping whatever it is keyed by — see the note in `forInvestor()`.
+     *
+     * @param  array<int, array{capital: string, profit: string}>  $pots
+     * @return array<int, array{capital: string, profit: string}>
+     */
+    private function rounded(array $pots): array
+    {
+        $out = [];
+
+        foreach ($pots as $key => $value) {
+            $out[$key] = [
+                'capital' => Money::round($value['capital']),
+                'profit' => Money::round($value['profit']),
+            ];
+        }
+
+        return $out;
     }
 
     /**

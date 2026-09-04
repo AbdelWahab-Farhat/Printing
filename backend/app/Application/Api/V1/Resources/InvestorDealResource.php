@@ -74,7 +74,20 @@ class InvestorDealResource extends JsonResource
 
             // Capital held and profit earned, per investor and in total — walked from the ledger
             // on the detail screen only.
-            'balances' => $this->when(isset($this->balances), fn (): array => $this->balances),
+            // Per investor as a list naming its investor — see InvestorResource for why an
+            // integer-keyed map is the wrong shape to put on a wire.
+            'balances' => $this->when(isset($this->balances), fn (): array => [
+                'capital' => $this->balances['capital'],
+                'profit' => $this->balances['profit'],
+                'per_investor' => array_map(
+                    fn (int $investorId): array => [
+                        'investor_id' => $investorId,
+                        'capital' => $this->balances['per_investor'][$investorId]['capital'],
+                        'profit' => $this->balances['per_investor'][$investorId]['profit'],
+                    ],
+                    array_keys($this->balances['per_investor']),
+                ),
+            ]),
             'stock' => $this->when(isset($this->stock), fn (): array => $this->stock),
 
             'created_at' => $this->created_at?->toIso8601String(),
