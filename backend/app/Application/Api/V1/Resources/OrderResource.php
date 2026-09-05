@@ -194,6 +194,19 @@ class OrderResource extends JsonResource
             'courier_phone' => $this->courier_phone,
             'tracking_number' => $this->tracking_number,
 
+            // **The carrier's own code for the parcel this order went out in.** Not
+            // `tracking_number`, which is a box somebody types into: this one is what Nawris
+            // called the parcel, and it is the number said out loud when a customer rings about
+            // a delivery. Attached by the controller rather than read here, because `Order` may
+            // not know a carrier exists — see CarrierService::parcelCodesFor().
+            //
+            // Absent, not null, wherever it was not attached: a client that got no key knows the
+            // question was not asked, where a null would say it was asked and came back empty.
+            'nawris_parcel' => $this->when(
+                isset($this->nawris_parcel),
+                fn (): array => $this->nawris_parcel,
+            ),
+
             // Where this order's stock came out of, and when — both null until the order first
             // enters `printing`. See DeductOrderStock.
             'fulfillment_warehouse_id' => $this->fulfillment_warehouse_id,

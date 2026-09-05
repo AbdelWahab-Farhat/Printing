@@ -59,6 +59,10 @@ final class MovementListQuery
                 $filters->movementType !== null,
                 fn (Builder $q) => $q->where('movement_type', $filters->movementType?->value),
             )
+            ->when(
+                $filters->adjustmentReason !== null,
+                fn (Builder $q) => $q->where('adjustment_reason', $filters->adjustmentReason?->value),
+            )
             ->when($filters->employeeId !== null, fn (Builder $q) => $q->where('employee_id', $filters->employeeId))
             ->when($filters->referenceId !== null, fn (Builder $q) => $q->where('reference_id', $filters->referenceId))
             ->when($filters->from !== null, fn (Builder $q) => $q->where('created_at', '>=', $filters->from))

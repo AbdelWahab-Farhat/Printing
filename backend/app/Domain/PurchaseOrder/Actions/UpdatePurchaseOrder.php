@@ -6,11 +6,13 @@ namespace App\Domain\PurchaseOrder\Actions;
 
 use App\Domain\Customer\Actions\SyncCustomerShops;
 use App\Domain\Inventory\Models\StockItem;
+use App\Domain\Investor\InvestorService;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderAdditionalCostData;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderData;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderItemData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderAdditionalCostDoesNotBelongToOrder;
+use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderIsFunded;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderItemDoesNotBelongToOrder;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderNotEditable;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
@@ -33,7 +35,14 @@ use Illuminate\Support\Facades\DB;
  * by {@see AllocatePurchaseOrderAdditionalCosts}, and `total_amount`/`total_additional_cost`
  * re-derived via {@see RecalculatePurchaseOrderTotal}.
  *
+ * **And not at all once investors have funded it.** A funded order is still `new` until the
+ * lorry arrives — the very state that keeps it editable — but the deal standing on it worked out
+ * what fraction of the goods the partners bought from these lines' cost, showed it to them and
+ * froze it. Retyping a cost underneath that would move the denominator of a frozen percent. The
+ * lines and the money were agreed together; changing either alone is a new deal.
+ *
  * @throws PurchaseOrderNotEditable
+ * @throws PurchaseOrderIsFunded
  * @throws PurchaseOrderItemDoesNotBelongToOrder
  * @throws PurchaseOrderAdditionalCostDoesNotBelongToOrder
  */
@@ -42,12 +51,19 @@ final class UpdatePurchaseOrder
     public function __construct(
         private readonly AllocatePurchaseOrderAdditionalCosts $allocateAdditionalCosts,
         private readonly RecalculatePurchaseOrderTotal $recalculateTotal,
+        private readonly InvestorService $investors,
     ) {}
 
     public function __invoke(PurchaseOrder $order, PurchaseOrderData $data): PurchaseOrder
     {
         if (! $order->status->isEditable()) {
             throw PurchaseOrderNotEditable::make($order->status);
+        }
+
+        $deals = $this->investors->fundingForPurchaseOrder((int) $order->getKey());
+
+        if ($deals !== []) {
+            throw PurchaseOrderIsFunded::make(array_map(fn (array $deal): string => $deal['code'], $deals));
         }
 
         return DB::transaction(function () use ($order, $data): PurchaseOrder {

@@ -80,7 +80,7 @@ void main() {
 
     // Act - Assert — «٠٫٠٠» here would say the job cost us nothing, which is a different claim
     // from «nobody has costed it yet» and the only one of the two that is false.
-    expect(find.text('0.00'), findsNothing);
+    expect(find.text('0'), findsNothing);
     expect(find.text('0'), findsNothing);
   });
 
@@ -94,9 +94,9 @@ void main() {
 
     // Act - Assert
     expect(find.text('تكلفة الإنتاج'), findsOneWidget);
-    expect(find.text('120.00'), findsOneWidget);
+    expect(find.text('120'), findsOneWidget);
     expect(find.text('مجمل الربح'), findsOneWidget);
-    expect(find.text('230.00'), findsOneWidget);
+    expect(find.text('230'), findsOneWidget);
     expect(find.textContaining('لم تُحتسب'), findsNothing);
   });
 
@@ -112,7 +112,7 @@ void main() {
 
     // Act - Assert
     expect(find.text('229.99'), findsOneWidget);
-    expect(find.text('230.00'), findsNothing);
+    expect(find.text('230'), findsNothing);
   });
 
   testWidgets('a job that lost money says so, minus sign and all', (tester) async {
@@ -122,8 +122,8 @@ void main() {
     );
 
     // Act
-    final profit = tester.widget<Text>(find.text('-45.00'));
-    final scheme = Theme.of(tester.element(find.text('-45.00'))).colorScheme;
+    final profit = tester.widget<Text>(find.text('-45'));
+    final scheme = Theme.of(tester.element(find.text('-45'))).colorScheme;
 
     // Assert — floored to zero it would read as a job that broke even, which is the one thing
     // somebody looking at this section needs not to be told.
@@ -137,8 +137,8 @@ void main() {
     );
 
     // Act
-    final profit = tester.widget<Text>(find.text('230.00'));
-    final scheme = Theme.of(tester.element(find.text('230.00'))).colorScheme;
+    final profit = tester.widget<Text>(find.text('230'));
+    final scheme = Theme.of(tester.element(find.text('230'))).colorScheme;
 
     // Assert
     expect(profit.style?.color, isNot(scheme.error));
@@ -150,8 +150,8 @@ void main() {
     await tester.pumpWidget(host(OrderCostSection(order: orderWith(totalCogs: '120.00'))));
 
     // Act - Assert
-    expect(find.text('120.00'), findsOneWidget);
+    expect(find.text('120'), findsOneWidget);
     expect(find.text('لم يُحتسب بعد'), findsOneWidget);
-    expect(find.text('230.00'), findsNothing);
+    expect(find.text('230'), findsNothing);
   });
 }

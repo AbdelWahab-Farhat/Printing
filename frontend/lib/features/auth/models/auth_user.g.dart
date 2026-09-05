@@ -23,6 +23,7 @@ _AuthUser _$AuthUserFromJson(Map<String, dynamic> json) => _AuthUser(
   isActive: json['is_active'] as bool? ?? true,
   salary: json['salary'] as String?,
   isAdmin: json['is_admin'] as bool? ?? false,
+  isInvestor: json['is_investor'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$AuthUserToJson(_AuthUser instance) => <String, dynamic>{
@@ -36,6 +37,7 @@ Map<String, dynamic> _$AuthUserToJson(_AuthUser instance) => <String, dynamic>{
   'is_active': instance.isActive,
   'salary': instance.salary,
   'is_admin': instance.isAdmin,
+  'is_investor': instance.isInvestor,
 };
 
 _UserRole _$UserRoleFromJson(Map<String, dynamic> json) =>

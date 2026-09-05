@@ -77,7 +77,7 @@ class OrderController extends Controller
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
         return $this->successWithPagination(
-            OrderResource::collection($this->orders->paginate($filters, $perPage)),
+            OrderResource::collection($this->withParcelCodes($this->orders->paginate($filters, $perPage))),
         );
     }
 
@@ -140,7 +140,7 @@ class OrderController extends Controller
         );
 
         return $this->created(
-            new OrderResource($this->orders->loadForDisplay($order)),
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($order))),
             'تم إنشاء الطلبية بنجاح',
         );
     }
@@ -152,7 +152,7 @@ class OrderController extends Controller
      */
     public function show(Order $order): JsonResponse
     {
-        return $this->success(new OrderResource($this->orders->loadForDisplay($order)));
+        return $this->success(new OrderResource($this->withParcelCode($this->orders->loadForDisplay($order))));
     }
 
     /**
@@ -173,7 +173,7 @@ class OrderController extends Controller
         );
 
         return $this->success(
-            new OrderResource($this->orders->loadForDisplay($updated)),
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
             'تم تحديث الطلبية بنجاح',
         );
     }
@@ -205,7 +205,7 @@ class OrderController extends Controller
         $this->tellTheCarrier($updated);
 
         return $this->success(
-            new OrderResource($this->orders->loadForDisplay($updated)),
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
             "تم نقل الطلبية إلى «{$updated->status->label()}»",
         );
     }
@@ -292,7 +292,7 @@ class OrderController extends Controller
         );
 
         return $this->success(
-            new OrderResource($this->orders->loadForDisplay($updated)),
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
             'تم تحديث نواقص الطلبية',
         );
     }
@@ -397,5 +397,52 @@ class OrderController extends Controller
         $user = $request->user();
 
         return $user instanceof User ? $user : null;
+    }
+
+    /**
+     * Hangs the carrier's parcel code on one order, for the resource to publish.
+     *
+     * **Here rather than in `OrderService`, and that is the architecture rather than taste.**
+     * `Order` may not know that a carrier exists — the back-reference is the cycle RULES §3
+     * forbids, and `CarrierService::ordersNotLodged()` refuses the same convenience in the same
+     * words. A controller is the one place allowed to know both contexts, so this is where the
+     * two are joined.
+     *
+     * Applied at **every** site that returns one order, not only `show`: the app patches a row in
+     * the list from whatever a status change or an edit hands back, so an endpoint that omitted
+     * the key would blank a code that is still perfectly true.
+     */
+    private function withParcelCode(Order $order): Order
+    {
+        $codes = $this->carrier->parcelCodesFor([(int) $order->getKey()]);
+
+        if (isset($codes[(int) $order->getKey()])) {
+            $order->setAttribute('nawris_parcel', $codes[(int) $order->getKey()]);
+        }
+
+        return $order;
+    }
+
+    /**
+     * The same for a page of them, in one query rather than one per row.
+     *
+     * @template TPaginator of \Illuminate\Contracts\Pagination\LengthAwarePaginator<int, Order>
+     *
+     * @param  TPaginator  $orders
+     * @return TPaginator
+     */
+    private function withParcelCodes($orders)
+    {
+        $codes = $this->carrier->parcelCodesFor(
+            $orders->getCollection()->map(fn (Order $order) => (int) $order->getKey())->all(),
+        );
+
+        foreach ($orders->getCollection() as $order) {
+            if (isset($codes[(int) $order->getKey()])) {
+                $order->setAttribute('nawris_parcel', $codes[(int) $order->getKey()]);
+            }
+        }
+
+        return $orders;
     }
 }

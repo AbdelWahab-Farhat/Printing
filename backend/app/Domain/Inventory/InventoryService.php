@@ -35,6 +35,7 @@ use App\Domain\Inventory\Models\StockItemGroup;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
+use App\Domain\Inventory\Queries\ConsumptionBreakdownQuery;
 use App\Domain\Inventory\Queries\FindStockItem;
 use App\Domain\Inventory\Queries\FindStockItemGroup;
 use App\Domain\Inventory\Queries\MovementFilters;
@@ -90,6 +91,7 @@ class InventoryService
         private readonly WarehouseListQuery $warehouseListQuery,
         private readonly StockItemListQuery $stockItemListQuery,
         private readonly FindStockItem $findStockItem,
+        private readonly ConsumptionBreakdownQuery $consumptionBreakdown,
         private readonly StockListQuery $stockListQuery,
         private readonly StockSummaryQuery $stockSummaryQuery,
         private readonly WarehouseBalancesQuery $warehouseBalancesQuery,
@@ -364,5 +366,20 @@ class InventoryService
         ?string $quantity = null,
     ): StockBatch {
         return ($this->revalueStockBatch)($batch, $unitCost, $reason, $userId, $quantity);
+    }
+
+    /**
+     * What each draw of these movements took, and which cost layer it came from.
+     *
+     * The seam another context uses to attribute a movement's cost to whoever financed the
+     * layers behind it. Inventory has no opinion about that — `investor_deal_id` is a column it
+     * copies and never reads.
+     *
+     * @param  list<int>  $movementIds
+     * @return array<int, list<array<string, mixed>>>
+     */
+    public function consumptionBreakdownFor(array $movementIds): array
+    {
+        return ($this->consumptionBreakdown)($movementIds);
     }
 }

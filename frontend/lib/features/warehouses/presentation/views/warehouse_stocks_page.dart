@@ -9,11 +9,11 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/features/warehouses/models/stock_group.dart';
+import 'package:dayaa/features/warehouses/models/stock_movement.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/warehouse_stocks_cubit.dart';
-import 'package:dayaa/features/warehouses/presentation/widgets/record_movement_sheet.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/stock_material_card.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/stock_row.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/stock_summary_card.dart';
@@ -121,9 +121,9 @@ class _StocksViewState extends State<_StocksView> {
             ? FloatingActionButton.extended(
                 heroTag: 'fab-warehouse-stocks',
                 onPressed: () async {
-                  final movement = await showRecordMovementSheet(
-                    context: context,
-                    warehouse: warehouse,
+                  final movement = await context.push<StockMovement>(
+                    Routes.recordStockMovement,
+                    extra: warehouse,
                   );
 
                   // Re-read rather than patch: the new balance is the server's answer, and this

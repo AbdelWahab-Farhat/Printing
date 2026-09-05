@@ -24,13 +24,20 @@ abstract interface class ProductCategoryRepository {
   /// مطبوعة through the press, سادة straight to «جاهزة», وسيط out to a vendor. Required rather
   /// than defaulted: a caller that forgets it is a caller silently putting a heading back on
   /// the printed road.
+  ///
+  /// [isInvestable] is the three-valued flag that decides which shelves a deal may be opened
+  /// against — true, false, or null for «حسب الرئيسي». Null by default: a heading nobody has
+  /// been asked about is not investable, and on a create there is no parent yet to ask.
   Future<Either<Failure, ProductCategory>> create({
     required String name,
     String? description,
     required int sortOrder,
     required ProductionMode productionMode,
+    bool? isInvestable,
   });
 
+  /// [parentId] is where the heading is filed, and it travels with every edit: a PUT replaces
+  /// the whole representation, and the server reads an absent parent as «اجعله رئيسياً».
   Future<Either<Failure, ProductCategory>> update(
     int categoryId, {
     required String name,
@@ -38,6 +45,8 @@ abstract interface class ProductCategoryRepository {
     required int sortOrder,
     required bool isActive,
     required ProductionMode productionMode,
+    int? parentId,
+    bool? isInvestable,
   });
 
   /// Hides a category from the pickers. The products already under it keep it.

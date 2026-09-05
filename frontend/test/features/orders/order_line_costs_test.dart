@@ -78,7 +78,7 @@ void main() {
     await tester.pumpWidget(host(OrderLineCosts(item: line())));
 
     // Act - Assert — «التكلفة ٠٫٠٠» is a claim about the line, and it is a false one.
-    expect(find.textContaining('0.00'), findsNothing);
+    expect(find.textContaining('0'), findsNothing);
     expect(find.textContaining('التكلفة'), findsNothing);
   });
 
@@ -101,7 +101,7 @@ void main() {
 
     // Act - Assert — one quiet line, the four figures as the server sent them.
     expect(
-      find.text('التكلفة 120.00 — مواد 80.00 · عمالة 30.00 · مصاريف 10.00'),
+      find.text('التكلفة 120 — مواد 80 · عمالة 30 · مصاريف 10'),
       findsOneWidget,
     );
   });
@@ -116,7 +116,7 @@ void main() {
     );
 
     // Act - Assert
-    expect(find.text('التكلفة 110.00 — مواد 80.00 · عمالة 30.00'), findsOneWidget);
+    expect(find.text('التكلفة 110 — مواد 80 · عمالة 30'), findsOneWidget);
     expect(find.textContaining('مصاريف'), findsNothing);
   });
 
@@ -126,7 +126,7 @@ void main() {
     await tester.pumpWidget(host(OrderLineCosts(item: line(cogs: '120.00'))));
 
     // Act - Assert
-    expect(find.text('التكلفة 120.00'), findsOneWidget);
+    expect(find.text('التكلفة 120'), findsOneWidget);
   });
 
   testWidgets('nothing here is added up on the phone', (tester) async {
@@ -147,7 +147,7 @@ void main() {
 
     // Act - Assert
     expect(find.textContaining('التكلفة 119.99'), findsOneWidget);
-    expect(find.textContaining('120.00'), findsNothing);
+    expect(find.textContaining('120'), findsNothing);
   });
 
   testWidgets('a costed line says what one unit of it cost in material', (tester) async {
@@ -187,7 +187,7 @@ void main() {
     );
 
     // Act - Assert — «تكلفة القطعة ٨٫٠٠٠» would be a wrong number, not an imprecise one.
-    expect(find.text('تكلفة المواد للكيلوغرام 8.000'), findsOneWidget);
+    expect(find.text('تكلفة المواد للكيلوغرام 8'), findsOneWidget);
     expect(find.textContaining('للقطعة'), findsNothing);
   });
 

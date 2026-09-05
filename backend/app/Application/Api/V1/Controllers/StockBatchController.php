@@ -10,9 +10,11 @@ use App\Application\Controller;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Queries\StockBatchFilters;
+use App\Domain\Investor\InvestorService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 /**
  * Stock cost layers
@@ -33,7 +35,36 @@ class StockBatchController extends Controller
 {
     use ResponseTrait;
 
-    public function __construct(private readonly InventoryService $inventory) {}
+    public function __construct(
+        private readonly InventoryService $inventory,
+        private readonly InvestorService $investors,
+    ) {}
+
+    /**
+     * Names the deal on every funded layer of a set — one query for the page, none for the rest.
+     *
+     * **Here rather than on the model.** Inventory does not import Investment, so a `belongsTo`
+     * on `StockBatch` would be the dependency running the wrong way; the Application layer is
+     * allowed to know both, and this is the only thing it has to know.
+     *
+     * @param  Collection<int, StockBatch>  $batches
+     * @return Collection<int, StockBatch>
+     */
+    private function nameTheDeals($batches)
+    {
+        $summaries = $this->investors->dealSummaries(
+            $batches->pluck('investor_deal_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all(),
+        );
+
+        return $batches->each(function ($batch) use ($summaries): void {
+            $summary = $batch->investor_deal_id === null
+                ? null
+                : ($summaries[(int) $batch->investor_deal_id] ?? null);
+
+            $batch->setAttribute('investor_deal_code', $summary['code'] ?? null);
+            $batch->setAttribute('investor_deal_investors', $summary['investors'] ?? null);
+        });
+    }
 
     /**
      * List cost layers
@@ -53,9 +84,14 @@ class StockBatchController extends Controller
         );
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
 
-        return $this->successWithPagination(
-            StockBatchResource::collection($this->inventory->paginateStockBatches($filters, $perPage)),
-        );
+        $page = $this->inventory->paginateStockBatches($filters, $perPage);
+
+        // **The paginator, not its collection.** `successWithPagination` reads the page's own
+        // meta off the paginator; handing it a plain collection is how the list came back with
+        // «الرد لا يحتوي على بيانات الصفحات». The enrichment mutates the models in place.
+        $this->nameTheDeals($page->getCollection());
+
+        return $this->successWithPagination(StockBatchResource::collection($page));
     }
 
     /**
@@ -87,7 +123,9 @@ class StockBatchController extends Controller
         );
 
         return $this->success(
-            new StockBatchResource($batch->load(['stockItem', 'warehouse', 'stockMovement'])),
+            new StockBatchResource($this->nameTheDeals(collect([
+                $batch->load(['stockItem', 'warehouse', 'stockMovement']),
+            ]))->first()),
             'تم تعديل تكلفة الدفعة بنجاح',
         );
     }

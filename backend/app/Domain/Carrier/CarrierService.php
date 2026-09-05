@@ -153,6 +153,62 @@ final class CarrierService
     }
 
     /**
+     * The carrier's code for each of a page of orders, keyed by order id.
+     *
+     * **What lets an order screen show «كود النورس» without `Order` learning that a carrier
+     * exists.** The back-reference a relation would need is the cycle RULES §3 forbids — see
+     * {@see ordersNotLodged()}, which refuses the same convenience for the same reason. The table
+     * name is the seam: this context already knows it, and a controller that is allowed to know
+     * both hands the answer to the resource.
+     *
+     * **The latest link wins.** A resent order sits in more than one parcel over its life, and
+     * the code a person reads off the screen has to be the one on the label in the courier's hand
+     * — so the rows are walked newest link first and the first one per order is kept. `is_open`
+     * comes from `closed_at`, the same reading «ما زال في الطريق» is built on everywhere else.
+     *
+     * A parcel whose code has not come back yet is skipped rather than published as null: that
+     * instant exists only between building the row and the carrier's response, and «كود النورس:
+     * لا شيء» is a worse answer than no line at all.
+     *
+     * @param  list<int>  $orderIds
+     * @return array<int, array{code: string, bar_code: ?string, is_open: bool}>
+     */
+    public function parcelCodesFor(array $orderIds): array
+    {
+        if ($orderIds === []) {
+            return [];
+        }
+
+        $rows = DB::table('nawris_parcel_orders as l')
+            ->join('nawris_parcels as p', 'p.id', '=', 'l.nawris_parcel_id')
+            ->whereIn('l.order_id', $orderIds)
+            ->whereNull('l.deleted_at')
+            ->whereNull('p.deleted_at')
+            ->whereNotNull('p.code')
+            ->orderByDesc('l.id')
+            ->get(['l.order_id', 'p.code', 'p.bar_code', 'p.closed_at']);
+
+        $codes = [];
+
+        foreach ($rows as $row) {
+            $orderId = (int) $row->order_id;
+
+            // Newest first, so the first one seen for an order is the one to keep.
+            if (isset($codes[$orderId])) {
+                continue;
+            }
+
+            $codes[$orderId] = [
+                'code' => (string) $row->code,
+                'bar_code' => $row->bar_code === null ? null : (string) $row->bar_code,
+                'is_open' => $row->closed_at === null,
+            ];
+        }
+
+        return $codes;
+    }
+
+    /**
      * Orders that left as deliveries but were never lodged with the carrier.
      *
      * **The outbound twin of «وصل ولم يُعالَج».** Because the carrier call happens after the

@@ -88,7 +88,7 @@ void main() {
     await openTheSheet(tester, [line(shortage: '100.000')]);
 
     // Assert
-    expect(find.text('100.000'), findsOneWidget);
+    expect(find.text('100'), findsOneWidget);
   });
 
   testWidgets('the line says what it will be charged for as it is typed', (tester) async {
@@ -101,7 +101,7 @@ void main() {
 
     // Assert — the arithmetic is on screen before the save, because finding out afterwards on a
     // total is finding out from the wrong number.
-    expect(find.text('يُحاسَب على 200.000 قطعة × 1.550'), findsOneWidget);
+    expect(find.text('يُحاسَب على 200 قطعة × 1.55'), findsOneWidget);
   });
 
   testWidgets('emptying a box is the gesture that puts the money back', (tester) async {
@@ -117,7 +117,7 @@ void main() {
     // Assert — the key travels holding nothing, which is what clears the shortage. Dropping it
     // would leave the old number standing and the invoice short with it.
     expect(saved, {11: ''});
-    expect(find.text('يُحاسَب على 300.000 قطعة × 1.550'), findsNothing);
+    expect(find.text('يُحاسَب على 300 قطعة × 1.55'), findsNothing);
   });
 
   testWidgets('what every line says travels, short or not', (tester) async {
@@ -150,7 +150,7 @@ void main() {
     // Assert — «ناقص ٤٠٠ من ٣٠٠» is a typo, and it would have produced a negative line. The
     // server refuses it too; this is the half that refuses it without a round trip.
     expect(saved, isNull);
-    expect(find.text('الناقص أكبر من المطلوب (300.000)'), findsOneWidget);
+    expect(find.text('الناقص أكبر من المطلوب (300)'), findsOneWidget);
   });
 
   testWidgets('a whole line going missing is a legitimate answer', (tester) async {
@@ -163,6 +163,6 @@ void main() {
 
     // Assert — nothing arrived, nothing is charged, and the sheet says so rather than treating
     // it as the mistake the line above is.
-    expect(find.text('يُحاسَب على 0.000 قطعة × 1.550'), findsOneWidget);
+    expect(find.text('يُحاسَب على 0 قطعة × 1.55'), findsOneWidget);
   });
 }

@@ -6,6 +6,7 @@ namespace App\Domain\Vendor\Actions;
 
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\InventoryService;
+use App\Domain\Investor\Exceptions\ArrivalForADealNeedsACost;
 use App\Domain\Vendor\DTOs\StockArrivalData;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\Models\StockArrivalItem;
@@ -45,6 +46,10 @@ final class RecordStockArrival
             $arrival->save();
 
             foreach ($data->items as $item) {
+                if ($item->investorDealId !== null && $item->unitCost === null) {
+                    throw ArrivalForADealNeedsACost::make();
+                }
+
                 $movement = $this->inventory->recordMovement(StockMovementData::arrival([
                     'stock_item_id' => $item->stockItemId,
                     'to_warehouse_id' => $data->warehouseId,
@@ -57,6 +62,11 @@ final class RecordStockArrival
                     // cost layer this opens falls back to "unknown" rather than the arrival being
                     // refused; see ApplyStockChange::increase().
                     'unit_cost' => $item->unitCost,
+                    // Null for everything the company bought for itself, which is almost every
+                    // line. When it is set the cost is required — see the guard above: a funded
+                    // layer opened at the '0.000' placeholder would hand the deal a 100% margin
+                    // on goods that cost real money.
+                    'investor_deal_id' => $item->investorDealId,
                 ], $data->receivedBy));
 
                 $arrivalItem = new StockArrivalItem(['quantity' => $item->quantity]);

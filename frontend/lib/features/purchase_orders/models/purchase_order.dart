@@ -195,6 +195,20 @@ abstract class PurchaseOrder with _$PurchaseOrder {
     /// Present when one order was fetched, and on the list. Absent from a status change.
     @Default(<PurchaseOrderItem>[]) List<PurchaseOrderItem> items,
 
+    /// The deals financing this order — **one per group of lines**, because the claim the
+    /// receipt reads is per line and one lorry may be paid for by two sets of partners.
+    ///
+    /// Sent with a single order only, and empty on the ordinary one the company bought for
+    /// itself. Each carries the money each man put in beside the percentage it produced.
+    @JsonKey(name: 'investor_funding')
+    @Default(<PurchaseOrderFunding>[])
+    List<PurchaseOrderFunding> investorFunding,
+
+    /// The investors' share of profit a deal struck on this order would be born with — the
+    /// company default, sent so the funding screen shows the number rather than implying it.
+    @JsonKey(name: 'default_investor_profit_share_percent')
+    String? defaultInvestorProfitSharePercent,
+
     @JsonKey(name: 'created_at') DateTime? createdAt,
     @JsonKey(name: 'updated_at') DateTime? updatedAt,
   }) = _PurchaseOrder;
@@ -446,4 +460,51 @@ class PurchaseLineUnit {
 
   @override
   int get hashCode => label.hashCode;
+}
+
+/// One deal financing a purchase order, as its own screen shows it.
+///
+/// **The percentage is not a second opinion about the money.** Both were written in the same
+/// breath by the funding screen — the amounts are the percentages — and they are drawn side by
+/// side so nobody has to take either on trust.
+@freezed
+abstract class PurchaseOrderFunding with _$PurchaseOrderFunding {
+  const factory PurchaseOrderFunding({
+    @JsonKey(name: 'deal_id') required int dealId,
+    required String code,
+    required String status,
+    @JsonKey(name: 'status_label') required String statusLabel,
+
+    /// The investors' share of *this* deal's profit — the company keeps the rest.
+    @JsonKey(name: 'investor_profit_share_percent')
+    required String investorProfitSharePercent,
+
+    /// The order's lines this deal paid for. A deal that took the whole lorry names them all.
+    @JsonKey(name: 'stock_item_ids')
+    @Default(<int>[])
+    List<int> stockItemIds,
+
+    @Default(<PurchaseOrderFunder>[]) List<PurchaseOrderFunder> investors,
+  }) = _PurchaseOrderFunding;
+
+  const PurchaseOrderFunding._();
+
+  factory PurchaseOrderFunding.fromJson(Map<String, dynamic> json) =>
+      _$PurchaseOrderFundingFromJson(json);
+}
+
+/// One partner in a deal: what he put in, and the share of the investors' half it bought him.
+@freezed
+abstract class PurchaseOrderFunder with _$PurchaseOrderFunder {
+  const factory PurchaseOrderFunder({
+    @JsonKey(name: 'investor_id') required int investorId,
+    required String name,
+    @JsonKey(name: 'committed_amount') required String committedAmount,
+    @JsonKey(name: 'share_percent') required String sharePercent,
+  }) = _PurchaseOrderFunder;
+
+  const PurchaseOrderFunder._();
+
+  factory PurchaseOrderFunder.fromJson(Map<String, dynamic> json) =>
+      _$PurchaseOrderFunderFromJson(json);
 }

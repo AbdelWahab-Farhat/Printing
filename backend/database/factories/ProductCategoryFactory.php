@@ -58,4 +58,15 @@ class ProductCategoryFactory extends Factory
     {
         return $this->state(fn () => ['production_mode' => ProductionMode::Outsourced]);
     }
+
+    /**
+     * A heading a deal may be opened against — see `ProductCategory::isInvestable()`.
+     *
+     * The default is null, not false, and the two are different answers: null asks the parent
+     * heading, false refuses on this row's own account.
+     */
+    public function investable(): static
+    {
+        return $this->state(fn () => ['is_investable' => true]);
+    }
 }

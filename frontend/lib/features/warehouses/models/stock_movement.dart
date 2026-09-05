@@ -102,6 +102,16 @@ abstract class StockMovement with _$StockMovement {
     /// that counts zeros describes nothing, so the row gets the total it can vouch for and the
     /// quantity it cannot. [totalCost] null means «nobody recorded it» — a row older than the
     /// cost ledger — and is read as unknown, never as free.
+    /// Whose goods went out — one entry per owner, a deal by its code and the company as a null
+    /// id. **The split has always existed and no screen said it**: FIFO writes one consumption
+    /// row per cost layer it touches, so an order taking a thousand bags off two layers took
+    /// them off two people.
+    ///
+    /// Empty on a movement that consumed nothing — an arrival, a transfer.
+    @JsonKey(name: 'investor_draws')
+    @Default(<MovementDraw>[])
+    List<MovementDraw> investorDraws,
+
     @JsonKey(name: 'unit_cost') String? unitCost,
     @JsonKey(name: 'total_cost') String? totalCost,
     @JsonKey(name: 'uncosted_quantity') String? uncostedQuantity,
@@ -271,4 +281,25 @@ abstract class MovementActor with _$MovementActor {
   }) = _MovementActor;
 
   factory MovementActor.fromJson(Map<String, dynamic> json) => _$MovementActorFromJson(json);
+}
+
+/// One owner's share of what a movement took off the shelf.
+@freezed
+abstract class MovementDraw with _$MovementDraw {
+  const factory MovementDraw({
+    /// Null for the company's own stock, which is most of it.
+    @JsonKey(name: 'investor_deal_id') int? investorDealId,
+    String? code,
+    required String quantity,
+
+    /// Present only where the caller may be told costs.
+    @JsonKey(name: 'total_cost') String? totalCost,
+  }) = _MovementDraw;
+
+  const MovementDraw._();
+
+  /// «D22» for a deal's goods, «الشركة» for our own — the label the row draws.
+  String get ownerLabel => code ?? 'الشركة';
+
+  factory MovementDraw.fromJson(Map<String, dynamic> json) => _$MovementDrawFromJson(json);
 }

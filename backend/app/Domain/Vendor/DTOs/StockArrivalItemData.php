@@ -20,6 +20,13 @@ final readonly class StockArrivalItemData
          */
         public ?string $unitCost = null,
         public ?string $totalCost = null,
+        /**
+         * Which deal financed this line, resolved by Investment from a claim made before the
+         * goods left the supplier. Always null through {@see fromArray()}: the receiving clerk
+         * has no such field on the screen and never chooses one — «الموظف لا يختار الصفقة أبداً»
+         * — so only `ReceivePurchaseOrder` ever fills it, by building this DTO directly.
+         */
+        public ?int $investorDealId = null,
     ) {}
 
     /**

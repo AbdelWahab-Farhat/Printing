@@ -47,6 +47,7 @@ class ProductCategoryRepositoryImpl implements ProductCategoryRepository {
     String? description,
     required int sortOrder,
     required ProductionMode productionMode,
+    bool? isInvestable,
   }) {
     return safeRequest<ProductCategory>(
       () => _dio.post(
@@ -65,6 +66,10 @@ class ProductCategoryRepositoryImpl implements ProductCategoryRepository {
           // would demote a وسيط heading; this build knows the three-way answer, and sending it
           // alone is what stops the server having to guess. See OUTSOURCED-PRODUCTS.md §8.
           'production_mode': productionMode.wire,
+          // Sent even when null, and that null is «حسب الرئيسي» rather than «لم أقل شيئاً»: the
+          // server keeps the stored answer for a request that omits the key, so an old build's
+          // rename cannot close a funded heading. A build that can say the third answer says it.
+          'is_investable': isInvestable,
         },
       ),
       parse: (data) => ProductCategory.fromJson(data! as Map<String, dynamic>),
@@ -79,6 +84,8 @@ class ProductCategoryRepositoryImpl implements ProductCategoryRepository {
     required int sortOrder,
     required bool isActive,
     required ProductionMode productionMode,
+    int? parentId,
+    bool? isInvestable,
   }) {
     return safeRequest<ProductCategory>(
       // A PUT sends the category's whole representation, which is why `is_active` is here and
@@ -98,6 +105,11 @@ class ProductCategoryRepositoryImpl implements ProductCategoryRepository {
           // heading back on the printed road on the next rename — the same trap `is_active` is
           // spelled out for above. The modern key alone, as on create.
           'production_mode': productionMode.wire,
+          // The same trap once more, and the one that bit: the server reads an absent parent as
+          // «اجعله رئيسياً», so a subheading renamed without this became a root — and «حسب
+          // الرئيسي» became «لا» with nobody having touched it.
+          'parent_id': parentId,
+          'is_investable': isInvestable,
         },
       ),
       parse: (data) => ProductCategory.fromJson(data! as Map<String, dynamic>),

@@ -17,6 +17,34 @@ abstract final class AuthEndpoints {
 }
 
 /// The numbers the app opens on.
+/// The investor's own door, and the staff screens that manage him.
+abstract final class InvestorEndpoints {
+  /// **No id in the path, and that is the security rather than an omission.** The account is
+  /// resolved on the server from the signed-in user's own link, so there is nothing here for an
+  /// app to change into somebody else's.
+  static const String portalSummary = '/investor-portal/summary';
+  static const String portalStatement = '/investor-portal/statement';
+
+  static const String investors = '/investors';
+  static const String deals = '/investor-deals';
+
+  static String investor(int id) => '/investors/$id';
+  static String wallet(int id) => '/investors/$id/wallet';
+  static String statement(int id) => '/investors/$id/statement';
+  static String deal(int id) => '/investor-deals/$id';
+  static String closeDeal(int id) => '/investor-deals/$id/close';
+  static String dealExpenses(int id) => '/investor-deals/$id/expenses';
+
+  /// The orders that sold this deal's goods, and what each one earned it.
+  static String dealOrders(int id) => '/investor-deals/$id/orders';
+
+  /// The deal being born from the order it is about — the partners, the money, and every one of
+  /// the order's lines claimed, in one call. Guarded by `investors.manage`, not by the buyer's
+  /// own grant.
+  static String fundPurchaseOrder(int purchaseOrderId) =>
+      '/purchase-orders/$purchaseOrderId/investor-funding';
+}
+
 abstract final class HomeEndpoints {
   /// Four counts and one row per order status, in one call — they are read together and go
   /// stale together.

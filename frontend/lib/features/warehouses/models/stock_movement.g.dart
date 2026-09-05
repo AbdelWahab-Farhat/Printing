@@ -39,6 +39,11 @@ _StockMovement _$StockMovementFromJson(
   notes: json['notes'] as String?,
   signedQuantity: json['signed_quantity'] as String?,
   balanceAfter: json['balance_after'] as String?,
+  investorDraws:
+      (json['investor_draws'] as List<dynamic>?)
+          ?.map((e) => MovementDraw.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <MovementDraw>[],
   unitCost: json['unit_cost'] as String?,
   totalCost: json['total_cost'] as String?,
   uncostedQuantity: json['uncosted_quantity'] as String?,
@@ -67,6 +72,7 @@ Map<String, dynamic> _$StockMovementToJson(_StockMovement instance) =>
       'notes': instance.notes,
       'signed_quantity': instance.signedQuantity,
       'balance_after': instance.balanceAfter,
+      'investor_draws': instance.investorDraws.map((e) => e.toJson()).toList(),
       'unit_cost': instance.unitCost,
       'total_cost': instance.totalCost,
       'uncosted_quantity': instance.uncostedQuantity,
@@ -104,4 +110,20 @@ Map<String, dynamic> _$MovementActorToJson(_MovementActor instance) =>
       'id': instance.id,
       'name': instance.name,
       'employee_code': instance.employeeCode,
+    };
+
+_MovementDraw _$MovementDrawFromJson(Map<String, dynamic> json) =>
+    _MovementDraw(
+      investorDealId: (json['investor_deal_id'] as num?)?.toInt(),
+      code: json['code'] as String?,
+      quantity: json['quantity'] as String,
+      totalCost: json['total_cost'] as String?,
+    );
+
+Map<String, dynamic> _$MovementDrawToJson(_MovementDraw instance) =>
+    <String, dynamic>{
+      'investor_deal_id': instance.investorDealId,
+      'code': instance.code,
+      'quantity': instance.quantity,
+      'total_cost': instance.totalCost,
     };

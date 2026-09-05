@@ -122,8 +122,8 @@ void main() {
     await tester.pump();
 
     // Assert
-    expect(find.text('100.000 كيلوغرام × 32.000'), findsOneWidget);
-    expect(find.text('3,200.00'), findsOneWidget);
+    expect(find.text('100 كيلوغرام × 32'), findsOneWidget);
+    expect(find.text('3,200'), findsOneWidget);
   });
 
   testWidgets('a tap opens the product', (tester) async {
@@ -211,8 +211,8 @@ void main() {
     await tester.pump();
 
     // Assert — priced on what is left, and «ناقص من كم» answered on the same line.
-    expect(find.text('75.000 كيلوغرام × 32.000'), findsOneWidget);
-    expect(find.text('ناقص: 25.000 من 100.000 كيلوغرام — غير محتسب'), findsOneWidget);
+    expect(find.text('75 كيلوغرام × 32'), findsOneWidget);
+    expect(find.text('ناقص: 25 من 100 كيلوغرام — غير محتسب'), findsOneWidget);
   });
 
   testWidgets('what the line cost is drawn only for those who may read it', (tester) async {

@@ -1,6 +1,7 @@
 import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/warehouses/models/stock_movement.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/movement_row.dart';
 import 'package:flutter/material.dart';
@@ -52,60 +53,98 @@ class LedgerRow extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 14.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: EdgeInsets.only(top: 4.h),
-            child: Icon(icon, size: 20.sp, color: tone),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _what(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                SizedBox(height: 4.h),
-                Text(_whenAndWho(), maxLines: 1, overflow: TextOverflow.ellipsis, style: quiet),
-                if (movement.movementType == MovementType.adjustment &&
-                    movement.balanceBeforeLabel != null) ...[
-                  SizedBox(height: 4.h),
-                  Text('كان ${movement.balanceBeforeLabel} ← صار ${movement.balanceAfterLabel}', style: quiet),
-                ],
-                if (movement.notes case final notes?) ...[
-                  SizedBox(height: 4.h),
-                  Text(notes, style: quiet?.copyWith(fontStyle: FontStyle.italic)),
-                ],
-              ],
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                movement.signedQuantityLabel ?? movement.quantityLabel,
-                textDirection: TextDirection.ltr,
-                style: context.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: tone,
-                  height: 1.1,
+              Padding(
+                padding: EdgeInsets.only(top: 4.h),
+                child: Icon(icon, size: 20.sp, color: tone),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _what(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    // **«1,000 ← 0» is the row's number.** From what to what, and the difference
+                    // between them is the movement — so the signed figure that used to sit on
+                    // the other side of the row said a third time what these two already say.
+                    // The words «كان» and «صار» went with it: an arrow between two balances
+                    // needs no verb.
+                    if (movement.balanceBeforeLabel case final before?) ...[
+                      SizedBox(height: 4.h),
+                      Text(
+                        '$before ← ${movement.balanceAfterLabel}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: tone,
+                        ),
+                      ),
+                    ] else if (movement.balanceAfterLabel case final after?) ...[
+                      // Nothing to say it came *from*: an opening row, or a ledger read from a
+                      // page that does not carry the figure before.
+                      SizedBox(height: 4.h),
+                      Text(
+                        after,
+                        style: context.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: tone,
+                        ),
+                      ),
+                    ],
+                    // **Whose goods went out.** Drawn only where more than one owner is in the
+                    // row: «−1,000» off a shelf nobody funded is the company's by definition,
+                    // and saying so on every line would be noise on most of them.
+                    if (movement.investorDraws.length > 1) ...[
+                      SizedBox(height: 4.h),
+                      Text(
+                        movement.investorDraws
+                            .map((draw) => '${draw.ownerLabel} ${groupedDecimal(draw.quantity)}')
+                            .join(' · '),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: quiet,
+                      ),
+                    ] else if (movement.investorDraws.firstOrNull?.code case final code?) ...[
+                      // One owner, and it is a deal — worth naming, because it is the case the
+                      // shelf cannot be read for.
+                      SizedBox(height: 4.h),
+                      Text('من $code', style: quiet),
+                    ],
+                    if (movement.notes case final notes?) ...[
+                      SizedBox(height: 4.h),
+                      Text(notes, style: quiet?.copyWith(fontStyle: FontStyle.italic)),
+                    ],
+                  ],
                 ),
               ),
-              if (movement.balanceAfterLabel case final balance?) ...[
-                SizedBox(height: 4.h),
-                _Balance(label: balance),
-              ],
-              if (showCost) ...[SizedBox(height: 4.h), _Cost(movement: movement, unitLabel: unitLabel)],
+              SizedBox(width: 12.w),
+              // **The quantity is gone from here.** «−1,000» beside «1,000 ← 0» was the same
+              // fact twice, and the loud one was the redundant one: the pair of balances says
+              // both how much moved and where it left the shelf standing.
+              if (showCost) _Cost(movement: movement, unitLabel: unitLabel),
             ],
           ),
+          // **The time is the last thing that matters and sits where the eye ends.** It used to
+          // run under the title, above the figures somebody actually came for.
+          if (_whenAndWho() case final line when line.isNotEmpty) ...[
+            SizedBox(height: 6.h),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Text(line, style: quiet),
+            ),
+          ],
         ],
       ),
     );
@@ -123,35 +162,6 @@ class LedgerRow extends StatelessWidget {
   String _whenAndWho() => [?movement.createdAt?.timeLabel, ?movement.employee?.name].join(' · ');
 }
 
-/// «الرصيد 300» — the running total, labelled, with the number carrying the weight.
-class _Balance extends StatelessWidget {
-  const _Balance({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final style = context.textTheme.bodyMedium?.copyWith(color: context.colorScheme.onSurfaceVariant);
-
-    return Text.rich(
-      TextSpan(
-        children: [
-          const TextSpan(text: 'الرصيد '),
-          TextSpan(
-            text: label,
-            style: style?.copyWith(color: context.colorScheme.onSurface, fontWeight: FontWeight.w700),
-          ),
-        ],
-      ),
-      textDirection: TextDirection.rtl,
-      style: style,
-    );
-  }
-}
-
-/// The cost, one number; «بلا تكلفة» in `warn` for stock nobody priced; and «التكلفة غير
-/// معروفة» for a row older than the cost ledger — said to a reader entitled to know, because
-/// silence there would read as «free».
 class _Cost extends StatelessWidget {
   const _Cost({required this.movement, required this.unitLabel});
 

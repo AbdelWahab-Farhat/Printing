@@ -108,12 +108,13 @@ final class ApplyStockChange
         StockBatchSourceType $sourceType,
         ?int $stockArrivalItemId = null,
         ?int $stockMovementId = null,
+        ?int $investorDealId = null,
     ): WarehouseStock {
         $stock = $this->growBalance($warehouseId, $stockItemId, $quantity, $unit);
 
         $this->openBatch(
             $warehouseId, $stockItemId, $quantity, $unitCost, $unit,
-            $sourceType, $stockArrivalItemId, Carbon::now(), $stockMovementId,
+            $sourceType, $stockArrivalItemId, Carbon::now(), $stockMovementId, $investorDealId,
         );
 
         return $stock;
@@ -150,6 +151,11 @@ final class ApplyStockChange
                 // moved it — the same reasoning `received_at` and `source_type` above follow.
                 // The transfer is fully recorded as its own `stock_movements` row.
                 $draw->stockMovementId,
+                // **And whoever financed it.** Missing this copy would turn an investor's stock
+                // into the company's the first time somebody moved half a shipment between
+                // warehouses, with every quantity in the system still perfectly correct and
+                // nothing at all to notice — which is why it has a scenario test of its own.
+                $draw->investorDealId,
             );
         }
 
@@ -239,6 +245,7 @@ final class ApplyStockChange
         ?int $stockArrivalItemId,
         Carbon $receivedAt,
         ?int $stockMovementId = null,
+        ?int $investorDealId = null,
     ): void {
         $batch = new StockBatch;
         $batch->warehouse_id = $warehouseId;
@@ -246,6 +253,10 @@ final class ApplyStockChange
         $batch->source_type = $sourceType;
         $batch->stock_arrival_item_id = $stockArrivalItemId;
         $batch->stock_movement_id = $stockMovementId;
+        // Null on almost every layer, and null means the company paid for this stock. One of the
+        // three places this column is ever written — see the migration for the other two and for
+        // why a missed copy is silent.
+        $batch->investor_deal_id = $investorDealId;
         $batch->unit_cost = $unitCost;
         $batch->quantity_received = $quantity;
         $batch->quantity_remaining = $quantity;

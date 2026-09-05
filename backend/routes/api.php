@@ -5,11 +5,15 @@ use App\Application\Api\V1\Controllers\AuthController;
 use App\Application\Api\V1\Controllers\BusinessFieldController;
 use App\Application\Api\V1\Controllers\CarrierController;
 use App\Application\Api\V1\Controllers\CityController;
+use App\Application\Api\V1\Controllers\CompanySettingController;
 use App\Application\Api\V1\Controllers\CustomerCommentController;
 use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\CustomerDesignController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
+use App\Application\Api\V1\Controllers\InvestorController;
+use App\Application\Api\V1\Controllers\InvestorDealController;
+use App\Application\Api\V1\Controllers\InvestorPortalController;
 use App\Application\Api\V1\Controllers\ManufacturingCostRateController;
 use App\Application\Api\V1\Controllers\NawrisWebhookController;
 use App\Application\Api\V1\Controllers\OrderController;
@@ -603,6 +607,73 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('adjustments', [StockMovementController::class, 'adjustments'])->name('adjustments');
             });
 
+        // ── investors ───────────────────────────────────────────────────────────────────
+        //
+        // The people whose money finances the stock, the deals it finances, and the wallet each
+        // one's money sits in. Reading and administering are the usual pair; the money verbs are
+        // split off because recording a deposit, paying somebody out and undoing either are
+        // different levels of trust — the same split `orders.payments.*` draws.
+        //
+        // **`investor-portal` is the investor's own door and carries no id at all.** There are no
+        // policies in this application, so «he sees his own rows» is enforced by there being
+        // nothing to tamper with: the account is resolved from his own user link.
+        Route::get('investors', [InvestorController::class, 'index'])
+            ->middleware('can:investors.view')->name('investors.index');
+
+        Route::post('investors', [InvestorController::class, 'store'])
+            ->middleware('can:investors.manage')->name('investors.store');
+
+        Route::get('investors/{investor}', [InvestorController::class, 'show'])
+            ->middleware('can:investors.view')->name('investors.show');
+
+        Route::put('investors/{investor}', [InvestorController::class, 'update'])
+            ->middleware('can:investors.manage')->name('investors.update');
+
+        Route::patch('investors/{investor}/activation', [InvestorController::class, 'activation'])
+            ->middleware('can:investors.manage')->name('investors.activation');
+
+        Route::get('investors/{investor}/statement', [InvestorController::class, 'statement'])
+            ->middleware('can:investors.view')->name('investors.statement');
+
+        Route::post('investors/{investor}/wallet', [InvestorController::class, 'storeWalletEntry'])
+            ->middleware('can:investors.money.record')->name('investors.wallet.store');
+
+        Route::get('investor-deals', [InvestorDealController::class, 'index'])
+            ->middleware('can:investors.view')->name('investor-deals.index');
+
+        Route::get('investor-deals/{deal}', [InvestorDealController::class, 'show'])
+            ->middleware('can:investors.view')->name('investor-deals.show');
+
+        Route::get('investor-deals/{deal}/orders', [InvestorDealController::class, 'orders'])
+            ->middleware('can:investors.view')->name('investor-deals.orders.index');
+
+        Route::post('investor-deals/{deal}/close', [InvestorDealController::class, 'close'])
+            ->middleware('can:investors.manage')->name('investor-deals.close');
+
+        // The only way a deal is born — on the order it is about. There is no deal form: a deal is
+        // one order's paperwork, and the fraction of the goods its partners own is derived from
+        // that order's cost, which a deal built by hand would not have. Guarded by
+        // `investors.manage` rather than by `purchase_orders.manage`: it creates a deal and moves
+        // investors' money, and the buyer who raises an order is not who decides that.
+        Route::post('purchase-orders/{purchaseOrder}/investor-funding', [InvestorDealController::class, 'fundPurchaseOrder'])
+            ->middleware('can:investors.manage')->name('purchase-orders.investor-funding.store');
+
+        Route::post('investor-deals/{deal}/expenses', [InvestorDealController::class, 'storeExpense'])
+            ->middleware('can:investor_deals.expenses.record')->name('investor-deals.expenses.store');
+
+        Route::get('investor-portal/summary', [InvestorPortalController::class, 'summary'])
+            ->middleware('can:investor_portal.view')->name('investor-portal.summary');
+
+        Route::get('investor-portal/statement', [InvestorPortalController::class, 'statement'])
+            ->middleware('can:investor_portal.view')->name('investor-portal.statement');
+
+        // The company's editable defaults.
+        Route::get('settings', [CompanySettingController::class, 'show'])
+            ->middleware('can:settings.view')->name('settings.show');
+
+        Route::put('settings', [CompanySettingController::class, 'update'])
+            ->middleware('can:settings.manage')->name('settings.update');
+
         // The cost layers behind those balances — the first thing in this API that could read
         // them. `PATCH .../cost` is the only write: it changes what a quantity of stock is
         // carried at without moving any stock, which is why it has a grant of its own rather
@@ -689,6 +760,13 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('manufacturing-cost-rates/{manufacturing_cost_rate}/logs', [ManufacturingCostRateController::class, 'logs'])
                 ->name('manufacturing-cost-rates.logs');
+
+            // The investor and the deal themselves. Not the wallet and not the deal's figures —
+            // those are ledgers rather than change logs, and `/investors/{investor}/statement`
+            // and the deal's own reader are built for them.
+            Route::get('investors/{investor}/logs', [InvestorController::class, 'logs'])->name('investors.logs');
+            Route::get('investor-deals/{deal}/logs', [InvestorDealController::class, 'logs'])
+                ->name('investor-deals.logs');
 
             // Scoped like the rest of the nested region routes: another city's region id is a
             // 404 here too, not a history leaked from the wrong place.

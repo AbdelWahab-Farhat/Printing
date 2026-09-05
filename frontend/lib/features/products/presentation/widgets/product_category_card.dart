@@ -121,6 +121,12 @@ String _subtitle(ProductCategory category) {
     final int many => '$many تصنيفاً فرعياً',
   };
 
+  // Read the same way «سادة» is, and only where this row itself says yes: «أي التصنيفات
+  // مفتوحة للمستثمرين؟» is a question about the list, and without the tail it takes opening
+  // every sheet in turn. A subheading inheriting a yes is not marked, for the reason given
+  // just above — this is the value its own sheet would put back.
+  final investable = category.isInvestable == true ? ' · قابل للاستثمار' : '';
+
   final count = category.shownProductsCount;
   final products = switch (count) {
     null => children == null ? 'تصنيف' : null,
@@ -131,7 +137,7 @@ String _subtitle(ProductCategory category) {
     _ => '${count.grouped} منتجاً',
   };
 
-  return [?children, ?products].join(' · ') + mode + stopped;
+  return [?children, ?products].join(' · ') + mode + investable + stopped;
 }
 
 /// The heading's picture, or the glyph that stands in for one.

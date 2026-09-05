@@ -212,6 +212,7 @@ class StockBatchLedgerTest extends TestCase
             'warehouse_id' => $warehouse->id,
             'direction' => 'decrease',
             'quantity' => 5,
+            'adjustment_reason' => 'damage',
             'notes' => 'تلف',
         ])->assertCreated();
 

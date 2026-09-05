@@ -125,6 +125,11 @@ void main() {
       'رفوف المخزن': Routes.warehouseStocks(5),
       'حركات المخزن': Routes.warehouseMovements(5),
       'سجل الحركات': Routes.stockMovements,
+      'المستثمرون': Routes.investors,
+      'مستثمر واحد': Routes.investor(3),
+      'صفقات المستثمرين': Routes.investorDeals,
+      'صفقة واحدة': Routes.investorDeal(12),
+      'شاشة المستثمر': Routes.investorPortal,
     };
 
     // Act & Assert
@@ -290,6 +295,19 @@ void main() {
 
     // Assert
     expect(matches.whereType<GoRoute>().last.path, Routes.newRole);
+  });
+
+  test('an existing deal resolves to the id route', () {
+    // There is no `/investor-deals/new` beside it any more: a deal is born on its purchase
+    // order, and the hand-built form went with the owner's «صفقة يدوية يجب أن لا توجد».
+    // Arrange
+    final location = Routes.investorDeal(12);
+
+    // Act
+    final matches = matchedRoutes(location);
+
+    // Assert
+    expect(matches.whereType<GoRoute>().last.path, '/investor-deals/:id');
   });
 
   test('editing a role resolves under the role it edits', () {

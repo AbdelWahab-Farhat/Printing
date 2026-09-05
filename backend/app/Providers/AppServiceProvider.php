@@ -8,8 +8,11 @@ use App\Domain\Carrier\Actions\ResolveNawrisDestination;
 use App\Domain\Carrier\Support\NawrisClient;
 use App\Domain\Customer\Queries\CustomerOrderActivity;
 use App\Domain\Identity\Models\User;
+use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
+use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Queries\OrderCustomerActivity;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -59,6 +62,15 @@ class AppServiceProvider extends ServiceProvider
         // Sanctum's tokenable, and Spatie's model_has_roles. See AuditSubject for why, and the
         // migration that rewrote the rows written before it.
         AuditSubject::register();
+
+        // **Orders announces, Investment listens.** The dependency runs one way — Investment
+        // reads Orders through its Service and Orders knows nothing about investors — so the
+        // moment a sale's profit becomes final is an event rather than a call. A direct call
+        // would be a loop the container cannot build: ChangeOrderStatus → InvestorService →
+        // OrderService → ChangeOrderStatus. Synchronous on purpose: it runs inside the
+        // transaction that moved the status, so the money and the status land together or not
+        // at all.
+        Event::listen(OrderProfitFinalised::class, PostEarningsWhenOrderIsFinalised::class);
 
         // Turns three silent classes of bug into loud exceptions everywhere except
         // production: lazy-loaded relations (N+1), reading an attribute that was never

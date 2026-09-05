@@ -7,6 +7,7 @@ namespace App\Domain\Inventory\DTOs;
 use App\Domain\Inventory\Actions\RecordStockMovement;
 use App\Domain\Inventory\Enums\AdjustmentDirection;
 use App\Domain\Inventory\Enums\MovementType;
+use App\Domain\Inventory\Enums\StockAdjustmentReason;
 
 /**
  * One movement, in the shape the ledger stores it.
@@ -47,6 +48,18 @@ final readonly class StockMovementData
          * that one movement type.
          */
         public ?int $reversedMovementId = null,
+        /**
+         * Which kind of loss a *decreasing* adjustment records — «هالك» or «عجز» or a miscount.
+         * Null on every other movement, and on an adjustment that added stock: those explain
+         * themselves by their type. See {@see StockAdjustmentReason}.
+         */
+        public ?StockAdjustmentReason $adjustmentReason = null,
+        /**
+         * Which deal financed the stock this movement brings in. Only meaningful on an arrival,
+         * resolved by Investment from a claim made before the goods left the supplier — never
+         * chosen by the person receiving them.
+         */
+        public ?int $investorDealId = null,
     ) {}
 
     /**
@@ -66,6 +79,7 @@ final readonly class StockMovementData
             referenceId: self::intOrNull($validated['reference_id'] ?? null),
             notes: self::textOrNull($validated['notes'] ?? null),
             unitCost: self::costOrNull($validated['unit_cost'] ?? null),
+            investorDealId: self::intOrNull($validated['investor_deal_id'] ?? null),
         );
     }
 
@@ -132,6 +146,12 @@ final readonly class StockMovementData
             // fall back to the "unknown" placeholder silently. Ignored for a Decrease, which only
             // ever consumes existing layers.
             unitCost: self::costOrNull($validated['unit_cost'] ?? null),
+            // The mirror image: required on a Decrease and refused on an Increase, by the same
+            // request. Read through the enum rather than passed as a string so an impossible
+            // value cannot reach the column the CHECK constraint guards.
+            adjustmentReason: $direction === AdjustmentDirection::Decrease
+                ? StockAdjustmentReason::from((string) $validated['adjustment_reason'])
+                : null,
         );
     }
 

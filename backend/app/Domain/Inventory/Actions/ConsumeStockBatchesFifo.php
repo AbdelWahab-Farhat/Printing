@@ -72,6 +72,7 @@ final class ConsumeStockBatchesFifo
                 sourceType: $batch->source_type,
                 stockArrivalItemId: $batch->stock_arrival_item_id,
                 stockMovementId: $batch->stock_movement_id,
+                investorDealId: $batch->investor_deal_id,
             );
 
             $remaining = bcsub($remaining, $take, 3);

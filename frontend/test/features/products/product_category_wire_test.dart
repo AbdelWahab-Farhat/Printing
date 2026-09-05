@@ -44,6 +44,7 @@ class _CapturingAdapter implements HttpClientAdapter {
           'production_mode': 'outsourced',
           'production_mode_label': 'وسيط — لدى مورد خارجي',
           'skips_production': true,
+          'is_investable': true,
         },
       }),
       200,
@@ -117,5 +118,71 @@ void main() {
     // Assert
     final stored = result.fold((failure) => fail(failure.message), (category) => category);
     expect(stored.productionMode, ProductionMode.outsourced);
+  });
+
+  test('adding a heading sends whether it is open to investment', () async {
+    // Arrange - Act
+    await repository.create(
+      name: 'أكياس',
+      sortOrder: 1,
+      productionMode: ProductionMode.inHouse,
+      isInvestable: true,
+    );
+
+    // Assert
+    final sent = jsonDecode(adapter.body!) as Map<String, dynamic>;
+    expect(sent['is_investable'], isTrue);
+  });
+
+  test('«حسب الرئيسي» goes out as an explicit null, not as a missing key', () async {
+    // Arrange - Act
+    await repository.update(
+      9,
+      name: 'أكياس ورقية',
+      sortOrder: 1,
+      isActive: true,
+      productionMode: ProductionMode.inHouse,
+      parentId: 3,
+      isInvestable: null,
+    );
+
+    // Assert — the server keeps the stored answer when the key is absent, deliberately: that is
+    // what stops a rename from the build already in people's hands closing a funded heading.
+    // Which means a build that *can* say «حسب الرئيسي» has to say it out loud.
+    final sent = jsonDecode(adapter.body!) as Map<String, dynamic>;
+    expect(sent.containsKey('is_investable'), isTrue);
+    expect(sent['is_investable'], isNull);
+  });
+
+  test('a rename leaves a subheading where it is filed', () async {
+    // Arrange - Act
+    await repository.update(
+      9,
+      name: 'أكياس ورقية',
+      sortOrder: 1,
+      isActive: true,
+      productionMode: ProductionMode.inHouse,
+      parentId: 3,
+    );
+
+    // Assert — a PUT replaces the whole representation and the server reads an absent
+    // `parent_id` as «اجعله رئيسياً». Leaving it out turned a subheading into a root on its next
+    // rename, which would also turn «حسب الرئيسي» into «لا» without anybody touching it.
+    final sent = jsonDecode(adapter.body!) as Map<String, dynamic>;
+    expect(sent['parent_id'], 3);
+  });
+
+  test('the answer is read back off the row', () async {
+    // Arrange - Act
+    final result = await repository.create(
+      name: 'أكياس',
+      sortOrder: 1,
+      productionMode: ProductionMode.inHouse,
+      isInvestable: true,
+    );
+
+    // Assert
+    final stored = result.fold((failure) => fail(failure.message), (category) => category);
+    expect(stored.isInvestable, isTrue);
   });
 }

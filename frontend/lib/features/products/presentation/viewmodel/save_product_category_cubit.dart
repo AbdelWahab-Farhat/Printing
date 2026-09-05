@@ -38,6 +38,10 @@ class SaveProductCategoryCubit extends Cubit<SaveProductCategoryState> {
   /// orders made only of this heading's goods take. The app carries the answer and decides
   /// nothing — which orders actually take which road is read from their own lines by the server.
   ///
+  /// [isInvestable] is the three-valued flag deciding which shelves a deal may be opened
+  /// against — true, false, or null for «حسب الرئيسي». It is carried, not judged: whether a
+  /// particular *shelf* may be funded is the server's answer, from the products standing on it.
+  ///
   /// [image] is a newly picked file, [removeImage] the request to take the current one off.
   /// They are mutually exclusive by construction — the sheet offers one or the other — and both
   /// happen **after** the save, because a new category has no id to hang a picture on until the
@@ -49,6 +53,8 @@ class SaveProductCategoryCubit extends Cubit<SaveProductCategoryState> {
     int sortOrder = 0,
     bool isActive = true,
     ProductionMode productionMode = ProductionMode.inHouse,
+    int? parentId,
+    bool? isInvestable,
     PickedFile? image,
     bool removeImage = false,
   }) async {
@@ -65,6 +71,8 @@ class SaveProductCategoryCubit extends Cubit<SaveProductCategoryState> {
       sortOrder: sortOrder,
       isActive: isActive,
       productionMode: productionMode,
+      parentId: parentId,
+      isInvestable: isInvestable,
     );
 
     // The sheet may have been closed while the request was in flight, and emitting into a

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Requests\Inventory;
 
 use App\Domain\Inventory\Enums\AdjustmentDirection;
+use App\Domain\Inventory\Enums\StockAdjustmentReason;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -52,6 +53,20 @@ class RecordAdjustmentRequest extends FormRequest
             // on a Decrease, which only ever consumes layers that already exist.
             'unit_cost' => ['required_if:direction,increase', 'numeric', 'gte:0', 'max:999999999.999'],
 
+            // The mirror of `unit_cost`, and required for the same kind of reason. A decrease
+            // says stock left without being sold, and «نقص» alone is the question rather than
+            // the answer — «كم هالك هذا الشهر؟» was unanswerable while the only record of it was
+            // Arabic prose in `notes`. Refused outright on an increase: finding more than the
+            // book said is not a loss and has no member of this vocabulary.
+            //
+            // `unit_change` is excluded from what a person may send. It exists so the discards
+            // `SetStockItemUnit` posts can be told apart from stock somebody actually lost.
+            'adjustment_reason' => [
+                'required_if:direction,decrease',
+                'prohibited_if:direction,increase',
+                Rule::in(StockAdjustmentReason::recordableValues()),
+            ],
+
             // **Required here alone.** The other three movements explain themselves — stock
             // arrived, moved, or went out on an order. An adjustment says the records were
             // wrong and offers no reason of its own, so the reason is the operation: breakage,
@@ -81,6 +96,9 @@ class RecordAdjustmentRequest extends FormRequest
             'unit_cost.numeric' => 'تكلفة الوحدة يجب أن تكون رقماً',
             'unit_cost.gte' => 'تكلفة الوحدة يجب ألا تكون سالبة',
             'unit_cost.max' => 'تكلفة الوحدة أكبر من الحد المسموح',
+            'adjustment_reason.required_if' => 'نوع النقص مطلوب: هالك أم عجز أم فرق جرد',
+            'adjustment_reason.prohibited_if' => 'الزيادة ليست نقصاً، فلا نوع لها',
+            'adjustment_reason.in' => 'نوع النقص غير صحيح',
             'notes.required' => 'سبب التسوية مطلوب',
             'notes.min' => 'سبب التسوية قصير جداً',
             'notes.max' => 'سبب التسوية طويل جداً',
@@ -98,6 +116,7 @@ class RecordAdjustmentRequest extends FormRequest
             'direction' => 'اتجاه التسوية',
             'quantity' => 'الكمية',
             'unit_cost' => 'تكلفة الوحدة',
+            'adjustment_reason' => 'نوع النقص',
             'notes' => 'سبب التسوية',
         ];
     }

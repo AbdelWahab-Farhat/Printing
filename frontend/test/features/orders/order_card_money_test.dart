@@ -85,9 +85,9 @@ void main() {
     expect(find.text('المدفوع'), findsOneWidget);
     expect(find.text('المتبقي'), findsOneWidget);
 
-    expect(find.text('450.00'), findsOneWidget);
-    expect(find.text('150.00'), findsOneWidget);
-    expect(find.text('300.00'), findsOneWidget);
+    expect(find.text('450'), findsOneWidget);
+    expect(find.text('150'), findsOneWidget);
+    expect(find.text('300'), findsOneWidget);
   });
 
   testWidgets('nothing is recomputed — the strings arrive rendered as they were sent', (
@@ -109,7 +109,7 @@ void main() {
     );
 
     // Act - Assert
-    expect(find.text('-50.00'), findsOneWidget);
+    expect(find.text('-50'), findsOneWidget);
   });
 
   testWidgets('the status is a band across the top, not a chip in a corner', (tester) async {
@@ -166,9 +166,9 @@ void main() {
       final scheme = Theme.of(tester.element(find.byType(OrderCard))).colorScheme;
 
       // Act
-      final price = tester.widget<Text>(find.text('450.00')).style!;
-      final paid = tester.widget<Text>(find.text('150.00')).style!;
-      final remaining = tester.widget<Text>(find.text('300.00')).style!;
+      final price = tester.widget<Text>(find.text('450')).style!;
+      final paid = tester.widget<Text>(find.text('150')).style!;
+      final remaining = tester.widget<Text>(find.text('300')).style!;
 
       // Assert
       expect(price.color, scheme.primary);
@@ -193,7 +193,7 @@ void main() {
       final scheme = Theme.of(tester.element(find.byType(OrderCard))).colorScheme;
 
       // Act
-      final remaining = tester.widget<Text>(find.text('0.00')).style!;
+      final remaining = tester.widget<Text>(find.text('0')).style!;
 
       // Assert
       expect(remaining.color, scheme.paid);

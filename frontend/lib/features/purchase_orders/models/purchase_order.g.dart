@@ -42,6 +42,13 @@ _PurchaseOrder _$PurchaseOrderFromJson(
           ?.map((e) => PurchaseOrderItem.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <PurchaseOrderItem>[],
+  investorFunding:
+      (json['investor_funding'] as List<dynamic>?)
+          ?.map((e) => PurchaseOrderFunding.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <PurchaseOrderFunding>[],
+  defaultInvestorProfitSharePercent:
+      json['default_investor_profit_share_percent'] as String?,
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -67,6 +74,9 @@ Map<String, dynamic> _$PurchaseOrderToJson(
   'total_additional_cost': instance.totalAdditionalCost,
   'additional_costs': instance.additionalCosts.map((e) => e.toJson()).toList(),
   'items': instance.items.map((e) => e.toJson()).toList(),
+  'investor_funding': instance.investorFunding.map((e) => e.toJson()).toList(),
+  'default_investor_profit_share_percent':
+      instance.defaultInvestorProfitSharePercent,
   'created_at': instance.createdAt?.toIso8601String(),
   'updated_at': instance.updatedAt?.toIso8601String(),
 };
@@ -130,3 +140,52 @@ Map<String, dynamic> _$PurchaseOrderItemToJson(_PurchaseOrderItem instance) =>
       'unit': instance.unit,
       'unit_label': instance.unitLabel,
     };
+
+_PurchaseOrderFunding _$PurchaseOrderFundingFromJson(
+  Map<String, dynamic> json,
+) => _PurchaseOrderFunding(
+  dealId: (json['deal_id'] as num).toInt(),
+  code: json['code'] as String,
+  status: json['status'] as String,
+  statusLabel: json['status_label'] as String,
+  investorProfitSharePercent: json['investor_profit_share_percent'] as String,
+  stockItemIds:
+      (json['stock_item_ids'] as List<dynamic>?)
+          ?.map((e) => (e as num).toInt())
+          .toList() ??
+      const <int>[],
+  investors:
+      (json['investors'] as List<dynamic>?)
+          ?.map((e) => PurchaseOrderFunder.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <PurchaseOrderFunder>[],
+);
+
+Map<String, dynamic> _$PurchaseOrderFundingToJson(
+  _PurchaseOrderFunding instance,
+) => <String, dynamic>{
+  'deal_id': instance.dealId,
+  'code': instance.code,
+  'status': instance.status,
+  'status_label': instance.statusLabel,
+  'investor_profit_share_percent': instance.investorProfitSharePercent,
+  'stock_item_ids': instance.stockItemIds,
+  'investors': instance.investors.map((e) => e.toJson()).toList(),
+};
+
+_PurchaseOrderFunder _$PurchaseOrderFunderFromJson(Map<String, dynamic> json) =>
+    _PurchaseOrderFunder(
+      investorId: (json['investor_id'] as num).toInt(),
+      name: json['name'] as String,
+      committedAmount: json['committed_amount'] as String,
+      sharePercent: json['share_percent'] as String,
+    );
+
+Map<String, dynamic> _$PurchaseOrderFunderToJson(
+  _PurchaseOrderFunder instance,
+) => <String, dynamic>{
+  'investor_id': instance.investorId,
+  'name': instance.name,
+  'committed_amount': instance.committedAmount,
+  'share_percent': instance.sharePercent,
+};

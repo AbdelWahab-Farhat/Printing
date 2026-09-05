@@ -206,6 +206,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
     required String quantity,
     required bool isIncrease,
     String? unitCost,
+    String? adjustmentReason,
     String? notes,
   }) {
     return _record(StockMovementEndpoints.adjustments, <String, dynamic>{
@@ -218,6 +219,10 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
       // Required by the API on an increase, ignored on a decrease. Which of the two this is has
       // already been decided in [RecordStockMovement] — a decrease arrives here with null.
       'unit_cost': ?unitCost,
+      // **Required on a decrease and refused on an increase.** «نقص» alone is the question
+      // rather than the answer, and the shape of that question — «كم هالك هذا الشهر؟» — is
+      // unanswerable while the only record of it is Arabic prose in `notes`.
+      'adjustment_reason': ?adjustmentReason,
       // **`notes` is required on both directions** (`min:3`), and this used to be
       // `if (notes != null && notes.isNotEmpty)` — a guard that silently dropped a field the
       // server demands. The sheet validates it, so the refusal was only ever one bypass away.

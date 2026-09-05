@@ -7,12 +7,14 @@ namespace App\Domain\Inventory\Models;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Enums\MovementType;
+use App\Domain\Inventory\Enums\StockAdjustmentReason;
 use Database\Factories\StockMovementFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -45,8 +47,39 @@ class StockMovement extends Model
     {
         return [
             'movement_type' => MovementType::class,
+            'adjustment_reason' => StockAdjustmentReason::class,
             'quantity' => 'decimal:3',
         ];
+    }
+
+    /**
+     * The fulfillment this row credited back, or null — which is almost every row.
+     *
+     * Under a partial UNIQUE, so a movement can be reversed once and never twice. The direction
+     * is deliberately this way round: the reversal points at what it undid, so excluding a
+     * cancelled sale from any cost sum is `NOT EXISTS (… WHERE reverses_movement_id = m.id)`
+     * rather than a flag somebody has to remember to set on the original.
+     *
+     * @return BelongsTo<StockMovement, $this>
+     */
+    public function reversesMovement(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reverses_movement_id');
+    }
+
+    /**
+     * The reversal that undid this movement, if one ever did.
+     *
+     * The inverse of {@see reversesMovement()}, and the useful direction for a report: «count
+     * every draw that still stands» is `whereDoesntHave('reversedBy')`, with no flag on the
+     * original for anybody to forget to set. `HasOne` rather than `HasMany` because the partial
+     * UNIQUE behind the column makes a second one impossible.
+     *
+     * @return HasOne<StockMovement, $this>
+     */
+    public function reversedBy(): HasOne
+    {
+        return $this->hasOne(self::class, 'reverses_movement_id');
     }
 
     /**

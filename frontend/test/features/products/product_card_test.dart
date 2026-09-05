@@ -113,10 +113,10 @@ void main() {
 
       // Assert — all twelve, because that is the whole point of the redesign.
       for (final price in const [
-        '1.10', '0.95', '0.85', //
-        '1.20', '1.05', '0.95', //
-        '1.65', '1.55', '1.40', //
-        '1.99', '1.90', '1.80', //
+        '1.1', '0.95', '0.85', //
+        '1.2', '1.05', '0.95', //
+        '1.65', '1.55', '1.4', //
+        '1.99', '1.9', '1.8', //
       ]) {
         expect(find.text(price), findsWidgets, reason: '$price is missing from the card');
       }
@@ -261,7 +261,7 @@ void main() {
       await tester.pump();
 
       // Assert — absence of a discount is shown as absence.
-      expect(find.text('32.000'), findsOneWidget);
+      expect(find.text('32'), findsOneWidget);
       expect(find.text('300+'), findsNothing);
       expect(find.text('1000+'), findsNothing);
       expect(find.text('أقل كمية 1 كيلوغرام'), findsOneWidget);

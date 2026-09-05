@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\PurchaseOrder\Actions;
 
+use App\Domain\Investor\InvestorService;
 use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderData;
 use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderItemData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
@@ -48,7 +49,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class ReceivePurchaseOrder
 {
-    public function __construct(private readonly VendorService $vendors) {}
+    public function __construct(
+        private readonly VendorService $vendors,
+        private readonly InvestorService $investors,
+    ) {}
 
     public function __invoke(PurchaseOrder $order, ReceivePurchaseOrderData $data): StockArrival
     {
@@ -76,7 +80,7 @@ final class ReceivePurchaseOrder
                 warehouseId: $order->warehouse_id,
                 receivedBy: $data->receivedBy,
                 items: array_map(
-                    function (ReceivePurchaseOrderItemData $line) use ($items): StockArrivalItemData {
+                    function (ReceivePurchaseOrderItemData $line) use ($items, $order): StockArrivalItemData {
                         /** @var PurchaseOrderItem $orderedLine */
                         $orderedLine = $items->get($line->stockItemId);
                         $unitCost = $orderedLine->final_unit_cost === null ? null : (string) $orderedLine->final_unit_cost;
@@ -90,6 +94,15 @@ final class ReceivePurchaseOrder
                             totalCost: $unitCost === null
                                 ? null
                                 : Money::round(bcmul($unitCost, $line->quantity, 6)),
+                            // **The whole of «الموظف لا يختار الصفقة أبداً».** One question to
+                            // Investment per line, answered from a claim somebody made before the
+                            // goods left the supplier. Null for everything the company bought for
+                            // itself. The receiving screen's body is unchanged and the storekeeper
+                            // sees no field.
+                            investorDealId: $this->investors->dealForSupply(
+                                (int) $order->getKey(),
+                                $line->stockItemId,
+                            ),
                         );
                     },
                     $data->items,

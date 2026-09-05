@@ -88,6 +88,18 @@ import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/repositories/home_repository.dart';
 import 'package:dayaa/features/home/repositories/home_repository_impl.dart';
 import 'package:dayaa/features/home/usecases/get_home_summary.dart';
+import 'package:dayaa/features/investor_portal/presentation/viewmodel/investor_portal_cubit.dart';
+import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository.dart';
+import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository_impl.dart';
+import 'package:dayaa/features/investor_portal/usecases/get_investor_portfolio.dart';
+import 'package:dayaa/features/investors/presentation/viewmodel/deal_detail_cubit.dart';
+import 'package:dayaa/features/investors/presentation/viewmodel/deal_orders_cubit.dart';
+import 'package:dayaa/features/investors/presentation/viewmodel/deals_cubit.dart';
+import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
+import 'package:dayaa/features/investors/presentation/viewmodel/investors_cubit.dart';
+import 'package:dayaa/features/investors/repositories/investor_repository.dart';
+import 'package:dayaa/features/investors/repositories/investor_repository_impl.dart';
+import 'package:dayaa/features/investors/usecases/investor_usecases.dart';
 import 'package:dayaa/features/location/presentation/viewmodel/pick_location_cubit.dart';
 import 'package:dayaa/features/location/repositories/geocoding_repository.dart';
 import 'package:dayaa/features/location/repositories/geocoding_repository_impl.dart';
@@ -301,6 +313,8 @@ abstract final class Injector {
     _registerAuth();
     _registerLocation();
     _registerHome();
+    _registerInvestorPortal();
+    _registerInvestors();
     _registerProducts();
     _registerCities();
     _registerBusinessFields();
@@ -523,6 +537,65 @@ abstract final class Injector {
         () => HomeCubit(
           getCurrentUser: sl<GetCurrentUser>(),
           getHomeSummary: sl<GetHomeSummary>(),
+        ),
+      );
+  }
+
+  /// The investor's own screen. One repository, one use case, one Cubit — he has exactly one
+  /// endpoint, and there is nothing else in the system he can reach.
+  static void _registerInvestorPortal() {
+    sl
+      ..registerLazySingleton<InvestorPortalRepository>(
+        () => InvestorPortalRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetInvestorPortfolio>(
+        () => GetInvestorPortfolio(sl<InvestorPortalRepository>()),
+      )
+      // Factory: the screen owns its Cubit and closes it on dispose.
+      ..registerFactory<InvestorPortalCubit>(
+        () => InvestorPortalCubit(getPortfolio: sl<GetInvestorPortfolio>()),
+      );
+  }
+
+  /// The staff side: the people whose money finances stock, and the deals it finances.
+  static void _registerInvestors() {
+    sl
+      ..registerLazySingleton<InvestorRepository>(
+        () => InvestorRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetInvestors>(() => GetInvestors(sl<InvestorRepository>()))
+      ..registerLazySingleton<GetInvestor>(() => GetInvestor(sl<InvestorRepository>()))
+      ..registerLazySingleton<CreateInvestor>(() => CreateInvestor(sl<InvestorRepository>()))
+      ..registerLazySingleton<RecordWalletEntry>(
+        () => RecordWalletEntry(sl<InvestorRepository>()),
+      )
+      ..registerLazySingleton<GetInvestorDeals>(() => GetInvestorDeals(sl<InvestorRepository>()))
+      ..registerLazySingleton<GetInvestorDeal>(() => GetInvestorDeal(sl<InvestorRepository>()))
+      ..registerLazySingleton<GetDealOrders>(() => GetDealOrders(sl<InvestorRepository>()))
+      ..registerLazySingleton<FundPurchaseOrder>(
+        () => FundPurchaseOrder(sl<InvestorRepository>()),
+      )
+      ..registerLazySingleton<ChangeDealState>(() => ChangeDealState(sl<InvestorRepository>()))
+      ..registerLazySingleton<RecordDealExpense>(
+        () => RecordDealExpense(sl<InvestorRepository>()),
+      )
+      // Factories: each screen owns its Cubit and closes it on dispose.
+      ..registerFactory<InvestorsCubit>(() => InvestorsCubit(getInvestors: sl<GetInvestors>()))
+      ..registerFactory<DealsCubit>(() => DealsCubit(getDeals: sl<GetInvestorDeals>()))
+      ..registerFactory<InvestorDetailCubit>(
+        () => InvestorDetailCubit(
+          getInvestor: sl<GetInvestor>(),
+          recordWalletEntry: sl<RecordWalletEntry>(),
+        ),
+      )
+      ..registerFactory<DealOrdersCubit>(
+        () => DealOrdersCubit(getOrders: sl<GetDealOrders>()),
+      )
+      ..registerFactory<DealDetailCubit>(
+        () => DealDetailCubit(
+          getDeal: sl<GetInvestorDeal>(),
+          changeState: sl<ChangeDealState>(),
+          recordExpense: sl<RecordDealExpense>(),
         ),
       );
   }

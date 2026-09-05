@@ -76,6 +76,13 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [STOCK-UNIT-AND-READY-DEDUCTION-BACKEND-CHANGES.md](inventory/STOCK-UNIT-AND-READY-DEDUCTION-BACKEND-CHANGES.md) | Settable stock unit, fulfilment moved to «جاهزة» — backend. |
 | [STOCK-UNIT-AND-READY-DEDUCTION-FRONTEND-INTEGRATION.md](inventory/STOCK-UNIT-AND-READY-DEDUCTION-FRONTEND-INTEGRATION.md) | The same change in the Flutter app. |
 
+## [investor-deals/](investor-deals/)
+
+| Document | |
+|---|---|
+| [INVESTOR-DEALS-HOW-IT-WORKS.md](investor-deals/INVESTOR-DEALS-HOW-IT-WORKS.md) | كيف يعمل النظام: حياة صفقة، وكيف يُحسب كل رقم. **مُنفَّذ.** ابدأ من هنا. |
+| [INVESTOR-DEALS-DESIGN.md](investor-deals/INVESTOR-DEALS-DESIGN.md) | المواصفة والقرارات وأسئلة §١١ وأجوبتها؛ الفرع `investor_deals`. |
+
 ## [nawris/](nawris/)
 
 | Document | |

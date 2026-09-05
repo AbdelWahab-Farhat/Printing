@@ -198,6 +198,29 @@ enum AppPermission {
   // different sensitivity from being allowed to see either alone.
   viewProfitAndLossReport('reports.pnl.view', 'عرض تقرير الأرباح والخسائر'),
 
+  // Investors. Reading and administering are the usual pair; the three money verbs are split
+  // off it for the reason `orders.payments.*` splits three ways — recording a deposit, paying an
+  // investor out and undoing either are different levels of trust, and whoever edits a deal's
+  // name is not necessarily whoever hands over cash.
+  viewInvestors('investors.view', 'عرض المستثمرين وصفقاتهم'),
+  manageInvestors('investors.manage', 'إضافة وتعديل المستثمرين والصفقات'),
+  recordInvestorMoney('investors.money.record', 'تسجيل إيداع أو تمويل أو سحب لمستثمر'),
+  reverseInvestorMoney('investors.money.reverse', 'عكس حركة مالية لمستثمر'),
+  recordDealExpenses('investor_deals.expenses.record', 'تسجيل مصاريف الصفقة'),
+
+  /// An investor's own account, and nothing else in the system.
+  ///
+  /// Held by the «مستثمر» role and by no employee. **An investor must never be granted
+  /// `orders.view`**: the order resource publishes `total_cogs` and `gross_profit` to anyone who
+  /// holds it, on the list endpoint as well as the detail one, so that single grant would show
+  /// him every customer's margin.
+  viewInvestorPortal('investor_portal.view', 'بوابة المستثمر — رأس ماله وأرباحه وحدها'),
+
+  // The company's editable defaults. Its own pair rather than riding on an existing one:
+  // everybody's screens read them and almost nobody should change them.
+  viewCompanySettings('settings.view', 'عرض إعدادات الشركة'),
+  manageCompanySettings('settings.manage', 'تعديل إعدادات الشركة'),
+
   // The audit trail. One permission, not a pair: nothing writes to it by hand.
   viewActivityLogs('logs.view', 'عرض سجل النشاطات');
 

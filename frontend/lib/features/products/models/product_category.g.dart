@@ -21,6 +21,7 @@ _ProductCategory _$ProductCategoryFromJson(Map<String, dynamic> json) =>
           ) ??
           ProductionMode.inHouse,
       productionModeLabel: json['production_mode_label'] as String?,
+      isInvestable: json['is_investable'] as bool?,
       skipsProduction: json['skips_production'] as bool? ?? false,
       parentId: (json['parent_id'] as num?)?.toInt(),
       productsCount: (json['products_count'] as num?)?.toInt(),
@@ -46,6 +47,7 @@ Map<String, dynamic> _$ProductCategoryToJson(_ProductCategory instance) =>
       'sort_order': instance.sortOrder,
       'production_mode': _$ProductionModeEnumMap[instance.productionMode]!,
       'production_mode_label': instance.productionModeLabel,
+      'is_investable': instance.isInvestable,
       'skips_production': instance.skipsProduction,
       'parent_id': instance.parentId,
       'products_count': instance.productsCount,

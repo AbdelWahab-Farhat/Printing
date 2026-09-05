@@ -200,4 +200,39 @@ class CatalogService
     {
         return ($this->findProductVariant)($variantId);
     }
+
+    /**
+     * Whether a deal may be opened against this shelf.
+     *
+     * **Every** active product standing on it must be investable, not merely one of them. A
+     * shelf is deliberately shared — «كيس شحن سادة ٢٥×٣٥» and «مطبوع ٢٥×٣٥» are two catalogue
+     * rows over one pile — and FIFO draws from whichever layer is oldest without knowing what
+     * was on the invoice. So a shelf that also carries a non-investable product would have the
+     * investor's money financing goods sold at another product's margin, and no guard downstream
+     * could tell the two apart.
+     *
+     * A shelf nothing points at is not investable either: there is no heading to ask.
+     *
+     * @return array{investable: bool, offending_product: ?string}
+     */
+    public function stockItemInvestability(int $stockItemId): array
+    {
+        $products = Product::query()
+            ->where('is_active', true)
+            ->whereHas('variants', fn ($q) => $q->where('stock_item_id', $stockItemId))
+            ->with('productCategory.parent')
+            ->get();
+
+        if ($products->isEmpty()) {
+            return ['investable' => false, 'offending_product' => null];
+        }
+
+        foreach ($products as $product) {
+            if ($product->productCategory?->isInvestable() !== true) {
+                return ['investable' => false, 'offending_product' => $product->name];
+            }
+        }
+
+        return ['investable' => true, 'offending_product' => null];
+    }
 }

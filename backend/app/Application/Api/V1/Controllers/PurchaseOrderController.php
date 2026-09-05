@@ -14,6 +14,7 @@ use App\Application\Api\V1\Resources\PurchaseOrderResource;
 use App\Application\Api\V1\Resources\StockArrivalResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
+use App\Domain\Investor\InvestorService;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderData;
 use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
@@ -42,7 +43,10 @@ class PurchaseOrderController extends Controller
 {
     use ReadsAuditTrail, ResponseTrait;
 
-    public function __construct(private readonly PurchaseOrderService $purchaseOrders) {}
+    public function __construct(
+        private readonly PurchaseOrderService $purchaseOrders,
+        private readonly InvestorService $investors,
+    ) {}
 
     /**
      * List purchase orders
@@ -100,9 +104,23 @@ class PurchaseOrderController extends Controller
      */
     public function show(PurchaseOrder $purchaseOrder): JsonResponse
     {
-        return $this->success(new PurchaseOrderResource(
-            $purchaseOrder->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts']),
-        ));
+        $purchaseOrder->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts']);
+
+        // Whose money is on this lorry — asked here because this is the screen where somebody is
+        // about to receive it. Empty for the ordinary order the company paid for itself.
+        $purchaseOrder->setAttribute(
+            'investor_funding',
+            $this->investors->fundingForPurchaseOrder((int) $purchaseOrder->getKey()),
+        );
+
+        // What a deal struck on this order would be born with, so the funding screen can show
+        // the number instead of leaving it to be discovered afterwards.
+        $purchaseOrder->setAttribute(
+            'default_investor_profit_share_percent',
+            $this->investors->defaultProfitSharePercent(),
+        );
+
+        return $this->success(new PurchaseOrderResource($purchaseOrder));
     }
 
     /**

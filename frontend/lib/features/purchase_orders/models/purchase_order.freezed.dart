@@ -38,7 +38,14 @@ mixin _$PurchaseOrder {
 /// the full current set — which matters, because saving replaces the set wholesale and a
 /// form that opened on half of it would delete the rest.
 @JsonKey(name: 'additional_costs') List<PurchaseOrderAdditionalCost> get additionalCosts;/// Present when one order was fetched, and on the list. Absent from a status change.
- List<PurchaseOrderItem> get items;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;
+ List<PurchaseOrderItem> get items;/// The deals financing this order — **one per group of lines**, because the claim the
+/// receipt reads is per line and one lorry may be paid for by two sets of partners.
+///
+/// Sent with a single order only, and empty on the ordinary one the company bought for
+/// itself. Each carries the money each man put in beside the percentage it produced.
+@JsonKey(name: 'investor_funding') List<PurchaseOrderFunding> get investorFunding;/// The investors' share of profit a deal struck on this order would be born with — the
+/// company default, sent so the funding screen shows the number rather than implying it.
+@JsonKey(name: 'default_investor_profit_share_percent') String? get defaultInvestorProfitSharePercent;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;
 /// Create a copy of PurchaseOrder
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -51,16 +58,16 @@ $PurchaseOrderCopyWith<PurchaseOrder> get copyWith => _$PurchaseOrderCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.orderDate, orderDate) || other.orderDate == orderDate)&&(identical(other.expectedDate, expectedDate) || other.expectedDate == expectedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.totalAdditionalCost, totalAdditionalCost) || other.totalAdditionalCost == totalAdditionalCost)&&const DeepCollectionEquality().equals(other.additionalCosts, additionalCosts)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.orderDate, orderDate) || other.orderDate == orderDate)&&(identical(other.expectedDate, expectedDate) || other.expectedDate == expectedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.totalAdditionalCost, totalAdditionalCost) || other.totalAdditionalCost == totalAdditionalCost)&&const DeepCollectionEquality().equals(other.additionalCosts, additionalCosts)&&const DeepCollectionEquality().equals(other.items, items)&&const DeepCollectionEquality().equals(other.investorFunding, investorFunding)&&(identical(other.defaultInvestorProfitSharePercent, defaultInvestorProfitSharePercent) || other.defaultInvestorProfitSharePercent == defaultInvestorProfitSharePercent)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,warehouseId,warehouse,status,statusLabel,orderDate,expectedDate,notes,totalAmount,totalAdditionalCost,const DeepCollectionEquality().hash(additionalCosts),const DeepCollectionEquality().hash(items),createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,warehouseId,warehouse,status,statusLabel,orderDate,expectedDate,notes,totalAmount,totalAdditionalCost,const DeepCollectionEquality().hash(additionalCosts),const DeepCollectionEquality().hash(items),const DeepCollectionEquality().hash(investorFunding),defaultInvestorProfitSharePercent,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'PurchaseOrder(id: $id, vendorId: $vendorId, vendor: $vendor, warehouseId: $warehouseId, warehouse: $warehouse, status: $status, statusLabel: $statusLabel, orderDate: $orderDate, expectedDate: $expectedDate, notes: $notes, totalAmount: $totalAmount, totalAdditionalCost: $totalAdditionalCost, additionalCosts: $additionalCosts, items: $items, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'PurchaseOrder(id: $id, vendorId: $vendorId, vendor: $vendor, warehouseId: $warehouseId, warehouse: $warehouse, status: $status, statusLabel: $statusLabel, orderDate: $orderDate, expectedDate: $expectedDate, notes: $notes, totalAmount: $totalAmount, totalAdditionalCost: $totalAdditionalCost, additionalCosts: $additionalCosts, items: $items, investorFunding: $investorFunding, defaultInvestorProfitSharePercent: $defaultInvestorProfitSharePercent, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -71,7 +78,7 @@ abstract mixin class $PurchaseOrderCopyWith<$Res>  {
   factory $PurchaseOrderCopyWith(PurchaseOrder value, $Res Function(PurchaseOrder) _then) = _$PurchaseOrderCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) PurchaseOrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'order_date') String orderDate,@JsonKey(name: 'expected_date') String? expectedDate, String? notes,@JsonKey(name: 'total_amount') String? totalAmount,@JsonKey(name: 'total_additional_cost') String? totalAdditionalCost,@JsonKey(name: 'additional_costs') List<PurchaseOrderAdditionalCost> additionalCosts, List<PurchaseOrderItem> items,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) PurchaseOrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'order_date') String orderDate,@JsonKey(name: 'expected_date') String? expectedDate, String? notes,@JsonKey(name: 'total_amount') String? totalAmount,@JsonKey(name: 'total_additional_cost') String? totalAdditionalCost,@JsonKey(name: 'additional_costs') List<PurchaseOrderAdditionalCost> additionalCosts, List<PurchaseOrderItem> items,@JsonKey(name: 'investor_funding') List<PurchaseOrderFunding> investorFunding,@JsonKey(name: 'default_investor_profit_share_percent') String? defaultInvestorProfitSharePercent,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -88,7 +95,7 @@ class _$PurchaseOrderCopyWithImpl<$Res>
 
 /// Create a copy of PurchaseOrder
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? status = null,Object? statusLabel = null,Object? orderDate = null,Object? expectedDate = freezed,Object? notes = freezed,Object? totalAmount = freezed,Object? totalAdditionalCost = freezed,Object? additionalCosts = null,Object? items = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? status = null,Object? statusLabel = null,Object? orderDate = null,Object? expectedDate = freezed,Object? notes = freezed,Object? totalAmount = freezed,Object? totalAdditionalCost = freezed,Object? additionalCosts = null,Object? items = null,Object? investorFunding = null,Object? defaultInvestorProfitSharePercent = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
@@ -104,7 +111,9 @@ as String?,totalAmount: freezed == totalAmount ? _self.totalAmount : totalAmount
 as String?,totalAdditionalCost: freezed == totalAdditionalCost ? _self.totalAdditionalCost : totalAdditionalCost // ignore: cast_nullable_to_non_nullable
 as String?,additionalCosts: null == additionalCosts ? _self.additionalCosts : additionalCosts // ignore: cast_nullable_to_non_nullable
 as List<PurchaseOrderAdditionalCost>,items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
-as List<PurchaseOrderItem>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as List<PurchaseOrderItem>,investorFunding: null == investorFunding ? _self.investorFunding : investorFunding // ignore: cast_nullable_to_non_nullable
+as List<PurchaseOrderFunding>,defaultInvestorProfitSharePercent: freezed == defaultInvestorProfitSharePercent ? _self.defaultInvestorProfitSharePercent : defaultInvestorProfitSharePercent // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -215,10 +224,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'investor_funding')  List<PurchaseOrderFunding> investorFunding, @JsonKey(name: 'default_investor_profit_share_percent')  String? defaultInvestorProfitSharePercent, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PurchaseOrder() when $default != null:
-return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.additionalCosts,_that.items,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.additionalCosts,_that.items,_that.investorFunding,_that.defaultInvestorProfitSharePercent,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -236,10 +245,10 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.war
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'investor_funding')  List<PurchaseOrderFunding> investorFunding, @JsonKey(name: 'default_investor_profit_share_percent')  String? defaultInvestorProfitSharePercent, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _PurchaseOrder():
-return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.additionalCosts,_that.items,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.additionalCosts,_that.items,_that.investorFunding,_that.defaultInvestorProfitSharePercent,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -256,10 +265,10 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.war
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'investor_funding')  List<PurchaseOrderFunding> investorFunding, @JsonKey(name: 'default_investor_profit_share_percent')  String? defaultInvestorProfitSharePercent, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _PurchaseOrder() when $default != null:
-return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.additionalCosts,_that.items,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.additionalCosts,_that.items,_that.investorFunding,_that.defaultInvestorProfitSharePercent,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -271,7 +280,7 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.war
 @JsonSerializable()
 
 class _PurchaseOrder extends PurchaseOrder {
-  const _PurchaseOrder({required this.id, @JsonKey(name: 'vendor_id') required this.vendorId, this.vendor, @JsonKey(name: 'warehouse_id') this.warehouseId, this.warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'order_date') required this.orderDate, @JsonKey(name: 'expected_date') this.expectedDate, this.notes, @JsonKey(name: 'total_amount') this.totalAmount, @JsonKey(name: 'total_additional_cost') this.totalAdditionalCost, @JsonKey(name: 'additional_costs') final  List<PurchaseOrderAdditionalCost> additionalCosts = const <PurchaseOrderAdditionalCost>[], final  List<PurchaseOrderItem> items = const <PurchaseOrderItem>[], @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _additionalCosts = additionalCosts,_items = items,super._();
+  const _PurchaseOrder({required this.id, @JsonKey(name: 'vendor_id') required this.vendorId, this.vendor, @JsonKey(name: 'warehouse_id') this.warehouseId, this.warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'order_date') required this.orderDate, @JsonKey(name: 'expected_date') this.expectedDate, this.notes, @JsonKey(name: 'total_amount') this.totalAmount, @JsonKey(name: 'total_additional_cost') this.totalAdditionalCost, @JsonKey(name: 'additional_costs') final  List<PurchaseOrderAdditionalCost> additionalCosts = const <PurchaseOrderAdditionalCost>[], final  List<PurchaseOrderItem> items = const <PurchaseOrderItem>[], @JsonKey(name: 'investor_funding') final  List<PurchaseOrderFunding> investorFunding = const <PurchaseOrderFunding>[], @JsonKey(name: 'default_investor_profit_share_percent') this.defaultInvestorProfitSharePercent, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _additionalCosts = additionalCosts,_items = items,_investorFunding = investorFunding,super._();
   factory _PurchaseOrder.fromJson(Map<String, dynamic> json) => _$PurchaseOrderFromJson(json);
 
 @override final  int id;
@@ -329,6 +338,26 @@ class _PurchaseOrder extends PurchaseOrder {
   return EqualUnmodifiableListView(_items);
 }
 
+/// The deals financing this order — **one per group of lines**, because the claim the
+/// receipt reads is per line and one lorry may be paid for by two sets of partners.
+///
+/// Sent with a single order only, and empty on the ordinary one the company bought for
+/// itself. Each carries the money each man put in beside the percentage it produced.
+ final  List<PurchaseOrderFunding> _investorFunding;
+/// The deals financing this order — **one per group of lines**, because the claim the
+/// receipt reads is per line and one lorry may be paid for by two sets of partners.
+///
+/// Sent with a single order only, and empty on the ordinary one the company bought for
+/// itself. Each carries the money each man put in beside the percentage it produced.
+@override@JsonKey(name: 'investor_funding') List<PurchaseOrderFunding> get investorFunding {
+  if (_investorFunding is EqualUnmodifiableListView) return _investorFunding;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_investorFunding);
+}
+
+/// The investors' share of profit a deal struck on this order would be born with — the
+/// company default, sent so the funding screen shows the number rather than implying it.
+@override@JsonKey(name: 'default_investor_profit_share_percent') final  String? defaultInvestorProfitSharePercent;
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
 @override@JsonKey(name: 'updated_at') final  DateTime? updatedAt;
 
@@ -345,16 +374,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PurchaseOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.orderDate, orderDate) || other.orderDate == orderDate)&&(identical(other.expectedDate, expectedDate) || other.expectedDate == expectedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.totalAdditionalCost, totalAdditionalCost) || other.totalAdditionalCost == totalAdditionalCost)&&const DeepCollectionEquality().equals(other._additionalCosts, _additionalCosts)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PurchaseOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.orderDate, orderDate) || other.orderDate == orderDate)&&(identical(other.expectedDate, expectedDate) || other.expectedDate == expectedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.totalAdditionalCost, totalAdditionalCost) || other.totalAdditionalCost == totalAdditionalCost)&&const DeepCollectionEquality().equals(other._additionalCosts, _additionalCosts)&&const DeepCollectionEquality().equals(other._items, _items)&&const DeepCollectionEquality().equals(other._investorFunding, _investorFunding)&&(identical(other.defaultInvestorProfitSharePercent, defaultInvestorProfitSharePercent) || other.defaultInvestorProfitSharePercent == defaultInvestorProfitSharePercent)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,warehouseId,warehouse,status,statusLabel,orderDate,expectedDate,notes,totalAmount,totalAdditionalCost,const DeepCollectionEquality().hash(_additionalCosts),const DeepCollectionEquality().hash(_items),createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,warehouseId,warehouse,status,statusLabel,orderDate,expectedDate,notes,totalAmount,totalAdditionalCost,const DeepCollectionEquality().hash(_additionalCosts),const DeepCollectionEquality().hash(_items),const DeepCollectionEquality().hash(_investorFunding),defaultInvestorProfitSharePercent,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'PurchaseOrder(id: $id, vendorId: $vendorId, vendor: $vendor, warehouseId: $warehouseId, warehouse: $warehouse, status: $status, statusLabel: $statusLabel, orderDate: $orderDate, expectedDate: $expectedDate, notes: $notes, totalAmount: $totalAmount, totalAdditionalCost: $totalAdditionalCost, additionalCosts: $additionalCosts, items: $items, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'PurchaseOrder(id: $id, vendorId: $vendorId, vendor: $vendor, warehouseId: $warehouseId, warehouse: $warehouse, status: $status, statusLabel: $statusLabel, orderDate: $orderDate, expectedDate: $expectedDate, notes: $notes, totalAmount: $totalAmount, totalAdditionalCost: $totalAdditionalCost, additionalCosts: $additionalCosts, items: $items, investorFunding: $investorFunding, defaultInvestorProfitSharePercent: $defaultInvestorProfitSharePercent, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -365,7 +394,7 @@ abstract mixin class _$PurchaseOrderCopyWith<$Res> implements $PurchaseOrderCopy
   factory _$PurchaseOrderCopyWith(_PurchaseOrder value, $Res Function(_PurchaseOrder) _then) = __$PurchaseOrderCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) PurchaseOrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'order_date') String orderDate,@JsonKey(name: 'expected_date') String? expectedDate, String? notes,@JsonKey(name: 'total_amount') String? totalAmount,@JsonKey(name: 'total_additional_cost') String? totalAdditionalCost,@JsonKey(name: 'additional_costs') List<PurchaseOrderAdditionalCost> additionalCosts, List<PurchaseOrderItem> items,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) PurchaseOrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'order_date') String orderDate,@JsonKey(name: 'expected_date') String? expectedDate, String? notes,@JsonKey(name: 'total_amount') String? totalAmount,@JsonKey(name: 'total_additional_cost') String? totalAdditionalCost,@JsonKey(name: 'additional_costs') List<PurchaseOrderAdditionalCost> additionalCosts, List<PurchaseOrderItem> items,@JsonKey(name: 'investor_funding') List<PurchaseOrderFunding> investorFunding,@JsonKey(name: 'default_investor_profit_share_percent') String? defaultInvestorProfitSharePercent,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -382,7 +411,7 @@ class __$PurchaseOrderCopyWithImpl<$Res>
 
 /// Create a copy of PurchaseOrder
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? status = null,Object? statusLabel = null,Object? orderDate = null,Object? expectedDate = freezed,Object? notes = freezed,Object? totalAmount = freezed,Object? totalAdditionalCost = freezed,Object? additionalCosts = null,Object? items = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? status = null,Object? statusLabel = null,Object? orderDate = null,Object? expectedDate = freezed,Object? notes = freezed,Object? totalAmount = freezed,Object? totalAdditionalCost = freezed,Object? additionalCosts = null,Object? items = null,Object? investorFunding = null,Object? defaultInvestorProfitSharePercent = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_PurchaseOrder(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
@@ -398,7 +427,9 @@ as String?,totalAmount: freezed == totalAmount ? _self.totalAmount : totalAmount
 as String?,totalAdditionalCost: freezed == totalAdditionalCost ? _self.totalAdditionalCost : totalAdditionalCost // ignore: cast_nullable_to_non_nullable
 as String?,additionalCosts: null == additionalCosts ? _self._additionalCosts : additionalCosts // ignore: cast_nullable_to_non_nullable
 as List<PurchaseOrderAdditionalCost>,items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
-as List<PurchaseOrderItem>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as List<PurchaseOrderItem>,investorFunding: null == investorFunding ? _self._investorFunding : investorFunding // ignore: cast_nullable_to_non_nullable
+as List<PurchaseOrderFunding>,defaultInvestorProfitSharePercent: freezed == defaultInvestorProfitSharePercent ? _self.defaultInvestorProfitSharePercent : defaultInvestorProfitSharePercent // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -1085,6 +1116,576 @@ $StockItemRefCopyWith<$Res>? get stockItem {
     return _then(_self.copyWith(stockItem: value));
   });
 }
+}
+
+
+/// @nodoc
+mixin _$PurchaseOrderFunding {
+
+@JsonKey(name: 'deal_id') int get dealId; String get code; String get status;@JsonKey(name: 'status_label') String get statusLabel;/// The investors' share of *this* deal's profit — the company keeps the rest.
+@JsonKey(name: 'investor_profit_share_percent') String get investorProfitSharePercent;/// The order's lines this deal paid for. A deal that took the whole lorry names them all.
+@JsonKey(name: 'stock_item_ids') List<int> get stockItemIds; List<PurchaseOrderFunder> get investors;
+/// Create a copy of PurchaseOrderFunding
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PurchaseOrderFundingCopyWith<PurchaseOrderFunding> get copyWith => _$PurchaseOrderFundingCopyWithImpl<PurchaseOrderFunding>(this as PurchaseOrderFunding, _$identity);
+
+  /// Serializes this PurchaseOrderFunding to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderFunding&&(identical(other.dealId, dealId) || other.dealId == dealId)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&const DeepCollectionEquality().equals(other.stockItemIds, stockItemIds)&&const DeepCollectionEquality().equals(other.investors, investors));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,dealId,code,status,statusLabel,investorProfitSharePercent,const DeepCollectionEquality().hash(stockItemIds),const DeepCollectionEquality().hash(investors));
+
+@override
+String toString() {
+  return 'PurchaseOrderFunding(dealId: $dealId, code: $code, status: $status, statusLabel: $statusLabel, investorProfitSharePercent: $investorProfitSharePercent, stockItemIds: $stockItemIds, investors: $investors)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PurchaseOrderFundingCopyWith<$Res>  {
+  factory $PurchaseOrderFundingCopyWith(PurchaseOrderFunding value, $Res Function(PurchaseOrderFunding) _then) = _$PurchaseOrderFundingCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'deal_id') int dealId, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'stock_item_ids') List<int> stockItemIds, List<PurchaseOrderFunder> investors
+});
+
+
+
+
+}
+/// @nodoc
+class _$PurchaseOrderFundingCopyWithImpl<$Res>
+    implements $PurchaseOrderFundingCopyWith<$Res> {
+  _$PurchaseOrderFundingCopyWithImpl(this._self, this._then);
+
+  final PurchaseOrderFunding _self;
+  final $Res Function(PurchaseOrderFunding) _then;
+
+/// Create a copy of PurchaseOrderFunding
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? dealId = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? investorProfitSharePercent = null,Object? stockItemIds = null,Object? investors = null,}) {
+  return _then(_self.copyWith(
+dealId: null == dealId ? _self.dealId : dealId // ignore: cast_nullable_to_non_nullable
+as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,statusLabel: null == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
+as String,investorProfitSharePercent: null == investorProfitSharePercent ? _self.investorProfitSharePercent : investorProfitSharePercent // ignore: cast_nullable_to_non_nullable
+as String,stockItemIds: null == stockItemIds ? _self.stockItemIds : stockItemIds // ignore: cast_nullable_to_non_nullable
+as List<int>,investors: null == investors ? _self.investors : investors // ignore: cast_nullable_to_non_nullable
+as List<PurchaseOrderFunder>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PurchaseOrderFunding].
+extension PurchaseOrderFundingPatterns on PurchaseOrderFunding {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PurchaseOrderFunding value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PurchaseOrderFunding() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PurchaseOrderFunding value)  $default,){
+final _that = this;
+switch (_that) {
+case _PurchaseOrderFunding():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PurchaseOrderFunding value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PurchaseOrderFunding() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'deal_id')  int dealId,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'stock_item_ids')  List<int> stockItemIds,  List<PurchaseOrderFunder> investors)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PurchaseOrderFunding() when $default != null:
+return $default(_that.dealId,_that.code,_that.status,_that.statusLabel,_that.investorProfitSharePercent,_that.stockItemIds,_that.investors);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'deal_id')  int dealId,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'stock_item_ids')  List<int> stockItemIds,  List<PurchaseOrderFunder> investors)  $default,) {final _that = this;
+switch (_that) {
+case _PurchaseOrderFunding():
+return $default(_that.dealId,_that.code,_that.status,_that.statusLabel,_that.investorProfitSharePercent,_that.stockItemIds,_that.investors);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'deal_id')  int dealId,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'stock_item_ids')  List<int> stockItemIds,  List<PurchaseOrderFunder> investors)?  $default,) {final _that = this;
+switch (_that) {
+case _PurchaseOrderFunding() when $default != null:
+return $default(_that.dealId,_that.code,_that.status,_that.statusLabel,_that.investorProfitSharePercent,_that.stockItemIds,_that.investors);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PurchaseOrderFunding extends PurchaseOrderFunding {
+  const _PurchaseOrderFunding({@JsonKey(name: 'deal_id') required this.dealId, required this.code, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'investor_profit_share_percent') required this.investorProfitSharePercent, @JsonKey(name: 'stock_item_ids') final  List<int> stockItemIds = const <int>[], final  List<PurchaseOrderFunder> investors = const <PurchaseOrderFunder>[]}): _stockItemIds = stockItemIds,_investors = investors,super._();
+  factory _PurchaseOrderFunding.fromJson(Map<String, dynamic> json) => _$PurchaseOrderFundingFromJson(json);
+
+@override@JsonKey(name: 'deal_id') final  int dealId;
+@override final  String code;
+@override final  String status;
+@override@JsonKey(name: 'status_label') final  String statusLabel;
+/// The investors' share of *this* deal's profit — the company keeps the rest.
+@override@JsonKey(name: 'investor_profit_share_percent') final  String investorProfitSharePercent;
+/// The order's lines this deal paid for. A deal that took the whole lorry names them all.
+ final  List<int> _stockItemIds;
+/// The order's lines this deal paid for. A deal that took the whole lorry names them all.
+@override@JsonKey(name: 'stock_item_ids') List<int> get stockItemIds {
+  if (_stockItemIds is EqualUnmodifiableListView) return _stockItemIds;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_stockItemIds);
+}
+
+ final  List<PurchaseOrderFunder> _investors;
+@override@JsonKey() List<PurchaseOrderFunder> get investors {
+  if (_investors is EqualUnmodifiableListView) return _investors;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_investors);
+}
+
+
+/// Create a copy of PurchaseOrderFunding
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PurchaseOrderFundingCopyWith<_PurchaseOrderFunding> get copyWith => __$PurchaseOrderFundingCopyWithImpl<_PurchaseOrderFunding>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PurchaseOrderFundingToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PurchaseOrderFunding&&(identical(other.dealId, dealId) || other.dealId == dealId)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&const DeepCollectionEquality().equals(other._stockItemIds, _stockItemIds)&&const DeepCollectionEquality().equals(other._investors, _investors));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,dealId,code,status,statusLabel,investorProfitSharePercent,const DeepCollectionEquality().hash(_stockItemIds),const DeepCollectionEquality().hash(_investors));
+
+@override
+String toString() {
+  return 'PurchaseOrderFunding(dealId: $dealId, code: $code, status: $status, statusLabel: $statusLabel, investorProfitSharePercent: $investorProfitSharePercent, stockItemIds: $stockItemIds, investors: $investors)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PurchaseOrderFundingCopyWith<$Res> implements $PurchaseOrderFundingCopyWith<$Res> {
+  factory _$PurchaseOrderFundingCopyWith(_PurchaseOrderFunding value, $Res Function(_PurchaseOrderFunding) _then) = __$PurchaseOrderFundingCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'deal_id') int dealId, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'stock_item_ids') List<int> stockItemIds, List<PurchaseOrderFunder> investors
+});
+
+
+
+
+}
+/// @nodoc
+class __$PurchaseOrderFundingCopyWithImpl<$Res>
+    implements _$PurchaseOrderFundingCopyWith<$Res> {
+  __$PurchaseOrderFundingCopyWithImpl(this._self, this._then);
+
+  final _PurchaseOrderFunding _self;
+  final $Res Function(_PurchaseOrderFunding) _then;
+
+/// Create a copy of PurchaseOrderFunding
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? dealId = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? investorProfitSharePercent = null,Object? stockItemIds = null,Object? investors = null,}) {
+  return _then(_PurchaseOrderFunding(
+dealId: null == dealId ? _self.dealId : dealId // ignore: cast_nullable_to_non_nullable
+as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,statusLabel: null == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
+as String,investorProfitSharePercent: null == investorProfitSharePercent ? _self.investorProfitSharePercent : investorProfitSharePercent // ignore: cast_nullable_to_non_nullable
+as String,stockItemIds: null == stockItemIds ? _self._stockItemIds : stockItemIds // ignore: cast_nullable_to_non_nullable
+as List<int>,investors: null == investors ? _self._investors : investors // ignore: cast_nullable_to_non_nullable
+as List<PurchaseOrderFunder>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PurchaseOrderFunder {
+
+@JsonKey(name: 'investor_id') int get investorId; String get name;@JsonKey(name: 'committed_amount') String get committedAmount;@JsonKey(name: 'share_percent') String get sharePercent;
+/// Create a copy of PurchaseOrderFunder
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PurchaseOrderFunderCopyWith<PurchaseOrderFunder> get copyWith => _$PurchaseOrderFunderCopyWithImpl<PurchaseOrderFunder>(this as PurchaseOrderFunder, _$identity);
+
+  /// Serializes this PurchaseOrderFunder to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderFunder&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.name, name) || other.name == name)&&(identical(other.committedAmount, committedAmount) || other.committedAmount == committedAmount)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,investorId,name,committedAmount,sharePercent);
+
+@override
+String toString() {
+  return 'PurchaseOrderFunder(investorId: $investorId, name: $name, committedAmount: $committedAmount, sharePercent: $sharePercent)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PurchaseOrderFunderCopyWith<$Res>  {
+  factory $PurchaseOrderFunderCopyWith(PurchaseOrderFunder value, $Res Function(PurchaseOrderFunder) _then) = _$PurchaseOrderFunderCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'investor_id') int investorId, String name,@JsonKey(name: 'committed_amount') String committedAmount,@JsonKey(name: 'share_percent') String sharePercent
+});
+
+
+
+
+}
+/// @nodoc
+class _$PurchaseOrderFunderCopyWithImpl<$Res>
+    implements $PurchaseOrderFunderCopyWith<$Res> {
+  _$PurchaseOrderFunderCopyWithImpl(this._self, this._then);
+
+  final PurchaseOrderFunder _self;
+  final $Res Function(PurchaseOrderFunder) _then;
+
+/// Create a copy of PurchaseOrderFunder
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? investorId = null,Object? name = null,Object? committedAmount = null,Object? sharePercent = null,}) {
+  return _then(_self.copyWith(
+investorId: null == investorId ? _self.investorId : investorId // ignore: cast_nullable_to_non_nullable
+as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,committedAmount: null == committedAmount ? _self.committedAmount : committedAmount // ignore: cast_nullable_to_non_nullable
+as String,sharePercent: null == sharePercent ? _self.sharePercent : sharePercent // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PurchaseOrderFunder].
+extension PurchaseOrderFunderPatterns on PurchaseOrderFunder {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PurchaseOrderFunder value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PurchaseOrderFunder() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PurchaseOrderFunder value)  $default,){
+final _that = this;
+switch (_that) {
+case _PurchaseOrderFunder():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PurchaseOrderFunder value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PurchaseOrderFunder() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'investor_id')  int investorId,  String name, @JsonKey(name: 'committed_amount')  String committedAmount, @JsonKey(name: 'share_percent')  String sharePercent)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PurchaseOrderFunder() when $default != null:
+return $default(_that.investorId,_that.name,_that.committedAmount,_that.sharePercent);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'investor_id')  int investorId,  String name, @JsonKey(name: 'committed_amount')  String committedAmount, @JsonKey(name: 'share_percent')  String sharePercent)  $default,) {final _that = this;
+switch (_that) {
+case _PurchaseOrderFunder():
+return $default(_that.investorId,_that.name,_that.committedAmount,_that.sharePercent);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'investor_id')  int investorId,  String name, @JsonKey(name: 'committed_amount')  String committedAmount, @JsonKey(name: 'share_percent')  String sharePercent)?  $default,) {final _that = this;
+switch (_that) {
+case _PurchaseOrderFunder() when $default != null:
+return $default(_that.investorId,_that.name,_that.committedAmount,_that.sharePercent);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PurchaseOrderFunder extends PurchaseOrderFunder {
+  const _PurchaseOrderFunder({@JsonKey(name: 'investor_id') required this.investorId, required this.name, @JsonKey(name: 'committed_amount') required this.committedAmount, @JsonKey(name: 'share_percent') required this.sharePercent}): super._();
+  factory _PurchaseOrderFunder.fromJson(Map<String, dynamic> json) => _$PurchaseOrderFunderFromJson(json);
+
+@override@JsonKey(name: 'investor_id') final  int investorId;
+@override final  String name;
+@override@JsonKey(name: 'committed_amount') final  String committedAmount;
+@override@JsonKey(name: 'share_percent') final  String sharePercent;
+
+/// Create a copy of PurchaseOrderFunder
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PurchaseOrderFunderCopyWith<_PurchaseOrderFunder> get copyWith => __$PurchaseOrderFunderCopyWithImpl<_PurchaseOrderFunder>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PurchaseOrderFunderToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PurchaseOrderFunder&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.name, name) || other.name == name)&&(identical(other.committedAmount, committedAmount) || other.committedAmount == committedAmount)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,investorId,name,committedAmount,sharePercent);
+
+@override
+String toString() {
+  return 'PurchaseOrderFunder(investorId: $investorId, name: $name, committedAmount: $committedAmount, sharePercent: $sharePercent)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PurchaseOrderFunderCopyWith<$Res> implements $PurchaseOrderFunderCopyWith<$Res> {
+  factory _$PurchaseOrderFunderCopyWith(_PurchaseOrderFunder value, $Res Function(_PurchaseOrderFunder) _then) = __$PurchaseOrderFunderCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'investor_id') int investorId, String name,@JsonKey(name: 'committed_amount') String committedAmount,@JsonKey(name: 'share_percent') String sharePercent
+});
+
+
+
+
+}
+/// @nodoc
+class __$PurchaseOrderFunderCopyWithImpl<$Res>
+    implements _$PurchaseOrderFunderCopyWith<$Res> {
+  __$PurchaseOrderFunderCopyWithImpl(this._self, this._then);
+
+  final _PurchaseOrderFunder _self;
+  final $Res Function(_PurchaseOrderFunder) _then;
+
+/// Create a copy of PurchaseOrderFunder
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? investorId = null,Object? name = null,Object? committedAmount = null,Object? sharePercent = null,}) {
+  return _then(_PurchaseOrderFunder(
+investorId: null == investorId ? _self.investorId : investorId // ignore: cast_nullable_to_non_nullable
+as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,committedAmount: null == committedAmount ? _self.committedAmount : committedAmount // ignore: cast_nullable_to_non_nullable
+as String,sharePercent: null == sharePercent ? _self.sharePercent : sharePercent // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
 }
 
 // dart format on

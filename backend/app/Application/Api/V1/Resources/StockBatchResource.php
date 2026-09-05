@@ -54,6 +54,22 @@ class StockBatchResource extends JsonResource
             'unit' => $this->unit->value,
             'unit_label' => $this->unit->label(),
 
+            // **Whose money bought this layer.** Null on the ordinary layer the company paid for
+            // itself, which is most of them. The code is attached by the controller rather than
+            // read through a relation: Inventory does not import Investment, and a `belongsTo`
+            // here would be the dependency running the wrong way.
+            'investor_deal_id' => $this->investor_deal_id,
+            'investor_deal_code' => $this->when(
+                isset($this->investor_deal_code),
+                fn (): ?string => $this->investor_deal_code,
+            ),
+            // Who is in that deal and what each put in — so «مَن يملك هذه البضاعة؟» is answered
+            // on the shelf, without opening the deal to find out.
+            'investor_deal_investors' => $this->when(
+                isset($this->investor_deal_investors),
+                fn (): ?array => $this->investor_deal_investors,
+            ),
+
             'source_type' => $this->source_type->value,
             'source_type_label' => $this->source_type->label(),
 

@@ -70,8 +70,17 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   notes: json['notes'] as String?,
   shippingCompany: json['shipping_company'] as String?,
   trackingNumber: json['tracking_number'] as String?,
+  nawrisParcel: json['nawris_parcel'] == null
+      ? null
+      : NawrisParcelRef.fromJson(json['nawris_parcel'] as Map<String, dynamic>),
   courierPhone: json['courier_phone'] as String?,
   cancellationReason: json['cancellation_reason'] as String?,
+  reinstateTo: $enumDecodeNullable(
+    _$OrderStatusEnumMap,
+    json['reinstate_to'],
+    unknownValue: OrderStatus.unknown,
+  ),
+  reinstateToLabel: json['reinstate_to_label'] as String?,
   progress: json['progress'] == null
       ? OrderProgress.unknown
       : OrderProgress.fromJson(json['progress'] as Map<String, dynamic>),
@@ -164,8 +173,11 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'notes': instance.notes,
   'shipping_company': instance.shippingCompany,
   'tracking_number': instance.trackingNumber,
+  'nawris_parcel': instance.nawrisParcel?.toJson(),
   'courier_phone': instance.courierPhone,
   'cancellation_reason': instance.cancellationReason,
+  'reinstate_to': _$OrderStatusEnumMap[instance.reinstateTo],
+  'reinstate_to_label': instance.reinstateToLabel,
   'progress': instance.progress.toJson(),
   'items_are_editable': instance.itemsAreEditable,
   'designs_are_editable': instance.designsAreEditable,
@@ -227,6 +239,20 @@ const _$PaymentStatusEnumMap = {
   PaymentStatus.writtenOff: 'written_off',
   PaymentStatus.unknown: 'unknown',
 };
+
+_NawrisParcelRef _$NawrisParcelRefFromJson(Map<String, dynamic> json) =>
+    _NawrisParcelRef(
+      code: json['code'] as String,
+      barCode: json['bar_code'] as String?,
+      isOpen: json['is_open'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$NawrisParcelRefToJson(_NawrisParcelRef instance) =>
+    <String, dynamic>{
+      'code': instance.code,
+      'bar_code': instance.barCode,
+      'is_open': instance.isOpen,
+    };
 
 _OrderProgress _$OrderProgressFromJson(Map<String, dynamic> json) =>
     _OrderProgress(

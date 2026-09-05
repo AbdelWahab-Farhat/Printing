@@ -94,6 +94,35 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
     context.showSuccess('تم إلغاء أمر الشراء');
   }
 
+  /// Naming the partners who paid for this shipment — and the deal that settles it.
+  ///
+  /// **Before the lorry arrives, and once.** The cost layer is stamped with its deal at the gate
+  /// and can never be stamped afterwards, so the server refuses this the moment a line has been
+  /// received. Said here first, because a filled-in form answered with a refusal is a wasted
+  /// minute.
+  Future<void> _fund(BuildContext context) async {
+    final cubit = context.read<PurchaseOrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    if (order.items.isEmpty) {
+      context.showInfo('أضف بنود الأمر أولاً — التمويل يقف على ما تشتريه');
+
+      return;
+    }
+
+    final deal = await context.push<Object?>(
+      Routes.purchaseOrderFunding,
+      extra: order,
+    );
+
+    if (deal == null || !context.mounted) return;
+
+    // Re-read: the order itself did not change, but the screen now has a deal to name, and the
+    // server is the one that knows its code.
+    await cubit.load();
+  }
+
   Future<void> _receive(BuildContext context) async {
     final cubit = context.read<PurchaseOrderDetailCubit>();
     final order = cubit.state.order;
@@ -169,6 +198,7 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
                   onEdit: _edit,
                   onCancel: _cancel,
                   onReceive: _receive,
+                  onFund: _fund,
                 );
               },
             ),
@@ -209,12 +239,14 @@ class _Actions extends StatelessWidget {
     required this.onEdit,
     required this.onCancel,
     required this.onReceive,
+    required this.onFund,
   });
 
   final PurchaseOrder order;
   final Future<void> Function(BuildContext context) onEdit;
   final Future<void> Function(BuildContext context) onCancel;
   final Future<void> Function(BuildContext context) onReceive;
+  final Future<void> Function(BuildContext context) onFund;
 
   @override
   Widget build(BuildContext context) {
@@ -230,6 +262,15 @@ class _Actions extends StatelessWidget {
             tone: AppActionTone.primary,
             permission: AppPermission.manageInventory,
             onTap: onReceive,
+          ),
+        // Only while nothing has arrived: who paid for goods is declared before they land.
+        if (order.status.isEditable)
+          AppAction(
+            label: 'تمويل مستثمرين',
+            icon: AppIcons.investors,
+            tone: AppActionTone.primary,
+            permission: AppPermission.manageInvestors,
+            onTap: onFund,
           ),
         if (order.status.isEditable)
           AppAction(
@@ -367,6 +408,13 @@ class _Body extends StatelessWidget {
           SizedBox(height: 14.h),
           _Section(title: 'ملاحظات', child: Text(notes)),
         ],
+        // Whose money is on this lorry. Placed above the lines because it is the thing a person
+        // opening a funded order wants first — and absent entirely on the ordinary order the
+        // company bought for itself, rather than drawn as an empty box.
+        for (final funding in order.investorFunding) ...[
+          SizedBox(height: 14.h),
+          _FundingSection(funding: funding, order: order),
+        ],
         SizedBox(height: 14.h),
         _Section(
           title: 'البنود',
@@ -380,6 +428,108 @@ class _Body extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// One deal on this order: its partners, what each put in, and the share it bought him.
+///
+/// **The two numbers stand together.** «30,000 · 60%» is one fact stated twice — the percentage
+/// was computed from the money when the deal was struck — and showing only the percentage would
+/// hide what a partner can check against his own receipt.
+class _FundingSection extends StatelessWidget {
+  const _FundingSection({required this.funding, required this.order});
+
+  final PurchaseOrderFunding funding;
+  final PurchaseOrder order;
+
+  /// The lines this deal paid for, named as the order names them.
+  String get _lines => order.items
+      .where((item) => funding.stockItemIds.contains(item.stockItemId))
+      .map((item) => item.stockItem?.displayName ?? 'مادة #${item.stockItemId}')
+      .join(' · ');
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return _Section(
+      title: 'تمويل ${funding.code}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => context.push(Routes.investorDeal(funding.dealId)),
+            borderRadius: BorderRadius.circular(8.r),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _lines.isEmpty ? funding.code : _lines,
+                      style: context.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    funding.statusLabel,
+                    style: context.textTheme.bodyLarge?.copyWith(
+                      color: scheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(width: 6.w),
+                  Icon(AppIcons.forward, size: 18.r, color: scheme.onSurfaceVariant),
+                ],
+              ),
+            ),
+          ),
+          Divider(height: 18.h),
+          for (final (index, funder) in funding.investors.indexed) ...[
+            if (index > 0) SizedBox(height: 10.h),
+            Row(
+              children: [
+                Expanded(child: Text(funder.name, style: context.textTheme.bodyLarge)),
+                Text(
+                  '${groupedDecimal(funder.committedAmount)} د.ل',
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Text(
+                  '${trimDecimals(funder.sharePercent)}%',
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          Divider(height: 18.h),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'حصة المستثمرين من الربح',
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Text(
+                '${trimDecimals(funding.investorProfitSharePercent)}%',
+                style: context.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

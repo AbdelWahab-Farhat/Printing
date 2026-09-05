@@ -13,10 +13,13 @@ use App\Application\Controller;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\InventoryService;
+use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Queries\MovementFilters;
+use App\Domain\Investor\InvestorService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 /**
  * Stock movements
@@ -39,7 +42,10 @@ class StockMovementController extends Controller
 {
     use ResponseTrait;
 
-    public function __construct(private readonly InventoryService $inventory) {}
+    public function __construct(
+        private readonly InventoryService $inventory,
+        private readonly InvestorService $investors,
+    ) {}
 
     /**
      * List movements
@@ -50,20 +56,90 @@ class StockMovementController extends Controller
      * Filter with `warehouse_id`, `stock_item_id`, `movement_type`, `employee_id`,
      * `reference_id`, `from` and `to`. Dates are inclusive: `to=2026-08-03` includes that whole day.
      */
+    /**
+     * Says which deal each outgoing movement drew its goods from — and which of it was ours.
+     *
+     * **The split already existed and nobody could see it.** FIFO writes one consumption row per
+     * cost layer it touches, each carrying that layer's deal, and an order taking a thousand bags
+     * off two layers is two rows with two owners. Until now the feed showed «−1,000» and the
+     * question «من مِن؟» had no answer on any screen.
+     *
+     * Three queries for the whole page, whatever its length: the consumption rows, then the deals
+     * they name. A row per movement would have made a fifteen-line feed forty queries deep.
+     *
+     * @param  Collection<int, StockMovement>  $movements
+     */
+    private function nameTheDraws($movements): void
+    {
+        $breakdown = $this->inventory->consumptionBreakdownFor(
+            $movements->pluck('id')->map(fn ($id) => (int) $id)->all(),
+        );
+
+        if ($breakdown === []) {
+            return;
+        }
+
+        $dealIds = [];
+
+        foreach ($breakdown as $draws) {
+            foreach ($draws as $draw) {
+                if ($draw['investor_deal_id'] !== null) {
+                    $dealIds[$draw['investor_deal_id']] = true;
+                }
+            }
+        }
+
+        $summaries = $this->investors->dealSummaries(array_map('intval', array_keys($dealIds)));
+
+        foreach ($movements as $movement) {
+            $draws = $breakdown[(int) $movement->getKey()] ?? [];
+
+            if ($draws === []) {
+                continue;
+            }
+
+            // Folded by owner: one line per deal, and one for the company's own stock, rather
+            // than one per cost layer. Which layer it came off is the FIFO's business; whose
+            // goods they were is the question being answered.
+            $byOwner = [];
+
+            foreach ($draws as $draw) {
+                $key = $draw['investor_deal_id'] ?? 0;
+
+                $byOwner[$key] ??= [
+                    'investor_deal_id' => $draw['investor_deal_id'],
+                    'code' => $draw['investor_deal_id'] === null
+                        ? null
+                        : ($summaries[$draw['investor_deal_id']]['code'] ?? null),
+                    'quantity' => '0.000',
+                    'total_cost' => '0.00',
+                ];
+
+                $byOwner[$key]['quantity'] = bcadd($byOwner[$key]['quantity'], $draw['quantity'], 3);
+                $byOwner[$key]['total_cost'] = bcadd($byOwner[$key]['total_cost'], $draw['total_cost'], 2);
+            }
+
+            $movement->setAttribute('investor_draws', array_values($byOwner));
+        }
+    }
+
     public function index(Request $request): JsonResponse
     {
         $filters = MovementFilters::fromArray($request->only([
-            'warehouse_id', 'stock_item_id', 'movement_type', 'employee_id', 'reference_id', 'from', 'to',
+            'warehouse_id', 'stock_item_id', 'movement_type', 'adjustment_reason',
+            'employee_id', 'reference_id', 'from', 'to',
         ]));
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
-        return $this->successWithPagination(
-            StockMovementResource::collection($this->inventory->paginateMovements(
-                $filters,
-                $perPage,
-                withCost: $request->user()?->can(PermissionName::ViewStockCost->value) === true,
-            )),
+        $page = $this->inventory->paginateMovements(
+            $filters,
+            $perPage,
+            withCost: $request->user()?->can(PermissionName::ViewStockCost->value) === true,
         );
+
+        $this->nameTheDraws($page->getCollection());
+
+        return $this->successWithPagination(StockMovementResource::collection($page));
     }
 
     /**

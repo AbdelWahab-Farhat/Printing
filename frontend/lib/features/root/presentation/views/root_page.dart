@@ -50,7 +50,9 @@ class RootPage extends StatelessWidget {
       icon: _IconOf.warehouse,
       permission: AppPermission.viewInventory,
     ),
-    _Destination(title: 'العملاء', label: 'العملاء', icon: _IconOf.customers),
+    // **Three registers, one tab.** «العملاء» named only the first of them once الموردون and
+    // المستثمرون moved out of the drawer and onto this screen — see [PartiesPage].
+    _Destination(title: 'الجهات', label: 'الجهات', icon: _IconOf.customers),
   ];
 
   @override
@@ -247,15 +249,19 @@ class _RootDrawer extends StatelessWidget {
               label: 'مدن التوصيل',
               onTap: () => context.push(Routes.cities),
             ),
-            // Who we buy from. Gated for the same reason the carriers below are: a supplier is
-            // chosen from the purchase-order screen's own picker, so no other form needs the
-            // list to be readable.
+            // **الموردون and المستثمرون are not here any more.** They are tabs of «الجهات» —
+            // one screen for the three registers of people, because "who do we deal with?" is
+            // one question and it was being answered in three places. Their routes still exist
+            // for deep links and for the pickers that push them.
+            //
+            // صفقات المستثمرين stays: a deal is not a person, and it belongs beside أوامر
+            // الشراء rather than under a register of names.
             PermissionGate(
-              permission: AppPermission.viewVendors,
+              permission: AppPermission.viewInvestors,
               child: _DrawerLink(
-                icon: AppIcons.vendors,
-                label: 'الموردون',
-                onTap: () => context.push(Routes.vendors),
+                icon: AppIcons.investorDeals,
+                label: 'صفقات المستثمرين',
+                onTap: () => context.push(Routes.investorDeals),
               ),
             ),
             // The paperwork raised against those suppliers. Its own grant, not vendors.*:

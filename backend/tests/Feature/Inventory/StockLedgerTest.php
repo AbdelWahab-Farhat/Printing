@@ -129,6 +129,7 @@ class StockLedgerTest extends TestCase
             'warehouse_id' => $floor->id,
             'direction' => 'decrease',
             'quantity' => 50,
+            'adjustment_reason' => 'damage',
             'notes' => 'تلف أثناء التشغيل',
         ])->assertCreated();
 

@@ -7,10 +7,13 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Resources\HomeSummaryResource;
 use App\Application\Controller;
 use App\Domain\Customer\CustomerService;
+use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Investor\InvestorService;
 use App\Domain\Order\OrderService;
 use App\Domain\Order\Queries\OrderFilters;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * Home
@@ -32,6 +35,7 @@ class HomeController extends Controller
     public function __construct(
         private readonly OrderService $orders,
         private readonly CustomerService $customers,
+        private readonly InvestorService $investors,
     ) {}
 
     /**
@@ -40,8 +44,22 @@ class HomeController extends Controller
      * Four counts, one card per order status, and one per payment state — each with the
      * Arabic to print on it.
      */
-    public function summary(): JsonResponse
+    public function summary(Request $request): JsonResponse
     {
+        // **This is the one authenticated route in the file with no `can:` beside it**, so that
+        // a designer holding a single status grant still has a working front door. That makes it
+        // the one place an investor would otherwise read the whole shop's trading position on
+        // his first launch — order counts, the customer count, every payment state.
+        //
+        // Keyed on the `investors.user_id` link rather than on a role, and narrowed further by
+        // «cannot read orders», so an administrator who also happens to be an investor still
+        // gets the board he came for.
+        $investor = $this->investors->investorFor($request->user());
+
+        if ($investor !== null && $request->user()?->can(PermissionName::ViewOrders->value) !== true) {
+            return $this->successMessage('مرحباً بك — تفاصيل حسابك في شاشتك الخاصة');
+        }
+
         $totals = $this->orders->totals();
 
         // Each context answers for its own numbers — this only puts them in one envelope. There

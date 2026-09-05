@@ -50,6 +50,22 @@ abstract class ProductCategory with _$ProductCategory {
     /// where it arrives, so a mode this build has never heard of still reads right on a card.
     @JsonKey(name: 'production_mode_label') String? productionModeLabel,
 
+    /// Whether a deal may be opened against the shelves under this heading.
+    ///
+    /// **Three answers, and null is one of them**: «حسب الرئيسي». A subheading left at null
+    /// takes its parent's answer, which is what lets one be kept out of an investable family
+    /// — `false` — rather than merely never asked about. A heading nobody has decided about is
+    /// not investable: nothing may be funded until somebody says so.
+    ///
+    /// **This row's own answer, not the effective one**, exactly as [productionMode] is: it is
+    /// the value the edit sheet puts back, and the inherited one would be saved onto a
+    /// subheading that never gave it.
+    ///
+    /// The flag opens *headings*, and a deal is opened against a *shelf*: the server accepts one
+    /// only when every active product standing on it is under a heading marked here. So the
+    /// answer to «لماذا رُفضت هذه المادة؟» is a product name, and it comes in the 422.
+    @JsonKey(name: 'is_investable') bool? isInvestable,
+
     /// **Deprecated, and still sent by the server for this build.** True for سادة *and* for وسيط
     /// — neither is printed here — so it can no longer tell them apart. Read [productionMode];
     /// this app stopped writing it the day the sheet learned the three-way answer, and it goes

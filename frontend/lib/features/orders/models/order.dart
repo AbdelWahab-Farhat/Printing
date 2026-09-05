@@ -173,6 +173,15 @@ abstract class Order with _$Order {
 
     @JsonKey(name: 'shipping_company') String? shippingCompany,
     @JsonKey(name: 'tracking_number') String? trackingNumber,
+
+    /// The carrier's own code for the parcel this order went out in — «كود النورس».
+    ///
+    /// **Not [trackingNumber], and never a substitute for it.** That one is a box somebody types
+    /// into; this one is what Nawris called the parcel, and it is the number said out loud when
+    /// a customer rings about a delivery. Null on every order that never went to a carrier, and
+    /// on one whose parcel is still waiting for its code — the server omits the key rather than
+    /// sending an empty one, so null here means «no code», never «code unknown».
+    @JsonKey(name: 'nawris_parcel') NawrisParcelRef? nawrisParcel,
     /// The number the man holding the parcel can be reached on — what «جاري التوصيل» asks for
     /// and what `OrderResource` publishes. It was read from `courier_name`, a key the server has
     /// never sent, so it parsed as null on every order ever fetched.
@@ -407,6 +416,24 @@ abstract class Order with _$Order {
 /// one thing this app deliberately keeps no copy of — the same reason the action buttons are
 /// drawn from `available_transitions`. A stepper built from a hard-coded list in Dart would be
 /// the second copy that drifts.
+/// What the carrier calls this order's parcel.
+@freezed
+abstract class NawrisParcelRef with _$NawrisParcelRef {
+  const factory NawrisParcelRef({
+    /// Their handle on the parcel, and what a customer is read over the phone.
+    required String code,
+
+    /// What is physically scanned at handover. Rarely shown; kept because it is the one
+    /// identifier that survives a resend announced under a code nobody has seen.
+    @JsonKey(name: 'bar_code') String? barCode,
+
+    /// Whether it is still out there — read off `closed_at`, not off a status list.
+    @JsonKey(name: 'is_open') @Default(false) bool isOpen,
+  }) = _NawrisParcelRef;
+
+  factory NawrisParcelRef.fromJson(Map<String, dynamic> json) => _$NawrisParcelRefFromJson(json);
+}
+
 @freezed
 abstract class OrderProgress with _$OrderProgress {
   const factory OrderProgress({
