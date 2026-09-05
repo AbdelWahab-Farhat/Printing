@@ -8,8 +8,8 @@ namespace App\Domain\Inventory\Enums;
  * What kind of place a warehouse is.
  *
  * Today this only labels and groups a row in a picker — nothing branches on it, and that is
- * deliberate. The moment a rule genuinely differs by type ("the showroom cannot fulfil an
- * order"), it belongs here as a predicate next to the cases, the way {@see MovementType} carries
+ * deliberate. The moment a rule genuinely differs by type ("the workshop floor cannot receive an
+ * arrival"), it belongs here as a predicate next to the cases, the way {@see MovementType} carries
  * `requiresSource()`, rather than as a string compared in three separate actions.
  */
 enum WarehouseType: string
@@ -20,15 +20,11 @@ enum WarehouseType: string
     /** The workshop floor: stock pulled forward for the machines to work through. */
     case Operational = 'operational';
 
-    /** Front of house — samples and walk-in sales. */
-    case Showroom = 'showroom';
-
     public function label(): string
     {
         return match ($this) {
             self::Main => 'المخزن الرئيسي',
             self::Operational => 'مخزن التشغيل',
-            self::Showroom => 'صالة العرض',
         };
     }
 

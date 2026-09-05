@@ -26,7 +26,6 @@ class InventorySeeder extends Seeder
     private const WAREHOUSES = [
         ['name' => 'المخزن الرئيسي', 'type' => WarehouseType::Main, 'location' => 'طرابلس'],
         ['name' => 'مخزن التشغيل', 'type' => WarehouseType::Operational, 'location' => 'طرابلس'],
-        ['name' => 'صالة العرض', 'type' => WarehouseType::Showroom, 'location' => 'طرابلس'],
     ];
 
     public function run(): void

@@ -12,7 +12,7 @@ use App\Domain\Inventory\Models\Warehouse;
  * keeping it. That is what PUT means, and it keeps "save the form" from silently preserving an
  * address the user just deleted.
  *
- * What it never touches is the stock inside. Retyping a warehouse from `main` to `showroom` says
+ * What it never touches is the stock inside. Retyping a warehouse from `main` to `operational` says
  * what the place is used for; it does not move a single bag, and there is no version of this
  * action that should.
  */

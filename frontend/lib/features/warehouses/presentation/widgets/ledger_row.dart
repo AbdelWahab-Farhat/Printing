@@ -150,7 +150,7 @@ class LedgerRow extends StatelessWidget {
     );
   }
 
-  /// «صرف لطلب #4», «تحويل داخلي ← صالة العرض», «توريد» — the kind, plus only what tells this
+  /// «صرف لطلب #4», «تحويل داخلي ← مخزن التشغيل», «توريد» — the kind, plus only what tells this
   /// row apart from the next of its kind.
   String _what() => [
     movement.movementTypeLabel,

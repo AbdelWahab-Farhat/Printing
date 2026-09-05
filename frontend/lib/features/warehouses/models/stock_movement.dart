@@ -132,7 +132,7 @@ abstract class StockMovement with _$StockMovement {
   /// without its item.
   String? get code => item?.code;
 
-  /// «من المخزن الرئيسي ← صالة العرض», or one half of it for a movement that has one end.
+  /// «من المخزن الرئيسي ← مخزن التشغيل», or one half of it for a movement that has one end.
   String get route => switch ((fromWarehouse?.name, toWarehouse?.name)) {
     (final from?, final to?) => '$from ← $to',
     (final from?, null) => 'من $from',
@@ -204,7 +204,7 @@ abstract class StockMovement with _$StockMovement {
     return groupedDecimal(subtractDecimals(after, signed));
   }
 
-  /// The other end of a transfer, seen from [warehouseId] — «← صالة العرض» on the sender's
+  /// The other end of a transfer, seen from [warehouseId] — «← مخزن التشغيل» on the sender's
   /// ledger, «من المخزن الرئيسي» on the receiver's. Empty for anything that is not a transfer:
   /// a shelf's own ledger already says where it is, and repeating the place on every row was
   /// a column of identical words.

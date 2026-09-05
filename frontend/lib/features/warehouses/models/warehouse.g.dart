@@ -40,6 +40,5 @@ Map<String, dynamic> _$WarehouseToJson(_Warehouse instance) =>
 const _$WarehouseTypeEnumMap = {
   WarehouseType.main: 'main',
   WarehouseType.operational: 'operational',
-  WarehouseType.showroom: 'showroom',
   WarehouseType.unknown: 'unknown',
 };

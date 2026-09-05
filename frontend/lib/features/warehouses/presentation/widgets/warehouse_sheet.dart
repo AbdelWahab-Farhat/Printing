@@ -173,7 +173,7 @@ class _WarehouseFormState extends State<_WarehouseForm> {
 
 /// The three kinds the server knows, as one row of chips.
 ///
-/// A chip row rather than a dropdown: there are three of them, they are short, and which one a
+/// A chip row rather than a dropdown: there are two of them, they are short, and which one a
 /// place is decides where stock is expected to sit — a fact worth reading without a tap.
 class _TypeChoice extends StatelessWidget {
   const _TypeChoice({required this.value, required this.onChanged});
@@ -184,7 +184,6 @@ class _TypeChoice extends StatelessWidget {
   static const Map<WarehouseType, String> _labels = {
     WarehouseType.main: 'المخزن الرئيسي',
     WarehouseType.operational: 'مخزن التشغيل',
-    WarehouseType.showroom: 'صالة العرض',
   };
 
   @override

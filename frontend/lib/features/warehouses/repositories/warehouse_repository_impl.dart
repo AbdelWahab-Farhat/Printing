@@ -248,8 +248,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
   String _wire(WarehouseType type) => switch (type) {
     WarehouseType.main => 'main',
     WarehouseType.operational => 'operational',
-    WarehouseType.showroom => 'showroom',
-    // Never sent: the form offers the three the server knows. Kept total so a case added to
+    // Never sent: the form offers the two the server knows. Kept total so a case added to
     // the enum tomorrow is a compile error here rather than a 422 in front of a storekeeper.
     WarehouseType.unknown => 'operational',
   };

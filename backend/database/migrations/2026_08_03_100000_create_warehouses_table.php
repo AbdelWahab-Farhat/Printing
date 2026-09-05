@@ -6,12 +6,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * A place stock is held — the main store, the workshop floor, the showroom.
+ * A place stock is held — the main store or the workshop floor.
  *
  * `type` is what tells the business which of those a row is, and it is deliberately *not* a
  * behaviour switch: nothing in the code branches on it today. It labels and groups a warehouse
- * in a picker. The moment a rule genuinely differs by type — say the showroom cannot fulfil an
- * order — it belongs in WarehouseType as a predicate, next to the cases, rather than as a
+ * in a picker. The moment a rule genuinely differs by type — say the workshop floor cannot
+ * receive an arrival — it belongs in WarehouseType as a predicate, next to the cases, rather than as a
  * string compared in three different actions.
  *
  * A warehouse *is* deletable, which makes it the second table after cities to carry a real

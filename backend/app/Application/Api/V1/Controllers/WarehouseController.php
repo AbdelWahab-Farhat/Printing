@@ -22,7 +22,7 @@ use Illuminate\Http\Request;
 /**
  * Warehouses
  *
- * The places stock is held — the main store, the workshop floor, the showroom. `type` says which,
+ * The places stock is held — the main store and the workshop floor. `type` says which,
  * and today it only labels and groups a row in a picker; nothing branches on it.
  *
  * Reading needs `inventory.view`, because anyone taking an order needs to know where stock is.

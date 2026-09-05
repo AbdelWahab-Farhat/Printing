@@ -34,11 +34,6 @@ class WarehouseFactory extends Factory
         return $this->state(fn () => ['type' => WarehouseType::Main]);
     }
 
-    public function showroom(): static
-    {
-        return $this->state(fn () => ['type' => WarehouseType::Showroom]);
-    }
-
     /** Nobody has written the address down yet. */
     public function unlocated(): static
     {

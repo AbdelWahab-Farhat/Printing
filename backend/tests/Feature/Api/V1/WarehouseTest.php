@@ -239,16 +239,16 @@ class WarehouseTest extends TestCase
     {
         // Arrange
         Warehouse::factory()->main()->create(['name' => 'الرئيسي']);
-        Warehouse::factory()->showroom()->create(['name' => 'العرض']);
+        Warehouse::factory()->create(['name' => 'التشغيل']);
         $headers = $this->viewer();
 
         // Act
-        $response = $this->withHeaders($headers)->getJson('/api/v1/warehouses?type=showroom');
+        $response = $this->withHeaders($headers)->getJson('/api/v1/warehouses?type=operational');
 
         // Assert
         $response->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.name', 'العرض');
+            ->assertJsonPath('data.0.name', 'التشغيل');
     }
 
     public function test_a_filter_naming_a_type_that_does_not_exist_returns_everything(): void
@@ -486,19 +486,19 @@ class WarehouseTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->putJson(
             "/api/v1/warehouses/{$warehouse->id}",
-            $this->payload(['name' => 'جديد', 'type' => WarehouseType::Showroom->value]),
+            $this->payload(['name' => 'جديد', 'type' => WarehouseType::Main->value]),
         );
 
         // Assert
         $response->assertOk()
             ->assertJsonPath('message', 'تم تحديث المخزن بنجاح')
             ->assertJsonPath('data.name', 'جديد')
-            ->assertJsonPath('data.type', 'showroom');
+            ->assertJsonPath('data.type', 'main');
 
         $this->assertDatabaseHas('warehouses', [
             'id' => $warehouse->id,
             'name' => 'جديد',
-            'type' => 'showroom',
+            'type' => 'main',
         ]);
     }
 
@@ -546,7 +546,7 @@ class WarehouseTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->putJson(
             "/api/v1/warehouses/{$warehouse->id}",
-            $this->payload(['name' => 'صالة العرض', 'type' => WarehouseType::Showroom->value]),
+            $this->payload(['name' => 'مخزن التشغيل', 'type' => WarehouseType::Operational->value]),
         );
 
         // Assert — retyping a warehouse says what the place is for; it moves nothing

@@ -28,7 +28,7 @@ class StoreWarehouseRequest extends FormRequest
                 Rule::unique('warehouses', 'name')->withoutTrashed(),
             ],
 
-            // What kind of place this is — the main store, the workshop floor, the showroom.
+            // What kind of place this is — the main store or the workshop floor.
             'type' => ['required', Rule::enum(WarehouseType::class)],
 
             // Where it physically is, written the way staff say it. Optional: a site that

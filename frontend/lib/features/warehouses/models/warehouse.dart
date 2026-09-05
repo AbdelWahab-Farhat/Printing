@@ -5,7 +5,7 @@ part 'warehouse.g.dart';
 
 /// What a warehouse is *for*, as the server's own enum.
 ///
-/// `unknown` rather than a throw: the shop can add a fourth kind before this build reaches a
+/// `unknown` rather than a throw: the shop can add a third kind before this build reaches a
 /// phone, and a warehouse we cannot classify is still a warehouse whose stock must be readable.
 /// Nothing branches on a particular case — [Warehouse.typeLabel] is the server's Arabic — so a
 /// new one renders correctly with a neutral glyph.
@@ -14,8 +14,6 @@ enum WarehouseType {
   main,
   @JsonValue('operational')
   operational,
-  @JsonValue('showroom')
-  showroom,
   unknown,
 }
 
