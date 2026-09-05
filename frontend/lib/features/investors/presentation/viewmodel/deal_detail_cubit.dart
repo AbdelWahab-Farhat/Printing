@@ -35,9 +35,6 @@ class DealDetailCubit extends Cubit<DealDetailState> {
     );
   }
 
-  /// Opens the deal — which also closes its terms, because they are what the money is split by.
-  Future<Failure?> open(int id) => _act(id, () => _changeState.open(id));
-
   /// Closes it, settling every investor and returning his money to his wallet.
   ///
   /// The server refuses while stock is left or while an order that took this deal's goods has

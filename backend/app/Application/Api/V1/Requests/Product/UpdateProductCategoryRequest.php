@@ -43,6 +43,10 @@ class UpdateProductCategoryRequest extends StoreProductCategoryRequest
             // beside it is translated before any rule runs, and an omitted mode keeps the stored
             // one — see `StoreProductCategoryRequest::prepareForValidation()`.
             'production_mode' => ['sometimes', Rule::enum(ProductionMode::class)],
+            // Omitting it keeps the stored answer rather than handing the heading back to its
+            // parent — see `StoreProductCategoryRequest::keepStored()`, which says the same of
+            // every field beside it.
+            'is_investable' => ['sometimes', 'nullable', 'boolean'],
             'skips_production' => ['sometimes', 'boolean'],
         ];
     }

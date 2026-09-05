@@ -1,55 +1,58 @@
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dropdown.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// The four movements a person may record against an investor's money.
+/// The three movements a person may record against an investor's money: money in, money out,
+/// profit out. Each of them is cash crossing the counter, which is why every one of them carries
+/// a payment method.
 ///
 /// **`profit` and `loss` are deliberately absent.** An earning is written by the order that
 /// produced it, and offering it on a form would be offering somebody the chance to invent one —
 /// after which the deal screen and the orders behind it would say two different things.
+///
+/// **`allocation` — «تمويل صفقة» — is absent for the same kind of reason.** Money enters a deal
+/// by funding the purchase order it was raised for, where the goods, their cost and the
+/// investor's share are all in front of the person doing it — `FundPurchaseOrder`. Typed
+/// here as a bare amount against a deal code, it was the one movement on this form with nothing
+/// on the other side of it to check against.
 enum WalletAction {
-  deposit('deposit', 'إيداع رأس مال', 'مال يسلّمه لنا'),
-  allocation('allocation', 'تمويل صفقة', 'من رصيد محفظته إلى صفقة'),
-  withdrawal('withdrawal', 'سحب رأس مال', 'من رصيد محفظته'),
-  profitWithdrawal('profit_withdrawal', 'سحب أرباح', 'من الأرباح المتاحة بعد إقفال صفقة');
+  deposit('deposit', 'إيداع رأس مال'),
+  withdrawal('withdrawal', 'سحب رأس مال'),
+  profitWithdrawal('profit_withdrawal', 'سحب أرباح');
 
-  const WalletAction(this.wire, this.label, this.caption);
+  const WalletAction(this.wire, this.label);
 
   final String wire;
   final String label;
-  final String caption;
-
-  bool get needsDeal => this == WalletAction.allocation;
-
-  bool get needsMethod => this != WalletAction.allocation;
 }
 
 Future<void> showWalletEntrySheet({
   required BuildContext context,
   required InvestorDetailCubit cubit,
   required Investor investor,
-  required List<({int id, String label})> deals,
 }) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) => _WalletEntryForm(cubit: cubit, investor: investor, deals: deals),
+    builder: (_) => _WalletEntryForm(cubit: cubit, investor: investor),
   );
 }
 
 class _WalletEntryForm extends StatefulWidget {
-  const _WalletEntryForm({
-    required this.cubit,
-    required this.investor,
-    required this.deals,
-  });
+  const _WalletEntryForm({required this.cubit, required this.investor});
 
   final InvestorDetailCubit cubit;
   final Investor investor;
-  final List<({int id, String label})> deals;
 
   @override
   State<_WalletEntryForm> createState() => _WalletEntryFormState();
@@ -61,8 +64,7 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
   final _notes = TextEditingController();
 
   WalletAction _action = WalletAction.deposit;
-  String _method = 'cash';
-  int? _dealId;
+  PaymentMethod _method = PaymentMethod.cash;
   bool _saving = false;
 
   @override
@@ -72,23 +74,34 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
     super.dispose();
   }
 
+  /// **Whether the money is actually there is the server's answer**, because it depends on rows
+  /// this screen may not have seen — a colleague recording a withdrawal at the same counter one
+  /// second earlier. This checks the shape and nothing else.
+  String? _validateAmount(String? value) {
+    final text = (value ?? '').trim();
+    if (text.isEmpty) return 'المبلغ مطلوب';
+
+    // The app's own conversion, not a copy of it. A local copy handled ٠-٩ and dropped ٫ — the
+    // Arabic decimal separator — so «١٢٫٥», which the field's own formatter deliberately admits,
+    // was refused here as «not a number» one layer before the send path could convert it.
+    final amount = double.tryParse(Validators.toWesternDigits(text));
+
+    if (amount == null) return 'المبلغ يجب أن يكون رقماً';
+    if (amount <= 0) return 'المبلغ يجب أن يكون أكبر من صفر';
+
+    return null;
+  }
+
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    if (_action.needsDeal && _dealId == null) {
-      context.showError('اختر الصفقة');
-
-      return;
-    }
 
     setState(() => _saving = true);
 
     final failure = await widget.cubit.record(
       investorId: widget.investor.id,
       type: _action.wire,
-      amount: _amount.text.trim(),
-      investorDealId: _action.needsDeal ? _dealId : null,
-      method: _action.needsMethod ? _method : null,
+      amount: _amount.text,
+      method: _method.wire,
       notes: _notes.text,
     );
 
@@ -111,14 +124,14 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = context.colorScheme;
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        left: 16.w,
+        right: 16.w,
+        top: 8.h,
+        bottom: context.keyboardInset + 16.h,
       ),
       child: SingleChildScrollView(
         child: Form(
@@ -127,73 +140,87 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('حركة مالية', style: theme.textTheme.titleLarge),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<WalletAction>(
-                initialValue: _action,
-                decoration: const InputDecoration(labelText: 'نوع الحركة'),
-                items: WalletAction.values
-                    .map(
-                      (action) => DropdownMenuItem<WalletAction>(
-                        value: action,
-                        child: Text(action.label),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => _action = value ?? _action),
+              Center(
+                child: Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: scheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 16.h),
               Text(
-                _action.caption,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                'حركة مالية',
+                style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
-              const SizedBox(height: 12),
-              if (_action.needsDeal)
-                DropdownButtonFormField<int>(
-                  initialValue: _dealId,
-                  decoration: const InputDecoration(labelText: 'الصفقة'),
-                  items: widget.deals
-                      .map(
-                        (deal) =>
-                            DropdownMenuItem<int>(value: deal.id, child: Text(deal.label)),
-                      )
-                      .toList(),
-                  onChanged: (value) => setState(() => _dealId = value),
-                ),
-              if (_action.needsMethod)
-                DropdownButtonFormField<String>(
-                  initialValue: _method,
-                  decoration: const InputDecoration(labelText: 'طريقة الدفع'),
-                  items: const [
-                    DropdownMenuItem<String>(value: 'cash', child: Text('نقداً')),
-                    DropdownMenuItem<String>(value: 'bank_transfer', child: Text('حوالة مصرفية')),
-                    DropdownMenuItem<String>(value: 'bank_card', child: Text('بطاقة مصرفية')),
-                  ],
-                  onChanged: (value) => setState(() => _method = value ?? _method),
-                ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _amount,
-                decoration: const InputDecoration(labelText: 'المبلغ (د.ل)'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (value) {
-                  final text = (value ?? '').trim();
-                  final amount = double.tryParse(text);
+              SizedBox(height: 4.h),
+              Text(
+                widget.investor.name,
+                style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+              SizedBox(height: 20.h),
 
-                  return amount == null || amount <= 0 ? 'أدخل مبلغاً أكبر من صفر' : null;
+              // The app's own dropdown, generic over the model — see [AppDropdown]. It draws to
+              // match the fields around it, which a hand-rolled picker per form never does for
+              // long.
+              AppDropdown<WalletAction>(
+                value: _action,
+                items: WalletAction.values,
+                labelOf: (action) => action.label,
+                label: 'نوع الحركة',
+                prefixIcon: AppIcons.statusChange,
+                onChanged: (action) {
+                  if (action == null) return;
+
+                  setState(() => _action = action);
                 },
               ),
-              const SizedBox(height: 12),
-              TextFormField(
+              SizedBox(height: 16.h),
+
+              AppDropdown<PaymentMethod>(
+                value: _method,
+                // `selectable` rather than `values`: the unknown case exists so an entry written
+                // by a newer server still renders, and it is never a person's choice.
+                items: PaymentMethod.selectable,
+                labelOf: (method) => method.label,
+                label: 'طريقة الدفع',
+                prefixIcon: AppIcons.payment,
+                onChanged: (method) {
+                  if (method == null) return;
+
+                  setState(() => _method = method);
+                },
+              ),
+              SizedBox(height: 16.h),
+
+              AppTextField(
+                controller: _amount,
+                label: 'المبلغ',
+                prefixIcon: AppIcons.payment,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                // **The formatter is the real defence against a comma.** `1,500` is fifteen
+                // hundred to most people who type it and one and a half to some, and no amount
+                // of cleverness downstream can tell which — so the character never gets typed.
+                // Arabic-Indic digits *are* allowed, because that is what an Arabic keyboard
+                // produces, and they are converted on the way to the API.
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
+                validator: _validateAmount,
+              ),
+              SizedBox(height: 16.h),
+
+              AppTextField(
                 controller: _notes,
-                decoration: const InputDecoration(labelText: 'ملاحظات (اختياري)'),
+                label: 'ملاحظات (اختياري)',
+                prefixIcon: AppIcons.notes,
+                textInputAction: TextInputAction.done,
                 maxLines: 2,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 24.h),
+
               AppButton(label: 'تسجيل', isLoading: _saving, onPressed: _saving ? null : _submit),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
             ],
           ),
         ),

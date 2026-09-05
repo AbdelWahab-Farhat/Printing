@@ -16,9 +16,8 @@ use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\Warehouse;
-use App\Domain\Investor\DTOs\DealItemData;
+use App\Domain\Investor\DTOs\WalletEntryData;
 use App\Domain\Investor\Enums\WalletEntryType;
-use App\Domain\Investor\Exceptions\StockItemIsNotInvestable;
 use App\Domain\Investor\InvestorService;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDeal;
@@ -30,6 +29,9 @@ use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
+use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
+use App\Domain\PurchaseOrder\Models\PurchaseOrder;
+use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
@@ -76,6 +78,28 @@ class InvestorDealEarningsTest extends TestCase
             PermissionName::ViewInventory->value,
             PermissionName::ManageInventory->value,
         ]);
+
+        return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function partner(): array
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo([
+            PermissionName::ViewInvestors->value,
+            PermissionName::ManageInvestors->value,
+        ]);
+
+        // **The guard caches the first user a test resolves, and the partner is always the
+        // second.** A test that walks an order to the customer as the storeman and then reads
+        // the deal as the partner is authorised as the storeman for the second request, and
+        // fails on a permission the partner plainly has. Forgetting the guards makes the next
+        // request resolve its own token — nothing to do with this feature, everything to do
+        // with two people in one test.
+        $this->app['auth']->forgetGuards();
 
         return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
     }
@@ -216,6 +240,54 @@ class InvestorDealEarningsTest extends TestCase
         $balances = app(InvestorBalances::class)->forInvestor((int) $investor->getKey());
         $this->assertSame('1500.00', $balances['deals'][$deal->getKey()]['profit']);
         $this->assertSame('0.00', $balances['wallet']['profit']);
+    }
+
+    public function test_the_ledger_says_whose_goods_went_out_of_a_shared_shelf(): void
+    {
+        // Arrange — the same shared pile the split is computed from: 2,000 of ours (older) and
+        // 6,000 the deal financed. A line for 3,000 takes all of ours and 1,000 of theirs.
+        $size = $this->investableSize();
+        $warehouse = Warehouse::factory()->create();
+        [$deal] = $this->fundedDeal($size);
+
+        $company = $this->layer($size, $warehouse, '2000', '1.800');
+        $company->forceFill(['received_at' => now()->subDays(10)])->save();
+
+        $funded = $this->layer($size, $warehouse, '6000', '2.000', $deal);
+        $funded->forceFill(['received_at' => now()->subDay()])->save();
+
+        $order = Order::factory()->create(['design_fee' => '0.00', 'delivery_price' => '0.00', 'discount' => '0.00']);
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $size->product_id,
+            'product_variant_id' => $size->getKey(),
+            'variant_label' => $size->label,
+            'quantity' => '3000',
+            'unit_price' => '5.000',
+            'line_total' => '15000.00',
+            'pricing_unit' => PricingUnit::Piece,
+        ]);
+        app(RecalculateOrderTotals::class)($order->refresh());
+
+        $headers = $this->foreman();
+        $this->move($headers, $order->refresh(), OrderStatus::ReadyToPrint, [
+            'warehouse_id' => $warehouse->getKey(),
+        ])->assertOk();
+
+        // Act — the shelf's own ledger, which showed «−3,000» and nothing about whose.
+        $response = $this->withHeaders($headers)->getJson(
+            '/api/v1/stock-movements?stock_item_id='.$size->stock_item_id.'&warehouse_id='.$warehouse->getKey(),
+        );
+
+        // Assert — one line per owner: 2,000 the company's, 1,000 the deal's. The split has been
+        // in `stock_batch_consumptions` since the first sale; this is the first screen to say it.
+        $response->assertOk();
+
+        $draws = collect($response->json('data.0.investor_draws'))->keyBy('investor_deal_id');
+
+        $this->assertSame('2000.000', $draws[null]['quantity']);
+        $this->assertNull($draws[null]['code']);
+        $this->assertSame('1000.000', $draws[$deal->getKey()]['quantity']);
+        $this->assertSame($deal->code, $draws[$deal->getKey()]['code']);
     }
 
     public function test_a_deal_is_paid_only_for_the_units_it_actually_financed(): void
@@ -412,10 +484,144 @@ class InvestorDealEarningsTest extends TestCase
         );
     }
 
-    public function test_a_deal_may_not_be_opened_against_a_shelf_a_non_investable_product_also_stands_on(): void
+    // ─────────────────────────── the paperwork ───────────────────────────
+
+    // ─────────────────────── the orders behind the money ───────────────────────
+
+    public function test_a_deal_lists_the_order_that_sold_its_goods_and_what_it_earned(): void
+    {
+        // Arrange — the shared shelf again: 2,000 of ours (older) and 6,000 the deal financed,
+        // and a line for 3,000 that takes all of ours and 1,000 of theirs.
+        $size = $this->investableSize();
+        $warehouse = Warehouse::factory()->create();
+        [$deal] = $this->fundedDeal($size);
+
+        $company = $this->layer($size, $warehouse, '2000', '1.800');
+        $company->forceFill(['received_at' => now()->subDays(10)])->save();
+
+        $funded = $this->layer($size, $warehouse, '6000', '2.000', $deal);
+        $funded->forceFill(['received_at' => now()->subDay()])->save();
+
+        $order = Order::factory()->create(['design_fee' => '0.00', 'delivery_price' => '0.00', 'discount' => '0.00']);
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $size->product_id,
+            'product_variant_id' => $size->getKey(),
+            'variant_label' => $size->label,
+            'quantity' => '3000',
+            'unit_price' => '5.000',
+            'line_total' => '15000.00',
+            'pricing_unit' => PricingUnit::Piece,
+        ]);
+        app(RecalculateOrderTotals::class)($order->refresh());
+        $this->deliver($this->foreman(), $order->refresh(), $warehouse);
+
+        // Act
+        $response = $this->withHeaders($this->partner())
+            ->getJson("/api/v1/investor-deals/{$deal->id}/orders");
+
+        // Assert — one row, and every figure on it is the arithmetic somebody can check by hand:
+        // 1,000 units off this deal at 2.000 apiece, a third of the line's 15,000.00 in revenue,
+        // so the deal made 3,000.00 — of which half went to the investors and half stayed here.
+        $response->assertOk()->assertJsonCount(1, 'data');
+
+        $this->assertSame((int) $order->getKey(), $response->json('data.0.order_id'));
+        $this->assertSame('1000.000', $response->json('data.0.quantity'));
+        $this->assertSame('2000.00', $response->json('data.0.material_cost'));
+        $this->assertSame('5000.00', $response->json('data.0.revenue'));
+        $this->assertSame('3000.00', $response->json('data.0.profit'));
+        $this->assertSame('1500.00', $response->json('data.0.investors_share'));
+        $this->assertSame('1500.00', $response->json('data.0.company_share'));
+        $this->assertTrue($response->json('data.0.is_posted'));
+
+        // And the row says which order it was, in the code staff say out loud.
+        $this->assertSame($order->refresh()->code, $response->json('data.0.code'));
+    }
+
+    public function test_an_order_still_on_the_road_is_listed_with_nothing_paid_yet(): void
+    {
+        // Arrange — the goods left the shelf at «جاهزة للطباعة» and the parcel is not there yet.
+        $size = $this->investableSize();
+        $warehouse = Warehouse::factory()->create();
+        [$deal] = $this->fundedDeal($size);
+        $this->layer($size, $warehouse, '1000', '2.000', $deal);
+
+        $order = Order::factory()->create(['design_fee' => '0.00', 'delivery_price' => '0.00', 'discount' => '0.00']);
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $size->product_id,
+            'product_variant_id' => $size->getKey(),
+            'variant_label' => $size->label,
+            'quantity' => '1000',
+            'unit_price' => '5.000',
+            'line_total' => '5000.00',
+            'pricing_unit' => PricingUnit::Piece,
+        ]);
+        app(RecalculateOrderTotals::class)($order->refresh());
+
+        $this->move($this->foreman(), $order->refresh(), OrderStatus::ReadyToPrint, [
+            'warehouse_id' => $warehouse->getKey(),
+        ])->assertOk();
+
+        // Act
+        $response = $this->withHeaders($this->partner())
+            ->getJson("/api/v1/investor-deals/{$deal->id}/orders");
+
+        // Assert — it is on the list, because it is holding this deal's stock right now and is
+        // exactly what refuses to let the deal close. But nothing has been paid for it: the
+        // share is **null** rather than 0.00, which is a different sentence — an order that
+        // broke exactly even would say 0.00.
+        $response->assertOk()->assertJsonCount(1, 'data');
+
+        $this->assertSame('3000.00', $response->json('data.0.profit'));
+        $this->assertNull($response->json('data.0.investors_share'));
+        $this->assertNull($response->json('data.0.company_share'));
+        $this->assertFalse($response->json('data.0.is_posted'));
+    }
+
+    public function test_a_cancelled_order_leaves_the_deal_s_list_with_the_goods_it_gave_back(): void
+    {
+        // Arrange — the stock left the shelf, then the order was cancelled whole.
+        $size = $this->investableSize();
+        $warehouse = Warehouse::factory()->create();
+        [$deal] = $this->fundedDeal($size);
+        $this->layer($size, $warehouse, '1000', '2.000', $deal);
+
+        $order = Order::factory()->create(['design_fee' => '0.00', 'delivery_price' => '0.00', 'discount' => '0.00']);
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $size->product_id,
+            'product_variant_id' => $size->getKey(),
+            'variant_label' => $size->label,
+            'quantity' => '1000',
+            'unit_price' => '5.000',
+            'line_total' => '5000.00',
+            'pricing_unit' => PricingUnit::Piece,
+        ]);
+        app(RecalculateOrderTotals::class)($order->refresh());
+
+        $headers = $this->foreman();
+        $this->move($headers, $order->refresh(), OrderStatus::ReadyToPrint, [
+            'warehouse_id' => $warehouse->getKey(),
+        ])->assertOk();
+
+        // Act
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Cancelled->value,
+            'reason' => 'الزبون ألغى',
+        ])->assertOk();
+
+        // Assert — gone. `CreditBackStockBatches` put the goods back into this deal's own
+        // layers, so the order took nothing from it and earned it nothing; leaving the row
+        // behind would show a sale that was undone.
+        $response = $this->withHeaders($this->partner())
+            ->getJson("/api/v1/investor-deals/{$deal->id}/orders");
+
+        $response->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_a_deal_may_not_be_struck_on_a_shelf_a_non_investable_product_also_stands_on(): void
     {
         // Arrange — one shelf, two products: bags the business invests in, and stickers it does
-        // not. This is the real shape of the catalogue, not a contrived one.
+        // not. This is the real shape of the catalogue, not a contrived one. An order brings
+        // 20,000 of that shelf, and a partner with money is ready to fund it.
         $size = $this->investableSize();
 
         $stickers = ProductCategory::factory()->create(['is_investable' => false]);
@@ -429,22 +635,43 @@ class InvestorDealEarningsTest extends TestCase
             'stock_item_id' => $size->stock_item_id,
         ]);
 
-        $deal = InvestorDeal::factory()->create();
+        $order = PurchaseOrder::factory()->create([
+            'warehouse_id' => Warehouse::factory()->create()->getKey(),
+            'status' => PurchaseOrderStatus::New,
+        ]);
+        PurchaseOrderItem::factory()->forOrder($order)->create([
+            'stock_item_id' => $size->stock_item_id,
+            'quantity_ordered' => '10000.000',
+            'base_total_cost' => '20000.00',
+            'base_unit_cost' => '2.000',
+            'allocated_additional_cost' => '0.00',
+            'final_unit_cost' => '2.000',
+            'final_total_cost' => '20000.00',
+        ]);
 
-        // Act
-        $refused = false;
+        $investor = Investor::factory()->create();
+        app(InvestorService::class)->recordWalletEntry(
+            new WalletEntryData(
+                investorId: (int) $investor->getKey(),
+                type: WalletEntryType::Deposit,
+                amount: '5000.00',
+                method: 'cash',
+            ),
+            null,
+        );
 
-        try {
-            app(InvestorService::class)->syncDealItems($deal, [
-                new DealItemData(stockItemId: (int) $size->stock_item_id),
-            ]);
-        } catch (StockItemIsNotInvestable $e) {
-            $refused = true;
-        }
+        // Act — through the only door a deal is born through.
+        $response = $this->withHeaders($this->partner())->postJson(
+            "/api/v1/purchase-orders/{$order->id}/investor-funding",
+            ['investors' => [['investor_id' => $investor->getKey(), 'amount' => '3000.00']]],
+        );
 
-        // Assert — FIFO draws from the oldest layer whatever product is on the invoice, so a
-        // shelf shared with a sticker would have the investor financing bags and being paid a
-        // sticker's margin. The guard is «every product here is investable», not «one of them».
-        $this->assertTrue($refused);
+        // Assert — refused whole, and nothing half-made left behind. FIFO draws from the oldest
+        // layer whatever product is on the invoice, so a shelf shared with a sticker would have
+        // the investor financing bags and being paid a sticker's margin. The guard is «every
+        // product here is investable», not «one of them».
+        $response->assertStatus(422);
+        $this->assertSame(0, InvestorDeal::query()->count());
+        $this->assertSame(0, InvestorWalletEntry::query()->where('type', WalletEntryType::Allocation->value)->count());
     }
 }

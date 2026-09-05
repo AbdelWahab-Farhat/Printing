@@ -91,8 +91,8 @@ void main() {
       // Act
       final label = city.priceLabel;
 
-      // Assert — the server's own '15.00', never a double that reformatted it.
-      expect(label, '15.00 د.ل');
+      // Assert — the server's '15.00' with its padding cut, never a double that reformatted it.
+      expect(label, '15 د.ل');
     });
 
     test('no agreed rate is said in words, never as a zero', () {

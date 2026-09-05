@@ -57,7 +57,12 @@ final class SyncDealItems
         }
 
         foreach ($items as $item) {
-            $row = $deal->items()->firstOrNew(['stock_item_id' => $item->stockItemId]);
+            // Found by its shelf, or made empty. Not `firstOrNew(['stock_item_id' => …])`:
+            // that mass-assigns the key, and the key is deliberately not fillable — which shelf
+            // a row funds is this action's to set and never a payload's, so strict mode refused
+            // the whole create rather than let it through.
+            $row = $deal->items()->where('stock_item_id', $item->stockItemId)->first()
+                ?? $deal->items()->make();
 
             $row->fill([
                 'quantity_expected' => $item->quantityExpected,

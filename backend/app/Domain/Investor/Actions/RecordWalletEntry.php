@@ -7,6 +7,7 @@ namespace App\Domain\Investor\Actions;
 use App\Domain\Investor\DTOs\WalletEntryData;
 use App\Domain\Investor\Enums\DealStatus;
 use App\Domain\Investor\Enums\WalletEntryType;
+use App\Domain\Investor\Exceptions\DealTakesNoMoreCapital;
 use App\Domain\Investor\Exceptions\EntryCannotBeReversed;
 use App\Domain\Investor\Exceptions\WithdrawalExceedsBalance;
 use App\Domain\Investor\Models\Investor;
@@ -107,6 +108,16 @@ final class RecordWalletEntry
             throw EntryCannotBeReversed::make(
                 "الصفقة {$deal->code} «{$deal->status->label()}» ولا تقبل حركات مالية جديدة"
             );
+        }
+
+        // A deal born from a purchase order fixed, at funding, what fraction of the goods the
+        // partners' money bought. Capital added after it opened buys nothing and moves no
+        // percent; `FundPurchaseOrder` writes its own allocations while the deal is still a
+        // draft, so this catches only the top-up from the investor screen.
+        if ($data->type === WalletEntryType::Allocation
+            && $deal->status === DealStatus::Open
+            && $deal->isBornFromPurchaseOrder()) {
+            throw DealTakesNoMoreCapital::make((string) $deal->code);
         }
     }
 }

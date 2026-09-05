@@ -19,7 +19,6 @@ final readonly class InvestorDealData
      * @param  list<DealShareData>  $shares
      */
     public function __construct(
-        public string $name,
         public string $openedOn,
         public array $items,
         public array $shares,
@@ -34,7 +33,6 @@ final readonly class InvestorDealData
     public static function fromArray(array $validated): self
     {
         return new self(
-            name: trim((string) $validated['name']),
             openedOn: (string) $validated['opened_on'],
             items: array_map(
                 fn (array $row) => DealItemData::fromArray($row),

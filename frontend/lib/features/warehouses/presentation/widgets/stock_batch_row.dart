@@ -49,6 +49,27 @@ class StockBatchRow extends StatelessWidget {
                         style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
+                    // **Whose money is in this layer**, said on the layer itself. A funded batch
+                    // was indistinguishable from the company's own until now, and FIFO will sell
+                    // it without asking anybody — so «D22» here is the only place the answer
+                    // appears before the goods are gone.
+                    if (batch.investorDealCode case final code?) ...[
+                      SizedBox(width: 8.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: scheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                        child: Text(
+                          code,
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            color: scheme.onPrimaryContainer,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
                     SizedBox(width: 8.w),
                     if (batch.isUncosted)
                       Text(
@@ -115,6 +136,47 @@ class StockBatchRow extends StatelessWidget {
                   Text(
                     'عُدّلت تكلفتها ${at.shortDayLabel}',
                     style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                ],
+                // Which paperwork brought it in. Absent on a layer entered as a plain arrival,
+                // which has no order behind it to name.
+                if (batch.purchaseOrderId case final orderId?) ...[
+                  SizedBox(height: 4.h),
+                  Text(
+                    'أمر شراء #$orderId',
+                    style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                ],
+                // **Whose money is in it.** A funded layer was indistinguishable from the
+                // company's own, and FIFO sells it without asking — so this is the only place
+                // the answer appears before the goods are gone.
+                for (final funder in batch.investorDealInvestors) ...[
+                  SizedBox(height: 4.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          funder.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textTheme.bodyMedium,
+                        ),
+                      ),
+                      Text(
+                        '${groupedDecimal(funder.committedAmount)} د.ل',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Text(
+                        '${trimDecimals(funder.sharePercent)}%',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ],

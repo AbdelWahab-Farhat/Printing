@@ -602,7 +602,7 @@ as String,
 /// @nodoc
 mixin _$InvestorDealLine {
 
- int get id; String? get code; String? get name; String? get status;/// The Arabic to print. Sent by the server so the app keeps no translation table in step.
+ int get id; String? get code; String? get status;/// The Arabic to print. Sent by the server so the app keeps no translation table in step.
 @JsonKey(name: 'status_label') String? get statusLabel;/// His slice **of the investors' share** of this deal — not of its whole profit.
 @JsonKey(name: 'share_percent') String get sharePercent; String get capital; String get profit;
 /// Create a copy of InvestorDealLine
@@ -617,16 +617,16 @@ $InvestorDealLineCopyWith<InvestorDealLine> get copyWith => _$InvestorDealLineCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorDealLine&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorDealLine&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,status,statusLabel,sharePercent,capital,profit);
+int get hashCode => Object.hash(runtimeType,id,code,status,statusLabel,sharePercent,capital,profit);
 
 @override
 String toString() {
-  return 'InvestorDealLine(id: $id, code: $code, name: $name, status: $status, statusLabel: $statusLabel, sharePercent: $sharePercent, capital: $capital, profit: $profit)';
+  return 'InvestorDealLine(id: $id, code: $code, status: $status, statusLabel: $statusLabel, sharePercent: $sharePercent, capital: $capital, profit: $profit)';
 }
 
 
@@ -637,7 +637,7 @@ abstract mixin class $InvestorDealLineCopyWith<$Res>  {
   factory $InvestorDealLineCopyWith(InvestorDealLine value, $Res Function(InvestorDealLine) _then) = _$InvestorDealLineCopyWithImpl;
 @useResult
 $Res call({
- int id, String? code, String? name, String? status,@JsonKey(name: 'status_label') String? statusLabel,@JsonKey(name: 'share_percent') String sharePercent, String capital, String profit
+ int id, String? code, String? status,@JsonKey(name: 'status_label') String? statusLabel,@JsonKey(name: 'share_percent') String sharePercent, String capital, String profit
 });
 
 
@@ -654,11 +654,10 @@ class _$InvestorDealLineCopyWithImpl<$Res>
 
 /// Create a copy of InvestorDealLine
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = freezed,Object? name = freezed,Object? status = freezed,Object? statusLabel = freezed,Object? sharePercent = null,Object? capital = null,Object? profit = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = freezed,Object? status = freezed,Object? statusLabel = freezed,Object? sharePercent = null,Object? capital = null,Object? profit = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
-as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String?,statusLabel: freezed == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
 as String?,sharePercent: null == sharePercent ? _self.sharePercent : sharePercent // ignore: cast_nullable_to_non_nullable
@@ -749,10 +748,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String? code,  String? name,  String? status, @JsonKey(name: 'status_label')  String? statusLabel, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String? code,  String? status, @JsonKey(name: 'status_label')  String? statusLabel, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InvestorDealLine() when $default != null:
-return $default(_that.id,_that.code,_that.name,_that.status,_that.statusLabel,_that.sharePercent,_that.capital,_that.profit);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.sharePercent,_that.capital,_that.profit);case _:
   return orElse();
 
 }
@@ -770,10 +769,10 @@ return $default(_that.id,_that.code,_that.name,_that.status,_that.statusLabel,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String? code,  String? name,  String? status, @JsonKey(name: 'status_label')  String? statusLabel, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String? code,  String? status, @JsonKey(name: 'status_label')  String? statusLabel, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit)  $default,) {final _that = this;
 switch (_that) {
 case _InvestorDealLine():
-return $default(_that.id,_that.code,_that.name,_that.status,_that.statusLabel,_that.sharePercent,_that.capital,_that.profit);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.sharePercent,_that.capital,_that.profit);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -790,10 +789,10 @@ return $default(_that.id,_that.code,_that.name,_that.status,_that.statusLabel,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String? code,  String? name,  String? status, @JsonKey(name: 'status_label')  String? statusLabel, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String? code,  String? status, @JsonKey(name: 'status_label')  String? statusLabel, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit)?  $default,) {final _that = this;
 switch (_that) {
 case _InvestorDealLine() when $default != null:
-return $default(_that.id,_that.code,_that.name,_that.status,_that.statusLabel,_that.sharePercent,_that.capital,_that.profit);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.sharePercent,_that.capital,_that.profit);case _:
   return null;
 
 }
@@ -805,12 +804,11 @@ return $default(_that.id,_that.code,_that.name,_that.status,_that.statusLabel,_t
 @JsonSerializable()
 
 class _InvestorDealLine implements InvestorDealLine {
-  const _InvestorDealLine({required this.id, this.code, this.name, this.status, @JsonKey(name: 'status_label') this.statusLabel, @JsonKey(name: 'share_percent') required this.sharePercent, required this.capital, required this.profit});
+  const _InvestorDealLine({required this.id, this.code, this.status, @JsonKey(name: 'status_label') this.statusLabel, @JsonKey(name: 'share_percent') required this.sharePercent, required this.capital, required this.profit});
   factory _InvestorDealLine.fromJson(Map<String, dynamic> json) => _$InvestorDealLineFromJson(json);
 
 @override final  int id;
 @override final  String? code;
-@override final  String? name;
 @override final  String? status;
 /// The Arabic to print. Sent by the server so the app keeps no translation table in step.
 @override@JsonKey(name: 'status_label') final  String? statusLabel;
@@ -832,16 +830,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorDealLine&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorDealLine&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,status,statusLabel,sharePercent,capital,profit);
+int get hashCode => Object.hash(runtimeType,id,code,status,statusLabel,sharePercent,capital,profit);
 
 @override
 String toString() {
-  return 'InvestorDealLine(id: $id, code: $code, name: $name, status: $status, statusLabel: $statusLabel, sharePercent: $sharePercent, capital: $capital, profit: $profit)';
+  return 'InvestorDealLine(id: $id, code: $code, status: $status, statusLabel: $statusLabel, sharePercent: $sharePercent, capital: $capital, profit: $profit)';
 }
 
 
@@ -852,7 +850,7 @@ abstract mixin class _$InvestorDealLineCopyWith<$Res> implements $InvestorDealLi
   factory _$InvestorDealLineCopyWith(_InvestorDealLine value, $Res Function(_InvestorDealLine) _then) = __$InvestorDealLineCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String? code, String? name, String? status,@JsonKey(name: 'status_label') String? statusLabel,@JsonKey(name: 'share_percent') String sharePercent, String capital, String profit
+ int id, String? code, String? status,@JsonKey(name: 'status_label') String? statusLabel,@JsonKey(name: 'share_percent') String sharePercent, String capital, String profit
 });
 
 
@@ -869,11 +867,10 @@ class __$InvestorDealLineCopyWithImpl<$Res>
 
 /// Create a copy of InvestorDealLine
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = freezed,Object? name = freezed,Object? status = freezed,Object? statusLabel = freezed,Object? sharePercent = null,Object? capital = null,Object? profit = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = freezed,Object? status = freezed,Object? statusLabel = freezed,Object? sharePercent = null,Object? capital = null,Object? profit = null,}) {
   return _then(_InvestorDealLine(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
-as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String?,statusLabel: freezed == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
 as String?,sharePercent: null == sharePercent ? _self.sharePercent : sharePercent // ignore: cast_nullable_to_non_nullable

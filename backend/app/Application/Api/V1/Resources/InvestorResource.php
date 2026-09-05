@@ -32,6 +32,14 @@ class InvestorResource extends JsonResource
             // the role cannot change what the app believes.
             'has_login' => $this->user_id !== null,
 
+            // What he has with us and what he has earned — two numbers, drawn on his row.
+            //
+            // `capital` is **both places his capital can be**, his wallet and the deals it is
+            // committed to, because from where he stands they are one sum he handed over; the
+            // two are told apart on his own screen, where the distinction is the point. Present
+            // on the list only, which is the screen that asked for it.
+            'totals' => $this->when(isset($this->totals), fn (): ?array => $this->totals),
+
             // Present only where the caller asked for balances — a list of fifty investors does
             // not walk fifty ledgers to draw a table.
             // **A list, not a map keyed by deal id.** An array with integer keys does not

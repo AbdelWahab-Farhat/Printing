@@ -12,7 +12,6 @@ abstract class InvestorDeal with _$InvestorDeal {
   const factory InvestorDeal({
     required int id,
     required String code,
-    required String name,
 
     required String status,
     @JsonKey(name: 'status_label') required String statusLabel,
@@ -23,6 +22,15 @@ abstract class InvestorDeal with _$InvestorDeal {
     /// The investors' share of **this** deal's profit, copied from the company default when it
     /// was created and frozen when it opened.
     @JsonKey(name: 'investor_profit_share_percent') required String investorProfitSharePercent,
+
+    /// The company as a partner: what it put in beside the investors — «الباقي على الشركة» —
+    /// derived at funding from the lines' landed cost and frozen. Zero on a deal built by hand.
+    @JsonKey(name: 'company_stake') @Default('0.00') String companyStake,
+
+    /// The fraction of the goods the investors' money actually bought, frozen with the terms.
+    /// Every profit, loss and expense is multiplied by it before their share is taken. A deal
+    /// built by hand owns all of its goods, hence 100.
+    @JsonKey(name: 'investor_funded_percent') @Default('100.0000') String investorFundedPercent,
 
     @JsonKey(name: 'opened_on') String? openedOn,
     @JsonKey(name: 'closed_at') String? closedAt,

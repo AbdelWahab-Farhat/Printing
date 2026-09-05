@@ -1,4 +1,6 @@
+import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/features/products/models/investability.dart';
 import 'package:dayaa/features/products/models/product_category.dart';
 import 'package:dayaa/features/products/models/production_mode.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/save_product_category_cubit.dart';
@@ -22,8 +24,13 @@ import 'package:mocktail/mocktail.dart';
 class _MockProductCategoryRepository extends Mock implements ProductCategoryRepository {}
 
 void main() {
+  late _MockProductCategoryRepository repository;
+
+  // `any(named: 'productionMode')` needs a value of the type to stand in for.
+  setUpAll(() => registerFallbackValue(ProductionMode.inHouse));
+
   setUp(() {
-    final repository = _MockProductCategoryRepository();
+    repository = _MockProductCategoryRepository();
     sl.registerFactory<SaveProductCategoryCubit>(
       () => SaveProductCategoryCubit(
         saveCategory: SaveProductCategory(repository),
@@ -42,7 +49,7 @@ void main() {
   );
 
   /// A page with one button that opens the sheet, the way the categories screen does.
-  Widget host() => ScreenUtilInit(
+  Widget host([ProductCategory seed = category]) => ScreenUtilInit(
     designSize: const Size(430, 932),
     builder: (context, _) => MaterialApp(
       locale: const Locale('ar'),
@@ -56,7 +63,7 @@ void main() {
         body: Builder(
           builder: (context) => Center(
             child: TextButton(
-              onPressed: () => showProductCategorySheet(context: context, category: category),
+              onPressed: () => showProductCategorySheet(context: context, category: seed),
               child: const Text('افتح'),
             ),
           ),
@@ -65,8 +72,8 @@ void main() {
     ),
   );
 
-  Future<void> open(WidgetTester tester) async {
-    await tester.pumpWidget(host());
+  Future<void> open(WidgetTester tester, [ProductCategory seed = category]) async {
+    await tester.pumpWidget(host(seed));
     await tester.tap(find.text('افتح'));
     await tester.pumpAndSettle();
   }
@@ -139,5 +146,127 @@ void main() {
 
     // Assert
     expect(find.textContaining('يصنعها مورد خارجي'), findsOneWidget);
+  });
+
+  // ─────────────────────────── قابل للاستثمار ───────────────────────────
+
+  testWidgets('a heading with nothing above it is offered two answers, not three', (
+    tester,
+  ) async {
+    // Arrange - Act
+    await open(tester);
+
+    // Assert — «حسب الرئيسي» would be a segment with nothing to ask: this heading is a root.
+    final picker = find.byType(SegmentedButton<Investability>);
+    expect(picker, findsOneWidget);
+    expect(find.text('نعم'), findsOneWidget);
+    expect(find.text('لا'), findsOneWidget);
+    expect(find.text('حسب الرئيسي'), findsNothing);
+
+    final fieldWidth = tester.getSize(find.byType(TextField).first).width;
+    expect(tester.getSize(picker).width, moreOrLessEquals(fieldWidth, epsilon: 2));
+  });
+
+  testWidgets('a heading nobody has decided about opens on «لا»', (tester) async {
+    // Arrange - Act
+    await open(tester);
+
+    // Assert — fail-closed, and the same answer the server gives: nothing is fundable until
+    // somebody says so.
+    final segmented = tester.widget<SegmentedButton<Investability>>(
+      find.byType(SegmentedButton<Investability>),
+    );
+    expect(segmented.selected, {Investability.no});
+  });
+
+  testWidgets('a subheading may hand the answer back to its parent', (tester) async {
+    // Arrange — a child, left at null: «حسب الرئيسي».
+    const child = ProductCategory(id: 6, name: 'أكياس ورقية', parentId: 3);
+
+    // Act
+    await open(tester, child);
+
+    // Assert — three answers here, and it opens on the one it holds. This is the whole reason
+    // the field is nullable: «لا» on a child means «استثنِ هذا الفرع», not «لم يُسأل عنه».
+    expect(find.text('حسب الرئيسي'), findsOneWidget);
+    final segmented = tester.widget<SegmentedButton<Investability>>(
+      find.byType(SegmentedButton<Investability>),
+    );
+    expect(segmented.selected, {Investability.inherit});
+  });
+
+  testWidgets('a heading already open to investment opens on «نعم»', (tester) async {
+    // Arrange
+    const funded = ProductCategory(id: 7, name: 'أكياس', isInvestable: true);
+
+    // Act
+    await open(tester, funded);
+
+    // Assert
+    final segmented = tester.widget<SegmentedButton<Investability>>(
+      find.byType(SegmentedButton<Investability>),
+    );
+    expect(segmented.selected, {Investability.yes});
+  });
+
+  testWidgets('the answer on the picker is what the save sends', (tester) async {
+    // Arrange — the last link in the chain, and the one that would fail silently: a sheet that
+    // draws the segments and drops them on submit looks right and changes nothing, while every
+    // shelf under the heading stays refused by the deal sheet.
+    when(
+      () => repository.update(
+        any(),
+        name: any(named: 'name'),
+        description: any(named: 'description'),
+        sortOrder: any(named: 'sortOrder'),
+        isActive: any(named: 'isActive'),
+        productionMode: any(named: 'productionMode'),
+        parentId: any(named: 'parentId'),
+        isInvestable: any(named: 'isInvestable'),
+      ),
+    ).thenAnswer((_) async => const Right(category));
+    await open(tester);
+
+    // Act
+    await tester.tap(find.text('نعم'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حفظ'));
+    await tester.pumpAndSettle();
+
+    // Assert — and the rest of the row goes back untouched beside it: a PUT replaces the whole
+    // representation, so anything left out is an answer given by accident.
+    verify(
+      () => repository.update(
+        5,
+        name: 'سادة',
+        description: 'منتجات بلا طباعة، تُباع غالباً بالوزن.',
+        sortOrder: 0,
+        isActive: true,
+        productionMode: ProductionMode.none,
+        parentId: null,
+        isInvestable: true,
+      ),
+    ).called(1);
+
+    // The success toast holds a three-second dismissal timer of its own, and a timer still
+    // pending when the tree is torn down fails the test. Let it run out.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('what the flag does is behind the question mark, not under the picker', (
+    tester,
+  ) async {
+    // Arrange
+    await open(tester);
+    expect(find.textContaining('كل المنتجات النشطة'), findsNothing);
+
+    // Act
+    await tester.tap(find.byKey(const Key('investable-help')));
+    await tester.pumpAndSettle();
+
+    // Assert — the rule somebody would otherwise meet as a 422 on the deal sheet: the flag
+    // opens headings, and a deal is opened against a shelf.
+    expect(find.textContaining('كل المنتجات النشطة'), findsOneWidget);
   });
 }

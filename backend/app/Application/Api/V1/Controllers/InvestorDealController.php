@@ -6,15 +6,17 @@ namespace App\Application\Api\V1\Controllers;
 
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
+use App\Application\Api\V1\Requests\Investor\FundPurchaseOrderRequest;
 use App\Application\Api\V1\Requests\Investor\StoreDealExpenseRequest;
-use App\Application\Api\V1\Requests\Investor\StoreInvestorDealRequest;
+use App\Application\Api\V1\Resources\DealOrderResource;
 use App\Application\Api\V1\Resources\InvestorDealResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
 use App\Domain\Investor\DTOs\DealExpenseData;
-use App\Domain\Investor\DTOs\InvestorDealData;
+use App\Domain\Investor\DTOs\FundPurchaseOrderData;
 use App\Domain\Investor\InvestorService;
 use App\Domain\Investor\Models\InvestorDeal;
+use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,6 +26,11 @@ use Illuminate\Http\Request;
  *
  * صفقات المستثمرين — one financed purchase of stock. A deal names the shelves it funds and the
  * people who are in it; from there the system does the rest.
+ *
+ * **A deal is born on its purchase order and nowhere else.** There is no endpoint that creates,
+ * opens, cancels or claims for a deal by hand: the fraction of the goods its partners own is
+ * derived from the order's cost, and a deal without an order had nothing to derive it from and
+ * paid its partners for goods they had not bought. The owner closed that door on 2026-09-05.
  *
  * **Nobody chooses a deal when goods arrive or when they are sold.** The funding is declared
  * against a purchase order before the lorry gets here, and the sale draws from the oldest cost
@@ -55,20 +62,30 @@ class InvestorDealController extends Controller
     }
 
     /**
-     * Create a deal
+     * Fund a purchase order
      *
-     * Born as a draft: its shelves, its participants and their percentages are all still
-     * editable, and no stock may be claimed for it yet. `investor_profit_share_percent` may be
-     * omitted, in which case the company default fills it.
+     * The ordinary way a deal is born: on the order itself, name the partners and what each one
+     * put in. The order's lines become the deal's shelves, every one of them is claimed for it,
+     * and the money moves from each wallet into the deal — all in one transaction, so a man who
+     * has not got what he promised leaves nothing half-made behind.
+     *
+     * The percentages are not asked for. They are the amounts, split so they sum to exactly 100.
+     *
+     * Refused once a line has been received: who paid for goods is declared before they arrive,
+     * because the cost layer is stamped at the gate and can never be stamped afterwards.
      */
-    public function store(StoreInvestorDealRequest $request): JsonResponse
+    public function fundPurchaseOrder(FundPurchaseOrderRequest $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
-        $deal = $this->investors->createDeal(
-            InvestorDealData::fromArray($request->validated()),
+        $deal = $this->investors->fundPurchaseOrder(
+            (int) $purchaseOrder->getKey(),
+            FundPurchaseOrderData::fromArray($request->validated()),
             $request->user()?->id,
         );
 
-        return $this->created(new InvestorDealResource($deal), 'تم إنشاء الصفقة');
+        return $this->created(
+            new InvestorDealResource($deal),
+            'تم إنشاء الصفقة وتمويل أمر الشراء',
+        );
     }
 
     /**
@@ -88,16 +105,26 @@ class InvestorDealController extends Controller
     }
 
     /**
-     * Open a deal
+     * The orders that sold this deal's goods
      *
-     * Goods may now be claimed for it — and its terms close in the same breath, because they are
-     * what the money will be split by.
+     * «أي طلبيات كانت مرتبطة بالصفقة وكم أدخلت» — one row per order, newest first, each carrying
+     * what it drew off the shelf and what that earned.
+     *
+     * **Two figures, and they are not the same one.** `profit` is what the deal made on the
+     * order; `investors_share` is what was written into the ledger for it, which is that profit
+     * times the deal's percentage. `investors_share` is null until the order reaches
+     * «تم الاستلام», because nothing is paid before then — and an order still on the road appears
+     * here anyway, since it is holding this deal's stock and is what refuses to let it close.
+     *
+     * A cancelled order is absent: its goods went back into this deal's own layers, so it took
+     * nothing and earned nothing.
      */
-    public function open(InvestorDeal $deal): JsonResponse
+    public function orders(Request $request, InvestorDeal $deal): JsonResponse
     {
-        return $this->success(
-            new InvestorDealResource($this->investors->openDeal($deal)),
-            'تم فتح الصفقة',
+        $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
+
+        return $this->successWithPagination(
+            DealOrderResource::collection($this->investors->dealOrders((int) $deal->getKey(), $perPage)),
         );
     }
 
@@ -117,47 +144,6 @@ class InvestorDealController extends Controller
             new InvestorDealResource($this->investors->closeDeal($deal)),
             'تم إغلاق الصفقة وتسوية حسابات المستثمرين',
         );
-    }
-
-    /**
-     * Cancel a deal
-     *
-     * From a draft only. A deal that already owns goods is closed, not cancelled — FIFO would go
-     * on drawing from its layers whatever its status said.
-     */
-    public function cancel(Request $request, InvestorDeal $deal): JsonResponse
-    {
-        $reason = (string) $request->validate([
-            'reason' => ['required', 'string', 'min:3', 'max:500'],
-        ])['reason'];
-
-        return $this->success(
-            new InvestorDealResource($this->investors->cancelDeal($deal, $reason)),
-            'تم إلغاء الصفقة',
-        );
-    }
-
-    /**
-     * Declare which purchase-order line this deal finances
-     *
-     * Made before the goods arrive. At receipt the system resolves it per line, so the person
-     * receiving the shipment never sees a deal field at all.
-     */
-    public function claimSupply(Request $request, InvestorDeal $deal): JsonResponse
-    {
-        $validated = $request->validate([
-            'purchase_order_id' => ['required', 'integer', 'exists:purchase_orders,id'],
-            'stock_item_id' => ['required', 'integer', 'exists:stock_items,id'],
-        ]);
-
-        $this->investors->claimSupply(
-            $deal,
-            (int) $validated['purchase_order_id'],
-            (int) $validated['stock_item_id'],
-            $request->user()?->id,
-        );
-
-        return $this->successMessage('تم إقرار تمويل البند');
     }
 
     /**
@@ -182,9 +168,16 @@ class InvestorDealController extends Controller
 
     /**
      * A deal's history
+     *
+     * Every change to the deal itself, newest first — who made it and what it was before.
+     *
+     * **Its money is not here, deliberately.** Capital, profit and quantities are walked from
+     * the ledgers rather than stored, so `GET /investor-deals/{deal}` is what reports them.
+     *
+     * Filter with `event`, `causer_id`, `from` and `to`.
      */
-    public function logs(ActivityLogFilterRequest $request, AuditService $audit, InvestorDeal $deal): JsonResponse
+    public function logs(ActivityLogFilterRequest $request, InvestorDeal $deal, AuditService $audit): JsonResponse
     {
-        return $this->auditTrailFor($request, $audit, $deal);
+        return $this->auditTrailResponse($request, $deal, $audit);
     }
 }

@@ -3,6 +3,7 @@ import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/theme/app_tones.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
@@ -12,6 +13,7 @@ import 'package:dayaa/features/warehouses/models/stock_movement.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_batches_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/views/record_movement_page.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/day_header.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/ledger_row.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/movement_row.dart';
@@ -134,10 +136,24 @@ class _ShelfLedgerView extends StatefulWidget {
   State<_ShelfLedgerView> createState() => _ShelfLedgerViewState();
 }
 
-class _ShelfLedgerViewState extends State<_ShelfLedgerView> {
+class _ShelfLedgerViewState extends State<_ShelfLedgerView>
+    with SingleTickerProviderStateMixin {
   static const _segments = ['الحركات', 'الدفعات'];
 
+  late final TabController _tabs = TabController(length: _segments.length, vsync: this)
+    ..addListener(() {
+      // The stack follows the bar, including the half-way point of a swipe — without this the
+      // list would only change when the animation ended.
+      if (_tabs.index != _segment) setState(() => _segment = _tabs.index);
+    });
+
   var _segment = 0;
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -145,37 +161,50 @@ class _ShelfLedgerViewState extends State<_ShelfLedgerView> {
 
     return Scaffold(
       appBar: AppBar(title: _Title(subtitle: subtitle)),
+      // **Recording is done from where the shelf already is.** Opened here, the material and the
+      // warehouse are settled — the page draws them as a heading and asks neither, which is the
+      // one mistake a movement form cannot catch: a quantity written off the wrong pile.
+      floatingActionButton: sl<Session>().can(AppPermission.manageInventory)
+          ? FloatingActionButton.extended(
+              heroTag: 'fab-shelf-ledger',
+              onPressed: () async {
+                final movement = await context.push<StockMovement>(
+                  Routes.recordStockMovement,
+                  extra: MovementContext(
+                    stockItemId: widget.stock.stockItemId,
+                    stockItemName: widget.stock.title,
+                    warehouseId: widget.warehouseId,
+                    warehouseName: widget.warehouseName ?? '',
+                    unitLabel: widget.stock.unitLabel,
+                  ),
+                );
+
+                if (movement != null && mounted) setState(() {});
+              },
+              icon: Icon(AppIcons.statusChange),
+              label: const Text('تسجيل حركة'),
+            )
+          : null,
       body: Column(
         children: [
           _ShelfHeader(stock: widget.stock, showCost: widget.showCost),
-          if (widget.showCost) ...[
-            // The same strip the inventory tab uses: a switch under the header, not a
-            // headline, spanning the row so its two words divide it evenly.
-            Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 6.h),
-              child: SizedBox(
-                height: 40.h,
-                child: SegmentedButton<int>(
-                  segments: [
-                    for (var i = 0; i < _segments.length; i++)
-                      ButtonSegment<int>(value: i, label: Text(_segments[i])),
-                  ],
-                  selected: {_segment},
-                  multiSelectionEnabled: false,
-                  emptySelectionAllowed: false,
-                  showSelectedIcon: false,
-                  expandedInsets: EdgeInsets.zero,
-                  style: SegmentedButton.styleFrom(
-                    textStyle: context.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-                    padding: EdgeInsets.symmetric(horizontal: 8.w),
-                    visualDensity: VisualDensity.compact,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  onSelectionChanged: (choice) => setState(() => _segment = choice.first),
-                ),
+          // **The registers' own bar**, so a switch between two lists reads the same here as it
+          // does on «الجهات» — one shape for one gesture, rather than a pill on one screen and
+          // an underline on the next.
+          if (widget.showCost)
+            TabBar(
+              controller: _tabs,
+              isScrollable: false,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: context.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              labelColor: context.colorScheme.primary,
+              unselectedLabelColor: context.colorScheme.onSurfaceVariant,
+              labelStyle: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
+              unselectedLabelStyle: context.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
+              tabs: [for (final label in _segments) Tab(height: 44.h, text: label)],
             ),
-          ],
           Expanded(
             // IndexedStack, so switching tabs keeps each list's scroll position and pages.
             child: IndexedStack(

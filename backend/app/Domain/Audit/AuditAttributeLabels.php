@@ -441,11 +441,16 @@ final class AuditAttributeLabels
             'created_by' => 'أضافه',
         ],
         'investor_deal' => [
-            'name' => 'اسم الصفقة',
             'product_id' => 'المنتج',
+            // The order the deal was born from. Empty on one assembled by hand out of several.
+            'purchase_order_id' => 'أمر الشراء',
             // Frozen once the deal opens: it is the arrangement the investors agreed to, and
             // moving it afterwards would rewrite what somebody has already been paid against.
             'investor_profit_share_percent' => 'نسبة المستثمرين من الربح',
+            // Both derived at funding and frozen with it: what the company put in beyond the
+            // investors, and the share of the goods their money bought.
+            'company_stake' => 'حصة الشركة',
+            'investor_funded_percent' => 'نسبة المستثمرين من البضاعة',
             'opened_on' => 'تاريخ الصفقة',
             'opened_at' => 'وقت الفتح',
             'closed_at' => 'وقت الإغلاق',

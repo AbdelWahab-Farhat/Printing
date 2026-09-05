@@ -8,7 +8,9 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Identity\Models\User;
+use App\Domain\Investor\Actions\FundPurchaseOrder;
 use App\Domain\Investor\Enums\DealStatus;
+use App\Domain\Investor\Support\Money;
 use Database\Factories\InvestorDealFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -28,9 +30,14 @@ use Illuminate\Support\Facades\DB;
  *
  * `investor_profit_share_percent` is the investors' half of *this* deal, seeded from the company
  * default and frozen the moment the deal opens. Renegotiating a live deal is a new deal.
+ *
+ * `investor_funded_percent` is the fraction of the goods their money actually bought, and
+ * `company_stake` the dinars it did not — «الباقي على الشركة». Both are written once by
+ * {@see FundPurchaseOrder} and frozen with the rest; a deal built by
+ * hand keeps the defaults, 100 and 0, and behaves as every deal did before them.
  */
 #[UseFactory(InvestorDealFactory::class)]
-#[Fillable(['name', 'opened_on', 'notes'])]
+#[Fillable(['opened_on', 'notes'])]
 class InvestorDeal extends Model implements HasAuditTrail
 {
     /** @use HasFactory<InvestorDealFactory> */
@@ -44,6 +51,8 @@ class InvestorDeal extends Model implements HasAuditTrail
         return [
             'status' => DealStatus::class,
             'investor_profit_share_percent' => 'decimal:2',
+            'company_stake' => 'decimal:2',
+            'investor_funded_percent' => 'decimal:4',
             'opened_on' => 'date',
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
@@ -133,6 +142,53 @@ class InvestorDeal extends Model implements HasAuditTrail
     public function isEditable(): bool
     {
         return $this->status->isEditable();
+    }
+
+    /**
+     * Whether this deal is one purchase order's paperwork — and so has its ownership frozen.
+     *
+     * Such a deal fixed what fraction of the goods the partners bought when it was funded, so it
+     * takes no more capital and its order takes no more edits. A deal assembled by hand has no
+     * such basis and keeps behaving as before.
+     */
+    public function isBornFromPurchaseOrder(): bool
+    {
+        return $this->purchase_order_id !== null;
+    }
+
+    /**
+     * The investors' cut of a figure earned or lost on this deal's goods.
+     *
+     * Two factors, both frozen when the deal opened — the fraction of the goods their money
+     * bought, and the share of that fraction's result they keep:
+     *
+     * ```
+     * cut = amount × investor_funded_percent ÷ 100 × investor_profit_share_percent ÷ 100
+     * ```
+     *
+     * **One definition, called from everywhere a dinar reaches a wallet** — the order's profit,
+     * its loss, and an expense typed on the deal — because two of them restating it is how a
+     * 1,000 customs invoice comes to cost partners who own 750 of the profit 500 of it.
+     *
+     * The sign travels with the amount; the magnitude is rounded once at the end, and a result
+     * that rounds to nothing is returned as plain zero rather than «-0.00».
+     */
+    public function investorsCutOf(string $amount): string
+    {
+        $negative = bccomp($amount, '0', Money::SCALE) < 0;
+        $magnitude = $negative ? substr($amount, 1) : $amount;
+
+        $cut = Money::round(bcdiv(
+            bcmul(
+                bcmul($magnitude, (string) $this->investor_funded_percent, 8),
+                (string) $this->investor_profit_share_percent,
+                8,
+            ),
+            '10000',
+            8,
+        ));
+
+        return $negative && bccomp($cut, '0', Money::SCALE) !== 0 ? '-'.$cut : $cut;
     }
 
     /**

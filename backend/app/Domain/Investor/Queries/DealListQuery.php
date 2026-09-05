@@ -21,7 +21,6 @@ final class DealListQuery
         return InvestorDeal::query()
             ->with(['product', 'shares.investor'])
             ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w
-                ->where('name', 'ilike', '%'.$search.'%')
                 ->orWhere('code', 'ilike', '%'.$search.'%')))
             ->when(
                 isset($filters['status']) && $filters['status'] !== '',

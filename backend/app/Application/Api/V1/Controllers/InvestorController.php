@@ -49,11 +49,21 @@ class InvestorController extends Controller
     {
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
-        return $this->successWithPagination(
-            InvestorResource::collection(
-                $this->investors->paginateInvestors($request->only(['search', 'is_active']), $perPage),
-            ),
+        $page = $this->investors->paginateInvestors($request->only(['search', 'is_active']), $perPage);
+
+        // What each man has with us and what he has earned, drawn on the row itself. **One query
+        // for the whole page**, not one ledger walk per card — the register is a list, and a
+        // list that costs fifty queries to draw two numbers is a list that gets slower every
+        // time somebody is added.
+        $totals = $this->investors->balancesForMany(
+            $page->getCollection()->map(fn ($investor) => (int) $investor->getKey())->all(),
         );
+
+        $page->getCollection()->each(
+            fn ($investor) => $investor->setAttribute('totals', $totals[(int) $investor->getKey()] ?? null),
+        );
+
+        return $this->successWithPagination(InvestorResource::collection($page));
     }
 
     /**
@@ -155,9 +165,16 @@ class InvestorController extends Controller
 
     /**
      * An investor's history
+     *
+     * Every change to the investor himself, newest first — who made it and what it was before.
+     *
+     * **His money is not here, deliberately.** The wallet is an append-only ledger rather than a
+     * change log, and `GET /investors/{investor}/statement` is the reader built for it.
+     *
+     * Filter with `event`, `causer_id`, `from` and `to`.
      */
-    public function logs(ActivityLogFilterRequest $request, AuditService $audit, Investor $investor): JsonResponse
+    public function logs(ActivityLogFilterRequest $request, Investor $investor, AuditService $audit): JsonResponse
     {
-        return $this->auditTrailFor($request, $audit, $investor);
+        return $this->auditTrailResponse($request, $investor, $audit);
     }
 }

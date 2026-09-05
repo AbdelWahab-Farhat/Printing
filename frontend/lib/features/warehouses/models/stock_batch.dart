@@ -35,6 +35,18 @@ abstract class StockBatch with _$StockBatch {
     required String unit,
     @JsonKey(name: 'unit_label') required String unitLabel,
 
+    /// The deal whose money bought this layer, and its code — **null on the ordinary layer the
+    /// company paid for itself**, which is most of them. What makes «هل هذه الدفعة لمستثمر؟»
+    /// answerable on the shelf itself rather than by hunting through the deals.
+    @JsonKey(name: 'investor_deal_id') int? investorDealId,
+    @JsonKey(name: 'investor_deal_code') String? investorDealCode,
+
+    /// Who is in that deal and what each put in — so «مَن يملك هذه البضاعة؟» is answered on the
+    /// shelf rather than by opening the deal.
+    @JsonKey(name: 'investor_deal_investors')
+    @Default(<BatchFunder>[])
+    List<BatchFunder> investorDealInvestors,
+
     @JsonKey(name: 'source_type') required String sourceType,
     @JsonKey(name: 'source_type_label') required String sourceTypeLabel,
 
@@ -64,6 +76,9 @@ abstract class StockBatch with _$StockBatch {
 
   /// `3.500` → `3.5`: trailing zeros carry nothing, and the screen is read at a glance.
   String get unitCostLabel => groupedDecimal(unitCost);
+
+  /// Whether an investor's money is in this layer.
+  bool get isFunded => investorDealId != null;
 
   /// What is left of this layer, at its price — money to two places.
   String get remainingValue => multiplyToMoney(quantityRemaining, unitCost);
@@ -137,4 +152,19 @@ class ShelfValuation {
   bool get hasUncosted => thousandths(uncostedQuantity) > BigInt.zero;
 
   bool get isWhollyUncosted => hasUncosted && uncostedQuantity == remainingQuantity;
+}
+
+/// One partner behind a funded cost layer: what he put in, and the share it bought him.
+@freezed
+abstract class BatchFunder with _$BatchFunder {
+  const factory BatchFunder({
+    @JsonKey(name: 'investor_id') required int investorId,
+    required String name,
+    @JsonKey(name: 'committed_amount') required String committedAmount,
+    @JsonKey(name: 'share_percent') required String sharePercent,
+  }) = _BatchFunder;
+
+  const BatchFunder._();
+
+  factory BatchFunder.fromJson(Map<String, dynamic> json) => _$BatchFunderFromJson(json);
 }

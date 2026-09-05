@@ -61,6 +61,24 @@ class StockMovementResource extends JsonResource
                 fn (): ?string => $this->cost()?->uncostedQuantity,
             ),
 
+            // **Whose goods went out, when the movement drew from the shelf.** One entry per
+            // owner — a deal by its code, and the company as a null id — because an order taking
+            // a thousand bags off two layers took them off two people. Absent on a movement that
+            // consumed nothing, and on the list a caller may not price: the quantities are
+            // everybody's, the costs are `stock.cost.view`'s.
+            'investor_draws' => $this->when(
+                isset($this->investor_draws),
+                fn (): array => array_map(
+                    fn (array $draw): array => [
+                        'investor_deal_id' => $draw['investor_deal_id'],
+                        'code' => $draw['code'],
+                        'quantity' => $draw['quantity'],
+                        ...($this->costIsSelected() ? ['total_cost' => $draw['total_cost']] : []),
+                    ],
+                    $this->investor_draws,
+                ),
+            ),
+
             'stock_item_id' => $this->stock_item_id,
             // What the quantity is counted in. «1.6» on a feed that mixes bags and kilos is
             // not a number until this says which. Read off the item rather than the balance

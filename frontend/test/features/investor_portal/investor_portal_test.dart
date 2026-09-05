@@ -1,12 +1,14 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/investor_portal/models/investor_portfolio.dart';
 import 'package:dayaa/features/investor_portal/presentation/viewmodel/investor_portal_cubit.dart';
+import 'package:dayaa/features/investor_portal/presentation/views/investor_portal_page.dart';
 import 'package:dayaa/features/investor_portal/presentation/widgets/investor_deal_card.dart';
-import 'package:dayaa/features/investor_portal/presentation/widgets/investor_money_tile.dart';
 import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository.dart';
 import 'package:dayaa/features/investor_portal/usecases/get_investor_portfolio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -22,22 +24,21 @@ void main() {
   const dealLine = InvestorDealLine(
     id: 25,
     code: 'D25',
-    name: 'أكياس شحن أبيض',
     status: 'open',
     statusLabel: 'مفتوحة',
     sharePercent: '60.0000',
-    capital: '30000.00',
-    profit: '1500.00',
+    capital: '30000',
+    profit: '1500',
   );
 
   const portfolio = InvestorPortfolio(
     investor: InvestorIdentity(id: 1, code: 'I1', name: 'أحمد'),
-    capitalInWallet: '20000.00',
-    capitalInDeals: '30000.00',
-    capitalTotal: '50000.00',
-    profitInDeals: '1500.00',
-    profitAvailable: '0.00',
-    profitWithdrawn: '0.00',
+    capitalInWallet: '20000',
+    capitalInDeals: '30000',
+    capitalTotal: '50000',
+    profitInDeals: '1500',
+    profitAvailable: '0',
+    profitWithdrawn: '0',
     deals: [dealLine],
   );
 
@@ -46,7 +47,10 @@ void main() {
     cubit = InvestorPortalCubit(getPortfolio: GetInvestorPortfolio(repository));
   });
 
-  tearDown(() => cubit.close());
+  tearDown(() async {
+    await cubit.close();
+    await Injector.reset();
+  });
 
   void arrange(Either<Failure, InvestorPortfolio> result) {
     when(() => repository.portfolio()).thenAnswer((_) async => result);
@@ -62,7 +66,7 @@ void main() {
 
       // Assert
       expect(cubit.state, isA<InvestorPortalLoaded>());
-      expect((cubit.state as InvestorPortalLoaded).portfolio.capitalInDeals, '30000.00');
+      expect((cubit.state as InvestorPortalLoaded).portfolio.capitalInDeals, '30000');
     });
 
     test('a failed refresh keeps the figures already on screen', () async {
@@ -77,41 +81,49 @@ void main() {
       // Assert — throwing away figures somebody is reading because a refresh timed out is the
       // worst of the available answers.
       expect(cubit.state, isA<InvestorPortalLoaded>());
-      expect((cubit.state as InvestorPortalLoaded).portfolio.profitInDeals, '1500.00');
+      expect((cubit.state as InvestorPortalLoaded).portfolio.profitInDeals, '1500');
     });
   });
 
   group('the screen', () {
-    Widget host(Widget child) => MaterialApp(
-      locale: const Locale('ar'),
-      home: Directionality(textDirection: TextDirection.rtl, child: child),
+    // The same design size the app itself is initialised at. Without it every `.w`/`.h` in a
+    // widget under test throws a `LateInitializationError` rather than laying out.
+    Widget host(Widget child) => ScreenUtilInit(
+      designSize: const Size(430, 932),
+      builder: (context, _) => MaterialApp(
+        locale: const Locale('ar'),
+        home: Directionality(textDirection: TextDirection.rtl, child: child),
+      ),
     );
 
     testWidgets('earned profit and withdrawable profit are two different figures', (tester) async {
-      // Arrange — 1,500 earned on a deal that is still open, and nothing released.
-      await tester.pumpWidget(
-        host(
-          const Scaffold(
-            body: Column(
-              children: [
-                InvestorMoneyTile(
-                  label: 'أرباحي حتى الآن',
-                  amount: '1500.00',
-                  caption: 'من صفقات ما زالت مفتوحة — تُصرف عند إقفالها',
-                ),
-                InvestorMoneyTile(label: 'أرباح متاحة للسحب', amount: '0.00'),
-              ],
-            ),
-          ),
-        ),
+      // Arrange — the whole screen, driven by the portfolio the server sent: 1,500 earned on a
+      // deal that is still open, and nothing released. Built from the *portfolio* rather than
+      // from two tiles handed the strings this test then looks for — that version passed by
+      // asserting its own literals back, and would have gone on passing with the distinction it
+      // is named after deleted.
+      arrange(const Right(portfolio));
+
+      // The screen builds its own Cubit out of the container, so the container is what the stub
+      // repository is handed to.
+      await Injector.reset();
+      sl.registerFactory<InvestorPortalCubit>(
+        () => InvestorPortalCubit(getPortfolio: GetInvestorPortfolio(repository)),
       );
 
-      // Assert — both are shown, and the first says in words why it is not the second. One
-      // number for both would either promise him money he cannot have yet or hide money he has
-      // already made.
-      expect(find.text('1,500.00 د.ل'), findsOneWidget);
-      expect(find.text('0.00 د.ل'), findsOneWidget);
+      // Act
+      await tester.pumpWidget(host(const InvestorPortalPage()));
+      await tester.pumpAndSettle();
+
+      // Assert — both figures are on the screen under their own headings, and the first says in
+      // words why it is not the second. One number for both would either promise him money he
+      // cannot have yet or hide money he has already made.
+      expect(find.text('أرباحي حتى الآن'), findsOneWidget);
+      expect(find.text('1,500 د.ل'), findsOneWidget);
+      expect(find.text('أرباح متاحة للسحب'), findsOneWidget);
       expect(find.textContaining('تُصرف عند إقفالها'), findsOneWidget);
+      // 0.00 twice: what is released and what has been withdrawn are both still nothing.
+      expect(find.text('0 د.ل'), findsNWidgets(2));
     });
 
     testWidgets('a deal card shows his stake and his share, and no quantities', (tester) async {
@@ -122,10 +134,10 @@ void main() {
 
       // Assert — what he financed, what it earned him, and the percentage it was split by.
       // Nothing about how many bags there are or what they cost a piece.
-      expect(find.text('أكياس شحن أبيض'), findsOneWidget);
+      expect(find.text('D25'), findsOneWidget);
       expect(find.textContaining('حصتي 60%'), findsOneWidget);
-      expect(find.text('30,000.00 د.ل'), findsOneWidget);
-      expect(find.text('1,500.00 د.ل'), findsOneWidget);
+      expect(find.text('30,000 د.ل'), findsOneWidget);
+      expect(find.text('1,500 د.ل'), findsOneWidget);
       expect(find.text('مفتوحة'), findsOneWidget);
     });
 
@@ -134,11 +146,10 @@ void main() {
       const losing = InvestorDealLine(
         id: 26,
         code: 'D26',
-        name: 'صفقة خاسرة',
         status: 'closed',
         statusLabel: 'مغلقة',
         sharePercent: '100.0000',
-        capital: '0.00',
+        capital: '0',
         profit: '-6500.00',
       );
 
@@ -148,6 +159,10 @@ void main() {
       // Assert — a colour is not a word, and somebody reading this needs to know which it is.
       expect(find.text('خسارتي'), findsOneWidget);
       expect(find.text('ربحي'), findsNothing);
+      // And the word carries the sign on its own: «خسارتي -6,500» says it twice, which reads as
+      // a negative loss.
+      expect(find.text('6,500 د.ل'), findsOneWidget);
+      expect(find.text('-6,500 د.ل'), findsNothing);
     });
   });
 }

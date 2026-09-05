@@ -49,6 +49,24 @@ class PurchaseOrderResource extends JsonResource
             'total_amount' => $this->total_amount !== null ? (string) $this->total_amount : null,
             'total_additional_cost' => $this->total_additional_cost !== null ? (string) $this->total_additional_cost : null,
 
+            // The deals financing this order, each with the lines it claims and the partners in
+            // it — the money each put in beside the percentage it produced. Present on the single
+            // order only, and an empty list on the ordinary one the company paid for itself.
+            // `isset` rather than a read: strict mode throws on an attribute that was never
+            // set, and this one is attached by the show endpoint alone — the list never carries
+            // it. Same shape as `InvestorDealResource::$balances`.
+            'investor_funding' => $this->when(
+                isset($this->investor_funding),
+                fn (): array => $this->investor_funding,
+            ),
+
+            // The share a deal struck on this order would be born with — the company default,
+            // published so the funding screen can show it rather than imply it.
+            'default_investor_profit_share_percent' => $this->when(
+                isset($this->default_investor_profit_share_percent),
+                fn (): string => $this->default_investor_profit_share_percent,
+            ),
+
             'items' => PurchaseOrderItemResource::collection($this->whenLoaded('items')),
             'additional_costs' => PurchaseOrderAdditionalCostResource::collection($this->whenLoaded('additionalCosts')),
 

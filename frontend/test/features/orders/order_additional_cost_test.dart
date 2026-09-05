@@ -157,7 +157,7 @@ void main() {
 
     // Assert — signed, so the direction is read before the number is.
     expect(find.text('تغليف خاص — علبة كرتون مزدوجة'), findsOneWidget);
-    expect(find.text('+ 10.00'), findsOneWidget);
+    expect(find.text('+ 10'), findsOneWidget);
   });
 
   testWidgets('the account prints it after the delivery and before the discount', (
@@ -182,7 +182,7 @@ void main() {
     // reaches «الإجمالي» with the same arithmetic the server did.
     expect(charge.top, greaterThan(delivery.top));
     expect(charge.top, lessThan(discount.top));
-    expect(find.text('+ 10.00'), findsOneWidget);
+    expect(find.text('+ 10'), findsOneWidget);
   });
 
   testWidgets('the account names the charge on the line it belongs to, once', (tester) async {
@@ -207,7 +207,7 @@ void main() {
     // repeating the same figure under the account was the same answer twice.
     expect(find.text('التكلفة الإضافية'), findsOneWidget);
     expect(find.text('نقل — سيارة أجرة'), findsOneWidget);
-    expect(find.text('+ 10.00'), findsOneWidget);
+    expect(find.text('+ 10'), findsOneWidget);
   });
 
   testWidgets('a charge the server sent with no category still gets its line', (tester) async {
@@ -220,7 +220,7 @@ void main() {
 
     // Assert
     expect(find.text('التكلفة الإضافية'), findsOneWidget);
-    expect(find.text('+ 10.00'), findsOneWidget);
+    expect(find.text('+ 10'), findsOneWidget);
   });
 
   testWidgets('an order with no charge draws no line for one', (tester) async {

@@ -37,6 +37,19 @@ class StoreProductCategoryRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $this->prepareProductionMode();
+
+        // Every field whose absence would otherwise answer for the row. `production_mode` is
+        // handled above instead, because it also has a legacy key to translate.
+        $this->keepStored('parent_id');
+        $this->keepStored('is_investable');
+        $this->keepStored('is_active');
+        $this->keepStored('sort_order');
+    }
+
+    /** @see prepareForValidation() — the three rules are stated there. */
+    private function prepareProductionMode(): void
+    {
         if ($this->has('production_mode')) {
             return;
         }
@@ -62,6 +75,41 @@ class StoreProductCategoryRequest extends FormRequest
     }
 
     /**
+     * **On an update, a field this request does not mention keeps what is stored.**
+     *
+     * Not what a PUT usually means, and deliberately so. A PUT replaces the whole
+     * representation, which makes an omitted key an answer — right for a client that sends the
+     * whole representation, and wrong for the build already in people's hands, whose rename
+     * carries a name and a mode and nothing else.
+     *
+     * What each omission used to say on that build's behalf, unasked:
+     *
+     * - `parent_id` → «اجعله رئيسياً». Every subheading it renamed came back a root. Quiet while
+     *   nothing depended on the link, and not quiet since: a rooted subheading holding
+     *   `is_investable = null` stops inheriting its family's yes and answers «لا», closing every
+     *   shelf under it to new deals.
+     * - `is_investable` → «اسأل الأب», which on a root is «لا» — a funded heading closed by a
+     *   rename, with nothing on any screen to say why.
+     * - `is_active` → «أعِده إلى القوائم»: a heading somebody stopped, back in every picker.
+     * - `sort_order` → «صفر»: the heading jumps to the head of the catalogue.
+     *
+     * **Saying any of them still works; it just has to be said.** On a create there is nothing
+     * stored, nothing is merged, and the defaults in {@see ProductCategoryData} stand.
+     */
+    private function keepStored(string $field): void
+    {
+        if ($this->has($field)) {
+            return;
+        }
+
+        $category = $this->route('product_category');
+
+        if ($category instanceof ProductCategory) {
+            $this->merge([$field => $category->getAttribute($field)]);
+        }
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function rules(): array
@@ -82,6 +130,9 @@ class StoreProductCategoryRequest extends FormRequest
             // explained: a category may only be filed under a *root*, so «أكياس ورقية» cannot
             // itself acquire children. Nothing in the catalogue is three deep, and a tree of
             // arbitrary depth costs every screen a recursive render for a shape nobody asked for.
+            //
+            // On an update, absent means «اتركه حيث هو» rather than «اجعله رئيسياً» — see
+            // `keepStored()` for the rename that used to root a subheading in silence.
             'parent_id' => [
                 'sometimes', 'nullable', 'integer',
                 Rule::exists('product_categories', 'id')
@@ -92,7 +143,8 @@ class StoreProductCategoryRequest extends FormRequest
             'description' => ['sometimes', 'nullable', 'string', 'max:500'],
 
             // Optional because a category is offered the moment it is created; hiding one is a
-            // later decision, taken from the list.
+            // later decision, taken from the list. An update that omits it keeps the stored
+            // answer — see `keepStored()`.
             'is_active' => ['sometimes', 'boolean'],
 
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:9999'],
@@ -102,6 +154,13 @@ class StoreProductCategoryRequest extends FormRequest
             // `in_house` by default: a heading nobody has thought about sends its orders down the
             // road every order took before this field existed.
             'production_mode' => ['sometimes', Rule::enum(ProductionMode::class)],
+
+            // Whether a deal may be opened against the shelves under this heading — see
+            // `ProductCategory::isInvestable()`. **Three-valued**: true, false, and null for
+            // «اسأل الأب», which is what lets a subheading be excluded from an investable family
+            // rather than merely un-asked-about. An update that omits it keeps what is stored —
+            // see `keepStored()`.
+            'is_investable' => ['sometimes', 'nullable', 'boolean'],
 
             // **The boolean this replaced, still accepted for the shipped app.** Never read past
             // this class — `prepareForValidation()` turns it into `production_mode` before any
@@ -139,6 +198,7 @@ class StoreProductCategoryRequest extends FormRequest
             'is_active' => 'الحالة',
             'sort_order' => 'الترتيب',
             'production_mode' => 'طريقة التنفيذ',
+            'is_investable' => 'قابل للاستثمار',
             'skips_production' => 'يتخطّى التصميم والطباعة',
         ];
     }

@@ -66,7 +66,6 @@ abstract class InvestorDealLine with _$InvestorDealLine {
   const factory InvestorDealLine({
     required int id,
     String? code,
-    String? name,
     String? status,
 
     /// The Arabic to print. Sent by the server so the app keeps no translation table in step.

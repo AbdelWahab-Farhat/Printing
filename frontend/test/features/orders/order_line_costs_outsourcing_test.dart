@@ -64,7 +64,7 @@ void main() {
     );
 
     // Act - Assert
-    expect(find.text('تكلفة المورد للقطعة 25.000'), findsOneWidget);
+    expect(find.text('تكلفة المورد للقطعة 25'), findsOneWidget);
     expect(find.textContaining('تصنيع خارجي'), findsNothing);
   });
 
@@ -81,8 +81,8 @@ void main() {
     );
 
     // Act - Assert
-    expect(find.text('تصنيع خارجي 750.00'), findsOneWidget);
-    expect(find.text('تكلفة المورد للقطعة 25.000'), findsOneWidget);
+    expect(find.text('تصنيع خارجي 750'), findsOneWidget);
+    expect(find.text('تكلفة المورد للقطعة 25'), findsOneWidget);
   });
 
   testWidgets('a reader without the vendor grant is shown neither', (tester) async {
@@ -112,6 +112,6 @@ void main() {
     );
 
     // Act - Assert
-    expect(find.text('التكلفة 750.00 — تصنيع خارجي 750.00'), findsOneWidget);
+    expect(find.text('التكلفة 750 — تصنيع خارجي 750'), findsOneWidget);
   });
 }

@@ -56,7 +56,10 @@ final class SyncDealShares
         }
 
         foreach ($shares as $share) {
-            $row = $deal->shares()->firstOrNew(['investor_id' => $share->investorId]);
+            // As in SyncDealItems, and for the same reason: `investor_id` is not fillable, so
+            // the row is found by it and assigned it, never filled with it.
+            $row = $deal->shares()->where('investor_id', $share->investorId)->first()
+                ?? $deal->shares()->make();
 
             $row->fill([
                 'committed_amount' => $share->committedAmount,

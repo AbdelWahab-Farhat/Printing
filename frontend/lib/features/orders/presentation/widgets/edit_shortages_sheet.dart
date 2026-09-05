@@ -48,7 +48,11 @@ class _EditShortagesSheetState extends State<_EditShortagesSheet> {
   /// One controller per line, opened on whatever is recorded against it today.
   late final Map<int, TextEditingController> _missing = {
     for (final item in widget.items)
-      item.id: TextEditingController(text: item.hasShortage ? item.shortageQuantity : ''),
+      // `trimDecimals`, not `grouped`: the padding zeros are noise in a box a thumb is about to
+      // edit, but a separator typed back in comes through `toWesternDigits` as a decimal point.
+      item.id: TextEditingController(
+        text: item.hasShortage ? trimDecimals(item.shortageQuantity!) : '',
+      ),
   };
 
   @override

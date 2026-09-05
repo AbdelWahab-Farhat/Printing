@@ -221,7 +221,7 @@ void main() {
     // never on the invoice quantity.
     expect(find.text('الكمية التالفة (بوحدة المخزن)'), findsOneWidget);
     expect(find.text('الكمية التالفة (قطعة)'), findsNothing);
-    expect(find.textContaining('خرج من المخزن لهذا البند 10.000'), findsOneWidget);
+    expect(find.textContaining('خرج من المخزن لهذا البند 10'), findsOneWidget);
   });
 
   testWidgets('a loss with no reason is refused before it is sent', (tester) async {

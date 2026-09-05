@@ -54,7 +54,13 @@ final class RecordDealExpense
     }
 
     /**
-     * The investors' share of the cost, split by the same percentages a profit is.
+     * The investors' cut of the cost — the same two factors a profit goes through, then the same
+     * split among them.
+     *
+     * {@see InvestorDeal::investorsCutOf()} rather than a multiplication of its own, and that is
+     * the whole point: on a deal whose partners bought 15% of the goods, a 1,000 customs invoice
+     * costs them 75, exactly as a 1,000 profit would pay them 75. Charging the whole invoice by
+     * their half alone took 500 from men who own 750 of the profit.
      *
      * A cost the company bears alone would be a different arrangement, and nothing in it says so.
      */
@@ -66,11 +72,7 @@ final class RecordDealExpense
             return;
         }
 
-        $investorsAmount = Money::round(bcdiv(
-            bcmul((string) $expense->amount, (string) $deal->investor_profit_share_percent, 8),
-            '100',
-            8,
-        ));
+        $investorsAmount = $deal->investorsCutOf((string) $expense->amount);
 
         if (bccomp($investorsAmount, '0', 2) <= 0) {
             return;

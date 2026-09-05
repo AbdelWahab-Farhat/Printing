@@ -3,6 +3,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/investors/models/deal_order.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/investor_deal.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository.dart';
@@ -116,6 +117,21 @@ class InvestorRepositoryImpl implements InvestorRepository {
   }
 
   @override
+  Future<Either<Failure, Paginated<DealOrder>>> dealOrders(
+    int dealId, {
+    int page = 1,
+    int perPage = 20,
+  }) {
+    return safePaginatedRequest<DealOrder>(
+      () => _dio.get(
+        InvestorEndpoints.dealOrders(dealId),
+        queryParameters: <String, dynamic>{'page': page, 'per_page': perPage},
+      ),
+      parseItem: (row) => DealOrder.fromJson(row),
+    );
+  }
+
+  @override
   Future<Either<Failure, InvestorDeal>> deal(int id) {
     return safeRequest<InvestorDeal>(
       () => _dio.get(InvestorEndpoints.deal(id)),
@@ -124,17 +140,15 @@ class InvestorRepositoryImpl implements InvestorRepository {
   }
 
   @override
-  Future<Either<Failure, InvestorDeal>> createDeal(Map<String, dynamic> body) {
+  Future<Either<Failure, InvestorDeal>> fundPurchaseOrder(
+    int purchaseOrderId,
+    Map<String, dynamic> body,
+  ) {
     return safeRequest<InvestorDeal>(
-      () => _dio.post(InvestorEndpoints.deals, data: body),
-      parse: (data) => InvestorDeal.fromJson(data as Map<String, dynamic>),
-    );
-  }
-
-  @override
-  Future<Either<Failure, InvestorDeal>> openDeal(int id) {
-    return safeRequest<InvestorDeal>(
-      () => _dio.post(InvestorEndpoints.openDeal(id)),
+      () => _dio.post(
+        InvestorEndpoints.fundPurchaseOrder(purchaseOrderId),
+        data: body,
+      ),
       parse: (data) => InvestorDeal.fromJson(data as Map<String, dynamic>),
     );
   }

@@ -10,6 +10,7 @@ import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
+import 'package:dayaa/features/products/models/investability.dart';
 import 'package:dayaa/features/products/models/product_category.dart';
 import 'package:dayaa/features/products/models/production_mode.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/save_product_category_cubit.dart';
@@ -99,6 +100,20 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
   /// Whether the row arrived with a mode this build cannot name — see [_productionMode].
   bool get _modeIsUnknown => widget.category?.productionMode == ProductionMode.unknown;
 
+  /// Whether a deal may be opened against the shelves under this heading.
+  ///
+  /// Seeded from the row's own answer, and «لا» for anything else: a heading nobody has decided
+  /// about is not investable, which is the server's answer too. A subheading reads null as «حسب
+  /// الرئيسي» instead — there is somebody to ask.
+  late Investability _investable = Investability.of(
+    widget.category?.isInvestable,
+    hasParent: _hasParent,
+  );
+
+  /// Whether this heading sits under another. The sheet does not manage the tree — everything
+  /// it creates is a heading in its own right — so this is only ever true of a row being edited.
+  bool get _hasParent => widget.category?.parentId != null;
+
   bool get _isEditing => widget.category != null;
 
   /// What the row should look like right now: the file just picked, else what the server has,
@@ -139,6 +154,11 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
       sortOrder: widget.category?.sortOrder ?? widget.nextSortOrder,
       isActive: widget.category?.isActive ?? true,
       productionMode: _productionMode,
+      // Where it is filed travels with the edit for the same reason those two do: a PUT
+      // replaces the whole representation, and a subheading whose parent is left out of one
+      // comes back a root.
+      parentId: widget.category?.parentId,
+      isInvestable: _investable.value,
       image: _image,
       removeImage: _removeImage,
     );
@@ -171,76 +191,91 @@ class _ProductCategoryFormState extends State<_ProductCategoryForm> {
           ),
           child: Form(
             key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const _Handle(),
-                SizedBox(height: 12.h),
-                Text(
-                  _isEditing ? 'تعديل التصنيف' : 'تصنيف جديد',
-                  style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                SizedBox(height: 16.h),
-                // First, because it is what the catalogue shows first: the picture is the
-                // heading's face on the products screen, and the owner asked for it to open the
-                // sheet rather than close it.
-                _ImageRow(
-                  picked: _image,
-                  existingUrl: _showsExistingImage ? widget.category!.imageUrl : null,
-                  onPick: () => unawaited(_pickImage()),
-                  onClear: () => setState(() {
-                    _image = null;
-                    // Only a picture the *server* holds needs removing; discarding one picked a
-                    // moment ago is just putting the sheet back where it was.
-                    _removeImage = widget.category?.hasImage ?? false;
-                  }),
-                ),
-                SizedBox(height: 12.h),
-                AppTextField(
-                  controller: _name,
-                  label: 'اسم التصنيف',
-                  onChanged: (_) => context.read<SaveProductCategoryCubit>().clearFailure(),
-                  validator: Validators.compose([
-                    Validators.required,
-                    Validators.minLength(2),
-                  ]),
-                  // The server's own complaint — «التصنيف مسجّل مسبقاً» — under the box holding
-                  // the name it is about.
-                  errorText: state.nameError,
-                ),
-                SizedBox(height: 12.h),
-                AppTextField(
-                  controller: _description,
-                  label: 'الوصف (اختياري)',
-                  hint: 'السطر الذي يظهر تحت العنوان في الكتالوج',
-                  maxLines: 3,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _submit(),
-                ),
-                SizedBox(height: 12.h),
-                // **Offered when adding as well as when editing**, unlike «يُعرض في قوائم
-                // الاختيار» on the sibling sheets: a category is created to be used, so its
-                // activation switch has one answer and is a row to read past — but «أكياس سادة»
-                // is created *because* it is not printed, and «كروت بزنس» *because* a vendor
-                // makes them; asking on the second visit would put the first orders under
-                // either through a designer and a press nobody meant to involve.
-                _ProductionModeField(
-                  value: _productionMode,
-                  isUnknown: _modeIsUnknown,
-                  onChanged: (mode) => setState(() => _productionMode = mode),
-                ),
-                SizedBox(height: 20.h),
-                AppButton(
-                  label: _isEditing ? 'حفظ' : 'إضافة',
-                  isLoading: state.isSubmitting,
-                  onPressed: _submit,
-                ),
-                if (_isEditing) ...[
-                  SizedBox(height: 8.h),
-                  _DeleteRow(category: widget.category!, onDelete: widget.onDelete),
+            // **Scrolls**, because the sheet is now taller than a small phone leaves room for
+            // once the keyboard is up: a picture row, two text boxes, two pickers and a button.
+            // A `Column` that overflows hides its bottom edge behind a striped bar — the save
+            // button among it — rather than letting the content be reached.
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _Handle(),
+                  SizedBox(height: 12.h),
+                  Text(
+                    _isEditing ? 'تعديل التصنيف' : 'تصنيف جديد',
+                    style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 16.h),
+                  // First, because it is what the catalogue shows first: the picture is the
+                  // heading's face on the products screen, and the owner asked for it to open the
+                  // sheet rather than close it.
+                  _ImageRow(
+                    picked: _image,
+                    existingUrl: _showsExistingImage ? widget.category!.imageUrl : null,
+                    onPick: () => unawaited(_pickImage()),
+                    onClear: () => setState(() {
+                      _image = null;
+                      // Only a picture the *server* holds needs removing; discarding one picked a
+                      // moment ago is just putting the sheet back where it was.
+                      _removeImage = widget.category?.hasImage ?? false;
+                    }),
+                  ),
+                  SizedBox(height: 12.h),
+                  AppTextField(
+                    controller: _name,
+                    label: 'اسم التصنيف',
+                    onChanged: (_) => context.read<SaveProductCategoryCubit>().clearFailure(),
+                    validator: Validators.compose([
+                      Validators.required,
+                      Validators.minLength(2),
+                    ]),
+                    // The server's own complaint — «التصنيف مسجّل مسبقاً» — under the box holding
+                    // the name it is about.
+                    errorText: state.nameError,
+                  ),
+                  SizedBox(height: 12.h),
+                  AppTextField(
+                    controller: _description,
+                    label: 'الوصف (اختياري)',
+                    hint: 'السطر الذي يظهر تحت العنوان في الكتالوج',
+                    maxLines: 3,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _submit(),
+                  ),
+                  SizedBox(height: 12.h),
+                  // **Offered when adding as well as when editing**, unlike «يُعرض في قوائم
+                  // الاختيار» on the sibling sheets: a category is created to be used, so its
+                  // activation switch has one answer and is a row to read past — but «أكياس سادة»
+                  // is created *because* it is not printed, and «كروت بزنس» *because* a vendor
+                  // makes them; asking on the second visit would put the first orders under
+                  // either through a designer and a press nobody meant to involve.
+                  _ProductionModeField(
+                    value: _productionMode,
+                    isUnknown: _modeIsUnknown,
+                    onChanged: (mode) => setState(() => _productionMode = mode),
+                  ),
+                  SizedBox(height: 12.h),
+                  // Beside «طريقة التنفيذ» because it is the same kind of answer — one row edited
+                  // once, deciding something about every product filed under it — and because
+                  // both are questions about the heading rather than about its name.
+                  _InvestableField(
+                    value: _investable,
+                    hasParent: _hasParent,
+                    onChanged: (answer) => setState(() => _investable = answer),
+                  ),
+                  SizedBox(height: 20.h),
+                  AppButton(
+                    label: _isEditing ? 'حفظ' : 'إضافة',
+                    isLoading: state.isSubmitting,
+                    onPressed: _submit,
+                  ),
+                    if (_isEditing) ...[
+                      SizedBox(height: 8.h),
+                      _DeleteRow(category: widget.category!, onDelete: widget.onDelete),
+                    ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -380,6 +415,110 @@ class _ProductionModeField extends StatelessWidget {
           'بـ«قيد التصنيع» دون أن يلمس أي مخزن.',
     ProductionMode.unknown => '',
   };
+}
+
+/// «قابل للاستثمار» — whether a deal may be opened against the shelves under this heading.
+///
+/// **Shaped like [_ProductionModeField] and for the same reasons**: segments rather than a
+/// switch, the full width of the sheet, and the consequence behind a question mark instead of
+/// printed under the row on every visit.
+///
+/// The switch is not merely a style choice here. The answer has **three** values — «نعم», «لا»,
+/// and «حسب الرئيسي» — and a switch has two positions, so it would turn every subheading's
+/// inherited answer into a flat no the first time somebody saved a rename. A root has nobody to
+/// ask, so it is offered the two answers that mean something to it.
+class _InvestableField extends StatelessWidget {
+  const _InvestableField({
+    required this.value,
+    required this.hasParent,
+    required this.onChanged,
+  });
+
+  final Investability value;
+
+  /// Whether this heading sits under another, and therefore has an answer to inherit.
+  final bool hasParent;
+
+  final ValueChanged<Investability> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'قابل للاستثمار',
+              style: context.textTheme.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            SizedBox(width: 2.w),
+            IconButton(
+              key: const Key('investable-help'),
+              onPressed: () => _explain(context),
+              icon: Icon(AppIcons.about, size: 18.sp, color: scheme.onSurfaceVariant),
+              tooltip: 'ماذا يعني؟',
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(minWidth: 28.w, minHeight: 28.w),
+            ),
+          ],
+        ),
+        SizedBox(height: 4.h),
+        SegmentedButton<Investability>(
+          segments: [
+            for (final answer in Investability.choicesFor(hasParent: hasParent))
+              ButtonSegment<Investability>(value: answer, label: Text(answer.label)),
+          ],
+          selected: {value},
+          showSelectedIcon: false,
+          expandedInsets: EdgeInsets.zero,
+          onSelectionChanged: (choice) => onChanged(choice.first),
+        ),
+      ],
+    );
+  }
+
+  /// The rule somebody would otherwise meet as a refusal on the deal sheet.
+  Future<void> _explain(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('قابل للاستثمار'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '«نعم» يفتح مواد هذا التصنيف أمام صفقات المستثمرين.',
+              style: dialog.textTheme.bodyMedium,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'ولا تُقبل مادة في صفقة إلا إذا كانت كل المنتجات النشطة الواقفة عليها تحت تصنيف '
+              'قابل للاستثمار: الرفّ واحد، والبيع يسحب من أقدم طبقة دون أن يعرف ما على '
+              'الفاتورة — فلو وقف عليه منتج خارج التصنيف، لَمَوّل المستثمر بضاعةً وحوسب على '
+              'هامش غيرها.',
+              style: dialog.textTheme.bodySmall,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              hasParent
+                  ? 'و«حسب الرئيسي» يأخذ جواب التصنيف الرئيسي، و«لا» يستثني هذا الفرع منه '
+                        'وحده.'
+                  : 'وتصنيف لم يُسأل عنه ليس قابلاً للاستثمار: لا يُموَّل شيء حتى يُقال ذلك.',
+              style: dialog.textTheme.bodySmall,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialog).pop(), child: const Text('حسناً')),
+        ],
+      ),
+    );
+  }
 }
 
 /// The picture the catalogue prints above the heading — pick one, replace it, or take it off.

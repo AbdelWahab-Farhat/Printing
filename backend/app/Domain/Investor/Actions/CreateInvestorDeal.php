@@ -30,7 +30,6 @@ final class CreateInvestorDeal
     {
         return DB::transaction(function () use ($data, $actorId): InvestorDeal {
             $deal = new InvestorDeal([
-                'name' => $data->name,
                 'opened_on' => $data->openedOn,
                 'notes' => $data->notes,
             ]);

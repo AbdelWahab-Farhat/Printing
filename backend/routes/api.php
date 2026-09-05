@@ -633,23 +633,22 @@ Route::prefix('v1')->group(function (): void {
         Route::get('investor-deals', [InvestorDealController::class, 'index'])
             ->middleware('can:investors.view')->name('investor-deals.index');
 
-        Route::post('investor-deals', [InvestorDealController::class, 'store'])
-            ->middleware('can:investors.manage')->name('investor-deals.store');
-
         Route::get('investor-deals/{deal}', [InvestorDealController::class, 'show'])
             ->middleware('can:investors.view')->name('investor-deals.show');
 
-        Route::post('investor-deals/{deal}/open', [InvestorDealController::class, 'open'])
-            ->middleware('can:investors.manage')->name('investor-deals.open');
+        Route::get('investor-deals/{deal}/orders', [InvestorDealController::class, 'orders'])
+            ->middleware('can:investors.view')->name('investor-deals.orders.index');
 
         Route::post('investor-deals/{deal}/close', [InvestorDealController::class, 'close'])
             ->middleware('can:investors.manage')->name('investor-deals.close');
 
-        Route::post('investor-deals/{deal}/cancel', [InvestorDealController::class, 'cancel'])
-            ->middleware('can:investors.manage')->name('investor-deals.cancel');
-
-        Route::post('investor-deals/{deal}/supplies', [InvestorDealController::class, 'claimSupply'])
-            ->middleware('can:investors.manage')->name('investor-deals.supplies.store');
+        // The only way a deal is born — on the order it is about. There is no deal form: a deal is
+        // one order's paperwork, and the fraction of the goods its partners own is derived from
+        // that order's cost, which a deal built by hand would not have. Guarded by
+        // `investors.manage` rather than by `purchase_orders.manage`: it creates a deal and moves
+        // investors' money, and the buyer who raises an order is not who decides that.
+        Route::post('purchase-orders/{purchaseOrder}/investor-funding', [InvestorDealController::class, 'fundPurchaseOrder'])
+            ->middleware('can:investors.manage')->name('purchase-orders.investor-funding.store');
 
         Route::post('investor-deals/{deal}/expenses', [InvestorDealController::class, 'storeExpense'])
             ->middleware('can:investor_deals.expenses.record')->name('investor-deals.expenses.store');
@@ -753,6 +752,13 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('manufacturing-cost-rates/{manufacturing_cost_rate}/logs', [ManufacturingCostRateController::class, 'logs'])
                 ->name('manufacturing-cost-rates.logs');
+
+            // The investor and the deal themselves. Not the wallet and not the deal's figures —
+            // those are ledgers rather than change logs, and `/investors/{investor}/statement`
+            // and the deal's own reader are built for them.
+            Route::get('investors/{investor}/logs', [InvestorController::class, 'logs'])->name('investors.logs');
+            Route::get('investor-deals/{deal}/logs', [InvestorDealController::class, 'logs'])
+                ->name('investor-deals.logs');
 
             // Scoped like the rest of the nested region routes: another city's region id is a
             // 404 here too, not a history leaked from the wrong place.

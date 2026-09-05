@@ -19,6 +19,13 @@ _StockBatch _$StockBatchFromJson(Map<String, dynamic> json) => _StockBatch(
   quantityConsumed: json['quantity_consumed'] as String,
   unit: json['unit'] as String,
   unitLabel: json['unit_label'] as String,
+  investorDealId: (json['investor_deal_id'] as num?)?.toInt(),
+  investorDealCode: json['investor_deal_code'] as String?,
+  investorDealInvestors:
+      (json['investor_deal_investors'] as List<dynamic>?)
+          ?.map((e) => BatchFunder.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <BatchFunder>[],
   sourceType: json['source_type'] as String,
   sourceTypeLabel: json['source_type_label'] as String,
   receivedAt: json['received_at'] == null
@@ -50,6 +57,11 @@ Map<String, dynamic> _$StockBatchToJson(_StockBatch instance) =>
       'quantity_consumed': instance.quantityConsumed,
       'unit': instance.unit,
       'unit_label': instance.unitLabel,
+      'investor_deal_id': instance.investorDealId,
+      'investor_deal_code': instance.investorDealCode,
+      'investor_deal_investors': instance.investorDealInvestors
+          .map((e) => e.toJson())
+          .toList(),
       'source_type': instance.sourceType,
       'source_type_label': instance.sourceTypeLabel,
       'received_at': instance.receivedAt?.toIso8601String(),
@@ -61,4 +73,19 @@ Map<String, dynamic> _$StockBatchToJson(_StockBatch instance) =>
       'is_partly_consumed': instance.isPartlyConsumed,
       'is_uncosted': instance.isUncosted,
       'created_at': instance.createdAt?.toIso8601String(),
+    };
+
+_BatchFunder _$BatchFunderFromJson(Map<String, dynamic> json) => _BatchFunder(
+  investorId: (json['investor_id'] as num).toInt(),
+  name: json['name'] as String,
+  committedAmount: json['committed_amount'] as String,
+  sharePercent: json['share_percent'] as String,
+);
+
+Map<String, dynamic> _$BatchFunderToJson(_BatchFunder instance) =>
+    <String, dynamic>{
+      'investor_id': instance.investorId,
+      'name': instance.name,
+      'committed_amount': instance.committedAmount,
+      'share_percent': instance.sharePercent,
     };

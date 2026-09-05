@@ -27,26 +27,42 @@ extension GroupedDigits on int {
 }
 
 extension GroupedNumberText on String {
-  /// `'2975.00'` → `'2,975.00'`, `'0.850'` → `'0.850'`.
+  /// `'2975.00'` → `'2,975'`, `'0.850'` → `'0.85'`, `'1250.500'` → `'1,250.5'`.
   ///
   /// **String surgery, never `double.parse`.** These are amounts the server sent as decimals,
-  /// and the decimals it chose are the decimals it means — round-tripping one through a float is
-  /// how `0.850` becomes `0.8500000000000001` on somebody's screen. Only the whole part is
-  /// grouped; the fraction is left exactly as it arrived, so this can be applied to anything on
-  /// screen without also deciding how precise it should look.
+  /// and round-tripping one through a float is how `0.850` becomes `0.8500000000000001` on
+  /// somebody's screen.
+  ///
+  /// **The padding zeros are cut, and that is a display decision made once here.** The server
+  /// sends `100000.00` because two places is what money is stored in; a person reading a screen
+  /// wants «100,000». Doing it at the single place every figure passes through is what keeps one
+  /// screen from disagreeing with the next — the alternative was ninety call sites each choosing.
+  ///
+  /// Not for a text field's initial value: use [trimDecimals] there, because a separator comes
+  /// back through `Validators.toWesternDigits` as a decimal point.
   String get grouped {
-    final point = indexOf('.');
-    if (point == -1) return _groupWhole(this);
+    final trimmed = trimDecimals(this);
+    final point = trimmed.indexOf('.');
 
-    return '${_groupWhole(substring(0, point))}${substring(point)}';
+    if (point == -1) return _groupWhole(trimmed);
+
+    return '${_groupWhole(trimmed.substring(0, point))}${trimmed.substring(point)}';
   }
 }
 
 /// `'12450.000'` → `'12,450'`, `'1250.500'` → `'1,250.5'`.
 ///
-/// For a figure going to a widget: the padding zeros are noise to a person, and the separator is
-/// what makes the rest legible.
-String groupedDecimal(String value) => trimDecimals(value).grouped;
+/// Kept as a name for what [GroupedNumberText.grouped] now does on its own, because «هذا رقم
+/// عشري» reads at a call site and the two were never allowed to differ.
+String groupedDecimal(String value) => value.grouped;
+
+/// The size of a figure, with the sign taken off — `'-1500.00'` → `'1500.00'`.
+///
+/// **For a number whose direction is already said in a word.** «خسارة -1,500 د.ل» says it twice
+/// and reads as a negative loss, which is a profit; «خسارة 1,500 د.ل» is what a person means.
+/// Only ever paired with that word — a bare figure that has quietly dropped its minus is worse
+/// than either.
+String unsigned(String value) => value.startsWith('-') ? value.substring(1) : value;
 
 /// `'100.000'` → `'100'`, `'0.850'` → `'0.85'`.
 ///

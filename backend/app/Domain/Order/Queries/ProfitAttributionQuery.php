@@ -40,12 +40,52 @@ final class ProfitAttributionQuery
      */
     public function __invoke(int $orderId): ?array
     {
-        $order = Order::query()->with('items')->find($orderId);
+        return $this->many([$orderId])[$orderId] ?? null;
+    }
 
-        if ($order === null) {
-            return null;
+    /**
+     * The same, for a page of orders in one query.
+     *
+     * What a report reads. One order at a time is two queries apiece, and a screen listing the
+     * fifteen orders a deal sold into would spend thirty of them saying what two can.
+     *
+     * @param  list<int>  $orderIds
+     * @return array<int, array{
+     *     order_id: int,
+     *     code: string,
+     *     status: string,
+     *     grand_total: string,
+     *     items_total: string,
+     *     total_cogs: ?string,
+     *     gross_profit: ?string,
+     *     lines: list<array{
+     *         line_id: int,
+     *         movement_id: int,
+     *         line_total: string,
+     *         conversion_cost: string
+     *     }>
+     * }>  keyed by order id, missing whatever was not found
+     */
+    public function many(array $orderIds): array
+    {
+        if ($orderIds === []) {
+            return [];
         }
 
+        $attributions = [];
+
+        foreach (Order::query()->with('items')->whereKey($orderIds)->get() as $order) {
+            $attributions[(int) $order->getKey()] = $this->attribute($order);
+        }
+
+        return $attributions;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function attribute(Order $order): array
+    {
         $lines = [];
 
         foreach ($order->items as $item) {

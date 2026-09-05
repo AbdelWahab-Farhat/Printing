@@ -24,6 +24,10 @@ abstract class Investor with _$Investor {
     /// Whether he has an account he can sign in with.
     @JsonKey(name: 'has_login') @Default(false) bool hasLogin,
 
+    /// What he has with us and what he has earned — sent with the list, so the register can draw
+    /// two numbers without opening anybody's screen.
+    InvestorTotals? totals,
+
     /// Present on the detail screen only — a list of fifty investors does not walk fifty
     /// ledgers to draw a table.
     InvestorBalances? balances,
@@ -73,4 +77,25 @@ abstract class DealPots with _$DealPots {
   }) = _DealPots;
 
   factory DealPots.fromJson(Map<String, dynamic> json) => _$DealPotsFromJson(json);
+}
+
+/// One investor's money in two numbers, as the register draws them.
+///
+/// **[capital] is both places his capital can be** — his wallet and the deals it is committed to
+/// — because from where he stands they are one sum he handed over. [walletCapital] is the part
+/// of it still uncommitted, and the deal-by-deal split is on his own screen, where the
+/// distinction is the point.
+@freezed
+abstract class InvestorTotals with _$InvestorTotals {
+  const factory InvestorTotals({
+    required String capital,
+    required String profit,
+    @JsonKey(name: 'wallet_capital') required String walletCapital,
+    @JsonKey(name: 'wallet_profit') required String walletProfit,
+  }) = _InvestorTotals;
+
+  const InvestorTotals._();
+
+  factory InvestorTotals.fromJson(Map<String, dynamic> json) =>
+      _$InvestorTotalsFromJson(json);
 }

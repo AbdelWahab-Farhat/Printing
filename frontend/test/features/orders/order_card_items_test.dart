@@ -90,7 +90,7 @@ void main() {
 
     // Assert — الاسم، والكمية بوحدتها، والصورة بجانبهما.
     expect(find.text('أكياس الشحن السادة'), findsOneWidget);
-    expect(find.text('100.000 قطعة'), findsOneWidget);
+    expect(find.text('100 قطعة'), findsOneWidget);
     expect(find.byType(ProductThumbnail), findsOneWidget);
   });
 

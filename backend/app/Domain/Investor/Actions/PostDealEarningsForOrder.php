@@ -10,6 +10,7 @@ use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Support\Money;
+use App\Domain\Investor\Support\OrderDealSlices;
 use App\Domain\Order\OrderService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -34,22 +35,19 @@ use Illuminate\Support\Facades\DB;
  * ## How one order's profit reaches one investor
  *
  * ```
- * E(O)          = grand_total − items_total        the order-level extras, net of the discount
- * line_revenue  = line_total + share of E(O)       allocated across lines by line_total
- * per draw c    revenue    = share of line_revenue    ← by quantity, over EVERY draw of the
- *               conversion = share of the line's        movement, the company's included
- *                            labour + overhead + outsourcing
- *               material   = c.total_cost exactly     ← never allocated; it is already exact
- *               profit(c)  = revenue − conversion − material
- * deal slice    = Σ profit(c) for that deal's draws
- * investors     = slice × investor_profit_share_percent ÷ 100
+ * deal slice    = OrderDealSlices — the order's money, split across the shelves it drew from
+ * investors     = slice × investor_funded_percent ÷ 100 × investor_profit_share_percent ÷ 100
  * each investor = largest-remainder split of that over share_percent
  * ```
  *
- * The denominator is the whole movement. A line that drew 1,000 units from a deal and 2,000 from
- * the company's own stock gives the deal a third of the line's money — allocating across the
- * deal's rows alone would hand it all of it, because a proportional split distributes its total
- * across whatever weights it is given.
+ * The first line is {@see OrderDealSlices}, which is also what `GET /investor-deals/{deal}/orders`
+ * reads to show a person the order behind his figure. The second is
+ * {@see InvestorDeal::investorsCutOf()}, shared with the expense that is charged the same way:
+ * the slice is what the deal's goods earned, all of it, and the partners own only the fraction of
+ * those goods their money bought — the company is a partner for the rest. So the slice stays
+ * whole on the deal's order screen, the investors' share shrinks, and the company's share is the
+ * residual. The last line is this class's own, because it is the only part that concerns who
+ * gets paid rather than what was earned.
  */
 final class PostDealEarningsForOrder
 {
@@ -107,57 +105,20 @@ final class PostDealEarningsForOrder
     /**
      * Each deal's share of this order's profit, keyed by deal id.
      *
+     * The arithmetic itself is {@see OrderDealSlices}, shared with the screen that shows a person
+     * why he was paid this — one definition, so the two can never come to disagree.
+     *
      * @param  array<string, mixed>  $order
      * @return array<int, string>
      */
     private function sliceByDeal(array $order): array
     {
-        $extras = bcsub($order['grand_total'], $order['items_total'], 2);
-
-        $lineTotals = array_map(fn (array $line) => $line['line_total'], $order['lines']);
-        $extraShares = Money::allocate($extras, array_map(
-            // Weights must not be negative, and a line total never is.
-            fn (string $total) => $total,
-            $lineTotals,
+        return OrderDealSlices::profitsOf(OrderDealSlices::forOrder(
+            $order,
+            $this->inventory->consumptionBreakdownFor(
+                array_map(fn (array $line) => $line['movement_id'], $order['lines']),
+            ),
         ));
-
-        $breakdown = $this->inventory->consumptionBreakdownFor(
-            array_map(fn (array $line) => $line['movement_id'], $order['lines']),
-        );
-
-        $slices = [];
-
-        foreach ($order['lines'] as $index => $line) {
-            $draws = $breakdown[$line['movement_id']] ?? [];
-
-            if ($draws === []) {
-                continue;
-            }
-
-            $lineRevenue = bcadd($line['line_total'], $extraShares[$index] ?? '0.00', 2);
-            $weights = array_map(fn (array $draw) => $draw['quantity'], $draws);
-
-            $revenue = Money::allocate($lineRevenue, $weights);
-            $conversion = Money::allocate($line['conversion_cost'], $weights);
-
-            foreach ($draws as $position => $draw) {
-                $dealId = $draw['investor_deal_id'];
-
-                if ($dealId === null) {
-                    continue;
-                }
-
-                $profit = bcsub(
-                    bcsub($revenue[$position] ?? '0.00', $conversion[$position] ?? '0.00', 2),
-                    $draw['total_cost'],
-                    2,
-                );
-
-                $slices[$dealId] = bcadd($slices[$dealId] ?? '0.00', $profit, 2);
-            }
-        }
-
-        return array_filter($slices, fn (string $slice) => bccomp($slice, '0', 2) !== 0);
     }
 
     /**
@@ -172,7 +133,7 @@ final class PostDealEarningsForOrder
      */
     private function rowsFor(InvestorDeal $deal, string $slice, int $orderId): array
     {
-        $investorsAmount = $this->applyPercent($slice, (string) $deal->investor_profit_share_percent);
+        $investorsAmount = $deal->investorsCutOf($slice);
 
         if (bccomp($investorsAmount, '0', 2) === 0) {
             return [];
@@ -244,22 +205,6 @@ final class PostDealEarningsForOrder
         }
 
         return $written;
-    }
-
-    /**
-     * The investors' share of a slice, with the sign carried across.
-     *
-     * A loss is split by the same percentage as a profit — «لو خسرنا نتقاسمها زي مانتقاسم
-     * الربح».
-     */
-    private function applyPercent(string $slice, string $percent): string
-    {
-        $negative = bccomp($slice, '0', 2) < 0;
-        $magnitude = $negative ? substr($slice, 1) : $slice;
-
-        $amount = Money::round(bcdiv(bcmul($magnitude, $percent, 8), '100', 8));
-
-        return $negative && bccomp($amount, '0', 2) !== 0 ? '-'.$amount : $amount;
     }
 
     /**

@@ -47,6 +47,13 @@ class ProductCategoryResource extends JsonResource
             'production_mode' => $this->production_mode->value,
             'production_mode_label' => $this->production_mode->label(),
 
+            // Whether a deal may be opened against the shelves under this heading. **This row's
+            // own answer**, for the reason given just above: null means «اسأل الأب», and sending
+            // the inherited answer instead would have the edit sheet save it onto a subheading
+            // that never gave one. The effective answer is the domain's — `isInvestable()` — and
+            // no screen needs it, because a shelf is refused by name and not by heading.
+            'is_investable' => $this->is_investable,
+
             // **The boolean this replaced, still sent for the shipped app**, which reads it to
             // print «بدون طباعة» on a category card — see OUTSOURCED-PRODUCTS.md §8. Derived, and
             // read-only: «وسيط» is not printed here either, so it answers true, and what an old

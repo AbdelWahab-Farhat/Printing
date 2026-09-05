@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Storage;
  * anywhere, so it became two rows here and the column was dropped. See PRODUCT-CATEGORIES.md.
  */
 #[UseFactory(ProductCategoryFactory::class)]
-#[Fillable(['name', 'description', 'is_active', 'sort_order', 'parent_id', 'production_mode'])]
+#[Fillable(['name', 'description', 'is_active', 'sort_order', 'parent_id', 'production_mode', 'is_investable'])]
 class ProductCategory extends Model implements HasAuditTrail
 {
     /** @use HasFactory<ProductCategoryFactory> */

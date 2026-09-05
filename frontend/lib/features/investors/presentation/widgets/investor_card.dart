@@ -1,61 +1,53 @@
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/register_card.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:flutter/material.dart';
 
-/// One row of the investors list.
+/// One investor in the list.
 ///
-/// Body-size type throughout, and the name is the biggest thing on it: a list is scanned for a
-/// person, not for a figure.
+/// The same [RegisterCard] the customers and the suppliers are drawn in; what belongs to an
+/// investor is his money — **what he has with us, and what he has earned** — because that is what
+/// he is in the register for, and it was previously a tap away on his own screen.
+///
+/// The whole page's figures come back in one query with the list, so the register costs what it
+/// always did. `capital` is both places his capital can be, his wallet and the deals it is
+/// committed to; the two are told apart on his own screen, where the distinction is the point.
+/// «12,500 د.ل», or a dash where the list came back without figures — never a zero invented
+/// here, which would read as «لا شيء عنده» about a man whose ledger simply was not sent.
+String _money(String? amount) =>
+    amount == null ? '–' : '${groupedDecimal(amount)} د.ل';
+
 class InvestorCard extends StatelessWidget {
-  const InvestorCard({super.key, required this.investor, required this.onTap});
+  const InvestorCard({required this.investor, required this.onTap, super.key});
 
   final Investor investor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
-    return InkWell(
+    return RegisterCard(
+      title: investor.name,
+      code: investor.code,
+      icon: AppIcons.investors,
+      tone: investor.isActive ? RegisterTone.investors : RegisterTone.muted,
+      badge: investor.isActive ? null : 'موقوف',
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: colors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.outlineVariant),
+      fields: [
+        RegisterField(
+          label: 'رأس المال',
+          value: _money(investor.totals?.capital),
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    investor.name,
-                    style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    [investor.code, if (investor.phone != null) investor.phone!].join(' · '),
-                    style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-            if (!investor.isActive)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: colors.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text('موقوف', style: theme.textTheme.bodyMedium),
-              ),
-          ],
+        RegisterField(
+          label: 'الأرباح',
+          value: _money(investor.totals?.profit),
         ),
-      ),
+        RegisterField(
+          label: 'رقم الهاتف',
+          value: investor.phone ?? '–',
+          valueDirection: TextDirection.ltr,
+        ),
+      ],
     );
   }
 }

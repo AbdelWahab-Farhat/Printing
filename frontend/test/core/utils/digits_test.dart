@@ -45,20 +45,21 @@ void main() {
   });
 
   group('String.grouped', () {
-    test('groups the whole part and leaves the fraction exactly as it arrived', () {
-      // Arrange — two decimals is how the server sends money.
+    test('groups the whole part and cuts the padding the server pads money with', () {
+      // Arrange — two decimals is how the server sends money, and «.00» is noise on a screen.
       const value = '2975.00';
 
       // Act
       final label = value.grouped;
 
-      // Assert — the separator is added, and nothing else about the number is touched.
-      expect(label, '2,975.00');
+      // Assert
+      expect(label, '2,975');
     });
 
-    test('never drops a trailing zero the server chose to send', () {
-      expect('0.850'.grouped, '0.850');
-      expect('1250.500'.grouped, '1,250.500');
+    test('keeps the decimals that carry a value, and drops only the padding', () {
+      expect('0.850'.grouped, '0.85');
+      expect('1250.500'.grouped, '1,250.5');
+      expect('0.125'.grouped, '0.125');
     });
 
     test('groups a whole number with no fraction at all', () {
@@ -67,7 +68,7 @@ void main() {
     });
 
     test('keeps the minus outside the grouping', () {
-      expect('-12450.00'.grouped, '-12,450.00');
+      expect('-12450.00'.grouped, '-12,450');
     });
 
     test('survives a value too long for an int', () {
@@ -101,6 +102,36 @@ void main() {
 
       // Assert
       expect(text, '12450');
+    });
+  });
+
+  group('unsigned', () {
+    test('takes the minus off a loss, so the word in front of it can carry the sign', () {
+      // Arrange — «خسارة -1,500 د.ل» says the direction twice, and twice reads as a negative
+      // loss, which is a profit.
+      const loss = '-1500.00';
+
+      // Act
+      final size = unsigned(loss);
+
+      // Assert
+      expect(size, '1500.00');
+    });
+
+    test('leaves a positive figure exactly as the server sent it', () {
+      // Arrange
+      const profit = '1500.00';
+
+      // Act & Assert
+      expect(unsigned(profit), '1500.00');
+    });
+
+    test('a bare minus with nothing after it is not mistaken for a number', () {
+      // Arrange — an em dash and an empty string reach these helpers from screens that have
+      // nothing to draw, and must come back out unchanged rather than throwing.
+      // Act & Assert
+      expect(unsigned('–'), '–');
+      expect(unsigned(''), '');
     });
   });
 

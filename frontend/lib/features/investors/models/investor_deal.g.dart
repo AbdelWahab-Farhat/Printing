@@ -10,12 +10,14 @@ _InvestorDeal _$InvestorDealFromJson(Map<String, dynamic> json) =>
     _InvestorDeal(
       id: (json['id'] as num).toInt(),
       code: json['code'] as String,
-      name: json['name'] as String,
       status: json['status'] as String,
       statusLabel: json['status_label'] as String,
       canBeEdited: json['can_be_edited'] as bool? ?? false,
       investorProfitSharePercent:
           json['investor_profit_share_percent'] as String,
+      companyStake: json['company_stake'] as String? ?? '0.00',
+      investorFundedPercent:
+          json['investor_funded_percent'] as String? ?? '100.0000',
       openedOn: json['opened_on'] as String?,
       closedAt: json['closed_at'] as String?,
       notes: json['notes'] as String?,
@@ -41,11 +43,12 @@ Map<String, dynamic> _$InvestorDealToJson(_InvestorDeal instance) =>
     <String, dynamic>{
       'id': instance.id,
       'code': instance.code,
-      'name': instance.name,
       'status': instance.status,
       'status_label': instance.statusLabel,
       'can_be_edited': instance.canBeEdited,
       'investor_profit_share_percent': instance.investorProfitSharePercent,
+      'company_stake': instance.companyStake,
+      'investor_funded_percent': instance.investorFundedPercent,
       'opened_on': instance.openedOn,
       'closed_at': instance.closedAt,
       'notes': instance.notes,

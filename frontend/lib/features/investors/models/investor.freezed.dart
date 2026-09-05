@@ -17,7 +17,9 @@ mixin _$Investor {
 
  int get id;/// «I7» — what staff say out loud and what he quotes on the phone.
  String get code; String get name; String? get phone; String? get notes;@JsonKey(name: 'is_active') bool get isActive;/// Whether he has an account he can sign in with.
-@JsonKey(name: 'has_login') bool get hasLogin;/// Present on the detail screen only — a list of fifty investors does not walk fifty
+@JsonKey(name: 'has_login') bool get hasLogin;/// What he has with us and what he has earned — sent with the list, so the register can draw
+/// two numbers without opening anybody's screen.
+ InvestorTotals? get totals;/// Present on the detail screen only — a list of fifty investors does not walk fifty
 /// ledgers to draw a table.
  InvestorBalances? get balances;
 /// Create a copy of Investor
@@ -32,16 +34,16 @@ $InvestorCopyWith<Investor> get copyWith => _$InvestorCopyWithImpl<Investor>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Investor&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.hasLogin, hasLogin) || other.hasLogin == hasLogin)&&(identical(other.balances, balances) || other.balances == balances));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Investor&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.hasLogin, hasLogin) || other.hasLogin == hasLogin)&&(identical(other.totals, totals) || other.totals == totals)&&(identical(other.balances, balances) || other.balances == balances));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,phone,notes,isActive,hasLogin,balances);
+int get hashCode => Object.hash(runtimeType,id,code,name,phone,notes,isActive,hasLogin,totals,balances);
 
 @override
 String toString() {
-  return 'Investor(id: $id, code: $code, name: $name, phone: $phone, notes: $notes, isActive: $isActive, hasLogin: $hasLogin, balances: $balances)';
+  return 'Investor(id: $id, code: $code, name: $name, phone: $phone, notes: $notes, isActive: $isActive, hasLogin: $hasLogin, totals: $totals, balances: $balances)';
 }
 
 
@@ -52,11 +54,11 @@ abstract mixin class $InvestorCopyWith<$Res>  {
   factory $InvestorCopyWith(Investor value, $Res Function(Investor) _then) = _$InvestorCopyWithImpl;
 @useResult
 $Res call({
- int id, String code, String name, String? phone, String? notes,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'has_login') bool hasLogin, InvestorBalances? balances
+ int id, String code, String name, String? phone, String? notes,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'has_login') bool hasLogin, InvestorTotals? totals, InvestorBalances? balances
 });
 
 
-$InvestorBalancesCopyWith<$Res>? get balances;
+$InvestorTotalsCopyWith<$Res>? get totals;$InvestorBalancesCopyWith<$Res>? get balances;
 
 }
 /// @nodoc
@@ -69,7 +71,7 @@ class _$InvestorCopyWithImpl<$Res>
 
 /// Create a copy of Investor
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,Object? phone = freezed,Object? notes = freezed,Object? isActive = null,Object? hasLogin = null,Object? balances = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,Object? phone = freezed,Object? notes = freezed,Object? isActive = null,Object? hasLogin = null,Object? totals = freezed,Object? balances = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -78,11 +80,24 @@ as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,hasLogin: null == hasLogin ? _self.hasLogin : hasLogin // ignore: cast_nullable_to_non_nullable
-as bool,balances: freezed == balances ? _self.balances : balances // ignore: cast_nullable_to_non_nullable
+as bool,totals: freezed == totals ? _self.totals : totals // ignore: cast_nullable_to_non_nullable
+as InvestorTotals?,balances: freezed == balances ? _self.balances : balances // ignore: cast_nullable_to_non_nullable
 as InvestorBalances?,
   ));
 }
 /// Create a copy of Investor
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$InvestorTotalsCopyWith<$Res>? get totals {
+    if (_self.totals == null) {
+    return null;
+  }
+
+  return $InvestorTotalsCopyWith<$Res>(_self.totals!, (value) {
+    return _then(_self.copyWith(totals: value));
+  });
+}/// Create a copy of Investor
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -176,10 +191,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'has_login')  bool hasLogin,  InvestorBalances? balances)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'has_login')  bool hasLogin,  InvestorTotals? totals,  InvestorBalances? balances)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Investor() when $default != null:
-return $default(_that.id,_that.code,_that.name,_that.phone,_that.notes,_that.isActive,_that.hasLogin,_that.balances);case _:
+return $default(_that.id,_that.code,_that.name,_that.phone,_that.notes,_that.isActive,_that.hasLogin,_that.totals,_that.balances);case _:
   return orElse();
 
 }
@@ -197,10 +212,10 @@ return $default(_that.id,_that.code,_that.name,_that.phone,_that.notes,_that.isA
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'has_login')  bool hasLogin,  InvestorBalances? balances)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'has_login')  bool hasLogin,  InvestorTotals? totals,  InvestorBalances? balances)  $default,) {final _that = this;
 switch (_that) {
 case _Investor():
-return $default(_that.id,_that.code,_that.name,_that.phone,_that.notes,_that.isActive,_that.hasLogin,_that.balances);case _:
+return $default(_that.id,_that.code,_that.name,_that.phone,_that.notes,_that.isActive,_that.hasLogin,_that.totals,_that.balances);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -217,10 +232,10 @@ return $default(_that.id,_that.code,_that.name,_that.phone,_that.notes,_that.isA
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'has_login')  bool hasLogin,  InvestorBalances? balances)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'has_login')  bool hasLogin,  InvestorTotals? totals,  InvestorBalances? balances)?  $default,) {final _that = this;
 switch (_that) {
 case _Investor() when $default != null:
-return $default(_that.id,_that.code,_that.name,_that.phone,_that.notes,_that.isActive,_that.hasLogin,_that.balances);case _:
+return $default(_that.id,_that.code,_that.name,_that.phone,_that.notes,_that.isActive,_that.hasLogin,_that.totals,_that.balances);case _:
   return null;
 
 }
@@ -232,7 +247,7 @@ return $default(_that.id,_that.code,_that.name,_that.phone,_that.notes,_that.isA
 @JsonSerializable()
 
 class _Investor implements Investor {
-  const _Investor({required this.id, required this.code, required this.name, this.phone, this.notes, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'has_login') this.hasLogin = false, this.balances});
+  const _Investor({required this.id, required this.code, required this.name, this.phone, this.notes, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'has_login') this.hasLogin = false, this.totals, this.balances});
   factory _Investor.fromJson(Map<String, dynamic> json) => _$InvestorFromJson(json);
 
 @override final  int id;
@@ -244,6 +259,9 @@ class _Investor implements Investor {
 @override@JsonKey(name: 'is_active') final  bool isActive;
 /// Whether he has an account he can sign in with.
 @override@JsonKey(name: 'has_login') final  bool hasLogin;
+/// What he has with us and what he has earned — sent with the list, so the register can draw
+/// two numbers without opening anybody's screen.
+@override final  InvestorTotals? totals;
 /// Present on the detail screen only — a list of fifty investors does not walk fifty
 /// ledgers to draw a table.
 @override final  InvestorBalances? balances;
@@ -261,16 +279,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Investor&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.hasLogin, hasLogin) || other.hasLogin == hasLogin)&&(identical(other.balances, balances) || other.balances == balances));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Investor&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.hasLogin, hasLogin) || other.hasLogin == hasLogin)&&(identical(other.totals, totals) || other.totals == totals)&&(identical(other.balances, balances) || other.balances == balances));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,phone,notes,isActive,hasLogin,balances);
+int get hashCode => Object.hash(runtimeType,id,code,name,phone,notes,isActive,hasLogin,totals,balances);
 
 @override
 String toString() {
-  return 'Investor(id: $id, code: $code, name: $name, phone: $phone, notes: $notes, isActive: $isActive, hasLogin: $hasLogin, balances: $balances)';
+  return 'Investor(id: $id, code: $code, name: $name, phone: $phone, notes: $notes, isActive: $isActive, hasLogin: $hasLogin, totals: $totals, balances: $balances)';
 }
 
 
@@ -281,11 +299,11 @@ abstract mixin class _$InvestorCopyWith<$Res> implements $InvestorCopyWith<$Res>
   factory _$InvestorCopyWith(_Investor value, $Res Function(_Investor) _then) = __$InvestorCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String code, String name, String? phone, String? notes,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'has_login') bool hasLogin, InvestorBalances? balances
+ int id, String code, String name, String? phone, String? notes,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'has_login') bool hasLogin, InvestorTotals? totals, InvestorBalances? balances
 });
 
 
-@override $InvestorBalancesCopyWith<$Res>? get balances;
+@override $InvestorTotalsCopyWith<$Res>? get totals;@override $InvestorBalancesCopyWith<$Res>? get balances;
 
 }
 /// @nodoc
@@ -298,7 +316,7 @@ class __$InvestorCopyWithImpl<$Res>
 
 /// Create a copy of Investor
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? name = null,Object? phone = freezed,Object? notes = freezed,Object? isActive = null,Object? hasLogin = null,Object? balances = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? name = null,Object? phone = freezed,Object? notes = freezed,Object? isActive = null,Object? hasLogin = null,Object? totals = freezed,Object? balances = freezed,}) {
   return _then(_Investor(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -307,12 +325,25 @@ as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,hasLogin: null == hasLogin ? _self.hasLogin : hasLogin // ignore: cast_nullable_to_non_nullable
-as bool,balances: freezed == balances ? _self.balances : balances // ignore: cast_nullable_to_non_nullable
+as bool,totals: freezed == totals ? _self.totals : totals // ignore: cast_nullable_to_non_nullable
+as InvestorTotals?,balances: freezed == balances ? _self.balances : balances // ignore: cast_nullable_to_non_nullable
 as InvestorBalances?,
   ));
 }
 
 /// Create a copy of Investor
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$InvestorTotalsCopyWith<$Res>? get totals {
+    if (_self.totals == null) {
+    return null;
+  }
+
+  return $InvestorTotalsCopyWith<$Res>(_self.totals!, (value) {
+    return _then(_self.copyWith(totals: value));
+  });
+}/// Create a copy of Investor
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -1162,6 +1193,278 @@ class __$DealPotsCopyWithImpl<$Res>
 investorDealId: null == investorDealId ? _self.investorDealId : investorDealId // ignore: cast_nullable_to_non_nullable
 as int,capital: null == capital ? _self.capital : capital // ignore: cast_nullable_to_non_nullable
 as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$InvestorTotals {
+
+ String get capital; String get profit;@JsonKey(name: 'wallet_capital') String get walletCapital;@JsonKey(name: 'wallet_profit') String get walletProfit;
+/// Create a copy of InvestorTotals
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$InvestorTotalsCopyWith<InvestorTotals> get copyWith => _$InvestorTotalsCopyWithImpl<InvestorTotals>(this as InvestorTotals, _$identity);
+
+  /// Serializes this InvestorTotals to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorTotals&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.walletCapital, walletCapital) || other.walletCapital == walletCapital)&&(identical(other.walletProfit, walletProfit) || other.walletProfit == walletProfit));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,capital,profit,walletCapital,walletProfit);
+
+@override
+String toString() {
+  return 'InvestorTotals(capital: $capital, profit: $profit, walletCapital: $walletCapital, walletProfit: $walletProfit)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $InvestorTotalsCopyWith<$Res>  {
+  factory $InvestorTotalsCopyWith(InvestorTotals value, $Res Function(InvestorTotals) _then) = _$InvestorTotalsCopyWithImpl;
+@useResult
+$Res call({
+ String capital, String profit,@JsonKey(name: 'wallet_capital') String walletCapital,@JsonKey(name: 'wallet_profit') String walletProfit
+});
+
+
+
+
+}
+/// @nodoc
+class _$InvestorTotalsCopyWithImpl<$Res>
+    implements $InvestorTotalsCopyWith<$Res> {
+  _$InvestorTotalsCopyWithImpl(this._self, this._then);
+
+  final InvestorTotals _self;
+  final $Res Function(InvestorTotals) _then;
+
+/// Create a copy of InvestorTotals
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? capital = null,Object? profit = null,Object? walletCapital = null,Object? walletProfit = null,}) {
+  return _then(_self.copyWith(
+capital: null == capital ? _self.capital : capital // ignore: cast_nullable_to_non_nullable
+as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
+as String,walletCapital: null == walletCapital ? _self.walletCapital : walletCapital // ignore: cast_nullable_to_non_nullable
+as String,walletProfit: null == walletProfit ? _self.walletProfit : walletProfit // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [InvestorTotals].
+extension InvestorTotalsPatterns on InvestorTotals {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _InvestorTotals value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _InvestorTotals() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _InvestorTotals value)  $default,){
+final _that = this;
+switch (_that) {
+case _InvestorTotals():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _InvestorTotals value)?  $default,){
+final _that = this;
+switch (_that) {
+case _InvestorTotals() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String capital,  String profit, @JsonKey(name: 'wallet_capital')  String walletCapital, @JsonKey(name: 'wallet_profit')  String walletProfit)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _InvestorTotals() when $default != null:
+return $default(_that.capital,_that.profit,_that.walletCapital,_that.walletProfit);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String capital,  String profit, @JsonKey(name: 'wallet_capital')  String walletCapital, @JsonKey(name: 'wallet_profit')  String walletProfit)  $default,) {final _that = this;
+switch (_that) {
+case _InvestorTotals():
+return $default(_that.capital,_that.profit,_that.walletCapital,_that.walletProfit);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String capital,  String profit, @JsonKey(name: 'wallet_capital')  String walletCapital, @JsonKey(name: 'wallet_profit')  String walletProfit)?  $default,) {final _that = this;
+switch (_that) {
+case _InvestorTotals() when $default != null:
+return $default(_that.capital,_that.profit,_that.walletCapital,_that.walletProfit);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _InvestorTotals extends InvestorTotals {
+  const _InvestorTotals({required this.capital, required this.profit, @JsonKey(name: 'wallet_capital') required this.walletCapital, @JsonKey(name: 'wallet_profit') required this.walletProfit}): super._();
+  factory _InvestorTotals.fromJson(Map<String, dynamic> json) => _$InvestorTotalsFromJson(json);
+
+@override final  String capital;
+@override final  String profit;
+@override@JsonKey(name: 'wallet_capital') final  String walletCapital;
+@override@JsonKey(name: 'wallet_profit') final  String walletProfit;
+
+/// Create a copy of InvestorTotals
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$InvestorTotalsCopyWith<_InvestorTotals> get copyWith => __$InvestorTotalsCopyWithImpl<_InvestorTotals>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$InvestorTotalsToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorTotals&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.walletCapital, walletCapital) || other.walletCapital == walletCapital)&&(identical(other.walletProfit, walletProfit) || other.walletProfit == walletProfit));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,capital,profit,walletCapital,walletProfit);
+
+@override
+String toString() {
+  return 'InvestorTotals(capital: $capital, profit: $profit, walletCapital: $walletCapital, walletProfit: $walletProfit)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$InvestorTotalsCopyWith<$Res> implements $InvestorTotalsCopyWith<$Res> {
+  factory _$InvestorTotalsCopyWith(_InvestorTotals value, $Res Function(_InvestorTotals) _then) = __$InvestorTotalsCopyWithImpl;
+@override @useResult
+$Res call({
+ String capital, String profit,@JsonKey(name: 'wallet_capital') String walletCapital,@JsonKey(name: 'wallet_profit') String walletProfit
+});
+
+
+
+
+}
+/// @nodoc
+class __$InvestorTotalsCopyWithImpl<$Res>
+    implements _$InvestorTotalsCopyWith<$Res> {
+  __$InvestorTotalsCopyWithImpl(this._self, this._then);
+
+  final _InvestorTotals _self;
+  final $Res Function(_InvestorTotals) _then;
+
+/// Create a copy of InvestorTotals
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? capital = null,Object? profit = null,Object? walletCapital = null,Object? walletProfit = null,}) {
+  return _then(_InvestorTotals(
+capital: null == capital ? _self.capital : capital // ignore: cast_nullable_to_non_nullable
+as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
+as String,walletCapital: null == walletCapital ? _self.walletCapital : walletCapital // ignore: cast_nullable_to_non_nullable
+as String,walletProfit: null == walletProfit ? _self.walletProfit : walletProfit // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

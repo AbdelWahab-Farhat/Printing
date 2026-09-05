@@ -137,6 +137,7 @@ abstract interface class WarehouseRepository {
     required String quantity,
     required bool isIncrease,
     String? unitCost,
+    String? adjustmentReason,
     String? notes,
   });
 }

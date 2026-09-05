@@ -82,6 +82,75 @@ final class InvestorBalances
     }
 
     /**
+     * The wallet-and-deal totals of a page of investors, in **one** query.
+     *
+     * What the register screen draws. The per-deal breakdown is deliberately not returned: a
+     * list wants «كم ماله عندنا وكم ربح», and carrying fifty deal maps to draw two numbers is
+     * work nobody asked for.
+     *
+     * **One query and one walk, not one per row.** The rows are few and `deltas()` stays the
+     * single definition of what each type does — restating it as SQL CASE expressions is the one
+     * thing this class exists to avoid, and it would drift from the enum the first time a type
+     * is added.
+     *
+     * @param  list<int>  $investorIds
+     * @return array<int, array{capital: string, profit: string, wallet_capital: string, wallet_profit: string}>
+     */
+    public function forInvestors(array $investorIds): array
+    {
+        if ($investorIds === []) {
+            return [];
+        }
+
+        $entries = InvestorWalletEntry::query()
+            ->with('reversedEntry')
+            ->whereIn('investor_id', $investorIds)
+            ->get();
+
+        $totals = [];
+
+        foreach ($investorIds as $id) {
+            $totals[$id] = ['capital' => '0', 'profit' => '0', 'wallet_capital' => '0', 'wallet_profit' => '0'];
+        }
+
+        foreach ($entries as $entry) {
+            $id = (int) $entry->investor_id;
+
+            if (! isset($totals[$id])) {
+                continue;
+            }
+
+            $deltas = $entry->deltas();
+
+            // «رأس ماله عندنا» is both places his capital can be — in his wallet and committed
+            // to deals — because from where he stands they are one sum he handed over. The two
+            // are told apart on his own screen, where the distinction is the point.
+            $totals[$id]['capital'] = bcadd(
+                $totals[$id]['capital'],
+                bcadd($deltas['capital_wallet'], $deltas['capital_deal'], 8),
+                8,
+            );
+            $totals[$id]['profit'] = bcadd(
+                $totals[$id]['profit'],
+                bcadd($deltas['profit_wallet'], $deltas['profit_deal'], 8),
+                8,
+            );
+            $totals[$id]['wallet_capital'] = bcadd($totals[$id]['wallet_capital'], $deltas['capital_wallet'], 8);
+            $totals[$id]['wallet_profit'] = bcadd($totals[$id]['wallet_profit'], $deltas['profit_wallet'], 8);
+        }
+
+        return array_map(
+            fn (array $pots): array => [
+                'capital' => Money::round($pots['capital']),
+                'profit' => Money::round($pots['profit']),
+                'wallet_capital' => Money::round($pots['wallet_capital']),
+                'wallet_profit' => Money::round($pots['wallet_profit']),
+            ],
+            $totals,
+        );
+    }
+
+    /**
      * One investor's standing in one deal.
      *
      * @return array{capital: string, profit: string}

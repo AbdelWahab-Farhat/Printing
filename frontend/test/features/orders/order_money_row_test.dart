@@ -66,9 +66,9 @@ void main() {
     for (final label in labels) {
       expect(find.text(label), findsOneWidget);
     }
-    expect(find.text('450.00'), findsOneWidget);
-    expect(find.text('150.00'), findsOneWidget);
-    expect(find.text('300.00'), findsOneWidget);
+    expect(find.text('450'), findsOneWidget);
+    expect(find.text('150'), findsOneWidget);
+    expect(find.text('300'), findsOneWidget);
   });
 
   testWidgets('the middle cell says «المدفوع» and never «العربون»', (tester) async {
@@ -101,7 +101,7 @@ void main() {
     );
 
     // Act - Assert
-    expect(find.text('-50.00'), findsOneWidget);
+    expect(find.text('-50'), findsOneWidget);
     expect(find.text('مدفوعة بالزيادة'), findsOneWidget);
   });
 
@@ -126,7 +126,7 @@ void main() {
     );
 
     // Act - Assert
-    expect(find.textContaining('لم يُسجَّل قبض 450.00'), findsOneWidget);
+    expect(find.textContaining('لم يُسجَّل قبض 450'), findsOneWidget);
   });
 
   testWidgets('a settled order carries no warning', (tester) async {
@@ -201,8 +201,8 @@ void main() {
 
     // Assert — the amount is named, and «المدفوع» still says only what was collected
     expect(line, findsOneWidget);
-    expect(find.textContaining('50.00'), findsWidgets);
-    expect(find.text('400.00'), findsOneWidget);
+    expect(find.textContaining('50'), findsWidgets);
+    expect(find.text('400'), findsOneWidget);
     expect(find.text('مشطوب فرقها'), findsOneWidget);
   });
 

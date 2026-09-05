@@ -767,8 +767,11 @@ class ProductCategoryTest extends TestCase
 
     public function test_a_heading_nobody_decided_about_is_made_here(): void
     {
+        // Arrange
+        $headers = $this->auth();
+
         // Act
-        $response = $this->postJson('/api/v1/product-categories', ['name' => 'أكياس'], $this->auth());
+        $response = $this->postJson('/api/v1/product-categories', ['name' => 'أكياس'], $headers);
 
         // Assert — the road every order took before any of this existed.
         $response->assertCreated()->assertJsonPath('data.production_mode', 'in_house');
@@ -830,14 +833,234 @@ class ProductCategoryTest extends TestCase
 
     public function test_a_mode_nobody_has_heard_of_is_refused(): void
     {
+        // Arrange
+        $headers = $this->auth();
+
         // Act
         $response = $this->postJson('/api/v1/product-categories', [
             'name' => 'تصنيف',
             'production_mode' => 'subcontracted',
-        ], $this->auth());
+        ], $headers);
 
         // Assert — a closed set, so the column stays something a report can group by rather than
         // four spellings of one idea.
         $response->assertStatus(422)->assertJsonValidationErrors('production_mode');
+    }
+
+    // ─────────────────────────── قابل للاستثمار ───────────────────────────
+    // The flag a deal's shelves are checked against — see `ProductCategory::isInvestable()` and
+    // `CatalogService::stockItemInvestability()`. Three-valued and inherited downwards, so «لا»
+    // and «اسأل أبي» stay two different answers.
+
+    public function test_a_heading_can_be_marked_investable(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->postJson('/api/v1/product-categories', [
+            'name' => 'أكياس',
+            'is_investable' => true,
+        ], $headers);
+
+        // Assert
+        $response->assertCreated()->assertJsonPath('data.is_investable', true);
+        $this->assertTrue(ProductCategory::query()->where('name', 'أكياس')->sole()->isInvestable());
+    }
+
+    public function test_a_heading_nobody_decided_about_is_not_investable(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->postJson('/api/v1/product-categories', ['name' => 'ستيكرات'], $headers);
+
+        // Assert — fail-closed, and null rather than false: «لم يُسأل عني» is what lets a
+        // subheading added later inherit an answer instead of carrying a no nobody gave.
+        $response->assertCreated()->assertJsonPath('data.is_investable', null);
+        $this->assertFalse(ProductCategory::query()->where('name', 'ستيكرات')->sole()->isInvestable());
+    }
+
+    public function test_a_subheading_takes_its_parents_answer(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+        $parent = ProductCategory::factory()->investable()->create(['name' => 'أكياس']);
+
+        // Act
+        $response = $this->postJson('/api/v1/product-categories', [
+            'name' => 'أكياس ورقية',
+            'parent_id' => $parent->getKey(),
+        ], $headers);
+
+        // Assert — null on the row and true when asked. The resource sends this row's own
+        // answer, exactly as `production_mode` does: it is the value the edit sheet puts back,
+        // and sending the inherited one would have a rename write it onto a child that never
+        // asked for it.
+        $response->assertCreated()->assertJsonPath('data.is_investable', null);
+        $this->assertTrue(ProductCategory::query()->where('name', 'أكياس ورقية')->sole()->isInvestable());
+    }
+
+    public function test_a_subheading_can_be_kept_out_of_an_investable_family(): void
+    {
+        // Arrange — «أكياس» is invested in; the shop's own bags under it are not for sale.
+        $headers = $this->auth();
+        $parent = ProductCategory::factory()->investable()->create(['name' => 'أكياس']);
+
+        // Act
+        $response = $this->postJson('/api/v1/product-categories', [
+            'name' => 'أكياس خاصة بالشركة',
+            'parent_id' => $parent->getKey(),
+            'is_investable' => false,
+        ], $headers);
+
+        // Assert — the whole reason the column is nullable: a boolean defaulting to false could
+        // not tell this row apart from one nobody had asked about, and the family's yes would
+        // have reached it.
+        $response->assertCreated()->assertJsonPath('data.is_investable', false);
+        $this->assertFalse(
+            ProductCategory::query()->where('name', 'أكياس خاصة بالشركة')->sole()->isInvestable(),
+        );
+    }
+
+    public function test_an_edit_that_says_nothing_about_investability_changes_nothing(): void
+    {
+        // Arrange — a build whose sheet has never heard of the flag, renaming a funded heading.
+        $headers = $this->auth();
+        $category = ProductCategory::factory()->investable()->create(['name' => 'أكياس']);
+
+        // Act
+        $response = $this->putJson(
+            "/api/v1/product-categories/{$category->id}",
+            ['name' => 'أكياس شحن'],
+            $headers,
+        );
+
+        // Assert — read as «لا» instead, a rename from an old build would close every shelf
+        // under the heading to new deals, and nothing on any screen would say why.
+        $response->assertOk()->assertJsonPath('data.is_investable', true);
+        $this->assertTrue($category->fresh()->is_investable);
+    }
+
+    public function test_the_answer_can_be_handed_back_to_the_parent(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+        $parent = ProductCategory::factory()->investable()->create(['name' => 'أكياس']);
+        $child = ProductCategory::factory()->create([
+            'name' => 'أكياس ورقية',
+            'parent_id' => $parent->getKey(),
+            'is_investable' => false,
+        ]);
+
+        // Act — «ورّث» is an answer, not the absence of one, so it travels as an explicit null.
+        // `parent_id` travels too: a PUT replaces the whole representation, and a subheading
+        // whose parent is left out of one becomes a root — which would make «ورّث» mean «لا».
+        $response = $this->putJson("/api/v1/product-categories/{$child->id}", [
+            'name' => 'أكياس ورقية',
+            'parent_id' => $parent->getKey(),
+            'is_investable' => null,
+        ], $headers);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.is_investable', null);
+        $this->assertNull($child->fresh()->is_investable);
+        $this->assertTrue($child->fresh()->isInvestable());
+    }
+
+    public function test_an_edit_that_says_nothing_about_the_parent_leaves_it_where_it_is_filed(): void
+    {
+        // Arrange — the build already in people's hands: a rename carrying a name and nothing
+        // else, on a subheading inside an investable family.
+        $headers = $this->auth();
+        $parent = ProductCategory::factory()->investable()->create(['name' => 'أكياس']);
+        $child = ProductCategory::factory()->create([
+            'name' => 'أكياس ورقية',
+            'parent_id' => $parent->getKey(),
+        ]);
+
+        // Act
+        $response = $this->putJson(
+            "/api/v1/product-categories/{$child->id}",
+            ['name' => 'أكياس ورقية مقواة'],
+            $headers,
+        );
+
+        // Assert — rooted instead, it would stop inheriting its family's yes and answer «لا»,
+        // closing every shelf under it to new deals on a request that only changed a name. The
+        // twin of the guard `is_investable` already has, for the same client.
+        $response->assertOk()->assertJsonPath('data.parent_id', $parent->getKey());
+        $this->assertSame($parent->getKey(), $child->fresh()->parent_id);
+        $this->assertTrue($child->fresh()->isInvestable());
+    }
+
+    public function test_an_edit_that_says_nothing_about_a_field_keeps_what_is_stored(): void
+    {
+        // Arrange — a stopped heading, sixth in the catalogue, edited by a client that sends
+        // only what it meant to change.
+        $headers = $this->auth();
+        $category = ProductCategory::factory()->inactive()->create([
+            'name' => 'ستيكرات',
+            'sort_order' => 6,
+        ]);
+
+        // Act
+        $response = $this->putJson(
+            "/api/v1/product-categories/{$category->id}",
+            ['name' => 'ستيكرات ومطبوعات'],
+            $headers,
+        );
+
+        // Assert — one rule for the whole row, not for the two fields this feature happened to
+        // touch: re-offering a heading somebody stopped, and moving it to the top of the
+        // catalogue, are two decisions nobody took.
+        $response->assertOk()
+            ->assertJsonPath('data.is_active', false)
+            ->assertJsonPath('data.sort_order', 6);
+    }
+
+    public function test_a_subheading_can_still_be_made_a_heading_of_its_own(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+        $parent = ProductCategory::factory()->create(['name' => 'أكياس']);
+        $child = ProductCategory::factory()->create([
+            'name' => 'أكياس ورقية',
+            'parent_id' => $parent->getKey(),
+        ]);
+
+        // Act — now that an absent parent means «اتركه كما هو», promotion has to be said.
+        $response = $this->putJson("/api/v1/product-categories/{$child->id}", [
+            'name' => 'أكياس ورقية',
+            'parent_id' => null,
+        ], $headers);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.parent_id', null);
+        $this->assertNull($child->fresh()->parent_id);
+    }
+
+    public function test_opening_a_heading_to_investment_is_written_to_its_history(): void
+    {
+        // Arrange
+        $headers = $this->auth();
+        $category = ProductCategory::factory()->create(['name' => 'أكياس']);
+
+        // Act
+        $this->putJson("/api/v1/product-categories/{$category->id}", [
+            'name' => 'أكياس',
+            'is_investable' => true,
+        ], $headers)->assertOk();
+
+        // Assert — who opened a heading to investor money, and when, is exactly what the log is
+        // for: every shelf under it becomes fundable the moment this is saved.
+        //
+        // The *value* is what is asserted, not the label beside it: the creation entry names
+        // every column of the new row, `is_investable` among them, so a label alone would be
+        // there whether the edit had landed or not.
+        $this->getJson("/api/v1/product-categories/{$category->id}/logs", $headers)
+            ->assertOk()
+            ->assertJsonFragment(['is_investable' => true]);
     }
 }

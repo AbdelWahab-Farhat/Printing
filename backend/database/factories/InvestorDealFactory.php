@@ -22,7 +22,6 @@ class InvestorDealFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => 'صفقة '.(++self::$sequence),
             'status' => DealStatus::Draft,
             'investor_profit_share_percent' => '50.00',
             'opened_on' => now()->toDateString(),

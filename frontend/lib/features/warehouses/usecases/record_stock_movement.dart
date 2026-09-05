@@ -48,6 +48,25 @@ enum MovementKind {
   bool get requiresCost => this == MovementKind.increase;
 }
 
+/// Why stock left without being sold — «هالك أم عجز أم فرق جرد».
+///
+/// **Mirrors `StockAdjustmentReason` on the server, minus `unit_change`**, which the API refuses
+/// from a person: it exists so the discards a unit change posts can be told apart from stock
+/// somebody actually lost.
+///
+/// Required on a decrease and refused on an increase, exactly as the API has it — finding more
+/// than the book said is not a loss and has no word in this vocabulary.
+enum ShortfallReason {
+  damage('damage', 'هالك'),
+  shortage('shortage', 'عجز'),
+  countCorrection('count_correction', 'فرق جرد');
+
+  const ShortfallReason(this.wire, this.label);
+
+  final String wire;
+  final String label;
+}
+
 /// Writes one line into the ledger.
 ///
 /// **What moves is a صنف مخزني, not a product's size.** Two catalogue rows at one size draw on
@@ -79,6 +98,7 @@ class RecordStockMovement {
     int? fromWarehouseId,
     required String quantity,
     String? unitCost,
+    ShortfallReason? shortfallReason,
     String? notes,
   }) {
     final amount = _number(quantity);
@@ -114,6 +134,9 @@ class RecordStockMovement {
         // Null on a decrease, decided above: the two directions share one call, so this is the
         // one place that can tell them apart before the payload is built.
         unitCost: cost,
+        // The mirror of the cost, and dropped the same way rather than by a form declining to
+        // draw a box: the API refuses a reason on an increase.
+        adjustmentReason: kind == MovementKind.decrease ? shortfallReason?.wire : null,
         notes: trimmedNotes,
       ),
     };

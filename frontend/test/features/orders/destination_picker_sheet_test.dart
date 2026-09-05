@@ -130,7 +130,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('15.00 د.ل'), findsOneWidget);
+    expect(find.text('15 د.ل'), findsOneWidget);
 
     // Act — the same city, asked about as a shop's address.
     await tester.tapAt(const Offset(10, 10));
@@ -140,7 +140,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('15.00 د.ل'), findsNothing);
+    expect(find.text('15 د.ل'), findsNothing);
   });
 
   testWidgets('picking a city hands the whole city back', (tester) async {

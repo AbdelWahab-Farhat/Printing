@@ -80,4 +80,36 @@ void main() {
     // Assert
     expect(find.text('12 منتجاً'), findsOneWidget);
   });
+
+  testWidgets('a heading open to investment says so on its row', (tester) async {
+    // Arrange
+    const category = ProductCategory(
+      id: 7,
+      name: 'أكياس',
+      productsCount: 12,
+      isInvestable: true,
+    );
+
+    // Act
+    await tester.pumpWidget(host(const ProductCategoryCard(category: category)));
+    await tester.pump();
+
+    // Assert — the list is where «أي التصنيفات مفتوحة للمستثمرين؟» is answered; without the
+    // tail it takes opening every sheet in turn.
+    expect(find.text('12 منتجاً · قابل للاستثمار'), findsOneWidget);
+  });
+
+  testWidgets('a heading nobody has decided about says nothing about it', (tester) async {
+    // Arrange — null, not false: «لم يُسأل عني». Neither is investable, and neither is worth a
+    // word on a row.
+    const category = ProductCategory(id: 8, name: 'ستيكرات', productsCount: 4);
+
+    // Act
+    await tester.pumpWidget(host(const ProductCategoryCard(category: category)));
+    await tester.pump();
+
+    // Assert
+    expect(find.text('4 منتجات'), findsOneWidget);
+    expect(find.textContaining('استثمار'), findsNothing);
+  });
 }

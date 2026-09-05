@@ -93,6 +93,7 @@ import 'package:dayaa/features/investor_portal/repositories/investor_portal_repo
 import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository_impl.dart';
 import 'package:dayaa/features/investor_portal/usecases/get_investor_portfolio.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deal_detail_cubit.dart';
+import 'package:dayaa/features/investors/presentation/viewmodel/deal_orders_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deals_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investors_cubit.dart';
@@ -569,8 +570,9 @@ abstract final class Injector {
       )
       ..registerLazySingleton<GetInvestorDeals>(() => GetInvestorDeals(sl<InvestorRepository>()))
       ..registerLazySingleton<GetInvestorDeal>(() => GetInvestorDeal(sl<InvestorRepository>()))
-      ..registerLazySingleton<CreateInvestorDeal>(
-        () => CreateInvestorDeal(sl<InvestorRepository>()),
+      ..registerLazySingleton<GetDealOrders>(() => GetDealOrders(sl<InvestorRepository>()))
+      ..registerLazySingleton<FundPurchaseOrder>(
+        () => FundPurchaseOrder(sl<InvestorRepository>()),
       )
       ..registerLazySingleton<ChangeDealState>(() => ChangeDealState(sl<InvestorRepository>()))
       ..registerLazySingleton<RecordDealExpense>(
@@ -584,6 +586,9 @@ abstract final class Injector {
           getInvestor: sl<GetInvestor>(),
           recordWalletEntry: sl<RecordWalletEntry>(),
         ),
+      )
+      ..registerFactory<DealOrdersCubit>(
+        () => DealOrdersCubit(getOrders: sl<GetDealOrders>()),
       )
       ..registerFactory<DealDetailCubit>(
         () => DealDetailCubit(

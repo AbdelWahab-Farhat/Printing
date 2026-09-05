@@ -54,7 +54,6 @@ _InvestorDealLine _$InvestorDealLineFromJson(Map<String, dynamic> json) =>
     _InvestorDealLine(
       id: (json['id'] as num).toInt(),
       code: json['code'] as String?,
-      name: json['name'] as String?,
       status: json['status'] as String?,
       statusLabel: json['status_label'] as String?,
       sharePercent: json['share_percent'] as String,
@@ -66,7 +65,6 @@ Map<String, dynamic> _$InvestorDealLineToJson(_InvestorDealLine instance) =>
     <String, dynamic>{
       'id': instance.id,
       'code': instance.code,
-      'name': instance.name,
       'status': instance.status,
       'status_label': instance.statusLabel,
       'share_percent': instance.sharePercent,

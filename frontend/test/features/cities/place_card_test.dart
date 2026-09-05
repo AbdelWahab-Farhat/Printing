@@ -40,7 +40,7 @@ void main() {
     id: 3,
     name: 'طرابلس',
     isRegionRequired: true,
-    deliveryPrice: '15.00',
+    deliveryPrice: '15',
     darbBranch: 'زناتة، طرابلس',
     regionsCount: 50,
   );
@@ -50,7 +50,7 @@ void main() {
     name: 'إستلام مكتب(قرجي)',
     isRegionRequired: false,
     fulfilmentType: FulfilmentType.officePickup,
-    deliveryPrice: '0.00',
+    deliveryPrice: '0',
     regionsCount: 0,
   );
 
@@ -67,7 +67,7 @@ void main() {
       // drive to rather than a counter.
       expect(find.text('طرابلس'), findsOneWidget);
       expect(find.text('50 منطقة · زناتة، طرابلس'), findsOneWidget);
-      expect(find.text('15.00 د.ل'), findsOneWidget);
+      expect(find.text('15 د.ل'), findsOneWidget);
       expect(find.byIcon(AppIcons.mapPin), findsOneWidget);
     });
 
@@ -102,7 +102,7 @@ void main() {
 
       // Assert
       expect(find.text('لم يُحدد'), findsOneWidget);
-      expect(find.text('0.00 د.ل'), findsNothing);
+      expect(find.text('0 د.ل'), findsNothing);
     });
 
     testWidgets('tapping a city with regions opens them', (tester) async {
@@ -149,7 +149,7 @@ void main() {
       id: 4,
       name: 'ضواحي طرابلس الجنوبية الشرقية',
       isRegionRequired: true,
-      deliveryPrice: '2000.00',
+      deliveryPrice: '2000',
       darbBranch: 'عين زارة، طرابلس، ليبيا',
       regionsCount: 160,
     );
@@ -160,7 +160,7 @@ void main() {
     // Assert — the name is on screen, on one line, and the pill it must not push off the end
     // is still there beside it.
     expect(find.text('ضواحي طرابلس الجنوبية الشرقية'), findsOneWidget);
-    expect(find.text('2,000.00 د.ل'), findsOneWidget);
+    expect(find.text('2,000 د.ل'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

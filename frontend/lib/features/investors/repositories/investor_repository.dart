@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/investors/models/deal_order.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/investor_deal.dart';
 
@@ -44,9 +45,21 @@ abstract class InvestorRepository {
 
   Future<Either<Failure, InvestorDeal>> deal(int id);
 
-  Future<Either<Failure, InvestorDeal>> createDeal(Map<String, dynamic> body);
+  /// The orders that sold a deal's goods, newest first — what each one drew off its shelves
+  /// and what that earned. An order still on the road is on the list with nothing paid for it
+  /// yet; a cancelled one is absent, because its goods went back into this deal's own layers.
+  Future<Either<Failure, Paginated<DealOrder>>> dealOrders(
+    int dealId, {
+    int page,
+    int perPage,
+  });
 
-  Future<Either<Failure, InvestorDeal>> openDeal(int id);
+  /// Funds one purchase order: creates the deal, inherits its lines, claims every one of them
+  /// and moves the money — the server does all four or none.
+  Future<Either<Failure, InvestorDeal>> fundPurchaseOrder(
+    int purchaseOrderId,
+    Map<String, dynamic> body,
+  );
 
   Future<Either<Failure, InvestorDeal>> closeDeal(int id);
 

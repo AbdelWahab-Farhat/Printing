@@ -316,4 +316,18 @@ class OrderService
     {
         return ($this->profitAttribution)($orderId);
     }
+
+    /**
+     * The same figures for a page of orders, in one read.
+     *
+     * A screen that lists the orders one deal sold into needs all of them at once; asking one at
+     * a time is two queries per row for an answer two queries can give.
+     *
+     * @param  list<int>  $orderIds
+     * @return array<int, array<string, mixed>> keyed by order id
+     */
+    public function profitAttributionForMany(array $orderIds): array
+    {
+        return $this->profitAttribution->many($orderIds);
+    }
 }

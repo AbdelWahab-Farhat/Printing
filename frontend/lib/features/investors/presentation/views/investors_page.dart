@@ -3,6 +3,7 @@ import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
@@ -11,9 +12,12 @@ import 'package:dayaa/features/investors/presentation/widgets/investor_card.dart
 import 'package:dayaa/features/investors/presentation/widgets/investor_form_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-/// المستثمرون — the people whose money finances the stock.
+/// المستثمرون — the people whose money finances the stock, on a screen of their own.
+///
+/// **Kept for the deep links**, though the tab under «الجهات» is where somebody normally arrives.
 class InvestorsPage extends StatelessWidget {
   const InvestorsPage({super.key});
 
@@ -31,7 +35,6 @@ class _InvestorsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<InvestorsCubit>();
     final canManage = sl<Session>().can(AppPermission.manageInvestors);
 
     return Scaffold(
@@ -41,40 +44,66 @@ class _InvestorsView extends StatelessWidget {
       floatingActionButton: canManage
           ? FloatingActionButton.extended(
               heroTag: 'investors-add',
-              onPressed: () async {
-                final created = await showInvestorFormSheet(context: context);
-                if (created == true) await cubit.refresh();
-              },
-              icon: const Icon(Icons.person_add_alt_1),
+              onPressed: () => addInvestor(context),
+              icon: Icon(AppIcons.add),
               label: const Text('مستثمر جديد'),
             )
           : null,
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: SearchField(
-              hint: 'ابحث بالاسم أو الرمز أو الهاتف',
-              onChanged: cubit.search,
-            ),
+      body: const InvestorsBody(),
+    );
+  }
+}
+
+/// Adds an investor and reloads the list behind it.
+///
+/// Top-level so the «إضافة» dial on [PartiesPage] can call it. A reload rather than a patch,
+/// unlike the other two registers: the create endpoint answers with the investor alone, and a
+/// row inserted without his balances would draw a person worth nothing.
+Future<void> addInvestor(BuildContext context) async {
+  final cubit = context.read<InvestorsCubit>();
+
+  final created = await showInvestorFormSheet(context: context);
+
+  if (created == true) await cubit.refresh();
+}
+
+/// The investors list itself — search box and rows, and nothing around them.
+///
+/// **A body, not a screen.** It is one tab of «الجهات» as well as the whole of [InvestorsPage],
+/// so the bar and the button belong to whichever of the two is hosting it.
+class InvestorsBody extends StatelessWidget {
+  const InvestorsBody({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<InvestorsCubit>();
+
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
+          child: SearchField(
+            hint: 'ابحث بالاسم أو الرمز أو الهاتف',
+            onChanged: cubit.search,
           ),
-          Expanded(
-            child: BlocBuilder<InvestorsCubit, PagedState<Investor>>(
-              builder: (context, state) => PagedListView<Investor>(
-                state: state,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-                emptyMessage: 'لا يوجد مستثمرون بعد',
-                onRefresh: cubit.refresh,
-                onLoadMore: cubit.loadMore,
-                itemBuilder: (context, investor, index) => InvestorCard(
-                  investor: investor,
-                  onTap: () => context.push(Routes.investor(investor.id)),
-                ),
+        ),
+        Expanded(
+          child: BlocBuilder<InvestorsCubit, PagedState<Investor>>(
+            builder: (context, state) => PagedListView<Investor>(
+              state: state,
+              emptyMessage: 'لا يوجد مستثمرون بعد',
+              onRefresh: cubit.refresh,
+              onLoadMore: cubit.loadMore,
+              skeletonHeight: 216.h,
+              itemBuilder: (context, investor, index) => InvestorCard(
+                key: ValueKey(investor.id),
+                investor: investor,
+                onTap: () => context.push(Routes.investor(investor.id)),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

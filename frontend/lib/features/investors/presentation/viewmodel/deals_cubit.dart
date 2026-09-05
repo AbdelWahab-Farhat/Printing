@@ -29,6 +29,14 @@ class DealsCubit extends PagedCubit<InvestorDeal> {
   @override
   Object identityOf(InvestorDeal item) => item.id;
 
+  /// A deal only belongs on the list the current filter asked for.
+  ///
+  /// Without this the base class keeps everything, and a deal created while «مفتوحة» is selected
+  /// is inserted as a draft into a list of open deals — which makes the filter a lie until the
+  /// next read, and the row vanishes on the following refresh with nothing to explain it.
+  @override
+  bool belongs(InvestorDeal item) => _status == null || item.status == _status;
+
   @override
   Future<Either<Failure, Paginated<InvestorDeal>>> fetchPage({
     String? search,

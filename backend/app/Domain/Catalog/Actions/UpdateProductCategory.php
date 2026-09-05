@@ -28,6 +28,11 @@ final class UpdateProductCategory
             // re-routes the *next* order under the heading, never one in flight — the flow is
             // stamped on the order at intake, see `ResolveOrderFlow`.
             'production_mode' => $data->productionMode,
+            // **A deal already open is untouched by this.** Its shelves were checked when they
+            // were named and its terms froze when it opened — see `SyncDealItems`. Taking the
+            // flag off closes the heading to the *next* deal, exactly as the line above closes
+            // it to the next order's road.
+            'is_investable' => $data->isInvestable,
         ]);
 
         return $category->loadCount(['products', 'children']);

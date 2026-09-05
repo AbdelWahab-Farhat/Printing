@@ -21,7 +21,6 @@ class InvestorDealResource extends JsonResource
         return [
             'id' => $this->id,
             'code' => $this->code,
-            'name' => $this->name,
 
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
@@ -31,6 +30,18 @@ class InvestorDealResource extends JsonResource
             // the deal was created and frozen when it opened. Published so a screen never has to
             // fetch the setting to explain a number.
             'investor_profit_share_percent' => (string) $this->investor_profit_share_percent,
+
+            // The company as a partner: what it put in beside the investors — «الباقي على
+            // الشركة» — and the fraction of the goods the investors' money bought. Both derived
+            // at funding and frozen; 0 and 100 on a deal assembled by hand, which owns all of its
+            // goods as every deal once did.
+            'company_stake' => (string) $this->company_stake,
+            'investor_funded_percent' => (string) $this->investor_funded_percent,
+
+            // The order this deal was born from, when it was. A deal assembled by hand out of
+            // several orders has none, and that is a real deal too — hence nullable rather than
+            // a promise the screen can lean on.
+            'purchase_order_id' => $this->purchase_order_id,
 
             'product_id' => $this->product_id,
             'product' => $this->whenLoaded('product', fn (): ?array => $this->product === null ? null : [

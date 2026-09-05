@@ -32,9 +32,17 @@ abstract final class InvestorEndpoints {
   static String wallet(int id) => '/investors/$id/wallet';
   static String statement(int id) => '/investors/$id/statement';
   static String deal(int id) => '/investor-deals/$id';
-  static String openDeal(int id) => '/investor-deals/$id/open';
   static String closeDeal(int id) => '/investor-deals/$id/close';
   static String dealExpenses(int id) => '/investor-deals/$id/expenses';
+
+  /// The orders that sold this deal's goods, and what each one earned it.
+  static String dealOrders(int id) => '/investor-deals/$id/orders';
+
+  /// The deal being born from the order it is about — the partners, the money, and every one of
+  /// the order's lines claimed, in one call. Guarded by `investors.manage`, not by the buyer's
+  /// own grant.
+  static String fundPurchaseOrder(int purchaseOrderId) =>
+      '/purchase-orders/$purchaseOrderId/investor-funding';
 }
 
 abstract final class HomeEndpoints {

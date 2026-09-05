@@ -9,10 +9,13 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// What the row has to get right, each of which the old feed got wrong:
 ///
-///   * **the sign is on the number.** A thousand in and a thousand out were the same digits,
-///     with the direction hidden in a preposition halfway along the line.
-///   * **the balance after each row is on the row.** The header said 300 and nothing below it
-///     proved it; checking meant adding ten cards in your head.
+///   * **the two balances are the number.** «1,000 ← 0» says how much moved and where it left
+///     the shelf standing; the signed figure that used to shout beside it was the same thousand
+///     a third time, and «كان»/«صار» were words an arrow does not need.
+///   * **the balance after each row is on the row — once.** The header said 300 and nothing
+///     below it proved it; checking meant adding ten cards in your head. It is inside «كان ←
+///     صار» rather than beside it, because one fact printed on both sides of a row is one fact
+///     a person has to reconcile with itself.
 ///   * **a count says «كان ← صار».** The person entered a count, not a difference, and
 ///     «105,250 من المخزن» read as if somebody had wheeled that much out of the door.
 ///   * **the warehouse is not repeated.** A ledger about one shelf in one place does not say the
@@ -36,6 +39,7 @@ void main() {
     String? uncosted,
     int? referenceId,
     String? notes,
+    List<MovementDraw> draws = const [],
     MovementPlace? from,
     MovementPlace? to = main,
   }) => StockMovement(
@@ -44,6 +48,7 @@ void main() {
     movementTypeLabel: label,
     quantity: quantity,
     stockItemId: 7,
+    investorDraws: draws,
     fromWarehouseId: from?.id,
     fromWarehouse: from,
     toWarehouseId: to?.id,
@@ -73,7 +78,7 @@ void main() {
     ),
   );
 
-  testWidgets('the quantity carries its sign and the balance it left behind', (tester) async {
+  testWidgets('the row is the two balances, and the movement is the space between', (tester) async {
     // Arrange
     await tester.pumpWidget(
       host(
@@ -88,10 +93,11 @@ void main() {
     // Act
     await tester.pump();
 
-    // Assert
-    expect(find.text('+1,000'), findsOneWidget);
-    expect(find.textContaining('الرصيد'), findsOneWidget);
-    expect(find.textContaining('1,300'), findsOneWidget);
+    // Assert — one fact, once. «الرصيد» beside it and «+1,000» opposite it were the same
+    // thousand said three times.
+    expect(find.text('300 ← 1,300'), findsOneWidget);
+    expect(find.textContaining('الرصيد'), findsNothing);
+    expect(find.text('+1,000'), findsNothing);
   });
 
   testWidgets('an issue is drawn negative and named by its order', (tester) async {
@@ -118,7 +124,7 @@ void main() {
     await tester.pump();
 
     // Assert — and the warehouse is not repeated: the ledger is about this shelf in this place
-    expect(find.text('−1,000'), findsOneWidget);
+    expect(find.text('1,300 ← 300'), findsOneWidget);
     expect(find.text('صرف لطلب #4'), findsOneWidget);
     expect(find.textContaining('المخزن الرئيسي'), findsNothing);
   });
@@ -148,7 +154,7 @@ void main() {
     await tester.pump();
 
     // Assert
-    expect(find.text('كان 105,250 ← صار 0'), findsOneWidget);
+    expect(find.text('105,250 ← 0'), findsOneWidget);
     expect(find.text('جرد'), findsOneWidget);
   });
 
@@ -269,5 +275,78 @@ void main() {
       expect(find.text('بلا تكلفة'), findsOneWidget);
       expect(find.textContaining('0 د.ل'), findsNothing);
     });
+  });
+
+  testWidgets('a shared shelf says whose goods went out, and how much of each', (tester) async {
+    // Arrange — the case the ledger could not be read for: 3,000 off one pile, 2,000 of it ours
+    // and 1,000 financed by a deal. FIFO wrote both rows months ago; no screen said so.
+    await tester.pumpWidget(
+      host(
+        LedgerRow(
+          movement: movement(
+            type: MovementType.orderFulfillment,
+            label: 'صرف لطلب',
+            referenceId: 1206,
+            quantity: '3000.000',
+            signed: '-3000.000',
+            draws: const [
+              MovementDraw(quantity: '2000.000'),
+              MovementDraw(investorDealId: 22, code: 'D22', quantity: '1000.000'),
+            ],
+          ),
+          warehouseId: main.id,
+          unitLabel: 'قطعة',
+        ),
+      ),
+    );
+
+    // Act
+    await tester.pump();
+
+    // Assert
+    expect(find.text('الشركة 2,000 · D22 1,000'), findsOneWidget);
+  });
+
+  testWidgets('a whole movement off one deal names it, and our own says nothing', (tester) async {
+    // Arrange — one owner. Naming the company on every ordinary line would be noise on most of
+    // them; naming the deal is the fact the shelf cannot be read for.
+    await tester.pumpWidget(
+      host(
+        LedgerRow(
+          movement: movement(
+            type: MovementType.orderFulfillment,
+            label: 'صرف لطلب',
+            signed: '-1000.000',
+            draws: const [MovementDraw(investorDealId: 22, code: 'D22', quantity: '1000.000')],
+          ),
+          warehouseId: main.id,
+          unitLabel: 'قطعة',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // Assert
+    expect(find.text('من D22'), findsOneWidget);
+
+    // Act — the same row, off our own stock.
+    await tester.pumpWidget(
+      host(
+        LedgerRow(
+          movement: movement(
+            type: MovementType.orderFulfillment,
+            label: 'صرف لطلب',
+            signed: '-1000.000',
+            draws: const [MovementDraw(quantity: '1000.000')],
+          ),
+          warehouseId: main.id,
+          unitLabel: 'قطعة',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // Assert
+    expect(find.textContaining('الشركة'), findsNothing);
   });
 }

@@ -34,6 +34,17 @@ final readonly class ProductCategoryData
          * `StoreProductCategoryRequest::prepareForValidation()`. The domain speaks one dialect.
          */
         public ProductionMode $productionMode = ProductionMode::InHouse,
+        /**
+         * Whether a deal may be opened against the shelves under this heading — see
+         * `ProductCategory::isInvestable()`.
+         *
+         * **Null is an answer, not a missing one**: «اسأل الأب». A heading nobody has decided
+         * about is not investable, and a subheading left at null takes its parent's answer —
+         * which is why this is `?bool` and not a `bool` defaulting to false. An update that
+         * mentions nothing arrives here holding what is stored; the request sees to that,
+         * because by this point a missing key and an explicit null read the same.
+         */
+        public ?bool $isInvestable = null,
     ) {}
 
     /**
@@ -49,8 +60,10 @@ final readonly class ProductCategoryData
 
         return new self(
             name: trim((string) $validated['name']),
-            // `?? null` rather than `array_key_exists`: both store and update send the whole
-            // representation, so an absent parent is «اجعله رئيسياً», not «اترك ما كان».
+            // Null is «رئيسي», and it has to be sent to mean it. An *absent* key no longer
+            // reaches here on an update: the request fills it from the stored row first, because
+            // the build already in people's hands renames without it and every subheading it
+            // touched came back a root. See `StoreProductCategoryRequest::keepStored()`.
             parentId: isset($validated['parent_id']) ? (int) $validated['parent_id'] : null,
             description: $description !== '' ? $description : null,
             isActive: (bool) ($validated['is_active'] ?? true),
@@ -58,6 +71,8 @@ final readonly class ProductCategoryData
             productionMode: isset($validated['production_mode'])
                 ? ProductionMode::from((string) $validated['production_mode'])
                 : ProductionMode::InHouse,
+            // `isset` is deliberate and reads null and absent alike: both mean «اسأل الأب».
+            isInvestable: isset($validated['is_investable']) ? (bool) $validated['is_investable'] : null,
         );
     }
 }

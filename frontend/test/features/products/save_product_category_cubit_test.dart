@@ -126,6 +126,72 @@ void main() {
     ).called(1);
   });
 
+  // ─────────────────────────── قابل للاستثمار ───────────────────────────
+  // The same rule as above, for the picker beside it: a form that drew the answer and dropped
+  // it on submit would look right and change nothing — and here «nothing» means every shelf
+  // under the heading stays refused by the deal sheet, with neither screen saying why.
+
+  test('carries the investability answer when a heading is added', () async {
+    // Arrange
+    when(
+      () => repository.create(
+        name: any(named: 'name'),
+        description: any(named: 'description'),
+        sortOrder: any(named: 'sortOrder'),
+        productionMode: any(named: 'productionMode'),
+        isInvestable: any(named: 'isInvestable'),
+      ),
+    ).thenAnswer((_) async => const Right(stored));
+
+    // Act
+    await cubit.submit(name: 'أكياس', isInvestable: true);
+
+    // Assert
+    verify(
+      () => repository.create(
+        name: 'أكياس',
+        description: null,
+        sortOrder: 0,
+        productionMode: ProductionMode.inHouse,
+        isInvestable: true,
+      ),
+    ).called(1);
+  });
+
+  test('carries «حسب الرئيسي» as an answer, and where the heading is filed', () async {
+    // Arrange
+    when(
+      () => repository.update(
+        any(),
+        name: any(named: 'name'),
+        description: any(named: 'description'),
+        sortOrder: any(named: 'sortOrder'),
+        isActive: any(named: 'isActive'),
+        productionMode: any(named: 'productionMode'),
+        parentId: any(named: 'parentId'),
+        isInvestable: any(named: 'isInvestable'),
+      ),
+    ).thenAnswer((_) async => const Right(stored));
+
+    // Act — a subheading left on its parent's answer.
+    await cubit.submit(categoryId: 4, name: 'أكياس ورقية', parentId: 3);
+
+    // Assert — null travels as a value, and the parent travels with it: a PUT that omits the
+    // parent makes the subheading a root, and «حسب الرئيسي» then resolves to «لا».
+    verify(
+      () => repository.update(
+        4,
+        name: 'أكياس ورقية',
+        description: null,
+        sortOrder: 0,
+        isActive: true,
+        productionMode: ProductionMode.inHouse,
+        parentId: 3,
+        isInvestable: null,
+      ),
+    ).called(1);
+  });
+
   group('reading the server back', () {
     test('takes the mode off the wire', () {
       // Arrange
@@ -140,6 +206,22 @@ void main() {
 
       // Assert
       expect(category.productionMode, ProductionMode.outsourced);
+    });
+
+    test('takes the investability answer off the wire, null included', () {
+      // Arrange — three headings: one open, one deliberately kept out, one never asked about.
+      // The third is what makes the field nullable, and the app has to keep the three apart.
+      final open = <String, dynamic>{'id': 1, 'name': 'أكياس', 'is_investable': true};
+      final excluded = <String, dynamic>{'id': 2, 'name': 'خاصة بنا', 'is_investable': false};
+      final unasked = <String, dynamic>{'id': 3, 'name': 'ستيكرات'};
+
+      // Act
+      final categories = [open, excluded, unasked].map(ProductCategory.fromJson).toList();
+
+      // Assert
+      expect(categories[0].isInvestable, isTrue);
+      expect(categories[1].isInvestable, isFalse);
+      expect(categories[2].isInvestable, isNull);
     });
 
     test('still reads the boolean the old build was sent, without believing it', () {

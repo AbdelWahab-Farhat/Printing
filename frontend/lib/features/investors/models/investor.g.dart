@@ -14,6 +14,9 @@ _Investor _$InvestorFromJson(Map<String, dynamic> json) => _Investor(
   notes: json['notes'] as String?,
   isActive: json['is_active'] as bool? ?? true,
   hasLogin: json['has_login'] as bool? ?? false,
+  totals: json['totals'] == null
+      ? null
+      : InvestorTotals.fromJson(json['totals'] as Map<String, dynamic>),
   balances: json['balances'] == null
       ? null
       : InvestorBalances.fromJson(json['balances'] as Map<String, dynamic>),
@@ -27,6 +30,7 @@ Map<String, dynamic> _$InvestorToJson(_Investor instance) => <String, dynamic>{
   'notes': instance.notes,
   'is_active': instance.isActive,
   'has_login': instance.hasLogin,
+  'totals': instance.totals?.toJson(),
   'balances': instance.balances?.toJson(),
 };
 
@@ -65,3 +69,19 @@ Map<String, dynamic> _$DealPotsToJson(_DealPots instance) => <String, dynamic>{
   'capital': instance.capital,
   'profit': instance.profit,
 };
+
+_InvestorTotals _$InvestorTotalsFromJson(Map<String, dynamic> json) =>
+    _InvestorTotals(
+      capital: json['capital'] as String,
+      profit: json['profit'] as String,
+      walletCapital: json['wallet_capital'] as String,
+      walletProfit: json['wallet_profit'] as String,
+    );
+
+Map<String, dynamic> _$InvestorTotalsToJson(_InvestorTotals instance) =>
+    <String, dynamic>{
+      'capital': instance.capital,
+      'profit': instance.profit,
+      'wallet_capital': instance.walletCapital,
+      'wallet_profit': instance.walletProfit,
+    };
