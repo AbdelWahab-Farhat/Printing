@@ -625,6 +625,7 @@ class _Body extends StatelessWidget {
       order.recipientName != null ||
       order.recipientPhone != null ||
       order.trackingNumber != null ||
+      order.nawrisParcel != null ||
       order.shippingCompany != null;
 
   @override
@@ -1005,6 +1006,10 @@ class _Destination extends StatelessWidget {
             _Row(icon: AppIcons.phone, label: 'هاتف المستلم', value: phone),
           if (order.trackingNumber case final tracking?)
             _Row(icon: AppIcons.tag, label: 'رقم التتبع', value: tracking),
+          // Beside «رقم التتبع» and never merged with it: that one is typed by a person, this
+          // one is what the carrier called the parcel. An order can carry both, and they differ.
+          if (order.nawrisParcel case final parcel?)
+            _Row(icon: AppIcons.tag, label: 'كود النورس', value: parcel.code),
           if (order.shippingCompany case final company?)
             _Row(icon: AppIcons.warehouse, label: 'شركة الشحن', value: company),
         ],
