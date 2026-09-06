@@ -227,6 +227,63 @@ class FundPurchaseOrderTest extends TestCase
         $this->assertSame('10.000', (string) $batch->unit_cost);
     }
 
+    /**
+     * **Undoing a receipt takes the deal's goods back and leaves its money entirely alone.**
+     *
+     * The two halves are settled at different moments and by different acts: an investor's cash
+     * moves when the deal is *funded*, and his stock is bought off him when it *leaves the shelf*
+     * (`PostDealStockPurchases`). A receipt entered in error sits between the two — the goods
+     * never left — so there is nothing owed to unwind, and the wallet must not so much as twitch.
+     * The layer simply goes back to nothing and the lorry is waiting to be received again.
+     */
+    public function test_undoing_a_receipt_takes_the_deals_stock_back_without_touching_its_money(): void
+    {
+        // Arrange — funded, and received.
+        $headers = $this->partner();
+        $size = $this->investableSize();
+        $warehouse = Warehouse::factory()->create();
+        $order = $this->order([$size], $warehouse);
+        $ahmed = $this->investorHolding('50000.00');
+
+        $this->withHeaders($headers)->postJson(
+            "/api/v1/purchase-orders/{$order->id}/investor-funding",
+            ['investors' => [['investor_id' => $ahmed->getKey(), 'amount' => '30000.00']]],
+        )->assertCreated();
+
+        $deal = InvestorDeal::query()->where('purchase_order_id', $order->id)->firstOrFail();
+
+        $this->withHeaders($headers)->postJson(
+            "/api/v1/purchase-orders/{$order->id}/arrivals",
+            ['items' => [['stock_item_id' => $size->stock_item_id, 'quantity' => '10000.000']]],
+        )->assertCreated();
+
+        $walletBefore = InvestorWalletEntry::query()->where('investor_id', $ahmed->getKey())->get();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson(
+            "/api/v1/purchase-orders/{$order->id}/receipt-reversal",
+            ['reason' => 'سُجّلت الشحنة على الأمر الخطأ'],
+        );
+
+        // Assert — the deal's stock is gone from the shelf …
+        $response->assertOk()->assertJsonPath('data.status', 'arrived');
+
+        $batch = StockBatch::query()->where('stock_item_id', $size->stock_item_id)->latest('id')->firstOrFail();
+        $this->assertSame((int) $deal->getKey(), (int) $batch->investor_deal_id);
+        $this->assertSame('0.000', (string) $batch->quantity_remaining);
+
+        // … the deal itself is untouched and still open, waiting for the goods to arrive again …
+        $this->assertSame(DealStatus::Open, $deal->refresh()->status);
+
+        // … and not one dinar moved.
+        $walletAfter = InvestorWalletEntry::query()->where('investor_id', $ahmed->getKey())->get();
+        $this->assertSame($walletBefore->count(), $walletAfter->count());
+        $this->assertSame(
+            $walletBefore->sum(fn (InvestorWalletEntry $entry): string => (string) $entry->amount),
+            $walletAfter->sum(fn (InvestorWalletEntry $entry): string => (string) $entry->amount),
+        );
+    }
+
     // ─────────────────────────── what it refuses ───────────────────────────
 
     public function test_an_order_that_has_started_arriving_cannot_be_funded(): void

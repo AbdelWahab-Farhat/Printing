@@ -171,6 +171,12 @@ enum PermissionName: string
     // reverse, neither of which this pair is meant to grant.
     case ViewPurchaseOrders = 'purchase_orders.view';
     case ManagePurchaseOrders = 'purchase_orders.manage';
+    // Stepping past the 24-hour window a receipt may ordinarily be taken back in. Its own grant
+    // rather than part of `inventory.manage`, the same reasoning `inventory.revalue` carries:
+    // undoing a receipt nobody can still walk over and verify is a different level of trust from
+    // posting one. It waives the *clock* and nothing else — the guards that refuse a reversal
+    // once the stock has moved or been repriced are arithmetic, and no grant reaches them.
+    case ReverseReceiptAnyTime = 'purchase_orders.reverse_receipt_any_time';
 
     // Investors. Reading and administering the deals is the usual pair; the three money verbs
     // are split off it for the same reason `orders.payments.*` splits three ways — recording a
@@ -258,6 +264,7 @@ enum PermissionName: string
             self::ManageVendors => 'إضافة وتعديل الموردين',
             self::ViewPurchaseOrders => 'عرض أوامر الشراء',
             self::ManagePurchaseOrders => 'إنشاء وتعديل أوامر الشراء وإرسالها وإلغاؤها',
+            self::ReverseReceiptAnyTime => 'التراجع عن استلام شحنة بعد انتهاء مهلة الـ٢٤ ساعة',
             self::ViewInvestors => 'عرض المستثمرين وصفقاتهم',
             self::ManageInvestors => 'إضافة وتعديل المستثمرين والصفقات',
             self::RecordInvestorMoney => 'تسجيل إيداع أو تمويل أو سحب لمستثمر',
@@ -306,7 +313,8 @@ enum PermissionName: string
             self::ViewInventory, self::ManageInventory,
             self::RevalueStock, self::ViewStockCost => 'المخازن والمخزون',
             self::ViewVendors, self::ManageVendors => 'الموردون',
-            self::ViewPurchaseOrders, self::ManagePurchaseOrders => 'أوامر الشراء',
+            self::ViewPurchaseOrders, self::ManagePurchaseOrders,
+            self::ReverseReceiptAnyTime => 'أوامر الشراء',
             self::ViewInvestors, self::ManageInvestors,
             self::RecordInvestorMoney, self::ReverseInvestorMoney,
             self::RecordDealExpenses, self::ViewInvestorPortal => 'المستثمرون',

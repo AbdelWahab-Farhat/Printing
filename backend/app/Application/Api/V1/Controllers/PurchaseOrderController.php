@@ -8,15 +8,18 @@ use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\PurchaseOrder\ChangePurchaseOrderStatusRequest;
 use App\Application\Api\V1\Requests\PurchaseOrder\ReceivePurchaseOrderArrivalRequest;
+use App\Application\Api\V1\Requests\PurchaseOrder\ReversePurchaseOrderReceiptRequest;
 use App\Application\Api\V1\Requests\PurchaseOrder\StorePurchaseOrderRequest;
 use App\Application\Api\V1\Requests\PurchaseOrder\UpdatePurchaseOrderRequest;
 use App\Application\Api\V1\Resources\PurchaseOrderResource;
 use App\Application\Api\V1\Resources\StockArrivalResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Investor\InvestorService;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderData;
 use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderData;
+use App\Domain\PurchaseOrder\DTOs\ReversePurchaseOrderReceiptData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderTransitionNotAllowed;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
@@ -104,7 +107,10 @@ class PurchaseOrderController extends Controller
      */
     public function show(PurchaseOrder $purchaseOrder): JsonResponse
     {
-        $purchaseOrder->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts']);
+        // `stockArrivals` is what the reversal affordance is computed from — see
+        // PurchaseOrderResource. Loaded here and not on the list: it is one query for one order,
+        // and the list has no button to draw.
+        $purchaseOrder->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts', 'stockArrivals']);
 
         // Whose money is on this lorry — asked here because this is the screen where somebody is
         // about to receive it. Empty for the ordinary order the company paid for itself.
@@ -177,6 +183,41 @@ class PurchaseOrderController extends Controller
         );
 
         return $this->created(new StockArrivalResource($arrival), 'تم تسجيل استلام الشحنة بنجاح');
+    }
+
+    /**
+     * Undo a receipt entered in error
+     *
+     * Takes the shipment back off the shelf — the exact cost layers it opened, at their own
+     * cost, never a FIFO draw on the oldest stock in the warehouse — rolls each line's
+     * `quantity_received` back down, and reopens the order at `arrived` so it can be received
+     * again correctly. The arrival document is kept and stamped as reversed, never deleted.
+     *
+     * **Allowed for 24 hours after the receipt was posted**, and refused outright — for
+     * everybody, at any age — once any of the arriving stock has been drawn on or any of its
+     * cost layers repriced by hand. Past those, the correction is a stocktake adjustment, which
+     * writes the difference off instead of rewriting a receipt that demonstrably happened.
+     *
+     * Whoever holds `purchase_orders.reverse_receipt_any_time` may step past the 24 hours, and
+     * past nothing else. `reason` is required of both, and `reversed_by` is stamped from the
+     * authenticated user, never read from the body.
+     */
+    public function reverseReceipt(ReversePurchaseOrderReceiptRequest $request, PurchaseOrder $purchaseOrder): JsonResponse
+    {
+        $updated = $this->purchaseOrders->reverseReceipt(
+            $purchaseOrder,
+            ReversePurchaseOrderReceiptData::fromArray(
+                $request->validated(),
+                (int) $request->user()->id,
+                // Read here rather than in the domain: who is asking is the boundary's business,
+                // and what that permits is the Action's — see ReverseStockArrival.
+                $request->user()->can(PermissionName::ReverseReceiptAnyTime->value),
+            ),
+        );
+
+        $updated->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts', 'stockArrivals']);
+
+        return $this->success(new PurchaseOrderResource($updated), 'تم التراجع عن الاستلام بنجاح');
     }
 
     /**

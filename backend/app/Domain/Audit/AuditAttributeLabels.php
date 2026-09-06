@@ -410,6 +410,9 @@ final class AuditAttributeLabels
             'received_by' => 'استلمها',
             'invoice_number' => 'رقم الفاتورة',
             'purchase_order_id' => 'أمر الشراء',
+            'reversed_at' => 'تاريخ التراجع',
+            'reversed_by' => 'تراجع عنها',
+            'reversal_reason' => 'سبب التراجع',
         ],
         'stock_arrival_item' => [
             'stock_arrival_id' => 'التوريد',

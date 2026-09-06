@@ -518,6 +518,14 @@ Route::prefix('v1')->group(function (): void {
         Route::post('purchase-orders/{purchase_order}/arrivals', [PurchaseOrderController::class, 'receiveArrival'])
             ->middleware('can:inventory.manage')->name('purchase-orders.arrivals');
 
+        // Undoing that receipt sits behind the same guard that posted it — it is the same job on
+        // the same document, and somebody who may put stock on a shelf by mistake must be able to
+        // take it back off. `purchase_orders.reverse_receipt_any_time` is *not* checked here:
+        // it does not open the door, it only waives the 24-hour window once inside, and the
+        // controller reads it off the caller for exactly that.
+        Route::post('purchase-orders/{purchase_order}/receipt-reversal', [PurchaseOrderController::class, 'reverseReceipt'])
+            ->middleware('can:inventory.manage')->name('purchase-orders.receipt-reversal');
+
         // ── inventory ───────────────────────────────────────────────────────────────────
         // One pair of permissions covers warehouses, balances and the ledger. Splitting them
         // would produce guards that cannot usefully be granted alone: whoever may transfer
