@@ -139,6 +139,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [PURCHASE-ORDER-ADDITIONAL-COSTS-BACKEND-CHANGES.md](purchase-orders/PURCHASE-ORDER-ADDITIONAL-COSTS-BACKEND-CHANGES.md) | Additional costs & line proportioning — backend. |
 | [PURCHASE-ORDER-ADDITIONAL-COSTS-FRONTEND-INTEGRATION.md](purchase-orders/PURCHASE-ORDER-ADDITIONAL-COSTS-FRONTEND-INTEGRATION.md) | The same, in the app. **Implemented.** |
 | [PURCHASE-ORDER-RECEIPT-REVERSAL.md](purchase-orders/PURCHASE-ORDER-RECEIPT-REVERSAL.md) | Undoing a receipt entered in error — 24 hours, and only while nothing has been drawn on. **Implemented.** |
+| [PURCHASE-ORDER-RECEIPT-REVERSAL-FRONTEND-INTEGRATION.md](purchase-orders/PURCHASE-ORDER-RECEIPT-REVERSAL-FRONTEND-INTEGRATION.md) | The same, in the app. **Planned — not built.** |
 
 ## [vendors/](vendors/)
 
