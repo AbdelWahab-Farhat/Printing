@@ -216,8 +216,11 @@ class _LineBox extends StatelessWidget {
           ],
           SizedBox(height: 4.h),
           Text(
-            // The arithmetic the server already did. A screen that subtracted would be a second
-            // opinion about the number that decides whether the shipment is refused.
+            // The arithmetic the server already did, so the screen never gives a second opinion
+            // about it.
+            //
+            // A guide, not a ceiling: a bigger number may be typed here, and a vendor that sent
+            // more of one size than was ordered is booked in for what actually turned up.
             //
             // The unit lands once, on the figure the two are measured against.
             'المتبقي ${item.remainingLabel} من ${item.orderedWithUnit}',

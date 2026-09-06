@@ -40,11 +40,12 @@ class PurchaseOrderItemResource extends JsonResource
 
             // Derived rather than trusted from either column alone, so a client never has to
             // subtract two decimal strings itself.
-            'quantity_remaining' => (string) bcsub(
-                (string) $this->quantity_ordered,
-                (string) $this->quantity_received,
-                3,
-            ),
+            //
+            // **Floored at zero.** An over-delivered line — 363.6 kg against an order for 360 —
+            // has nothing still owing, and «متبقٍ ٣٫٦-» would read as a debt rather than as a
+            // surplus. The surplus itself is still legible: `quantity_received` stands above
+            // `quantity_ordered`, and both are printed.
+            'quantity_remaining' => $this->quantityRemaining(),
 
             // Null only on a line written before cost tracking existed.
             'base_total_cost' => $this->base_total_cost !== null ? (string) $this->base_total_cost : null,
@@ -57,5 +58,18 @@ class PurchaseOrderItemResource extends JsonResource
             'unit' => $this->unit?->value,
             'unit_label' => $this->unit?->label(),
         ];
+    }
+
+    /**
+     * What is still owing on this line, never below zero.
+     *
+     * An over-delivery leaves nothing outstanding, and a negative figure would read on the screen
+     * as a debt to the vendor rather than as a surplus on the shelf.
+     */
+    private function quantityRemaining(): string
+    {
+        $remaining = bcsub((string) $this->quantity_ordered, (string) $this->quantity_received, 3);
+
+        return bccomp($remaining, '0', 3) > 0 ? $remaining : '0.000';
     }
 }

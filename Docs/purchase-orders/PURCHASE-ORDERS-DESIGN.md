@@ -147,8 +147,10 @@ What happens, in one transaction:
 
 1. Refused (422) if the order is `completed` or `cancelled`.
 2. Every line is checked *before* anything is written: a `product_variant_id` not on the order
-   is refused, and a line whose running total would exceed `quantity_ordered` is refused —
-   nothing partially lands.
+   is refused — nothing partially lands. A quantity **larger** than what remains on order is
+   *not* refused: a supplier over-delivering one size is ordinary, and the shelf gets what turned
+   up. `quantity_received` then stands above `quantity_ordered`, and `quantity_remaining` is
+   reported as `0.000` rather than as a negative.
 3. The shipment is posted through the exact same path `POST /stock-arrivals` uses
    (`VendorService::recordStockArrival()` → `InventoryService::recordMovement()`), so the
    warehouse balance and `stock_movements` ledger move exactly as they always have.
@@ -226,7 +228,8 @@ Touched (not created) in the Vendor context: `StockArrivalData` gained an option
 ## 9. Tests
 
 `tests/Feature/Api/V1/PurchaseOrderTest.php` — 37 tests, full CRUD/status/receiving matrix
-including the permission split in §5, over-receipt, receiving an unordered variant, and the
+including the permission split in §5, over-receipt being booked in as it arrived, receiving an
+unordered variant, and the
 document+ledger+balance triple-check on every successful receive. Two tests added to
 `StockArrivalTest.php` confirming the generic endpoint never accepts a client-supplied
 `purchase_order_id`.

@@ -293,7 +293,10 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
     @JsonKey(name: 'quantity_received') required String quantityReceived,
 
     /// Computed by the server, never here — a client that subtracted would be a second opinion
-    /// about arithmetic that decides whether a shipment is refused.
+    /// about the figure the whole receiving screen is written around.
+    ///
+    /// **Floored at zero by the server.** An over-delivered line has nothing still owing, so the
+    /// surplus is read off [surplusWithUnit] instead, which compares the two printed figures.
     @JsonKey(name: 'quantity_remaining') required String quantityRemaining,
 
     /// What the vendor charged for this line, and that divided by the quantity.
@@ -369,6 +372,21 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
   bool get hasReceipts => (double.tryParse(quantityReceived) ?? 0) > 0;
 
   bool get isOutstanding => (double.tryParse(quantityRemaining) ?? 0) > 0;
+
+  /// How much more than ordered turned up, as a number — `0` on every ordinary line.
+  ///
+  /// A vendor sending 363.6 kg against an order for 360 is booked in as 363.6, because the shelf
+  /// holds what arrived. [quantityRemaining] cannot say so — it stops at zero — so the surplus is
+  /// worked out here, for a label and nothing else.
+  double get _surplus =>
+      (double.tryParse(quantityReceived) ?? 0) -
+      (double.tryParse(quantityOrdered) ?? 0);
+
+  bool get hasSurplus => _surplus > 0;
+
+  /// «٣٫٦ كيلوغرام» — the extra, ready to sit after a word that already says it is extra.
+  String get surplusWithUnit =>
+      lineUnit.amount(groupedDecimal(trimDecimals(_surplus.toStringAsFixed(3))));
 
   /// Whether a cost was ever recorded against this line.
   ///

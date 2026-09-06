@@ -1042,7 +1042,12 @@ class PurchaseOrderTest extends TestCase
         $this->assertDatabaseCount('stock_arrivals', 0);
     }
 
-    public function test_over_receiving_is_refused(): void
+    /**
+     * A supplier who sends more of one size than was ordered has still sent it, and the shelf
+     * holds what turned up — so the surplus is booked in rather than refused. The order closes
+     * on it, and `quantity_remaining` is reported as zero, never as a negative.
+     */
+    public function test_over_receiving_is_booked_in_as_it_arrived(): void
     {
         // Arrange
         $vendor = Vendor::factory()->create();
@@ -1053,21 +1058,32 @@ class PurchaseOrderTest extends TestCase
             $this->payload($vendor, $warehouse, $variant),
         )->json('data');
         $inventoryHeaders = $this->inventoryManager();
+        $viewerHeaders = $this->viewer();
         $this->forgetAuth();
 
-        // Act
+        // Act — 15 against an order for 10
         $response = $this->withHeaders($inventoryHeaders)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
             ['items' => [['stock_item_id' => $variant->id, 'quantity' => 15]]],
         );
 
-        // Assert — refused, and nothing partially lands
-        $response->assertStatus(422)->assertJsonStructure(['errors' => ['items']]);
-        $this->assertDatabaseCount('stock_arrivals', 0);
-        $this->assertDatabaseCount('stock_movements', 0);
+        // Assert — all fifteen land, on the shelf and on the line
+        $response->assertCreated();
+        $this->assertDatabaseHas('purchase_orders', ['id' => $order['id'], 'status' => 'completed']);
         $this->assertDatabaseHas('purchase_order_items', [
-            'purchase_order_id' => $order['id'], 'stock_item_id' => $variant->id, 'quantity_received' => '0.000',
+            'purchase_order_id' => $order['id'], 'stock_item_id' => $variant->id, 'quantity_received' => '15.000',
         ]);
+        $this->assertDatabaseCount('stock_arrivals', 1);
+        $this->assertDatabaseCount('stock_movements', 1);
+        $this->assertSame('15.000', (string) $this->stockOf($warehouse, $variant)?->quantity);
+
+        // ...and the line reports nothing still owing rather than «-5»
+        $this->forgetAuth();
+        $this->withHeaders($viewerHeaders)
+            ->getJson("/api/v1/purchase-orders/{$order['id']}")
+            ->assertOk()
+            ->assertJsonPath('data.items.0.quantity_received', '15.000')
+            ->assertJsonPath('data.items.0.quantity_remaining', '0.000');
     }
 
     public function test_receiving_an_unordered_variant_is_refused(): void

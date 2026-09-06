@@ -578,12 +578,21 @@ class _LineRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (isDone)
+            if (item.hasSurplus)
+              Text(
+                // **Said in a word, not with a minus sign.** More arrived than was ordered — an
+                // ordinary thing for a vendor to do on one size — and the line is closed either
+                // way, so «متبقٍ ٣٫٦-» would read as a debt instead of as goods on the shelf.
+                'زائد ${item.surplusWithUnit}',
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: scheme.tertiary,
+                ),
+              )
+            else if (isDone)
               Icon(AppIcons.activate, size: 18.sp, color: scheme.primary)
             else
               Text(
-                // The number that decides whether the next shipment is accepted, printed once
-                // and computed by the server.
+                // What the next shipment is still owed, printed once and computed by the server.
                 'متبقٍ ${item.remainingWithUnit}',
                 style: context.textTheme.bodySmall?.copyWith(
                   color: scheme.error,

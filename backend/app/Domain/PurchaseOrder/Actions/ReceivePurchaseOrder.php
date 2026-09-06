@@ -10,7 +10,6 @@ use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderItemData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderHasNoWarehouse;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderNotReceivable;
-use App\Domain\PurchaseOrder\Exceptions\ReceivedQuantityExceedsOrdered;
 use App\Domain\PurchaseOrder\Exceptions\StockItemNotOnPurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
@@ -42,10 +41,15 @@ use Illuminate\Support\Facades\DB;
  * `final_total_cost` on a partial receipt — so the vendor module still never decides a cost, only
  * records the one this module already agreed to.
  *
+ * A shipment may carry **more** than the line ordered, and that is booked in as it arrived: a
+ * supplier who sends 363.6 kg against an order for 360 has delivered 363.6 kg, and the stock
+ * ledger records what is on the shelf, not what was hoped for. The surplus reads on the order as
+ * `quantity_received` above `quantity_ordered`; `quantity_remaining` floors at zero rather than
+ * going negative.
+ *
  * @throws PurchaseOrderNotReceivable
  * @throws PurchaseOrderHasNoWarehouse
  * @throws StockItemNotOnPurchaseOrder
- * @throws ReceivedQuantityExceedsOrdered
  */
 final class ReceivePurchaseOrder
 {
@@ -66,8 +70,8 @@ final class ReceivePurchaseOrder
 
         return DB::transaction(function () use ($order, $data): StockArrival {
             // Locked for the rest of the transaction so two concurrent receipts against the
-            // same order cannot both read the same quantity_received and both pass the
-            // over-receipt guard below — the same reasoning ApplyStockChange locks a balance row
+            // same order cannot both read the same quantity_received and both write a total
+            // that forgets the other — the same reasoning ApplyStockChange locks a balance row
             // for.
             $items = $order->items()->lockForUpdate()->get()->keyBy('stock_item_id');
 
@@ -129,28 +133,18 @@ final class ReceivePurchaseOrder
     }
 
     /**
+     * The line has to *be* on the order — a shipment naming a shelf nobody ordered is a mistyped
+     * payload, not a delivery. How much it carried is not questioned: over-delivery is a normal
+     * thing for a supplier to do on one size, and refusing it would leave real stock unbooked.
+     *
      * @param  Collection<int, PurchaseOrderItem>  $items  Keyed by stock_item_id.
      *
      * @throws StockItemNotOnPurchaseOrder
-     * @throws ReceivedQuantityExceedsOrdered
      */
     private function guardLine(PurchaseOrder $order, Collection $items, ReceivePurchaseOrderItemData $line): void
     {
-        $item = $items->get($line->stockItemId);
-
-        if ($item === null) {
+        if (! $items->has($line->stockItemId)) {
             throw StockItemNotOnPurchaseOrder::make($line->stockItemId, (int) $order->getKey());
-        }
-
-        $projected = bcadd((string) $item->quantity_received, $line->quantity, 3);
-
-        if (bccomp($projected, (string) $item->quantity_ordered, 3) > 0) {
-            throw ReceivedQuantityExceedsOrdered::make(
-                $line->stockItemId,
-                (string) $item->quantity_ordered,
-                (string) $item->quantity_received,
-                $line->quantity,
-            );
         }
     }
 

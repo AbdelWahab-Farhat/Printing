@@ -14,10 +14,10 @@ use Illuminate\Validation\Rule;
  * `warehouse_id` — both are already fixed by the order itself, so re-sending them would only
  * invite a payload that disagrees with the order it names.
  *
- * Whether *this* order may currently receive anything, and whether any one line's quantity is
- * more than what remains on order, are domain questions — see `PurchaseOrderNotReceivable` and
- * `ReceivedQuantityExceedsOrdered` — because both depend on state this request cannot see
- * without reading the database twice.
+ * Whether *this* order may currently receive anything is a domain question — see
+ * `PurchaseOrderNotReceivable` — because it depends on state this request cannot see without
+ * reading the database. A quantity larger than what remains on order is **not** rejected
+ * anywhere: a supplier over-delivering one size is ordinary, and the shelf gets what turned up.
  */
 class ReceivePurchaseOrderArrivalRequest extends FormRequest
 {

@@ -26,10 +26,14 @@ use App\Domain\Delivery\Models\Region;
  * copying integers, once per town, and getting one wrong sends parcels to the wrong place with
  * nothing on our side reading as an error.
  *
- * **An exact match after normalisation, or nothing.** {@see ArabicName} folds the spellings nobody
- * means differently; anything left over is reported for a human rather than guessed at. The
- * failure mode of a fuzzy match here is a parcel delivered to another town, which no one finds
- * out about until a customer calls.
+ * **Two exact passes, then one guess that says it is a guess.** {@see ArabicName} folds the
+ * spellings nobody means differently and the two exact passes demand equality after it; only when
+ * both find nothing does {@see nearest} look for a name a letter or two away. The failure mode of
+ * that third pass is a parcel delivered to another town, which no one finds out about until a
+ * customer calls — so it is deliberately narrow, it refuses ties outright, and every pair it
+ * produces is listed in the report under «مطابقات تقريبية» for somebody to read. **Its output is
+ * a proposal, not a fact**, and the run that prints it is the last chance to catch «بن سعيد»
+ * quietly becoming «بن سعيب».
  *
  * **Never overwrites.** A city that already carries an id was mapped by somebody who looked, and
  * a name match is a weaker fact than a decision. Re-running is therefore safe, and is how the
@@ -54,6 +58,7 @@ final class MatchNawrisGeography
         $alreadyMapped = 0;
         $unmatchedCities = [];
         $unmatchedRegions = [];
+        $approximate = [];
 
         $cities = City::query()
             // **An «استلام مكتب» city is not an unmapped destination, it is not a destination.**
@@ -81,6 +86,10 @@ final class MatchNawrisGeography
                 continue;
             }
 
+            if ($their['approximate']) {
+                $approximate[] = 'مدينة: '.$city->name.' ← '.$their['name'];
+            }
+
             if ($this->mapped($city->nawris_government_id) !== null) {
                 $alreadyMapped++;
             } else {
@@ -91,10 +100,11 @@ final class MatchNawrisGeography
                 }
             }
 
-            [$regions, $missing] = $this->matchRegions($city, $their['id'], $apply);
+            [$regions, $missing, $guessed] = $this->matchRegions($city, $their['id'], $apply);
 
             $matchedRegions += $regions;
             $unmatchedRegions = [...$unmatchedRegions, ...$missing];
+            $approximate = [...$approximate, ...$guessed];
         }
 
         return new GeographyMatchReport(
@@ -103,12 +113,13 @@ final class MatchNawrisGeography
             unmatchedCities: $unmatchedCities,
             unmatchedRegions: $unmatchedRegions,
             alreadyMappedCities: $alreadyMapped,
+            approximateMatches: $approximate,
         );
     }
 
     /**
      * @param  string  $government  their **id** for the city — what `get-area` is keyed by
-     * @return array{int, list<string>}
+     * @return array{int, list<string>, list<string>}
      */
     private function matchRegions(City $city, string $government, bool $apply): array
     {
@@ -117,13 +128,14 @@ final class MatchNawrisGeography
         // One HTTP call per city is already the cost of this; making it for a city with nothing
         // left to map would be paying it for no reason.
         if ($unmapped->isEmpty()) {
-            return [0, []];
+            return [0, [], []];
         }
 
         [$strict, $loose] = $this->byName($this->client->areas($government));
 
         $matched = 0;
         $missing = [];
+        $guessed = [];
 
         foreach ($unmapped as $region) {
             $area = $this->theirRowFor($region->name, $strict, $loose);
@@ -137,12 +149,16 @@ final class MatchNawrisGeography
 
             $matched++;
 
+            if ($area['approximate']) {
+                $guessed[] = 'منطقة: '.$city->name.' — '.$region->name.' ← '.$area['name'];
+            }
+
             if ($apply) {
                 $region->forceFill(['nawris_area_id' => $area['name']])->save();
             }
         }
 
-        return [$matched, $missing];
+        return [$matched, $missing, $guessed];
     }
 
     /**
@@ -195,15 +211,26 @@ final class MatchNawrisGeography
     /**
      * Their row for one of ours, or null.
      *
+     * Three passes, each only reached when the one before it found nothing: exact after
+     * normalisation, exact again without the articles, and finally {@see nearest} — the only one
+     * of the three that is a guess, and the only one that sets `approximate`.
+     *
      * @param  array<string, array<string, mixed>>  $strict
      * @param  array<string, array<string, mixed>>  $loose
-     * @return array{id: string, name: string}|null
+     * @return array{id: string, name: string, approximate: bool}|null
      */
     private function theirRowFor(?string $ours, array $strict, array $loose): ?array
     {
         $row = $strict[ArabicName::normalize($ours)]
             ?? $loose[ArabicName::withoutArticles($ours)]
             ?? null;
+
+        $approximate = false;
+
+        if ($row === null) {
+            $row = $this->nearest((string) $ours, $strict);
+            $approximate = $row !== null;
+        }
 
         if ($row === null) {
             return null;
@@ -213,7 +240,70 @@ final class MatchNawrisGeography
 
         return $name === ''
             ? null
-            : ['id' => isset($row['id']) ? (string) $row['id'] : '', 'name' => $name];
+            : [
+                'id' => isset($row['id']) ? (string) $row['id'] : '',
+                'name' => $name,
+                'approximate' => $approximate,
+            ];
+    }
+
+    /**
+     * The one name of theirs close enough to ours to be a misspelling of it — or null.
+     *
+     * **Two rules, and the second matters more than the first.**
+     *
+     * *Close enough* is one letter per five, and never fewer than one: «صلاج الدين» reaches
+     * «صلاح الدين» and «ززواغة» reaches «زواغة», while «تساوة» does not reach «هراوة» three
+     * letters away. Scaling with length is what keeps a short name strict — on four letters a
+     * fixed budget of two would put half the alphabet within reach.
+     *
+     * *And unambiguous.* Two of their names tied at the best distance means neither is chosen.
+     * A tie is precisely the case where a guess is worth least and costs most, and picking one by
+     * array order would make the answer depend on how they happened to sort their list.
+     *
+     * **This pass is a guess, and it is reported as one.** {@see GeographyMatchReport::$approximateMatches}
+     * carries every pair it produced so the run can be read by somebody who knows the country;
+     * an approximate match on a *city* puts a parcel in another town, and the only defence
+     * against that is that a human sees the sentence «س ← ص» before parcels start moving.
+     *
+     * @param  array<string, array<string, mixed>>  $strict  their rows keyed by normalised name
+     * @return array<string, mixed>|null
+     */
+    private function nearest(string $ours, array $strict): ?array
+    {
+        $name = ArabicName::normalize($ours);
+
+        if ($name === '') {
+            return null;
+        }
+
+        $budget = max(1, intdiv(mb_strlen($name), 5));
+
+        $best = null;
+        $bestDistance = $budget + 1;
+        $tied = false;
+
+        foreach ($strict as $theirs => $row) {
+            $distance = ArabicName::distance($name, $theirs);
+
+            if ($distance > $budget) {
+                continue;
+            }
+
+            if ($distance < $bestDistance) {
+                $best = $row;
+                $bestDistance = $distance;
+                $tied = false;
+
+                continue;
+            }
+
+            if ($distance === $bestDistance) {
+                $tied = true;
+            }
+        }
+
+        return $tied ? null : $best;
     }
 
     /** An id that is present and not an empty string — the same test dispatch makes. */
