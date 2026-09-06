@@ -156,7 +156,8 @@ What happens, in one transaction:
    not refused**: suppliers overship, the goods are on the shelf either way, and refusing the
    receipt would only leave the ledger describing a warehouse that does not exist. The surplus
    enters stock at the line's own landed unit cost, so the extra units are valued at the price
-   the order agreed per unit.
+   the order agreed per unit. `quantity_remaining` is then reported as `0.000` rather than as a
+   negative, and what arrived over the order is published beside it as `quantity_over_received`.
 3. The shipment is posted through the exact same path `POST /stock-arrivals` uses
    (`VendorService::recordStockArrival()` → `InventoryService::recordMovement()`), so the
    warehouse balance and `stock_movements` ledger move exactly as they always have.

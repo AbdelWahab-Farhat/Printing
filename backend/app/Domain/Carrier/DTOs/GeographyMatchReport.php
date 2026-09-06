@@ -18,6 +18,9 @@ final class GeographyMatchReport
     /**
      * @param  list<string>  $unmatchedCities  our city names with no counterpart
      * @param  list<string>  $unmatchedRegions  «city — region», so a name says where it lives
+     * @param  list<string>  $approximateMatches  «ours ← theirs» for every name matched by
+     *                                           distance rather than equality — a guess each, and
+     *                                           the list a human has to read before parcels move
      */
     public function __construct(
         public readonly int $matchedCities = 0,
@@ -25,5 +28,6 @@ final class GeographyMatchReport
         public readonly array $unmatchedCities = [],
         public readonly array $unmatchedRegions = [],
         public readonly int $alreadyMappedCities = 0,
+        public readonly array $approximateMatches = [],
     ) {}
 }

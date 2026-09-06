@@ -448,7 +448,8 @@ server's own 422 when it disagrees — never to silently re-implement them clien
   single message under the `items` key, not per-index) — show it as a form-level message above
   the line list, not attached to one specific row, since the server doesn't say which row. A
   quantity larger than what remains on order is *not* one of these: it is accepted, and the line
-  reports the surplus in `quantity_over_received`.
+  reports the surplus in `quantity_over_received`. The server books in whatever arrived, so the
+  receive form must not cap its inputs at `quantityRemaining` either.
 
 ---
 

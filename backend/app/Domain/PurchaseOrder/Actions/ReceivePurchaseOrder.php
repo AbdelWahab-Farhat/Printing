@@ -134,6 +134,10 @@ final class ReceivePurchaseOrder
     }
 
     /**
+     * The line has to *be* on the order — a shipment naming a shelf nobody ordered is a mistyped
+     * payload, not a delivery. How much it carried is not questioned: over-delivery is a normal
+     * thing for a supplier to do on one size, and refusing it would leave real stock unbooked.
+     *
      * @param  Collection<int, PurchaseOrderItem>  $items  Keyed by stock_item_id.
      *
      * @throws StockItemNotOnPurchaseOrder

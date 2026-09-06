@@ -222,6 +222,9 @@ class _LineBox extends StatelessWidget {
             // The arithmetic the server already did. A screen that subtracted would be a second
             // opinion about a number the storeman is typing against.
             //
+            // A guide, not a ceiling: a bigger number may be typed here, and a vendor that sent
+            // more of one size than was ordered is booked in for what actually turned up.
+            //
             // The unit lands once, on the figure the two are measured against. A line with
             // nothing left owing says so rather than printing «المتبقي ٠», which reads as a box
             // that should be left alone — and it is still there to be typed into, because more

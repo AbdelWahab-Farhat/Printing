@@ -36,3 +36,10 @@ backend/database/seeders/data/customers.php
 # The same book — the rows still waiting for a telephone number, so the same real names
 # and the same reason.
 backend/database/seeders/data/customers-without-a-phone.xlsx
+
+# ── Database dumps (never commit; this repository is public) ──────────────────
+# A dump carries everything the customer book does and more: orders, prices,
+# settlements, carrier data. Taken out of band, kept out of band.
+*.sql
+*.sql.gz
+*.dump

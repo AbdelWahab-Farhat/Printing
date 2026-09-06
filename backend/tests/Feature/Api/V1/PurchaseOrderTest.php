@@ -1043,6 +1043,11 @@ class PurchaseOrderTest extends TestCase
         $this->assertDatabaseCount('stock_arrivals', 0);
     }
 
+    /**
+     * A supplier who sends more of one size than was ordered has still sent it, and the shelf
+     * holds what turned up — so the surplus is booked in rather than refused. The order closes
+     * on it, and the surplus is reported in its own right rather than as a negative remainder.
+     */
     public function test_over_receiving_is_accepted_and_the_surplus_lands_in_stock(): void
     {
         // Arrange — 10 ordered at 50.00, so 5.00 a unit; the lorry turns up with 15
@@ -1056,7 +1061,7 @@ class PurchaseOrderTest extends TestCase
         $inventoryHeaders = $this->inventoryManager();
         $this->forgetAuth();
 
-        // Act
+        // Act — 15 against an order for 10
         $response = $this->withHeaders($inventoryHeaders)->postJson(
             "/api/v1/purchase-orders/{$order['id']}/arrivals",
             ['items' => [['stock_item_id' => $variant->id, 'quantity' => 15]]],
@@ -1072,6 +1077,8 @@ class PurchaseOrderTest extends TestCase
         $this->assertDatabaseHas('stock_arrival_items', [
             'stock_item_id' => $variant->id, 'quantity' => '15.000', 'unit_cost' => '5.000', 'total_cost' => '75.00',
         ]);
+        $this->assertDatabaseCount('stock_arrivals', 1);
+        $this->assertDatabaseCount('stock_movements', 1);
         $this->assertSame('15.000', (string) $this->stockOf($warehouse, $variant)?->quantity);
     }
 

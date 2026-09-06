@@ -37,6 +37,20 @@ class MapNawrisGeography extends Command
         $this->line("  مدن طوبقت: {$report->matchedCities}   مناطق طوبقت: {$report->matchedRegions}");
         $this->line("  مدن مربوطة من قبل: {$report->alreadyMappedCities}");
 
+        // **Printed before the to-do list, and deliberately loud.** These are the run's guesses:
+        // names matched a letter or two away rather than exactly. An unread approximate match on
+        // a city is a parcel in the wrong town, so it goes where somebody scanning the output
+        // cannot miss it — above the list they were waiting for.
+        if ($report->approximateMatches !== []) {
+            $this->newLine();
+            $this->warn('مطابقات تقريبية — راجعها ('.count($report->approximateMatches).'):');
+            $this->line('  اسمنا ← اسمهم. صحّح أي سطر خاطئ يدوياً، فهذه تخمينات لا حقائق.');
+
+            foreach ($report->approximateMatches as $pair) {
+                $this->line('  - '.$pair);
+            }
+        }
+
         // The half that is a to-do list rather than a score.
         foreach ([
             'مدن لا مقابل لها عندهم' => $report->unmatchedCities,
