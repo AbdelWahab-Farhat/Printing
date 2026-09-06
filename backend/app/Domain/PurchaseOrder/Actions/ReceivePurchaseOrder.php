@@ -40,6 +40,18 @@ use Illuminate\Support\Facades\DB;
  * unit cost, so what the order agreed per unit is what the extra units are valued at; the line
  * then owes nothing and reports the surplus separately, and the order completes.
  *
+ * **A shipment smaller than the order also completes it, and the shortfall is reported rather
+ * than left holding the order open.** The owner's rule, on 2026-09-06: «تسجيل شحنات دوما يخليها
+ * مكتملة حتى لو في نواقص وتسجل كنواقص». A delivery is the event that closes the order — what the
+ * supplier failed to send is a fact about that delivery, not a reason to keep asking whether more
+ * is coming. What is still owing stays on the line as `quantity_ordered - quantity_received` and
+ * is published as `quantity_remaining` beside `quantity_over_received`, so «نواقص» is a number
+ * every screen can read off the order rather than a status it has to infer.
+ *
+ * **So the receipt is the order's last act.** `completed` is refused by the guard above, which
+ * makes the first shipment the only one an order takes: goods that turn up afterwards are their
+ * own event and are posted through `POST /stock-arrivals`, unattached to a purchase order.
+ *
  * Each line's `final_unit_cost` — the base cost plus its allocated share of the order's
  * additional costs, from {@see AllocatePurchaseOrderAdditionalCosts} — also travels into the
  * {@see StockArrivalItemData} built here, so a shipment's landed cost (and the FIFO stock batch
@@ -124,9 +136,9 @@ final class ReceivePurchaseOrder
                 $item->save();
             }
 
-            $order->status = $this->isFullyReceived($items)
-                ? PurchaseOrderStatus::Completed
-                : PurchaseOrderStatus::Arrived;
+            // Unconditional — see the class docblock. A short delivery closes the order just as
+            // a full one does, and what is missing is read off the lines, not off the status.
+            $order->status = PurchaseOrderStatus::Completed;
             $order->save();
 
             return $arrival;
@@ -147,15 +159,5 @@ final class ReceivePurchaseOrder
         if (! $items->has($line->stockItemId)) {
             throw StockItemNotOnPurchaseOrder::make($line->stockItemId, (int) $order->getKey());
         }
-    }
-
-    /**
-     * @param  Collection<int, PurchaseOrderItem>  $items  Already carries this receipt's totals.
-     */
-    private function isFullyReceived(Collection $items): bool
-    {
-        return $items->every(
-            fn (PurchaseOrderItem $item) => bccomp((string) $item->quantity_received, (string) $item->quantity_ordered, 3) >= 0,
-        );
     }
 }

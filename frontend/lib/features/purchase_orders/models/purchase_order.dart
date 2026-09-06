@@ -57,15 +57,15 @@ enum PurchaseOrderStatus {
   /// **Two of the machine's moves are deliberately on no button, for different reasons.**
   ///
   /// «مكتمل» is refused by the endpoint. `allowedNext()` lists it because completion *is* a legal
-  /// next state, but it is reached by receiving the last of the goods, and
-  /// `ChangePurchaseOrderStatusRequest` accepts only `arrived` and `cancelled`. A button for it
-  /// would ask the server for something it answers «لا يمكن تحويل أمر الشراء إلى هذه الحالة
-  /// يدوياً», on a screen that offered it.
+  /// next state, but it is reached by booking in a shipment — any shipment, however short, see
+  /// [isReceivable] — and `ChangePurchaseOrderStatusRequest` accepts only `arrived` and
+  /// `cancelled`. A button for it would ask the server for something it answers «لا يمكن تحويل
+  /// أمر الشراء إلى هذه الحالة يدوياً», on a screen that offered it.
   ///
   /// «قيد الاستلام» is accepted by the endpoint, and nothing needs it. A shipment may be booked
-  /// in straight from «جديد» — see [isReceivable] — and `ReceivePurchaseOrder` moves the order
-  /// there itself the moment one posts. So a «إرسال للمورد» button opened nothing; all it did was
-  /// end [isEditable] before any goods had turned up, which is a cost with no matching gain.
+  /// in straight from «جديد» — see [isReceivable] — and it lands the order on «مكتمل» either way,
+  /// never here. So a «إرسال للمورد» button opened nothing; all it did was end [isEditable]
+  /// before any goods had turned up, which is a cost with no matching gain.
   ///
   /// So the map is mirrored faithfully above and narrowed here, in one place, with the reasons
   /// written down.
@@ -88,6 +88,12 @@ enum PurchaseOrderStatus {
   /// **Including «جديد»**, which surprises people: there is no need to «send» an order before
   /// the goods turn up, and requiring it would have staff pressing a button to describe
   /// something that already happened.
+  ///
+  /// **And excluding «مكتمل», which is now the state a first shipment leaves behind** — «تسجيل
+  /// شحنات دوما يخليها مكتملة حتى لو في نواقص وتسجل كنواقص», the owner on 2026-09-06. So the
+  /// receive button shows once and then goes: whatever the supplier still owes is read off the
+  /// lines as «متبقٍ», and goods that turn up later are their own arrival, booked through the
+  /// stock-arrivals screen rather than against this order.
   bool get isReceivable =>
       this == PurchaseOrderStatus.fresh || this == PurchaseOrderStatus.arrived;
 

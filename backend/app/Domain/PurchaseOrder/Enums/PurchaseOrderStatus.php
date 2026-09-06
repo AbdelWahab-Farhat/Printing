@@ -12,26 +12,26 @@ namespace App\Domain\PurchaseOrder\Enums;
  * definition of what is legal; both the manual status endpoint and
  * {@see ReceivePurchaseOrder} answer to it.
  *
- * **`Arrived` deliberately covers two things a bigger machine might split**: "sent to the
- * vendor, nothing has shown up yet" and "some of it has arrived, some hasn't". A purchase order
- * moves into it either by a deliberate "mark as sent" (`PATCH .../status`) or automatically the
- * moment the first shipment posts against it — whichever happens first. Splitting those into a
- * `sent` and a `partially_received` case would ask a client to tell two states apart that no one
- * here needs told apart: both mean "this order is in motion, not everything is on the shelf yet".
+ * **`Arrived` means "sent to the vendor, nothing has shown up yet"**, and an order reaches it
+ * only by a deliberate "mark as sent" (`PATCH .../status`). There is no partially-received state
+ * to sit in: the first shipment takes the order straight to `Completed` however much of it turned
+ * up, so "in motion" and "on the shelf" are the only two things this enum has to tell apart.
  *
  * `Completed` is reachable only from stock actually arriving, never as a manual target — see
- * `ChangePurchaseOrderStatusRequest`. A purchase order is done when {@see ReceivePurchaseOrder}
- * says every line is fully received, not when someone declares it so.
+ * `ChangePurchaseOrderStatusRequest`. **A purchase order is done when a delivery posts against
+ * it, whether or not the delivery was short** — «تسجيل شحنات دوما يخليها مكتملة حتى لو في نواقص
+ * وتسجل كنواقص», the owner on 2026-09-06. What the supplier still owes is reported off the lines
+ * (`quantity_remaining`), not held in the status; see {@see ReceivePurchaseOrder}.
  */
 enum PurchaseOrderStatus: string
 {
     /** Just created. The only status a purchase order may still be edited in. */
     case New = 'new';
 
-    /** In motion — sent, awaiting the vendor, or partway received. See the class docblock. */
+    /** In motion — sent, awaiting the vendor. See the class docblock. */
     case Arrived = 'arrived';
 
-    /** Every line fully received. The end of the road. */
+    /** A delivery has been posted against it — short, exact or over. The end of the road. */
     case Completed = 'completed';
 
     case Cancelled = 'cancelled';

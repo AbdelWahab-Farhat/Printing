@@ -946,7 +946,13 @@ class PurchaseOrderTest extends TestCase
         $this->assertSame('10.000', (string) $this->stockOf($warehouse, $variant)?->quantity);
     }
 
-    public function test_receiving_less_than_ordered_moves_the_order_to_arrived(): void
+    /**
+     * **A short delivery closes the order too** — «تسجيل شحنات دوما يخليها مكتملة حتى لو في نواقص
+     * وتسجل كنواقص», the owner on 2026-09-06. The 6 that never turned up are the supplier's
+     * failing, not an open question about this order, so they are reported on the line as
+     * `quantity_remaining` while the status moves on.
+     */
+    public function test_receiving_less_than_ordered_completes_the_order_and_reports_the_shortfall(): void
     {
         // Arrange
         $vendor = Vendor::factory()->create();
@@ -957,6 +963,7 @@ class PurchaseOrderTest extends TestCase
             $this->payload($vendor, $warehouse, $variant),
         )->json('data');
         $inventoryHeaders = $this->inventoryManager();
+        $viewerHeaders = $this->viewer();
         $this->forgetAuth();
 
         // Act
@@ -967,13 +974,30 @@ class PurchaseOrderTest extends TestCase
 
         // Assert
         $response->assertCreated();
-        $this->assertDatabaseHas('purchase_orders', ['id' => $order['id'], 'status' => 'arrived']);
+        $this->assertDatabaseHas('purchase_orders', ['id' => $order['id'], 'status' => 'completed']);
         $this->assertDatabaseHas('purchase_order_items', [
             'purchase_order_id' => $order['id'], 'stock_item_id' => $variant->id, 'quantity_received' => '4.000',
         ]);
+        // … and only what actually turned up reached the shelf
+        $this->assertSame('4.000', (string) $this->stockOf($warehouse, $variant)?->quantity);
+
+        // … with the نواقص readable off the line rather than inferred from the status
+        $this->forgetAuth();
+        $this->withHeaders($viewerHeaders)->getJson("/api/v1/purchase-orders/{$order['id']}")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'completed')
+            ->assertJsonPath('data.items.0.quantity_ordered', '10.000')
+            ->assertJsonPath('data.items.0.quantity_received', '4.000')
+            ->assertJsonPath('data.items.0.quantity_remaining', '6.000')
+            ->assertJsonPath('data.items.0.quantity_over_received', '0.000');
     }
 
-    public function test_receiving_the_remainder_completes_the_order(): void
+    /**
+     * The other half of the rule above: closing on a short delivery means closing for good. A
+     * second truck is not a second receipt against this order — it is its own arrival, posted
+     * through `POST /stock-arrivals` with no purchase order attached.
+     */
+    public function test_a_second_shipment_after_a_short_delivery_is_refused(): void
     {
         // Arrange
         $vendor = Vendor::factory()->create();
@@ -997,14 +1021,14 @@ class PurchaseOrderTest extends TestCase
         );
 
         // Assert
-        $response->assertCreated();
+        $response->assertStatus(422)->assertJsonPath('status', false);
         $this->assertDatabaseHas('purchase_orders', ['id' => $order['id'], 'status' => 'completed']);
         $this->assertDatabaseHas('purchase_order_items', [
-            'purchase_order_id' => $order['id'], 'stock_item_id' => $variant->id, 'quantity_received' => '10.000',
+            'purchase_order_id' => $order['id'], 'stock_item_id' => $variant->id, 'quantity_received' => '4.000',
         ]);
-        $this->assertDatabaseCount('stock_arrivals', 2);
-        $this->assertDatabaseCount('stock_movements', 2);
-        $this->assertSame('10.000', (string) $this->stockOf($warehouse, $variant)?->quantity);
+        $this->assertDatabaseCount('stock_arrivals', 1);
+        $this->assertDatabaseCount('stock_movements', 1);
+        $this->assertSame('4.000', (string) $this->stockOf($warehouse, $variant)?->quantity);
     }
 
     public function test_receiving_needs_authentication(): void
