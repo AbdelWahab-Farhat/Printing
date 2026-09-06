@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Domain\Identity\Enums\PermissionName;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Console\Command;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -19,7 +20,7 @@ use Spatie\Permission\PermissionRegistrar;
  *
  * **Creates only.** It never grants, revokes, or touches roles — who may do what is the
  * administrator's, changed through the API, and a deploy has no business resetting it. That is
- * also why this exists next to {@see \Database\Seeders\RoleSeeder} rather than being it: the
+ * also why this exists next to {@see RoleSeeder} rather than being it: the
  * seeder re-syncs the staff role to its starting shape, which on a live system throws away
  * whatever the business decided since.
  *

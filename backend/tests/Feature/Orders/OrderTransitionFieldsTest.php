@@ -590,7 +590,7 @@ class OrderTransitionFieldsTest extends TestCase
     public function test_an_unweighed_line_is_not_previewed_as_a_figure_nobody_measured(): void
     {
         // Arrange — 500 pieces, a kilogram shelf, nothing weighed yet. The preview printed
-        // «500.000 كيلوغرام» here, which is precisely the confusion the field below it closes.
+        // «500.000 كجم» here, which is precisely the confusion the field below it closes.
         [$order, $item] = $this->lineStockedIn(PricingUnit::Kilogram, sold: '500');
         $headers = $this->foreman();
 
@@ -1191,7 +1191,7 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertSame(["shortage_{$pieces->id}", "shortage_{$kilos->id}", 'reason'], $keys);
         $this->assertStringContainsString('30*30', $shortage['fields'][0]['label']);
         $this->assertStringContainsString('قطعة', $shortage['fields'][0]['label']);
-        $this->assertStringContainsString('كيلوغرام', $shortage['fields'][1]['label']);
+        $this->assertStringContainsString('كجم', $shortage['fields'][1]['label']);
     }
 
     public function test_a_line_cannot_be_shorter_than_it_was_ordered(): void

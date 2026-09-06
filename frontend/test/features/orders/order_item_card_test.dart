@@ -52,7 +52,7 @@ void main() {
     variantLabel: 'سادة',
     productCode: code,
     productImage: image,
-    pricingUnitLabel: 'كيلوغرام',
+    pricingUnitLabel: 'كجم',
     quantity: '100.000',
     shortageQuantity: shortage,
     billableQuantity: billable,
@@ -122,7 +122,7 @@ void main() {
     await tester.pump();
 
     // Assert
-    expect(find.text('100 كيلوغرام × 32'), findsOneWidget);
+    expect(find.text('100 كجم × 32'), findsOneWidget);
     expect(find.text('3,200'), findsOneWidget);
   });
 
@@ -211,8 +211,8 @@ void main() {
     await tester.pump();
 
     // Assert — priced on what is left, and «ناقص من كم» answered on the same line.
-    expect(find.text('75 كيلوغرام × 32'), findsOneWidget);
-    expect(find.text('ناقص: 25 من 100 كيلوغرام — غير محتسب'), findsOneWidget);
+    expect(find.text('75 كجم × 32'), findsOneWidget);
+    expect(find.text('ناقص: 25 من 100 كجم — غير محتسب'), findsOneWidget);
   });
 
   testWidgets('what the line cost is drawn only for those who may read it', (tester) async {

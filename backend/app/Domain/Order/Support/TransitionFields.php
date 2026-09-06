@@ -389,7 +389,7 @@ final class TransitionFields
      *
      * **A line nobody has weighed yet is named, not numbered.** `producedQuantity()` falls back
      * to the sold quantity, which for a line stocked in another unit is a piece count wearing a
-     * kilogram label — «٥٠٠ كيلوغرام» for five hundred bags. That fallback is the bug the box
+     * kilogram label — «٥٠٠ كجم» for five hundred bags. That fallback is the bug the box
      * below this hint exists to close, and printing it here would be the same lie in the same
      * breath as the question that fixes it.
      *

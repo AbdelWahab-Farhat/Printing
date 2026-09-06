@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Investor\DTOs;
 
+use App\Domain\Investor\Models\InvestorDeal;
+
 /**
  * «مَن موّل أمر الشراء هذا، وبكم» — the whole funding screen in one payload.
  *
@@ -23,6 +25,12 @@ final readonly class FundPurchaseOrderData
         public array $funders,
         public ?array $stockItemIds = null,
         public ?string $investorProfitSharePercent = null,
+        /**
+         * سعر السادة this deal sells its plain stock to the press at, by weight. Null keeps the
+         * deal on the road every deal walked before it existed — see
+         * {@see InvestorDeal}.
+         */
+        public ?string $printingSalePrice = null,
         public ?string $notes = null,
     ) {}
 
@@ -41,6 +49,11 @@ final readonly class FundPurchaseOrderData
                 : null,
             investorProfitSharePercent: isset($validated['investor_profit_share_percent'])
                 ? number_format((float) $validated['investor_profit_share_percent'], 2, '.', '')
+                : null,
+            // Three places, matching `stock_batches.unit_cost` — the number it is subtracted
+            // from every time it is used.
+            printingSalePrice: isset($validated['printing_sale_price'])
+                ? number_format((float) $validated['printing_sale_price'], 3, '.', '')
                 : null,
             notes: isset($validated['notes']) && trim((string) $validated['notes']) !== ''
                 ? trim((string) $validated['notes'])

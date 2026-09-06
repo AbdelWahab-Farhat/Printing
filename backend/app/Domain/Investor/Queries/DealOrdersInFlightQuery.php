@@ -39,6 +39,14 @@ final class DealOrdersInFlightQuery
             ->whereNull('oi.deleted_at')
             ->whereNull('o.deleted_at')
             ->whereNotIn('o.status', ['delivered', 'settled', 'cancelled'])
+            // **A draw the press has already bought is not waiting on anything.** It was paid
+            // for at سعر السادة the day it left the shelf, and a cancellation now returns the
+            // goods to the company rather than to this deal — so the parcel's fate cannot reach
+            // the layers here, and holding the deal open for it would be waiting for news that
+            // never arrives. Only the deal's *unsold* road still waits on delivery.
+            ->where(fn ($q) => $q
+                ->whereNull('b.printing_sale_price')
+                ->orWhereNull('oi.stock_purchased_at'))
             // A reversed draw is not holding anything: the goods went back to the shelf.
             ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
                 ->from('stock_movements as r')

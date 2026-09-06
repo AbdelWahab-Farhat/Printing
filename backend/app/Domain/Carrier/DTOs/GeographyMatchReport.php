@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domain\Carrier\DTOs;
 
+use App\Domain\Carrier\Actions\MatchNawrisGeography;
+
 /**
- * What a run of {@see \App\Domain\Carrier\Actions\MatchNawrisGeography} did, and what it could not.
+ * What a run of {@see MatchNawrisGeography} did, and what it could not.
  *
  * **The unmatched lists are the useful half.** A count of successes tells nobody what to do next;
  * a list of the towns their side has never heard of is a morning's work with a phone, and it is

@@ -419,7 +419,8 @@ One verb each, mirroring [warehouses' set](../../frontend/lib/features/warehouse
 
 Each takes `PurchaseOrderRepository` in its constructor and exposes one `call(...)`. No business
 logic beyond argument shaping belongs here — the server is the source of truth for every rule
-described in the design doc (editable-only-while-new, the over-receipt guard, the status map).
+described in the design doc (editable-only-while-new, the status map, the surplus a receipt
+larger than the order leaves behind).
 The app's job is to *reflect* those rules in what it lets a user tap (§2), and to show the
 server's own 422 when it disagrees — never to silently re-implement them client-side.
 
@@ -443,10 +444,11 @@ server's own 422 when it disagrees — never to silently re-implement them clien
 - **Receive-arrival form** — pre-fill one input per line from `PurchaseOrder.items`, defaulting
   the quantity field to `quantityRemaining`, not `quantityOrdered` — the common case is finishing
   a partial shipment, not re-receiving the whole thing.
-- **422 handling** — the over-receipt and "variant not on this order" failures both come back
-  with `errors.items` (a single message under the `items` key, not per-index) — show it as a
-  form-level message above the line list, not attached to one specific row, since the server
-  doesn't say which row.
+- **422 handling** — the "variant not on this order" failure comes back with `errors.items` (a
+  single message under the `items` key, not per-index) — show it as a form-level message above
+  the line list, not attached to one specific row, since the server doesn't say which row. A
+  quantity larger than what remains on order is *not* one of these: it is accepted, and the line
+  reports the surplus in `quantity_over_received`.
 
 ---
 
@@ -498,7 +500,7 @@ Following [frontend/RULES.md §12](../../frontend/RULES.md):
 6. `presentation/views/` — list, detail, create/edit form, receive-arrival form.
 7. Register in [Injector](../../frontend/lib/core/di/injector.dart) — §7.
 8. Cubit tests — fake `PurchaseOrderRepository`, assert the state sequence for each action
-   including the 422 path (over-receipt, editing a non-`new` order).
+   including the 422 path (receiving an unordered line, editing a non-`new` order).
 9. `dart run build_runner build`, then `flutter analyze`, then `flutter test`.
 
 Verify against the live contract before wiring anything: run the backend and open

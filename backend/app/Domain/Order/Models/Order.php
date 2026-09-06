@@ -16,6 +16,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\AllocateOrderIdentifier;
 use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
+use App\Domain\Order\Actions\ReinstateCancelledOrder;
 use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderFlow;
@@ -484,7 +485,7 @@ class Order extends Model implements HasAuditTrail
      * **Read from the timeline, because that is the only place the answer exists.** «إلغاء تام»
      * is reachable from eight different statuses, and `orders` keeps no column saying which one
      * this order came from — `order_status_transitions` does, on the row the cancellation wrote.
-     * It is what {@see \App\Domain\Order\Actions\ReinstateCancelledOrder} puts the order back
+     * It is what {@see ReinstateCancelledOrder} puts the order back
      * to, and the reason that action lets nobody name a destination.
      *
      * **The last cancellation, not the first.** An order may be written off, put back, and

@@ -7,10 +7,9 @@ namespace App\Domain\Order\Actions;
 use App\Domain\Inventory\Actions\CreditBackStockBatches;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\InventoryService;
-use App\Domain\Inventory\Models\StockBatchConsumption;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
-use App\Domain\Order\Support\Money;
+use App\Domain\Order\Support\MaterialCost;
 use App\Domain\Order\Support\TransitionFields;
 
 /**
@@ -54,7 +53,7 @@ final class RestateOrderStockDeduction
      */
     public function __invoke(Order $order, array $fields, int $employeeId): void
     {
-        $order->items->loadMissing('variant.stockItem');
+        $order->items->loadMissing(['variant.stockItem', 'product.productCategory.parent']);
 
         $warehouseId = (int) $order->fulfillment_warehouse_id;
 
@@ -139,14 +138,23 @@ final class RestateOrderStockDeduction
             'reference_id' => $order->getKey(),
         ], $employeeId));
 
-        $materialCost = StockBatchConsumption::query()
-            ->where('stock_movement_id', $movement->getKey())
-            ->sum('total_cost');
+        // Derived exactly as the original deduction derived it — see {@see MaterialCost}. The
+        // credit-back above deliberately did **not** hand the priced layers to the company: a
+        // restatement is undoing the draw, not writing off a sale, so those layers are on the
+        // shelf again and this fresh draw buys them again at the same price.
+        $cost = MaterialCost::forDraws(
+            $this->inventory->consumptionBreakdownFor([(int) $movement->getKey()])[(int) $movement->getKey()] ?? [],
+            $item->isPrinted(),
+        );
 
         // The pointer moves with it. Cancelling this order later credits back the *corrected*
-        // draw against the batches it actually came from — see the class docblock.
+        // draw against the batches it actually came from — see the class docblock. Investment
+        // follows the same pointer: the purchase it booked against the old movement is reversed
+        // and rebooked against this one, because that movement is no longer any line's.
         $item->forceFill([
-            'material_cost' => Money::round((string) $materialCost),
+            'material_cost' => $cost->charged,
+            'material_cost_actual' => $cost->actual,
+            'stock_purchased_at' => $cost->purchased ? now() : null,
             'fulfillment_stock_movement_id' => $movement->getKey(),
         ])->save();
 

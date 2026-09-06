@@ -39,6 +39,7 @@ use App\Domain\Order\Queries\OrderPaymentStatusCountsQuery;
 use App\Domain\Order\Queries\OrderStatusCountsQuery;
 use App\Domain\Order\Queries\OrderTotalsQuery;
 use App\Domain\Order\Queries\ProfitAttributionQuery;
+use App\Domain\Order\Queries\StockPurchaseAttributionQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -71,6 +72,7 @@ class OrderService
         private readonly RecordScrapLoss $recordScrapLoss,
         private readonly OrderListQuery $listQuery,
         private readonly ProfitAttributionQuery $profitAttribution,
+        private readonly StockPurchaseAttributionQuery $stockPurchaseAttribution,
         private readonly OrderStatusCountsQuery $statusCounts,
         private readonly OrderPaymentStatusCountsQuery $paymentStatusCounts,
         private readonly OrderTotalsQuery $totals,
@@ -327,6 +329,20 @@ class OrderService
      *
      * @return array<string, mixed>|null
      */
+    /**
+     * The lines of this order whose material the press bought off the shelf, and the draw behind
+     * each — see {@see StockPurchaseAttributionQuery}.
+     *
+     * The door Investment comes through to settle سعر السادة. Empty for every order that drew on
+     * nothing but the company's own stock, which is almost all of them.
+     *
+     * @return list<array{line_id: int, movement_id: int}>
+     */
+    public function stockPurchaseAttributionFor(int $orderId): array
+    {
+        return ($this->stockPurchaseAttribution)($orderId);
+    }
+
     public function profitAttributionFor(int $orderId): ?array
     {
         return ($this->profitAttribution)($orderId);

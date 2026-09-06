@@ -31,6 +31,13 @@ class FundPurchaseOrderRequest extends FormRequest
     {
         return [
             'investor_profit_share_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+
+            // سعر السادة — what the press will pay this deal for a unit of its plain stock,
+            // agreed while the lorry is being funded and frozen with the percentages. Omitted,
+            // the deal is on the old road: its investors ride the delivered order's profit.
+            // `gt:0` rather than `min:0` — a price of nothing is «nobody said», which is what
+            // leaving the field empty already means.
+            'printing_sale_price' => ['nullable', 'numeric', 'gt:0', 'max:999999999'],
             'notes' => ['nullable', 'string', 'max:2000'],
 
             // Which of the order's lines this deal funds. Omitted, it takes every line nobody

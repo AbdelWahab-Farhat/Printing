@@ -47,7 +47,7 @@ void main() {
     final order = orderWith(totalWeight: '12.500');
 
     // Act - Assert — the column's padding zeros are not a precision anybody weighed to.
-    expect(order.weightLabel, '12.5 كيلوغرام');
+    expect(order.weightLabel, '12.5 كجم');
   });
 
   test('a whole number of kilograms loses its decimal point', () {
@@ -55,7 +55,7 @@ void main() {
     final order = orderWith(totalWeight: '17.000');
 
     // Act - Assert
-    expect(order.weightLabel, '17 كيلوغرام');
+    expect(order.weightLabel, '17 كجم');
   });
 
   test('a heavy order keeps its thousands separator', () {
@@ -64,6 +64,6 @@ void main() {
 
     // Act - Assert — read as a number rather than as a shape, like every other figure the app
     // draws.
-    expect(order.weightLabel, '1,250.75 كيلوغرام');
+    expect(order.weightLabel, '1,250.75 كجم');
   });
 }

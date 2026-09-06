@@ -26,7 +26,9 @@ final class ConsumptionBreakdownQuery
      *     consumption_id: int,
      *     stock_batch_id: int,
      *     investor_deal_id: ?int,
+     *     printing_sale_price: ?string,
      *     quantity: string,
+     *     unit_cost: string,
      *     total_cost: string
      * }>>  keyed by movement id
      */
@@ -46,8 +48,10 @@ final class ConsumptionBreakdownQuery
                 'stock_batch_consumptions.stock_movement_id',
                 'stock_batch_consumptions.stock_batch_id',
                 'stock_batch_consumptions.quantity',
+                'stock_batch_consumptions.unit_cost',
                 'stock_batch_consumptions.total_cost',
                 'stock_batches.investor_deal_id',
+                'stock_batches.printing_sale_price',
             ]);
 
         $byMovement = [];
@@ -57,7 +61,12 @@ final class ConsumptionBreakdownQuery
                 'consumption_id' => (int) $row->consumption_id,
                 'stock_batch_id' => (int) $row->stock_batch_id,
                 'investor_deal_id' => $row->investor_deal_id === null ? null : (int) $row->investor_deal_id,
+                // Copied and never read here, exactly as `investor_deal_id` is: what the layer's
+                // financier sells it to the press for. Orders prices a printed line's material
+                // with it; Investment turns the margin into a wallet row.
+                'printing_sale_price' => $row->printing_sale_price === null ? null : (string) $row->printing_sale_price,
                 'quantity' => (string) $row->quantity,
+                'unit_cost' => (string) $row->unit_cost,
                 'total_cost' => (string) $row->total_cost,
             ];
         }

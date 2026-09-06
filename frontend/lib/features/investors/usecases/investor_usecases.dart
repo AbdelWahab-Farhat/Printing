@@ -5,6 +5,7 @@ import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/features/investors/models/deal_order.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/investor_deal.dart';
+import 'package:dayaa/features/investors/models/order_investor_share.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository.dart';
 
 /// One page of the investors list.
@@ -117,6 +118,17 @@ class GetDealOrders {
     int page = 1,
     int perPage = 20,
   }) => _repository.dealOrders(dealId, page: page, perPage: perPage);
+}
+
+/// Which deals took money out of one order, and whether they were paid it — the same question
+/// [GetDealOrders] answers, asked from the order's end.
+class GetOrderInvestorShares {
+  const GetOrderInvestorShares(this._repository);
+
+  final InvestorRepository _repository;
+
+  Future<Either<Failure, List<OrderInvestorShare>>> call(int orderId) =>
+      _repository.orderInvestorShares(orderId);
 }
 
 /// Funding a purchase order — the only way a deal is born.

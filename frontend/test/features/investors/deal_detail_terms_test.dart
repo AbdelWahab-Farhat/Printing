@@ -21,16 +21,20 @@ void main() {
   late _MockRepository repository;
 
   /// A closed deal, so the screen offers no action and needs no session behind it.
-  InvestorDeal dealWith({String companyStake = '0.00', String fundedPercent = '100.0000'}) =>
-      InvestorDeal(
-        id: 22,
-        code: 'D22',
-        status: 'closed',
-        statusLabel: 'مقفلة',
-        investorProfitSharePercent: '50.00',
-        companyStake: companyStake,
-        investorFundedPercent: fundedPercent,
-      );
+  InvestorDeal dealWith({
+    String companyStake = '0.00',
+    String fundedPercent = '100.0000',
+    String? printingSalePrice,
+  }) => InvestorDeal(
+    id: 22,
+    code: 'D22',
+    status: 'closed',
+    statusLabel: 'مقفلة',
+    investorProfitSharePercent: '50.00',
+    companyStake: companyStake,
+    investorFundedPercent: fundedPercent,
+    printingSalePrice: printingSalePrice,
+  );
 
   Widget host() => ScreenUtilInit(
     designSize: const Size(430, 932),
@@ -94,5 +98,32 @@ void main() {
     // Assert
     expect(find.text('D22 · للمستثمرين 50% من الربح'), findsOneWidget);
     expect(find.textContaining('الشركة شريك'), findsNothing);
+  });
+
+  testWidgets('a deal that sells to the press says at what price, on the header', (tester) async {
+    // Arrange — «كأننا بنشروه من المستثمر»، بـ32 للكيلو.
+    when(() => repository.deal(22)).thenAnswer(
+      (_) async => Right(dealWith(printingSalePrice: '32.000')),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — the term that decides which road this deal earns on, beside the percentages.
+    expect(find.text('تبيع السادة للمطبعة بـ 32 د.ل للوحدة'), findsOneWidget);
+  });
+
+  testWidgets('a deal without the term keeps the header as it was', (tester) async {
+    // Arrange
+    when(() => repository.deal(22)).thenAnswer((_) async => Right(dealWith()));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — nothing is printed for the ordinary case; «بلا سعر» would be a word on the screen
+    // for every deal that ever existed before the term.
+    expect(find.textContaining('تبيع السادة للمطبعة'), findsNothing);
   });
 }

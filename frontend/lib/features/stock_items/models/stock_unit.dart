@@ -1,13 +1,13 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-/// What a pile is counted in — «قطعة» or «كيلوغرام».
+/// What a pile is counted in — «قطعة» or «كجم».
 ///
 /// **Deliberately not `features/products/models/pricing_unit.dart`, though the wire values
 /// match.** That enum answers a different question in different words: it is what the *customer
 /// is charged by*, and its Arabic reads «بالقطعة» — "billed by the piece". A shelf's unit is a
 /// noun somebody counts in, and the server sends it as «قطعة». Borrowing the pricing wording
-/// would print «بالكيلوغرام» in a confirm dialog two lines under the same server field rendered
-/// as «كيلوغرام», and the two would be read as two different facts.
+/// would print «بالكجم» in a confirm dialog two lines under the same server field rendered
+/// as «كجم», and the two would be read as two different facts.
 ///
 /// The backend drew the same line the hard way: `products.stock_unit` was **dropped** and
 /// `stock_items.unit` replaced it, because «كيس شحن سادة» and «كيس شحن مطبوع» share one pile and
@@ -24,7 +24,7 @@ enum StockUnit {
   piece('piece', 'قطعة'),
 
   @JsonValue('kilogram')
-  kilogram('kilogram', 'كيلوغرام'),
+  kilogram('kilogram', 'كجم'),
 
   /// A unit the server grew after this build shipped. `unknown` rather than a throw: nothing
   /// branches on a case — every row draws its own `unit_label`, which arrives with it — so a

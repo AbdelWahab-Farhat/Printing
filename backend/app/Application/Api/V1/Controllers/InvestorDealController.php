@@ -10,12 +10,14 @@ use App\Application\Api\V1\Requests\Investor\FundPurchaseOrderRequest;
 use App\Application\Api\V1\Requests\Investor\StoreDealExpenseRequest;
 use App\Application\Api\V1\Resources\DealOrderResource;
 use App\Application\Api\V1\Resources\InvestorDealResource;
+use App\Application\Api\V1\Resources\OrderInvestorShareResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
 use App\Domain\Investor\DTOs\DealExpenseData;
 use App\Domain\Investor\DTOs\FundPurchaseOrderData;
 use App\Domain\Investor\InvestorService;
 use App\Domain\Investor\Models\InvestorDeal;
+use App\Domain\Order\Models\Order;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -125,6 +127,27 @@ class InvestorDealController extends Controller
 
         return $this->successWithPagination(
             DealOrderResource::collection($this->investors->dealOrders((int) $deal->getKey(), $perPage)),
+        );
+    }
+
+    /**
+     * Who took money out of one order
+     *
+     * The mirror of the deal's own order list, asked from the order's end: which deals financed
+     * the stock this order used, what each of them made on it, what the investors' share of that
+     * is, and whether it has actually reached their ledgers yet.
+     *
+     * **Two roads, never added together.** A `plain_sale` row is what the press *paid* for plain
+     * bags when they left the shelf — money inside this order's material cost, settled before the
+     * parcel moved. An `order_profit` row is a share carved out of the order's own profit at
+     * delivery. One subtotal over both would be wrong whichever way it was read.
+     */
+    public function investorShares(Order $order): JsonResponse
+    {
+        return $this->success(
+            OrderInvestorShareResource::collection(
+                $this->investors->investorSharesOfOrder((int) $order->getKey()),
+            ),
         );
     }
 

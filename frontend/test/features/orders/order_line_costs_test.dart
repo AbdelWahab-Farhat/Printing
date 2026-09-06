@@ -180,14 +180,14 @@ void main() {
             materialCost: '100.00',
             cogs: '100.00',
             unitMaterialCost: '8.000',
-            stockUnitLabel: 'كيلوغرام',
+            stockUnitLabel: 'كجم',
           ),
         ),
       ),
     );
 
     // Act - Assert — «تكلفة القطعة ٨٫٠٠٠» would be a wrong number, not an imprecise one.
-    expect(find.text('تكلفة المواد للكيلوغرام 8'), findsOneWidget);
+    expect(find.text('تكلفة المواد للكجم 8'), findsOneWidget);
     expect(find.textContaining('للقطعة'), findsNothing);
   });
 

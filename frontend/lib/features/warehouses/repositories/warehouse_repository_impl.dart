@@ -77,6 +77,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
     int warehouseId, {
     bool? lowStock,
     bool? inStock,
+    int? stockItemId,
     int page = 1,
     int perPage = 20,
   }) {
@@ -88,6 +89,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
           'per_page': perPage,
           if (lowStock != null) 'low_stock': lowStock ? 1 : 0,
           if (inStock != null) 'in_stock': inStock ? 1 : 0,
+          'stock_item_id': ?stockItemId,
         },
       ),
       parseItem: WarehouseStock.fromJson,
@@ -160,6 +162,28 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
         },
       ),
       parseItem: StockBatch.fromJson,
+    );
+  }
+
+  @override
+  Future<Either<Failure, StockBatch>> revalueStockBatch(
+    int batchId, {
+    required String unitCost,
+    required String reason,
+    String? quantity,
+  }) {
+    return safeRequest<StockBatch>(
+      () => _dio.patch(
+        StockBatchEndpoints.cost(batchId),
+        data: <String, dynamic>{
+          'unit_cost': unitCost,
+          'reason': reason,
+          // Omitted rather than sent as null: the key's absence is what asks for the whole of
+          // what is left, and a null would be read as a quantity and refused.
+          'quantity': ?quantity,
+        },
+      ),
+      parse: (data) => StockBatch.fromJson(data as Map<String, dynamic>),
     );
   }
 

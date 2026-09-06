@@ -226,10 +226,6 @@ abstract class PurchaseOrder with _$PurchaseOrder {
   /// Whether anything at all has been booked in against it yet.
   bool get hasReceipts => items.any((item) => item.hasReceipts);
 
-  /// The lines still owing something. What the receive screen opens on.
-  List<PurchaseOrderItem> get outstanding =>
-      items.where((item) => item.isOutstanding).toList(growable: false);
-
   /// Whether anything beyond the goods was charged on this order.
   ///
   /// Read off the list rather than off [totalAdditionalCost]: most orders have none, and a
@@ -293,8 +289,21 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
     @JsonKey(name: 'quantity_received') required String quantityReceived,
 
     /// Computed by the server, never here — a client that subtracted would be a second opinion
-    /// about arithmetic that decides whether a shipment is refused.
+    /// about arithmetic every screen reads as «is anything still coming».
+    ///
+    /// **Floored at zero.** A line the supplier overshipped owes nothing; what came over the
+    /// order is [quantityOverReceived], not a negative remainder.
     @JsonKey(name: 'quantity_remaining') required String quantityRemaining,
+
+    /// What arrived beyond what was ordered — `'0.000'` on the ordinary line.
+    ///
+    /// **Suppliers overship, and the goods are on the shelf either way.** A run of bags comes
+    /// off the machine heavy and the whole lot turns up, so the receipt is booked in whole and
+    /// the surplus is named here rather than refused at the door. Sent by the server like every
+    /// other quantity on this line, and defaulted for a response older than the field.
+    @JsonKey(name: 'quantity_over_received')
+    @Default('0.000')
+    String quantityOverReceived,
 
     /// What the vendor charged for this line, and that divided by the quantity.
     ///
@@ -350,25 +359,36 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
 
   String get remainingLabel => groupedDecimal(quantityRemaining);
 
+  String get overReceivedLabel => groupedDecimal(quantityOverReceived);
+
   /// What this line's numbers are counted in, and the words built from it.
   PurchaseLineUnit get lineUnit => PurchaseLineUnit(unitLabel);
 
-  /// «٥٠٠ كيلوغرام», or a bare «٥٠٠» on a line older than the unit column.
+  /// «٥٠٠ كجم», or a bare «٥٠٠» on a line older than the unit column.
   String get orderedWithUnit => lineUnit.amount(orderedLabel);
 
   String get receivedWithUnit => lineUnit.amount(receivedLabel);
 
   String get remainingWithUnit => lineUnit.amount(remainingLabel);
 
-  /// «للكيلوغرام» — what a unit cost is *per*, as it reads after the amount.
+  /// «٢٠٠ كجم» over the order.
+  String get overReceivedWithUnit => lineUnit.amount(overReceivedLabel);
+
+  /// «للكجم» — what a unit cost is *per*, as it reads after the amount.
   String get perUnitSuffix => lineUnit.per;
 
-  /// «الكمية المطلوبة (كيلوغرام)».
+  /// «الكمية المطلوبة (كجم)».
   String get quantityFieldLabel => lineUnit.quantityField;
 
   bool get hasReceipts => (double.tryParse(quantityReceived) ?? 0) > 0;
 
   bool get isOutstanding => (double.tryParse(quantityRemaining) ?? 0) > 0;
+
+  /// Whether more of this line turned up than was ever ordered.
+  ///
+  /// **Not a failure**, and not drawn as one: the shipment was booked in and the extra is on the
+  /// shelf. The screens say so in the informational tone rather than the red one.
+  bool get isOverReceived => (double.tryParse(quantityOverReceived) ?? 0) > 0;
 
   /// Whether a cost was ever recorded against this line.
   ///
@@ -417,8 +437,8 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
 /// different question and is deliberately not this.
 ///
 /// **One place for the wording, and the Arabic is the reason.** Three surfaces print these — the
-/// form's quantity box, the line on the order, the receiving sheet — and «لل» + «كيلوغرام» is
-/// exactly the kind of join that comes out «لل كيلوغرام» on the third copy. It also keeps the
+/// form's quantity box, the line on the order, the receiving sheet — and «لل» + «كجم» is
+/// exactly the kind of join that comes out «لل كجم» on the third copy. It also keeps the
 /// form and the saved line saying the same word: a form that asks in one unit and a screen that
 /// reports the answer in another is the failure this exists to prevent.
 ///
@@ -430,27 +450,27 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
 class PurchaseLineUnit {
   const PurchaseLineUnit(this.label);
 
-  /// «كيلوغرام», «قطعة», or null on a line older than the unit column.
+  /// «كجم», «قطعة», or null on a line older than the unit column.
   final String? label;
 
-  /// «٥٠٠ كيلوغرام», or a bare «٥٠٠» when there is no unit to name.
+  /// «٥٠٠ كجم», or a bare «٥٠٠» when there is no unit to name.
   ///
   /// **Bare, never guessed.** Falling back to «قطعة» is precisely how a weight comes to be read
   /// as a count, and it would be wrong silently.
   String amount(String value) => label == null ? value : '$value $label';
 
-  /// «للكيلوغرام» — what a unit cost is *per*, as it reads after the amount. «للوحدة» when
+  /// «للكجم» — what a unit cost is *per*, as it reads after the amount. «للوحدة» when
   /// unknown: vague, but true of any unit.
   String get per => label == null ? 'للوحدة' : 'لل$label';
 
-  /// «الكمية المطلوبة (كيلوغرام)».
+  /// «الكمية المطلوبة (كجم)».
   ///
   /// The unit in brackets rather than inside the sentence: it is a note about what the box
   /// expects, not part of what is being asked for.
   String get quantityField =>
       label == null ? 'الكمية المطلوبة' : 'الكمية المطلوبة ($label)';
 
-  /// «الكمية التي وصلت (كيلوغرام)» — the box a storeman types a weighbridge figure into.
+  /// «الكمية التي وصلت (كجم)» — the box a storeman types a weighbridge figure into.
   String get receivedField =>
       label == null ? 'الكمية التي وصلت' : 'الكمية التي وصلت ($label)';
 

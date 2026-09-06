@@ -89,12 +89,12 @@ void main() {
           'stock_item_group_id': 3,
           'stock_item_group': material({
             'default_unit': 'kilogram',
-            'default_unit_label': 'كيلوغرام',
+            'default_unit_label': 'كجم',
           }),
           'variants': [
             variantJson({
               'stock_item_id': 4,
-              'stock_item': shelf({'unit': 'kilogram', 'unit_label': 'كيلوغرام'}),
+              'stock_item': shelf({'unit': 'kilogram', 'unit_label': 'كجم'}),
             }),
           ],
         }),
@@ -106,7 +106,7 @@ void main() {
       // apart because changing the material's never disturbs a shelf that already exists.
       expect(product.pricingUnit, 'piece');
       expect(product.stockItemGroup?.defaultUnit, 'kilogram');
-      expect(product.stockItemGroup?.defaultUnitLabel, 'كيلوغرام');
+      expect(product.stockItemGroup?.defaultUnitLabel, 'كجم');
       expect(product.variants.single.stockItem?.unit, 'kilogram');
     });
 

@@ -116,6 +116,7 @@ final class RecordStockMovement
         if ($data->toWarehouseId !== null && $data->movementType === MovementType::OrderReversal) {
             $this->applyStockChange->creditBack(
                 $data->toWarehouseId, $data->stockItemId, $unit, $data->reversedMovementId,
+                $data->purchasedLayersBelongToTheCompany,
             );
 
             return;
@@ -133,6 +134,9 @@ final class RecordStockMovement
                 // Resolved by Investment before the goods arrived, and null for everything the
                 // company bought for itself — which is almost all of it.
                 investorDealId: $data->investorDealId,
+                // And, beside it, the price that deal sells to the press at — a term agreed
+                // while the lorry was still being funded.
+                printingSalePrice: $data->printingSalePrice,
             );
         }
     }

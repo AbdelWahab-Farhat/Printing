@@ -37,6 +37,7 @@ void main() {
     required int id,
     required String displayName,
     required String finalTotalCost,
+    String? finalUnitCost,
   }) => PurchaseOrderItem(
     id: id,
     stockItemId: id,
@@ -50,6 +51,7 @@ void main() {
     quantityReceived: '0.000',
     quantityRemaining: '10000.000',
     finalTotalCost: finalTotalCost,
+    finalUnitCost: finalUnitCost,
   );
 
   PurchaseOrder orderOf(
@@ -168,5 +170,74 @@ void main() {
     expect(find.text('تكلفة ما اخترته'), findsOneWidget);
     expect(find.text('30,000 د.ل'), findsNWidgets(4));
     expect(find.text('60,000 د.ل'), findsNothing);
+  });
+
+  testWidgets('the screen asks for سعر السادة, and says what an empty box means', (tester) async {
+    // Arrange — a shipment being funded.
+    final order = orderOf([
+      lineOf(id: 1, displayName: 'كيس شحن 25*35', finalTotalCost: '30000.00'),
+    ]);
+
+    // Act
+    await tester.pumpWidget(host(FundPurchaseOrderPage(order: order)));
+    await tester.pumpAndSettle();
+
+    // Assert — beside «نسبة المستثمرين من الربح», under الصفقة, and the label carries the rule
+    // rather than «اختياري»: left empty is a real answer, and it is the answer «بالتكلفة».
+    expect(find.text('سعر بيع السادة للطباعة (فارغ = بالتكلفة)'), findsOneWidget);
+  });
+
+  testWidgets('the box shows the very price an empty one falls back to', (tester) async {
+    // Arrange — one line, landed at 1,000 the unit.
+    final order = orderOf([
+      lineOf(
+        id: 1,
+        displayName: 'كيس شحن 25*35',
+        finalTotalCost: '30000.00',
+        finalUnitCost: '1000.000',
+      ),
+    ]);
+
+    // Act — the placeholder stands in the empty box, so it is read on the way in. It is the
+    // last field on the screen, and tapping it is what floats the label off it.
+    await tester.pumpWidget(host(FundPurchaseOrderPage(order: order)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(TextFormField).last);
+    await tester.pumpAndSettle();
+
+    // Assert — the landed cost of what this deal is taking, which is what the press pays for it
+    // when no price is agreed.
+    expect(find.text('التكلفة 1,000'), findsOneWidget);
+  });
+
+  testWidgets('two lines landed at different costs name no single fallback', (tester) async {
+    // Arrange — the chosen lines disagree about what a unit cost.
+    final order = orderOf([
+      lineOf(
+        id: 1,
+        displayName: 'كيس شحن 25*35',
+        finalTotalCost: '30000.00',
+        finalUnitCost: '1000.000',
+      ),
+      lineOf(
+        id: 2,
+        displayName: 'كيس شحن 30*40',
+        finalTotalCost: '10000.00',
+        finalUnitCost: '800.000',
+      ),
+    ]);
+
+    // Act — the second line pushes the box past the fold, so the list is scrolled before it is
+    // tapped.
+    await tester.pumpWidget(host(FundPurchaseOrderPage(order: order)));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(TextFormField).last);
+    await tester.pumpAndSettle();
+
+    // Assert — one number would be an average nobody is charged, so the box names none.
+    expect(find.text('التكلفة 1,000'), findsNothing);
+    expect(find.text('التكلفة 800'), findsNothing);
   });
 }

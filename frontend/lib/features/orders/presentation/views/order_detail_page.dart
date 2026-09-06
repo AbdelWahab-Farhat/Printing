@@ -16,6 +16,7 @@ import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/carrier/models/nawris_parcel.dart';
 import 'package:dayaa/features/carrier/usecases/lodge_order.dart';
 import 'package:dayaa/features/carrier/usecases/release_shipment.dart';
+import 'package:dayaa/features/investors/presentation/widgets/order_investors_section.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
@@ -787,6 +788,20 @@ class _Body extends StatelessWidget {
               if (showCosts) ...[
                 SizedBox(height: 16.h),
                 _Section(title: 'التكلفة والربح', child: OrderCostSection(order: order)),
+                // **Under the cost column, never inside it.** A `plain_sale` row is money this
+                // order *paid* an investor for its material — it is inside «تكلفة الإنتاج»
+                // above, not a share of «مجمل الربح» — while an `order_profit` row genuinely is
+                // carved out of that profit. One column cannot state both without lying about
+                // one of them, so they are a section apart and each row says which it is.
+                //
+                // Behind the same grant the cost column is: both answer «كم كسبنا», and the
+                // section removes itself entirely when the order drew on nobody's stock but
+                // ours, which is most orders.
+                SizedBox(height: 16.h),
+                _Section(
+                  title: 'المستثمرون',
+                  child: OrderInvestorsSection(orderId: order.id),
+                ),
               ],
               // Shown even when no version exists yet, because that is exactly the order somebody
               // opens this screen to add one to. Any order may carry artwork — `design_source`
@@ -1114,7 +1129,7 @@ class _Items extends StatelessWidget {
 
   final List<OrderItem> items;
 
-  /// «12.5 كيلوغرام», or null on an order with no weight to state — see [Order.totalWeight],
+  /// «12.5 كجم», or null on an order with no weight to state — see [Order.totalWeight],
   /// where null covers both «nothing here is weighed» and «nothing has been weighed yet». The
   /// server decides which; the screen only draws the line when there is one.
   final String? weight;
@@ -1161,7 +1176,7 @@ class _Items extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              // No `textDirection` override: «12.5 كيلوغرام» is a number *and* an Arabic word,
+              // No `textDirection` override: «12.5 كجم» is a number *and* an Arabic word,
               // and forcing the run left-to-right would put the unit on the wrong side of it.
               // The overrides elsewhere on this screen are for bare figures.
               Text(

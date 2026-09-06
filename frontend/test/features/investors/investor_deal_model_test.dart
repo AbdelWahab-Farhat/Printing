@@ -40,4 +40,27 @@ void main() {
     expect(deal.companyStake, '0.00');
     expect(deal.investorFundedPercent, '100.0000');
   });
+
+  test('a deal that sells its plain stock to the press carries the price it agreed', () {
+    // Arrange
+    final json = dealJson(extra: {'printing_sale_price': '32.000'});
+
+    // Act
+    final deal = InvestorDeal.fromJson(json);
+
+    // Assert
+    expect(deal.printingSalePrice, '32.000');
+  });
+
+  test('a deal with no such term is left null rather than zeroed', () {
+    // Arrange — every deal funded before the term existed, and every one funded without it.
+    final json = dealJson();
+
+    // Act
+    final deal = InvestorDeal.fromJson(json);
+
+    // Assert — null is «no such arrangement», and a zero would read as «the press takes them for
+    // nothing». The screen and the server both branch on exactly this.
+    expect(deal.printingSalePrice, isNull);
+  });
 }

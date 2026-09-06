@@ -38,7 +38,7 @@ void main() {
     stockItemId: id,
     quantity: quantity,
     unit: 'kg',
-    unitLabel: 'كيلوغرام',
+    unitLabel: 'كجم',
     lowStockThreshold: threshold,
     isLowStock: isLow,
     item: StockItemRef(

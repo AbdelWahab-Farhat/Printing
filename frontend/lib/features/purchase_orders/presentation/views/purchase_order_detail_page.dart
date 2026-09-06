@@ -136,12 +136,6 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
       return;
     }
 
-    if (order.outstanding.isEmpty) {
-      context.showInfo('كل البنود وصلت بالكامل');
-
-      return;
-    }
-
     final shipment = await showReceiveArrivalSheet(
       context: context,
       order: order,
@@ -578,12 +572,21 @@ class _LineRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (isDone)
+            if (item.isOverReceived)
+              Text(
+                // More turned up than was ordered — booked in whole, and said in the
+                // informational blue rather than the red owed-quantity tone: nothing is wrong
+                // with the order, there is simply more of it on the shelf.
+                'زائد ${item.overReceivedWithUnit}',
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: scheme.tertiary,
+                ),
+              )
+            else if (isDone)
               Icon(AppIcons.activate, size: 18.sp, color: scheme.primary)
             else
               Text(
-                // The number that decides whether the next shipment is accepted, printed once
-                // and computed by the server.
+                // What is still owed on this line, printed once and computed by the server.
                 'متبقٍ ${item.remainingWithUnit}',
                 style: context.textTheme.bodySmall?.copyWith(
                   color: scheme.error,
@@ -605,7 +608,7 @@ class _LineRow extends StatelessWidget {
         if (item.hasCost) ...[
           SizedBox(height: 4.h),
           Text(
-            // **The landed cost, not the invoiced one.** «١٫٥ د.ل للكيلوغرام» is a price a buyer
+            // **The landed cost, not the invoiced one.** «١٫٥ د.ل للكجم» is a price a buyer
             // can check against the quote they were given — and once delivery has been spread
             // over the lines, the landed figure is the one a job's margin is worked out against.
             // «للوحدة» named nothing, and named it identically for both units.

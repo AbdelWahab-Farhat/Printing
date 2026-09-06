@@ -40,10 +40,9 @@ return new class extends Migration
         });
 
         // A line ordering nothing explains nothing, the same rule stock_arrival_items.quantity
-        // holds. quantity_received has no upper bound here — ReceivePurchaseOrder is what
-        // refuses a receipt larger than what was ordered, in code rather than in the schema,
-        // because "refuse" is a business decision this constraint could only express as a
-        // failed insert with no readable message.
+        // holds. quantity_received has no upper bound here, and is not meant to have one: a
+        // supplier who ships more than was ordered is booked in whole — see
+        // ReceivePurchaseOrder — so a line legitimately holds more than it asked for.
         DB::statement(
             'ALTER TABLE purchase_order_items
              ADD CONSTRAINT purchase_order_items_quantity_ordered_is_positive CHECK (quantity_ordered > 0)'

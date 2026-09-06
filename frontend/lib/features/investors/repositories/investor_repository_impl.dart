@@ -6,6 +6,7 @@ import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/features/investors/models/deal_order.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/investor_deal.dart';
+import 'package:dayaa/features/investors/models/order_investor_share.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository.dart';
 import 'package:dio/dio.dart';
 
@@ -128,6 +129,16 @@ class InvestorRepositoryImpl implements InvestorRepository {
         queryParameters: <String, dynamic>{'page': page, 'per_page': perPage},
       ),
       parseItem: (row) => DealOrder.fromJson(row),
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<OrderInvestorShare>>> orderInvestorShares(int orderId) {
+    return safeRequest<List<OrderInvestorShare>>(
+      () => _dio.get(InvestorEndpoints.orderInvestorShares(orderId)),
+      parse: (data) => (data as List<dynamic>)
+          .map((row) => OrderInvestorShare.fromJson(row as Map<String, dynamic>))
+          .toList(),
     );
   }
 

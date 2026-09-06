@@ -10,6 +10,7 @@ use App\Domain\Investor\Actions\CloseInvestorDeal;
 use App\Domain\Investor\Actions\CreateInvestor;
 use App\Domain\Investor\Actions\FundPurchaseOrder;
 use App\Domain\Investor\Actions\PostDealEarningsForOrder;
+use App\Domain\Investor\Actions\PostDealStockPurchases;
 use App\Domain\Investor\Actions\RecordDealExpense;
 use App\Domain\Investor\Actions\RecordWalletEntry;
 use App\Domain\Investor\Actions\SetInvestorActivation;
@@ -17,6 +18,7 @@ use App\Domain\Investor\Actions\UpdateInvestor;
 use App\Domain\Investor\DTOs\DealExpenseData;
 use App\Domain\Investor\DTOs\FundPurchaseOrderData;
 use App\Domain\Investor\DTOs\InvestorData;
+use App\Domain\Investor\DTOs\SupplyFunding;
 use App\Domain\Investor\DTOs\WalletEntryData;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDeal;
@@ -28,8 +30,10 @@ use App\Domain\Investor\Queries\DealOrdersQuery;
 use App\Domain\Investor\Queries\DealStockPosition;
 use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Queries\InvestorListQuery;
+use App\Domain\Investor\Queries\OrderInvestorSharesQuery;
 use App\Domain\Investor\Queries\PurchaseOrderFundingQuery;
 use App\Domain\Investor\Support\Money;
+use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Settings\SettingsService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -52,11 +56,13 @@ final class InvestorService
         private readonly RecordWalletEntry $recordEntry,
         private readonly RecordDealExpense $recordExpense,
         private readonly PostDealEarningsForOrder $postEarnings,
+        private readonly PostDealStockPurchases $postStockPurchases,
         private readonly InvestorBalances $balances,
         private readonly InvestorListQuery $investorList,
         private readonly DealListQuery $dealList,
         private readonly DealStockPosition $stockPosition,
         private readonly DealOrdersQuery $dealOrderList,
+        private readonly OrderInvestorSharesQuery $orderShares,
         private readonly PurchaseOrderFundingQuery $purchaseOrderFunding,
         private readonly SettingsService $settings,
     ) {}
@@ -218,21 +224,34 @@ final class InvestorService
     }
 
     /**
-     * Which deal financed a line of an arriving document — asked once per line at receipt.
+     * Which deal financed a line of an arriving document, and at what price it sells its plain
+     * stock to the press — asked once per line at receipt.
      *
      * Null is the ordinary answer and means the company paid for it. The receiving clerk never
      * sees this question: it is answered from a claim somebody made before the goods left the
      * supplier.
      */
-    public function dealForSupply(int $purchaseOrderId, int $stockItemId): ?int
+    public function dealForSupply(int $purchaseOrderId, int $stockItemId): ?SupplyFunding
     {
         $supply = InvestorDealSupply::query()
+            ->with('deal')
             ->where('source_type', AuditSubject::PurchaseOrder->value)
             ->where('source_id', $purchaseOrderId)
             ->where('stock_item_id', $stockItemId)
             ->first();
 
-        return $supply === null ? null : (int) $supply->investor_deal_id;
+        if ($supply === null) {
+            return null;
+        }
+
+        return new SupplyFunding(
+            dealId: (int) $supply->investor_deal_id,
+            // Carried out with the id because the layer this answer opens must freeze both, and
+            // asking twice would be two reads of one row for one decision.
+            printingSalePrice: $supply->deal?->printing_sale_price === null
+                ? null
+                : (string) $supply->deal->printing_sale_price,
+        );
     }
 
     /**
@@ -246,6 +265,42 @@ final class InvestorService
     public function postEarningsForOrder(int $orderId): array
     {
         return ($this->postEarnings)($orderId);
+    }
+
+    /**
+     * The press has taken its plain material off the shelf — pay whoever sold it.
+     *
+     * Called from `ChangeOrderStatus` on the way into «جاهزة للطباعة» and «جاهزة», through
+     * {@see OrderStockDrawn}. Does nothing at all unless a printed
+     * line drew on a deal that sells to the press at سعر السادة, which is the normal case.
+     *
+     * @return list<InvestorWalletEntry>
+     */
+    public function postStockPurchasesForOrder(int $orderId): array
+    {
+        return ($this->postStockPurchases)($orderId);
+    }
+
+    /**
+     * One further draw off the shelf — bags spoiled at the press — paid for on its own row.
+     *
+     * @return list<InvestorWalletEntry>
+     */
+    public function postStockPurchaseForMovement(int $stockMovementId): array
+    {
+        return $this->postStockPurchases->forMovement($stockMovementId);
+    }
+
+    /**
+     * «هذه الطلبية — من أخذ منها، وكم، وهل أخذه فعلاً» — see {@see OrderInvestorSharesQuery}.
+     *
+     * Empty for every order that drew on nothing but the company's own stock.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function investorSharesOfOrder(int $orderId): array
+    {
+        return ($this->orderShares)($orderId);
     }
 
     /**

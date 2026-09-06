@@ -64,6 +64,14 @@ final class ReverseOrderStockDeduction
                 reversedMovementId: $item->fulfillment_stock_movement_id,
                 referenceId: $order->getKey(),
                 employeeId: $employeeId,
+                // **The half of «استلم الزبون ما استلمش، المطبعة تتحمّل» that lives in the
+                // warehouse.** A line that bought its plain material off a deal paid for it the
+                // day it left the shelf, and that money is in an investor's ledger already.
+                // Crediting the goods back to his cost layers would leave him holding both, and
+                // the next order would buy the same kilo from him a second time — so those
+                // layers come back as the company's own stock, at what the company paid for
+                // them. Everything else on the line credits back exactly as before.
+                purchasedLayersBelongToTheCompany: $item->stock_purchased_at !== null,
             ));
 
             $this->reverseProductionCostEntries($item, $employeeId);

@@ -109,12 +109,14 @@ final class ApplyStockChange
         ?int $stockArrivalItemId = null,
         ?int $stockMovementId = null,
         ?int $investorDealId = null,
+        ?string $printingSalePrice = null,
     ): WarehouseStock {
         $stock = $this->growBalance($warehouseId, $stockItemId, $quantity, $unit);
 
         $this->openBatch(
             $warehouseId, $stockItemId, $quantity, $unitCost, $unit,
             $sourceType, $stockArrivalItemId, Carbon::now(), $stockMovementId, $investorDealId,
+            $printingSalePrice,
         );
 
         return $stock;
@@ -156,6 +158,9 @@ final class ApplyStockChange
                 // warehouses, with every quantity in the system still perfectly correct and
                 // nothing at all to notice — which is why it has a scenario test of its own.
                 $draw->investorDealId,
+                // And the price it sells to the press at, for the same reason and with the same
+                // silence: a lorry moved to the workshop shelf would be printed at cost.
+                $draw->printingSalePrice,
             );
         }
 
@@ -178,6 +183,7 @@ final class ApplyStockChange
         int $stockItemId,
         PricingUnit $unit,
         int $reversedMovementId,
+        bool $purchasedLayersBelongToTheCompany = false,
     ): WarehouseStock {
         $total = (string) StockBatchConsumption::query()
             ->where('stock_movement_id', $reversedMovementId)
@@ -185,7 +191,28 @@ final class ApplyStockChange
 
         $stock = $this->growBalance($warehouseId, $stockItemId, $total, $unit);
 
-        ($this->creditBackBatches)($reversedMovementId);
+        $bought = ($this->creditBackBatches)($reversedMovementId, $purchasedLayersBelongToTheCompany);
+
+        foreach ($bought as $draw) {
+            $this->openBatch(
+                $warehouseId,
+                $stockItemId,
+                $draw['quantity'],
+                // What the company paid for it, which is the only cost it has now. The layer it
+                // came off was drawn down and paid for; this is a different lot of goods in
+                // every sense that matters to a ledger.
+                $draw['printing_sale_price'],
+                $unit,
+                StockBatchSourceType::Adjustment,
+                stockArrivalItemId: null,
+                receivedAt: Carbon::now(),
+                stockMovementId: null,
+                // The company's, now — «استلم الزبون ما استلمش، المطبعة تتحمّل». No deal, so no
+                // price either: nobody sells this to the press a second time.
+                investorDealId: null,
+                printingSalePrice: null,
+            );
+        }
 
         return $stock;
     }
@@ -246,6 +273,7 @@ final class ApplyStockChange
         Carbon $receivedAt,
         ?int $stockMovementId = null,
         ?int $investorDealId = null,
+        ?string $printingSalePrice = null,
     ): void {
         $batch = new StockBatch;
         $batch->warehouse_id = $warehouseId;
@@ -257,6 +285,9 @@ final class ApplyStockChange
         // three places this column is ever written — see the migration for the other two and for
         // why a missed copy is silent.
         $batch->investor_deal_id = $investorDealId;
+        // Never set without a deal — the database refuses it, because a price with nobody to pay
+        // it creates a margin that belongs to no one.
+        $batch->printing_sale_price = $investorDealId === null ? null : $printingSalePrice;
         $batch->unit_cost = $unitCost;
         $batch->quantity_received = $quantity;
         $batch->quantity_remaining = $quantity;

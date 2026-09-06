@@ -518,7 +518,8 @@ class PurchaseOrderTest extends TestCase
             ->assertJsonCount(1, 'data.items')
             ->assertJsonPath('data.items.0.quantity_ordered', '10.000')
             ->assertJsonPath('data.items.0.quantity_received', '0.000')
-            ->assertJsonPath('data.items.0.quantity_remaining', '10.000');
+            ->assertJsonPath('data.items.0.quantity_remaining', '10.000')
+            ->assertJsonPath('data.items.0.quantity_over_received', '0.000');
     }
 
     public function test_reading_a_purchase_order_that_does_not_exist_is_a_404(): void
@@ -1042,9 +1043,9 @@ class PurchaseOrderTest extends TestCase
         $this->assertDatabaseCount('stock_arrivals', 0);
     }
 
-    public function test_over_receiving_is_refused(): void
+    public function test_over_receiving_is_accepted_and_the_surplus_lands_in_stock(): void
     {
-        // Arrange
+        // Arrange — 10 ordered at 50.00, so 5.00 a unit; the lorry turns up with 15
         $vendor = Vendor::factory()->create();
         $warehouse = Warehouse::factory()->create();
         $variant = $this->variant();
@@ -1061,13 +1062,47 @@ class PurchaseOrderTest extends TestCase
             ['items' => [['stock_item_id' => $variant->id, 'quantity' => 15]]],
         );
 
-        // Assert — refused, and nothing partially lands
-        $response->assertStatus(422)->assertJsonStructure(['errors' => ['items']]);
-        $this->assertDatabaseCount('stock_arrivals', 0);
-        $this->assertDatabaseCount('stock_movements', 0);
+        // Assert — all fifteen are booked in, priced at the line's own landed unit cost, and the
+        // order is done
+        $response->assertCreated();
+        $this->assertDatabaseHas('purchase_orders', ['id' => $order['id'], 'status' => 'completed']);
         $this->assertDatabaseHas('purchase_order_items', [
-            'purchase_order_id' => $order['id'], 'stock_item_id' => $variant->id, 'quantity_received' => '0.000',
+            'purchase_order_id' => $order['id'], 'stock_item_id' => $variant->id, 'quantity_received' => '15.000',
         ]);
+        $this->assertDatabaseHas('stock_arrival_items', [
+            'stock_item_id' => $variant->id, 'quantity' => '15.000', 'unit_cost' => '5.000', 'total_cost' => '75.00',
+        ]);
+        $this->assertSame('15.000', (string) $this->stockOf($warehouse, $variant)?->quantity);
+    }
+
+    public function test_an_over_received_line_owes_nothing_and_reports_the_surplus(): void
+    {
+        // Arrange — 10 ordered, 15 delivered
+        $vendor = Vendor::factory()->create();
+        $warehouse = Warehouse::factory()->create();
+        $variant = $this->variant();
+        $viewerHeaders = $this->viewer();
+        $order = $this->withHeaders($this->manager())->postJson(
+            '/api/v1/purchase-orders',
+            $this->payload($vendor, $warehouse, $variant),
+        )->json('data');
+        $inventoryHeaders = $this->inventoryManager();
+        $this->forgetAuth();
+        $this->withHeaders($inventoryHeaders)->postJson(
+            "/api/v1/purchase-orders/{$order['id']}/arrivals",
+            ['items' => [['stock_item_id' => $variant->id, 'quantity' => 15]]],
+        );
+        $this->forgetAuth();
+
+        // Act
+        $response = $this->withHeaders($viewerHeaders)->getJson("/api/v1/purchase-orders/{$order['id']}");
+
+        // Assert — nothing is still owing, and the five extra are named rather than hidden in a
+        // negative remainder
+        $response->assertOk()
+            ->assertJsonPath('data.items.0.quantity_received', '15.000')
+            ->assertJsonPath('data.items.0.quantity_remaining', '0.000')
+            ->assertJsonPath('data.items.0.quantity_over_received', '5.000');
     }
 
     public function test_receiving_an_unordered_variant_is_refused(): void

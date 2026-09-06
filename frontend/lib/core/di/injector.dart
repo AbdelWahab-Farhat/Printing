@@ -94,6 +94,7 @@ import 'package:dayaa/features/investor_portal/repositories/investor_portal_repo
 import 'package:dayaa/features/investor_portal/usecases/get_investor_portfolio.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deal_detail_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deal_orders_cubit.dart';
+import 'package:dayaa/features/investors/presentation/viewmodel/order_investor_shares_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deals_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investors_cubit.dart';
@@ -213,6 +214,7 @@ import 'package:dayaa/features/vendors/usecases/get_vendors.dart';
 import 'package:dayaa/features/vendors/usecases/save_vendor.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/save_warehouse_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/shelf_balance_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_batches_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_movements_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/stock_summary_cubit.dart';
@@ -227,6 +229,7 @@ import 'package:dayaa/features/warehouses/usecases/get_stock_summary.dart';
 import 'package:dayaa/features/warehouses/usecases/get_warehouse_stocks.dart';
 import 'package:dayaa/features/warehouses/usecases/get_warehouses.dart';
 import 'package:dayaa/features/warehouses/usecases/record_stock_movement.dart';
+import 'package:dayaa/features/warehouses/usecases/revalue_stock_batch.dart';
 import 'package:dayaa/features/warehouses/usecases/save_warehouse.dart';
 import 'package:dayaa/features/warehouses/usecases/set_low_stock_threshold.dart';
 import 'package:dio/dio.dart';
@@ -572,6 +575,9 @@ abstract final class Injector {
       ..registerLazySingleton<GetInvestorDeals>(() => GetInvestorDeals(sl<InvestorRepository>()))
       ..registerLazySingleton<GetInvestorDeal>(() => GetInvestorDeal(sl<InvestorRepository>()))
       ..registerLazySingleton<GetDealOrders>(() => GetDealOrders(sl<InvestorRepository>()))
+      ..registerLazySingleton<GetOrderInvestorShares>(
+        () => GetOrderInvestorShares(sl<InvestorRepository>()),
+      )
       ..registerLazySingleton<FundPurchaseOrder>(
         () => FundPurchaseOrder(sl<InvestorRepository>()),
       )
@@ -587,6 +593,9 @@ abstract final class Injector {
           getInvestor: sl<GetInvestor>(),
           recordWalletEntry: sl<RecordWalletEntry>(),
         ),
+      )
+      ..registerFactory<OrderInvestorSharesCubit>(
+        () => OrderInvestorSharesCubit(getShares: sl<GetOrderInvestorShares>()),
       )
       ..registerFactory<DealOrdersCubit>(
         () => DealOrdersCubit(getOrders: sl<GetDealOrders>()),
@@ -1176,6 +1185,9 @@ abstract final class Injector {
       ..registerLazySingleton<GetStockBatches>(
         () => GetStockBatches(sl<WarehouseRepository>()),
       )
+      ..registerLazySingleton<RevalueStockBatch>(
+        () => RevalueStockBatch(sl<WarehouseRepository>()),
+      )
       ..registerLazySingleton<RecordStockMovement>(
         () => RecordStockMovement(sl<WarehouseRepository>()),
       )
@@ -1218,6 +1230,7 @@ abstract final class Injector {
       ..registerFactoryParam<StockBatchesCubit, ({int warehouseId, int stockItemId}), bool>(
         (shelf, remaining) => StockBatchesCubit(
           getBatches: sl<GetStockBatches>(),
+          revalueBatch: sl<RevalueStockBatch>(),
           warehouseId: shelf.warehouseId,
           stockItemId: shelf.stockItemId,
           remaining: remaining,
@@ -1228,6 +1241,12 @@ abstract final class Injector {
       )
       ..registerFactory<RecordMovementCubit>(
         () => RecordMovementCubit(recordMovement: sl<RecordStockMovement>()),
+      )
+      // Beside the recording form rather than inside it: what is on the shelf is a question the
+      // form asks while it is being filled in, and it must not take the form down when it
+      // cannot be answered.
+      ..registerFactory<ShelfBalanceCubit>(
+        () => ShelfBalanceCubit(getStocks: sl<GetWarehouseStocks>()),
       );
   }
 

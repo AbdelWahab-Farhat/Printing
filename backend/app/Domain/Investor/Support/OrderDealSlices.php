@@ -46,10 +46,10 @@ final class OrderDealSlices
      * dropped: they belong to nobody this class is answering about.
      *
      * @param  array{grand_total: string, items_total: string, lines: list<array{
-     *     movement_id: int, line_total: string, conversion_cost: string
+     *     movement_id: int, stock_purchased: bool, line_total: string, conversion_cost: string
      * }>}  $order  as {@see ProfitAttributionQuery} returns it
      * @param  array<int, list<array{
-     *     investor_deal_id: ?int, quantity: string, total_cost: string
+     *     investor_deal_id: ?int, printing_sale_price: ?string, quantity: string, total_cost: string
      * }>>  $breakdown  every draw of every line's movement, keyed by movement id
      * @return array<int, array{
      *     quantity: string,
@@ -88,6 +88,17 @@ final class OrderDealSlices
                 $dealId = $draw['investor_deal_id'];
 
                 if ($dealId === null) {
+                    continue;
+                }
+
+                // **A draw the press already paid for belongs to nobody here.** The line bought
+                // it off the deal at سعر السادة the day it left the shelf, and that margin is in
+                // the investor's ledger; letting the delivery split it again would pay him twice
+                // for one kilo. Dropped *after* its weight has done its work above — the
+                // allocation's denominator is still every draw of the movement — so what its
+                // share of the revenue would have been simply stays with the company, which is
+                // precisely who owns those goods now.
+                if ($line['stock_purchased'] && $draw['printing_sale_price'] !== null) {
                     continue;
                 }
 

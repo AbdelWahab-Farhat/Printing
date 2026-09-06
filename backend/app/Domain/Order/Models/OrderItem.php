@@ -6,12 +6,14 @@ namespace App\Domain\Order\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Inventory\Actions\SetStockItemUnit;
 use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Order\Actions\DeductOrderStock;
+use App\Domain\Order\Actions\ResolveOrderFlow;
 use App\Domain\Order\Support\Money;
 use App\Domain\Order\Support\TransitionFields;
 use Database\Factories\OrderItemFactory;
@@ -72,7 +74,33 @@ class OrderItem extends Model
             'line_total' => 'decimal:2',
             // Null means "same unit as the warehouse" — see the class docblock.
             'warehouse_quantity' => 'decimal:3',
+            // When the press bought this line's plain material off the shelf — see the migration
+            // that added it, and {@see isPrinted()} for who is entitled to sell it.
+            'stock_purchased_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Whether the press actually runs on this line — the fork the whole of سعر السادة turns on.
+     *
+     * **Asked of the line, never of the order.** {@see ResolveOrderFlow}
+     * puts a whole order on the printing road for one printed line among five plain ones, which
+     * is right for the road and wrong for the money: an order-level answer would have the plain
+     * lines inside a printed order buying their own material at a price that has nothing to do
+     * with them. What a line is, is a fact about the line.
+     *
+     * The unknown case is `in_house`, the same answer `ResolveOrderFlow` gives it and for the
+     * same reason: a product filed under no heading is production work until somebody says
+     * otherwise. That is the generous direction here too — it prices the material at what the
+     * press pays, which is the figure the investor was promised.
+     *
+     * Callers must eager-load `product.productCategory.parent`; strict mode turns a forgotten
+     * load into an exception rather than a query per line.
+     */
+    public function isPrinted(): bool
+    {
+        return ($this->product?->productCategory?->productionMode() ?? ProductionMode::InHouse)
+            === ProductionMode::InHouse;
     }
 
     /**

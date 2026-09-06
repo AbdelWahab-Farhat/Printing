@@ -180,7 +180,7 @@ void main() {
     await tester.pumpWidget(
       host(
         StockRow(
-          stock: stock(quantity: '250.000', unit: 'kg', unitLabel: 'كيلوغرام'),
+          stock: stock(quantity: '250.000', unit: 'kg', unitLabel: 'كجم'),
         ),
       ),
     );
@@ -191,6 +191,6 @@ void main() {
     // Assert — «250» alone is ambiguous on a floor holding both bags and kilos, and reading the
     // unit off the item instead would restate an old count in a unit somebody chose later.
     expect(find.text('250'), findsOneWidget);
-    expect(find.text('كيلوغرام'), findsOneWidget);
+    expect(find.text('كجم'), findsOneWidget);
   });
 }

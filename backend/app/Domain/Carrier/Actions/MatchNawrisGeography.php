@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Carrier\Actions;
 
 use App\Domain\Carrier\DTOs\GeographyMatchReport;
+use App\Domain\Carrier\Exceptions\CityHasNoNawrisMapping;
 use App\Domain\Carrier\Support\ArabicName;
 use App\Domain\Carrier\Support\NawrisClient;
 use App\Domain\Delivery\Enums\FulfilmentType;
@@ -21,7 +22,7 @@ use App\Domain\Delivery\Models\Region;
  * had called the API.
  *
  * **Why this is not a screen.** A city with no `nawris_government_id` refuses dispatch by name —
- * see {@see \App\Domain\Carrier\Exceptions\CityHasNoNawrisMapping} — so before the first parcel
+ * see {@see CityHasNoNawrisMapping} — so before the first parcel
  * every destination has to be mapped. Doing it by hand is reading two lists side by side and
  * copying integers, once per town, and getting one wrong sends parcels to the wrong place with
  * nothing on our side reading as an error.

@@ -101,7 +101,11 @@ class StockBatchResource extends JsonResource
             // **Three questions the app must not answer for itself.** Whether a layer may be
             // repriced at all, whether correcting it will only reach part of what arrived, and
             // whether an invoice somewhere says something different.
-            'can_be_revalued' => ! $this->isFullyConsumed(),
+            // A layer with nothing left cannot be repriced, and neither can one an investor's
+            // money bought: his share is paid on a cost agreed once, so a late invoice becomes a
+            // deal expense instead. Both refusals live in `RevalueStockBatch`; this flag exists
+            // so the app never offers a button whose only outcome is that refusal.
+            'can_be_revalued' => ! $this->isFullyConsumed() && $this->investor_deal_id === null,
             'is_partly_consumed' => $this->isPartlyConsumed(),
             'is_uncosted' => $this->isUncosted(),
 

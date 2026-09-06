@@ -73,6 +73,9 @@ final class ConsumeStockBatchesFifo
                 stockArrivalItemId: $batch->stock_arrival_item_id,
                 stockMovementId: $batch->stock_movement_id,
                 investorDealId: $batch->investor_deal_id,
+                printingSalePrice: $batch->printing_sale_price === null
+                    ? null
+                    : (string) $batch->printing_sale_price,
             );
 
             $remaining = bcsub($remaining, $take, 3);

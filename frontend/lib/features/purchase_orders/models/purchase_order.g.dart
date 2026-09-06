@@ -115,6 +115,8 @@ _PurchaseOrderItem _$PurchaseOrderItemFromJson(Map<String, dynamic> json) =>
       quantityOrdered: json['quantity_ordered'] as String,
       quantityReceived: json['quantity_received'] as String,
       quantityRemaining: json['quantity_remaining'] as String,
+      quantityOverReceived:
+          json['quantity_over_received'] as String? ?? '0.000',
       baseTotalCost: json['base_total_cost'] as String?,
       baseUnitCost: json['base_unit_cost'] as String?,
       allocatedAdditionalCost: json['allocated_additional_cost'] as String?,
@@ -132,6 +134,7 @@ Map<String, dynamic> _$PurchaseOrderItemToJson(_PurchaseOrderItem instance) =>
       'quantity_ordered': instance.quantityOrdered,
       'quantity_received': instance.quantityReceived,
       'quantity_remaining': instance.quantityRemaining,
+      'quantity_over_received': instance.quantityOverReceived,
       'base_total_cost': instance.baseTotalCost,
       'base_unit_cost': instance.baseUnitCost,
       'allocated_additional_cost': instance.allocatedAdditionalCost,

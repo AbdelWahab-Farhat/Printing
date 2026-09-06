@@ -33,6 +33,7 @@ final class ProfitAttributionQuery
      *     lines: list<array{
      *         line_id: int,
      *         movement_id: int,
+     *         stock_purchased: bool,
      *         line_total: string,
      *         conversion_cost: string
      *     }>
@@ -61,6 +62,7 @@ final class ProfitAttributionQuery
      *     lines: list<array{
      *         line_id: int,
      *         movement_id: int,
+     *         stock_purchased: bool,
      *         line_total: string,
      *         conversion_cost: string
      *     }>
@@ -96,6 +98,11 @@ final class ProfitAttributionQuery
             $lines[] = [
                 'line_id' => (int) $item->getKey(),
                 'movement_id' => (int) $item->fulfillment_stock_movement_id,
+                // Whether the press already bought this line's plain material off the shelf. A
+                // line that did has settled with whoever financed it, so the delivery must not
+                // pay him a second time — see OrderDealSlices, which drops those draws from the
+                // deal's slice while still counting them in the allocation's denominator.
+                'stock_purchased' => $item->stock_purchased_at !== null,
                 'line_total' => (string) ($item->line_total ?? '0.00'),
                 // What the company added to the goods on this line. Kept separate from material
                 // so a deal is never charged for it twice and never credited with it.

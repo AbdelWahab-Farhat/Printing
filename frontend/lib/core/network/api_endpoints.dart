@@ -38,6 +38,10 @@ abstract final class InvestorEndpoints {
   /// The orders that sold this deal's goods, and what each one earned it.
   static String dealOrders(int id) => '/investor-deals/$id/orders';
 
+  /// The same question from the order's end — «هذه الطلبية، من أخذ منها وكم».
+  static String orderInvestorShares(int orderId) =>
+      '/orders/$orderId/investor-shares';
+
   /// The deal being born from the order it is about — the partners, the money, and every one of
   /// the order's lines claimed, in one call. Guarded by `investors.manage`, not by the buyer's
   /// own grant.

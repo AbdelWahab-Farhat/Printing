@@ -264,7 +264,7 @@ class ProductTest extends TestCase
         // Assert
         $response->assertCreated()
             ->assertJsonPath('data.pricing_unit', 'kilogram')
-            ->assertJsonPath('data.pricing_unit_label', 'كيلوغرام')
+            ->assertJsonPath('data.pricing_unit_label', 'كجم')
             ->assertJsonPath('data.min_order_quantity', '2.500');
     }
 

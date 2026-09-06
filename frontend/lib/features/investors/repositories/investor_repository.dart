@@ -4,6 +4,7 @@ import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/investors/models/deal_order.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/investor_deal.dart';
+import 'package:dayaa/features/investors/models/order_investor_share.dart';
 
 /// The staff side of investors: the people, their money, and their deals.
 abstract class InvestorRepository {
@@ -53,6 +54,12 @@ abstract class InvestorRepository {
     int page,
     int perPage,
   });
+
+  /// Which deals took money out of one order, and whether they have been paid it yet.
+  ///
+  /// Empty for every order that drew on nothing but the company's own stock, which is most of
+  /// them — an empty list is «لا مستثمر في هذه الطلبية», not a failure.
+  Future<Either<Failure, List<OrderInvestorShare>>> orderInvestorShares(int orderId);
 
   /// Funds one purchase order: creates the deal, inherits its lines, claims every one of them
   /// and moves the money — the server does all four or none.

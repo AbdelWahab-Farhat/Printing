@@ -9,6 +9,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Events\OrderProfitFinalised;
+use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\PaymentRequiresAnActor;
@@ -260,6 +261,15 @@ final class ChangeOrderStatus
 
             if ($restateStock) {
                 $this->restateStockForOrder($order, $fields, $actor);
+            }
+
+            // **The press has its material, and whoever it bought it from is owed for it now.**
+            // Dispatched after both the deduction and the restatement, so every line's
+            // `fulfillment_stock_movement_id` already names the draw that will stand — the
+            // figure a purchase is booked against must not be one a correction is about to
+            // replace. Announced, not acted on; see {@see OrderStockDrawn}.
+            if ($deductStock || $restateStock) {
+                OrderStockDrawn::dispatch((int) $order->getKey());
             }
 
             // **Costed at «جاهزة» on both roads, and never at «جاهزة للطباعة».** Labour, machine

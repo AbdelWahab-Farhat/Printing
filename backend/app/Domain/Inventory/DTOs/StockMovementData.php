@@ -60,6 +60,18 @@ final readonly class StockMovementData
          * chosen by the person receiving them.
          */
         public ?int $investorDealId = null,
+        /**
+         * سعر السادة that deal sells the arriving stock to the press at, stamped onto the layer
+         * this movement opens. Only meaningful beside `investorDealId`, and null everywhere else.
+         */
+        public ?string $printingSalePrice = null,
+        /**
+         * Whether an `orderReversal()` hands the layers somebody has already been paid for back
+         * to the **company** rather than to the deal that financed them. True only for a
+         * cancellation of a line that bought its material at the shelf; false for a restatement,
+         * which is undoing the draw rather than writing off a sale.
+         */
+        public bool $purchasedLayersBelongToTheCompany = false,
     ) {}
 
     /**
@@ -80,6 +92,7 @@ final readonly class StockMovementData
             notes: self::textOrNull($validated['notes'] ?? null),
             unitCost: self::costOrNull($validated['unit_cost'] ?? null),
             investorDealId: self::intOrNull($validated['investor_deal_id'] ?? null),
+            printingSalePrice: self::costOrNull($validated['printing_sale_price'] ?? null),
         );
     }
 
@@ -170,6 +183,7 @@ final readonly class StockMovementData
         int $reversedMovementId,
         int $referenceId,
         int $employeeId,
+        bool $purchasedLayersBelongToTheCompany = false,
     ): self {
         return new self(
             stockItemId: $stockItemId,
@@ -180,6 +194,7 @@ final readonly class StockMovementData
             employeeId: $employeeId,
             referenceId: $referenceId,
             reversedMovementId: $reversedMovementId,
+            purchasedLayersBelongToTheCompany: $purchasedLayersBelongToTheCompany,
         );
     }
 

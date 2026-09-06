@@ -67,6 +67,9 @@ final class RecordStockArrival
                     // layer opened at the '0.000' placeholder would hand the deal a 100% margin
                     // on goods that cost real money.
                     'investor_deal_id' => $item->investorDealId,
+                    // Stamped onto the layer beside the deal, and frozen there — see the
+                    // stock_batches migration for why it is a copy rather than a lookup.
+                    'printing_sale_price' => $item->printingSalePrice,
                 ], $data->receivedBy));
 
                 $arrivalItem = new StockArrivalItem(['quantity' => $item->quantity]);

@@ -647,6 +647,12 @@ Route::prefix('v1')->group(function (): void {
         Route::get('investor-deals/{deal}/orders', [InvestorDealController::class, 'orders'])
             ->middleware('can:investors.view')->name('investor-deals.orders.index');
 
+        // **The same question from the order's end** — «هذه الطلبية، من أخذ منها وكم». Behind
+        // `investors.view` rather than `orders.view`: it is a statement about somebody's money,
+        // and the clerk who books orders has no business reading it.
+        Route::get('orders/{order}/investor-shares', [InvestorDealController::class, 'investorShares'])
+            ->middleware('can:investors.view')->name('orders.investor-shares.index');
+
         Route::post('investor-deals/{deal}/close', [InvestorDealController::class, 'close'])
             ->middleware('can:investors.manage')->name('investor-deals.close');
 

@@ -7,7 +7,7 @@ import 'package:dayaa/features/stock_items/repositories/stock_item_repository.da
 /// Changes what a pile is counted in.
 ///
 /// ⚠️ **It does not convert the balance. It throws it away, and that is the point.** «٢٠٠ كيس»
-/// is not «٢٠٠ كيلوغرام»: a quantity is only meaningful in the unit it was measured in, so the
+/// is not «٢٠٠ كجم»: a quantity is only meaningful in the unit it was measured in, so the
 /// server ends it rather than restating it. Every warehouse holding this item is taken to zero by
 /// a recorded «تسوية نقص» *before* the unit changes — so the ledger line carries the unit the
 /// stock was actually counted in — and only then are the item, its balances and its cost batches

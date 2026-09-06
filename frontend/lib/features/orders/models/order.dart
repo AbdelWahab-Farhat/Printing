@@ -363,12 +363,12 @@ abstract class Order with _$Order {
     return hasNote ? '$label — $note' : label;
   }
 
-  /// The weight as one line — «12.5 كيلوغرام» — or null on an order with none to state.
+  /// The weight as one line — «12.5 كجم» — or null on an order with none to state.
   ///
   /// Trimmed like every other quantity the app draws: the three decimals are the column's
   /// padding, not a precision anybody weighed to. See [totalWeight] for what null means.
   String? get weightLabel =>
-      totalWeight == null ? null : '${groupedDecimal(totalWeight!)} كيلوغرام';
+      totalWeight == null ? null : '${groupedDecimal(totalWeight!)} كجم';
 
   /// Only charged when we did the design, so the server sends `'0.00'` otherwise.
   bool get hasDesignFee => designFee != '0.00';
@@ -552,6 +552,23 @@ abstract class OrderItem with _$OrderItem {
     /// summed. **All four null until the line has reached «جاهزة»** — a line nobody has
     /// finished has no cost, which is not a cost of zero.
     @JsonKey(name: 'material_cost') String? materialCost,
+
+    /// What that material actually cost the business, when the two are not the same number.
+    ///
+    /// **They differ on a printed line that bought its plain bags off an investor's shelf** at
+    /// سعر السادة: [materialCost] is then what the press *paid*, which is the figure this line's
+    /// own profit has to carry, and this is what the goods cost whoever financed them. Equal on
+    /// every line that bought nothing, which is most of them.
+    @JsonKey(name: 'material_cost_actual') String? materialCostActual,
+
+    /// When the press bought this line's plain material off the shelf — and null on every line
+    /// that did not.
+    ///
+    /// Set, it says the investor behind these goods has already been settled with in full: the
+    /// delivery will not pay him again, and cancelling this order returns the bags to the
+    /// company rather than to his deal. «استلم الزبون ما استلمش، المطبعة تتحمّل.»
+    @JsonKey(name: 'stock_purchased_at') String? stockPurchasedAt,
+
     @JsonKey(name: 'labor_cost') String? laborCost,
     @JsonKey(name: 'overhead_cost') String? overheadCost,
 

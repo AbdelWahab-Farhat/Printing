@@ -13,7 +13,7 @@ library;
 
 enum PricingUnit {
   piece('piece', 'بالقطعة'),
-  kilogram('kilogram', 'بالكيلوغرام'),
+  kilogram('kilogram', 'بالكجم'),
 
   unknown('', '');
 

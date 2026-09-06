@@ -249,7 +249,7 @@ void main() {
             product: product(
               name: 'أكياس الشحن السادة',
               categoryName: 'سادة',
-              pricingUnitLabel: 'كيلوغرام',
+              pricingUnitLabel: 'كجم',
               minOrderQuantity: '1.000',
               variants: [variant('سادة', const [('1.000', '32.000')])],
             ),
@@ -264,7 +264,7 @@ void main() {
       expect(find.text('32'), findsOneWidget);
       expect(find.text('300+'), findsNothing);
       expect(find.text('1000+'), findsNothing);
-      expect(find.text('أقل كمية 1 كيلوغرام'), findsOneWidget);
+      expect(find.text('أقل كمية 1 كجم'), findsOneWidget);
       // The variant label only repeats the product name, so it is not printed. The one «سادة»
       // on the card is the heading badge — check it is the badge and not the size row.
       expect(

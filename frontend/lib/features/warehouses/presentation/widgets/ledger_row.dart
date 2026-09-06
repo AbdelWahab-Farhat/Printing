@@ -37,7 +37,7 @@ class LedgerRow extends StatelessWidget {
   /// The warehouse this ledger is read for: decides which end of a transfer is «the other».
   final int warehouseId;
 
-  /// The balance's unit — «قطعة», «كيلوغرام» — for the cost line's «د.ل/قطعة».
+  /// The balance's unit — «قطعة», «كجم» — for the cost line's «د.ل/قطعة».
   final String unitLabel;
 
   /// Whether the reader holds `inventory.view_cost`. **Decided by the caller from the session,

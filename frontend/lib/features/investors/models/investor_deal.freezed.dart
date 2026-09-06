@@ -23,7 +23,14 @@ mixin _$InvestorDeal {
 @JsonKey(name: 'company_stake') String get companyStake;/// The fraction of the goods the investors' money actually bought, frozen with the terms.
 /// Every profit, loss and expense is multiplied by it before their share is taken. A deal
 /// built by hand owns all of its goods, hence 100.
-@JsonKey(name: 'investor_funded_percent') String get investorFundedPercent;@JsonKey(name: 'opened_on') String? get openedOn;@JsonKey(name: 'closed_at') String? get closedAt; String? get notes; List<DealParticipant> get investors; List<DealItem> get items; DealBalances? get balances; DealStock? get stock;
+@JsonKey(name: 'investor_funded_percent') String get investorFundedPercent;/// سعر السادة — what the press pays this deal for a unit of its plain stock, agreed while
+/// the order was being funded and frozen with the percentages.
+///
+/// **Null puts the deal on the other road entirely.** With a price, the press buys its plain
+/// material off the shelf the moment a printed line takes it and the partners are paid there
+/// and then, by ownership alone. Without one, they ride the sale itself and are paid out of
+/// the delivered order's profit — which is what every deal did before this existed.
+@JsonKey(name: 'printing_sale_price') String? get printingSalePrice;@JsonKey(name: 'opened_on') String? get openedOn;@JsonKey(name: 'closed_at') String? get closedAt; String? get notes; List<DealParticipant> get investors; List<DealItem> get items; DealBalances? get balances; DealStock? get stock;
 /// Create a copy of InvestorDeal
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -36,16 +43,16 @@ $InvestorDealCopyWith<InvestorDeal> get copyWith => _$InvestorDealCopyWithImpl<I
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.canBeEdited, canBeEdited) || other.canBeEdited == canBeEdited)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.companyStake, companyStake) || other.companyStake == companyStake)&&(identical(other.investorFundedPercent, investorFundedPercent) || other.investorFundedPercent == investorFundedPercent)&&(identical(other.openedOn, openedOn) || other.openedOn == openedOn)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.investors, investors)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.stock, stock) || other.stock == stock));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.canBeEdited, canBeEdited) || other.canBeEdited == canBeEdited)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.companyStake, companyStake) || other.companyStake == companyStake)&&(identical(other.investorFundedPercent, investorFundedPercent) || other.investorFundedPercent == investorFundedPercent)&&(identical(other.printingSalePrice, printingSalePrice) || other.printingSalePrice == printingSalePrice)&&(identical(other.openedOn, openedOn) || other.openedOn == openedOn)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.investors, investors)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.stock, stock) || other.stock == stock));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,status,statusLabel,canBeEdited,investorProfitSharePercent,companyStake,investorFundedPercent,openedOn,closedAt,notes,const DeepCollectionEquality().hash(investors),const DeepCollectionEquality().hash(items),balances,stock);
+int get hashCode => Object.hash(runtimeType,id,code,status,statusLabel,canBeEdited,investorProfitSharePercent,companyStake,investorFundedPercent,printingSalePrice,openedOn,closedAt,notes,const DeepCollectionEquality().hash(investors),const DeepCollectionEquality().hash(items),balances,stock);
 
 @override
 String toString() {
-  return 'InvestorDeal(id: $id, code: $code, status: $status, statusLabel: $statusLabel, canBeEdited: $canBeEdited, investorProfitSharePercent: $investorProfitSharePercent, companyStake: $companyStake, investorFundedPercent: $investorFundedPercent, openedOn: $openedOn, closedAt: $closedAt, notes: $notes, investors: $investors, items: $items, balances: $balances, stock: $stock)';
+  return 'InvestorDeal(id: $id, code: $code, status: $status, statusLabel: $statusLabel, canBeEdited: $canBeEdited, investorProfitSharePercent: $investorProfitSharePercent, companyStake: $companyStake, investorFundedPercent: $investorFundedPercent, printingSalePrice: $printingSalePrice, openedOn: $openedOn, closedAt: $closedAt, notes: $notes, investors: $investors, items: $items, balances: $balances, stock: $stock)';
 }
 
 
@@ -56,7 +63,7 @@ abstract mixin class $InvestorDealCopyWith<$Res>  {
   factory $InvestorDealCopyWith(InvestorDeal value, $Res Function(InvestorDeal) _then) = _$InvestorDealCopyWithImpl;
 @useResult
 $Res call({
- int id, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'can_be_edited') bool canBeEdited,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'company_stake') String companyStake,@JsonKey(name: 'investor_funded_percent') String investorFundedPercent,@JsonKey(name: 'opened_on') String? openedOn,@JsonKey(name: 'closed_at') String? closedAt, String? notes, List<DealParticipant> investors, List<DealItem> items, DealBalances? balances, DealStock? stock
+ int id, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'can_be_edited') bool canBeEdited,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'company_stake') String companyStake,@JsonKey(name: 'investor_funded_percent') String investorFundedPercent,@JsonKey(name: 'printing_sale_price') String? printingSalePrice,@JsonKey(name: 'opened_on') String? openedOn,@JsonKey(name: 'closed_at') String? closedAt, String? notes, List<DealParticipant> investors, List<DealItem> items, DealBalances? balances, DealStock? stock
 });
 
 
@@ -73,7 +80,7 @@ class _$InvestorDealCopyWithImpl<$Res>
 
 /// Create a copy of InvestorDeal
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? canBeEdited = null,Object? investorProfitSharePercent = null,Object? companyStake = null,Object? investorFundedPercent = null,Object? openedOn = freezed,Object? closedAt = freezed,Object? notes = freezed,Object? investors = null,Object? items = null,Object? balances = freezed,Object? stock = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? canBeEdited = null,Object? investorProfitSharePercent = null,Object? companyStake = null,Object? investorFundedPercent = null,Object? printingSalePrice = freezed,Object? openedOn = freezed,Object? closedAt = freezed,Object? notes = freezed,Object? investors = null,Object? items = null,Object? balances = freezed,Object? stock = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -83,7 +90,8 @@ as String,canBeEdited: null == canBeEdited ? _self.canBeEdited : canBeEdited // 
 as bool,investorProfitSharePercent: null == investorProfitSharePercent ? _self.investorProfitSharePercent : investorProfitSharePercent // ignore: cast_nullable_to_non_nullable
 as String,companyStake: null == companyStake ? _self.companyStake : companyStake // ignore: cast_nullable_to_non_nullable
 as String,investorFundedPercent: null == investorFundedPercent ? _self.investorFundedPercent : investorFundedPercent // ignore: cast_nullable_to_non_nullable
-as String,openedOn: freezed == openedOn ? _self.openedOn : openedOn // ignore: cast_nullable_to_non_nullable
+as String,printingSalePrice: freezed == printingSalePrice ? _self.printingSalePrice : printingSalePrice // ignore: cast_nullable_to_non_nullable
+as String?,openedOn: freezed == openedOn ? _self.openedOn : openedOn // ignore: cast_nullable_to_non_nullable
 as String?,closedAt: freezed == closedAt ? _self.closedAt : closedAt // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,investors: null == investors ? _self.investors : investors // ignore: cast_nullable_to_non_nullable
@@ -199,10 +207,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'printing_sale_price')  String? printingSalePrice, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InvestorDeal() when $default != null:
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.printingSalePrice,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock);case _:
   return orElse();
 
 }
@@ -220,10 +228,10 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEd
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'printing_sale_price')  String? printingSalePrice, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock)  $default,) {final _that = this;
 switch (_that) {
 case _InvestorDeal():
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.printingSalePrice,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -240,10 +248,10 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEd
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'printing_sale_price')  String? printingSalePrice, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock)?  $default,) {final _that = this;
 switch (_that) {
 case _InvestorDeal() when $default != null:
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.printingSalePrice,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock);case _:
   return null;
 
 }
@@ -255,7 +263,7 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEd
 @JsonSerializable()
 
 class _InvestorDeal implements InvestorDeal {
-  const _InvestorDeal({required this.id, required this.code, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'can_be_edited') this.canBeEdited = false, @JsonKey(name: 'investor_profit_share_percent') required this.investorProfitSharePercent, @JsonKey(name: 'company_stake') this.companyStake = '0.00', @JsonKey(name: 'investor_funded_percent') this.investorFundedPercent = '100.0000', @JsonKey(name: 'opened_on') this.openedOn, @JsonKey(name: 'closed_at') this.closedAt, this.notes, final  List<DealParticipant> investors = const <DealParticipant>[], final  List<DealItem> items = const <DealItem>[], this.balances, this.stock}): _investors = investors,_items = items;
+  const _InvestorDeal({required this.id, required this.code, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'can_be_edited') this.canBeEdited = false, @JsonKey(name: 'investor_profit_share_percent') required this.investorProfitSharePercent, @JsonKey(name: 'company_stake') this.companyStake = '0.00', @JsonKey(name: 'investor_funded_percent') this.investorFundedPercent = '100.0000', @JsonKey(name: 'printing_sale_price') this.printingSalePrice, @JsonKey(name: 'opened_on') this.openedOn, @JsonKey(name: 'closed_at') this.closedAt, this.notes, final  List<DealParticipant> investors = const <DealParticipant>[], final  List<DealItem> items = const <DealItem>[], this.balances, this.stock}): _investors = investors,_items = items;
   factory _InvestorDeal.fromJson(Map<String, dynamic> json) => _$InvestorDealFromJson(json);
 
 @override final  int id;
@@ -274,6 +282,14 @@ class _InvestorDeal implements InvestorDeal {
 /// Every profit, loss and expense is multiplied by it before their share is taken. A deal
 /// built by hand owns all of its goods, hence 100.
 @override@JsonKey(name: 'investor_funded_percent') final  String investorFundedPercent;
+/// سعر السادة — what the press pays this deal for a unit of its plain stock, agreed while
+/// the order was being funded and frozen with the percentages.
+///
+/// **Null puts the deal on the other road entirely.** With a price, the press buys its plain
+/// material off the shelf the moment a printed line takes it and the partners are paid there
+/// and then, by ownership alone. Without one, they ride the sale itself and are paid out of
+/// the delivered order's profit — which is what every deal did before this existed.
+@override@JsonKey(name: 'printing_sale_price') final  String? printingSalePrice;
 @override@JsonKey(name: 'opened_on') final  String? openedOn;
 @override@JsonKey(name: 'closed_at') final  String? closedAt;
 @override final  String? notes;
@@ -307,16 +323,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.canBeEdited, canBeEdited) || other.canBeEdited == canBeEdited)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.companyStake, companyStake) || other.companyStake == companyStake)&&(identical(other.investorFundedPercent, investorFundedPercent) || other.investorFundedPercent == investorFundedPercent)&&(identical(other.openedOn, openedOn) || other.openedOn == openedOn)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other._investors, _investors)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.stock, stock) || other.stock == stock));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.canBeEdited, canBeEdited) || other.canBeEdited == canBeEdited)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.companyStake, companyStake) || other.companyStake == companyStake)&&(identical(other.investorFundedPercent, investorFundedPercent) || other.investorFundedPercent == investorFundedPercent)&&(identical(other.printingSalePrice, printingSalePrice) || other.printingSalePrice == printingSalePrice)&&(identical(other.openedOn, openedOn) || other.openedOn == openedOn)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other._investors, _investors)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.stock, stock) || other.stock == stock));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,status,statusLabel,canBeEdited,investorProfitSharePercent,companyStake,investorFundedPercent,openedOn,closedAt,notes,const DeepCollectionEquality().hash(_investors),const DeepCollectionEquality().hash(_items),balances,stock);
+int get hashCode => Object.hash(runtimeType,id,code,status,statusLabel,canBeEdited,investorProfitSharePercent,companyStake,investorFundedPercent,printingSalePrice,openedOn,closedAt,notes,const DeepCollectionEquality().hash(_investors),const DeepCollectionEquality().hash(_items),balances,stock);
 
 @override
 String toString() {
-  return 'InvestorDeal(id: $id, code: $code, status: $status, statusLabel: $statusLabel, canBeEdited: $canBeEdited, investorProfitSharePercent: $investorProfitSharePercent, companyStake: $companyStake, investorFundedPercent: $investorFundedPercent, openedOn: $openedOn, closedAt: $closedAt, notes: $notes, investors: $investors, items: $items, balances: $balances, stock: $stock)';
+  return 'InvestorDeal(id: $id, code: $code, status: $status, statusLabel: $statusLabel, canBeEdited: $canBeEdited, investorProfitSharePercent: $investorProfitSharePercent, companyStake: $companyStake, investorFundedPercent: $investorFundedPercent, printingSalePrice: $printingSalePrice, openedOn: $openedOn, closedAt: $closedAt, notes: $notes, investors: $investors, items: $items, balances: $balances, stock: $stock)';
 }
 
 
@@ -327,7 +343,7 @@ abstract mixin class _$InvestorDealCopyWith<$Res> implements $InvestorDealCopyWi
   factory _$InvestorDealCopyWith(_InvestorDeal value, $Res Function(_InvestorDeal) _then) = __$InvestorDealCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'can_be_edited') bool canBeEdited,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'company_stake') String companyStake,@JsonKey(name: 'investor_funded_percent') String investorFundedPercent,@JsonKey(name: 'opened_on') String? openedOn,@JsonKey(name: 'closed_at') String? closedAt, String? notes, List<DealParticipant> investors, List<DealItem> items, DealBalances? balances, DealStock? stock
+ int id, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'can_be_edited') bool canBeEdited,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'company_stake') String companyStake,@JsonKey(name: 'investor_funded_percent') String investorFundedPercent,@JsonKey(name: 'printing_sale_price') String? printingSalePrice,@JsonKey(name: 'opened_on') String? openedOn,@JsonKey(name: 'closed_at') String? closedAt, String? notes, List<DealParticipant> investors, List<DealItem> items, DealBalances? balances, DealStock? stock
 });
 
 
@@ -344,7 +360,7 @@ class __$InvestorDealCopyWithImpl<$Res>
 
 /// Create a copy of InvestorDeal
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? canBeEdited = null,Object? investorProfitSharePercent = null,Object? companyStake = null,Object? investorFundedPercent = null,Object? openedOn = freezed,Object? closedAt = freezed,Object? notes = freezed,Object? investors = null,Object? items = null,Object? balances = freezed,Object? stock = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? canBeEdited = null,Object? investorProfitSharePercent = null,Object? companyStake = null,Object? investorFundedPercent = null,Object? printingSalePrice = freezed,Object? openedOn = freezed,Object? closedAt = freezed,Object? notes = freezed,Object? investors = null,Object? items = null,Object? balances = freezed,Object? stock = freezed,}) {
   return _then(_InvestorDeal(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -354,7 +370,8 @@ as String,canBeEdited: null == canBeEdited ? _self.canBeEdited : canBeEdited // 
 as bool,investorProfitSharePercent: null == investorProfitSharePercent ? _self.investorProfitSharePercent : investorProfitSharePercent // ignore: cast_nullable_to_non_nullable
 as String,companyStake: null == companyStake ? _self.companyStake : companyStake // ignore: cast_nullable_to_non_nullable
 as String,investorFundedPercent: null == investorFundedPercent ? _self.investorFundedPercent : investorFundedPercent // ignore: cast_nullable_to_non_nullable
-as String,openedOn: freezed == openedOn ? _self.openedOn : openedOn // ignore: cast_nullable_to_non_nullable
+as String,printingSalePrice: freezed == printingSalePrice ? _self.printingSalePrice : printingSalePrice // ignore: cast_nullable_to_non_nullable
+as String?,openedOn: freezed == openedOn ? _self.openedOn : openedOn // ignore: cast_nullable_to_non_nullable
 as String?,closedAt: freezed == closedAt ? _self.closedAt : closedAt // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,investors: null == investors ? _self._investors : investors // ignore: cast_nullable_to_non_nullable
@@ -2085,7 +2102,7 @@ as String,
 /// @nodoc
 mixin _$DealStock {
 
-@JsonKey(name: 'quantity_received') String get quantityReceived;@JsonKey(name: 'quantity_remaining') String get quantityRemaining;@JsonKey(name: 'quantity_sold') String get quantitySold;@JsonKey(name: 'quantity_damaged') String get quantityDamaged;@JsonKey(name: 'quantity_short') String get quantityShort;@JsonKey(name: 'cost_remaining') String get costRemaining;@JsonKey(name: 'cost_sold') String get costSold;@JsonKey(name: 'cost_damaged') String get costDamaged;@JsonKey(name: 'cost_short') String get costShort;
+@JsonKey(name: 'quantity_received') String get quantityReceived;@JsonKey(name: 'quantity_remaining') String get quantityRemaining;@JsonKey(name: 'quantity_sold') String get quantitySold;@JsonKey(name: 'quantity_damaged') String get quantityDamaged;@JsonKey(name: 'quantity_short') String get quantityShort; String? get unit;@JsonKey(name: 'unit_label') String? get unitLabel;@JsonKey(name: 'cost_remaining') String get costRemaining;@JsonKey(name: 'cost_sold') String get costSold;@JsonKey(name: 'cost_damaged') String get costDamaged;@JsonKey(name: 'cost_short') String get costShort;
 /// Create a copy of DealStock
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2098,16 +2115,16 @@ $DealStockCopyWith<DealStock> get copyWith => _$DealStockCopyWithImpl<DealStock>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealStock&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.quantitySold, quantitySold) || other.quantitySold == quantitySold)&&(identical(other.quantityDamaged, quantityDamaged) || other.quantityDamaged == quantityDamaged)&&(identical(other.quantityShort, quantityShort) || other.quantityShort == quantityShort)&&(identical(other.costRemaining, costRemaining) || other.costRemaining == costRemaining)&&(identical(other.costSold, costSold) || other.costSold == costSold)&&(identical(other.costDamaged, costDamaged) || other.costDamaged == costDamaged)&&(identical(other.costShort, costShort) || other.costShort == costShort));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealStock&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.quantitySold, quantitySold) || other.quantitySold == quantitySold)&&(identical(other.quantityDamaged, quantityDamaged) || other.quantityDamaged == quantityDamaged)&&(identical(other.quantityShort, quantityShort) || other.quantityShort == quantityShort)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.costRemaining, costRemaining) || other.costRemaining == costRemaining)&&(identical(other.costSold, costSold) || other.costSold == costSold)&&(identical(other.costDamaged, costDamaged) || other.costDamaged == costDamaged)&&(identical(other.costShort, costShort) || other.costShort == costShort));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,quantityReceived,quantityRemaining,quantitySold,quantityDamaged,quantityShort,costRemaining,costSold,costDamaged,costShort);
+int get hashCode => Object.hash(runtimeType,quantityReceived,quantityRemaining,quantitySold,quantityDamaged,quantityShort,unit,unitLabel,costRemaining,costSold,costDamaged,costShort);
 
 @override
 String toString() {
-  return 'DealStock(quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, quantitySold: $quantitySold, quantityDamaged: $quantityDamaged, quantityShort: $quantityShort, costRemaining: $costRemaining, costSold: $costSold, costDamaged: $costDamaged, costShort: $costShort)';
+  return 'DealStock(quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, quantitySold: $quantitySold, quantityDamaged: $quantityDamaged, quantityShort: $quantityShort, unit: $unit, unitLabel: $unitLabel, costRemaining: $costRemaining, costSold: $costSold, costDamaged: $costDamaged, costShort: $costShort)';
 }
 
 
@@ -2118,7 +2135,7 @@ abstract mixin class $DealStockCopyWith<$Res>  {
   factory $DealStockCopyWith(DealStock value, $Res Function(DealStock) _then) = _$DealStockCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining,@JsonKey(name: 'quantity_sold') String quantitySold,@JsonKey(name: 'quantity_damaged') String quantityDamaged,@JsonKey(name: 'quantity_short') String quantityShort,@JsonKey(name: 'cost_remaining') String costRemaining,@JsonKey(name: 'cost_sold') String costSold,@JsonKey(name: 'cost_damaged') String costDamaged,@JsonKey(name: 'cost_short') String costShort
+@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining,@JsonKey(name: 'quantity_sold') String quantitySold,@JsonKey(name: 'quantity_damaged') String quantityDamaged,@JsonKey(name: 'quantity_short') String quantityShort, String? unit,@JsonKey(name: 'unit_label') String? unitLabel,@JsonKey(name: 'cost_remaining') String costRemaining,@JsonKey(name: 'cost_sold') String costSold,@JsonKey(name: 'cost_damaged') String costDamaged,@JsonKey(name: 'cost_short') String costShort
 });
 
 
@@ -2135,14 +2152,16 @@ class _$DealStockCopyWithImpl<$Res>
 
 /// Create a copy of DealStock
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? quantityReceived = null,Object? quantityRemaining = null,Object? quantitySold = null,Object? quantityDamaged = null,Object? quantityShort = null,Object? costRemaining = null,Object? costSold = null,Object? costDamaged = null,Object? costShort = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? quantityReceived = null,Object? quantityRemaining = null,Object? quantitySold = null,Object? quantityDamaged = null,Object? quantityShort = null,Object? unit = freezed,Object? unitLabel = freezed,Object? costRemaining = null,Object? costSold = null,Object? costDamaged = null,Object? costShort = null,}) {
   return _then(_self.copyWith(
 quantityReceived: null == quantityReceived ? _self.quantityReceived : quantityReceived // ignore: cast_nullable_to_non_nullable
 as String,quantityRemaining: null == quantityRemaining ? _self.quantityRemaining : quantityRemaining // ignore: cast_nullable_to_non_nullable
 as String,quantitySold: null == quantitySold ? _self.quantitySold : quantitySold // ignore: cast_nullable_to_non_nullable
 as String,quantityDamaged: null == quantityDamaged ? _self.quantityDamaged : quantityDamaged // ignore: cast_nullable_to_non_nullable
 as String,quantityShort: null == quantityShort ? _self.quantityShort : quantityShort // ignore: cast_nullable_to_non_nullable
-as String,costRemaining: null == costRemaining ? _self.costRemaining : costRemaining // ignore: cast_nullable_to_non_nullable
+as String,unit: freezed == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
+as String?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,costRemaining: null == costRemaining ? _self.costRemaining : costRemaining // ignore: cast_nullable_to_non_nullable
 as String,costSold: null == costSold ? _self.costSold : costSold // ignore: cast_nullable_to_non_nullable
 as String,costDamaged: null == costDamaged ? _self.costDamaged : costDamaged // ignore: cast_nullable_to_non_nullable
 as String,costShort: null == costShort ? _self.costShort : costShort // ignore: cast_nullable_to_non_nullable
@@ -2231,10 +2250,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'quantity_sold')  String quantitySold, @JsonKey(name: 'quantity_damaged')  String quantityDamaged, @JsonKey(name: 'quantity_short')  String quantityShort, @JsonKey(name: 'cost_remaining')  String costRemaining, @JsonKey(name: 'cost_sold')  String costSold, @JsonKey(name: 'cost_damaged')  String costDamaged, @JsonKey(name: 'cost_short')  String costShort)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'quantity_sold')  String quantitySold, @JsonKey(name: 'quantity_damaged')  String quantityDamaged, @JsonKey(name: 'quantity_short')  String quantityShort,  String? unit, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'cost_remaining')  String costRemaining, @JsonKey(name: 'cost_sold')  String costSold, @JsonKey(name: 'cost_damaged')  String costDamaged, @JsonKey(name: 'cost_short')  String costShort)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DealStock() when $default != null:
-return $default(_that.quantityReceived,_that.quantityRemaining,_that.quantitySold,_that.quantityDamaged,_that.quantityShort,_that.costRemaining,_that.costSold,_that.costDamaged,_that.costShort);case _:
+return $default(_that.quantityReceived,_that.quantityRemaining,_that.quantitySold,_that.quantityDamaged,_that.quantityShort,_that.unit,_that.unitLabel,_that.costRemaining,_that.costSold,_that.costDamaged,_that.costShort);case _:
   return orElse();
 
 }
@@ -2252,10 +2271,10 @@ return $default(_that.quantityReceived,_that.quantityRemaining,_that.quantitySol
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'quantity_sold')  String quantitySold, @JsonKey(name: 'quantity_damaged')  String quantityDamaged, @JsonKey(name: 'quantity_short')  String quantityShort, @JsonKey(name: 'cost_remaining')  String costRemaining, @JsonKey(name: 'cost_sold')  String costSold, @JsonKey(name: 'cost_damaged')  String costDamaged, @JsonKey(name: 'cost_short')  String costShort)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'quantity_sold')  String quantitySold, @JsonKey(name: 'quantity_damaged')  String quantityDamaged, @JsonKey(name: 'quantity_short')  String quantityShort,  String? unit, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'cost_remaining')  String costRemaining, @JsonKey(name: 'cost_sold')  String costSold, @JsonKey(name: 'cost_damaged')  String costDamaged, @JsonKey(name: 'cost_short')  String costShort)  $default,) {final _that = this;
 switch (_that) {
 case _DealStock():
-return $default(_that.quantityReceived,_that.quantityRemaining,_that.quantitySold,_that.quantityDamaged,_that.quantityShort,_that.costRemaining,_that.costSold,_that.costDamaged,_that.costShort);case _:
+return $default(_that.quantityReceived,_that.quantityRemaining,_that.quantitySold,_that.quantityDamaged,_that.quantityShort,_that.unit,_that.unitLabel,_that.costRemaining,_that.costSold,_that.costDamaged,_that.costShort);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2272,10 +2291,10 @@ return $default(_that.quantityReceived,_that.quantityRemaining,_that.quantitySol
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'quantity_sold')  String quantitySold, @JsonKey(name: 'quantity_damaged')  String quantityDamaged, @JsonKey(name: 'quantity_short')  String quantityShort, @JsonKey(name: 'cost_remaining')  String costRemaining, @JsonKey(name: 'cost_sold')  String costSold, @JsonKey(name: 'cost_damaged')  String costDamaged, @JsonKey(name: 'cost_short')  String costShort)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining, @JsonKey(name: 'quantity_sold')  String quantitySold, @JsonKey(name: 'quantity_damaged')  String quantityDamaged, @JsonKey(name: 'quantity_short')  String quantityShort,  String? unit, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'cost_remaining')  String costRemaining, @JsonKey(name: 'cost_sold')  String costSold, @JsonKey(name: 'cost_damaged')  String costDamaged, @JsonKey(name: 'cost_short')  String costShort)?  $default,) {final _that = this;
 switch (_that) {
 case _DealStock() when $default != null:
-return $default(_that.quantityReceived,_that.quantityRemaining,_that.quantitySold,_that.quantityDamaged,_that.quantityShort,_that.costRemaining,_that.costSold,_that.costDamaged,_that.costShort);case _:
+return $default(_that.quantityReceived,_that.quantityRemaining,_that.quantitySold,_that.quantityDamaged,_that.quantityShort,_that.unit,_that.unitLabel,_that.costRemaining,_that.costSold,_that.costDamaged,_that.costShort);case _:
   return null;
 
 }
@@ -2287,7 +2306,7 @@ return $default(_that.quantityReceived,_that.quantityRemaining,_that.quantitySol
 @JsonSerializable()
 
 class _DealStock implements DealStock {
-  const _DealStock({@JsonKey(name: 'quantity_received') required this.quantityReceived, @JsonKey(name: 'quantity_remaining') required this.quantityRemaining, @JsonKey(name: 'quantity_sold') required this.quantitySold, @JsonKey(name: 'quantity_damaged') required this.quantityDamaged, @JsonKey(name: 'quantity_short') required this.quantityShort, @JsonKey(name: 'cost_remaining') required this.costRemaining, @JsonKey(name: 'cost_sold') required this.costSold, @JsonKey(name: 'cost_damaged') required this.costDamaged, @JsonKey(name: 'cost_short') required this.costShort});
+  const _DealStock({@JsonKey(name: 'quantity_received') required this.quantityReceived, @JsonKey(name: 'quantity_remaining') required this.quantityRemaining, @JsonKey(name: 'quantity_sold') required this.quantitySold, @JsonKey(name: 'quantity_damaged') required this.quantityDamaged, @JsonKey(name: 'quantity_short') required this.quantityShort, this.unit, @JsonKey(name: 'unit_label') this.unitLabel, @JsonKey(name: 'cost_remaining') required this.costRemaining, @JsonKey(name: 'cost_sold') required this.costSold, @JsonKey(name: 'cost_damaged') required this.costDamaged, @JsonKey(name: 'cost_short') required this.costShort});
   factory _DealStock.fromJson(Map<String, dynamic> json) => _$DealStockFromJson(json);
 
 @override@JsonKey(name: 'quantity_received') final  String quantityReceived;
@@ -2295,6 +2314,8 @@ class _DealStock implements DealStock {
 @override@JsonKey(name: 'quantity_sold') final  String quantitySold;
 @override@JsonKey(name: 'quantity_damaged') final  String quantityDamaged;
 @override@JsonKey(name: 'quantity_short') final  String quantityShort;
+@override final  String? unit;
+@override@JsonKey(name: 'unit_label') final  String? unitLabel;
 @override@JsonKey(name: 'cost_remaining') final  String costRemaining;
 @override@JsonKey(name: 'cost_sold') final  String costSold;
 @override@JsonKey(name: 'cost_damaged') final  String costDamaged;
@@ -2313,16 +2334,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealStock&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.quantitySold, quantitySold) || other.quantitySold == quantitySold)&&(identical(other.quantityDamaged, quantityDamaged) || other.quantityDamaged == quantityDamaged)&&(identical(other.quantityShort, quantityShort) || other.quantityShort == quantityShort)&&(identical(other.costRemaining, costRemaining) || other.costRemaining == costRemaining)&&(identical(other.costSold, costSold) || other.costSold == costSold)&&(identical(other.costDamaged, costDamaged) || other.costDamaged == costDamaged)&&(identical(other.costShort, costShort) || other.costShort == costShort));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealStock&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.quantitySold, quantitySold) || other.quantitySold == quantitySold)&&(identical(other.quantityDamaged, quantityDamaged) || other.quantityDamaged == quantityDamaged)&&(identical(other.quantityShort, quantityShort) || other.quantityShort == quantityShort)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.costRemaining, costRemaining) || other.costRemaining == costRemaining)&&(identical(other.costSold, costSold) || other.costSold == costSold)&&(identical(other.costDamaged, costDamaged) || other.costDamaged == costDamaged)&&(identical(other.costShort, costShort) || other.costShort == costShort));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,quantityReceived,quantityRemaining,quantitySold,quantityDamaged,quantityShort,costRemaining,costSold,costDamaged,costShort);
+int get hashCode => Object.hash(runtimeType,quantityReceived,quantityRemaining,quantitySold,quantityDamaged,quantityShort,unit,unitLabel,costRemaining,costSold,costDamaged,costShort);
 
 @override
 String toString() {
-  return 'DealStock(quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, quantitySold: $quantitySold, quantityDamaged: $quantityDamaged, quantityShort: $quantityShort, costRemaining: $costRemaining, costSold: $costSold, costDamaged: $costDamaged, costShort: $costShort)';
+  return 'DealStock(quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, quantitySold: $quantitySold, quantityDamaged: $quantityDamaged, quantityShort: $quantityShort, unit: $unit, unitLabel: $unitLabel, costRemaining: $costRemaining, costSold: $costSold, costDamaged: $costDamaged, costShort: $costShort)';
 }
 
 
@@ -2333,7 +2354,7 @@ abstract mixin class _$DealStockCopyWith<$Res> implements $DealStockCopyWith<$Re
   factory _$DealStockCopyWith(_DealStock value, $Res Function(_DealStock) _then) = __$DealStockCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining,@JsonKey(name: 'quantity_sold') String quantitySold,@JsonKey(name: 'quantity_damaged') String quantityDamaged,@JsonKey(name: 'quantity_short') String quantityShort,@JsonKey(name: 'cost_remaining') String costRemaining,@JsonKey(name: 'cost_sold') String costSold,@JsonKey(name: 'cost_damaged') String costDamaged,@JsonKey(name: 'cost_short') String costShort
+@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining,@JsonKey(name: 'quantity_sold') String quantitySold,@JsonKey(name: 'quantity_damaged') String quantityDamaged,@JsonKey(name: 'quantity_short') String quantityShort, String? unit,@JsonKey(name: 'unit_label') String? unitLabel,@JsonKey(name: 'cost_remaining') String costRemaining,@JsonKey(name: 'cost_sold') String costSold,@JsonKey(name: 'cost_damaged') String costDamaged,@JsonKey(name: 'cost_short') String costShort
 });
 
 
@@ -2350,14 +2371,16 @@ class __$DealStockCopyWithImpl<$Res>
 
 /// Create a copy of DealStock
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? quantityReceived = null,Object? quantityRemaining = null,Object? quantitySold = null,Object? quantityDamaged = null,Object? quantityShort = null,Object? costRemaining = null,Object? costSold = null,Object? costDamaged = null,Object? costShort = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? quantityReceived = null,Object? quantityRemaining = null,Object? quantitySold = null,Object? quantityDamaged = null,Object? quantityShort = null,Object? unit = freezed,Object? unitLabel = freezed,Object? costRemaining = null,Object? costSold = null,Object? costDamaged = null,Object? costShort = null,}) {
   return _then(_DealStock(
 quantityReceived: null == quantityReceived ? _self.quantityReceived : quantityReceived // ignore: cast_nullable_to_non_nullable
 as String,quantityRemaining: null == quantityRemaining ? _self.quantityRemaining : quantityRemaining // ignore: cast_nullable_to_non_nullable
 as String,quantitySold: null == quantitySold ? _self.quantitySold : quantitySold // ignore: cast_nullable_to_non_nullable
 as String,quantityDamaged: null == quantityDamaged ? _self.quantityDamaged : quantityDamaged // ignore: cast_nullable_to_non_nullable
 as String,quantityShort: null == quantityShort ? _self.quantityShort : quantityShort // ignore: cast_nullable_to_non_nullable
-as String,costRemaining: null == costRemaining ? _self.costRemaining : costRemaining // ignore: cast_nullable_to_non_nullable
+as String,unit: freezed == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
+as String?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,costRemaining: null == costRemaining ? _self.costRemaining : costRemaining // ignore: cast_nullable_to_non_nullable
 as String,costSold: null == costSold ? _self.costSold : costSold // ignore: cast_nullable_to_non_nullable
 as String,costDamaged: null == costDamaged ? _self.costDamaged : costDamaged // ignore: cast_nullable_to_non_nullable
 as String,costShort: null == costShort ? _self.costShort : costShort // ignore: cast_nullable_to_non_nullable

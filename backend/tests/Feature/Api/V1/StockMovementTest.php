@@ -762,7 +762,7 @@ class StockMovementTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.0.quantity', '1.600')
             ->assertJsonPath('data.0.unit', 'kilogram')
-            ->assertJsonPath('data.0.unit_label', 'كيلوغرام');
+            ->assertJsonPath('data.0.unit_label', 'كجم');
     }
 
     public function test_reading_the_ledger_needs_authentication(): void

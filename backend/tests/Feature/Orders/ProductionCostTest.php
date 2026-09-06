@@ -410,7 +410,7 @@ class ProductionCostTest extends TestCase
             'fields' => [TransitionFields::stockQuantityKey($item) => '12.5'],
         ])->assertOk();
 
-        // Assert — 100.00 over 12.5 kilograms, and «كيلوغرام» said out loud so nobody reads it
+        // Assert — 100.00 over 12.5 kilograms, and «كجم» said out loud so nobody reads it
         // as the cost of a bag.
         $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}")
             ->assertOk()

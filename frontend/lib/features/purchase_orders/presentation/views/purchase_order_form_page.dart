@@ -501,7 +501,7 @@ class _LineDraft {
   /// only on a line seeded from an order that arrived without its item.
   final String? code;
 
-  /// «كيلوغرام» or «قطعة» — what the quantity box below is asking for.
+  /// «كجم» or «قطعة» — what the quantity box below is asking for.
   ///
   /// The *same* type the saved line uses, so the form asks in the word the order will report in.
   /// It is the **shelf's** unit: two products sharing a pile cannot disagree about how it is

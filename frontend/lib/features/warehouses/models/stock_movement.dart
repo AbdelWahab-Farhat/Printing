@@ -66,7 +66,7 @@ abstract class StockMovement with _$StockMovement {
     @JsonKey(name: 'stock_item_id') required int stockItemId,
     @JsonKey(name: 'stock_item') StockItemRef? item,
 
-    /// What [quantity] is counted in — «قطعة», «كيلوغرام». On the row itself rather than on
+    /// What [quantity] is counted in — «قطعة», «كجم». On the row itself rather than on
     /// [item], because a feed that mixes bags and kilos is not readable without it and «1.6»
     /// on its own is not a number. Null on a row returned straight from a write.
     String? unit,

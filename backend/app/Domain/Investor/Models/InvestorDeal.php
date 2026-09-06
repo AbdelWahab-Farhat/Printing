@@ -35,6 +35,20 @@ use Illuminate\Support\Facades\DB;
  * `company_stake` the dinars it did not — «الباقي على الشركة». Both are written once by
  * {@see FundPurchaseOrder} and frozen with the rest; a deal built by
  * hand keeps the defaults, 100 and 0, and behaves as every deal did before them.
+ *
+ * `printing_sale_price` is **سعر السادة**, and it puts a deal on one of two roads for its whole
+ * life:
+ *
+ * - **Set** — the press buys this deal's plain stock off the shelf the moment a printed line
+ *   takes it, at this price by weight. The margin is settled there and then, split by ownership
+ *   alone ({@see ownersCutOf()}), and nothing that happens to the order afterwards reaches the
+ *   investor: not the customer's price, not the press's wages, not a cancellation.
+ * - **Null** — the road every deal walked before 2026-09-06: the investors ride the sale itself,
+ *   and are paid a share of the delivered order's profit ({@see investorsCutOf()}).
+ *
+ * The owner's framing: «الشركة نفسها مطبعة — كأننا بنشروه من المستثمر… استلم الزبون ما استلمش،
+ * المطبعة تتحمّل». A deal never has both: a draw is priced or it is not, and the two mechanisms
+ * are kept apart by `order_items.stock_purchased_at`.
  */
 #[UseFactory(InvestorDealFactory::class)]
 #[Fillable(['opened_on', 'notes'])]
@@ -53,6 +67,9 @@ class InvestorDeal extends Model implements HasAuditTrail
             'investor_profit_share_percent' => 'decimal:2',
             'company_stake' => 'decimal:2',
             'investor_funded_percent' => 'decimal:4',
+            // سعر السادة — what the press pays this deal for a unit of its plain stock. Null on
+            // every deal that predates the term, and on one funded without it.
+            'printing_sale_price' => 'decimal:3',
             'opened_on' => 'date',
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
@@ -189,6 +206,47 @@ class InvestorDeal extends Model implements HasAuditTrail
         ));
 
         return $negative && bccomp($cut, '0', Money::SCALE) !== 0 ? '-'.$cut : $cut;
+    }
+
+    /**
+     * The owners' cut of a margin this deal's goods made at the shelf — **ownership alone, with
+     * no share taken off the top for the company's work.**
+     *
+     * The owner settled this on 2026-09-06, asked how 32 a kilo should reach a man's pocket:
+     * «انت قوم بإعادة تدوير لي 32 هذي، بينهم وبين شركة — أكيد للشركة نسبة فيها، فنسبة فيها
+     * أعطيها للشركة بشكل طبيعي وانتهينا، وباقي يتوزع بينهم».
+     *
+     * **Why this is not {@see investorsCutOf()} with a second factor of 100.** They answer two
+     * different questions and it matters that they stay two methods. `investorsCutOf` prices a
+     * *sale the company made*: it went out and found a customer, printed the bags and carried
+     * the risk of the parcel coming home, so half of what the goods earned is the company's
+     * before ownership is even considered. This prices a *purchase at an agreed price*: nobody
+     * sold anything to anybody outside, there is no work to pay for, and the margin is simply
+     * split between the two parties that own the goods — the partners by
+     * `investor_funded_percent`, the company by the rest.
+     *
+     * ```
+     * cut = amount × investor_funded_percent ÷ 100
+     * ```
+     */
+    public function ownersCutOf(string $amount): string
+    {
+        $negative = bccomp($amount, '0', Money::SCALE) < 0;
+        $magnitude = $negative ? substr($amount, 1) : $amount;
+
+        $cut = Money::round(bcdiv(
+            bcmul($magnitude, (string) $this->investor_funded_percent, 8),
+            '100',
+            8,
+        ));
+
+        return $negative && bccomp($cut, '0', Money::SCALE) !== 0 ? '-'.$cut : $cut;
+    }
+
+    /** Whether this deal sells its plain stock to the press at an agreed price. */
+    public function sellsToThePress(): bool
+    {
+        return $this->printing_sale_price !== null;
     }
 
     /**

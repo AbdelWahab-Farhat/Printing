@@ -27,7 +27,7 @@ void main() {
         stockItemId: id,
         quantity: '10.000',
         unit: 'kg',
-        unitLabel: 'كيلوغرام',
+        unitLabel: 'كجم',
         item: material == null
             ? null
             : StockItemRef(

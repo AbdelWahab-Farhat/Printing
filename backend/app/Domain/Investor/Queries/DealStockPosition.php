@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Investor\Queries;
 
+use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Investor\Support\Money;
 use Illuminate\Support\Facades\DB;
 
@@ -16,6 +17,11 @@ use Illuminate\Support\Facades\DB;
  * **`quantity_received` is derived, never `SUM(quantity_received)`.** A transfer mints a fresh
  * layer at the destination with its own received quantity, so that sum double-counts every unit
  * ever moved between warehouses. Remaining plus everything that left is the honest figure.
+ *
+ * **`unit` is what these quantities are counted in**, read off the layers rather than off the
+ * deal's items, because the layers are what they were summed from. Bags weighed by the kilo make
+ * 174.900 an ordinary figure and the screen printing it bare gave the owner no way to tell a kilo
+ * from a bag. A deal holding two units has no one word for its total, so it names neither.
  *
  * A reversed movement is excluded whole: `CreditBackStockBatches` returns a draw in its entirety
  * and there is no partial credit anywhere in Inventory, so «the movement a live reversal points
@@ -31,6 +37,8 @@ final class DealStockPosition
      *     quantity_damaged: string,
      *     quantity_short: string,
      *     quantity_received: string,
+     *     unit: string|null,
+     *     unit_label: string|null,
      *     cost_remaining: string,
      *     cost_sold: string,
      *     cost_damaged: string,
@@ -40,6 +48,8 @@ final class DealStockPosition
      */
     public function __invoke(int $dealId): array
     {
+        $unit = $this->unitOf($dealId);
+
         $remaining = DB::table('stock_batches')
             ->where('investor_deal_id', $dealId)
             ->whereNull('deleted_at')
@@ -108,12 +118,31 @@ final class DealStockPosition
                 bcadd($buckets['sold'][0], bcadd($buckets['damaged'][0], $buckets['short'][0], 3), 3),
                 3,
             )),
+            'unit' => $unit?->value,
+            'unit_label' => $unit?->label(),
             'cost_remaining' => Money::round($remainingCost),
             'cost_sold' => Money::round($buckets['sold'][1]),
             'cost_damaged' => Money::round($buckets['damaged'][1]),
             'cost_short' => Money::round($buckets['short'][1]),
             'per_item' => array_values($perItem),
         ];
+    }
+
+    /**
+     * The single unit every one of this deal's layers is counted in, or null when they disagree.
+     *
+     * A layer's `unit` is a snapshot taken at receipt, which is the right one to read: it is the
+     * unit the quantity beside it was measured in, whatever the shelf has been renamed to since.
+     */
+    private function unitOf(int $dealId): ?PricingUnit
+    {
+        $units = DB::table('stock_batches')
+            ->where('investor_deal_id', $dealId)
+            ->whereNull('deleted_at')
+            ->distinct()
+            ->pluck('unit');
+
+        return $units->count() === 1 ? PricingUnit::tryFrom((string) $units->first()) : null;
     }
 
     /**

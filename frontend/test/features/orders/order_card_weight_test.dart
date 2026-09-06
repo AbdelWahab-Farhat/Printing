@@ -13,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// ولا يزاحم المال في وسطها.
 ///
 /// **ويغيب كما يغيب في الخادم.** `total_weight` تصل `null` في طلبيةٍ لا شيء فيها يُوزن، وفي
-/// طلبيةٍ لم يقف أحدٌ بها على ميزان بعد — والخانة تعود فارغةً في الحالتين، لأن «٠ كيلوغرام»
+/// طلبيةٍ لم يقف أحدٌ بها على ميزان بعد — والخانة تعود فارغةً في الحالتين، لأن «٠ كجم»
 /// تحت اسمٍ عريض تُقرأ كوزنٍ قيس فوجد صفراً.
 ///
 /// Arrange - Act - Assert throughout.
@@ -71,7 +71,7 @@ void main() {
     // Act - Assert — the same string the order screen prints, trimmed of the column's padding
     // zeros and carrying its unit.
     expect(find.text('وزن الطلبية'), findsOneWidget);
-    expect(find.text('12.5 كيلوغرام'), findsOneWidget);
+    expect(find.text('12.5 كجم'), findsOneWidget);
   });
 
   testWidgets('an order with no weight to state draws no weight cell', (tester) async {

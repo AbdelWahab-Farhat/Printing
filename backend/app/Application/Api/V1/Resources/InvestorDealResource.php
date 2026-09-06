@@ -37,6 +37,12 @@ class InvestorDealResource extends JsonResource
             // goods as every deal once did.
             'company_stake' => (string) $this->company_stake,
             'investor_funded_percent' => (string) $this->investor_funded_percent,
+            // سعر السادة — what the press pays this deal for a unit of its plain stock, agreed
+            // while the lorry was being funded. Null puts the deal on the other road entirely:
+            // its investors are paid out of the delivered order's profit instead.
+            'printing_sale_price' => $this->printing_sale_price === null
+                ? null
+                : (string) $this->printing_sale_price,
 
             // The order this deal was born from, when it was. A deal assembled by hand out of
             // several orders has none, and that is a real deal too — hence nullable rather than

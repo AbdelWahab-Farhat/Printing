@@ -36,7 +36,7 @@ void main() {
     toWarehouseId: to?.id,
     toWarehouse: to,
     referenceId: referenceId,
-    unitLabel: 'كيلوغرام',
+    unitLabel: 'كجم',
     notes: notes,
     employee: const MovementActor(id: 1, name: 'المدير'),
     createdAt: DateTime(2026, 9, 2, 22, 13),
@@ -68,7 +68,7 @@ void main() {
     expect(find.text('أكياس الشحن 40*35'), findsOneWidget);
     // … the number, signed, and what it is counted in
     expect(find.text('−1.6'), findsOneWidget);
-    expect(find.text('كيلوغرام'), findsOneWidget);
+    expect(find.text('كجم'), findsOneWidget);
     // … what happened, for which order, from where
     expect(find.text('صرف لطلب #1242 · من المخزن الرئيسي'), findsOneWidget);
     // … the time and who — the day belongs to the header above the group

@@ -42,39 +42,39 @@ void main() {
   );
 
   group('a line bought by weight', () {
-    test('says كيلوغرام after every quantity', () {
+    test('says كجم after every quantity', () {
       // Arrange
-      final item = itemWith(unitLabel: 'كيلوغرام');
+      final item = itemWith(unitLabel: 'كجم');
 
       // Act & Assert — trimmed the way every quantity in this app is: «120.500» is «120.5».
-      expect(item.orderedWithUnit, '500 كيلوغرام');
-      expect(item.receivedWithUnit, '120.5 كيلوغرام');
-      expect(item.remainingWithUnit, '379.5 كيلوغرام');
+      expect(item.orderedWithUnit, '500 كجم');
+      expect(item.receivedWithUnit, '120.5 كجم');
+      expect(item.remainingWithUnit, '379.5 كجم');
     });
 
-    test('prices per كيلوغرام, not «per unit»', () {
+    test('prices per كجم, not «per unit»', () {
       // Arrange
-      final item = itemWith(unitLabel: 'كيلوغرام');
+      final item = itemWith(unitLabel: 'كجم');
 
-      // Act & Assert — «١٫٥ د.ل للكيلوغرام» is a price a buyer can check against a quote;
+      // Act & Assert — «١٫٥ د.ل للكجم» is a price a buyer can check against a quote;
       // «للوحدة» is a word that names nothing.
-      expect(item.perUnitSuffix, 'للكيلوغرام');
+      expect(item.perUnitSuffix, 'للكجم');
     });
 
     test('names the quantity field after the unit being ordered', () {
       // Arrange
-      final item = itemWith(unitLabel: 'كيلوغرام');
+      final item = itemWith(unitLabel: 'كجم');
 
       // Act & Assert
-      expect(item.quantityFieldLabel, 'الكمية المطلوبة (كيلوغرام)');
+      expect(item.quantityFieldLabel, 'الكمية المطلوبة (كجم)');
     });
 
     test('the receiving box asks for the same unit the order was raised in', () {
       // Arrange — the buyer typed kilograms; the storeman must not be asked for bags.
-      final item = itemWith(unitLabel: 'كيلوغرام');
+      final item = itemWith(unitLabel: 'كجم');
 
       // Act & Assert
-      expect(item.lineUnit.receivedField, 'الكمية التي وصلت (كيلوغرام)');
+      expect(item.lineUnit.receivedField, 'الكمية التي وصلت (كجم)');
     });
   });
 
@@ -83,7 +83,7 @@ void main() {
       // Arrange
       final item = itemWith(unitLabel: 'قطعة');
 
-      // Act & Assert — one sentence shape for both units, so «للقطعة» and «للكيلوغرام» are read
+      // Act & Assert — one sentence shape for both units, so «للقطعة» and «للكجم» are read
       // in the same place on the row rather than each needing to be found.
       expect(item.orderedWithUnit, '500 قطعة');
       expect(item.perUnitSuffix, 'للقطعة');
@@ -107,7 +107,7 @@ void main() {
     test('quotes the landed cost, not what the vendor invoiced', () {
       // Arrange — 750 د.ل of goods carrying 97.50 د.ل of this order's delivery and customs.
       final item = itemWith(
-        unitLabel: 'كيلوغرام',
+        unitLabel: 'كجم',
         allocatedAdditionalCost: '97.50',
         finalUnitCost: '1.695',
         finalTotalCost: '847.50',
@@ -125,7 +125,7 @@ void main() {
     test('falls back to the base figures on an order with no additional costs', () {
       // Arrange — nothing was spread across the lines, so the server's final equals its base.
       final item = itemWith(
-        unitLabel: 'كيلوغرام',
+        unitLabel: 'كجم',
         allocatedAdditionalCost: '0.00',
         finalUnitCost: '1.500',
         finalTotalCost: '750.00',
@@ -140,7 +140,7 @@ void main() {
 
     test('a line written before the landed figures existed shows what it has', () {
       // Arrange — `final_unit_cost` is null on a line the allocator never ran over.
-      final item = itemWith(unitLabel: 'كيلوغرام');
+      final item = itemWith(unitLabel: 'كجم');
 
       // Act & Assert — the base cost is a true answer, and printing it beats printing nothing.
       expect(item.hasCost, isTrue);

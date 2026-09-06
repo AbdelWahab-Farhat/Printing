@@ -7,6 +7,7 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/stock_items/presentation/widgets/stock_item_picker_sheet.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
+import 'package:dayaa/features/warehouses/presentation/viewmodel/shelf_balance_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
 import 'package:dayaa/features/warehouses/usecases/record_stock_movement.dart';
 import 'package:flutter/material.dart';
@@ -66,8 +67,13 @@ class RecordMovementPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext ctx) {
-    return BlocProvider<RecordMovementCubit>(
-      create: (_) => sl<RecordMovementCubit>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<RecordMovementCubit>(create: (_) => sl<RecordMovementCubit>()),
+        // Its own Cubit, because it answers its own question and fails on its own: a balance
+        // that could not be read leaves the form entirely usable.
+        BlocProvider<ShelfBalanceCubit>(create: (_) => sl<ShelfBalanceCubit>()),
+      ],
       child: _RecordMovementForm(warehouse: warehouse, fixed: context),
     );
   }
@@ -104,7 +110,14 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
   /// Whether the shelf and the warehouse were settled before this screen opened.
   bool get _isFixed => widget.fixed != null;
 
-  /// What this shelf is counted in — «قطعة» or «كيلوغرام», the server's own word for it.
+  /// The place being moved into or corrected.
+  ///
+  /// **A fixed warehouse is an answer, not a missing one.** Opened from a shelf, the picker is
+  /// not drawn — so reading the destination off it alone left the form refusing every movement
+  /// with «اختر مخزن الاستلام» and no box to answer it in.
+  int? get _destinationWarehouseId => widget.fixed?.warehouseId ?? _warehouse?.id;
+
+  /// What this shelf is counted in — «قطعة» or «كجم», the server's own word for it.
   ///
   /// Held so the quantity field can say which unit it is asking for. **It belongs to the shelf
   /// and to nothing else**: `products.stock_unit` was dropped precisely because two products
@@ -115,11 +128,50 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
   Warehouse? _source;
 
   @override
+  void initState() {
+    super.initState();
+
+    // Opened from a shelf, both answers are already settled — so the balance is asked for
+    // before the storekeeper has typed anything.
+    _lookUpBalance();
+  }
+
+  @override
   void dispose() {
     _quantity.dispose();
     _unitCost.dispose();
     _notes.dispose();
     super.dispose();
+  }
+
+  /// The warehouse whose shelf the number being typed is judged against.
+  ///
+  /// **A transfer is judged at the end it leaves from**, not the one it lands in: «حوّل ٥٠٠» is
+  /// refused by what the source holds. Everything else has one warehouse and it is that one.
+  int? get _balanceWarehouseId => _kind.needsSource ? _source?.id : _destinationWarehouseId;
+
+  /// What that warehouse is called, for the line that quotes its balance. A transfer names the
+  /// source, so the figure cannot be read as the destination's.
+  String? get _balanceWarehouseName => _kind.needsSource
+      ? _source?.name
+      : widget.fixed?.warehouseName ?? _warehouse?.name;
+
+  /// Asks what is on the shelf, once both halves of the question are answered.
+  void _lookUpBalance() {
+    // Called after a picker sheet closes, which is an await this form can be disposed across.
+    if (!mounted) return;
+
+    final warehouseId = _balanceWarehouseId;
+    final stockItemId = _stockItemId;
+    final balances = context.read<ShelfBalanceCubit>();
+
+    if (warehouseId == null || stockItemId == null) {
+      balances.clear();
+
+      return;
+    }
+
+    balances.look(warehouseId: warehouseId, stockItemId: stockItemId);
   }
 
   Future<void> _pickStockItem() async {
@@ -133,6 +185,8 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
       _stockItemLabel = picked.displayName;
       _unitLabel = picked.unitLabel;
     });
+
+    _lookUpBalance();
   }
 
   Future<void> _pickWarehouse({required bool isSource}) async {
@@ -140,6 +194,8 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
     if (picked == null) return;
 
     setState(() => isSource ? _source = picked : _warehouse = picked);
+
+    _lookUpBalance();
   }
 
   void _submit() {
@@ -153,7 +209,8 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
       return;
     }
 
-    if (_warehouse == null) {
+    final destinationWarehouseId = _destinationWarehouseId;
+    if (destinationWarehouseId == null) {
       context.showError('اختر ${_kind.destinationLabel}');
 
       return;
@@ -175,7 +232,7 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
     context.read<RecordMovementCubit>().submit(
       kind: _kind,
       stockItemId: _stockItemId!,
-      warehouseId: _warehouse!.id,
+      warehouseId: destinationWarehouseId,
       fromWarehouseId: _source?.id,
       quantity: _quantity.text,
       unitCost: _unitCost.text,
@@ -239,17 +296,23 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                   children: [
                   _KindChoice(
                     value: _kind,
-                    onChanged: (kind) => setState(() {
-                      _kind = kind;
-                      // A source belongs to a transfer alone; leaving a stale one selected
-                      // would send it with an adjustment the next time the chip changed.
-                      if (!kind.needsSource) _source = null;
-                      // Cleared for the same reason, though nothing depends on it: the use case
-                      // drops a cost this kind cannot carry. This is so a figure that vanished
-                      // when the chip moved does not reappear when it moves back — the box was
-                      // emptied, not merely hidden.
-                      if (!kind.opensCostLayer) _unitCost.clear();
-                    }),
+                    onChanged: (kind) {
+                      setState(() {
+                        _kind = kind;
+                        // A source belongs to a transfer alone; leaving a stale one selected
+                        // would send it with an adjustment the next time the chip changed.
+                        if (!kind.needsSource) _source = null;
+                        // Cleared for the same reason, though nothing depends on it: the use
+                        // case drops a cost this kind cannot carry. This is so a figure that
+                        // vanished when the chip moved does not reappear when it moves back —
+                        // the box was emptied, not merely hidden.
+                        if (!kind.opensCostLayer) _unitCost.clear();
+                      });
+
+                      // The chip moves the question itself: «تحويل» is judged at the shelf it
+                      // leaves from, everything else at the one it lands in.
+                      _lookUpBalance();
+                    },
                   ),
                   // **Opened from a shelf, the shelf is not a question.** Both answers are
                   // already on the screen behind, and offering them again invites the one
@@ -291,6 +354,13 @@ class _RecordMovementFormState extends State<_RecordMovementForm> {
                       onTap: () => _pickWarehouse(isSource: false),
                     ),
                   ],
+                  // What is on that shelf right now, above the box asking how much of it is
+                  // moving. **The number the typed one is judged against**, and it used to be
+                  // learnt only from the server's refusal after the form was filled in.
+                  _ShelfBalanceLine(
+                    warehouseName: _balanceWarehouseName,
+                    fallbackUnitLabel: _unitLabel,
+                  ),
                   SizedBox(height: 14.h),
                   AppTextField(
                     controller: _quantity,
@@ -469,6 +539,88 @@ class _ShortfallChoice extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
           ),
       ],
+    );
+  }
+}
+
+/// «الرصيد الحالي في المخزن الرئيسي · ٨٠٠ كجم» — what is on the shelf being written
+/// against.
+///
+/// **Drawn only when there is something true to say.** Before both the shelf and the warehouse
+/// are settled the question has no answer, and a lookup that failed says nothing at all rather
+/// than putting an error above a form that works without it.
+///
+/// A warehouse that has never held this size answers with no shelf at all, which is a balance of
+/// nothing — «٠», counted in the unit the *item* carries, because there is no shelf of its own
+/// to take one from. Zero is drawn in the error tone: it is the answer that decides whether the
+/// movement being typed can happen at all.
+class _ShelfBalanceLine extends StatelessWidget {
+  const _ShelfBalanceLine({this.warehouseName, this.fallbackUnitLabel});
+
+  final String? warehouseName;
+
+  /// The item's own unit, for the shelf that does not exist yet.
+  final String? fallbackUnitLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return BlocBuilder<ShelfBalanceCubit, ShelfBalanceState>(
+      builder: (context, state) {
+        if (state is! ShelfBalanceLoading && state is! ShelfBalanceLoaded) {
+          return const SizedBox.shrink();
+        }
+
+        final stock = state is ShelfBalanceLoaded ? state.stock : null;
+        final isEmpty = state is ShelfBalanceLoaded && (stock == null || stock.isOutOfStock);
+
+        return Padding(
+          padding: EdgeInsets.only(top: 10.h),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(color: scheme.outlineVariant),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    warehouseName == null
+                        ? 'الرصيد الحالي'
+                        : 'الرصيد الحالي في $warehouseName',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                if (state is ShelfBalanceLoading)
+                  SizedBox(
+                    width: 16.w,
+                    height: 16.w,
+                    child: CircularProgressIndicator(strokeWidth: 2.w),
+                  )
+                else
+                  Text(
+                    // The number this screen exists to put in front of somebody, so it is the
+                    // biggest thing on the line and carries its unit.
+                    stock?.quantityWithUnit ??
+                        (fallbackUnitLabel == null ? '0' : '0 $fallbackUnitLabel'),
+                    style: context.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: isEmpty ? scheme.error : scheme.onSurface,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

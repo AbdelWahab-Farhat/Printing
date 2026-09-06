@@ -129,7 +129,7 @@ class _Warning extends StatelessWidget {
           Expanded(
             child: Text(
               // Latin digits, like every other number this app draws — see `core/utils/digits`.
-              'تغيير الوحدة لا يحوّل الكمية، بل يصفّرها. 200 كيس ليست 200 كيلوغرام، وما على '
+              'تغيير الوحدة لا يحوّل الكمية، بل يصفّرها. 200 كيس ليست 200 كجم، وما على '
               'الرفوف اليوم لا معنى له بالوحدة الجديدة.',
               style: context.textTheme.bodySmall?.copyWith(
                 height: 1.5,

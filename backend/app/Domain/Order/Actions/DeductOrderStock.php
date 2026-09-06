@@ -9,14 +9,13 @@ use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\Exceptions\InsufficientStock;
 use App\Domain\Inventory\Exceptions\VariantHasNoStockItem;
 use App\Domain\Inventory\InventoryService;
-use App\Domain\Inventory\Models\StockBatchConsumption;
 use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Order\DTOs\StockShortfall;
 use App\Domain\Order\Exceptions\LineNeedsAMeasuredStockQuantity;
 use App\Domain\Order\Exceptions\OrderStockShortfall;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
-use App\Domain\Order\Support\Money;
+use App\Domain\Order\Support\MaterialCost;
 use App\Domain\Order\Support\TransitionFields;
 
 /**
@@ -80,7 +79,9 @@ final class DeductOrderStock
         // answers from the shelf rather than from the product, so asking whether a line is
         // stocked in another unit touches `variant.stockItem` — and strict mode turns a
         // forgotten load into an exception rather than a query per line.
-        $order->items->loadMissing('variant.stockItem');
+        // `product.productCategory.parent` beside the shelf, because `OrderItem::isPrinted()`
+        // walks it for every line — see the note on the pricing below.
+        $order->items->loadMissing(['variant.stockItem', 'product.productCategory.parent']);
 
         // Before the shelves are even resolved: a line with no measurement has no figure to
         // weigh against one, and the number that would stand in for it is the wrong one.
@@ -101,14 +102,26 @@ final class DeductOrderStock
                 'reference_id' => $order->getKey(),
             ], $employeeId));
 
-            $materialCost = StockBatchConsumption::query()
-                ->where('stock_movement_id', $movement->getKey())
-                ->sum('total_cost');
+            // **What the line pays, and what the goods cost — two numbers since سعر السادة.**
+            // A printed line drawing on a deal that sells to the press buys its plain bags off
+            // the shelf at that price, and `material_cost` becomes what it paid; the FIFO figure
+            // survives beside it as `material_cost_actual`, because a company-wide profit is
+            // still computed from what the goods really cost. See {@see MaterialCost}, which both
+            // this and {@see RestateOrderStockDeduction} derive it through.
+            $cost = MaterialCost::forDraws(
+                $this->inventory->consumptionBreakdownFor([(int) $movement->getKey()])[(int) $movement->getKey()] ?? [],
+                $item->isPrinted(),
+            );
 
             // The forward pointer ReverseOrderStockDeduction reads back if this order is later
             // cancelled — see the note on OrderItem::fulfillmentStockMovement().
             $item->forceFill([
-                'material_cost' => Money::round((string) $materialCost),
+                'material_cost' => $cost->charged,
+                'material_cost_actual' => $cost->actual,
+                // The fact three other places read: the investor behind this line has been paid
+                // already, so the delivery must not pay him again, this line must not hold his
+                // deal open, and a cancellation returns its goods to the company.
+                'stock_purchased_at' => $cost->purchased ? now() : null,
                 'fulfillment_stock_movement_id' => $movement->getKey(),
             ])->save();
 

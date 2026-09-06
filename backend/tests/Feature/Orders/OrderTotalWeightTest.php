@@ -95,7 +95,7 @@ class OrderTotalWeightTest extends TestCase
         // Act
         $weight = $order->totalWeight();
 
-        // Assert — the sold quantity is a bag count. Reading it as «300 كيلوغرام» is the one
+        // Assert — the sold quantity is a bag count. Reading it as «300 كجم» is the one
         // mistake this figure exists to avoid.
         $this->assertNull($weight);
     }

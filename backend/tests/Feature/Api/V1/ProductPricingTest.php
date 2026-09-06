@@ -249,7 +249,7 @@ class ProductPricingTest extends TestCase
         // Assert
         $response->assertOk()
             ->assertJsonPath('data.unit', 'kilogram')
-            ->assertJsonPath('data.unit_label', 'كيلوغرام')
+            ->assertJsonPath('data.unit_label', 'كجم')
             ->assertJsonPath('data.total', '80.000');
     }
 

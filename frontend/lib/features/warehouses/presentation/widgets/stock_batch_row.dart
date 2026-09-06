@@ -13,9 +13,20 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// The price is the loudest thing on the row — it is the number a person knows is wrong on
 /// sight — and a layer nobody priced says «بلا تكلفة» there in `warn`, never `0.000`.
 class StockBatchRow extends StatelessWidget {
-  const StockBatchRow({required this.batch, required this.position, this.isNext = false, super.key});
+  const StockBatchRow({
+    required this.batch,
+    required this.position,
+    this.isNext = false,
+    this.onTap,
+    super.key,
+  });
 
   final StockBatch batch;
+
+  /// Opens the layer's cost correction. **Null is the ordinary case** — a reader without the
+  /// grant, a layer with nothing left on it, one an investor's money bought — and the row is
+  /// then not a tap target at all rather than one that refuses when tapped.
+  final VoidCallback? onTap;
 
   /// 1-based, in FIFO order.
   final int position;
@@ -27,7 +38,7 @@ class StockBatchRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
-    return Padding(
+    final row = Padding(
       padding: EdgeInsets.symmetric(vertical: 14.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,6 +196,8 @@ class StockBatchRow extends StatelessWidget {
         ],
       ),
     );
+
+    return onTap == null ? row : InkWell(onTap: onTap, child: row);
   }
 
   /// «توريد · 31 أغسطس 2026» — where it came from and when, the FIFO key in words.

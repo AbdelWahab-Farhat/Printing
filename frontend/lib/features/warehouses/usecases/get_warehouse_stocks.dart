@@ -14,6 +14,7 @@ class GetWarehouseStocks {
     int warehouseId, {
     bool? lowStock,
     bool? inStock,
+    int? stockItemId,
     int page = 1,
     int perPage = 20,
   }) {
@@ -21,6 +22,7 @@ class GetWarehouseStocks {
       warehouseId,
       lowStock: lowStock,
       inStock: inStock,
+      stockItemId: stockItemId,
       page: page,
       perPage: perPage,
     );

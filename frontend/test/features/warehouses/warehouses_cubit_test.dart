@@ -30,11 +30,11 @@ void main() {
     stocksCount: 12,
   );
 
-  const showroom = Warehouse(
+  const workshop = Warehouse(
     id: 2,
-    name: 'صالة العرض',
-    type: WarehouseType.showroom,
-    typeLabel: 'صالة العرض',
+    name: 'مخزن التشغيل',
+    type: WarehouseType.operational,
+    typeLabel: 'مخزن التشغيل',
     stocksCount: 0,
   );
 
@@ -72,7 +72,7 @@ void main() {
     'goes loading then loaded when the list answers',
     setUp: () {
       // Arrange
-      answerWith(Right(pageOf(const [main, showroom])));
+      answerWith(Right(pageOf(const [main, workshop])));
     },
     build: () => cubit,
     // Act
@@ -83,7 +83,7 @@ void main() {
       isA<WarehousesLoaded>().having(
         (state) => state.page.items.map((warehouse) => warehouse.name),
         'names',
-        ['المخزن الرئيسي', 'صالة العرض'],
+        ['المخزن الرئيسي', 'مخزن التشغيل'],
       ),
     ],
   );
@@ -110,12 +110,12 @@ void main() {
 
   test('an empty warehouse is removed and the list re-read', () async {
     // Arrange
-    answerWith(Right(pageOf(const [showroom])));
+    answerWith(Right(pageOf(const [workshop])));
     when(() => repository.delete(any())).thenAnswer((_) async => const Right('تم الحذف'));
     await cubit.load();
 
     // Act
-    final failure = await cubit.remove(showroom);
+    final failure = await cubit.remove(workshop);
 
     // Assert
     expect(failure, isNull);
@@ -144,7 +144,7 @@ void main() {
       // Arrange & Act — read off the model, so the sheet and the list agree.
       // Assert
       expect(main.holdsStock, isTrue);
-      expect(showroom.holdsStock, isFalse);
+      expect(workshop.holdsStock, isFalse);
     });
 
     test('a warehouse whose count was never asked for is assumed to hold stock', () {

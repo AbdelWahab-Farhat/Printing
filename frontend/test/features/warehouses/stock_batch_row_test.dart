@@ -78,6 +78,33 @@ void main() {
     expect(find.text('التالية للصرف'), findsNothing);
   });
 
+  testWidgets('a layer offers its correction to whoever may make one', (tester) async {
+    // Arrange
+    var taps = 0;
+    await tester.pumpWidget(
+      host(StockBatchRow(batch: batch(), position: 1, onTap: () => taps += 1)),
+    );
+
+    // Act
+    await tester.tap(find.text('توريد · 31 أغسطس 2026'));
+    await tester.pump();
+
+    // Assert
+    expect(taps, 1);
+  });
+
+  testWidgets('with no correction to offer, the row is not a tap target at all', (tester) async {
+    // Arrange — a used-up layer, or a reader without the grant: the page hands no handler down
+    // rather than the row deciding for itself.
+    await tester.pumpWidget(host(StockBatchRow(batch: batch(), position: 1)));
+
+    // Act
+    await tester.pump();
+
+    // Assert
+    expect(find.byType(InkWell), findsNothing);
+  });
+
   group('the valuation', () {
     test('sums what remains at each layer\'s price and averages by what remains', () {
       // Arrange — 300 @ 3.500 and 100 @ 5.000: 1,050 + 500 over 400 units

@@ -72,7 +72,7 @@ abstract class WarehouseStock with _$WarehouseStock {
   /// something on it is the worse mistake.
   bool get isOutOfStock => (num.tryParse(quantity) ?? 1) <= 0;
 
-  /// «250 كيلوغرام» — the balance together with what it is counted in.
+  /// «250 كجم» — the balance together with what it is counted in.
   ///
   /// A bare number is ambiguous on a floor that holds both bags and kilos, and the unit is the
   /// difference between a shelf that is nearly empty and one that is nearly full.

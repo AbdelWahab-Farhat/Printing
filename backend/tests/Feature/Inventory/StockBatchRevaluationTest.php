@@ -13,6 +13,7 @@ use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
+use App\Domain\Investor\Models\InvestorDeal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -505,6 +506,30 @@ class StockBatchRevaluationTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.can_be_revalued', false);
+    }
+
+    public function test_a_layer_an_investor_funded_is_not_offered_for_repricing(): void
+    {
+        // Arrange — a deal's own stock, sitting on a shelf like any other layer. Built by the
+        // factory: what is under test is the flag the app reads, not how the deal took delivery.
+        $deal = InvestorDeal::factory()->open()->create();
+        $batch = StockBatch::factory()->unitCost('4.000')->create(['investor_deal_id' => $deal->id]);
+        $headers = $this->accountant();
+
+        // Act
+        $list = $this->withHeaders($headers)->getJson('/api/v1/stock-batches');
+        $refusal = $this->withHeaders($headers)
+            ->patchJson("/api/v1/stock-batches/{$batch->id}/cost", [
+                'unit_cost' => '9',
+                'reason' => 'فاتورة المورد وصلت بسعر مختلف',
+            ]);
+
+        // Assert — **the flag has to agree with the refusal.** A layer the server will not
+        // reprice must not come back saying it can be, or the app draws a button whose only
+        // outcome is a 422 in Arabic.
+        $list->assertOk()->assertJsonPath('data.0.can_be_revalued', false);
+        $refusal->assertStatus(422);
+        $this->assertSame('4.000', (string) $batch->fresh()->unit_cost);
     }
 
     public function test_reading_the_layers_needs_only_the_viewing_grant(): void

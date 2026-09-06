@@ -6,13 +6,10 @@ namespace App\Domain\Investor\Actions;
 
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Inventory\InventoryService;
-use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorWalletEntry;
-use App\Domain\Investor\Support\Money;
 use App\Domain\Investor\Support\OrderDealSlices;
 use App\Domain\Order\OrderService;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -57,6 +54,7 @@ final class PostDealEarningsForOrder
     public function __construct(
         private readonly OrderService $orders,
         private readonly InventoryService $inventory,
+        private readonly PostDealShare $postShare,
     ) {}
 
     /**
@@ -122,134 +120,22 @@ final class PostDealEarningsForOrder
     }
 
     /**
-     * Turns one deal's slice into one row per investor — or leaves what already stands alone.
+     * Turns one deal's slice into one row per investor.
      *
-     * Idempotent by comparison rather than by hope: the same order delivered twice, or a status
-     * walked twice, computes the same figures and writes nothing the second time. The partial
-     * unique index behind `(investor, deal, source, sequence)` is the database's own backstop for
-     * the day a future caller forgets the lock.
+     * The slice is what the deal's goods earned, all of it; {@see InvestorDeal::investorsCutOf()}
+     * takes the partners' fraction of it — the goods their money bought, and their half of what
+     * that fraction made — and {@see PostDealShare} turns the result into ledger rows.
      *
      * @return list<InvestorWalletEntry>
      */
     private function rowsFor(InvestorDeal $deal, string $slice, int $orderId): array
     {
-        $investorsAmount = $deal->investorsCutOf($slice);
-
-        if (bccomp($investorsAmount, '0', 2) === 0) {
-            return [];
-        }
-
-        $shares = $deal->shares()->get();
-
-        if ($shares->isEmpty()) {
-            return [];
-        }
-
-        $amounts = Money::allocate(
-            $investorsAmount,
-            $shares->map(fn ($share) => (string) $share->share_percent)->all(),
+        return ($this->postShare)(
+            $deal,
+            $deal->investorsCutOf($slice),
+            AuditSubject::Order->value,
+            $orderId,
+            'تصحيح إسناد ربح الطلبية',
         );
-
-        $standing = InvestorWalletEntry::query()
-            ->where('investor_deal_id', $deal->getKey())
-            ->where('source_type', AuditSubject::Order->value)
-            ->where('source_id', $orderId)
-            ->whereIn('type', [WalletEntryType::Profit->value, WalletEntryType::Loss->value])
-            ->whereDoesntHave('reversedBy')
-            ->get()
-            ->keyBy('investor_id');
-
-        $target = [];
-
-        foreach ($shares as $index => $share) {
-            $target[(int) $share->investor_id] = $amounts[$index] ?? '0.00';
-        }
-
-        if ($this->matches($standing, $target)) {
-            return [];
-        }
-
-        $sequence = 1 + (int) InvestorWalletEntry::query()
-            ->where('investor_deal_id', $deal->getKey())
-            ->where('source_type', AuditSubject::Order->value)
-            ->where('source_id', $orderId)
-            ->max('source_sequence');
-
-        foreach ($standing as $entry) {
-            $this->reverse($entry);
-        }
-
-        $written = [];
-
-        foreach ($target as $investorId => $amount) {
-            if (bccomp($amount, '0', 2) === 0) {
-                continue;
-            }
-
-            $isLoss = bccomp($amount, '0', 2) < 0;
-
-            $entry = new InvestorWalletEntry([
-                'amount' => $isLoss ? substr($amount, 1) : $amount,
-                'occurred_at' => now(),
-            ]);
-
-            $entry->investor_id = $investorId;
-            $entry->investor_deal_id = $deal->getKey();
-            $entry->type = $isLoss ? WalletEntryType::Loss : WalletEntryType::Profit;
-            $entry->source_type = AuditSubject::Order->value;
-            $entry->source_id = $orderId;
-            $entry->source_sequence = $sequence;
-            $entry->save();
-
-            $written[] = $entry;
-        }
-
-        return $written;
-    }
-
-    /**
-     * @param  Collection<int, InvestorWalletEntry>  $standing
-     * @param  array<int, string>  $target
-     */
-    private function matches($standing, array $target): bool
-    {
-        $current = [];
-
-        foreach ($standing as $entry) {
-            $signed = $entry->type === WalletEntryType::Loss
-                ? '-'.$entry->amount
-                : (string) $entry->amount;
-
-            $current[(int) $entry->investor_id] = $signed;
-        }
-
-        $wanted = array_filter($target, fn (string $amount) => bccomp($amount, '0', 2) !== 0);
-
-        if (array_keys($current) !== array_keys($wanted)) {
-            return false;
-        }
-
-        foreach ($wanted as $investorId => $amount) {
-            if (bccomp($current[$investorId], $amount, 2) !== 0) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private function reverse(InvestorWalletEntry $entry): void
-    {
-        $reversal = new InvestorWalletEntry([
-            'amount' => (string) $entry->amount,
-            'occurred_at' => now(),
-            'notes' => 'تصحيح إسناد ربح الطلبية',
-        ]);
-
-        $reversal->investor_id = $entry->investor_id;
-        $reversal->investor_deal_id = $entry->investor_deal_id;
-        $reversal->type = WalletEntryType::Reversal;
-        $reversal->reverses_entry_id = $entry->getKey();
-        $reversal->save();
     }
 }

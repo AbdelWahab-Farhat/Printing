@@ -47,10 +47,15 @@ abstract interface class WarehouseRepository {
   /// is opened for on a busy morning. [inStock] `false` narrows to the ones that have run out —
   /// **a different question**, because a size nobody set an alert level for is empty all the
   /// same, and the server leaves it out of the low-stock answer entirely.
+  ///
+  /// [stockItemId] narrows to one shelf, which is how a single balance is read: a size that has
+  /// never been here answers with an empty page rather than a zero, and «never stocked» is a
+  /// true answer the caller is left to word.
   Future<Either<Failure, Paginated<WarehouseStock>>> stocks(
     int warehouseId, {
     bool? lowStock,
     bool? inStock,
+    int? stockItemId,
     int page = 1,
     int perPage = 20,
   });
@@ -95,6 +100,23 @@ abstract interface class WarehouseRepository {
     bool remaining = true,
     int page = 1,
     int perPage = 50,
+  });
+
+  /// Corrects what a cost layer is carried at — **the only write a batch accepts**.
+  ///
+  /// [quantity] null is all of what is left, which is the common case. A smaller figure splits
+  /// the layer: the repriced part stays on this row, keeping the FIFO position that makes it the
+  /// next thing off the shelf, and the remainder moves to a new row at the old price.
+  ///
+  /// **Prospective, always.** What has already been drawn off the layer keeps the cost it left
+  /// at, and the orders that took it keep their profit — nothing here restates a closed sale.
+  ///
+  /// The server refuses a layer with nothing left on it, and one an investor's money bought.
+  Future<Either<Failure, StockBatch>> revalueStockBatch(
+    int batchId, {
+    required String unitCost,
+    required String reason,
+    String? quantity,
   });
 
   /// Stock arriving from outside — a purchase. No source, because there is none.

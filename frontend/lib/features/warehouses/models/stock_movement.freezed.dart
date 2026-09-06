@@ -20,7 +20,7 @@ mixin _$StockMovement {
 /// adjustment down is a movement *out of* a warehouse, not a negative number.
  String get quantity;/// **The pile that moved, not a product's size.** Two catalogue rows can share one, so a row
 /// here answers «ماذا تحرّك من الرف» and deliberately not «لأي منتج».
-@JsonKey(name: 'stock_item_id') int get stockItemId;@JsonKey(name: 'stock_item') StockItemRef? get item;/// What [quantity] is counted in — «قطعة», «كيلوغرام». On the row itself rather than on
+@JsonKey(name: 'stock_item_id') int get stockItemId;@JsonKey(name: 'stock_item') StockItemRef? get item;/// What [quantity] is counted in — «قطعة», «كجم». On the row itself rather than on
 /// [item], because a feed that mixes bags and kilos is not readable without it and «1.6»
 /// on its own is not a number. Null on a row returned straight from a write.
  String? get unit;@JsonKey(name: 'unit_label') String? get unitLabel;@JsonKey(name: 'from_warehouse_id') int? get fromWarehouseId;@JsonKey(name: 'from_warehouse') MovementPlace? get fromWarehouse;@JsonKey(name: 'to_warehouse_id') int? get toWarehouseId;@JsonKey(name: 'to_warehouse') MovementPlace? get toWarehouse;/// The order a fulfillment was for, or the purchase an arrival came from.
@@ -321,7 +321,7 @@ class _StockMovement extends StockMovement {
 /// here answers «ماذا تحرّك من الرف» and deliberately not «لأي منتج».
 @override@JsonKey(name: 'stock_item_id') final  int stockItemId;
 @override@JsonKey(name: 'stock_item') final  StockItemRef? item;
-/// What [quantity] is counted in — «قطعة», «كيلوغرام». On the row itself rather than on
+/// What [quantity] is counted in — «قطعة», «كجم». On the row itself rather than on
 /// [item], because a feed that mixes bags and kilos is not readable without it and «1.6»
 /// on its own is not a number. Null on a row returned straight from a write.
 @override final  String? unit;

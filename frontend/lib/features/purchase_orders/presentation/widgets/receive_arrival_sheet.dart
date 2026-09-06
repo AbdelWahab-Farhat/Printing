@@ -18,12 +18,15 @@ typedef ReceivedShipment = ({
 
 /// Booking a shipment in against a purchase order.
 ///
-/// **It opens on what is still owing, one box per line, and every box starts empty.** A
+/// **It opens on every line of the order, one box per line, and every box starts empty.** A
 /// shipment that brought two of five sizes is the ordinary case, not the exception — pre-filling
 /// each box with the outstanding quantity would turn «what turned up» into «confirm what we
 /// hoped for», and the difference between those two is the entire reason this screen exists.
 ///
-/// The remaining quantity is printed beside each box instead, so nobody has to subtract.
+/// The remaining quantity is printed beside each box instead, so nobody has to subtract. A line
+/// that has already had everything it asked for still gets a box: suppliers overship, the extra
+/// is accepted and costed, and a box that vanished the moment a line was satisfied would leave
+/// a storeman with a pallet he cannot book in.
 ///
 /// Returns null when the user backs out.
 Future<ReceivedShipment?> showReceiveArrivalSheet({
@@ -54,10 +57,10 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
   final _invoice = TextEditingController();
   final _notes = TextEditingController();
 
-  /// One controller per outstanding line, keyed by stock item — which is what the API addresses
-  /// a received line by, not by the line's own id.
+  /// One controller per line, keyed by stock item — which is what the API addresses a received
+  /// line by, not by the line's own id.
   late final Map<int, TextEditingController> _quantities = {
-    for (final item in widget.order.outstanding)
+    for (final item in widget.order.items)
       item.stockItemId: TextEditingController(),
   };
 
@@ -93,7 +96,7 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final outstanding = widget.order.outstanding;
+    final lines = widget.order.items;
 
     return FractionallySizedBox(
       heightFactor: 0.9,
@@ -132,7 +135,7 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
             child: ListView(
               padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
               children: [
-                for (final item in outstanding) ...[
+                for (final item in lines) ...[
                   _LineBox(
                     item: item,
                     controller: _quantities[item.stockItemId]!,
@@ -217,10 +220,15 @@ class _LineBox extends StatelessWidget {
           SizedBox(height: 4.h),
           Text(
             // The arithmetic the server already did. A screen that subtracted would be a second
-            // opinion about the number that decides whether the shipment is refused.
+            // opinion about a number the storeman is typing against.
             //
-            // The unit lands once, on the figure the two are measured against.
-            'المتبقي ${item.remainingLabel} من ${item.orderedWithUnit}',
+            // The unit lands once, on the figure the two are measured against. A line with
+            // nothing left owing says so rather than printing «المتبقي ٠», which reads as a box
+            // that should be left alone — and it is still there to be typed into, because more
+            // than was ordered can turn up.
+            item.isOutstanding
+                ? 'المتبقي ${item.remainingLabel} من ${item.orderedWithUnit}'
+                : 'اكتمل · وصل ${item.receivedLabel} من ${item.orderedWithUnit}',
             style: context.textTheme.bodySmall?.copyWith(
               color: scheme.onSurfaceVariant,
             ),

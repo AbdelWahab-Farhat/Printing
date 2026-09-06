@@ -9,7 +9,11 @@ use App\Domain\Carrier\Support\NawrisClient;
 use App\Domain\Customer\Queries\CustomerOrderActivity;
 use App\Domain\Identity\Models\User;
 use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
+use App\Domain\Investor\Listeners\PostPurchasesWhenStockLeaves;
+use App\Domain\Investor\Listeners\PostPurchaseWhenScrapIsDrawn;
 use App\Domain\Order\Events\OrderProfitFinalised;
+use App\Domain\Order\Events\OrderScrapDrawn;
+use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Queries\OrderCustomerActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
@@ -71,6 +75,8 @@ class AppServiceProvider extends ServiceProvider
         // transaction that moved the status, so the money and the status land together or not
         // at all.
         Event::listen(OrderProfitFinalised::class, PostEarningsWhenOrderIsFinalised::class);
+        Event::listen(OrderStockDrawn::class, PostPurchasesWhenStockLeaves::class);
+        Event::listen(OrderScrapDrawn::class, PostPurchaseWhenScrapIsDrawn::class);
 
         // Turns three silent classes of bug into loud exceptions everywhere except
         // production: lazy-loaded relations (N+1), reading an attribute that was never

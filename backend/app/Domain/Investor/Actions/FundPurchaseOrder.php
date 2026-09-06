@@ -117,6 +117,9 @@ final class FundPurchaseOrder
             );
 
             $deal->purchase_order_id = $purchaseOrderId;
+            // Frozen here with the percentages, and for the same reason: it is the term the men
+            // putting money in were shown. Every layer this deal's goods arrive on takes a copy.
+            $deal->printing_sale_price = $data->printingSalePrice;
             $deal->company_stake = bcsub($cost, $funded, 2);
             $deal->investor_funded_percent = Money::allocatePercent([$funded, $deal->company_stake])[0];
             $deal->save();

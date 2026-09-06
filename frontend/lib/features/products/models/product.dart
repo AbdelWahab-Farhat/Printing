@@ -258,7 +258,7 @@ abstract class ProductMaterial with _$ProductMaterial {
     /// disturbs no existing shelf; it only decides what the next one is minted with.
     @JsonKey(name: 'default_unit') required String defaultUnit,
 
-    /// The server's Arabic for [defaultUnit] — «قطعة», «كيلوغرام» — drawn as sent, so a unit the
+    /// The server's Arabic for [defaultUnit] — «قطعة», «كجم» — drawn as sent, so a unit the
     /// backend grows tomorrow still reads right without this app being rebuilt.
     @JsonKey(name: 'default_unit_label') required String defaultUnitLabel,
   }) = _ProductMaterial;

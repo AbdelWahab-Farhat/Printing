@@ -58,6 +58,9 @@ class StockBatch extends Model
         return [
             'source_type' => StockBatchSourceType::class,
             'unit_cost' => 'decimal:3',
+            // What the press pays this layer's deal for a unit of it. Null on every layer the
+            // company financed, and on a deal opened without the term.
+            'printing_sale_price' => 'decimal:3',
             'quantity_received' => 'decimal:3',
             'quantity_remaining' => 'decimal:3',
             'unit' => PricingUnit::class,

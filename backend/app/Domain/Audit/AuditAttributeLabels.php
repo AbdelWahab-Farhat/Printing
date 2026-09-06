@@ -307,6 +307,11 @@ final class AuditAttributeLabels
             // dictionary above already names.
             'outsourcing_cost' => 'تكلفة التنفيذ لدى المورد',
             'material_cost' => 'تكلفة الخامات',
+            // The two halves سعر السادة split «تكلفة الخامات» into: what the press paid for the
+            // plain bags, and what those bags cost the business. Equal on every line that bought
+            // nothing off an investor, which is most of them.
+            'material_cost_actual' => 'التكلفة الفعلية للخامات',
+            'stock_purchased_at' => 'وقت شراء الخامات من الصفقة',
             'labor_cost' => 'تكلفة العمالة',
             'overhead_cost' => 'التكاليف غير المباشرة',
             'cogs' => 'تكلفة البضاعة',
@@ -372,6 +377,9 @@ final class AuditAttributeLabels
         'stock_batch' => [
             'source_type' => 'مصدر الدفعة',
             'investor_deal_id' => 'صفقة المستثمر',
+            // Copied from the deal when the layer opens, and frozen there: what the press pays
+            // for a unit of it.
+            'printing_sale_price' => 'سعر البيع للطباعة',
             'stock_arrival_item_id' => 'بند التوريد',
             'stock_movement_id' => 'الحركة المخزنية',
             'split_from_batch_id' => 'مقسومة من دفعة',
@@ -451,6 +459,9 @@ final class AuditAttributeLabels
             // investors, and the share of the goods their money bought.
             'company_stake' => 'حصة الشركة',
             'investor_funded_percent' => 'نسبة المستثمرين من البضاعة',
+            // Frozen with them, and the term that decides which road this deal earns on: set, the
+            // press buys its plain stock at the shelf; null, its investors ride the sale itself.
+            'printing_sale_price' => 'سعر بيع السادة للطباعة',
             'opened_on' => 'تاريخ الصفقة',
             'opened_at' => 'وقت الفتح',
             'closed_at' => 'وقت الإغلاق',

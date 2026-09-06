@@ -156,6 +156,16 @@ class _Actions extends StatelessWidget {
   }
 }
 
+/// A goods quantity with the word it is counted in — «174.9 كجم».
+///
+/// Bags bought by the kilo make 174.900 an ordinary figure, and the number alone left no way to
+/// tell a kilo from a bag. The word is the server's, as everywhere else in this app; a deal
+/// holding two units at once sends none and the number stands bare, because there is no one word
+/// for a total of kilos and pieces.
+String _weighed(DealStock stock, String quantity) => stock.unitLabel == null
+    ? groupedDecimal(quantity)
+    : '${groupedDecimal(quantity)} ${stock.unitLabel}';
+
 class _Body extends StatelessWidget {
   const _Body({required this.deal});
 
@@ -208,11 +218,11 @@ class _Body extends StatelessWidget {
           SizedBox(height: 8.h),
           _Rows(
             rows: [
-              ('وصل', groupedDecimal(stock.quantityReceived)),
-              ('بِيع', groupedDecimal(stock.quantitySold)),
-              ('متبقٍّ', groupedDecimal(stock.quantityRemaining)),
-              ('هالك', groupedDecimal(stock.quantityDamaged)),
-              ('عجز', groupedDecimal(stock.quantityShort)),
+              ('وصل', _weighed(stock, stock.quantityReceived)),
+              ('بِيع', _weighed(stock, stock.quantitySold)),
+              ('متبقٍّ', _weighed(stock, stock.quantityRemaining)),
+              ('هالك', _weighed(stock, stock.quantityDamaged)),
+              ('عجز', _weighed(stock, stock.quantityShort)),
             ],
           ),
           SizedBox(height: 24.h),
@@ -284,6 +294,17 @@ class _Terms extends StatelessWidget {
             Text(
               'الشركة شريك بـ ${groupedDecimal(deal.companyStake)} د.ل · للمستثمرين '
               '${trimDecimals(deal.investorFundedPercent)}% من البضاعة',
+              style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ],
+          // **The term that decides which road this deal earns on**, so it is on the header
+          // beside the percentages rather than buried in a list. Absent, the line is absent too:
+          // a deal without it behaves as every deal did before the term existed, and printing
+          // «بلا سعر» would put a word on the screen for the ordinary case.
+          if (deal.printingSalePrice != null) ...[
+            SizedBox(height: 4.h),
+            Text(
+              'تبيع السادة للمطبعة بـ ${trimDecimals(deal.printingSalePrice!)} د.ل للوحدة',
               style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],

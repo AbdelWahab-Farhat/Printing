@@ -40,5 +40,12 @@ final readonly class BatchDraw
          * every shelf.
          */
         public ?int $investorDealId = null,
+        /**
+         * سعر السادة the deal that financed this layer sells it to the press at — carried for
+         * the reason `investorDealId` above is, and it is the same mistake if it is dropped: a
+         * transfer's destination layer would lose the price and the next printed order would
+         * take an investor's goods at cost.
+         */
+        public ?string $printingSalePrice = null,
     ) {}
 }

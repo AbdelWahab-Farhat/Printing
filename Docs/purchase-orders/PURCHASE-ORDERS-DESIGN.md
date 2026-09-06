@@ -115,9 +115,14 @@ data}`, `meta` on lists).
   "product_variant": { "id": 14, "label": "34*44", "product_id": 14, "product_code": "P14", "product_name": "..." },
   "quantity_ordered": "10.000",
   "quantity_received": "4.000",
-  "quantity_remaining": "6.000"
+  "quantity_remaining": "6.000",
+  "quantity_over_received": "0.000"
 }
 ```
+
+`quantity_remaining` is floored at zero and `quantity_over_received` carries what arrived beyond
+the order — an overshipped line owes nothing, and a negative remainder would make every screen
+asking "is anything still coming" read a debt that runs the wrong way.
 
 `POST .../arrivals` does **not** return a `PurchaseOrderResource`. It returns the created
 `StockArrivalResource` (identical shape to `POST /stock-arrivals`), now carrying
@@ -147,8 +152,11 @@ What happens, in one transaction:
 
 1. Refused (422) if the order is `completed` or `cancelled`.
 2. Every line is checked *before* anything is written: a `product_variant_id` not on the order
-   is refused, and a line whose running total would exceed `quantity_ordered` is refused —
-   nothing partially lands.
+   is refused — nothing partially lands. **A quantity larger than what remains on order is
+   not refused**: suppliers overship, the goods are on the shelf either way, and refusing the
+   receipt would only leave the ledger describing a warehouse that does not exist. The surplus
+   enters stock at the line's own landed unit cost, so the extra units are valued at the price
+   the order agreed per unit.
 3. The shipment is posted through the exact same path `POST /stock-arrivals` uses
    (`VendorService::recordStockArrival()` → `InventoryService::recordMovement()`), so the
    warehouse balance and `stock_movements` ledger move exactly as they always have.
@@ -226,7 +234,8 @@ Touched (not created) in the Vendor context: `StockArrivalData` gained an option
 ## 9. Tests
 
 `tests/Feature/Api/V1/PurchaseOrderTest.php` — 37 tests, full CRUD/status/receiving matrix
-including the permission split in §5, over-receipt, receiving an unordered variant, and the
+including the permission split in §5, over-receipt (accepted, costed and reported as a surplus),
+receiving an unordered variant, and the
 document+ledger+balance triple-check on every successful receive. Two tests added to
 `StockArrivalTest.php` confirming the generic endpoint never accepts a client-supplied
 `purchase_order_id`.

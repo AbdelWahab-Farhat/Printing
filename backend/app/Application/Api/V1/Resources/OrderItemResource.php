@@ -90,7 +90,14 @@ class OrderItemResource extends JsonResource
                 fn () => $this->outsourcing_cost === null ? null : (string) $this->outsourcing_cost,
             ),
 
+            // What this line **paid** for its material. On a printed line that drew an
+            // investor's plain stock that is سعر السادة × weight, not what the goods cost — the
+            // press bought them. `material_cost_actual` beside it is what they cost.
             'material_cost' => $this->material_cost === null ? null : (string) $this->material_cost,
+            'material_cost_actual' => $this->material_cost_actual === null
+                ? null
+                : (string) $this->material_cost_actual,
+            'stock_purchased_at' => $this->stock_purchased_at?->toISOString(),
             'labor_cost' => $this->labor_cost === null ? null : (string) $this->labor_cost,
             'overhead_cost' => $this->overhead_cost === null ? null : (string) $this->overhead_cost,
             'cogs' => $this->cogs === null ? null : (string) $this->cogs,

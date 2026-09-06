@@ -32,6 +32,15 @@ abstract class InvestorDeal with _$InvestorDeal {
     /// built by hand owns all of its goods, hence 100.
     @JsonKey(name: 'investor_funded_percent') @Default('100.0000') String investorFundedPercent,
 
+    /// سعر السادة — what the press pays this deal for a unit of its plain stock, agreed while
+    /// the order was being funded and frozen with the percentages.
+    ///
+    /// **Null puts the deal on the other road entirely.** With a price, the press buys its plain
+    /// material off the shelf the moment a printed line takes it and the partners are paid there
+    /// and then, by ownership alone. Without one, they ride the sale itself and are paid out of
+    /// the delivered order's profit — which is what every deal did before this existed.
+    @JsonKey(name: 'printing_sale_price') String? printingSalePrice,
+
     @JsonKey(name: 'opened_on') String? openedOn,
     @JsonKey(name: 'closed_at') String? closedAt,
     String? notes,
@@ -129,6 +138,10 @@ abstract class DealInvestorStanding with _$DealInvestorStanding {
 /// `quantityReceived` is derived by the server rather than summed off the layers, because a
 /// transfer between warehouses mints a fresh layer and summing received quantities would
 /// double-count every unit ever moved.
+///
+/// `unitLabel` is the Arabic word the quantities are in — sent by the server, as everywhere else
+/// in this app, so no translation table lives here. It is null when the deal holds two units at
+/// once and the totals are in no single one; the numbers then stand bare, as they used to.
 @freezed
 abstract class DealStock with _$DealStock {
   const factory DealStock({
@@ -137,6 +150,8 @@ abstract class DealStock with _$DealStock {
     @JsonKey(name: 'quantity_sold') required String quantitySold,
     @JsonKey(name: 'quantity_damaged') required String quantityDamaged,
     @JsonKey(name: 'quantity_short') required String quantityShort,
+    String? unit,
+    @JsonKey(name: 'unit_label') String? unitLabel,
     @JsonKey(name: 'cost_remaining') required String costRemaining,
     @JsonKey(name: 'cost_sold') required String costSold,
     @JsonKey(name: 'cost_damaged') required String costDamaged,

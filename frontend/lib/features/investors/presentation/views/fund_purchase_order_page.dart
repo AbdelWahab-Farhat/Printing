@@ -45,6 +45,17 @@ class _FundPurchaseOrderPageState extends State<FundPurchaseOrderPage> {
   final _formKey = GlobalKey<FormState>();
   final _sharePercent = TextEditingController();
 
+  /// سعر السادة — what the press will pay this deal for a unit of its plain stock.
+  ///
+  /// **Left empty on purpose is a real answer**, and the deal takes the road it always took: its
+  /// partners ride the sale and are paid out of the delivered order's profit. Filled, they are
+  /// paid the margin at the warehouse door instead and nothing after it reaches them.
+  ///
+  /// Empty is not «no price» to the press, though — an unpriced draw is charged what the goods
+  /// cost, so the box says so on its own label and stands the figure itself in the empty field
+  /// ({@see _costPerUnit}). «بكم بتمشي لو ما كتبتش؟» is answered before it is asked.
+  final _printingSalePrice = TextEditingController();
+
   final _funders = <({Investor investor, TextEditingController amount})>[];
 
   /// The shelves this deal is taking. Starts as everything nobody has claimed.
@@ -70,6 +81,7 @@ class _FundPurchaseOrderPageState extends State<FundPurchaseOrderPage> {
   @override
   void dispose() {
     _sharePercent.dispose();
+    _printingSalePrice.dispose();
     for (final row in _funders) {
       row.amount.dispose();
     }
@@ -92,6 +104,21 @@ class _FundPurchaseOrderPageState extends State<FundPurchaseOrderPage> {
   double get _chosenCost => widget.order.items
       .where((line) => _chosen.contains(line.stockItemId))
       .fold(0, (sum, line) => sum + _costOf(line));
+
+  /// What one unit of the chosen stock cost landed — **the price an empty box falls back to**,
+  /// because a draw carrying no سعر السادة is charged to the printing job at what it cost.
+  ///
+  /// Null while the chosen lines disagree about it: a single number would then be an average
+  /// nobody is charged, and the rule on the label is the whole of the honest answer.
+  String? get _costPerUnit {
+    final unitCosts = <String>{
+      for (final line in widget.order.items)
+        if (_chosen.contains(line.stockItemId))
+          groupedDecimal(line.finalUnitCost ?? '0'),
+    };
+
+    return unitCosts.length == 1 ? unitCosts.first : null;
+  }
 
   double _amountOf(({Investor investor, TextEditingController amount}) row) =>
       double.tryParse(Validators.toWesternDigits(row.amount.text.trim())) ?? 0;
@@ -159,6 +186,12 @@ class _FundPurchaseOrderPageState extends State<FundPurchaseOrderPage> {
       if (_sharePercent.text.trim().isNotEmpty)
         'investor_profit_share_percent': Validators.toWesternDigits(
           _sharePercent.text.trim(),
+        ),
+      // Omitted entirely when empty, never sent as a zero: the server reads «nobody agreed a
+      // price» from its absence, and a zero would mean the press takes the goods for nothing.
+      if (_printingSalePrice.text.trim().isNotEmpty)
+        'printing_sale_price': Validators.toWesternDigits(
+          _printingSalePrice.text.trim(),
         ),
       'stock_item_ids': _chosen.toList(),
       'investors': [
@@ -240,6 +273,21 @@ class _FundPurchaseOrderPageState extends State<FundPurchaseOrderPage> {
                 suffix: Text('%', style: context.textTheme.bodyLarge),
                 validator: Validators.optional(
                   Validators.decimal(allowZero: false, max: 100),
+                ),
+              ),
+              SizedBox(height: 12.h),
+              AppTextField(
+                controller: _printingSalePrice,
+                label: 'سعر بيع السادة للطباعة (فارغ = بالتكلفة)',
+                hint: _costPerUnit == null ? null : 'التكلفة $_costPerUnit',
+                prefixIcon: AppIcons.manufacturingCostRates,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]')),
+                ],
+                suffix: Text('د.ل', style: context.textTheme.bodyLarge),
+                validator: Validators.optional(
+                  Validators.decimal(allowZero: false),
                 ),
               ),
               SizedBox(height: 28.h),

@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// One field of a move, drawn from what the server said about it.
 ///
 /// **The point of these tests is that nothing here is written per field.** «المخصوم من 25*35
-/// (كيلوغرام)» and «الناقص من 30*30 (قطعة)» are the same widget with different words, and the
+/// (كجم)» and «الناقص من 30*30 (قطعة)» are the same widget with different words, and the
 /// words came down the wire — so a field added to a path on the backend needs no change in this
 /// app. «الوزن (كجم)» was drawn by this same widget until the day it was deleted, and deleting
 /// it took no Dart with it.
@@ -69,9 +69,9 @@ void main() {
     const measured = TransitionField(
       key: 'warehouse_quantity_31',
       type: TransitionFieldType.number,
-      label: 'المخصوم من 25*35 (كيلوغرام)',
+      label: 'المخصوم من 25*35 (كجم)',
       isRequired: true,
-      hint: 'المباع 500.000 قطعة — والمخزن يُنقص بالكيلوغرام',
+      hint: 'المباع 500.000 قطعة — والمخزن يُنقص بالكجم',
     );
 
     // Act
@@ -79,8 +79,8 @@ void main() {
     await tester.pump();
 
     // Assert — the label is the server's, and the hint under it too.
-    expect(find.text('المخصوم من 25*35 (كيلوغرام)'), findsOneWidget);
-    expect(find.text('المباع 500.000 قطعة — والمخزن يُنقص بالكيلوغرام'), findsOneWidget);
+    expect(find.text('المخصوم من 25*35 (كجم)'), findsOneWidget);
+    expect(find.text('المباع 500.000 قطعة — والمخزن يُنقص بالكجم'), findsOneWidget);
   });
 
   testWidgets('an optional field says so, so nobody hunts for what is blocking them', (
@@ -91,7 +91,7 @@ void main() {
     const measured = TransitionField(
       key: 'warehouse_quantity_31',
       type: TransitionFieldType.number,
-      label: 'المخصوم من 25*35 (كيلوغرام)',
+      label: 'المخصوم من 25*35 (كجم)',
     );
 
     // Act
@@ -99,7 +99,7 @@ void main() {
     await tester.pump();
 
     // Assert
-    expect(find.text('المخصوم من 25*35 (كيلوغرام) (اختياري)'), findsOneWidget);
+    expect(find.text('المخصوم من 25*35 (كجم) (اختياري)'), findsOneWidget);
   });
 
   testWidgets('what is typed reaches the caller as typed', (tester) async {

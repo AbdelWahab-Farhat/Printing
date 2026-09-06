@@ -852,7 +852,7 @@ mixin _$ProductMaterial {
  int get id;/// `G3` — server-allocated from the id and never settable.
  String get code; String get name;/// What a size created under this material starts out counted in. Changing it on the material
 /// disturbs no existing shelf; it only decides what the next one is minted with.
-@JsonKey(name: 'default_unit') String get defaultUnit;/// The server's Arabic for [defaultUnit] — «قطعة», «كيلوغرام» — drawn as sent, so a unit the
+@JsonKey(name: 'default_unit') String get defaultUnit;/// The server's Arabic for [defaultUnit] — «قطعة», «كجم» — drawn as sent, so a unit the
 /// backend grows tomorrow still reads right without this app being rebuilt.
 @JsonKey(name: 'default_unit_label') String get defaultUnitLabel;
 /// Create a copy of ProductMaterial
@@ -1062,7 +1062,7 @@ class _ProductMaterial implements ProductMaterial {
 /// What a size created under this material starts out counted in. Changing it on the material
 /// disturbs no existing shelf; it only decides what the next one is minted with.
 @override@JsonKey(name: 'default_unit') final  String defaultUnit;
-/// The server's Arabic for [defaultUnit] — «قطعة», «كيلوغرام» — drawn as sent, so a unit the
+/// The server's Arabic for [defaultUnit] — «قطعة», «كجم» — drawn as sent, so a unit the
 /// backend grows tomorrow still reads right without this app being rebuilt.
 @override@JsonKey(name: 'default_unit_label') final  String defaultUnitLabel;
 

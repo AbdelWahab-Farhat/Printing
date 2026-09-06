@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Order;
 
+use App\Domain\Order\Actions\ReinstateCancelledOrder;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -11,7 +12,7 @@ use Illuminate\Foundation\Http\FormRequest;
  *
  * **One optional field, and no destination among them.** Where the order goes back to is read
  * from its own timeline — see
- * {@see \App\Domain\Order\Actions\ReinstateCancelledOrder} — so there is nothing here for a
+ * {@see ReinstateCancelledOrder} — so there is nothing here for a
  * caller to name, and a payload that tried would be describing a decision this endpoint does
  * not offer.
  *

@@ -150,13 +150,13 @@ void main() {
       'quantity': '1.600',
       'stock_item_id': 7,
       'unit': 'kilogram',
-      'unit_label': 'كيلوغرام',
+      'unit_label': 'كجم',
     });
 
     // Act
     final unit = row.unitLabel;
 
     // Assert
-    expect(unit, 'كيلوغرام');
+    expect(unit, 'كجم');
   });
 }

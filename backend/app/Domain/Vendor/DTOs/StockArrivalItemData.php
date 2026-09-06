@@ -27,6 +27,12 @@ final readonly class StockArrivalItemData
          * — so only `ReceivePurchaseOrder` ever fills it, by building this DTO directly.
          */
         public ?int $investorDealId = null,
+        /**
+         * سعر السادة that deal sells this line to the press at, read from the deal beside the id
+         * above and never typed here either. Null when the company financed the line, and null
+         * on a deal opened without the term.
+         */
+        public ?string $printingSalePrice = null,
     ) {}
 
     /**

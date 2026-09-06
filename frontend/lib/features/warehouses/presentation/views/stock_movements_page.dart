@@ -17,6 +17,7 @@ import 'package:dayaa/features/warehouses/presentation/views/record_movement_pag
 import 'package:dayaa/features/warehouses/presentation/widgets/day_header.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/ledger_row.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/movement_row.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/revalue_batch_sheet.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/stock_batch_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -530,6 +531,13 @@ class _BatchesTabState extends State<_BatchesTab> {
                 batch: batch,
                 position: index + 1,
                 isNext: index == 0,
+                // **Whether this layer may be repriced is the server's answer, not one worked
+                // out here**: a used-up layer and one an investor's money bought are both
+                // refused, and `can_be_revalued` is how the API says so. The grant is the
+                // second half — correcting a cost is a different trust level from moving stock.
+                onTap: batch.canBeRevalued && sl<Session>().can(AppPermission.revalueStock)
+                    ? () => _correctCost(context, batch)
+                    : null,
               ),
             ),
           ),
@@ -555,6 +563,36 @@ class _BatchesTabState extends State<_BatchesTab> {
       ),
     );
   }
+}
+
+/// Opens the correction, sends what it answered with, and says what happened.
+///
+/// The Cubit decides what the list does with the answer — patched in place, or re-read when the
+/// layer split. Here there is only the sentence a person sees, and the server's own words when
+/// it refuses.
+Future<void> _correctCost(BuildContext context, StockBatch batch) async {
+  final cubit = context.read<StockBatchesCubit>();
+
+  final draft = await showRevalueBatchSheet(context: context, batch: batch);
+
+  if (draft == null || !context.mounted) return;
+
+  final failure = await cubit.revalue(
+    batch,
+    unitCost: draft.unitCost,
+    quantity: draft.quantity,
+    reason: draft.reason,
+  );
+
+  if (!context.mounted) return;
+
+  if (failure != null) {
+    context.showFailure(failure);
+
+    return;
+  }
+
+  context.showSuccess('تم تعديل تكلفة الدفعة');
 }
 
 class _SpentBatches extends StatelessWidget {

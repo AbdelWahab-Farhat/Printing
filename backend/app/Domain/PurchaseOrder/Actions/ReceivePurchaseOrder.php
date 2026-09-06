@@ -10,7 +10,6 @@ use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderItemData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderHasNoWarehouse;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderNotReceivable;
-use App\Domain\PurchaseOrder\Exceptions\ReceivedQuantityExceedsOrdered;
 use App\Domain\PurchaseOrder\Exceptions\StockItemNotOnPurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
@@ -34,6 +33,13 @@ use Illuminate\Support\Facades\DB;
  * `quantity_received` climbs by what this shipment carried, and the order's status is
  * recomputed from the result.
  *
+ * **A shipment larger than the order is booked in whole.** Suppliers overship — a run of bags
+ * comes off the machine heavy and the whole lot arrives — and the goods are on the shelf whether
+ * or not the paperwork expected them, so refusing the receipt would only leave the ledger
+ * describing a warehouse that does not exist. The surplus enters stock at the line's own landed
+ * unit cost, so what the order agreed per unit is what the extra units are valued at; the line
+ * then owes nothing and reports the surplus separately, and the order completes.
+ *
  * Each line's `final_unit_cost` — the base cost plus its allocated share of the order's
  * additional costs, from {@see AllocatePurchaseOrderAdditionalCosts} — also travels into the
  * {@see StockArrivalItemData} built here, so a shipment's landed cost (and the FIFO stock batch
@@ -45,7 +51,6 @@ use Illuminate\Support\Facades\DB;
  * @throws PurchaseOrderNotReceivable
  * @throws PurchaseOrderHasNoWarehouse
  * @throws StockItemNotOnPurchaseOrder
- * @throws ReceivedQuantityExceedsOrdered
  */
 final class ReceivePurchaseOrder
 {
@@ -66,9 +71,8 @@ final class ReceivePurchaseOrder
 
         return DB::transaction(function () use ($order, $data): StockArrival {
             // Locked for the rest of the transaction so two concurrent receipts against the
-            // same order cannot both read the same quantity_received and both pass the
-            // over-receipt guard below — the same reasoning ApplyStockChange locks a balance row
-            // for.
+            // same order cannot both read the same quantity_received and both write a total
+            // computed from it — the same reasoning ApplyStockChange locks a balance row for.
             $items = $order->items()->lockForUpdate()->get()->keyBy('stock_item_id');
 
             foreach ($data->items as $line) {
@@ -84,6 +88,7 @@ final class ReceivePurchaseOrder
                         /** @var PurchaseOrderItem $orderedLine */
                         $orderedLine = $items->get($line->stockItemId);
                         $unitCost = $orderedLine->final_unit_cost === null ? null : (string) $orderedLine->final_unit_cost;
+                        $funding = $this->investors->dealForSupply((int) $order->getKey(), $line->stockItemId);
 
                         return new StockArrivalItemData(
                             stockItemId: $line->stockItemId,
@@ -99,10 +104,10 @@ final class ReceivePurchaseOrder
                             // goods left the supplier. Null for everything the company bought for
                             // itself. The receiving screen's body is unchanged and the storekeeper
                             // sees no field.
-                            investorDealId: $this->investors->dealForSupply(
-                                (int) $order->getKey(),
-                                $line->stockItemId,
-                            ),
+                            investorDealId: $funding?->dealId,
+                            // Frozen onto the layer beside the deal that owns it: what the press
+                            // will pay for these bags the day it prints on them.
+                            printingSalePrice: $funding?->printingSalePrice,
                         );
                     },
                     $data->items,
@@ -132,25 +137,11 @@ final class ReceivePurchaseOrder
      * @param  Collection<int, PurchaseOrderItem>  $items  Keyed by stock_item_id.
      *
      * @throws StockItemNotOnPurchaseOrder
-     * @throws ReceivedQuantityExceedsOrdered
      */
     private function guardLine(PurchaseOrder $order, Collection $items, ReceivePurchaseOrderItemData $line): void
     {
-        $item = $items->get($line->stockItemId);
-
-        if ($item === null) {
+        if (! $items->has($line->stockItemId)) {
             throw StockItemNotOnPurchaseOrder::make($line->stockItemId, (int) $order->getKey());
-        }
-
-        $projected = bcadd((string) $item->quantity_received, $line->quantity, 3);
-
-        if (bccomp($projected, (string) $item->quantity_ordered, 3) > 0) {
-            throw ReceivedQuantityExceedsOrdered::make(
-                $line->stockItemId,
-                (string) $item->quantity_ordered,
-                (string) $item->quantity_received,
-                $line->quantity,
-            );
         }
     }
 
