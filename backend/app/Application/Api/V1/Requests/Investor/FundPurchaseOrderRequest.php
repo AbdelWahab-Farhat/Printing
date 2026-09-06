@@ -35,9 +35,14 @@ class FundPurchaseOrderRequest extends FormRequest
             // سعر السادة — what the press will pay this deal for a unit of its plain stock,
             // agreed while the lorry is being funded and frozen with the percentages. Omitted,
             // the deal is on the old road: its investors ride the delivered order's profit.
-            // `gt:0` rather than `min:0` — a price of nothing is «nobody said», which is what
-            // leaving the field empty already means.
-            'printing_sale_price' => ['nullable', 'numeric', 'gt:0', 'max:999999999'],
+            //
+            // **The floor is the column's own resolution, not `gt:0`.** The price is rounded to
+            // three places before it is stored — `FundPurchaseOrderData::fromArray()`, matching
+            // `stock_batches.unit_cost` — so anything under half a thousandth passes `gt:0` and
+            // then arrives at the `printing_sale_price > 0` CHECK as a flat zero: a 500 out of
+            // the database where the person should have been told which field to fix. A price of
+            // nothing is «nobody said», which is what leaving the field empty already means.
+            'printing_sale_price' => ['nullable', 'numeric', 'min:0.001', 'max:999999999'],
             'notes' => ['nullable', 'string', 'max:2000'],
 
             // Which of the order's lines this deal funds. Omitted, it takes every line nobody
@@ -68,6 +73,7 @@ class FundPurchaseOrderRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'printing_sale_price.min' => 'أقل سعر سادة يمكن تسجيله هو 0.001 د.ل',
             'stock_item_ids.min' => 'اختر بنداً واحداً على الأقل تموّله الصفقة',
             'investors.required' => 'اختر مستثمراً واحداً على الأقل',
             'investors.*.investor_id.distinct' => 'المستثمر مكرَّر — سطر واحد لكل مستثمر',

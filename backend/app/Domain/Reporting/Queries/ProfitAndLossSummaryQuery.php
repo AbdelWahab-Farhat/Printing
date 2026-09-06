@@ -24,9 +24,14 @@ use Illuminate\Support\Facades\DB;
  * figures three other contexts already compute and cache; routing each number through a service
  * method would not reduce coupling, only relocate it. What this query must **not** do is
  * re-derive any of those figures itself: every SUM below is over an already-cached column
- * (`items_total`, `design_fee`, `total_cogs`, `order_items.material_cost`/`labor_cost`/
+ * (`items_total`, `design_fee`, `total_cogs`, `order_items.material_cost_actual`/`labor_cost`/
  * `overhead_cost`, `order_payments.amount`), never a re-computation of a money rule that already
- * has one home. The one exception — which orders' `design_fee` actually counts as revenue — is
+ * has one home.
+ *
+ * **Materials are costed at `material_cost_actual`.** A printed line that bought its plain bags
+ * off an investor at سعر السادة carries two material figures — what it paid, and what the goods
+ * cost the business — and a company-wide statement is only ever the second. See the note beside
+ * the breakdown below. The one exception — which orders' `design_fee` actually counts as revenue — is
  * the same `design_source = 'in_house'` condition {@see RecalculateOrderTotals}
  * already states once; restating it here in SQL is the same trade-off
  * `Order\Support\PaymentStatusExpression` already makes for exactly this reason: a report reading
@@ -75,14 +80,29 @@ final class ProfitAndLossSummaryQuery
 
         $orderIds = (clone $recognized)->pluck('id');
 
+        // **`material_cost_actual`, not `material_cost` — and this statement is the reason that
+        // column exists.** Since سعر السادة, a printed line's `material_cost` is what the *press*
+        // paid the deal that financed its plain bags, which is the right basis for that line's
+        // own profit and the wrong one for the company's. The difference between the two never
+        // left the business: it moved from the press's pocket to the deal's, and the investors'
+        // slice of it is a distribution out of the wallet, not a cost of goods. Summing the
+        // charged figure here would understate company-wide gross profit by the whole internal
+        // margin — the company's own share of it included.
+        //
+        // `total_cogs` above is the same charged figure rolled up per order, so the margin is
+        // netted out of it below rather than the column being redefined: an order's own margin
+        // must keep costing it what it paid.
         $costBreakdown = OrderItem::query()
             ->whereIn('order_id', $orderIds)
             ->selectRaw(
-                'COALESCE(SUM(material_cost), 0) as material, '.
+                'COALESCE(SUM(COALESCE(material_cost_actual, material_cost)), 0) as material, '.
                 'COALESCE(SUM(labor_cost), 0) as labor, '.
-                'COALESCE(SUM(overhead_cost), 0) as overhead',
+                'COALESCE(SUM(overhead_cost), 0) as overhead, '.
+                'COALESCE(SUM(material_cost - COALESCE(material_cost_actual, material_cost)), 0) as transfer_margin',
             )
             ->first();
+
+        $cogs = bcsub($cogs, (string) $costBreakdown->transfer_margin, 8);
 
         $cashCollected = (string) OrderPayment::query()
             ->where('type', OrderPaymentType::Payment->value)
