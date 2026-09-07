@@ -83,6 +83,7 @@ enum NawrisStatusCode: int
     /** «مرتجع مع المندوب» — on its way back, still with the courier. */
     case ComingBack = 15;
 
+    case OnTheWayToBranch = 16;
     /** «مرتجع في الفرع» — sitting at the carrier's branch. */
     case ReturnAtBranch = 19;
 
@@ -99,9 +100,9 @@ enum NawrisStatusCode: int
         return match ($this) {
             // Their warehouse says nothing about our order beyond "they have it", and their
             // settlement says nothing about ours.
-            self::AtTheirCompany, self::TheirSettlement => null,
+             self::TheirSettlement => null,
 
-            self::WithTheCourier => OrderStatus::OutForDelivery,
+            self::WithTheCourier,self::AtTheirCompany,self::OnTheWayToBranch => OrderStatus::OutForDelivery,
             self::ReturnWithCompany, self::ReturnAtBranch => OrderStatus::ReturnedCarrier,
             self::ComingBack => OrderStatus::ReturnedCourier,
             self::ReturnReceived => OrderStatus::ReturnedOffice,
