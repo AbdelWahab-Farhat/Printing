@@ -70,6 +70,22 @@ return [
             'replace_placeholders' => true,
         ],
 
+        /*
+         * Push notifications. Its own channel for the same reason the carrier has one: when a
+         * notification does not arrive on somebody's phone, the question is always «did we even
+         * try?», and that answer should not have to be dug out of the application log.
+         *
+         * The service account's private key never reaches here — FcmClient logs the message it
+         * built and the status it got back, and nothing else.
+         */
+        'fcm' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/fcm.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => (int) env('FCM_LOG_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', (string) env('LOG_STACK', 'single')),

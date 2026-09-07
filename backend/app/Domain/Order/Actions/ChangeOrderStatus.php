@@ -8,6 +8,7 @@ use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
@@ -295,6 +296,14 @@ final class ChangeOrderStatus
             // {@see OrderProfitFinalised}.
             if ($target === OrderStatus::Delivered || $target === OrderStatus::Settled) {
                 OrderProfitFinalised::dispatch((int) $order->getKey());
+            }
+
+            // **The order is stuck and a person has to do something about it.** Announced rather
+            // than acted on, like the three above — but its listener is the one that is *queued
+            // and deferred to after commit*, because it tells people rather than moving money.
+            // A notification about a transaction that then rolled back cannot be taken back.
+            if ($target === OrderStatus::Shortage) {
+                OrderEnteredShortage::dispatch((int) $order->getKey(), $actor?->getKey() === null ? null : (int) $actor->getKey());
             }
 
             return $order->refresh();

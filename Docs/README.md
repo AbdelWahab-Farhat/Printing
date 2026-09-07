@@ -91,6 +91,13 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [NAWRIS-CHANGES.md](nawris/NAWRIS-CHANGES.md) | What actually changed: parcels, webhooks, carrier settlement. |
 | [NAWRIS-FRONTEND-INTEGRATION.md](nawris/NAWRIS-FRONTEND-INTEGRATION.md) | Connecting the Flutter app to it. |
 
+## [notifications/](notifications/)
+
+| Document | |
+|---|---|
+| [NOTIFICATIONS-BACKEND-CHANGES.md](notifications/NOTIFICATIONS-BACKEND-CHANGES.md) | الإشعارات — مركز داخل التطبيق ودفع FCM. **مخطَّط، لم يُبنَ بعد.** ابدأ من هنا. |
+| [NOTIFICATIONS-FRONTEND-INTEGRATION.md](notifications/NOTIFICATIONS-FRONTEND-INTEGRATION.md) | الجانب التطبيقي — الجرس، رمز الجهاز، إذن النظام. **لم يبدأ.** |
+
 ## [orders/](orders/)
 
 | Document | |

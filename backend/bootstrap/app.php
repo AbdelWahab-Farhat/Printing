@@ -3,6 +3,7 @@
 use App\Support\ApiEnvelope;
 use App\Support\Exceptions\ProvidesApiFailure;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,19 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    /*
+     * **The first scheduled work in this application** — so `schedule:run` needs a cron entry on
+     * every box, exactly as `queue:work` needs a worker. Registering it here does nothing on its
+     * own, and its absence is silent: the notification tables simply grow forever while every
+     * screen keeps working. It belongs on the deployment checklist beside the worker:
+     *
+     *     * * * * * cd /path/to/backend && php artisan schedule:run >> /dev/null 2>&1
+     */
+    ->withSchedule(function (Schedule $schedule): void {
+        // Nightly, off-hours, and without overlapping itself — a prune that ran long once must
+        // not have a second copy start on top of it.
+        $schedule->command('notifications:prune')->dailyAt('03:30')->withoutOverlapping();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         // An unauthenticated API request must never redirect to a web login page — there
         // isn't one. Returning null makes Laravel throw AuthenticationException, which the
