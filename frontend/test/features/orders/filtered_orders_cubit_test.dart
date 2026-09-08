@@ -6,6 +6,7 @@ import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
+import 'package:dayaa/features/orders/models/orders_sort.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/get_orders.dart';
@@ -22,6 +23,10 @@ class _MockOrderRepository extends Mock implements OrderRepository {}
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
+  // `any(named: 'sort')` needs something to hand back when nothing was captured, and
+  // mocktail cannot invent a value for an enum.
+  setUpAll(() => registerFallbackValue(OrdersSort.newest));
+
   late _MockOrderRepository repository;
 
   setUp(() => repository = _MockOrderRepository());
@@ -54,6 +59,8 @@ void main() {
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         from: any(named: 'from'),
         to: any(named: 'to'),
@@ -94,6 +101,8 @@ void main() {
         search: any(named: 'search'),
         statuses: captureAny(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         from: any(named: 'from'),
         to: any(named: 'to'),
@@ -122,6 +131,8 @@ void main() {
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         from: captureAny(named: 'from'),
         to: captureAny(named: 'to'),
@@ -151,6 +162,8 @@ void main() {
         search: any(named: 'search'),
         statuses: captureAny(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         from: any(named: 'from'),
         to: any(named: 'to'),
@@ -216,6 +229,8 @@ void main() {
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: captureAny(named: 'customerId'),
         from: any(named: 'from'),
         to: any(named: 'to'),
@@ -249,6 +264,8 @@ void main() {
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: captureAny(named: 'customerId'),
         from: any(named: 'from'),
         to: any(named: 'to'),
@@ -275,6 +292,8 @@ void main() {
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: captureAny(named: 'customerId'),
         from: any(named: 'from'),
         to: any(named: 'to'),

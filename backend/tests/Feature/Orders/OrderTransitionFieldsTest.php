@@ -193,6 +193,7 @@ class OrderTransitionFieldsTest extends TestCase
                 'min' => null,
                 'max' => null,
                 'value' => null,
+                'value_label' => null,
                 'options' => [],
                 'required_with' => null,
                 'required_if' => null,
@@ -210,6 +211,7 @@ class OrderTransitionFieldsTest extends TestCase
                 'min' => null,
                 'max' => null,
                 'value' => null,
+                'value_label' => null,
                 'options' => [],
                 'required_with' => null,
                 'required_if' => null,
@@ -629,6 +631,56 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertNotNull($courier);
         $this->assertSame('هاتف المندوب', $courier['label']);
         $this->assertFalse($courier['required']);
+    }
+
+    public function test_the_dispatch_form_opens_holding_the_default_carrier(): void
+    {
+        // Arrange — the business named the one that takes nearly every parcel.
+        ShippingCompany::factory()->create(['name' => 'درب']);
+        $preferred = ShippingCompany::factory()->asDefault()->create(['name' => 'النورس']);
+        $order = Order::factory()->status(OrderStatus::Ready)->create();
+        $headers = $this->dispatcher();
+
+        // Act
+        $out = $this->transition($this->show($headers, $order), OrderStatus::OutForDelivery);
+        $carrier = $this->fieldNamed($out['fields'], 'shipping_company_id');
+
+        // Assert — the id is what travels back, and the name travels beside it so the app can
+        // write «النورس» on the button without having fetched the list first.
+        $this->assertSame((string) $preferred->id, $carrier['value']);
+        $this->assertSame('النورس', $carrier['value_label']);
+    }
+
+    public function test_the_dispatch_form_opens_empty_when_nobody_named_a_default(): void
+    {
+        // Arrange
+        ShippingCompany::factory()->count(2)->create();
+        $order = Order::factory()->status(OrderStatus::Ready)->create();
+        $headers = $this->dispatcher();
+
+        // Act
+        $out = $this->transition($this->show($headers, $order), OrderStatus::OutForDelivery);
+        $carrier = $this->fieldNamed($out['fields'], 'shipping_company_id');
+
+        // Assert — which of two took the parcel is a fact, not a default.
+        $this->assertNull($carrier['value']);
+        $this->assertNull($carrier['value_label']);
+    }
+
+    public function test_a_default_we_stopped_dealing_with_is_not_suggested(): void
+    {
+        // Arrange — the flag cannot outlive the dealing, but a row edited outside the app could
+        // still carry it.
+        ShippingCompany::factory()->inactive()->create(['name' => 'النورس', 'is_default' => true]);
+        $order = Order::factory()->status(OrderStatus::Ready)->create();
+        $headers = $this->dispatcher();
+
+        // Act
+        $out = $this->transition($this->show($headers, $order), OrderStatus::OutForDelivery);
+        $carrier = $this->fieldNamed($out['fields'], 'shipping_company_id');
+
+        // Assert — the picker would refuse it, so the form must not open holding it.
+        $this->assertNull($carrier['value']);
     }
 
     public function test_an_order_the_customer_is_collecting_is_asked_for_no_carrier(): void

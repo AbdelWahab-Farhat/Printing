@@ -160,7 +160,7 @@ void main() {
     expect(find.text('+ 10'), findsOneWidget);
   });
 
-  testWidgets('the account prints it after the delivery and before the discount', (
+  testWidgets('the account prints it after the products and before the discount', (
     tester,
   ) async {
     // Arrange
@@ -174,13 +174,14 @@ void main() {
 
     // Act
     await tester.pump();
-    final delivery = tester.getRect(find.text('التوصيل'));
+    final products = tester.getRect(find.text('المنتجات'));
     final charge = tester.getRect(find.text('التكلفة الإضافية'));
     final discount = tester.getRect(find.text('الخصم'));
 
     // Assert — the server's own order of operations, so a reader working down the column
-    // reaches «الإجمالي» with the same arithmetic the server did.
-    expect(charge.top, greaterThan(delivery.top));
+    // reaches «الإجمالي» with the same arithmetic the server did. «التوصيل» is no longer one
+    // of the lines it passes: the fee sits under the total and is added to nothing.
+    expect(charge.top, greaterThan(products.top));
     expect(charge.top, lessThan(discount.top));
     expect(find.text('+ 10'), findsOneWidget);
   });

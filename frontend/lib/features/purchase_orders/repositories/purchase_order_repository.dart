@@ -179,4 +179,23 @@ abstract interface class PurchaseOrderRepository {
     String? invoiceNumber,
     String? notes,
   });
+
+  /// Undoes a receipt posted in error: takes the stock back off the shelf, marks the arrival as
+  /// reversed and leaves the order on «قيد الاستلام» to be received again.
+  ///
+  /// **Answers with the reopened order**, unlike [receiveArrival] — so the detail state is
+  /// replaced rather than re-fetched, the same shape [changeStatus] has.
+  ///
+  /// [reason] is required by the server, 3–500 characters. A correction to the stock ledger
+  /// nobody has to account for is what the window and the audit trail exist to prevent.
+  ///
+  /// **Refused with a 422 and its own Arabic sentence** when the window has closed without the
+  /// override, when some of the batch has already been drawn on, when a layer was repriced by
+  /// hand, when it was undone already, or when there is no receipt to undo. Each names a
+  /// different problem and tells the person what to do instead — usually a stocktake
+  /// adjustment — so the message is surfaced as sent and never re-worded here.
+  Future<Either<Failure, PurchaseOrder>> reverseReceipt(
+    int purchaseOrderId, {
+    required String reason,
+  });
 }

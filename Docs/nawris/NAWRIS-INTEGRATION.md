@@ -229,9 +229,12 @@ code 7  →  ChangeOrderStatus(order, Delivered, actor: carrier system user)
 ```
 
 **The amount recorded is what Nawris remits to us, not what the customer handed the courier.**
-Those differ by the carrier's own fee, and — since we subtract our delivery line before sending —
-the COD payment alone leaves `orders.delivery_price` outstanding. A second, non-cash entry closes
-that gap in the same transaction; see [§5.2](#52-the-delivery-fee-and-the-guard-it-keeps-alive).
+Those differ by the carrier's own fee. **Since 2026-09-08 the COD payment closes the order on its
+own**: the delivery fee left `grand_total` altogether, so nothing of it is outstanding for a
+second entry to close — see [§5.2](#52-the-delivery-fee-and-the-guard-it-keeps-alive). The
+`CarrierSettled` entry and its action stay in place for parcels dispatched before that change,
+whose `delivery_price_deducted` carries a real figure; new parcels write `0.00` and never reach
+that branch.
 
 Otherwise the webhook **stops** here. «تم التسوية» stays where it is: a human decision, guarded by
 `SettlementRequiresFullPayment`, taken by someone holding `orders.status.settled`. The carrier
@@ -251,18 +254,23 @@ Three consequences to build for:
 
 ### 5.2 The delivery fee, and the guard it keeps alive
 
-**Decided: our delivery fee is subtracted from the COD before the payload goes out.**
+**Decided 2026-09-08, by the owner: delivery is not part of what we bill.** «سعر التوصيل ليس من
+تكاليفي وليس حتى من ارباحي، هو فقط على الزبون.» The fee left `grand_total` — see
+`RecalculateOrderTotals` — and with it the subtraction this section used to describe. It is still
+recorded on the order and shown on every screen, because a clerk quoting an order has to say what
+the trip costs; it is simply added to nothing.
 
 ```
-amount_to_be_collected = max(0, Order::remainingAmount() − orders.delivery_price)
+amount_to_be_collected = max(0, Order::remainingAmount())
 
                        // remainingAmount() expanded, so nothing is hidden behind a method name:
-                       = max(0, grand_total
-                               − paid_amount            // every deposit and installment already taken
-                               − written_off_amount     // money forgiven is not money to collect
-                               − delivery_price)        // the fee, per this section
+                       = max(0, grand_total              // the goods, the design fee, the charge,
+                                                         //   less the discount — no delivery in it
+                               − paid_amount             // every deposit and installment already taken
+                               − written_off_amount      // money forgiven is not money to collect
+                               − carrier_settled_amount) // pre-2026-09-08 parcels only
 
-shipment_on_sender     = 0     // their default — the courier collects their own fee on top
+shipment_on_sender     = 0     // always — the courier collects their own fee at the door
 ```
 
 **`paid_amount` coming off is the contract's field rule #1**, and the reason it insists on one COD
@@ -271,25 +279,18 @@ paid."* One function — `BuildNawrisPayload` — is called by dispatch and by e
 payment landing after dispatch is itself an `edit-order` trigger ([§8](#8-when-we-call-them)) so the
 figure Nawris holds follows the ledger rather than drifting from it.
 
-**The clamp has one edge, and it is a real double-charge.** When `remaining ≤ delivery_price` — a
-prepaid order, or one paid down to less than the fee — the subtraction cannot be fully absorbed and
-`max(0, …)` discards the difference. The customer has already paid us for delivery inside
-`grand_total`, and `shipment_on_sender = 0` then has the courier charge them again at the door. A
-fully prepaid order is the clearest case: COD is `0`, and the customer pays Nawris's fee on top of a
-delivery they have already settled.
+**Subtracting the fee now would under-collect, which is why it went.** The old arithmetic put the
+fee into `grand_total` and took it straight back out of the COD, so that the courier could charge
+it once at the door. Taking it out of a total that no longer contains it would simply hand the
+customer a discount the size of the trip.
 
-The fix is one condition in `BuildNawrisPayload`, not a new concept:
-
-```
-shipment_on_sender = (remaining ≤ delivery_price) ? 1 : 0
-```
-
-When there is no COD left to carry the fee, the fee is billed to us — which is what the customer's
-own payment already covered. `0` in every ordinary case, exactly as decided above.
+**`shipment_on_sender` is `0` with no condition on it.** The flip to `1` existed only to repair the
+edge the old clamp created — a prepaid order whose COD could not absorb the subtraction had already
+paid us for delivery, so the fee fell to us. No order pays us for delivery any more, so no order
+reaches that case: the customer owes the courier the trip whether or not they owe us for the bags.
 
 The customer hands the courier our COD *plus* Nawris's own city fee. Nawris keeps their fee and
-remits our COD. The customer pays for delivery exactly once — at the door, to the courier — instead
-of once inside our `grand_total` and again to the courier on top of it.
+remits our COD. The customer pays for delivery exactly once — at the door, to the courier.
 
 Three consequences. The third needs an answer before this can ship.
 
@@ -301,7 +302,9 @@ warning, and exactly why comparing the raw figure against what we asked for woul
 discrepancy on every single order.
 
 So the parcel stores `delivery_price_deducted` — **our** fee, as taken off at dispatch, frozen.
-Every edit replays it. Primula looks its fee up live by city name at comparison time, which lets a
+Every edit replays it. **Since 2026-09-08 nothing is taken off, so the column reads `0.00` on every
+new parcel**; it stays on the table because parcels dispatched before that carry a real figure that
+their settlement still has to read correctly. Primula looks its fee up live by city name at comparison time, which lets a
 tariff change retroactively rewrite history and disables the check entirely for an unlisted city.
 Ours is a snapshot on the row, like `city_name` and every money column on `orders`.
 

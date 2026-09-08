@@ -25,6 +25,7 @@ _NewOrder _$NewOrderFromJson(Map<String, dynamic> json) => _NewOrder(
   recipientPhone: json['recipient_phone'] as String?,
   addressDetails: json['address_details'] as String?,
   notes: json['notes'] as String?,
+  isUrgent: json['is_urgent'] as bool?,
 );
 
 Map<String, dynamic> _$NewOrderToJson(_NewOrder instance) => <String, dynamic>{
@@ -42,6 +43,7 @@ Map<String, dynamic> _$NewOrderToJson(_NewOrder instance) => <String, dynamic>{
   'recipient_phone': ?instance.recipientPhone,
   'address_details': ?instance.addressDetails,
   'notes': ?instance.notes,
+  'is_urgent': ?instance.isUrgent,
 };
 
 _NewOrderItem _$NewOrderItemFromJson(Map<String, dynamic> json) =>

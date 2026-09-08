@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/orders_sort.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 
 /// One page of the orders list.
@@ -16,6 +17,8 @@ class GetOrders {
     String? search,
     List<String> statuses = const <String>[],
     List<String> paymentStatuses = const <String>[],
+    bool? isUrgent,
+    OrdersSort sort = OrdersSort.fallback,
     int? customerId,
     String? from,
     String? to,
@@ -26,6 +29,8 @@ class GetOrders {
       search: search,
       statuses: statuses,
       paymentStatuses: paymentStatuses,
+      isUrgent: isUrgent,
+      sort: sort,
       customerId: customerId,
       from: from,
       to: to,

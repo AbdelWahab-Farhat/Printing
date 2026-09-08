@@ -24,6 +24,7 @@ class SaveShippingCompanyCubit extends Cubit<SaveShippingCompanyState> {
     String? phone,
     String? notes,
     bool isActive = true,
+    bool? isDefault,
   }) async {
     // Ignored rather than queued: a second tap while the first is in flight is a second POST,
     // and a company has no natural key the server could dedupe on.
@@ -37,6 +38,7 @@ class SaveShippingCompanyCubit extends Cubit<SaveShippingCompanyState> {
       phone: phone,
       notes: notes,
       isActive: isActive,
+      isDefault: isDefault,
     );
 
     // The screen may have been popped while the request was in flight.

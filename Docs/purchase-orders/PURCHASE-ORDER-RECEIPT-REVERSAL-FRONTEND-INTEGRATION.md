@@ -1,9 +1,15 @@
 # Undoing a receipt — connecting the Flutter app
 
-> **Status: planned, not built.** The backend shipped on branch `purchaseOrder_reversal` — see
-> [PURCHASE-ORDER-RECEIPT-REVERSAL.md](PURCHASE-ORDER-RECEIPT-REVERSAL.md). Nothing in
-> `frontend/lib/features/purchase_orders/` knows about it yet. This document is the plan for
-> wiring it up; where it and the shipped code eventually disagree, the code is right.
+> **Status: built**, on 2026-09-08, when `purchaseOrder_reversal` was merged into `main`. The
+> backend is described in [PURCHASE-ORDER-RECEIPT-REVERSAL.md](PURCHASE-ORDER-RECEIPT-REVERSAL.md);
+> everything below now exists in `frontend/lib/features/purchase_orders/` and
+> `frontend/lib/features/vendors/models/stock_arrival.dart`. Where this and the shipped code
+> disagree, the code is right.
+>
+> **Two things came out differently, both noted in place below:** the speed-dial widget is called
+> `_Actions`, not `_PurchaseOrderActions` (§6); and §8 had nothing to change, because no screen
+> lists or shows a `StockArrival` yet — the model carries the fields, and the first screen to
+> draw an arrival owes it the marking §8 describes.
 
 ---
 
@@ -165,7 +171,8 @@ Future<Failure?> reverseReceipt({required String reason}) =>
 
 ## 6. The button
 
-In `_PurchaseOrderActions`, immediately after «تسجيل شحنة»:
+In `_Actions` (the doc first called it `_PurchaseOrderActions`; the widget's real name is
+`_Actions`), immediately after «تسجيل شحنة»:
 
 ```dart
 // **Gated on the server's answer, not on a status test.** Whether a receipt may still be
@@ -245,14 +252,23 @@ never happened:
 
 ## 9. Checklist
 
-- [ ] `PurchaseOrder`: `receiptReversibleUntil`, `canReverseReceipt` (defaulting to `false`), rebuild freezed
-- [ ] `StockArrival`: `reversedAt`, `reversalReason`, `isReversed`
-- [ ] Correct the «nothing reopens it» sentence on `PurchaseOrderStatus.isFinal`; leave `offeredNext` alone
-- [ ] `PurchaseOrderEndpoints.receiptReversal()`
-- [ ] `AppPermission.reverseReceiptAnyTime`
-- [ ] Repository + usecase + `PurchaseOrderDetailCubit.reverseReceipt()`
-- [ ] `showReverseReceiptSheet()` with a required reason
-- [ ] The speed-dial action, gated on `canReverseReceipt`
-- [ ] The deadline line on the detail header
-- [ ] Reversed arrivals marked on the shipments screen
-- [ ] Cubit test: success replaces the order and refreshes; a 422 surfaces the server's message and keeps the sheet open
+- [x] `PurchaseOrder`: `receiptReversibleUntil`, `canReverseReceipt` (defaulting to `false`), rebuild freezed
+- [x] `StockArrival`: `reversedAt`, `reversalReason`, `isReversed` — and `reversedBy` /
+      `reversedByUser` beside them, mirroring the `receivedBy` / `receivedByUser` pair the
+      resource already publishes
+- [x] Correct the «nothing reopens it» sentence on `PurchaseOrderStatus.isFinal`; leave `offeredNext` alone
+- [x] `PurchaseOrderEndpoints.receiptReversal()`
+- [x] `AppPermission.reverseReceiptAnyTime`
+- [x] Repository + usecase + `PurchaseOrderDetailCubit.reverseReceipt()`
+- [x] `showReverseReceiptSheet()` with a required reason
+- [x] The speed-dial action, gated on `canReverseReceipt`
+- [x] The deadline line on the detail header — `_ReversalWindow`, under «مكتمل» rather than
+      beside it: the sentence is too long to sit on the status row without wrapping
+- [ ] Reversed arrivals marked on the shipments screen — **nothing to do yet.** `StockArrival`
+      has a repository and a model but no screen: nothing under
+      `frontend/lib/features/vendors/presentation/` lists or opens one. The fields are on the
+      model, so the first screen that draws an arrival has what it needs; this stays open until
+      that screen exists.
+- [x] Cubit test: success replaces the order and refreshes; a 422 surfaces the server's message and keeps the sheet open
+      — `purchase_order_detail_cubit_test.dart`, plus `reverse_receipt_sheet_test.dart` for the
+      part the cubit cannot see: that the sheet stays open on the refusal and prints it

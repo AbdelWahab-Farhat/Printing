@@ -43,6 +43,7 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
           regionId: order.regionId,
           regionName: order.regionName,
           recipientPhone: order.recipientPhone,
+          isUrgent: order.isUrgent,
           linesAreEditable: order.itemsAreEditable,
           destinationIsEditable: order.destinationIsEditable,
         ),
@@ -126,6 +127,17 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
     );
   }
 
+  /// Marks the order as one the customer is waiting on, or takes the mark off.
+  ///
+  /// **Held until «حفظ التعديلات» like every other field on this form.** Writing on the tap
+  /// would make the switch disagree with the save button beside it — one thing on the screen
+  /// already saved, the rest not — which is the confusion `isDirty` exists to prevent.
+  void setUrgent(bool value) {
+    if (value == state.isUrgent) return;
+
+    emit(state.copyWith(isUrgent: value, isDirty: true, failure: null));
+  }
+
   Future<void> save() async {
     if (!state.isValid || state.isSaving) return;
 
@@ -151,6 +163,7 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
       // Sent only when it may be changed. On an order out for delivery the server refuses a
       // *different* number, and this screen has no business offering one it would refuse.
       recipientPhone: state.destinationIsEditable ? (number: state.recipientPhone) : null,
+      isUrgent: state.isUrgent,
     );
 
     if (isClosed) return;

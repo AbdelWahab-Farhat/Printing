@@ -69,7 +69,9 @@ final class ResendNawrisParcel
                 'government' => $parcel->government,
                 'area' => $parcel->area,
                 'amount_to_collect' => $amount,
-                'delivery_price_deducted' => (string) $order->delivery_price,
+                // `0.00` for the reason `DispatchToNawris` writes it: we no longer take the
+                // delivery fee off the COD, because it is no longer part of what we bill.
+                'delivery_price_deducted' => '0.00',
                 'shipping_company_id' => $parcel->shipping_company_id,
                 'dispatched_at' => now(),
             ])->save();

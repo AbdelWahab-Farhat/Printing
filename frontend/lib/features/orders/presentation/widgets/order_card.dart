@@ -76,7 +76,25 @@ class OrderCard extends StatelessWidget {
                 // The band takes the full width from this, and the grid rows fill it anyway.
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  OrderStatusChip(status: order.status, label: order.statusLabel, banner: true),
+                  // **الشارة إلى جانب الشريط لا فوقه ولا تحته.** الحالة تُقرأ أولاً، فتبقى لها
+                  // عرض البطاقة تقريباً؛ و«مستعجل» طبقةٌ فوق الحالة لا حالةٌ ثانية، فتأخذ من
+                  // السطر نفسه بقدر كلمتها وحدها. وتغيب تماماً في الطلبية العادية — لا مكان
+                  // محجوز لها ولا شرطة، فالبطاقة التي لا شارة فيها هي البطاقة كما كانت.
+                  Row(
+                    children: [
+                      if (order.isUrgent) ...[
+                        const _UrgentBadge(),
+                        SizedBox(width: 8.w),
+                      ],
+                      Expanded(
+                        child: OrderStatusChip(
+                          status: order.status,
+                          label: order.statusLabel,
+                          banner: true,
+                        ),
+                      ),
+                    ],
+                  ),
                   SizedBox(height: 22.h),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -372,6 +390,50 @@ class _Cell extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: context.textTheme.bodyMedium?.copyWith(color: tone ?? scheme.onSurface),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// «مستعجل» — ما طلبه العميل، لا ما تأخّرنا نحن فيه.
+///
+/// **الأحمر المملوء لا الباهت.** «نواقص» و«راجع» تلبسان `errorContainer` أصلاً — الأحمر الباهت —
+/// فشارةٌ بالدرجة نفسها تذوب في الشريط الذي تقف بجانبه؛ والمملوء هو اللون الوحيد على البطاقة
+/// الذي لا تلبسه حالةٌ من الحالات، فيُقرأ طبقةً فوق الحالة لا حالةً ثانية تنازعها.
+///
+/// **ولا تلوين للبطاقة كلها.** جُرّب في «شارة الدفع» قبل هذا ورُفض: طلاء صفٍّ كامل في قائمة
+/// تُقرأ سطراً سطراً يخطف العين، وقائمةٌ نصفها مطليّ لا تُبرز شيئاً.
+///
+/// والأيقونة تسبق الكلمة كما تفعل في `OrderStatusChip.showIcon`: الشكل يُقرأ قبل الحرف، وهذه
+/// الشارة تحديداً وُضعت لتُلمَح لا لتُقرأ.
+class _UrgentBadge extends StatelessWidget {
+  const _UrgentBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Container(
+      // نفس ارتفاع الشريط بجانبه تقريباً، فيستقيم السطر دون أن تُحاذى الشارة يدوياً.
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: scheme.error,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(AppIcons.urgent, size: 16.sp, color: scheme.onError),
+          SizedBox(width: 5.w),
+          Text(
+            'مستعجل',
+            style: context.textTheme.labelLarge?.copyWith(
+              color: scheme.onError,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),

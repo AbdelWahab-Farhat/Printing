@@ -7,17 +7,20 @@ use App\Domain\Carrier\Actions\BuildNawrisPayload;
 use App\Domain\Carrier\Actions\ResolveNawrisDestination;
 use App\Domain\Carrier\Support\NawrisClient;
 use App\Domain\Customer\Queries\CustomerOrderActivity;
+use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
 use App\Domain\Investor\Listeners\PostPurchasesWhenStockLeaves;
 use App\Domain\Investor\Listeners\PostPurchaseWhenScrapIsDrawn;
 use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
+use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
 use App\Domain\Notification\Support\FcmClient;
 use App\Domain\Notification\Support\GoogleServiceAccountToken;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderScrapDrawn;
+use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Queries\OrderCustomerActivity;
 use Illuminate\Database\Eloquent\Model;
@@ -54,9 +57,15 @@ class AppServiceProvider extends ServiceProvider
             fn ($app) => new BuildNawrisPayload((array) $app['config']->get('services.nawris', [])),
         );
 
+        // The delivery module beside the configuration, because "which of our carriers is this
+        // parcel filed under" is a question the setting answers first and the business's own
+        // default answers when it is blank — see the action.
         $this->app->bind(
             ResolveNawrisDestination::class,
-            fn ($app) => new ResolveNawrisDestination((array) $app['config']->get('services.nawris', [])),
+            fn ($app) => new ResolveNawrisDestination(
+                (array) $app['config']->get('services.nawris', []),
+                $app->make(DeliveryService::class),
+            ),
         );
 
         // The push side takes its configuration the same way and for the same reason: nothing
@@ -117,6 +126,11 @@ class AppServiceProvider extends ServiceProvider
         // failed push must not roll back an order, and an announcement about a transaction that
         // then rolled back cannot be un-sent. See NotifyWhenOrderEntersShortage.
         Event::listen(OrderEnteredShortage::class, NotifyWhenOrderEntersShortage::class);
+
+        // Fired by every transition, not only the interesting ones — the listener holds the list
+        // of what is worth a bell, so a second listener can want a different subset without
+        // touching Orders. Same queued, after-commit bargain as the line above.
+        Event::listen(OrderStatusChanged::class, NotifyWhenOrderStatusChanges::class);
 
         // Turns three silent classes of bug into loud exceptions everywhere except
         // production: lazy-loaded relations (N+1), reading an attribute that was never

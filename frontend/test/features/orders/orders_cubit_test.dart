@@ -6,6 +6,7 @@ import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/models/orders_sort.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/orders_cubit.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/get_order_counts.dart';
@@ -18,6 +19,10 @@ import 'package:mocktail/mocktail.dart';
 class _MockOrderRepository extends Mock implements OrderRepository {}
 
 void main() {
+  // `any(named: 'sort')` needs something to hand back when nothing was captured, and
+  // mocktail cannot invent a value for an enum.
+  setUpAll(() => registerFallbackValue(OrdersSort.newest));
+
   late _MockOrderRepository repository;
   late OrdersCubit cubit;
 
@@ -25,6 +30,7 @@ void main() {
     int id = 1,
     OrderStatus status = OrderStatus.ready,
     String label = 'جاهزة',
+    bool isUrgent = false,
   }) {
     return Order(
       id: id,
@@ -32,6 +38,7 @@ void main() {
       status: status,
       statusLabel: label,
       isFinal: false,
+      isUrgent: isUrgent,
       customerId: 5,
       cityId: 3,
       designSource: 'none',
@@ -92,6 +99,8 @@ void main() {
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -181,6 +190,7 @@ void main() {
     await cubit.showFilters(
       status: OrderStatus.ready,
       paymentStatuses: {PaymentStatus.unpaid, PaymentStatus.partiallyPaid},
+      isUrgent: null,
     );
 
     // Assert
@@ -189,6 +199,8 @@ void main() {
         search: any(named: 'search'),
         statuses: captureAny(named: 'statuses'),
         paymentStatuses: captureAny(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -212,6 +224,8 @@ void main() {
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
         paymentStatuses: captureAny(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -228,6 +242,7 @@ void main() {
     await cubit.showFilters(
       status: OrderStatus.ready,
       paymentStatuses: {PaymentStatus.unpaid},
+      isUrgent: null,
     );
     clearInteractions(repository);
 
@@ -235,6 +250,7 @@ void main() {
     await cubit.showFilters(
       status: OrderStatus.ready,
       paymentStatuses: {PaymentStatus.unpaid},
+      isUrgent: null,
     );
 
     // Assert
@@ -243,6 +259,8 @@ void main() {
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -257,6 +275,7 @@ void main() {
     await cubit.showFilters(
       status: null,
       paymentStatuses: {PaymentStatus.unpaid},
+      isUrgent: null,
     );
 
     // Act
@@ -271,6 +290,118 @@ void main() {
     // Assert
     final state = cubit.state as OrdersLoaded;
     expect(state.page.items, isEmpty);
+  });
+
+  test('«الأقدم أولاً» rides along with every page, not just the first', () async {
+    // Arrange — page two of a list read from its far end must not arrive sorted the other way:
+    // that is a page of orders the reader has already seen, appended under the ones they have.
+    stub(orders: [orderWith()], lastPage: 2);
+    await cubit.showSort(OrdersSort.oldest);
+    clearInteractions(repository);
+
+    // Act
+    await cubit.loadMore();
+
+    // Assert
+    final captured = verify(
+      () => repository.orders(
+        search: any(named: 'search'),
+        statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: captureAny(named: 'sort'),
+        customerId: any(named: 'customerId'),
+        page: any(named: 'page'),
+        perPage: any(named: 'perPage'),
+      ),
+    ).captured;
+
+    expect(captured.last, OrdersSort.oldest);
+  });
+
+  test('an order that stops being urgent leaves «المستعجلة فقط»', () async {
+    // Arrange — the third axis moves a row for the same reason the other two do: a list that
+    // kept a row it no longer describes is a list disagreeing with its own filter.
+    stub(orders: [orderWith(isUrgent: true)]);
+    await cubit.showFilters(status: null, paymentStatuses: const {}, isUrgent: true);
+
+    // Act
+    cubit.replace(orderWith(isUrgent: true).copyWith(isUrgent: false));
+
+    // Assert
+    final state = cubit.state as OrdersLoaded;
+    expect(state.page.items, isEmpty);
+  });
+
+  test('a row that is still urgent stays where it was', () async {
+    // Arrange — and the sort is deliberately not consulted: a patched row keeps its place
+    // rather than jumping the queue, because nothing about it moved except the flag.
+    stub(orders: [orderWith(isUrgent: true)]);
+    await cubit.showSort(OrdersSort.oldest);
+    await cubit.showFilters(status: null, paymentStatuses: const {}, isUrgent: true);
+
+    // Act
+    cubit.replace(orderWith(isUrgent: true).copyWith(statusLabel: 'قيد الطباعة'));
+
+    // Assert
+    final state = cubit.state as OrdersLoaded;
+    expect(state.page.items.single.statusLabel, 'قيد الطباعة');
+  });
+
+  test('turning the list round keeps every filter on it', () async {
+    // Arrange — «أرِني الجاهزة، الأقدم أولاً» is one question asked in two taps, not a fresh
+    // start: the button beside the filter must not undo what the sheet was used for.
+    stub(orders: [orderWith()]);
+    await cubit.showFilters(
+      status: OrderStatus.ready,
+      paymentStatuses: {PaymentStatus.unpaid},
+      isUrgent: true,
+    );
+
+    // Act
+    await cubit.showSort(OrdersSort.oldest);
+
+    // Assert
+    expect(cubit.sort, OrdersSort.oldest);
+    expect(cubit.status, OrderStatus.ready);
+    expect(cubit.paymentStatuses, {PaymentStatus.unpaid});
+    expect(cubit.isUrgent, isTrue);
+  });
+
+  test('tapping to the order it is already in fetches nothing', () async {
+    // Arrange
+    stub(orders: [orderWith()]);
+    await cubit.load();
+    clearInteractions(repository);
+
+    // Act
+    await cubit.showSort(OrdersSort.newest);
+
+    // Assert
+    verifyNever(
+      () => repository.orders(
+        search: any(named: 'search'),
+        statuses: any(named: 'statuses'),
+        paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
+        customerId: any(named: 'customerId'),
+        page: any(named: 'page'),
+        perPage: any(named: 'perPage'),
+      ),
+    );
+  });
+
+  test('the sort is not what fills the filter button', () async {
+    // Arrange — it has a button of its own that already says which way the list runs, and
+    // filling both for one state would say «مصفّاة» about a list nothing was filtered out of.
+    stub(orders: [orderWith()]);
+
+    // Act
+    await cubit.showSort(OrdersSort.oldest);
+
+    // Assert
+    expect(cubit.isFiltered, isFalse);
   });
 
   test('the counts carry the payment axis too', () async {
@@ -307,6 +438,8 @@ void main() {
         search: any(named: 'search'),
         statuses: captureAny(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -329,6 +462,8 @@ void main() {
         search: any(named: 'search'),
         statuses: captureAny(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -352,6 +487,8 @@ void main() {
         search: captureAny(named: 'search'),
         statuses: any(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -376,6 +513,8 @@ void main() {
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),
@@ -546,6 +685,8 @@ void main() {
         search: any(named: 'search'),
         statuses: any(named: 'statuses'),
         paymentStatuses: any(named: 'paymentStatuses'),
+        isUrgent: any(named: 'isUrgent'),
+        sort: any(named: 'sort'),
         customerId: any(named: 'customerId'),
         page: any(named: 'page'),
         perPage: any(named: 'perPage'),

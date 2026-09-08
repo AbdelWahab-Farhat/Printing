@@ -13,6 +13,7 @@ _ShippingCompany _$ShippingCompanyFromJson(Map<String, dynamic> json) =>
       phone: json['phone'] as String?,
       notes: json['notes'] as String?,
       isActive: json['is_active'] as bool? ?? true,
+      isDefault: json['is_default'] as bool? ?? false,
       createdAt: json['created_at'] == null
           ? null
           : DateTime.parse(json['created_at'] as String),
@@ -25,5 +26,6 @@ Map<String, dynamic> _$ShippingCompanyToJson(_ShippingCompany instance) =>
       'phone': instance.phone,
       'notes': instance.notes,
       'is_active': instance.isActive,
+      'is_default': instance.isDefault,
       'created_at': instance.createdAt?.toIso8601String(),
     };

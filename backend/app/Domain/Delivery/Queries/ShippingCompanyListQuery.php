@@ -28,9 +28,11 @@ final class ShippingCompanyListQuery
                 });
             })
             ->when($filters->isActive !== null, fn ($q) => $q->where('is_active', $filters->isActive))
-            // In use first, then by name: the picker is opened to choose a carrier, and one we
-            // stopped dealing with is never the answer.
+            // In use first, then the usual one, then by name: the picker is opened to choose a
+            // carrier, one we stopped dealing with is never the answer, and the company named
+            // as the default is the answer nine times in ten.
             ->orderByDesc('is_active')
+            ->orderByDesc('is_default')
             ->orderBy('name')
             ->paginate($perPage);
     }

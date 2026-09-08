@@ -127,6 +127,29 @@ void main() {
     expect(sent.containsKey('discount'), isFalse);
     expect(sent.containsKey('design_fee'), isFalse);
     expect(sent.containsKey('design_ids'), isFalse);
+    // And urgency with them: an ordinary order says nothing about a switch nobody moved. On
+    // the way in the server reads that as «ليست مستعجلة»; on an edit the same silence means
+    // «اتركها كما هي», which is exactly why it is a missing key and not a `false`.
+    expect(sent.containsKey('is_urgent'), isFalse);
+  });
+
+  test('a rush job says so, and says it as a boolean', () async {
+    // Arrange — «مستعجلة» ticked at the counter. A string «true» would pass `boolean`
+    // validation on the server and is not what any other flag in this app sends.
+    const urgent = NewOrder(
+      customerId: 3,
+      cityId: 1,
+      designSource: 'none',
+      isUrgent: true,
+      items: [NewOrderItem(productId: 7, productVariantId: 12, quantity: '300', sortOrder: 0)],
+    );
+
+    // Act
+    await repository.create(urgent);
+
+    // Assert
+    final sent = jsonDecode(adapter.body!) as Map<String, dynamic>;
+    expect(sent['is_urgent'], isTrue);
   });
 
   test('the artwork travels as a list of plain ids', () async {

@@ -73,7 +73,14 @@ enum PurchaseOrderStatus {
       .where((status) => status == PurchaseOrderStatus.cancelled)
       .toList(growable: false);
 
-  /// Nothing follows, and nothing reopens it.
+  /// Nothing follows it, and no *transition* leads back out.
+  ///
+  /// **Not «nothing reopens it», which it used to say.** A completed order can be reopened —
+  /// not by a move on this machine, but by undoing the receipt underneath it, which takes the
+  /// stock back off the shelf and leaves the order on «قيد الاستلام» to be received again. That
+  /// is a correction to the ledger that happens to reopen the paperwork, so it belongs on the
+  /// speed dial beside «تسجيل شحنة» and never in [offeredNext] — see `PurchaseOrder`'s
+  /// `canReverseReceipt`.
   bool get isFinal =>
       this == PurchaseOrderStatus.completed ||
       this == PurchaseOrderStatus.cancelled;
@@ -214,6 +221,24 @@ abstract class PurchaseOrder with _$PurchaseOrder {
     /// company default, sent so the funding screen shows the number rather than implying it.
     @JsonKey(name: 'default_investor_profit_share_percent')
     String? defaultInvestorProfitSharePercent,
+
+    /// When the ordinary 24-hour window on undoing this order's receipt closes.
+    ///
+    /// Null when there is no live receipt behind it — anything not «مكتمل», or a receipt already
+    /// undone. **Sent on the detail endpoint only**, so the list carries neither this nor
+    /// [canReverseReceipt] and nothing drawn from a list row may reach for them.
+    @JsonKey(name: 'receipt_reversible_until') DateTime? receiptReversibleUntil,
+
+    /// Whether **this** caller may undo the receipt right now — the clock, or the grant that
+    /// waives it, already folded together by the server.
+    ///
+    /// The same order answers `false` to a storekeeper on day three and `true` to a manager
+    /// holding `purchase_orders.reverse_receipt_any_time`. **Read it; never re-derive it from
+    /// [receiptReversibleUntil]**, or the two disagree the day the window changes.
+    ///
+    /// **Defaults to `false`, and that default is the point.** The list omits the key, and a
+    /// missing answer has to read as «no» rather than as «unknown, so offer the button».
+    @JsonKey(name: 'can_reverse_receipt') @Default(false) bool canReverseReceipt,
 
     @JsonKey(name: 'created_at') DateTime? createdAt,
     @JsonKey(name: 'updated_at') DateTime? updatedAt,

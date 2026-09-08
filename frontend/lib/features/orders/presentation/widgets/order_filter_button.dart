@@ -32,6 +32,7 @@ class OrderFilterButton extends StatelessWidget {
   const OrderFilterButton({
     required this.selected,
     required this.selectedPayments,
+    required this.selectedUrgency,
     required this.counts,
     required this.onApplied,
     super.key,
@@ -43,11 +44,15 @@ class OrderFilterButton extends StatelessWidget {
   /// Which payment states are ticked. Empty means every one of them.
   final Set<PaymentStatus> selectedPayments;
 
+  /// Whether the list is narrowed to the rush jobs. Null is «كلاهما».
+  final bool? selectedUrgency;
+
   final ValueListenable<OrderCounts> counts;
 
-  /// Both axes at once. One callback rather than two, because the sheet answers them together
-  /// and two would fetch the list twice for a single tap on «تطبيق».
-  final void Function(OrderStatus? status, Set<PaymentStatus> payments) onApplied;
+  /// Every axis at once. One callback rather than three, because the sheet answers them
+  /// together and three would fetch the list three times for a single tap on «تطبيق».
+  final void Function(OrderStatus? status, Set<PaymentStatus> payments, bool? isUrgent)
+  onApplied;
 
   /// The sheet's own box, so a test can measure how much of the phone it takes. That is a
   /// tested property here rather than a matter of taste — see [_FilterSheet].
@@ -66,18 +71,27 @@ class OrderFilterButton extends StatelessWidget {
       // tapped, and the sheet should not open frozen on the empty placeholder.
       builder: (_) => ValueListenableBuilder<OrderCounts>(
         valueListenable: counts,
-        builder: (context, value, _) =>
-            _FilterSheet(selected: selected, selectedPayments: selectedPayments, counts: value),
+        builder: (context, value, _) => _FilterSheet(
+          selected: selected,
+          selectedPayments: selectedPayments,
+          selectedUrgency: selectedUrgency,
+          counts: value,
+        ),
       ),
     );
 
-    if (picked != null) onApplied(picked.status, picked.payments);
+    if (picked != null) {
+      onApplied(picked.status, picked.payments, picked.isUrgent);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final isActive = selected != null || selectedPayments.isNotEmpty;
+    // The sort is deliberately not counted: it has a button of its own beside this one, and
+    // that button already fills when the list is running backwards.
+    final isActive =
+        selected != null || selectedPayments.isNotEmpty || selectedUrgency != null;
 
     return Material(
       color: isActive ? scheme.primaryContainer : scheme.surfaceContainerLowest,
@@ -98,15 +112,17 @@ class OrderFilterButton extends StatelessWidget {
   }
 }
 
-/// What the sheet answers with: both axes, together.
+/// What the sheet answers with: every axis, together.
 class _FilterChoice {
-  const _FilterChoice(this.status, this.payments);
+  const _FilterChoice(this.status, this.payments, this.isUrgent);
 
   final OrderStatus? status;
   final Set<PaymentStatus> payments;
+  final bool? isUrgent;
 }
 
-/// Two axes on one sheet: where the work stands, and where the money stands.
+/// Three questions on one sheet, and every one of them narrows the list: where the work stands,
+/// where the money stands, and whether the customer is waiting on it.
 ///
 /// **The payment rows are ticks, not a second single choice.** «أرِني ما لم يُدفع» means unpaid
 /// *and* part-paid in practice, and a radio list would make somebody run the list twice to see
@@ -139,11 +155,13 @@ class _FilterSheet extends StatefulWidget {
   const _FilterSheet({
     required this.selected,
     required this.selectedPayments,
+    required this.selectedUrgency,
     required this.counts,
   });
 
   final OrderStatus? selected;
   final Set<PaymentStatus> selectedPayments;
+  final bool? selectedUrgency;
   final OrderCounts counts;
 
   @override
@@ -153,8 +171,10 @@ class _FilterSheet extends StatefulWidget {
 class _FilterSheetState extends State<_FilterSheet> {
   late OrderStatus? _status = widget.selected;
   late Set<PaymentStatus> _payments = {...widget.selectedPayments};
+  late bool? _isUrgent = widget.selectedUrgency;
 
-  bool get _isFiltered => _status != null || _payments.isNotEmpty;
+  bool get _isFiltered =>
+      _status != null || _payments.isNotEmpty || _isUrgent != null;
 
   @override
   Widget build(BuildContext context) {
@@ -191,6 +211,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                       onPressed: () => setState(() {
                         _status = null;
                         _payments = <PaymentStatus>{};
+                        _isUrgent = null;
                       }),
                       child: const Text('مسح الفلاتر'),
                     ),
@@ -262,6 +283,34 @@ class _FilterSheetState extends State<_FilterSheet> {
                           ),
                       ],
                     ),
+                    SizedBox(height: 18.h),
+                    const FilterSectionTitle(title: 'الاستعجال'),
+                    SizedBox(height: 10.h),
+                    Wrap(
+                      spacing: 8.w,
+                      runSpacing: 8.h,
+                      children: [
+                        // **One tick, not a row of three.** «المستعجلة فقط» و«غير المستعجلة»
+                        // و«كلاهما» were drawn first, and the middle option is the only one
+                        // anybody opens this sheet to ask for — the other two cost a line each
+                        // on a sheet that already scrolls. The API still answers `urgent=0`;
+                        // nothing here asks it yet.
+                        //
+                        // A tick rather than a dot, because it narrows the same list the
+                        // payment ticks above it do rather than replacing a choice — the shape
+                        // is what tells the two kinds of section apart. See [FilterOptionChip].
+                        FilterOptionChip(
+                          label: 'المستعجلة فقط',
+                          isTicked: true,
+                          isSelected: _isUrgent == true,
+                          onTap: () =>
+                              setState(() => _isUrgent = _isUrgent == true ? null : true),
+                        ),
+                      ],
+                    ),
+                    // **ولا قسمَ للترتيب هنا.** كان، ونُزع إلى زرٍّ فوق القائمة: كل شريحةٍ على
+                    // هذه الورقة تُنقص من النتيجة، والترتيب لا يُنقص شيئاً — فشريحةٌ لا تصغّر
+                    // القائمة بين شرائحَ تصغّرها تُقرأ كفلترٍ لا يعمل. انظر [OrderSortButton].
                   ],
                 ),
               ),
@@ -271,7 +320,7 @@ class _FilterSheetState extends State<_FilterSheet> {
               child: AppButton(
                 label: 'تطبيق',
                 onPressed: () =>
-                    Navigator.of(context).pop(_FilterChoice(_status, _payments)),
+                    Navigator.of(context).pop(_FilterChoice(_status, _payments, _isUrgent)),
               ),
             ),
           ],

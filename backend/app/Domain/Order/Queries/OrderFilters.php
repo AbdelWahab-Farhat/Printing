@@ -29,6 +29,14 @@ final readonly class OrderFilters
          *                               is how a filter goes unused.
          */
         public ?array $paymentStatuses = null,
+        /**
+         * Null is «كلاهما» — the list as it has always been. `false` is a question in its own
+         * right («أرِني ما ليس مستعجلاً») rather than the absence of one, which is why this is
+         * a nullable bool and not a flag.
+         */
+        public ?bool $isUrgent = null,
+        /** Which end of the queue the list starts at. Never null: there is always an order. */
+        public OrderSort $sort = OrderSort::Newest,
     ) {}
 
     /**
@@ -46,6 +54,8 @@ final readonly class OrderFilters
             from: self::textOrNull($query['from'] ?? null),
             to: self::textOrNull($query['to'] ?? null),
             paymentStatuses: self::paymentStatuses($query),
+            isUrgent: self::boolOrNull($query['urgent'] ?? null),
+            sort: OrderSort::fromRequest($query['sort'] ?? null),
         );
     }
 
@@ -68,6 +78,8 @@ final readonly class OrderFilters
             from: $this->from,
             to: $this->to,
             paymentStatuses: null,
+            isUrgent: $this->isUrgent,
+            sort: $this->sort,
         );
     }
 
@@ -115,6 +127,23 @@ final readonly class OrderFilters
         ));
 
         return $statuses === [] ? null : array_values($statuses);
+    }
+
+    /**
+     * `1`/`0`, `true`/`false` and `"yes"`/`"no"` all arrive as strings in a query string, so the
+     * reading is Laravel's own rather than a cast — `(bool) "0"` is false but `(bool) "false"`
+     * is true, which would turn «أرِني ما ليس مستعجلاً» into its opposite.
+     *
+     * Anything that is neither is treated as «لم يُسأل», for the reason a status naming nothing
+     * is dropped: a filter nobody can satisfy returns an empty page and reads as «لا طلبيات».
+     */
+    private static function boolOrNull(mixed $value): ?bool
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
     }
 
     private static function intOrNull(mixed $value): ?int

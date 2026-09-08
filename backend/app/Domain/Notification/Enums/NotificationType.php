@@ -8,6 +8,7 @@ use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Notification\Contracts\NotificationDefinition;
 use App\Domain\Notification\Definitions\ManualAnnouncement;
 use App\Domain\Notification\Definitions\OrderReachedShortage;
+use App\Domain\Notification\Definitions\OrderReachedStatus;
 
 /**
  * Every kind of notification the system can send — the catalogue.
@@ -27,6 +28,14 @@ enum NotificationType: string
     /** An order could not be fulfilled from the shelf and is waiting on a person. */
     case OrderShortage = 'order.shortage';
 
+    /**
+     * An order reached a status the shop needs to know about — one type for every milestone.
+     *
+     * Not fifteen types, one per status: they share an audience, a route and a sentence, and the
+     * status itself rides in the payload. See {@see OrderReachedStatus}.
+     */
+    case OrderStatusChanged = 'order.status';
+
     /** Somebody wrote a message and sent it to staff. The only one a human composes. */
     case Announcement = 'announcement.manual';
 
@@ -43,6 +52,7 @@ enum NotificationType: string
     {
         return match ($this) {
             self::OrderShortage => OrderReachedShortage::class,
+            self::OrderStatusChanged => OrderReachedStatus::class,
             self::Announcement => ManualAnnouncement::class,
         };
     }
@@ -58,6 +68,7 @@ enum NotificationType: string
     {
         return match ($this) {
             self::OrderShortage => 'warning',
+            self::OrderStatusChanged => 'order',
             self::Announcement => 'announcement',
         };
     }
@@ -69,6 +80,7 @@ enum NotificationType: string
     {
         return match ($this) {
             self::OrderShortage => 'نواقص طلبية',
+            self::OrderStatusChanged => 'حالة طلبية',
             self::Announcement => 'إشعار عام',
         };
     }

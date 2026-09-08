@@ -327,6 +327,14 @@ Every endpoint is published as OpenAPI 3.1 automatically. **Never hand-write API
    decision or a trap is worth keeping.
 7. **Never commit secrets.** `.env` is ignored; add every new key to `.env.example`.
 8. **Small named units.** If a controller method outgrows the screen, extract an Action.
+9. **Arabic is folded at the door.** `DeshapeArabicInput` runs beside `TrimStrings` on every
+   request and rewrites the Arabic Presentation Forms block (`U+FE70`–`U+FEFC`) — «ﺷﺮﻛﺔ», the
+   pre-joined codepoints some Windows keyboards and every copy-out-of-a-PDF produce — into the
+   letters it stands for. The two are indistinguishable on screen and different bytes to every
+   `LIKE`, `ORDER BY` and duplicate check; one such character stored in a customer's name is what
+   stopped an invoice PDF from being drawn on the phone, because Arabic faces carry no glyphs for
+   that block. Never fold a password, a path or a token — see `App\Support\ArabicText`, and
+   `php artisan text:deshape --dry-run` for the rows that predate the middleware.
 
 ---
 

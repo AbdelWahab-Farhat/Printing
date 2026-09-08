@@ -38,6 +38,13 @@ class OrderResource extends JsonResource
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
 
+            // **«مستعجلة» — a decision, not a status.** It rides beside the status rather than
+            // inside it because it is true of an order at *any* step: a rush job is rushed while
+            // it is being designed, printed and delivered, and folding it into the state machine
+            // would double every case in it. No label travels with it: unlike a status, it is one
+            // word the app already knows and has nothing to translate.
+            'is_urgent' => (bool) $this->is_urgent,
+
             // Who is making it, for an order a vendor executes. The name travels with the id
             // because it is what this order said at the time — a vendor renamed since keeps its
             // new name everywhere except here. Null on every order that is made in-house.

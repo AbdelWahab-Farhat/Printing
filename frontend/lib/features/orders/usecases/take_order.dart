@@ -51,6 +51,9 @@ class TakeOrder {
     /// offer one. Carried, never judged: whether the server *requires* it is a fact about the
     /// lines, mirrored by `vendorRequirementFor` on the form and enforced in the domain.
     int? vendorId,
+    /// «مستعجلة», as the clerk ticked it at the counter. Passed straight through: it is one
+    /// boolean the server takes at its word, unlike the fee and the discount around it.
+    bool? isUrgent,
   }) {
     final fee = _number(designFee);
     final artwork = designSource == noDesign ? const <int>[] : designIds;
@@ -70,6 +73,7 @@ class TakeOrder {
         designIds: artwork.isEmpty ? null : artwork,
         discount: _number(discount),
         vendorId: vendorId,
+        isUrgent: isUrgent,
         recipientPhone: _text(recipientPhone),
         notes: _text(notes),
         items: [

@@ -37,7 +37,11 @@ void main() {
     );
   }
 
-  Order orderWith({List<OrderItem>? items, String discount = '0.00'}) {
+  Order orderWith({
+    List<OrderItem>? items,
+    String discount = '0.00',
+    bool isUrgent = false,
+  }) {
     return Order(
       id: 7,
       code: '7',
@@ -56,6 +60,7 @@ void main() {
       deliveryPrice: '20.00',
       discount: discount,
       grandTotal: '350.00',
+      isUrgent: isUrgent,
       // «جديدة»: the lines are open, which is what these tests are about. The screen only
       // sends quantities when they are, so a fixture that left this false would make every
       // assertion below vacuous.
@@ -79,6 +84,7 @@ void main() {
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
         recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
       ),
     ).thenAnswer(
       (_) async => failure != null ? Left(failure) : Right(orderWith()),
@@ -187,14 +193,15 @@ void main() {
   });
 
   test('the running estimate follows what is typed', () {
-    // Arrange — 300 × 1.100 + 20.00 delivery.
+    // Arrange
     final cubit = cubitFor(orderWith());
 
     // Act
     cubit.setQuantity(1, '100');
 
-    // Assert — 100 × 1.100 + 20.00.
-    expect(cubit.state.estimatedTotal, '130.00');
+    // Assert — 100 × 1.100, and the destination's 20.00 is in none of it: the server stopped
+    // adding the fee, so a guess that added it would jump on save.
+    expect(cubit.state.estimatedTotal, '110.00');
   });
 
   // ───────────────────────────── saving ─────────────────────────────
@@ -224,6 +231,7 @@ void main() {
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
         recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
       ),
     ).captured.last as List<InvoiceLineUpdate>;
 
@@ -250,6 +258,7 @@ void main() {
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
         recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
       ),
     ).captured.last as List<InvoiceLineUpdate>;
 
@@ -274,6 +283,7 @@ void main() {
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
         recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
       ),
     ).captured.last as List<InvoiceLineUpdate>;
 
@@ -299,6 +309,7 @@ void main() {
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
         recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
       ),
     ).captured.last as List<InvoiceLineUpdate>;
 
@@ -323,6 +334,7 @@ void main() {
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
         recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
       ),
     );
   });
@@ -400,6 +412,7 @@ void main() {
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
         recipientPhone: captureAny(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
       ),
     ).captured.last as ({String? number})?;
 
@@ -424,6 +437,7 @@ void main() {
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
         recipientPhone: captureAny(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
       ),
     ).captured.last as ({String? number})?;
 
@@ -452,6 +466,7 @@ void main() {
         cityId: any(named: 'cityId'),
         regionId: any(named: 'regionId'),
         recipientPhone: captureAny(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
       ),
     ).captured.last;
 
@@ -502,6 +517,7 @@ void main() {
         cityId: captureAny(named: 'cityId'),
         regionId: any(named: 'regionId'),
         recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
       ),
     ).captured;
 
@@ -536,6 +552,96 @@ void main() {
 
     // Assert — the region survives, and nothing is marked dirty.
     expect(cubit.state.regionId, 4);
+    expect(cubit.state.isDirty, isFalse);
+  });
+
+  test('the switch starts where the order stands', () {
+    // Arrange - Act
+    final cubit = cubitFor(orderWith(isUrgent: true));
+
+    // Assert — seeded from the order, never guessed at from its age: an order's age measures
+    // our delay and this records the customer's demand.
+    expect(cubit.state.isUrgent, isTrue);
+    expect(cubit.state.isDirty, isFalse);
+  });
+
+  test('marking it urgent dirties the form and travels with the save', () async {
+    // Arrange — held until «حفظ التعديلات», unlike the additional cost beside it: a switch that
+    // wrote on the tap would leave one thing on the screen saved and the rest not.
+    stubSave();
+    final cubit = cubitFor(orderWith());
+
+    // Act
+    cubit.setUrgent(true);
+
+    // Assert — nothing has been sent yet.
+    expect(cubit.state.isDirty, isTrue);
+    verifyNever(
+      () => repository.updateInvoice(
+        any(),
+        lines: any(named: 'lines'),
+        discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
+      ),
+    );
+
+    // Act
+    await cubit.save();
+
+    // Assert
+    final sent = verify(
+      () => repository.updateInvoice(
+        any(),
+        lines: any(named: 'lines'),
+        discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: captureAny(named: 'isUrgent'),
+      ),
+    ).captured.last;
+
+    expect(sent, isTrue);
+  });
+
+  test('taking the mark off is a change like any other', () async {
+    // Arrange
+    stubSave();
+    final cubit = cubitFor(orderWith(isUrgent: true));
+
+    // Act
+    cubit.setUrgent(false);
+    await cubit.save();
+
+    // Assert — `false`, not an absent key: the customer stopped being in a hurry, and the
+    // server has to be told rather than left to keep the flag.
+    final sent = verify(
+      () => repository.updateInvoice(
+        any(),
+        lines: any(named: 'lines'),
+        discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: captureAny(named: 'isUrgent'),
+      ),
+    ).captured.last;
+
+    expect(sent, isFalse);
+  });
+
+  test('setting it to what it already is changes nothing', () {
+    // Arrange — a form marked dirty by a switch nobody moved would offer a save that writes
+    // exactly what is already stored.
+    final cubit = cubitFor(orderWith(isUrgent: true));
+
+    // Act
+    cubit.setUrgent(true);
+
+    // Assert
     expect(cubit.state.isDirty, isFalse);
   });
 }

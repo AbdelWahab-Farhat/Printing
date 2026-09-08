@@ -50,6 +50,12 @@ trait FiltersOrders
                 $filters->paymentStatuses !== null,
                 fn (Builder $q) => $this->applyPaymentStatuses($q, $filters->paymentStatuses),
             )
+            // **A third axis, crossing the other two rather than narrowing one of them.** «الجاهزة
+            // والمستعجلة» is one question, so this sits beside the status the way the payment
+            // state does. `false` is a question in its own right — «أرِني ما ليس مستعجلاً» — which
+            // is why it is compared against rather than treated as «no filter»; see
+            // OrderFilters::boolOrNull().
+            ->when($filters->isUrgent !== null, fn (Builder $q) => $q->where('is_urgent', $filters->isUrgent))
             ->when($filters->customerId !== null, fn (Builder $q) => $q->where('customer_id', $filters->customerId))
             ->when($filters->cityId !== null, fn (Builder $q) => $q->where('city_id', $filters->cityId))
             // **`placed_at`, in the shop's own timezone, and both of those matter.**

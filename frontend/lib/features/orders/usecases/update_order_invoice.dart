@@ -40,6 +40,10 @@ class InvoiceLineUpdate {
 /// `PUT /orders/{id}` replaces the whole set — the same contract a product's sizes follow — so
 /// a removed line is expressed by sending the ones that remain, not by a delete call.
 ///
+/// **Urgency is null unless this edit is about it.** The server reads a missing `is_urgent` as
+/// «اتركها كما هي», which is what lets the additional-cost sheet write on its own without
+/// calming down an order it never asked about.
+///
 /// **Every argument is optional, because the parts close at different moments.** An order in
 /// «جاهزة» has its lines shut and its address open, so the only honest way to express that edit
 /// is to send the address and say nothing at all about the lines. The recipient's phone closes
@@ -59,6 +63,7 @@ class UpdateOrderInvoice {
     String? additionalCost,
     AdditionalCostReason? additionalCostReason,
     String? additionalCostNote,
+    bool? isUrgent,
   }) {
     // **An amount of nothing takes its reason with it.** The chips can be tapped before the box
     // is filled, and a reason on its own would be a category for money nobody is charging —
@@ -76,6 +81,7 @@ class UpdateOrderInvoice {
       additionalCost: charge,
       additionalCostReason: isCharging ? additionalCostReason : null,
       additionalCostNote: isCharging ? _text(additionalCostNote) : null,
+      isUrgent: isUrgent,
     );
   }
 

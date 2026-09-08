@@ -24,6 +24,8 @@ class ShippingCompanyResource extends JsonResource
             'phone' => $this->phone,
             'notes' => $this->notes,
             'is_active' => $this->is_active,
+            // The one a dispatch form opens on. At most one company says true.
+            'is_default' => $this->is_default,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

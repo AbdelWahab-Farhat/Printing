@@ -14,6 +14,7 @@ use App\Domain\Carrier\Models\NawrisParcelOrder;
 use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
+use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,7 +57,8 @@ class NawrisDispatchTest extends TestCase
 
     /**
      * An order going out for delivery to a mapped city, priced so the arithmetic is legible:
-     * 100 of bags plus 20 of delivery.
+     * 100 of bags, with a 20 delivery fee that is stated on the order and part of no total —
+     * the courier bills it to the customer at the door.
      */
     private function order(string $paid = '0.00', ?string $areaId = '204'): Order
     {
@@ -77,7 +79,7 @@ class NawrisDispatchTest extends TestCase
             'fulfilment_type' => FulfilmentType::Delivery,
             'items_total' => '100.00',
             'delivery_price' => '20.00',
-            'grand_total' => '120.00',
+            'grand_total' => '100.00',
             'paid_amount' => $paid,
         ]);
     }
@@ -133,16 +135,17 @@ class NawrisDispatchTest extends TestCase
 
     // ── the money ────────────────────────────────────────────────────────────────────────
 
-    public function test_the_cod_is_the_remainder_less_our_delivery_fee(): void
+    public function test_the_cod_is_the_remainder_with_nothing_taken_off_for_delivery(): void
     {
-        // Arrange — nothing paid yet: 120 owed, 20 of it delivery.
+        // Arrange — nothing paid yet: 100 owed for the bags, and delivery is in no total of ours.
         $this->accepted();
         $order = $this->order();
 
         // Act
         $this->carrier()->dispatchOrder($order);
 
-        // Assert — 100, not 120. The courier collects their own fee at the door on top.
+        // Assert — the whole remainder. The courier adds their own fee at the door on top of it,
+        // which is the only time the customer is billed for the trip.
         Http::assertSent(fn ($request) => (float) $request->data()['amount_to_be_collected'] === 100.0);
         $this->assertSame('100.00', (string) NawrisParcel::query()->sole()->amount_to_collect);
     }
@@ -157,40 +160,39 @@ class NawrisDispatchTest extends TestCase
         // Act
         $this->carrier()->dispatchOrder($order);
 
-        // Assert — 120 − 30 − 20.
+        // Assert — 100 − 30.
         Http::assertSent(fn ($request) => (float) $request->data()['amount_to_be_collected'] === 70.0);
     }
 
-    public function test_the_fee_we_deducted_is_frozen_on_the_parcel(): void
+    public function test_no_delivery_fee_is_recorded_as_deducted_from_the_parcel(): void
     {
-        // Arrange — so a later tariff change cannot retroactively rewrite what this parcel was
-        // asked to collect.
+        // Arrange — the deduction is gone, because the fee it deducted is in no total of ours.
         $this->accepted();
         $order = $this->order();
 
         // Act
         $this->carrier()->dispatchOrder($order);
 
-        // Assert
-        $this->assertSame('20.00', (string) NawrisParcel::query()->sole()->delivery_price_deducted);
+        // Assert — the column stays for the parcels dispatched under the old arrangement, and
+        // reads zero for every parcel dispatched under this one.
+        $this->assertSame('0.00', (string) NawrisParcel::query()->sole()->delivery_price_deducted);
     }
 
-    public function test_a_fully_prepaid_order_sends_no_cod_and_moves_the_fee_onto_us(): void
+    public function test_a_fully_prepaid_order_sends_no_cod_and_still_bills_the_trip_to_the_customer(): void
     {
-        // Arrange — the edge the clamp creates. The customer has already paid us for delivery, so
-        // letting the courier charge them again at the door would bill it twice.
+        // Arrange — the bags are paid for, and the trip never was: it is not on this order.
         $this->accepted();
-        $order = $this->order(paid: '120.00');
+        $order = $this->order(paid: '100.00');
 
         // Act
         $this->carrier()->dispatchOrder($order);
 
-        // Assert
+        // Assert — nothing to collect for us, and the courier still collects their own fee.
         Http::assertSent(function ($request): bool {
             $body = $request->data();
 
             return (float) $body['amount_to_be_collected'] === 0.0
-                && (int) $body['shipment_on_sender'] === 1;
+                && (int) $body['shipment_on_sender'] === 0;
         });
     }
 
@@ -275,6 +277,72 @@ class NawrisDispatchTest extends TestCase
             'order_id' => $order->id,
             'amount_to_collect' => '100.00',
         ]);
+    }
+
+    // ── which of our carriers the parcel is filed under ──────────────────────────────────
+
+    public function test_a_parcel_is_filed_under_the_configured_carrier(): void
+    {
+        // Arrange — the row the integration files its parcels under, named in `.env` so the
+        // filters and reports that already read `shipping_companies` keep working.
+        $nawris = ShippingCompany::factory()->create(['name' => 'النورس']);
+        config()->set('services.nawris.shipping_company_id', (string) $nawris->id);
+        $this->accepted();
+        $order = $this->order();
+
+        // Act
+        $parcel = $this->carrier()->dispatchOrder($order);
+
+        // Assert
+        $this->assertSame($nawris->id, $parcel->shipping_company_id);
+    }
+
+    public function test_a_parcel_falls_back_to_the_carrier_the_business_named_as_its_default(): void
+    {
+        // Arrange — nothing configured, which is every deployment until somebody sets it.
+        config()->set('services.nawris.shipping_company_id', null);
+        $nawris = ShippingCompany::factory()->asDefault()->create(['name' => 'النورس']);
+        $this->accepted();
+        $order = $this->order();
+
+        // Act
+        $parcel = $this->carrier()->dispatchOrder($order);
+
+        // Assert — «من الناقل» has one answer in the business, so an unset setting reads it
+        // rather than filing the parcel under nobody and leaving two truths about one parcel.
+        $this->assertSame($nawris->id, $parcel->shipping_company_id);
+    }
+
+    public function test_the_configured_carrier_wins_over_the_default(): void
+    {
+        // Arrange — the two answer different questions: the default is who we usually send
+        // with, and the setting is who *this integration's* parcels belong to.
+        $nawris = ShippingCompany::factory()->create(['name' => 'النورس']);
+        ShippingCompany::factory()->asDefault()->create(['name' => 'درب السبيل']);
+        config()->set('services.nawris.shipping_company_id', (string) $nawris->id);
+        $this->accepted();
+        $order = $this->order();
+
+        // Act
+        $parcel = $this->carrier()->dispatchOrder($order);
+
+        // Assert
+        $this->assertSame($nawris->id, $parcel->shipping_company_id);
+    }
+
+    public function test_a_parcel_names_nobody_when_neither_is_set(): void
+    {
+        // Arrange
+        config()->set('services.nawris.shipping_company_id', null);
+        $this->accepted();
+        $order = $this->order();
+
+        // Act
+        $parcel = $this->carrier()->dispatchOrder($order);
+
+        // Assert — the parcel is still lodged: who it is filed under is bookkeeping, and
+        // refusing a real shipment over it would be the tail wagging the dog.
+        $this->assertNull($parcel->shipping_company_id);
     }
 
     public function test_the_reference_we_minted_is_what_we_stored(): void

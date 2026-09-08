@@ -11,6 +11,7 @@ import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/models/orders_sort.dart';
 import 'package:dayaa/features/orders/usecases/get_order_counts.dart';
 import 'package:dayaa/features/orders/usecases/get_orders.dart';
 import 'package:flutter/foundation.dart';
@@ -59,8 +60,28 @@ class OrdersCubit extends PagedCubit<Order> {
   /// answers applied at once, so this narrows the same list rather than replacing the status.
   Set<PaymentStatus> paymentStatuses = const <PaymentStatus>{};
 
+  /// Whether the list is narrowed to the rush jobs. Null is «كلاهما».
+  ///
+  /// **A third axis, crossing the other two.** «جاهزة ومستعجلة» is one question with three
+  /// parts, so this narrows the same list rather than replacing the status — exactly as the
+  /// payment states do.
+  bool? isUrgent;
+
+  /// Which end of the queue the list starts at.
+  ///
+  /// **Not a filter, and it has its own button** — see [OrderSortButton]. It changes nothing
+  /// about *which* orders are on screen, only where the list starts, so it is set on its own
+  /// rather than through [showFilters]. It still has to ride along with every page `loadMore`
+  /// asks for: page two of «الأقدم أولاً» fetched the other way is a page of orders the reader
+  /// has already seen, appended under the ones they have.
+  OrdersSort sort = OrdersSort.fallback;
+
   /// Whether the list is narrowed by anything at all — what fills the filter button.
-  bool get isFiltered => status != null || paymentStatuses.isNotEmpty;
+  ///
+  /// The sort is deliberately absent: it narrows nothing, and the button beside the filter's
+  /// already says which way the list runs.
+  bool get isFiltered =>
+      status != null || paymentStatuses.isNotEmpty || isUrgent != null;
 
   @override
   Object identityOf(Order item) => item.id;
@@ -73,6 +94,8 @@ class OrdersCubit extends PagedCubit<Order> {
       search: search,
       statuses: [?status?.wire],
       paymentStatuses: paymentStatuses.map((status) => status.wire).toList(growable: false),
+      isUrgent: isUrgent,
+      sort: sort,
       page: page,
     );
   }
@@ -133,19 +156,38 @@ class OrdersCubit extends PagedCubit<Order> {
     await load(search: currentSearch);
   }
 
-  /// Applies both axes at once.
+  /// Applies every narrowing axis at once — the status, the payment states and urgency.
   ///
-  /// One call rather than two, because the sheet answers both together — and two calls would
-  /// fetch the list twice for a single tap on «تطبيق», with the first result thrown away.
+  /// One call rather than three, because the sheet answers them together — and three calls
+  /// would fetch the list three times for a single tap on «تطبيق», with two results thrown
+  /// away. The sort is not here: it is one tap on a button of its own, see [showSort].
   Future<void> showFilters({
     required OrderStatus? status,
     required Set<PaymentStatus> paymentStatuses,
+    required bool? isUrgent,
   }) async {
-    if (status == this.status && setEquals(paymentStatuses, this.paymentStatuses)) return;
+    if (status == this.status &&
+        setEquals(paymentStatuses, this.paymentStatuses) &&
+        isUrgent == this.isUrgent) {
+      return;
+    }
 
     this.status = status;
     this.paymentStatuses = paymentStatuses;
+    this.isUrgent = isUrgent;
 
+    await load(search: currentSearch);
+  }
+
+  /// Turns the list round.
+  ///
+  /// Everything else survives it — the search, the status, the payment states, the urgency:
+  /// somebody asking «أرِني الجاهزة، الأقدم أولاً» is asking one question in two taps, not
+  /// starting again.
+  Future<void> showSort(OrdersSort next) async {
+    if (next == sort) return;
+
+    sort = next;
     await load(search: currentSearch);
   }
 
@@ -157,7 +199,12 @@ class OrdersCubit extends PagedCubit<Order> {
   @override
   bool belongs(Order item) =>
       (status == null || item.status == status) &&
-      (paymentStatuses.isEmpty || paymentStatuses.contains(item.paymentStatus));
+      (paymentStatuses.isEmpty || paymentStatuses.contains(item.paymentStatus)) &&
+      // The third axis, and it moves for the same reason: an order that has just been marked
+      // urgent belongs in «المستعجلة فقط», and one that has just been calmed down leaves it.
+      // The *sort* is deliberately not consulted — a patched row keeps its place rather than
+      // jumping the queue, because nothing about it moved except the flag.
+      (isUrgent == null || item.isUrgent == isUrgent);
 
   /// Replaces one row in place, without a round trip — and re-reads the numbers beside the
   /// filter, which are the one thing on this screen a status change makes stale everywhere at

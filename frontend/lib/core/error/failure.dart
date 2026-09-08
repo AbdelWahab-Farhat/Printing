@@ -31,7 +31,13 @@ sealed class Failure with _$Failure {
   const factory Failure.forbidden({required String message}) = ForbiddenFailure;
 
   /// A bug on our side — a parse error, a shape the API never promised.
-  const factory Failure.unexpected({required String message}) = UnexpectedFailure;
+  ///
+  /// **`cause` is the exception's own words**, carried so the second line of the toast can say
+  /// which of several steps failed. Without it «تعذّر إنشاء ملف الفاتورة» was reported off a
+  /// phone with nothing to work from: a missing asset, a font that would not parse and a
+  /// filesystem that refused the write all reached the user as one sentence. Optional, because
+  /// most unexpected failures are raised by code that already knows what it is saying.
+  const factory Failure.unexpected({required String message, String? cause}) = UnexpectedFailure;
 }
 
 /// The Arabic the user actually reads. Defined as constants so a test can assert on them and
@@ -68,8 +74,14 @@ extension FailureMessage on Failure {
   /// A screen with an input to hang these under should render them there instead — that is the
   /// whole reason the API bothers to key them by field. This is for the screens that have
   /// nowhere better, and for fields no form on the phone actually shows.
+  ///
+  /// **On an [UnexpectedFailure] it is the exception itself**, in English and unedited. Nobody
+  /// enjoys reading `MissingPluginException` off a phone, but a fault nobody can name is worse:
+  /// this is the line that gets read out over the phone when something the app was never meant
+  /// to do happens on somebody else's device.
   String? get details => switch (this) {
     ServerFailure(:final fieldErrors?) => _joined(fieldErrors, except: message),
+    UnexpectedFailure(:final cause?) => cause,
     _ => null,
   };
 }

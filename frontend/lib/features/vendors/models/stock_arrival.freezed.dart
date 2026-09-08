@@ -25,7 +25,15 @@ mixin _$StockArrival {
 /// purchase history that passed through it has to survive that. The document keeps its
 /// lines and its ledger rows; only the pointer goes.
 @JsonKey(name: 'warehouse_id') int? get warehouseId; ArrivalRef? get warehouse;@JsonKey(name: 'invoice_number') String? get invoiceNumber; String? get notes;/// Stamped by the server from the authenticated user — never sent by this app.
-@JsonKey(name: 'received_by') int get receivedBy;@JsonKey(name: 'received_by_user') ArrivalRef? get receivedByUser; List<StockArrivalItem> get items;@JsonKey(name: 'created_at') DateTime? get createdAt;
+@JsonKey(name: 'received_by') int get receivedBy;@JsonKey(name: 'received_by_user') ArrivalRef? get receivedByUser;/// When this shipment was undone, and why — null on the ordinary arrival that stands.
+///
+/// **The document is kept and annotated, never deleted.** A receipt entered in error takes
+/// its stock back off the shelf, but the paper it was posted on is real history: a shipment
+/// somebody remembers booking in must not look like it never happened. So the screens keep
+/// the row and mark it — see [isReversed].
+@JsonKey(name: 'reversed_at') DateTime? get reversedAt;@JsonKey(name: 'reversal_reason') String? get reversalReason;/// Who undid it, stamped by the server from the authenticated user — the pair
+/// [receivedBy] / [receivedByUser] already follows.
+@JsonKey(name: 'reversed_by') int? get reversedBy;@JsonKey(name: 'reversed_by_user') ArrivalRef? get reversedByUser; List<StockArrivalItem> get items;@JsonKey(name: 'created_at') DateTime? get createdAt;
 /// Create a copy of StockArrival
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -38,16 +46,16 @@ $StockArrivalCopyWith<StockArrival> get copyWith => _$StockArrivalCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockArrival&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.invoiceNumber, invoiceNumber) || other.invoiceNumber == invoiceNumber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.receivedBy, receivedBy) || other.receivedBy == receivedBy)&&(identical(other.receivedByUser, receivedByUser) || other.receivedByUser == receivedByUser)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockArrival&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.invoiceNumber, invoiceNumber) || other.invoiceNumber == invoiceNumber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.receivedBy, receivedBy) || other.receivedBy == receivedBy)&&(identical(other.receivedByUser, receivedByUser) || other.receivedByUser == receivedByUser)&&(identical(other.reversedAt, reversedAt) || other.reversedAt == reversedAt)&&(identical(other.reversalReason, reversalReason) || other.reversalReason == reversalReason)&&(identical(other.reversedBy, reversedBy) || other.reversedBy == reversedBy)&&(identical(other.reversedByUser, reversedByUser) || other.reversedByUser == reversedByUser)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,purchaseOrderId,warehouseId,warehouse,invoiceNumber,notes,receivedBy,receivedByUser,const DeepCollectionEquality().hash(items),createdAt);
+int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,purchaseOrderId,warehouseId,warehouse,invoiceNumber,notes,receivedBy,receivedByUser,reversedAt,reversalReason,reversedBy,reversedByUser,const DeepCollectionEquality().hash(items),createdAt);
 
 @override
 String toString() {
-  return 'StockArrival(id: $id, vendorId: $vendorId, vendor: $vendor, purchaseOrderId: $purchaseOrderId, warehouseId: $warehouseId, warehouse: $warehouse, invoiceNumber: $invoiceNumber, notes: $notes, receivedBy: $receivedBy, receivedByUser: $receivedByUser, items: $items, createdAt: $createdAt)';
+  return 'StockArrival(id: $id, vendorId: $vendorId, vendor: $vendor, purchaseOrderId: $purchaseOrderId, warehouseId: $warehouseId, warehouse: $warehouse, invoiceNumber: $invoiceNumber, notes: $notes, receivedBy: $receivedBy, receivedByUser: $receivedByUser, reversedAt: $reversedAt, reversalReason: $reversalReason, reversedBy: $reversedBy, reversedByUser: $reversedByUser, items: $items, createdAt: $createdAt)';
 }
 
 
@@ -58,11 +66,11 @@ abstract mixin class $StockArrivalCopyWith<$Res>  {
   factory $StockArrivalCopyWith(StockArrival value, $Res Function(StockArrival) _then) = _$StockArrivalCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'purchase_order_id') int? purchaseOrderId,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(name: 'invoice_number') String? invoiceNumber, String? notes,@JsonKey(name: 'received_by') int receivedBy,@JsonKey(name: 'received_by_user') ArrivalRef? receivedByUser, List<StockArrivalItem> items,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'purchase_order_id') int? purchaseOrderId,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(name: 'invoice_number') String? invoiceNumber, String? notes,@JsonKey(name: 'received_by') int receivedBy,@JsonKey(name: 'received_by_user') ArrivalRef? receivedByUser,@JsonKey(name: 'reversed_at') DateTime? reversedAt,@JsonKey(name: 'reversal_reason') String? reversalReason,@JsonKey(name: 'reversed_by') int? reversedBy,@JsonKey(name: 'reversed_by_user') ArrivalRef? reversedByUser, List<StockArrivalItem> items,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
-$ArrivalRefCopyWith<$Res>? get vendor;$ArrivalRefCopyWith<$Res>? get warehouse;$ArrivalRefCopyWith<$Res>? get receivedByUser;
+$ArrivalRefCopyWith<$Res>? get vendor;$ArrivalRefCopyWith<$Res>? get warehouse;$ArrivalRefCopyWith<$Res>? get receivedByUser;$ArrivalRefCopyWith<$Res>? get reversedByUser;
 
 }
 /// @nodoc
@@ -75,7 +83,7 @@ class _$StockArrivalCopyWithImpl<$Res>
 
 /// Create a copy of StockArrival
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? purchaseOrderId = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? invoiceNumber = freezed,Object? notes = freezed,Object? receivedBy = null,Object? receivedByUser = freezed,Object? items = null,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? purchaseOrderId = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? invoiceNumber = freezed,Object? notes = freezed,Object? receivedBy = null,Object? receivedByUser = freezed,Object? reversedAt = freezed,Object? reversalReason = freezed,Object? reversedBy = freezed,Object? reversedByUser = freezed,Object? items = null,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
@@ -87,6 +95,10 @@ as ArrivalRef?,invoiceNumber: freezed == invoiceNumber ? _self.invoiceNumber : i
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,receivedBy: null == receivedBy ? _self.receivedBy : receivedBy // ignore: cast_nullable_to_non_nullable
 as int,receivedByUser: freezed == receivedByUser ? _self.receivedByUser : receivedByUser // ignore: cast_nullable_to_non_nullable
+as ArrivalRef?,reversedAt: freezed == reversedAt ? _self.reversedAt : reversedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,reversalReason: freezed == reversalReason ? _self.reversalReason : reversalReason // ignore: cast_nullable_to_non_nullable
+as String?,reversedBy: freezed == reversedBy ? _self.reversedBy : reversedBy // ignore: cast_nullable_to_non_nullable
+as int?,reversedByUser: freezed == reversedByUser ? _self.reversedByUser : reversedByUser // ignore: cast_nullable_to_non_nullable
 as ArrivalRef?,items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
 as List<StockArrivalItem>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
@@ -127,6 +139,18 @@ $ArrivalRefCopyWith<$Res>? get receivedByUser {
 
   return $ArrivalRefCopyWith<$Res>(_self.receivedByUser!, (value) {
     return _then(_self.copyWith(receivedByUser: value));
+  });
+}/// Create a copy of StockArrival
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ArrivalRefCopyWith<$Res>? get reversedByUser {
+    if (_self.reversedByUser == null) {
+    return null;
+  }
+
+  return $ArrivalRefCopyWith<$Res>(_self.reversedByUser!, (value) {
+    return _then(_self.copyWith(reversedByUser: value));
   });
 }
 }
@@ -210,10 +234,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser, @JsonKey(name: 'reversed_at')  DateTime? reversedAt, @JsonKey(name: 'reversal_reason')  String? reversalReason, @JsonKey(name: 'reversed_by')  int? reversedBy, @JsonKey(name: 'reversed_by_user')  ArrivalRef? reversedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StockArrival() when $default != null:
-return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.items,_that.createdAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.reversedAt,_that.reversalReason,_that.reversedBy,_that.reversedByUser,_that.items,_that.createdAt);case _:
   return orElse();
 
 }
@@ -231,10 +255,10 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser, @JsonKey(name: 'reversed_at')  DateTime? reversedAt, @JsonKey(name: 'reversal_reason')  String? reversalReason, @JsonKey(name: 'reversed_by')  int? reversedBy, @JsonKey(name: 'reversed_by_user')  ArrivalRef? reversedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _StockArrival():
-return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.items,_that.createdAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.reversedAt,_that.reversalReason,_that.reversedBy,_that.reversedByUser,_that.items,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -251,10 +275,10 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(name: 'invoice_number')  String? invoiceNumber,  String? notes, @JsonKey(name: 'received_by')  int receivedBy, @JsonKey(name: 'received_by_user')  ArrivalRef? receivedByUser, @JsonKey(name: 'reversed_at')  DateTime? reversedAt, @JsonKey(name: 'reversal_reason')  String? reversalReason, @JsonKey(name: 'reversed_by')  int? reversedBy, @JsonKey(name: 'reversed_by_user')  ArrivalRef? reversedByUser,  List<StockArrivalItem> items, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _StockArrival() when $default != null:
-return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.items,_that.createdAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that.warehouseId,_that.warehouse,_that.invoiceNumber,_that.notes,_that.receivedBy,_that.receivedByUser,_that.reversedAt,_that.reversalReason,_that.reversedBy,_that.reversedByUser,_that.items,_that.createdAt);case _:
   return null;
 
 }
@@ -266,7 +290,7 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that
 @JsonSerializable()
 
 class _StockArrival extends StockArrival {
-  const _StockArrival({required this.id, @JsonKey(name: 'vendor_id') required this.vendorId, this.vendor, @JsonKey(name: 'purchase_order_id') this.purchaseOrderId, @JsonKey(name: 'warehouse_id') this.warehouseId, this.warehouse, @JsonKey(name: 'invoice_number') this.invoiceNumber, this.notes, @JsonKey(name: 'received_by') required this.receivedBy, @JsonKey(name: 'received_by_user') this.receivedByUser, final  List<StockArrivalItem> items = const <StockArrivalItem>[], @JsonKey(name: 'created_at') this.createdAt}): _items = items,super._();
+  const _StockArrival({required this.id, @JsonKey(name: 'vendor_id') required this.vendorId, this.vendor, @JsonKey(name: 'purchase_order_id') this.purchaseOrderId, @JsonKey(name: 'warehouse_id') this.warehouseId, this.warehouse, @JsonKey(name: 'invoice_number') this.invoiceNumber, this.notes, @JsonKey(name: 'received_by') required this.receivedBy, @JsonKey(name: 'received_by_user') this.receivedByUser, @JsonKey(name: 'reversed_at') this.reversedAt, @JsonKey(name: 'reversal_reason') this.reversalReason, @JsonKey(name: 'reversed_by') this.reversedBy, @JsonKey(name: 'reversed_by_user') this.reversedByUser, final  List<StockArrivalItem> items = const <StockArrivalItem>[], @JsonKey(name: 'created_at') this.createdAt}): _items = items,super._();
   factory _StockArrival.fromJson(Map<String, dynamic> json) => _$StockArrivalFromJson(json);
 
 @override final  int id;
@@ -289,6 +313,18 @@ class _StockArrival extends StockArrival {
 /// Stamped by the server from the authenticated user — never sent by this app.
 @override@JsonKey(name: 'received_by') final  int receivedBy;
 @override@JsonKey(name: 'received_by_user') final  ArrivalRef? receivedByUser;
+/// When this shipment was undone, and why — null on the ordinary arrival that stands.
+///
+/// **The document is kept and annotated, never deleted.** A receipt entered in error takes
+/// its stock back off the shelf, but the paper it was posted on is real history: a shipment
+/// somebody remembers booking in must not look like it never happened. So the screens keep
+/// the row and mark it — see [isReversed].
+@override@JsonKey(name: 'reversed_at') final  DateTime? reversedAt;
+@override@JsonKey(name: 'reversal_reason') final  String? reversalReason;
+/// Who undid it, stamped by the server from the authenticated user — the pair
+/// [receivedBy] / [receivedByUser] already follows.
+@override@JsonKey(name: 'reversed_by') final  int? reversedBy;
+@override@JsonKey(name: 'reversed_by_user') final  ArrivalRef? reversedByUser;
  final  List<StockArrivalItem> _items;
 @override@JsonKey() List<StockArrivalItem> get items {
   if (_items is EqualUnmodifiableListView) return _items;
@@ -311,16 +347,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockArrival&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.invoiceNumber, invoiceNumber) || other.invoiceNumber == invoiceNumber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.receivedBy, receivedBy) || other.receivedBy == receivedBy)&&(identical(other.receivedByUser, receivedByUser) || other.receivedByUser == receivedByUser)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockArrival&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.invoiceNumber, invoiceNumber) || other.invoiceNumber == invoiceNumber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.receivedBy, receivedBy) || other.receivedBy == receivedBy)&&(identical(other.receivedByUser, receivedByUser) || other.receivedByUser == receivedByUser)&&(identical(other.reversedAt, reversedAt) || other.reversedAt == reversedAt)&&(identical(other.reversalReason, reversalReason) || other.reversalReason == reversalReason)&&(identical(other.reversedBy, reversedBy) || other.reversedBy == reversedBy)&&(identical(other.reversedByUser, reversedByUser) || other.reversedByUser == reversedByUser)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,purchaseOrderId,warehouseId,warehouse,invoiceNumber,notes,receivedBy,receivedByUser,const DeepCollectionEquality().hash(_items),createdAt);
+int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,purchaseOrderId,warehouseId,warehouse,invoiceNumber,notes,receivedBy,receivedByUser,reversedAt,reversalReason,reversedBy,reversedByUser,const DeepCollectionEquality().hash(_items),createdAt);
 
 @override
 String toString() {
-  return 'StockArrival(id: $id, vendorId: $vendorId, vendor: $vendor, purchaseOrderId: $purchaseOrderId, warehouseId: $warehouseId, warehouse: $warehouse, invoiceNumber: $invoiceNumber, notes: $notes, receivedBy: $receivedBy, receivedByUser: $receivedByUser, items: $items, createdAt: $createdAt)';
+  return 'StockArrival(id: $id, vendorId: $vendorId, vendor: $vendor, purchaseOrderId: $purchaseOrderId, warehouseId: $warehouseId, warehouse: $warehouse, invoiceNumber: $invoiceNumber, notes: $notes, receivedBy: $receivedBy, receivedByUser: $receivedByUser, reversedAt: $reversedAt, reversalReason: $reversalReason, reversedBy: $reversedBy, reversedByUser: $reversedByUser, items: $items, createdAt: $createdAt)';
 }
 
 
@@ -331,11 +367,11 @@ abstract mixin class _$StockArrivalCopyWith<$Res> implements $StockArrivalCopyWi
   factory _$StockArrivalCopyWith(_StockArrival value, $Res Function(_StockArrival) _then) = __$StockArrivalCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'purchase_order_id') int? purchaseOrderId,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(name: 'invoice_number') String? invoiceNumber, String? notes,@JsonKey(name: 'received_by') int receivedBy,@JsonKey(name: 'received_by_user') ArrivalRef? receivedByUser, List<StockArrivalItem> items,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'purchase_order_id') int? purchaseOrderId,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(name: 'invoice_number') String? invoiceNumber, String? notes,@JsonKey(name: 'received_by') int receivedBy,@JsonKey(name: 'received_by_user') ArrivalRef? receivedByUser,@JsonKey(name: 'reversed_at') DateTime? reversedAt,@JsonKey(name: 'reversal_reason') String? reversalReason,@JsonKey(name: 'reversed_by') int? reversedBy,@JsonKey(name: 'reversed_by_user') ArrivalRef? reversedByUser, List<StockArrivalItem> items,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
-@override $ArrivalRefCopyWith<$Res>? get vendor;@override $ArrivalRefCopyWith<$Res>? get warehouse;@override $ArrivalRefCopyWith<$Res>? get receivedByUser;
+@override $ArrivalRefCopyWith<$Res>? get vendor;@override $ArrivalRefCopyWith<$Res>? get warehouse;@override $ArrivalRefCopyWith<$Res>? get receivedByUser;@override $ArrivalRefCopyWith<$Res>? get reversedByUser;
 
 }
 /// @nodoc
@@ -348,7 +384,7 @@ class __$StockArrivalCopyWithImpl<$Res>
 
 /// Create a copy of StockArrival
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? purchaseOrderId = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? invoiceNumber = freezed,Object? notes = freezed,Object? receivedBy = null,Object? receivedByUser = freezed,Object? items = null,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? purchaseOrderId = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? invoiceNumber = freezed,Object? notes = freezed,Object? receivedBy = null,Object? receivedByUser = freezed,Object? reversedAt = freezed,Object? reversalReason = freezed,Object? reversedBy = freezed,Object? reversedByUser = freezed,Object? items = null,Object? createdAt = freezed,}) {
   return _then(_StockArrival(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
@@ -360,6 +396,10 @@ as ArrivalRef?,invoiceNumber: freezed == invoiceNumber ? _self.invoiceNumber : i
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,receivedBy: null == receivedBy ? _self.receivedBy : receivedBy // ignore: cast_nullable_to_non_nullable
 as int,receivedByUser: freezed == receivedByUser ? _self.receivedByUser : receivedByUser // ignore: cast_nullable_to_non_nullable
+as ArrivalRef?,reversedAt: freezed == reversedAt ? _self.reversedAt : reversedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,reversalReason: freezed == reversalReason ? _self.reversalReason : reversalReason // ignore: cast_nullable_to_non_nullable
+as String?,reversedBy: freezed == reversedBy ? _self.reversedBy : reversedBy // ignore: cast_nullable_to_non_nullable
+as int?,reversedByUser: freezed == reversedByUser ? _self.reversedByUser : reversedByUser // ignore: cast_nullable_to_non_nullable
 as ArrivalRef?,items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
 as List<StockArrivalItem>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
@@ -401,6 +441,18 @@ $ArrivalRefCopyWith<$Res>? get receivedByUser {
 
   return $ArrivalRefCopyWith<$Res>(_self.receivedByUser!, (value) {
     return _then(_self.copyWith(receivedByUser: value));
+  });
+}/// Create a copy of StockArrival
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ArrivalRefCopyWith<$Res>? get reversedByUser {
+    if (_self.reversedByUser == null) {
+    return null;
+  }
+
+  return $ArrivalRefCopyWith<$Res>(_self.reversedByUser!, (value) {
+    return _then(_self.copyWith(reversedByUser: value));
   });
 }
 }

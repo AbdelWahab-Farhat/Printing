@@ -100,7 +100,7 @@ class ShippingCompanyTest extends TestCase
             ->assertJsonPath('status', true)
             ->assertJsonCount(2, 'data')
             ->assertJsonStructure([
-                'data' => [['id', 'name', 'phone', 'notes', 'is_active', 'created_at']],
+                'data' => [['id', 'name', 'phone', 'notes', 'is_active', 'is_default', 'created_at']],
                 'meta' => ['current_page', 'per_page', 'last_page', 'total'],
             ]);
     }
@@ -328,6 +328,108 @@ class ShippingCompanyTest extends TestCase
 
         // Assert — old orders still name it; it simply stops being offered on new ones.
         $response->assertOk()->assertJsonPath('data.is_active', false);
+    }
+
+    // ────────────────────────── the default carrier ──────────────────────────
+
+    public function test_a_manager_can_name_the_company_a_dispatch_opens_on(): void
+    {
+        // Arrange
+        $company = ShippingCompany::factory()->create(['name' => 'النورس']);
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson(
+            "/api/v1/shipping-companies/{$company->id}",
+            $this->payload(['name' => 'النورس', 'is_default' => true]),
+        );
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.is_default', true);
+        $this->assertDatabaseHas('shipping_companies', ['id' => $company->id, 'is_default' => true]);
+    }
+
+    public function test_naming_a_default_takes_the_flag_off_the_one_that_held_it(): void
+    {
+        // Arrange — «الافتراضية» is a fact about the list, not about a row: there is one, or
+        // there is none.
+        $wasDefault = ShippingCompany::factory()->asDefault()->create(['name' => 'درب']);
+        $company = ShippingCompany::factory()->create(['name' => 'النورس']);
+        $headers = $this->manager();
+
+        // Act
+        $this->withHeaders($headers)->putJson(
+            "/api/v1/shipping-companies/{$company->id}",
+            $this->payload(['name' => 'النورس', 'is_default' => true]),
+        );
+
+        // Assert
+        $this->assertTrue($company->fresh()->is_default);
+        $this->assertFalse($wasDefault->fresh()->is_default);
+    }
+
+    public function test_a_new_company_is_not_the_default_unless_it_is_asked_for(): void
+    {
+        // Arrange
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->postJson('/api/v1/shipping-companies', $this->payload());
+
+        // Assert — being added is not being preferred. Somebody says which one that is.
+        $response->assertCreated()->assertJsonPath('data.is_default', false);
+    }
+
+    public function test_editing_a_company_that_says_nothing_about_the_flag_leaves_it_alone(): void
+    {
+        // Arrange — a client written before the flag existed, correcting a phone number.
+        $company = ShippingCompany::factory()->asDefault()->create(['name' => 'النورس']);
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson(
+            "/api/v1/shipping-companies/{$company->id}",
+            ['name' => 'النورس', 'phone' => '0912222222'],
+        );
+
+        // Assert — silence about the flag is «لا تُغيّرها», never «لا». Flipping it moves it off
+        // another company, so it may not happen as a side effect of an edit that never named it.
+        $response->assertOk()->assertJsonPath('data.is_default', true);
+        $this->assertTrue($company->fresh()->is_default);
+    }
+
+    public function test_a_company_we_stopped_dealing_with_stops_being_the_default(): void
+    {
+        // Arrange
+        $company = ShippingCompany::factory()->asDefault()->create(['name' => 'النورس']);
+        $headers = $this->manager();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson(
+            "/api/v1/shipping-companies/{$company->id}",
+            $this->payload(['name' => 'النورس', 'is_active' => false]),
+        );
+
+        // Assert — a carrier that is not offered at all cannot be the one a dispatch opens on.
+        $response->assertOk()
+            ->assertJsonPath('data.is_active', false)
+            ->assertJsonPath('data.is_default', false);
+    }
+
+    public function test_the_default_is_offered_first(): void
+    {
+        // Arrange
+        ShippingCompany::factory()->create(['name' => 'ا درب']);
+        ShippingCompany::factory()->asDefault()->create(['name' => 'ي النورس']);
+        $headers = $this->viewer();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/shipping-companies');
+
+        // Assert — ahead of the alphabet, because the picker is opened to answer «من سيأخذها»
+        // and the usual answer is the one somebody named as usual.
+        $response->assertOk()->assertJsonPath('data.0.name', 'ي النورس');
     }
 
     // ─────────────────────────────── removing ───────────────────────────────

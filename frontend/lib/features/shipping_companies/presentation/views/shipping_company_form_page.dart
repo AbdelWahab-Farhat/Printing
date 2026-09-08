@@ -50,6 +50,7 @@ class _ShippingCompanyFormViewState extends State<_ShippingCompanyFormView> {
       TextEditingController(text: widget.company?.notes ?? '');
 
   late bool _isActive = widget.company?.isActive ?? true;
+  late bool _isDefault = widget.company?.isDefault ?? false;
 
   bool get _isEditing => widget.company != null;
 
@@ -70,6 +71,7 @@ class _ShippingCompanyFormViewState extends State<_ShippingCompanyFormView> {
       phone: _phone.text,
       notes: _notes.text,
       isActive: _isActive,
+      isDefault: _isDefault,
     );
   }
 
@@ -142,11 +144,28 @@ class _ShippingCompanyFormViewState extends State<_ShippingCompanyFormView> {
 
                   SwitchListTile.adaptive(
                     value: _isActive,
-                    onChanged: (value) => setState(() => _isActive = value),
+                    // A company we no longer deal with cannot be the one a dispatch opens on,
+                    // which is the server's rule as well as this one: switching it off here
+                    // and being told so by the response would be the same answer, later.
+                    onChanged: (value) => setState(() {
+                      _isActive = value;
+                      if (!value) _isDefault = false;
+                    }),
                     title: const Text('نتعامل معها'),
                     // Said out loud, because "off" is not "deleted" and the difference is the
                     // whole reason this switch exists rather than a bin.
                     subtitle: const Text('إن أُطفئت لم تُعرض عند إرسال طلبية، وتبقى في الطلبيات السابقة'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+
+                  SwitchListTile.adaptive(
+                    value: _isDefault,
+                    // Offered only while we deal with her: the switch above is the one that
+                    // decides whether this question has an answer at all.
+                    onChanged: _isActive
+                        ? (value) => setState(() => _isDefault = value)
+                        : null,
+                    title: const Text('الشركة الافتراضية عند التوصيل'),
                     contentPadding: EdgeInsets.zero,
                   ),
                   SizedBox(height: 28.h),

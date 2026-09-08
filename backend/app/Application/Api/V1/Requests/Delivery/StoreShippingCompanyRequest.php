@@ -35,6 +35,14 @@ class StoreShippingCompanyRequest extends FormRequest
 
             /** Whether it is offered on a new dispatch. Absent means yes. */
             'is_active' => ['sometimes', 'boolean'],
+
+            /**
+             * Whether a dispatch form opens on this company. At most one does, so switching it
+             * on here switches it off wherever it was — and **absent means «اتركها كما هي»**
+             * rather than «لا», so an edit that never mentioned it cannot move the shop's
+             * default. A company being switched off loses it either way.
+             */
+            'is_default' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -60,6 +68,7 @@ class StoreShippingCompanyRequest extends FormRequest
             'phone' => 'رقم الهاتف',
             'notes' => 'ملاحظات',
             'is_active' => 'مفعّلة',
+            'is_default' => 'الشركة الافتراضية',
         ];
     }
 }

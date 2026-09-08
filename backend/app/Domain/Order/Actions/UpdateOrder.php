@@ -107,6 +107,11 @@ final class UpdateOrder
                 'address_details' => $data->addressDetails,
                 'notes' => $data->notes,
                 'tracking_number' => $data->trackingNumber,
+                // **Only when the request mentioned it.** Every edit re-sends the whole order,
+                // so a key that never arrived has to leave the flag standing — otherwise
+                // correcting an address on an urgent order would quietly calm it down. See
+                // OrderData::$isUrgent.
+                ...($data->isUrgent === null ? [] : ['is_urgent' => $data->isUrgent]),
             ]);
 
             $order->forceFill([

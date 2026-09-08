@@ -248,6 +248,7 @@ final class AuditAttributeLabels
             'region_id' => 'المنطقة',
             'region_name' => 'اسم المنطقة',
             'design_source' => 'مصدر التصميم',
+            'is_urgent' => 'مستعجلة',
             'recipient_name' => 'اسم المستلم',
             'recipient_phone' => 'هاتف المستلم',
             'address_details' => 'تفاصيل العنوان',

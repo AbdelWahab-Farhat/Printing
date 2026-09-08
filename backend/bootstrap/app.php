@@ -1,5 +1,6 @@
 <?php
 
+use App\Application\Api\V1\Middleware\DeshapeArabicInput;
 use App\Support\ApiEnvelope;
 use App\Support\Exceptions\ProvidesApiFailure;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -41,6 +42,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // isn't one. Returning null makes Laravel throw AuthenticationException, which the
         // handler below renders as a 401 envelope.
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/login');
+
+        // Beside `TrimStrings` in the global stack, and doing the same kind of work: what a
+        // person typed is tidied before the application ever sees it. Arabic keyed already
+        // shaped — «ﺷﺮﻛﺔ» rather than «شركة» — reads identically on every screen and is
+        // different bytes to every machine; one such character stored in a name is what stopped
+        // order 1228's invoice from being drawn. See App\Support\ArabicText.
+        $middleware->append(DeshapeArabicInput::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

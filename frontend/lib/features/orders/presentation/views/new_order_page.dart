@@ -19,6 +19,7 @@ import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.d
 import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_line_row.dart';
 import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_urgent_switch.dart';
 import 'package:dayaa/features/orders/presentation/widgets/product_picker_sheet.dart';
 import 'package:dayaa/features/orders/usecases/take_order.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
@@ -128,6 +129,12 @@ class _NewOrderViewState extends State<_NewOrderView> {
   /// Hidden without the grant — and refused by the server either way, which is the half that
   /// is a rule.
   bool get _mayDiscount => sl<Session>().can(AppPermission.discountOrders);
+
+  /// Whether the customer asked for this one to jump the queue.
+  ///
+  /// Not behind a permission of its own: the person taking the order is the one being told it
+  /// is urgent, and `orders.manage` — which this whole form already costs — is the grant.
+  bool _isUrgent = false;
 
   @override
   void dispose() {
@@ -273,6 +280,9 @@ class _NewOrderViewState extends State<_NewOrderView> {
       vendorId: _vendorRequirement.isOffered ? _vendor?.id : null,
       recipientPhone: _recipientPhone.text,
       notes: _notes.text,
+      // Only when it was ticked. A `false` on every ordinary order would be the app saying
+      // something about a field nobody touched — see `OrderData::$isUrgent`.
+      isUrgent: _isUrgent ? true : null,
       lines: [
         for (final line in _lines)
           DraftOrderLine(
@@ -418,6 +428,19 @@ class _NewOrderViewState extends State<_NewOrderView> {
               ],
 
               SizedBox(height: 14.h),
+              // **Above «ملاحظات», not inside it.** «مستعجلة» written into a free-text box is a
+              // sentence nothing can filter on, which is exactly what this field replaces.
+              _Section(
+                title: 'الاستعجال',
+                // The same control «تعديل الطلبية» carries, not a second copy of it: same word,
+                // same red, same shape — and one of them to re-word the day it is re-worded.
+                child: OrderUrgentSwitch(
+                  value: _isUrgent,
+                  onChanged: (value) => setState(() => _isUrgent = value),
+                ),
+              ),
+
+              SizedBox(height: 14.h),
               _Section(
                 title: 'ملاحظات',
                 child: AppTextField(
@@ -489,8 +512,9 @@ class _NewOrderViewState extends State<_NewOrderView> {
                 caption: 'المدينة',
                 value: city?.name ?? 'مطلوبة',
                 isChosen: city != null,
-                // The delivery price, inside the box of the city it comes from. The server
-                // adds it to the total; nothing here needs to say so.
+                // The delivery price, inside the box of the city it comes from. It is added
+                // to no total, here or on the server — the courier bills it to the customer at
+                // the door — and the box it sits in is the whole of what it is about.
                 trailing: city != null && city.hasDeliveryPrice
                     ? '${city.deliveryPrice!.grouped} د.ل'
                     : null,
@@ -796,10 +820,10 @@ class _CustomerBanner extends StatelessWidget {
 
 /// What the lines add up to — **an estimate, and it says so.**
 ///
-/// Delivery is not in it: the server reads that off the city, and a number the app added up is
-/// a second answer to a question the invoice already answers. Nothing here is shown at all
-/// until every line has a price from the server, because a partial sum labelled «الإجمالي» is
-/// the kind of number somebody reads out down a phone.
+/// Delivery is not in it, and is in no total the server sends back either — the fee is the
+/// courier's, billed to the customer at the door. Nothing here is shown at all until every line
+/// has a price from the server, because a partial sum labelled «الإجمالي» is the kind of number
+/// somebody reads out down a phone.
 class _Estimate extends StatelessWidget {
   const _Estimate({required this.lines});
 

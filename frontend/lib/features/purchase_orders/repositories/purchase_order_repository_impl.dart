@@ -169,6 +169,23 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
     );
   }
 
+  @override
+  Future<Either<Failure, PurchaseOrder>> reverseReceipt(
+    int purchaseOrderId, {
+    required String reason,
+  }) {
+    return safeRequest<PurchaseOrder>(
+      () => _dio.post(
+        PurchaseOrderEndpoints.receiptReversal(purchaseOrderId),
+        // One field, and it is the reason. Which shipment, which lines and which warehouse are
+        // all already known to the server — a client that could name them could take stock off
+        // the wrong shelf.
+        data: <String, dynamic>{'reason': reason},
+      ),
+      parse: (data) => PurchaseOrder.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
   /// The body create and update share. Written once, because the two differ only in the verb —
   /// and a field added to one and forgotten in the other is a silent half-save.
   Map<String, dynamic> _document({

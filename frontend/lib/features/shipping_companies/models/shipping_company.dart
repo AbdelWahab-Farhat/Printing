@@ -24,6 +24,13 @@ abstract class ShippingCompany with _$ShippingCompany {
     /// Whether it is offered on a new dispatch. Old orders naming it are unaffected.
     @JsonKey(name: 'is_active') @Default(true) bool isActive,
 
+    /// Whether a dispatch form opens on this company.
+    ///
+    /// At most one does — «من سيأخذها» has the same answer nine times in ten, and this is the
+    /// business saying which. Absent means no: a server too old to know the flag is a business
+    /// that has not named one.
+    @JsonKey(name: 'is_default') @Default(false) bool isDefault,
+
     @JsonKey(name: 'created_at') DateTime? createdAt,
   }) = _ShippingCompany;
 

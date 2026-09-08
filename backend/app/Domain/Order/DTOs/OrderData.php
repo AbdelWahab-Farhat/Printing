@@ -53,6 +53,14 @@ final readonly class OrderData
          */
         public ?int $vendorId = null,
         public ?string $trackingNumber = null,
+        /**
+         * «مستعجلة»، and **null means «لم يُذكر» rather than «لا»**.
+         *
+         * Every edit re-sends the whole order, so a boolean that defaulted to false would let
+         * somebody correcting an address quietly clear a flag they never saw. The same rule
+         * `is_active` follows on a customer, and for the same reason. Read on create as false.
+         */
+        public ?bool $isUrgent = null,
         public ?array $items = null,
         public array $designIds = [],
     ) {}
@@ -88,6 +96,11 @@ final readonly class OrderData
             additionalCostNote: self::textOrNull($validated['additional_cost_note'] ?? null),
             vendorId: isset($validated['vendor_id']) ? (int) $validated['vendor_id'] : null,
             trackingNumber: self::textOrNull($validated['tracking_number'] ?? null),
+            // `array_key_exists`, not `??`: the key being absent is the whole signal, and a
+            // `false` that arrived deliberately must not read the same as one that never came.
+            isUrgent: array_key_exists('is_urgent', $validated)
+                ? (bool) $validated['is_urgent']
+                : null,
             designIds: is_array($validated['design_ids'] ?? null)
                 ? array_values(array_map(intval(...), $validated['design_ids']))
                 : [],

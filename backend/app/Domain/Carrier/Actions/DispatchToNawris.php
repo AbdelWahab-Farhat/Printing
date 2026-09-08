@@ -101,8 +101,12 @@ final class DispatchToNawris
                 'government' => $destination->government,
                 'area' => $destination->area,
                 'amount_to_collect' => $amount,
-                // Frozen here so the returning figure stays explicable after a tariff change.
-                'delivery_price_deducted' => (string) $order->delivery_price,
+                // **Nothing is deducted any more, so this is `0.00` on every new parcel.** The
+                // delivery fee left `grand_total` — see `RecalculateOrderTotals` — and the
+                // courier bills it to the customer at the door on their own account. The column
+                // stays because parcels dispatched under the old arrangement carry a real figure
+                // in it, and the settlement that reads it must keep reading theirs correctly.
+                'delivery_price_deducted' => '0.00',
                 'shipping_company_id' => $destination->shippingCompanyId,
                 'dispatched_at' => now(),
             ])->save();

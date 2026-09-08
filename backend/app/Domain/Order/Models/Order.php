@@ -52,7 +52,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'customer_shop_id', 'customer_shop_name', 'vendor_id', 'vendor_name', 'city_id', 'region_id',
     'city_name', 'region_name', 'fulfilment_type',
     'design_source', 'recipient_name', 'recipient_phone', 'address_details', 'notes',
-    'tracking_number',
+    'tracking_number', 'is_urgent',
 ])]
 class Order extends Model implements HasAuditTrail
 {
@@ -87,6 +87,11 @@ class Order extends Model implements HasAuditTrail
     {
         return [
             'status' => OrderStatus::class,
+            // «مستعجلة» — a decision somebody made about this order, not a measurement of how
+            // long it has waited. Fillable, unlike every money column beside it, because there
+            // is nothing a client could invent here that it is not entitled to say: this is the
+            // clerk telling us what the customer asked for.
+            'is_urgent' => 'boolean',
             'fulfilment_type' => FulfilmentType::class,
             // Which road this order walks, stamped at intake by `ResolveOrderFlow` and never
             // re-read afterwards — see that action for why it is a snapshot. Absent from the

@@ -135,11 +135,11 @@ class OrderShortageTest extends TestCase
         $response = $this->setShortages($headers, $order, [$item->id => '100']);
 
         // Assert — 200 × 1.550, and the order's own totals follow the line rather than being
-        // written separately.
+        // written separately. The 20.00 of delivery is beside the total, never inside it.
         $response->assertOk();
         $this->assertSame('310.00', (string) $item->fresh()->line_total);
         $this->assertSame('310.00', (string) $order->fresh()->items_total);
-        $this->assertSame('330.00', (string) $order->fresh()->grand_total);
+        $this->assertSame('310.00', (string) $order->fresh()->grand_total);
     }
 
     public function test_the_ordered_quantity_is_never_rewritten(): void
@@ -186,7 +186,7 @@ class OrderShortageTest extends TestCase
         $this->assertNull($item->fresh()->shortage_quantity);
         $this->assertSame('465.00', (string) $item->fresh()->line_total);
         $this->assertSame('465.00', (string) $order->fresh()->items_total);
-        $this->assertSame('485.00', (string) $order->fresh()->grand_total);
+        $this->assertSame('465.00', (string) $order->fresh()->grand_total);
     }
 
     public function test_a_line_that_goes_entirely_missing_costs_nothing(): void
@@ -238,7 +238,7 @@ class OrderShortageTest extends TestCase
 
     public function test_an_order_paid_in_full_before_the_shortage_reads_as_overpaid(): void
     {
-        // Arrange — 485 collected up front, then a hundred bags fail to turn up. One clerk doing
+        // Arrange — 465 collected up front, then a hundred bags fail to turn up. One clerk doing
         // both, which is how it happens: the counter takes the money, the store finds the gap.
         [$order, $item] = $this->orderOf300();
         $headers = $this->auth(
@@ -249,7 +249,7 @@ class OrderShortageTest extends TestCase
         );
 
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/payments", [
-            'amount' => '485.00',
+            'amount' => '465.00',
             'method' => PaymentMethod::Cash->value,
         ])->assertCreated();
 

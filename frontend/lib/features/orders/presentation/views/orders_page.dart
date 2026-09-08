@@ -6,6 +6,7 @@ import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/orders_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_filter_button.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_sort_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -58,15 +59,27 @@ class _OrdersView extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: 10.w),
-                // Rebuilt with the list, so the status ticked inside the sheet and what is on
-                // screen cannot disagree.
+                // Both rebuilt with the list, so what the sheet says is ticked — and which way
+                // the arrow points — cannot disagree with what is on screen.
                 BlocBuilder<OrdersCubit, OrdersState>(
-                  builder: (context, state) => OrderFilterButton(
-                    selected: cubit.status,
-                    selectedPayments: cubit.paymentStatuses,
-                    counts: cubit.counts,
-                    onApplied: (status, payments) =>
-                        cubit.showFilters(status: status, paymentStatuses: payments),
+                  builder: (context, state) => Row(
+                    children: [
+                      // **A button, not a row on the filter sheet.** The sort narrows nothing,
+                      // and one tap is the whole of it — see [OrderSortButton].
+                      OrderSortButton(sort: cubit.sort, onToggled: cubit.showSort),
+                      SizedBox(width: 6.w),
+                      OrderFilterButton(
+                        selected: cubit.status,
+                        selectedPayments: cubit.paymentStatuses,
+                        selectedUrgency: cubit.isUrgent,
+                        counts: cubit.counts,
+                        onApplied: (status, payments, isUrgent) => cubit.showFilters(
+                          status: status,
+                          paymentStatuses: payments,
+                          isUrgent: isUrgent,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

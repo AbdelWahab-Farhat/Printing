@@ -42,9 +42,13 @@ class ShippingCompanyRepositoryImpl implements ShippingCompanyRepository {
     String? phone,
     String? notes,
     bool isActive = true,
+    bool? isDefault,
   }) {
     return safeRequest<ShippingCompany>(
-      () => _dio.post(ShippingCompanyEndpoints.index, data: _body(name, phone, notes, isActive)),
+      () => _dio.post(
+        ShippingCompanyEndpoints.index,
+        data: _body(name, phone, notes, isActive, isDefault),
+      ),
       parse: (data) => ShippingCompany.fromJson(data as Map<String, dynamic>),
     );
   }
@@ -56,9 +60,13 @@ class ShippingCompanyRepositoryImpl implements ShippingCompanyRepository {
     String? phone,
     String? notes,
     bool isActive = true,
+    bool? isDefault,
   }) {
     return safeRequest<ShippingCompany>(
-      () => _dio.put(ShippingCompanyEndpoints.show(id), data: _body(name, phone, notes, isActive)),
+      () => _dio.put(
+        ShippingCompanyEndpoints.show(id),
+        data: _body(name, phone, notes, isActive, isDefault),
+      ),
       parse: (data) => ShippingCompany.fromJson(data as Map<String, dynamic>),
     );
   }
@@ -70,12 +78,24 @@ class ShippingCompanyRepositoryImpl implements ShippingCompanyRepository {
 
   /// The whole record either way: the endpoint replaces rather than patches, so a field left
   /// out clears it — which is why nulls are sent rather than omitted.
-  Map<String, dynamic> _body(String name, String? phone, String? notes, bool isActive) {
+  ///
+  /// **`is_default` is the one key that is omitted rather than nulled**, and only when the
+  /// caller said nothing about it. It is a fact about the list rather than about this row —
+  /// switching it on takes it off another company — so the endpoint reads its absence as
+  /// «اتركها كما هي», and a null would be an answer where silence was meant.
+  Map<String, dynamic> _body(
+    String name,
+    String? phone,
+    String? notes,
+    bool isActive,
+    bool? isDefault,
+  ) {
     return <String, dynamic>{
       'name': name,
       'phone': phone,
       'notes': notes,
       'is_active': isActive,
+      'is_default': ?isDefault,
     };
   }
 }

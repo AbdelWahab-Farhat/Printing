@@ -133,6 +133,14 @@ abstract class TransitionField with _$TransitionField {
     /// all of it: the server fills that in, and agreeing costs a tap. Null on almost every
     /// field, because a box that suggests a wrong number is worse than an empty one.
     String? value,
+
+    /// What to write on the box when [value] is an id rather than something a person reads.
+    ///
+    /// «شركة التوصيل» travels as an id, so a form opening on the usual carrier would open on a
+    /// number nobody recognises. The name comes down beside it and the button says «النورس»
+    /// without this app fetching the list to learn one word. Both halves or neither: an answer
+    /// nobody can read is an answer nobody agreed to.
+    @JsonKey(name: 'value_label') String? valueLabel,
   }) = _TransitionField;
 
   const TransitionField._();

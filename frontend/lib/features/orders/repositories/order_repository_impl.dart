@@ -11,6 +11,7 @@ import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/models/orders_sort.dart';
 import 'package:dayaa/features/orders/models/production_cost_entry.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
@@ -30,6 +31,8 @@ class OrderRepositoryImpl implements OrderRepository {
     String? search,
     List<String> statuses = const <String>[],
     List<String> paymentStatuses = const <String>[],
+    bool? isUrgent,
+    OrdersSort sort = OrdersSort.fallback,
     int? customerId,
     String? from,
     String? to,
@@ -51,6 +54,14 @@ class OrderRepositoryImpl implements OrderRepository {
           // Repeated for the same reason: «أرِني ما لم يُدفع» means unpaid *and* part-paid in
           // practice, and making somebody run the list twice is how a filter goes unused.
           if (paymentStatuses.isNotEmpty) 'payment_status': paymentStatuses,
+          // `1`/`0` rather than `true`/`false`: a bool in a query string reaches PHP as the
+          // word, and the server reads both — but the digits are what every other client of
+          // this API sends and what its own docs say.
+          if (isUrgent != null) 'urgent': isUrgent ? 1 : 0,
+          // Omitted while the list is in its default order, so the common request keeps the URL
+          // it has always had — and so a server that predates the parameter answers it the same
+          // way it always did.
+          if (sort != OrdersSort.fallback) 'sort': sort.wire,
           // The null-aware element: same meaning as the `if` above it, and the form the
           // analyzer asks for when the condition is only a null check.
           'customer_id': ?customerId,
@@ -109,6 +120,7 @@ class OrderRepositoryImpl implements OrderRepository {
     String? additionalCost,
     AdditionalCostReason? additionalCostReason,
     String? additionalCostNote,
+    bool? isUrgent,
   }) async {
     // `PUT` replaces the whole order, so the fields this screen does not touch have to be sent
     // back as they are — omitting `city_id` would be an instruction to clear the destination.
@@ -154,6 +166,17 @@ class OrderRepositoryImpl implements OrderRepository {
                 ? order.additionalCostNote
                 : additionalCostNote),
             'tracking_number': ?order.trackingNumber,
+            // **Omitted when this edit is not about it**, unlike every field above: the server
+            // reads a missing key as «اتركها كما هي», so the additional-cost sheet can write
+            // without calming down an order it never asked about. Sending the order's own value
+            // back would work too, but it would send a flag somebody else may have set in the
+            // seconds since — and this is the one field on the order two people race over.
+            'is_urgent': ?isUrgent,
+            // Who is making it, echoed back like the address beside it. Absent means «no
+            // vendor» here, not «leave it alone», and clearing it on a وسيط order makes the
+            // server refuse the whole edit with «الطلبية الوسيطة تحتاج مورداً» — a message
+            // about a field this screen never opened.
+            'vendor_id': ?order.vendorId,
             // Omitted entirely when this edit is not about the lines: `items` is the one field
             // whose absence means "leave them alone" rather than "clear them", which is what
             // lets an address be corrected on an order whose lines are already closed.

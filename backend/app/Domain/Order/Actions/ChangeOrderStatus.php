@@ -10,6 +10,7 @@ use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderProfitFinalised;
+use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
 use App\Domain\Order\Exceptions\OrderIsClosed;
@@ -298,13 +299,23 @@ final class ChangeOrderStatus
                 OrderProfitFinalised::dispatch((int) $order->getKey());
             }
 
+            // Read once for the two announcements below, both of which owe their listener the
+            // person who moved the order so that person is not told about their own tap.
+            $actorId = $actor?->getKey() === null ? null : (int) $actor->getKey();
+
             // **The order is stuck and a person has to do something about it.** Announced rather
             // than acted on, like the three above — but its listener is the one that is *queued
             // and deferred to after commit*, because it tells people rather than moving money.
             // A notification about a transaction that then rolled back cannot be taken back.
             if ($target === OrderStatus::Shortage) {
-                OrderEnteredShortage::dispatch((int) $order->getKey(), $actor?->getKey() === null ? null : (int) $actor->getKey());
+                OrderEnteredShortage::dispatch((int) $order->getKey(), $actorId);
             }
+
+            // **Every move, including the ones nobody is told about.** The four announcements
+            // above each name one moment; this one names the fact that a moment happened, and
+            // leaves «is this worth telling anyone» to its listener — which is the only place
+            // that list should live. See {@see OrderStatusChanged}.
+            OrderStatusChanged::dispatch((int) $order->getKey(), $from, $target, $actorId);
 
             return $order->refresh();
         });

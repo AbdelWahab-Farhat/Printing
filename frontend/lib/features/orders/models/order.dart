@@ -58,6 +58,18 @@ abstract class Order with _$Order {
     /// Whether the order itself is closed to editing.
     @JsonKey(name: 'is_closed') @Default(false) bool isClosed,
 
+    /// «مستعجلة» — what the customer asked for, not how long the order has waited.
+    ///
+    /// **A field the server carries, never a judgement made here.** Deriving it from
+    /// [placedAt] was the alternative, and it answers a different question: an order's age
+    /// measures *our* delay, while this records the customer's demand. A rush job taken and
+    /// delivered the same morning would never reach any threshold, and an order stuck a
+    /// fortnight waiting for the customer to approve artwork is not urgent at all.
+    ///
+    /// Defaulted for the reason [paidAmount] is: an order from a build of the API that
+    /// predates the column was never marked, and false is exactly what that means.
+    @JsonKey(name: 'is_urgent') @Default(false) bool isUrgent,
+
     /// The moves this order may make, **already narrowed to what the signed-in user may do.**
     /// The screen draws exactly these buttons and no others, which is what stops it offering an
     /// action the server would refuse.
@@ -325,6 +337,42 @@ abstract class Order with _$Order {
   /// entering it asks what is short — so an arm on the dial elsewhere would be a third door to
   /// a room with two.
   bool get shortagesAreEditable => status == OrderStatus.shortage;
+
+  /// The artwork this order's lines are drawn with, or null when there is none to draw.
+  ///
+  /// **What tells one printed order from another is what is being printed on it**, and every
+  /// line of every one of them was showing the same catalogue photograph of a white bag. The
+  /// file was already on the payload — the screen simply drew the other picture.
+  ///
+  /// Three things make it null, and none of them is a special case in the screen:
+  ///
+  /// - **A كيس سادة carries no design at all.** Nothing is printed, so there is nothing to show
+  ///   but the product, which is exactly what it showed before.
+  /// - **A PDF is not drawn.** [DesignKind] arrives decided by the server for this one reason —
+  ///   so nothing here tries to paint a print file into a thumbnail — and a photograph of the
+  ///   bags is a better answer than a grey square.
+  /// - **A payload that never loaded the file** behind the version: the list endpoint sends no
+  ///   designs, and a version with no [CustomerDesign.fileUrl] has no picture in it.
+  ///
+  /// **The newest version wins, and a rejected one never does.** The versions are a
+  /// conversation, so the last word is the current one — but a version the customer turned down
+  /// is precisely not what the shop is printing, and showing it would put the refused artwork on
+  /// the screen the press works from.
+  CustomerDesign? get artwork {
+    final versions = designs;
+
+    if (versions == null || versions.isEmpty) return null;
+
+    final drawable =
+        versions
+            .where((version) => !version.isRejected)
+            .where((version) => version.design?.kind == DesignKind.image)
+            .where((version) => (version.design?.fileUrl ?? '').isNotEmpty)
+            .toList()
+          ..sort((a, b) => b.version.compareTo(a.version));
+
+    return drawable.isEmpty ? null : drawable.first.design;
+  }
 
   /// Whether anything is still owed on this order.
   ///

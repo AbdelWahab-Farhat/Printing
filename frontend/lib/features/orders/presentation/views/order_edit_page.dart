@@ -15,6 +15,7 @@ import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.d
 import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_additional_cost.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_urgent_switch.dart';
 import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:flutter/material.dart';
@@ -203,6 +204,11 @@ class _OrderEditViewState extends State<_OrderEditView> {
                 // A third line, and later than the other two: the address stays correctable
                 // until somebody is driving to it.
                 mayEditDestination: session.can(AppPermission.manageOrders),
+                // **`is_closed`, the server's own line, not a status checked here.**
+                // `UpdateOrder` refuses a closed order and accepts every other, so a switch
+                // drawn on this condition never leads to a refusal — and «استعجل ما وصل» means
+                // nothing anyway. The grant is `orders.manage`, the one every other edit costs.
+                mayFlagUrgent: session.can(AppPermission.manageOrders) && !order.isClosed,
                 // **`is_closed`, which is the server's own line rather than one chosen here.**
                 // `UpdateOrder` refuses a closed order and accepts every other, so a button
                 // drawn on that condition never leads to a refusal — and the grant is the
@@ -240,6 +246,7 @@ class _Form extends StatelessWidget {
     required this.mayDiscount,
     required this.mayEditItems,
     required this.mayEditDestination,
+    required this.mayFlagUrgent,
     required this.onEditAdditionalCost,
     required this.onSaved,
     required this.onAddDesign,
@@ -257,6 +264,10 @@ class _Form extends StatelessWidget {
   /// The address closes later than the lines do — only when somebody is driving to it — so it
   /// gets its own permission check rather than riding on [mayEditItems].
   final bool mayEditDestination;
+
+  /// Whether «مستعجلة» may be switched. False for a reader, and on an order the server would
+  /// refuse to edit at all.
+  final bool mayFlagUrgent;
 
   /// Null without `orders.additional_cost`, and on an order the server would refuse to edit —
   /// see the call site for the line, which is the server's own. Its own grant, so a clerk who
@@ -305,6 +316,33 @@ class _Form extends StatelessWidget {
                   ),
                   SizedBox(height: 16.h),
                 ],
+                // **دائماً، ولا يختفي.** كان يُخفى في الطلبية المقفلة وعند من لا يملك المنح،
+                // فكانت الشاشة نفسها تُفتح مرّةً وفيها القسم ومرّةً وليس فيها، ومن لم يجده لا
+                // يعرف أاختفى لأنّه ممنوع أم لأنّه غير موجود أصلاً. الحال الآن كحال «البنود»
+                // تحته: القسم واقف، والمفتاح وحده يُقفل، والسطر يقول لماذا.
+                //
+                // **وفوق البنود**، لأنّه أقصر سؤالٍ على هذه الشاشة وأكثر ما تُفتح لأجله — اتّصل
+                // العميل فصارت تسبق غيرها — فلا يُدفن تحت قائمةِ بنودٍ قد تمتدّ خارج الشاشة.
+                _Section(
+                  title: 'الاستعجال',
+                  child: Column(
+                    children: [
+                      if (!mayFlagUrgent)
+                        _Note(
+                          text: order.isClosed
+                              ? 'الاستعجال مقفل بعد إغلاق الطلبية'
+                              : 'لا تملك صلاحية تعديل الطلبية',
+                        ),
+                      OrderUrgentSwitch(
+                        value: state.isUrgent,
+                        // Null closes the switch itself — the same line the section is drawn
+                        // on, so what is shown and what may be tapped cannot disagree.
+                        onChanged: mayFlagUrgent ? cubit.setUrgent : null,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16.h),
                 _Section(
                   title: 'البنود',
                   child: Column(
@@ -406,7 +444,9 @@ class _Form extends StatelessWidget {
               ],
             ),
           ),
-          if (mayEditItems || (state.destinationIsEditable && mayEditDestination))
+          if (mayEditItems ||
+              mayFlagUrgent ||
+              (state.destinationIsEditable && mayEditDestination))
             SafeArea(
               top: false,
               child: Padding(
@@ -520,8 +560,9 @@ class _DestinationState extends State<_Destination> {
         SizedBox(height: 6.h),
         Text(
           // Said out loud, because it is the part that surprises people: the rate follows the
-          // address, and the total on the invoice moves with it.
-          'تغيير المدينة يعيد حساب سعر التوصيل والإجمالي',
+          // address. The invoice's own total does not move with it — the fee is the courier's,
+          // billed to the customer at the door and part of no total of ours.
+          'تغيير المدينة يعيد حساب سعر التوصيل وحده',
           style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
         SizedBox(height: 10.h),
@@ -806,3 +847,5 @@ class _FailureView extends StatelessWidget {
     );
   }
 }
+
+

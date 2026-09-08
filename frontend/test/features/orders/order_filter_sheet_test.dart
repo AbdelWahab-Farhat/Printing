@@ -1,6 +1,7 @@
 import 'package:dayaa/features/orders/models/order_counts.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/models/orders_sort.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_filter_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -26,10 +27,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   late OrderStatus? appliedStatus;
   late Set<PaymentStatus>? appliedPayments;
+  late bool? appliedUrgency;
 
   setUp(() {
     appliedStatus = null;
     appliedPayments = null;
+    appliedUrgency = null;
   });
 
   /// A real phone, not the 800×600 the test binding defaults to.
@@ -67,6 +70,7 @@ void main() {
   Widget host({
     OrderStatus? selected,
     Set<PaymentStatus> selectedPayments = const <PaymentStatus>{},
+    bool? selectedUrgency,
   }) => ScreenUtilInit(
     designSize: const Size(430, 932),
     builder: (context, _) => MaterialApp(
@@ -82,10 +86,12 @@ void main() {
           child: OrderFilterButton(
             selected: selected,
             selectedPayments: selectedPayments,
+            selectedUrgency: selectedUrgency,
             counts: counts,
-            onApplied: (status, payments) {
+            onApplied: (status, payments, isUrgent) {
               appliedStatus = status;
               appliedPayments = payments;
+              appliedUrgency = isUrgent;
             },
           ),
         ),
@@ -135,8 +141,15 @@ void main() {
     // longer fitted inside the 80% the sheet may take. It was returning that 80% exactly — a
     // fraction of the phone, which is the very thing this test exists to catch — so the number
     // had stopped being able to tell the two layouts apart. The screen grows; the assertion
-    // does not move.
-    useAPhone(tester, height: 2400);
+    // does not move. It grew once more when «الاستعجال» added a section beneath the payment
+    // states — and stopped growing there, because «الترتيب» left this sheet for a button.
+    //
+    // **Growing it is not a way of dodging the assertion**, and the arithmetic says why: the
+    // sheet's own content does not scale one-for-one with the screen — the text does not grow
+    // as fast as the spacing around it — so a taller phone genuinely leaves the sheet more
+    // room than the 80% it may take. At 2400 the sheet is pinned at that ceiling and the test
+    // could tell nothing; at 2800 it comes back under it, which is the answer being asked for.
+    useAPhone(tester, height: 2800);
     await tester.pumpWidget(host());
 
     // Act
@@ -147,7 +160,7 @@ void main() {
     // "measures its own content". The layout this replaced asked for 90% of whatever it was
     // given and would have come back with 2160 — and this is the *inflated* test font, so a real
     // phone has more room left over than this number suggests.
-    expect(height, lessThan(2400 * 0.8));
+    expect(height, lessThan(2800 * 0.8));
   });
 
   testWidgets('the options share lines — chips, not a column of full-width rows', (tester) async {
@@ -252,6 +265,77 @@ void main() {
     // Assert
     expect(appliedStatus, isNull);
     expect(appliedPayments, isEmpty);
+  });
+
+  testWidgets('the sort is not on this sheet at all', (tester) async {
+    // Arrange — it was, and it was wrong: every chip here narrows the list, and one that does
+    // not reads as a filter that has stopped working. It is a button above the list now.
+    useAPhone(tester);
+    await tester.pumpWidget(host());
+
+    // Act
+    await openTheSheet(tester);
+
+    // Assert
+    expect(find.text('الترتيب'), findsNothing);
+    for (final option in OrdersSort.values) {
+      expect(find.text(option.label), findsNothing, reason: option.wire);
+    }
+  });
+
+  testWidgets('«المستعجلة فقط» is a tick, and unticking it asks for everything again', (
+    tester,
+  ) async {
+    // Arrange — the third axis. Ticked it narrows; untouched it says nothing at all, which is
+    // not the same as asking for the calm ones.
+    useAPhone(tester);
+    await tester.pumpWidget(host());
+    await openTheSheet(tester);
+
+    // Act
+    await tapOption(tester, 'المستعجلة فقط');
+    await tapOption(tester, 'المستعجلة فقط');
+    await tester.tap(find.text('تطبيق'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(appliedUrgency, isNull);
+  });
+
+  testWidgets('the axes cross rather than replace each other', (tester) async {
+    // Arrange — «الجاهزة غير المدفوعة المستعجلة» is one question, and every part of it has to
+    // survive one tap on «تطبيق».
+    useAPhone(tester);
+    await tester.pumpWidget(host());
+    await openTheSheet(tester);
+
+    // Act
+    await tapOption(tester, OrderStatus.ready.label);
+    await tapOption(tester, 'غير مدفوعة');
+    await tapOption(tester, 'المستعجلة فقط');
+    await tester.tap(find.text('تطبيق'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(appliedStatus, OrderStatus.ready);
+    expect(appliedPayments, {PaymentStatus.unpaid});
+    expect(appliedUrgency, isTrue);
+  });
+
+  testWidgets('«مسح الفلاتر» clears urgency with the rest', (tester) async {
+    // Arrange
+    useAPhone(tester);
+    await tester.pumpWidget(host(selectedUrgency: true));
+    await openTheSheet(tester);
+
+    // Act
+    await tester.tap(find.text('مسح الفلاتر'));
+    await tester.pump();
+    await tester.tap(find.text('تطبيق'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(appliedUrgency, isNull);
   });
 
   testWidgets('the button says whether the list is narrowed before it is opened', (tester) async {

@@ -42,6 +42,7 @@ _TransitionField _$TransitionFieldFromJson(Map<String, dynamic> json) =>
       maxKilobytes: (json['max_kilobytes'] as num?)?.toInt(),
       requiredWith: json['required_with'] as String?,
       value: json['value'] as String?,
+      valueLabel: json['value_label'] as String?,
     );
 
 Map<String, dynamic> _$TransitionFieldToJson(_TransitionField instance) =>
@@ -61,6 +62,7 @@ Map<String, dynamic> _$TransitionFieldToJson(_TransitionField instance) =>
       'max_kilobytes': instance.maxKilobytes,
       'required_with': instance.requiredWith,
       'value': instance.value,
+      'value_label': instance.valueLabel,
     };
 
 const _$TransitionFieldTypeEnumMap = {

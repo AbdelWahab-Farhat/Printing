@@ -20,16 +20,19 @@ class PurchaseOrderDetailCubit extends Cubit<PurchaseOrderDetailState> {
     required GetPurchaseOrder getOrder,
     required ChangePurchaseOrderStatus changeStatus,
     required ReceivePurchaseOrderArrival receiveArrival,
+    required ReverseReceipt reverseReceiptUseCase,
   }) : _id = purchaseOrderId,
        _getOrder = getOrder,
        _changeStatus = changeStatus,
        _receiveArrival = receiveArrival,
+       _reverseReceipt = reverseReceiptUseCase,
        super(const PurchaseOrderDetailState.loading());
 
   final int _id;
   final GetPurchaseOrder _getOrder;
   final ChangePurchaseOrderStatus _changeStatus;
   final ReceivePurchaseOrderArrival _receiveArrival;
+  final ReverseReceipt _reverseReceipt;
 
   Future<void> load() async {
     // The order it already has is kept while the next read is in flight, so a pull-to-refresh
@@ -69,6 +72,16 @@ class PurchaseOrderDetailCubit extends Cubit<PurchaseOrderDetailState> {
       ),
     );
   }
+
+  /// Undoes a receipt posted in error, taking its stock back off the shelf and leaving the
+  /// order on «قيد الاستلام» to be received again.
+  ///
+  /// **The refusals matter more than the success here**, and each one names a different problem
+  /// — the window has closed, the stock has already been drawn on, a layer was repriced by hand
+  /// — so the [Failure] is handed back for the sheet to print rather than swallowed into a
+  /// generic message.
+  Future<Failure?> reverseReceipt({required String reason}) =>
+      _write(() => _reverseReceipt(_id, reason: reason));
 
   /// Runs a write, then re-reads the order.
   ///

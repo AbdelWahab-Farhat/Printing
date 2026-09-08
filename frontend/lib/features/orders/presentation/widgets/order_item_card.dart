@@ -32,6 +32,7 @@ class OrderItemCard extends StatelessWidget {
     required this.item,
     required this.showCosts,
     this.showOutsourcingCosts = false,
+    this.artworkUrl,
     this.onOpenProduct,
     this.onScrap,
     super.key,
@@ -48,6 +49,14 @@ class OrderItemCard extends StatelessWidget {
   /// Whether a وسيط line says what the vendor charges — a different grant from [showCosts], see
   /// [OrderLineCosts].
   final bool showOutsourcingCosts;
+
+  /// What is being printed on these bags, drawn in the slot the catalogue photograph would
+  /// otherwise hold — see `Order.artwork`, which is what decides it.
+  ///
+  /// **The order's, not the line's.** The artwork belongs to the order, and every line of it is
+  /// the same job in another size. Null on a كيس سادة and on anything this screen cannot draw,
+  /// and then the product's own photograph is shown exactly as before.
+  final String? artworkUrl;
 
   /// Null without `products.view`, and on a payload that did not carry the product.
   final VoidCallback? onOpenProduct;
@@ -77,7 +86,11 @@ class OrderItemCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Identity(item: item, showChevron: onOpenProduct != null),
+              _Identity(
+                item: item,
+                showChevron: onOpenProduct != null,
+                artworkUrl: artworkUrl,
+              ),
               SizedBox(height: 10.h),
               // Separates what was bought from what it costs — the two questions this card
               // answers, and the only rule drawn on it.
@@ -116,10 +129,13 @@ class OrderItemCard extends StatelessWidget {
 
 /// What was sold: the picture, the code, the name and the size.
 class _Identity extends StatelessWidget {
-  const _Identity({required this.item, required this.showChevron});
+  const _Identity({required this.item, required this.showChevron, this.artworkUrl});
 
   final OrderItem item;
   final bool showChevron;
+
+  /// See [OrderItemCard.artworkUrl].
+  final String? artworkUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -129,8 +145,11 @@ class _Identity extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (image != null) ...[
-          ProductThumbnail(image: image, side: 52.w, radius: 12.r),
+        // **Drawn for the artwork too, not only for a photograph.** The slot used to appear only
+        // when the catalogue had a picture, which hid the design on every product nobody had
+        // photographed — and the design is the one picture that is about *this* order.
+        if (image != null || artworkUrl != null) ...[
+          ProductThumbnail(image: image, imageUrl: artworkUrl, side: 52.w, radius: 12.r),
           SizedBox(width: 10.w),
         ],
         Expanded(
