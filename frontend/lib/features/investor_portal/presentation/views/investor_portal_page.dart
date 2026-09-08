@@ -5,6 +5,7 @@ import 'package:dayaa/features/investor_portal/models/investor_portfolio.dart';
 import 'package:dayaa/features/investor_portal/presentation/viewmodel/investor_portal_cubit.dart';
 import 'package:dayaa/features/investor_portal/presentation/widgets/investor_deal_card.dart';
 import 'package:dayaa/features/investors/presentation/widgets/investor_money_tile.dart';
+import 'package:dayaa/features/notifications/presentation/widgets/notification_bell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -37,6 +38,11 @@ class _InvestorPortalView extends StatelessWidget {
       appBar: AppBar(
         title: const Text('حسابي'),
         actions: [
+          // **Not a copy of the shell's bell — the same widget.** This page is top level, beside
+          // the splash and the login screen rather than inside the shell, so the staff bar's
+          // bell is invisible to an investor. Writing the badge inline in RootPage would have
+          // left every investor without one.
+          const NotificationBell(),
           IconButton(
             icon: Icon(AppIcons.refresh),
             tooltip: 'تحديث',

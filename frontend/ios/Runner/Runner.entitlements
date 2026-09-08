@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- `development` so debug builds talk to the APNs sandbox. Xcode rewrites this to
+	     `production` for a release/App Store build, which is why the same .p8 key must be
+	     uploaded to BOTH slots in the Firebase console: one auth key, two environments. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

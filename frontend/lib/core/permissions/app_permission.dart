@@ -113,6 +113,15 @@ enum AppPermission {
     'purchase_orders.manage',
     'إنشاء وتعديل أوامر الشراء وإرسالها وإلغاؤها',
   ),
+  // Undoing a receipt is `inventory.manage` like posting one — this is not the grant that opens
+  // that door. It waives the **clock** and nothing else: a receipt nobody can still walk over
+  // and verify is a different level of trust, the same reasoning `inventory.revalue` carries.
+  // So it is listed here for the permissions screen to grant, and no button is gated on it —
+  // the server folds it into `can_reverse_receipt` for the caller who is asking.
+  reverseReceiptAnyTime(
+    'purchase_orders.reverse_receipt_any_time',
+    'التراجع عن استلام شحنة بعد انتهاء مهلة الـ٢٤ ساعة',
+  ),
 
   // Orders. One permission per status the workflow can move *into*, so the business composes
   // a designer, a printer and a delivery coordinator out of this list without any of those
@@ -222,7 +231,13 @@ enum AppPermission {
   manageCompanySettings('settings.manage', 'تعديل إعدادات الشركة'),
 
   // The audit trail. One permission, not a pair: nothing writes to it by hand.
-  viewActivityLogs('logs.view', 'عرض سجل النشاطات');
+  viewActivityLogs('logs.view', 'عرض سجل النشاطات'),
+
+  // Interrupting every phone in the company at once. Grantable rather than a Gate on purpose,
+  // so the business can hand it to a floor manager with one tick on the roles screen and no
+  // deploy — which is exactly why the app must gate the compose screen on `can` and never on
+  // `isAdmin`. The two agree today only because no role holds this yet.
+  broadcastNotifications('notifications.broadcast', 'إرسال إشعار عام لكل الموظفين');
 
   const AppPermission(this.wire, this.label);
 

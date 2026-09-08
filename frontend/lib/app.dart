@@ -1,8 +1,11 @@
+import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/theme/text_theme.dart';
 import 'package:dayaa/core/theme/theme.dart';
 import 'package:dayaa/core/widgets/dismiss_keyboard.dart';
+import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -46,7 +49,17 @@ class DayaaApp extends StatelessWidget {
           // closes on some forms is worse than one that never does, because the user stops
           // trusting the gesture. `builder` is the one place that sits above the router and
           // below the theme, so it covers dialogs and sheets too.
-          builder: (context, child) => DismissKeyboard(child: child ?? const SizedBox.shrink()),
+          // The badge lives here, above the router, because the bell it feeds exists in two
+          // shells — the staff one and the investor portal, which is outside that shell — and
+          // both must show the same number. Provided above them rather than in each, so reading
+          // a notification cannot clear one bell and leave the other stale.
+          //
+          // A `.value` provider over the GetIt singleton: the container owns its lifetime, so
+          // this must not close it when the widget goes.
+          builder: (context, child) => BlocProvider<UnreadBadgeCubit>.value(
+            value: sl<UnreadBadgeCubit>(),
+            child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
+          ),
         );
       },
     );

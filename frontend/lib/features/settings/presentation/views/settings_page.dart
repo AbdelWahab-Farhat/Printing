@@ -135,8 +135,33 @@ class _Card extends StatelessWidget {
   }
 }
 
-class _NotificationsCard extends StatelessWidget {
+/// Stateful for one reason: the phone's answer can change while this screen is open — the user
+/// leaves for the system settings, grants permission and comes back — and a row that kept
+/// showing «محظور» after that would be the same lie in the opposite direction.
+class _NotificationsCard extends StatefulWidget {
   const _NotificationsCard();
+
+  @override
+  State<_NotificationsCard> createState() => _NotificationsCardState();
+}
+
+class _NotificationsCardState extends State<_NotificationsCard> {
+  AppLifecycleListener? _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(context.read<SettingsCubit>().refreshOsPermission());
+    _lifecycle = AppLifecycleListener(
+      onResume: () => unawaited(context.read<SettingsCubit>().refreshOsPermission()),
+    );
+  }
+
+  @override
+  void dispose() {
+    _lifecycle?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -152,15 +177,25 @@ class _NotificationsCard extends StatelessWidget {
             style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           subtitle: Text(
-            // Says what it is for, not what it does today. The honest note about the service
-            // not existing yet lives in [SetNotificationsEnabled], where a developer reads it —
-            // telling the shop "this does nothing yet" is an apology, not information.
-            'إشعارات الطلبات الجديدة والتحديثات على هذا الجهاز',
+            // **The one case where this row must say something extra.** The stored preference
+            // is on and the phone is blocking anyway; a switch left reading «مفعّل» would stop
+            // the user ever looking at their phone's settings, which is where the actual fix
+            // is. Ordinary state says what the switch is for, not what it does today.
+            state.isBlockedByOs
+                ? 'الإشعارات موقوفة من إعدادات الهاتف — فعّلها من هناك'
+                : 'إشعارات الطلبات الجديدة والتحديثات على هذا الجهاز',
             style: context.textTheme.bodySmall?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
+              color: state.isBlockedByOs
+                  ? context.colorScheme.error
+                  : context.colorScheme.onSurfaceVariant,
             ),
           ),
-          secondary: Icon(AppIcons.notifications, color: context.colorScheme.primary),
+          secondary: Icon(
+            AppIcons.notifications,
+            color: state.isBlockedByOs
+                ? context.colorScheme.error
+                : context.colorScheme.primary,
+          ),
           contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
         ),
       ),

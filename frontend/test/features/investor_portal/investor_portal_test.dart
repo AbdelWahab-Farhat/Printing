@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
@@ -7,7 +8,11 @@ import 'package:dayaa/features/investor_portal/presentation/views/investor_porta
 import 'package:dayaa/features/investor_portal/presentation/widgets/investor_deal_card.dart';
 import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository.dart';
 import 'package:dayaa/features/investor_portal/usecases/get_investor_portfolio.dart';
+import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
+import 'package:dayaa/features/notifications/repositories/notifications_repository.dart';
+import 'package:dayaa/features/notifications/usecases/get_unread_count.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -92,7 +97,14 @@ void main() {
       designSize: const Size(430, 932),
       builder: (context, _) => MaterialApp(
         locale: const Locale('ar'),
-        home: Directionality(textDirection: TextDirection.rtl, child: child),
+        // The portal's app bar carries the notification bell, and the bell reads the badge from
+        // above it — in the running app that provider sits in [DayaaApp], above the router, so
+        // that the staff shell and this page cannot show two different counts. Supplied here
+        // for the same reason: without it the page cannot build at all.
+        home: BlocProvider<UnreadBadgeCubit>(
+          create: (_) => UnreadBadgeCubit(GetUnreadCount(_SilentNotificationsRepository())),
+          child: Directionality(textDirection: TextDirection.rtl, child: child),
+        ),
       ),
     );
 
@@ -165,4 +177,15 @@ void main() {
       expect(find.text('-6,500 د.ل'), findsNothing);
     });
   });
+}
+
+
+/// A mailbox that answers nothing.
+///
+/// The bell has to exist for the portal to build, but this file is about the two profit figures
+/// — so the count is deliberately left hanging rather than stubbed to a number that would put a
+/// badge on the screen for other tests to trip over.
+class _SilentNotificationsRepository implements NotificationsRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => Completer<Never>().future;
 }

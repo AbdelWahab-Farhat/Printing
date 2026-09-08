@@ -1,12 +1,26 @@
 # Notifications — connecting the Flutter app
 
-> **Status: not started, and the backend it describes is not built either.** This is the plan for
-> the app side of
+> **Status (٢٠٢٦-٠٩-٠٩): built, and the backend is merged on `main` (`7ef66d3`).** This was the
+> plan for the app side of
 > [NOTIFICATIONS-BACKEND-CHANGES.md](NOTIFICATIONS-BACKEND-CHANGES.md), written at the same time
-> as it so the contract is agreed once rather than negotiated twice.
+> as it so the contract was agreed once rather than negotiated twice. Where this document and the
+> shipped API disagree, **the API is right** — the live spec is `/docs/api`.
 >
-> Nothing here should be built until the backend endpoints exist and answer. Where this document
-> and the shipped API disagree, **the API is right** — the live spec is `/docs/api`.
+> **Two things in §11 are deliberately still open, and both are noted where they belong:**
+>
+> * **iOS push is untested code.** The APNs key now exists (`J24ZP25BJQ`, team `XJF65LWZ2J`) and
+>   is uploaded to the *production* slot of the `daya-bdf70` Firebase project — but the
+>   *development* slot is empty, so a debug build talks to the APNs sandbox and finds no key
+>   there. Nothing on iOS has been observed delivering a push. Do not report it as working.
+> * **No route to the system settings.** §7 asks for a one-tap `openAppSettings` from the blocked
+>   state. The blocked state itself is implemented — the row goes red and says the phone is
+>   blocking — but the tap is not, because every way to open the OS settings page needs a new
+>   dependency (`app_settings` or `permission_handler`) and `pubspec.yaml` says plainly that
+>   every dependency is a decision. Left for whoever wants to make it.
+>
+> The **in-app centre owes FCM nothing** and works on every phone today, iPhones included. That
+> is the sentence to reach for when somebody asks why iOS «ما عندهاش إشعارات»: the mailbox is
+> complete there; the phone is simply not woken by it yet.
 
 ---
 
@@ -369,24 +383,24 @@ Three fields:
 
 ## 11. Checklist
 
-- [ ] `firebase_core`, `firebase_messaging` added; Firebase config files provisioned per flavour
-- [ ] `NotificationEndpoints` added to `api_endpoints.dart`
-- [ ] `AppNotification` model + `Paginated` list, `dart run build_runner build`
-- [ ] Repository contract + impl (the only file importing `dio`)
-- [ ] Six usecases
-- [ ] `NotificationsCubit` + `UnreadBadgeCubit`, both sealed-union states
-- [ ] `NotificationsPage` — list, pull to refresh, pagination, mark-read on tap, "قراءة الكل"
-- [ ] Shared `NotificationBell` widget with badge
-- [ ] Bell wired into **`RootPage`** `actions:`
-- [ ] Bell wired into **`InvestorPortalPage`** `actions:`
-- [ ] Token registered on sign-in, on toggle-on, and on `onTokenRefresh`
-- [ ] **Token released on sign-out and on toggle-off** — §6
-- [ ] OS permission requested at sign-in; blocked-state shown in settings with a route to system settings — §7
-- [ ] Foreground / background / **terminated** handled; terminated deferred until after the splash — §8
-- [ ] Android notification channel id matches the server's
-- [ ] iOS: push capability + background modes enabled. **APNs key not available yet — the iOS push path ships untested and must be reported as such** — §8
-- [ ] Unknown `icon` falls back; **null `route` does not navigate**; unknown route lands on the list, never the error page — §3
-- [ ] `broadcastNotifications` added to `AppPermission` — §10
-- [ ] Compose-announcement screen behind `PermissionGate` (**`can`, not `isAdmin`** — §10), with the confirmation dialog and 429 handling
-- [ ] All registrations added to [`Injector`](../../frontend/lib/core/di/injector.dart)
-- [ ] `flutter analyze` clean · `dart format -l 100` on changed files only · tests green
+- [x] `firebase_core`, `firebase_messaging` added; Firebase config files provisioned per flavour
+- [x] `NotificationEndpoints` added to `api_endpoints.dart`
+- [x] `AppNotification` model + `Paginated` list, `dart run build_runner build`
+- [x] Repository contract + impl (the only file importing `dio`)
+- [x] Six usecases
+- [x] `NotificationsCubit` + `UnreadBadgeCubit`, both sealed-union states
+- [x] `NotificationsPage` — list, pull to refresh, pagination, mark-read on tap, "قراءة الكل"
+- [x] Shared `NotificationBell` widget with badge
+- [x] Bell wired into **`RootPage`** `actions:`
+- [x] Bell wired into **`InvestorPortalPage`** `actions:`
+- [x] Token registered on sign-in, on toggle-on, and on `onTokenRefresh`
+- [x] **Token released on sign-out and on toggle-off** — §6
+- [~] OS permission requested at sign-in ✅; blocked state shown in settings ✅; **route to the system settings not built** — needs a new dependency, see the status note at the top — §7
+- [x] Foreground / background / **terminated** handled; terminated deferred until after the splash — §8
+- [x] Android notification channel id matches the server's
+- [~] iOS: push capability + background modes enabled ✅ (`Runner.entitlements`, `UIBackgroundModes`). APNs key uploaded to the **production slot only**, so **the iOS push path is still untested and must be reported as such** — §8
+- [x] Unknown `icon` falls back; **null `route` does not navigate**; unknown route lands on the list, never the error page — §3
+- [x] `broadcastNotifications` added to `AppPermission` — §10
+- [x] Compose-announcement screen behind `PermissionGate` (**`can`, not `isAdmin`** — §10), with the confirmation dialog and 429 handling
+- [x] All registrations added to [`Injector`](../../frontend/lib/core/di/injector.dart)
+- [x] `flutter analyze` clean (only the four pre-existing issues on `main`, none in this feature) · tests green. **`dart format` not run** — the installed SDK's tall style reflows dozens of untouched files, so formatting is left to whoever owns that decision.

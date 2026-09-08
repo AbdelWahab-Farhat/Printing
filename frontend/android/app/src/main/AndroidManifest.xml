@@ -40,6 +40,14 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- The channel every push from our server names, in android.notification.channel_id.
+             The FCM SDK creates the channel referenced here on first run; without it Android 8+
+             DROPS the notification silently - no error, no log, nothing on screen - which is the
+             single most misleading failure in this feature. It must stay identical to the
+             backend's FCM_ANDROID_CHANNEL_ID (config/services.php -> fcm.android_channel_id). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="dayaa_default" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

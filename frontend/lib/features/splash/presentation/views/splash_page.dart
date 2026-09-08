@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/push/push_service.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -28,6 +30,22 @@ class SplashPage extends StatelessWidget {
   }
 }
 
+/// Reads the route a cold start was launched from, once the session is known.
+///
+/// Silent when there is none, which is every ordinary launch.
+Future<void> _openInitialNotification() async {
+  final route = await sl<PushService>().initialRoute();
+  if (route == null) return;
+
+  try {
+    unawaited(AppRouter.instance.push(route));
+  } on Exception {
+    // A destination this build has never heard of — an older app against a newer backend. The
+    // list is the honest fallback; the router's error page is not.
+    unawaited(AppRouter.instance.push(Routes.notifications));
+  }
+}
+
 class _SplashView extends StatelessWidget {
   const _SplashView();
 
@@ -43,8 +61,21 @@ class _SplashView extends StatelessWidget {
             switch (state) {
               case SplashSignedIn():
                 context.go(Routes.home);
+                // **The terminated-launch case, and the only correct place for it.** The app was
+                // started by tapping a notification, and `getInitialMessage()` has been holding
+                // that route since. Reading it any earlier — in `main`, or on the notification
+                // itself — would navigate before this screen had decided whether there is a
+                // usable session, sending an unauthenticated user at an authenticated screen.
+                //
+                // Pushed on top of home, so the back button leaves the user somewhere real
+                // rather than on an empty stack.
+                unawaited(_openInitialNotification());
 
               case SplashSignedOut():
+                // Deliberately dropped rather than remembered: by the time this person signs in
+                // they may be a different employee on a shared phone, and opening the previous
+                // one's order behind the login screen is exactly the leak the sign-out release
+                // exists to prevent.
                 context.go(Routes.login);
 
               default:

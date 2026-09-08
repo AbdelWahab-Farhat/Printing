@@ -2,6 +2,7 @@ import 'package:dayaa/core/config/app_config.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/attachment_picker_impl.dart';
 import 'package:dayaa/core/network/dio_client.dart';
+import 'package:dayaa/core/push/push_service.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/storage/token_storage.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/add_employee_cubit.dart';
@@ -110,6 +111,17 @@ import 'package:dayaa/features/manufacturing_cost_rates/presentation/viewmodel/s
 import 'package:dayaa/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository_impl.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/usecases/manufacturing_cost_rate_usecases.dart';
+import 'package:dayaa/features/notifications/presentation/viewmodel/notifications_cubit.dart';
+import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
+import 'package:dayaa/features/notifications/repositories/notifications_repository.dart';
+import 'package:dayaa/features/notifications/repositories/notifications_repository_impl.dart';
+import 'package:dayaa/features/notifications/usecases/get_notifications.dart';
+import 'package:dayaa/features/notifications/usecases/get_unread_count.dart';
+import 'package:dayaa/features/notifications/usecases/mark_all_read.dart';
+import 'package:dayaa/features/notifications/usecases/mark_notification_read.dart';
+import 'package:dayaa/features/notifications/usecases/register_device_token.dart';
+import 'package:dayaa/features/notifications/usecases/release_device_token.dart';
+import 'package:dayaa/features/notifications/usecases/send_announcement.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
@@ -333,9 +345,64 @@ abstract final class Injector {
     _registerSettings();
     _registerOrders();
     _registerReports();
+    _registerNotifications();
 
     _isInitialized = true;
     debugPrint('⏱️ injector ready in ${stopwatch.elapsed}');
+  }
+
+  /// The mailbox, the bell, and the push plumbing behind them.
+  ///
+  /// [UnreadBadgeCubit] is a **lazy singleton, not a factory**, and that is the one decision in
+  /// here worth a sentence: the bell exists in two separate shells — the staff one and the
+  /// investor portal — and both must show the same number. A factory would hand each its own
+  /// count, so reading a notification would clear one bell and leave the other stale.
+  ///
+  /// [PushService] is a singleton for the same class of reason: it holds the stream
+  /// subscriptions and the token last handed to the server, and a second instance would leave
+  /// the first one still listening.
+  static void _registerNotifications() {
+    sl
+      ..registerLazySingleton<NotificationsRepository>(
+        () => NotificationsRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetNotifications>(
+        () => GetNotifications(sl<NotificationsRepository>()),
+      )
+      ..registerLazySingleton<GetUnreadCount>(
+        () => GetUnreadCount(sl<NotificationsRepository>()),
+      )
+      ..registerLazySingleton<MarkNotificationRead>(
+        () => MarkNotificationRead(sl<NotificationsRepository>()),
+      )
+      ..registerLazySingleton<MarkAllRead>(
+        () => MarkAllRead(sl<NotificationsRepository>()),
+      )
+      ..registerLazySingleton<RegisterDeviceToken>(
+        () => RegisterDeviceToken(sl<NotificationsRepository>()),
+      )
+      ..registerLazySingleton<ReleaseDeviceToken>(
+        () => ReleaseDeviceToken(sl<NotificationsRepository>()),
+      )
+      ..registerLazySingleton<SendAnnouncement>(
+        () => SendAnnouncement(sl<NotificationsRepository>()),
+      )
+      ..registerLazySingleton<PushService>(
+        () => PushService(
+          registerToken: sl<RegisterDeviceToken>(),
+          releaseToken: sl<ReleaseDeviceToken>(),
+        ),
+      )
+      ..registerLazySingleton<UnreadBadgeCubit>(
+        () => UnreadBadgeCubit(sl<GetUnreadCount>()),
+      )
+      ..registerFactory<NotificationsCubit>(
+        () => NotificationsCubit(
+          sl<GetNotifications>(),
+          sl<MarkNotificationRead>(),
+          sl<MarkAllRead>(),
+        ),
+      );
   }
 
   /// Who works here, what jobs exist, and what each job may do.
@@ -460,7 +527,13 @@ abstract final class Injector {
       // Lazy singleton, not a factory: the splash screen and every future sign-out share one
       // repository, and it is stateless apart from the token store it already shares.
       ..registerLazySingleton<AuthRepository>(
-        () => AuthRepositoryImpl(sl<Dio>(), sl<TokenStorage>(), sl<Session>()),
+        () => AuthRepositoryImpl(
+          sl<Dio>(),
+          sl<TokenStorage>(),
+          sl<Session>(),
+          sl<PushService>(),
+          sl<SettingsRepository>(),
+        ),
       )
       ..registerLazySingleton<Login>(() => Login(sl<AuthRepository>()))
       ..registerLazySingleton<GetCurrentUser>(
@@ -939,6 +1012,9 @@ abstract final class Injector {
       ..registerLazySingleton<ReceivePurchaseOrderArrival>(
         () => ReceivePurchaseOrderArrival(sl<PurchaseOrderRepository>()),
       )
+      ..registerLazySingleton<ReverseReceipt>(
+        () => ReverseReceipt(sl<PurchaseOrderRepository>()),
+      )
       ..registerFactory<PurchaseOrdersCubit>(
         () => PurchaseOrdersCubit(getOrders: sl<GetPurchaseOrders>()),
       )
@@ -949,6 +1025,7 @@ abstract final class Injector {
           getOrder: sl<GetPurchaseOrder>(),
           changeStatus: sl<ChangePurchaseOrderStatus>(),
           receiveArrival: sl<ReceivePurchaseOrderArrival>(),
+          reverseReceiptUseCase: sl<ReverseReceipt>(),
         ),
       )
       ..registerFactory<SavePurchaseOrderCubit>(
@@ -1546,6 +1623,7 @@ abstract final class Injector {
         () => SettingsCubit(
           getSettings: sl<GetSettings>(),
           setNotificationsEnabled: sl<SetNotificationsEnabled>(),
+          push: sl<PushService>(),
         ),
       );
   }
