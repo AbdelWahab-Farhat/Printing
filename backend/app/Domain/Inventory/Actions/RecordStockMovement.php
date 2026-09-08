@@ -105,6 +105,18 @@ final class RecordStockMovement
             return;
         }
 
+        if ($data->fromWarehouseId !== null && $data->movementType === MovementType::ArrivalReversal) {
+            // Deliberately ahead of the generic decrease below: this one knows *which* layers to
+            // take back — the ones the arrival opened — and must never be allowed to fall through
+            // to a FIFO draw on the oldest stock in the building.
+            $this->applyStockChange->withdrawArrival(
+                $data->fromWarehouseId, $data->stockItemId, $unit,
+                $data->reversedMovementId, $movementId,
+            );
+
+            return;
+        }
+
         if ($data->fromWarehouseId !== null) {
             $this->applyStockChange->decrease(
                 $data->fromWarehouseId, $data->stockItemId, $data->quantity, $unit, $movementId,
@@ -187,11 +199,12 @@ final class RecordStockMovement
         return match ($type) {
             MovementType::PurchaseArrival => StockBatchSourceType::PurchaseArrival,
             MovementType::Adjustment => StockBatchSourceType::Adjustment,
-            // Never reached: InternalTransfer and OrderReversal each relocate or credit back
-            // existing batches instead of opening one, and OrderFulfillment, ScrapLoss and an
-            // Adjustment-decrease only ever call decrease().
+            // Never reached: InternalTransfer, OrderReversal and ArrivalReversal each relocate,
+            // credit back or withdraw existing batches instead of opening one, and
+            // OrderFulfillment, ScrapLoss and an Adjustment-decrease only ever call decrease().
             MovementType::InternalTransfer, MovementType::OrderFulfillment,
-            MovementType::OrderReversal, MovementType::ScrapLoss => StockBatchSourceType::Adjustment,
+            MovementType::OrderReversal, MovementType::ScrapLoss,
+            MovementType::ArrivalReversal => StockBatchSourceType::Adjustment,
         };
     }
 

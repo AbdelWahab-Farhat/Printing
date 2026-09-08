@@ -42,6 +42,7 @@ final class ApplyStockChange
     public function __construct(
         private readonly ConsumeStockBatchesFifo $consumeBatches,
         private readonly CreditBackStockBatches $creditBackBatches,
+        private readonly WithdrawArrivalStockBatches $withdrawArrivalBatches,
     ) {}
 
     /**
@@ -213,6 +214,56 @@ final class ApplyStockChange
                 printingSalePrice: null,
             );
         }
+
+        return $stock;
+    }
+
+    /**
+     * Shrinks a balance by taking back exactly the cost layers `$reversedMovementId` opened —
+     * never a FIFO draw from the oldest stock on the shelf. See
+     * {@see WithdrawArrivalStockBatches} for why: the layers this undoes are the erroneous ones,
+     * and drawing FIFO instead would consume somebody else's oldest stock while leaving the
+     * mistake on the shelf.
+     *
+     * The balance row is locked before any batch row is read, the same ordering every other
+     * method here follows. The two guards inside the withdrawal — nothing drawn from the layer,
+     * nothing repriced on it — are what make the total below safe to subtract: a layer that has
+     * never been touched still holds precisely what the arrival put on it.
+     *
+     * @throws InsufficientStock
+     * @throws UnitOfMeasurementMismatch
+     */
+    public function withdrawArrival(
+        int $warehouseId,
+        int $stockItemId,
+        PricingUnit $unit,
+        int $reversedMovementId,
+        int $stockMovementId,
+    ): WarehouseStock {
+        $stock = $this->lockedRow($warehouseId, $stockItemId);
+
+        $withdrawn = ($this->withdrawArrivalBatches)(
+            $warehouseId, $stockItemId, $reversedMovementId, $stockMovementId,
+        );
+
+        // Unreachable while the guards above hold: a layer nobody has drawn on cannot exist
+        // without the balance that was grown alongside it, in the same transaction. Kept as the
+        // loud failure for the day the two have somehow drifted apart — the same role the
+        // remainder check at the end of ConsumeStockBatchesFifo plays.
+        if ($stock === null) {
+            throw InsufficientStock::make('0.000', $withdrawn);
+        }
+
+        $this->guardUnit($stock, $unit);
+
+        $available = (string) $stock->quantity;
+
+        if (bccomp($available, $withdrawn, 3) < 0) {
+            throw InsufficientStock::make($available, $withdrawn);
+        }
+
+        $stock->quantity = bcsub($available, $withdrawn, 3);
+        $stock->save();
 
         return $stock;
     }

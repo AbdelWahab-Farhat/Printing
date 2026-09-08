@@ -51,10 +51,26 @@ class StockArrivalResource extends JsonResource
                 'name' => $this->receivedByUser->name,
             ]),
 
+            // Set only on a receipt somebody entered in error and took back — null on every one
+            // that stands. The document is kept and annotated rather than deleted, so a screen
+            // showing the shipment can say «مُلغى: سُجّلت الكمية خطأً» instead of quietly not
+            // showing it at all.
+            'reversed_at' => $this->reversed_at?->toIso8601String(),
+            'reversal_reason' => $this->reversal_reason,
+            'reversed_by' => $this->reversed_by,
+            'reversed_by_user' => $this->whenLoaded(
+                'reversedByUser',
+                fn (): ?array => $this->reversedByUser === null ? null : [
+                    'id' => $this->reversedByUser->id,
+                    'name' => $this->reversedByUser->name,
+                ],
+            ),
+
             'items' => StockArrivalItemResource::collection($this->whenLoaded('items')),
 
-            // No `updated_at`: an arrival is never updated, so publishing one would only invite
-            // a client to believe it could be.
+            // No `updated_at`: the only thing that ever changes on an arrival is the reversal
+            // stamp above, which says when it happened itself — publishing a bare timestamp
+            // would only invite a client to believe the document could be edited.
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

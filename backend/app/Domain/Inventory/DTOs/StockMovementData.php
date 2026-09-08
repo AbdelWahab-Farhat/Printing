@@ -44,8 +44,11 @@ final readonly class StockMovementData
          */
         public ?string $unitCost = null,
         /**
-         * The `OrderFulfillment` movement an `orderReversal()` credits back. Only meaningful for
-         * that one movement type.
+         * The movement being undone: the `OrderFulfillment` an `orderReversal()` credits back,
+         * or the `PurchaseArrival` an `arrivalReversal()` withdraws. Only meaningful for those
+         * two movement types, and persisted for both — see the partial UNIQUE behind
+         * `stock_movements.reverses_movement_id`, which is what makes undoing the same movement
+         * twice a database error rather than a silently doubled shelf.
          */
         public ?int $reversedMovementId = null,
         /**
@@ -195,6 +198,37 @@ final readonly class StockMovementData
             referenceId: $referenceId,
             reversedMovementId: $reversedMovementId,
             purchasedLayersBelongToTheCompany: $purchasedLayersBelongToTheCompany,
+        );
+    }
+
+    /**
+     * Stock taken back off the shelf because the receipt that put it there was entered in error:
+     * no destination, because it leaves the business the same way it came in — except that which
+     * layers it comes out of is already decided, by `$reversedMovementId`, rather than found by
+     * drawing FIFO.
+     *
+     * The mirror of `orderReversal()` in every respect, including this one: built directly from
+     * typed values, never posted through an HTTP endpoint. Only `Vendor\Actions\ReverseStockArrival`
+     * constructs it, because only that action has established that the receipt may be undone at
+     * all.
+     */
+    public static function arrivalReversal(
+        int $stockItemId,
+        int $warehouseId,
+        string $quantity,
+        int $reversedMovementId,
+        int $referenceId,
+        int $employeeId,
+    ): self {
+        return new self(
+            stockItemId: $stockItemId,
+            movementType: MovementType::ArrivalReversal,
+            quantity: self::quantity($quantity),
+            fromWarehouseId: $warehouseId,
+            toWarehouseId: null,
+            employeeId: $employeeId,
+            referenceId: $referenceId,
+            reversedMovementId: $reversedMovementId,
         );
     }
 

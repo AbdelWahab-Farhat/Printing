@@ -8,10 +8,12 @@ use App\Domain\Inventory\InventoryService;
 use App\Domain\PurchaseOrder\Actions\CancelPurchaseOrder;
 use App\Domain\PurchaseOrder\Actions\CreatePurchaseOrder;
 use App\Domain\PurchaseOrder\Actions\ReceivePurchaseOrder;
+use App\Domain\PurchaseOrder\Actions\ReversePurchaseOrderReceipt;
 use App\Domain\PurchaseOrder\Actions\SendPurchaseOrder;
 use App\Domain\PurchaseOrder\Actions\UpdatePurchaseOrder;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderData;
 use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderData;
+use App\Domain\PurchaseOrder\DTOs\ReversePurchaseOrderReceiptData;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Queries\PurchaseOrderFilters;
 use App\Domain\PurchaseOrder\Queries\PurchaseOrderListQuery;
@@ -37,6 +39,7 @@ class PurchaseOrderService
         private readonly SendPurchaseOrder $sendPurchaseOrder,
         private readonly CancelPurchaseOrder $cancelPurchaseOrder,
         private readonly ReceivePurchaseOrder $receivePurchaseOrder,
+        private readonly ReversePurchaseOrderReceipt $reverseReceipt,
         private readonly PurchaseOrderListQuery $purchaseOrderListQuery,
         private readonly PurchaseOrderStatusCountsQuery $statusCountsQuery,
     ) {}
@@ -97,5 +100,15 @@ class PurchaseOrderService
     public function receiveArrival(PurchaseOrder $order, ReceivePurchaseOrderData $data): StockArrival
     {
         return ($this->receivePurchaseOrder)($order, $data);
+    }
+
+    /**
+     * Takes a receipt entered in error back off the shelf and reopens the order, atomically. See
+     * {@see ReversePurchaseOrderReceipt} for what it rolls back here and
+     * `Vendor\Actions\ReverseStockArrival` for what it refuses and why.
+     */
+    public function reverseReceipt(PurchaseOrder $order, ReversePurchaseOrderReceiptData $data): PurchaseOrder
+    {
+        return ($this->reverseReceipt)($order, $data);
     }
 }
