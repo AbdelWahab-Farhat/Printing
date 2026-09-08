@@ -520,6 +520,17 @@ final class AuditAttributeLabels
             'investor_profit_share_percent' => 'نسبة المستثمرين من الربح (الافتراضية)',
             'updated_by' => 'عدّلها',
         ],
+        // Only ever an announcement. Notifications as a class are outside the audit trail — see
+        // the model — but «اجتماع الساعة ٤» is a deliberate act performed under somebody's name,
+        // and the one row that has to outlive the retention prune.
+        'notification' => [
+            'type' => 'نوع الإشعار',
+            'subject_type' => 'نوع السجل',
+            'subject_id' => 'رقم السجل',
+            'payload' => 'محتوى الإشعار',
+            'dedupe_key' => 'مفتاح منع التكرار',
+            'causer_id' => 'أرسله',
+        ],
     ];
 
     /**

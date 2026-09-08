@@ -208,6 +208,21 @@ enum PermissionName: string
     // sensitivity from being allowed to see either alone.
     case ViewProfitAndLossReport = 'reports.pnl.view';
 
+    // Sending a message to every employee's phone at once. Its own permission rather than part
+    // of any other: it is not a view of anything, it is a power over other people's attention,
+    // and the person who edits products is not automatically the person who may interrupt the
+    // whole shop.
+    //
+    // **A permission rather than a Gate — unlike `users.create`, and deliberately.** The
+    // business expects to delegate this (a floor manager announcing a shift change), so it must
+    // be a tick box rather than a rule only a deploy can change. Today **no role holds it**, so
+    // it is administrators-only through `Gate::before` alone, with nothing seeded and nothing to
+    // remove later.
+    //
+    // Reading one's own notifications is deliberately *not* a permission: every account has a
+    // mailbox, and there is nothing to grant.
+    case BroadcastNotifications = 'notifications.broadcast';
+
     public function label(): string
     {
         return match ($this) {
@@ -274,6 +289,9 @@ enum PermissionName: string
             self::ViewCompanySettings => 'عرض إعدادات الشركة',
             self::ManageCompanySettings => 'تعديل إعدادات الشركة',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
+            // Deliberately explicit about the blast radius: whoever ticks this on the roles
+            // screen should read what they are granting before they grant it.
+            self::BroadcastNotifications => 'إرسال إشعار عام لكل الموظفين',
             self::ViewProfitAndLossReport => 'عرض تقرير الأرباح والخسائر',
         };
     }
@@ -321,6 +339,7 @@ enum PermissionName: string
             self::ViewCompanySettings, self::ManageCompanySettings => 'إعدادات الشركة',
             self::ViewActivityLogs => 'سجل النشاطات',
             self::ViewProfitAndLossReport => 'التقارير المالية',
+            self::BroadcastNotifications => 'الإشعارات',
         };
     }
 

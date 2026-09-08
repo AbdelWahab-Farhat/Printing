@@ -9,6 +9,9 @@ use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Audit\Models\ActivityLog;
 use App\Domain\Carrier\Models\NawrisWebhookEvent;
 use App\Domain\Identity\Models\Role;
+use App\Domain\Notification\Models\DeviceToken;
+use App\Domain\Notification\Models\Notification;
+use App\Domain\Notification\Models\NotificationRecipient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Schema;
@@ -45,6 +48,22 @@ class ModelConventionsTest extends TestCase
         // a second row saying the first arrived, and soft-deleting it would defeat the
         // point of keeping it. It is also the only table here that grows with traffic.
         NawrisWebhookEvent::class,
+
+        // The notification centre's three tables, all event records rather than business
+        // records — the same category as the two above.
+        //
+        // Auditing a notification would record that a record arrived, which is the recursion
+        // ActivityLog is excluded to avoid. Soft-deleting one would defeat the retention prune
+        // that is the only thing keeping these tables bounded: they grow with every status
+        // change, every announcement and every employee, and nothing here is worth keeping
+        // once it has been read and aged out.
+        Notification::class,
+        NotificationRecipient::class,
+
+        // And the device tokens, which are not records at all but routing addresses. When FCM
+        // answers UNREGISTERED the address is dead and the row must genuinely go — a soft
+        // deleted token is one the push channel would keep finding and keep failing on.
+        DeviceToken::class,
     ];
 
     public function test_every_domain_model_soft_deletes(): void
