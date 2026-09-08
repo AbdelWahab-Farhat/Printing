@@ -103,6 +103,23 @@ void main() {
     fields: [courier],
   );
 
+  /// The same field, arriving with the company the business named as its usual carrier: the id
+  /// to send back, and the name to write on the button.
+  const preferredCourier = TransitionField(
+    key: 'shipping_company_id',
+    type: TransitionFieldType.shippingCompany,
+    label: 'شركة التوصيل',
+    isRequired: true,
+    value: '9',
+    valueLabel: 'النورس',
+  );
+
+  const toDeliveryWithDefault = OrderTransition(
+    status: OrderStatus.outForDelivery,
+    label: 'جاري التوصيل',
+    fields: [preferredCourier],
+  );
+
   Warehouse warehouse(int id, {required WarehouseType type, String name = 'المخزن الرئيسي'}) =>
       Warehouse(id: id, name: name, type: type, typeLabel: 'رئيسي');
 
@@ -412,6 +429,88 @@ void main() {
 
       // Assert — a list of one that still has to be tapped is a tap that tells nobody anything.
       expect(cubit.state.values['shipping_company_id'], carrier(2));
+    });
+
+    test('the carrier the business named opens with the form', () async {
+      // Arrange — two active companies, so the app has no guess of its own to make.
+      when(() => repository.order(7))
+          .thenAnswer((_) async => Right(orderWith(transitions: [toDeliveryWithDefault])));
+      when(
+        () => carriers.companies(
+          search: any(named: 'search'),
+          isActive: true,
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer(
+        (_) async => Right(onePage([carrier(2), carrier(5, name: 'سريع')], total: 2)),
+      );
+
+      // Act
+      await cubit.load();
+
+      // Assert — the whole company, built from what the field carried, so the button says
+      // «النورس» without a request going out to learn the name.
+      expect(
+        cubit.state.values['shipping_company_id'],
+        const ShippingCompany(id: 9, name: 'النورس'),
+      );
+      expect(cubit.state.canSubmit, isTrue);
+    });
+
+    test('what the server named beats what the list suggests', () async {
+      // Arrange — the app would have guessed the one active company it can see.
+      when(() => repository.order(7))
+          .thenAnswer((_) async => Right(orderWith(transitions: [toDeliveryWithDefault])));
+      when(
+        () => carriers.companies(
+          search: any(named: 'search'),
+          isActive: true,
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer((_) async => Right(onePage([carrier(2)])));
+
+      // Act
+      await cubit.load();
+
+      // Assert — an answer that came with the field is the business's own; a list of one is
+      // this app inferring. The inference never overwrites the answer.
+      expect(
+        cubit.state.values['shipping_company_id'],
+        const ShippingCompany(id: 9, name: 'النورس'),
+      );
+    });
+
+    test('an id with no name to put on it is not smuggled onto the form', () async {
+      // Arrange — an answer the screen could not show, from a server that sent half of one.
+      const unnamed = TransitionField(
+        key: 'shipping_company_id',
+        type: TransitionFieldType.shippingCompany,
+        label: 'شركة التوصيل',
+        isRequired: true,
+        value: '9',
+      );
+      when(() => repository.order(7)).thenAnswer(
+        (_) async => Right(
+          orderWith(
+            transitions: [
+              const OrderTransition(
+                status: OrderStatus.outForDelivery,
+                label: 'جاري التوصيل',
+                fields: [unnamed],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Act
+      await cubit.load();
+
+      // Assert — an answer nobody can read is an answer nobody agreed to: the form opens empty
+      // and the picker is one tap away, exactly as it was before any of this.
+      expect(cubit.state.values['shipping_company_id'], isNull);
     });
 
     test('a second carrier gives the choice back to the person', () async {

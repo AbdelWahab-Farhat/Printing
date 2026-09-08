@@ -74,6 +74,14 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
     /// but «جاري التوصيل»: past that point the courier is carrying both, and our copy changing
     /// while his does not is worse than a wrong number we can telephone him about.
     @Default(false) bool destinationIsEditable,
+
+    /// «مستعجلة», as it stands on screen.
+    ///
+    /// Seeded from the order and sent with «حفظ التعديلات» rather than the moment it is
+    /// tapped — unlike the additional cost, which goes on its own. A switch that wrote
+    /// immediately would be a third way this screen saves, and this one is a field of the order
+    /// like the discount beside it, not a conversation with the customer.
+    @Default(false) bool isUrgent,
     @Default(false) bool isSaving,
     @Default(false) bool isSaved,
     @Default(false) bool isDirty,
@@ -104,12 +112,16 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
 
   /// What the total will *probably* be. The server's arithmetic is the invoice; this exists so
   /// the number moves while somebody is typing.
+  ///
+  /// **[deliveryPrice] is not in it**, for the reason the server stopped adding it: the fee is
+  /// the courier's, collected from the customer at the door. A guess that included it would
+  /// jump to the real figure on save, which is worse than not moving at all.
   String get estimatedTotal {
     final items = lines.fold<double>(0, (sum, line) => sum + line.estimate);
-    final extras = (double.tryParse(designFee) ?? 0) + (double.tryParse(deliveryPrice) ?? 0);
+    final fee = double.tryParse(designFee) ?? 0;
     final off = double.tryParse(_ascii(discount)) ?? 0;
 
-    return (items + extras - off).clamp(0, double.infinity).toStringAsFixed(2);
+    return (items + fee - off).clamp(0, double.infinity).toStringAsFixed(2);
   }
 }
 

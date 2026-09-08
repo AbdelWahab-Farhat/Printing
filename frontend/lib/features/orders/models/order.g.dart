@@ -18,6 +18,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   productionFlowLabel: json['production_flow_label'] as String? ?? '',
   isFinal: json['is_final'] as bool,
   isClosed: json['is_closed'] as bool? ?? false,
+  isUrgent: json['is_urgent'] as bool? ?? false,
   availableTransitions:
       (json['available_transitions'] as List<dynamic>?)
           ?.map((e) => OrderTransition.fromJson(e as Map<String, dynamic>))
@@ -134,6 +135,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'production_flow_label': instance.productionFlowLabel,
   'is_final': instance.isFinal,
   'is_closed': instance.isClosed,
+  'is_urgent': instance.isUrgent,
   'available_transitions': instance.availableTransitions
       .map((e) => e.toJson())
       .toList(),

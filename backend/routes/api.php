@@ -16,6 +16,7 @@ use App\Application\Api\V1\Controllers\InvestorDealController;
 use App\Application\Api\V1\Controllers\InvestorPortalController;
 use App\Application\Api\V1\Controllers\ManufacturingCostRateController;
 use App\Application\Api\V1\Controllers\NawrisWebhookController;
+use App\Application\Api\V1\Controllers\NotificationController;
 use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\OrderPaymentController;
 use App\Application\Api\V1\Controllers\PermissionController;
@@ -518,6 +519,14 @@ Route::prefix('v1')->group(function (): void {
         Route::post('purchase-orders/{purchase_order}/arrivals', [PurchaseOrderController::class, 'receiveArrival'])
             ->middleware('can:inventory.manage')->name('purchase-orders.arrivals');
 
+        // Undoing that receipt sits behind the same guard that posted it — it is the same job on
+        // the same document, and somebody who may put stock on a shelf by mistake must be able to
+        // take it back off. `purchase_orders.reverse_receipt_any_time` is *not* checked here:
+        // it does not open the door, it only waives the 24-hour window once inside, and the
+        // controller reads it off the caller for exactly that.
+        Route::post('purchase-orders/{purchase_order}/receipt-reversal', [PurchaseOrderController::class, 'reverseReceipt'])
+            ->middleware('can:inventory.manage')->name('purchase-orders.receipt-reversal');
+
         // ── inventory ───────────────────────────────────────────────────────────────────
         // One pair of permissions covers warehouses, balances and the ledger. Splitting them
         // would produce guards that cannot usefully be granted alone: whoever may transfer
@@ -672,6 +681,40 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('investor-portal/statement', [InvestorPortalController::class, 'statement'])
             ->middleware('can:investor_portal.view')->name('investor-portal.statement');
+
+        /*
+         * Notifications — this account's own mailbox.
+         *
+         * **Behind no permission, and there is no id for anybody else's mail.** Every account
+         * has a mailbox, so there is nothing to grant; the scoping is done by removing the
+         * surface, exactly as `investor-portal` above does. A foreign notification id answers
+         * 404 rather than 403 — a 403 would confirm the id names something real.
+         */
+        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+
+        Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount'])
+            ->name('notifications.unread-count');
+
+        // Before `{notification}`, or the bare parameter swallows the literal segment behind it.
+        Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+            ->name('notifications.read-all');
+
+        Route::post('notifications/devices', [NotificationController::class, 'registerDevice'])
+            ->name('notifications.devices.store');
+
+        Route::delete('notifications/devices', [NotificationController::class, 'releaseDevice'])
+            ->name('notifications.devices.destroy');
+
+        // **The one endpoint here that is guarded, and the only one in the whole API that can
+        // put a message on every phone in the company.** Rate limited as well as permissioned:
+        // the permission decides who may interrupt everybody, the throttle stops a
+        // double-tapped send button doing it twice.
+        Route::post('notifications/announcements', [NotificationController::class, 'sendAnnouncement'])
+            ->middleware(['can:notifications.broadcast', 'throttle:6,1'])
+            ->name('notifications.announcements.store');
+
+        Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
+            ->whereNumber('notification')->name('notifications.read');
 
         // The company's editable defaults.
         Route::get('settings', [CompanySettingController::class, 'show'])

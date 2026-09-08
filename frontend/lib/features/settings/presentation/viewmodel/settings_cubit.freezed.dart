@@ -14,7 +14,13 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SettingsState {
 
- bool get notificationsEnabled;
+ bool get notificationsEnabled;/// What the **phone** says, which is a different question from [notificationsEnabled].
+///
+/// They can disagree, and that disagreement is the whole reason this field exists: the
+/// stored preference can say «مفعّل» while iOS or Android 13+ silently blocks every
+/// notification. A switch that reads yes while the phone says no is worse than no switch at
+/// all, because it stops the user looking for the real cause.
+ bool get osAllows;
 /// Create a copy of SettingsState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +31,16 @@ $SettingsStateCopyWith<SettingsState> get copyWith => _$SettingsStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SettingsState&&(identical(other.notificationsEnabled, notificationsEnabled) || other.notificationsEnabled == notificationsEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SettingsState&&(identical(other.notificationsEnabled, notificationsEnabled) || other.notificationsEnabled == notificationsEnabled)&&(identical(other.osAllows, osAllows) || other.osAllows == osAllows));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,notificationsEnabled);
+int get hashCode => Object.hash(runtimeType,notificationsEnabled,osAllows);
 
 @override
 String toString() {
-  return 'SettingsState(notificationsEnabled: $notificationsEnabled)';
+  return 'SettingsState(notificationsEnabled: $notificationsEnabled, osAllows: $osAllows)';
 }
 
 
@@ -45,7 +51,7 @@ abstract mixin class $SettingsStateCopyWith<$Res>  {
   factory $SettingsStateCopyWith(SettingsState value, $Res Function(SettingsState) _then) = _$SettingsStateCopyWithImpl;
 @useResult
 $Res call({
- bool notificationsEnabled
+ bool notificationsEnabled, bool osAllows
 });
 
 
@@ -62,9 +68,10 @@ class _$SettingsStateCopyWithImpl<$Res>
 
 /// Create a copy of SettingsState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? notificationsEnabled = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? notificationsEnabled = null,Object? osAllows = null,}) {
   return _then(_self.copyWith(
 notificationsEnabled: null == notificationsEnabled ? _self.notificationsEnabled : notificationsEnabled // ignore: cast_nullable_to_non_nullable
+as bool,osAllows: null == osAllows ? _self.osAllows : osAllows // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -150,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool notificationsEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool notificationsEnabled,  bool osAllows)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SettingsState() when $default != null:
-return $default(_that.notificationsEnabled);case _:
+return $default(_that.notificationsEnabled,_that.osAllows);case _:
   return orElse();
 
 }
@@ -171,10 +178,10 @@ return $default(_that.notificationsEnabled);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool notificationsEnabled)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool notificationsEnabled,  bool osAllows)  $default,) {final _that = this;
 switch (_that) {
 case _SettingsState():
-return $default(_that.notificationsEnabled);case _:
+return $default(_that.notificationsEnabled,_that.osAllows);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -191,10 +198,10 @@ return $default(_that.notificationsEnabled);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool notificationsEnabled)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool notificationsEnabled,  bool osAllows)?  $default,) {final _that = this;
 switch (_that) {
 case _SettingsState() when $default != null:
-return $default(_that.notificationsEnabled);case _:
+return $default(_that.notificationsEnabled,_that.osAllows);case _:
   return null;
 
 }
@@ -205,11 +212,18 @@ return $default(_that.notificationsEnabled);case _:
 /// @nodoc
 
 
-class _SettingsState implements SettingsState {
-  const _SettingsState({required this.notificationsEnabled});
+class _SettingsState extends SettingsState {
+  const _SettingsState({required this.notificationsEnabled, this.osAllows = true}): super._();
   
 
 @override final  bool notificationsEnabled;
+/// What the **phone** says, which is a different question from [notificationsEnabled].
+///
+/// They can disagree, and that disagreement is the whole reason this field exists: the
+/// stored preference can say «مفعّل» while iOS or Android 13+ silently blocks every
+/// notification. A switch that reads yes while the phone says no is worse than no switch at
+/// all, because it stops the user looking for the real cause.
+@override@JsonKey() final  bool osAllows;
 
 /// Create a copy of SettingsState
 /// with the given fields replaced by the non-null parameter values.
@@ -221,16 +235,16 @@ _$SettingsStateCopyWith<_SettingsState> get copyWith => __$SettingsStateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SettingsState&&(identical(other.notificationsEnabled, notificationsEnabled) || other.notificationsEnabled == notificationsEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SettingsState&&(identical(other.notificationsEnabled, notificationsEnabled) || other.notificationsEnabled == notificationsEnabled)&&(identical(other.osAllows, osAllows) || other.osAllows == osAllows));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,notificationsEnabled);
+int get hashCode => Object.hash(runtimeType,notificationsEnabled,osAllows);
 
 @override
 String toString() {
-  return 'SettingsState(notificationsEnabled: $notificationsEnabled)';
+  return 'SettingsState(notificationsEnabled: $notificationsEnabled, osAllows: $osAllows)';
 }
 
 
@@ -241,7 +255,7 @@ abstract mixin class _$SettingsStateCopyWith<$Res> implements $SettingsStateCopy
   factory _$SettingsStateCopyWith(_SettingsState value, $Res Function(_SettingsState) _then) = __$SettingsStateCopyWithImpl;
 @override @useResult
 $Res call({
- bool notificationsEnabled
+ bool notificationsEnabled, bool osAllows
 });
 
 
@@ -258,9 +272,10 @@ class __$SettingsStateCopyWithImpl<$Res>
 
 /// Create a copy of SettingsState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? notificationsEnabled = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? notificationsEnabled = null,Object? osAllows = null,}) {
   return _then(_SettingsState(
 notificationsEnabled: null == notificationsEnabled ? _self.notificationsEnabled : notificationsEnabled // ignore: cast_nullable_to_non_nullable
+as bool,osAllows: null == osAllows ? _self.osAllows : osAllows // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

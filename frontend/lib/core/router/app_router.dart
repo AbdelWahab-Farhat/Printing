@@ -36,6 +36,8 @@ import 'package:dayaa/features/location/presentation/views/pick_location_page.da
 import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rate_form_page.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rates_page.dart';
+import 'package:dayaa/features/notifications/presentation/views/compose_announcement_page.dart';
+import 'package:dayaa/features/notifications/presentation/views/notifications_page.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:dayaa/features/orders/presentation/views/filtered_orders_page.dart';
@@ -274,6 +276,15 @@ abstract final class Routes {
   static const String editRolePath = '/roles/:id/edit';
 
   static String editRole(int roleId) => '/roles/$roleId/edit';
+
+  /// صندوق الإشعارات. Outside the shell and reached from the bell in the app bar, which is in
+  /// *two* shells — the staff one and the investor portal — so this route is the single
+  /// destination both of them push.
+  static const String notifications = '/notifications';
+
+  /// Composing an announcement. Nested under the list on purpose: it is reached from there and
+  /// nowhere else, and the list is where the sender returns to see it landed.
+  static const String composeAnnouncement = '/notifications/compose';
 
   /// Preferences, what this build is, and the way out. Outside the shell: it is a place the
   /// user goes *to*, not a tab they browse between.
@@ -944,6 +955,19 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.settings,
         builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: Routes.notifications,
+        builder: (context, state) => const NotificationsPage(),
+        routes: [
+          // `can:notifications.broadcast` on the server is the boundary; the PermissionGate on
+          // the button that reaches this is a courtesy. Never relax the server check because
+          // the app hides the entry.
+          GoRoute(
+            path: 'compose',
+            builder: (context, state) => const ComposeAnnouncementPage(),
+          ),
+        ],
       ),
       // Declared beside them rather than nested under the العملاء branch: `/customers` has no
       // sub-routes, so this is the only thing `/customers/new` can match, and the form covers

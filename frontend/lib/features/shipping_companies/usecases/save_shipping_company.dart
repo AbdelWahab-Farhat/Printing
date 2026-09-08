@@ -13,13 +13,15 @@ class SaveShippingCompany {
 
   final ShippingCompanyRepository _repository;
 
-  /// [id] null adds; anything else corrects that company.
+  /// [id] null adds; anything else corrects that company. [isDefault] null says nothing about
+  /// which company a dispatch opens on, and the server leaves that where it is.
   Future<Either<Failure, ShippingCompany>> call({
     int? id,
     required String name,
     String? phone,
     String? notes,
     bool isActive = true,
+    bool? isDefault,
   }) {
     final trimmedName = name.trim();
     final trimmedPhone = _blankToNull(phone);
@@ -31,6 +33,7 @@ class SaveShippingCompany {
         phone: trimmedPhone,
         notes: trimmedNotes,
         isActive: isActive,
+        isDefault: isDefault,
       );
     }
 
@@ -40,6 +43,7 @@ class SaveShippingCompany {
       phone: trimmedPhone,
       notes: trimmedNotes,
       isActive: isActive,
+      isDefault: isDefault,
     );
   }
 

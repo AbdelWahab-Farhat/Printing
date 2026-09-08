@@ -21,6 +21,14 @@ use App\Domain\Order\Support\Money;
  * so switching `design_source` back and forth does not lose a number a clerk typed — it simply
  * stops being charged.
  *
+ * **`delivery_price` is not one of these numbers, by the owner's instruction.** The fee is the
+ * courier's, collected from the customer at their door on the courier's own account — it is
+ * neither money we take nor a cost we bear, so an order's total is the goods and our own charges
+ * and nothing else. The column stays on the row and on every screen, because a clerk quoting an
+ * order still has to say what the trip will cost; it simply stops being added to anything. See
+ * {@see \App\Domain\Carrier\Actions\BuildNawrisPayload::amountToCollect()}, which stopped
+ * subtracting it on the same day for the same reason.
+ *
  * **The additional cost joins the base the discount is measured against, deliberately.** The
  * ceiling on a discount is what the customer would otherwise pay, and a charge for packaging is
  * part of that — so an order of 350 carrying a 10 charge may be discounted by 360 and reach
@@ -43,7 +51,6 @@ final class RecalculateOrderTotals
         $beforeDiscount = Money::sum(
             $itemsTotal,
             $designFee,
-            (string) $order->delivery_price,
             (string) $order->additional_cost,
         );
         $discount = (string) $order->discount;

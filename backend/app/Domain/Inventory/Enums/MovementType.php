@@ -47,6 +47,21 @@ enum MovementType: string
      */
     case ScrapLoss = 'scrap_loss';
 
+    /**
+     * Stock taken back off the shelf because the receipt that put it there was entered in
+     * error — the wrong quantity typed, the wrong order received against. Withdraws the exact
+     * cost layers the {@see PurchaseArrival} opened, at their own cost, rather than drawing FIFO
+     * from the oldest layers on the shelf: the layers this undoes are the erroneous ones, and
+     * consuming somebody else's oldest stock instead would leave the mistake sitting on the
+     * shelf while quietly repricing goods that were never in question.
+     *
+     * Its own type rather than a reuse of `Adjustment`: an operator correcting a miscount and
+     * the system unwinding a receipt somebody posted by mistake are different events, and a
+     * report should be able to tell them apart without inspecting `reference_id`. The mirror of
+     * {@see OrderReversal}, which undoes a draw rather than an entry.
+     */
+    case ArrivalReversal = 'arrival_reversal';
+
     public function label(): string
     {
         return match ($this) {
@@ -56,6 +71,7 @@ enum MovementType: string
             self::Adjustment => 'تسوية جرد',
             self::OrderReversal => 'إرجاع بعد إلغاء طلبية',
             self::ScrapLoss => 'تلف أثناء الإنتاج',
+            self::ArrivalReversal => 'إلغاء استلام شحنة',
         };
     }
 
@@ -69,7 +85,8 @@ enum MovementType: string
     public function requiresSource(): bool
     {
         return match ($this) {
-            self::InternalTransfer, self::OrderFulfillment, self::ScrapLoss => true,
+            self::InternalTransfer, self::OrderFulfillment, self::ScrapLoss,
+            self::ArrivalReversal => true,
             self::PurchaseArrival, self::Adjustment, self::OrderReversal => false,
         };
     }
@@ -81,7 +98,8 @@ enum MovementType: string
     {
         return match ($this) {
             self::PurchaseArrival, self::InternalTransfer, self::OrderReversal => true,
-            self::OrderFulfillment, self::Adjustment, self::ScrapLoss => false,
+            self::OrderFulfillment, self::Adjustment, self::ScrapLoss,
+            self::ArrivalReversal => false,
         };
     }
 

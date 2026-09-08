@@ -90,6 +90,45 @@ return [
         'fallback_phone' => env('NAWRIS_FALLBACK_PHONE', '+218910000000'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Firebase Cloud Messaging — push notifications
+    |--------------------------------------------------------------------------
+    |
+    | FCM HTTP v1, authenticated with an OAuth2 bearer minted from a service account. The legacy
+    | server key is retired by Google and is deliberately not supported here.
+    |
+    | Nothing below has a working default: an unset key raises `FcmIsNotConfigured` before any
+    | HTTP call, rather than sending an empty assertion and relaying Google's complaint about it
+    | as though the notification were at fault. Same bargain as the Nawris block above.
+    |
+    | **Two Firebase projects, one per environment.** A project owns the device-token registry,
+    | and a token minted under one is meaningless to the other — so sharing a single project
+    | means a push fired from a developer's laptop reaches whatever real device is registered,
+    | the shop's counter phone included, with no flag capable of preventing it.
+    |
+    */
+    'fcm' => [
+        'project_id' => env('FCM_PROJECT_ID'),
+
+        // Absolute path to the service account JSON. **A private key: never committed, never
+        // logged**, copied to each box out of band exactly like `.env`.
+        'credentials' => env('FCM_CREDENTIALS_PATH'),
+
+        // Must match the notification channel the Flutter app creates, or Android 8+ drops the
+        // notification silently — no error, no log, nothing on screen.
+        'android_channel_id' => env('FCM_ANDROID_CHANNEL_ID', 'dayaa_default'),
+
+        'connect_timeout' => (int) env('FCM_CONNECT_TIMEOUT', 5),
+        'timeout' => (int) env('FCM_TIMEOUT', 15),
+
+        'log_channel' => env('FCM_LOG_CHANNEL'),
+
+        // Build the payload, log it, send nothing — read the exact JSON before the first live
+        // push leaves the box.
+        'dry_run' => (bool) env('FCM_DRY_RUN', false),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

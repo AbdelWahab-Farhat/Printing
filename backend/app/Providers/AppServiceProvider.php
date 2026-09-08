@@ -7,12 +7,20 @@ use App\Domain\Carrier\Actions\BuildNawrisPayload;
 use App\Domain\Carrier\Actions\ResolveNawrisDestination;
 use App\Domain\Carrier\Support\NawrisClient;
 use App\Domain\Customer\Queries\CustomerOrderActivity;
+use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
 use App\Domain\Investor\Listeners\PostPurchasesWhenStockLeaves;
 use App\Domain\Investor\Listeners\PostPurchaseWhenScrapIsDrawn;
+use App\Domain\Notification\Channels\PushChannel;
+use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
+use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
+use App\Domain\Notification\Support\FcmClient;
+use App\Domain\Notification\Support\GoogleServiceAccountToken;
+use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderScrapDrawn;
+use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Queries\OrderCustomerActivity;
 use Illuminate\Database\Eloquent\Model;
@@ -49,9 +57,39 @@ class AppServiceProvider extends ServiceProvider
             fn ($app) => new BuildNawrisPayload((array) $app['config']->get('services.nawris', [])),
         );
 
+        // The delivery module beside the configuration, because "which of our carriers is this
+        // parcel filed under" is a question the setting answers first and the business's own
+        // default answers when it is blank — see the action.
         $this->app->bind(
             ResolveNawrisDestination::class,
-            fn ($app) => new ResolveNawrisDestination((array) $app['config']->get('services.nawris', [])),
+            fn ($app) => new ResolveNawrisDestination(
+                (array) $app['config']->get('services.nawris', []),
+                $app->make(DeliveryService::class),
+            ),
+        );
+
+        // The push side takes its configuration the same way and for the same reason: nothing
+        // inside reaches for `config()`, so a test can hand it a dry-run flag or an empty
+        // project without touching global state.
+        //
+        // The token is a singleton because it caches Google's access token — one exchange per
+        // process rather than one per device on an announcement going to thirty phones.
+        $this->app->singleton(
+            GoogleServiceAccountToken::class,
+            fn ($app) => new GoogleServiceAccountToken((array) $app['config']->get('services.fcm', [])),
+        );
+
+        $this->app->bind(
+            FcmClient::class,
+            fn ($app) => new FcmClient(
+                (array) $app['config']->get('services.fcm', []),
+                $app->make(GoogleServiceAccountToken::class),
+            ),
+        );
+
+        $this->app->bind(
+            PushChannel::class,
+            fn ($app) => new PushChannel((array) $app['config']->get('services.fcm', [])),
         );
     }
 
@@ -77,6 +115,22 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(OrderProfitFinalised::class, PostEarningsWhenOrderIsFinalised::class);
         Event::listen(OrderStockDrawn::class, PostPurchasesWhenStockLeaves::class);
         Event::listen(OrderScrapDrawn::class, PostPurchaseWhenScrapIsDrawn::class);
+
+        // **Orders announces, the notification centre listens** — the same one-way dependency,
+        // for a different reason: Notification reads Orders to build its sentence, and Orders
+        // must never learn that notifications exist.
+        //
+        // **But this listener is queued and deferred to after commit, unlike the three above.**
+        // Those are synchronous inside the transaction on purpose, because they move money and
+        // must land with the status or not at all. Telling people is the opposite bargain: a
+        // failed push must not roll back an order, and an announcement about a transaction that
+        // then rolled back cannot be un-sent. See NotifyWhenOrderEntersShortage.
+        Event::listen(OrderEnteredShortage::class, NotifyWhenOrderEntersShortage::class);
+
+        // Fired by every transition, not only the interesting ones — the listener holds the list
+        // of what is worth a bell, so a second listener can want a different subset without
+        // touching Orders. Same queued, after-commit bargain as the line above.
+        Event::listen(OrderStatusChanged::class, NotifyWhenOrderStatusChanges::class);
 
         // Turns three silent classes of bug into loud exceptions everywhere except
         // production: lazy-loaded relations (N+1), reading an attribute that was never

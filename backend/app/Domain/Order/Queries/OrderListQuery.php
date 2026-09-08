@@ -11,8 +11,10 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 /**
  * The orders list.
  *
- * Newest first: an order screen is a work queue, and the thing taken five minutes ago is the
- * one somebody is asking about.
+ * Newest first by default: an order screen is a work queue, and the thing taken five minutes ago
+ * is the one somebody is asking about. {@see OrderSort} turns it round for the other question a
+ * queue is opened with — «ما الذي ينتظر منذ أطول وقت؟» — which the default cannot answer at all
+ * past the first page.
  */
 final class OrderListQuery
 {
@@ -49,8 +51,17 @@ final class OrderListQuery
             ->with('items.variant.stockItem')
             ->withCount('items');
 
+        $direction = $filters->sort->direction();
+
         return $this->applyFilters($query, $filters)
-            ->orderByDesc('id')
+            // **`placed_at`, not `id`, and the same column the date filter counts on** — see
+            // FiltersOrders. They are the same instant for every order this API takes and part
+            // company the day an old one is imported, and «الأقدم» means the day it was taken.
+            ->orderBy('placed_at', $direction)
+            // The tiebreaker, and not decoration: two orders taken in the same second leave
+            // Postgres free to hand back either first, and a row that changes places between
+            // page one and page two is a row read twice and a row never seen.
+            ->orderBy('id', $direction)
             ->paginate($perPage);
     }
 }

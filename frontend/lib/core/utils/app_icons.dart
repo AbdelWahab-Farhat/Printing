@@ -480,6 +480,26 @@ abstract final class AppIcons {
   static IconData get error =>
       _pick(Icons.error_outline_rounded, CupertinoIcons.exclamationmark_circle);
 
+  /// Which end of the queue the orders list starts at, as one glyph that flips.
+  ///
+  /// **Arrows, not Material's `sort` bars.** Those bars mean «here is a menu of orderings», and
+  /// there is no menu — one tap turns the list round. An arrow says which way it now runs, and
+  /// the pair reads as one control in two states rather than two unrelated icons.
+  static IconData get sortNewest =>
+      _pick(Icons.arrow_downward_rounded, CupertinoIcons.arrow_down);
+
+  static IconData get sortOldest =>
+      _pick(Icons.arrow_upward_rounded, CupertinoIcons.arrow_up);
+
+  /// «مستعجل» — speed, not alarm.
+  ///
+  /// Deliberately **not** [error]'s exclamation mark, which already stands for «نواقص» on the
+  /// same card: two red glyphs a centimetre apart meaning different things is one legend too
+  /// many. And not a clock either — a clock on an order reads as «متى موعدها», which is a
+  /// question nothing here answers. A bolt says «هذه قبل غيرها», which is the whole flag.
+  static IconData get urgent =>
+      _pick(Icons.bolt_rounded, CupertinoIcons.bolt_fill);
+
   static IconData get empty =>
       _pick(Icons.inbox_rounded, CupertinoIcons.tray);
 }

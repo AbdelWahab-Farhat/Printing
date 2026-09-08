@@ -150,6 +150,30 @@ void main() {
     expect(_pageCount(short), 1);
   });
 
+  test('text that arrived already shaped still produces a document', () async {
+    // Arrange — «ﺷﺮﻛﺔ ﺑﺮﻳﻤﻮﻻ» in the Arabic Presentation Forms block, which is what a name
+    // typed on some Windows keyboards or pasted out of a PDF actually contains. It reads
+    // identically on the screen and it took order 1228's invoice down: Almarai carries no glyph
+    // for these codepoints, and the PDF's font subsetter throws on the first one rather than
+    // skipping it. The letters are folded back before they are drawn.
+    final order = orderWith(
+      withCustomer: const Customer(
+        id: 2,
+        code: 'A2',
+        name: 'ﺷﺮﻛﺔ ﺑﺮﻳﻤﻮﻻ',
+        phone: '0916667646',
+        isActive: true,
+      ),
+      items: [item.copyWith(productName: 'ﺃﻛﻴﺎﺱ ﺷﺤﻦ - ﻣﻄﺒﻮﻋﺔ')],
+    );
+
+    // Act
+    final bytes = await OrderInvoicePdf.build(order: order, assets: assets);
+
+    // Assert
+    expect(String.fromCharCodes(bytes.sublist(0, 4)), '%PDF');
+  });
+
   test('the file is named for the order, so it is findable after it is saved', () {
     // Arrange
     final order = orderWith();

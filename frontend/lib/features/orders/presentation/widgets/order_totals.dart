@@ -13,6 +13,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// Lines that are zero are absent rather than shown as `0.00` — a design fee of nothing is not
 /// a fact about this order, it is the absence of one, and printing it invites the reader to
 /// wonder what it means.
+///
+/// **«التوصيل» is under the total, not above it, and adds to nothing.** By the owner's
+/// instruction the fee is neither our revenue nor our cost: the courier collects it from the
+/// customer at their door, so «الإجمالي» is the goods and our own charges alone. It is still
+/// printed, because a clerk quoting an order has to say what the trip costs — and printed
+/// *below* the rule, because a figure standing above a total is a figure the reader adds into
+/// it.
 class OrderTotals extends StatelessWidget {
   const OrderTotals({required this.order, super.key});
 
@@ -26,13 +33,7 @@ class OrderTotals extends StatelessWidget {
       children: [
         _Line(label: 'المنتجات', value: order.itemsTotal.grouped),
         if (order.hasDesignFee) _Line(label: 'التصميم', value: order.designFee.grouped),
-        _Line(
-          label: 'التوصيل',
-          // '0.00' is a fact worth stating here — it is what an office pickup costs, and the
-          // reader is checking a total. Only the *fee* lines hide when empty.
-          value: order.deliveryPrice.grouped,
-        ),
-        // **After the delivery and before the discount — the server's own order of operations.**
+        // **Before the discount — the server's own order of operations.**
         // A reader checking the total works down the column, and a charge printed under the
         // subtraction it comes before turns a correct total into an arithmetic mistake.
         //
@@ -54,6 +55,19 @@ class OrderTotals extends StatelessWidget {
           child: Divider(height: 1, color: scheme.outlineVariant),
         ),
         _Line(label: 'الإجمالي', value: order.grandTotal.grouped, isTotal: true),
+        Padding(
+          padding: EdgeInsets.only(top: 8.h, bottom: 6.h),
+          child: _Line(
+            // The label carries the whole answer — «على الزبون» is why this figure is down here
+            // and out of the sum, and a sentence under the line saying so would be the same fact
+            // told twice.
+            label: 'التوصيل (على الزبون)',
+            // '0.00' is a fact worth stating — it is what an office pickup costs, and «كم
+            // التوصيل؟» wants an answer rather than a missing line to infer one from. Only the
+            // lines *inside* the total hide when empty.
+            value: order.deliveryPrice.grouped,
+          ),
+        ),
       ],
     );
   }

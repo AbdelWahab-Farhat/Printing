@@ -4,6 +4,7 @@ import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
@@ -11,6 +12,7 @@ import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
 import 'package:dayaa/features/purchase_orders/presentation/widgets/receive_arrival_sheet.dart';
+import 'package:dayaa/features/purchase_orders/presentation/widgets/reverse_receipt_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -159,6 +161,29 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
     context.showSuccess('تم تسجيل الشحنة ودخلت المخزن');
   }
 
+  /// Undoing a receipt entered in error — the one act that reopens a completed order.
+  ///
+  /// **The sheet does the sending, not this.** Every other write on this screen posts here and
+  /// reports the outcome with a snackbar; this one cannot, because the five refusals the
+  /// endpoint sends are instructions to do something else — usually a stocktake adjustment —
+  /// and they have to reach somebody who is still holding the decision. See
+  /// [showReverseReceiptSheet].
+  Future<void> _reverseReceipt(BuildContext context) async {
+    final cubit = context.read<PurchaseOrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final reversed = await showReverseReceiptSheet(
+      context: context,
+      order: order,
+      onConfirm: (reason) => cubit.reverseReceipt(reason: reason),
+    );
+
+    if (reversed != true || !context.mounted) return;
+
+    context.showSuccess('تم التراجع عن الاستلام وخرجت الكميات من المخزن');
+  }
+
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<PurchaseOrderDetailCubit>();
@@ -192,6 +217,7 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
                   onEdit: _edit,
                   onCancel: _cancel,
                   onReceive: _receive,
+                  onReverseReceipt: _reverseReceipt,
                   onFund: _fund,
                 );
               },
@@ -233,6 +259,7 @@ class _Actions extends StatelessWidget {
     required this.onEdit,
     required this.onCancel,
     required this.onReceive,
+    required this.onReverseReceipt,
     required this.onFund,
   });
 
@@ -240,6 +267,7 @@ class _Actions extends StatelessWidget {
   final Future<void> Function(BuildContext context) onEdit;
   final Future<void> Function(BuildContext context) onCancel;
   final Future<void> Function(BuildContext context) onReceive;
+  final Future<void> Function(BuildContext context) onReverseReceipt;
   final Future<void> Function(BuildContext context) onFund;
 
   @override
@@ -256,6 +284,29 @@ class _Actions extends StatelessWidget {
             tone: AppActionTone.primary,
             permission: AppPermission.manageInventory,
             onTap: onReceive,
+          ),
+        // **Gated on the server's answer, not on a status test.** Whether a receipt may still be
+        // undone depends on the clock and on who is asking, and only the server knows both — so
+        // `can_reverse_receipt` is read, never re-derived. `order.status == completed` is
+        // deliberately not added beside it: the server already folds that into the flag, and two
+        // conditions over one fact are two things to keep in step.
+        //
+        // `manageInventory` is the grant that opens the endpoint — undoing a receipt takes stock
+        // off the shelf, so whoever may put it there by mistake must be able to take it back.
+        // `reverseReceiptAnyTime` is **not** tested here: it does not open the door, it only
+        // waives the window, which the server has already accounted for in the flag.
+        //
+        // The button is offered on receipts that turn out to be un-reversible — stock already
+        // drawn on, a layer repriced by hand — because the API deliberately does not publish
+        // either. That is the intended failure: a clear refusal naming the reason. Hiding the
+        // button on a receipt that *is* reversible would be the worse bug.
+        if (order.canReverseReceipt)
+          AppAction(
+            label: 'التراجع عن الاستلام',
+            icon: AppIcons.undo,
+            tone: AppActionTone.warning,
+            permission: AppPermission.manageInventory,
+            onTap: onReverseReceipt,
           ),
         // Only while nothing has arrived: who paid for goods is declared before they land.
         if (order.status.isEditable)
@@ -348,6 +399,13 @@ class _Body extends StatelessWidget {
             ],
           ),
         ),
+        // Under «مكتمل», and only while there is a receipt to undo. Nobody expects a finished
+        // order to be reopenable, so the deadline is stated rather than left to be discovered
+        // on the speed dial.
+        if (order.canReverseReceipt) ...[
+          SizedBox(height: 8.h),
+          _ReversalWindow(order: order),
+        ],
         SizedBox(height: 14.h),
         _Section(
           title: 'التواريخ',
@@ -419,6 +477,54 @@ class _Body extends StatelessWidget {
                 _LineRow(item: item),
               ],
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// How long «التراجع عن الاستلام» stays on offer, said in words rather than counted down.
+///
+/// **Drawn only when the server already said the button is there** — this explains the action,
+/// it never decides it. Two sentences, because there are two reasons a person can be looking at
+/// that button:
+///
+///   * inside the ordinary window → the deadline, coarsely. This is a decision somebody makes
+///     within a day, not a stopwatch, so «حتى ٧ سبتمبر · ١٠:٠٠ ص» is the whole of it,
+///   * past it, with the button still there → the caller holds
+///     `purchase_orders.reverse_receipt_any_time`. Said out loud so nobody is surprised by a
+///     button their colleague does not have.
+///
+/// A null deadline with the flag still true is not drawn at all: the server sends both together
+/// and inventing a sentence for a shape it does not produce would be guessing.
+class _ReversalWindow extends StatelessWidget {
+  const _ReversalWindow({required this.order});
+
+  final PurchaseOrder order;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final deadline = order.receiptReversibleUntil;
+    if (deadline == null) return const SizedBox.shrink();
+
+    final isOpen = deadline.isAfter(DateTime.now());
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(AppIcons.undo, size: 15.sp, color: scheme.onSurfaceVariant),
+        SizedBox(width: 6.w),
+        Expanded(
+          child: Text(
+            isOpen
+                ? 'يمكن التراجع عن الاستلام حتى '
+                      '${deadline.shortDayLabel} · ${deadline.timeLabel}'
+                : 'انتهت مهلة التراجع — لديك صلاحية التراجع بعدها',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
           ),
         ),
       ],

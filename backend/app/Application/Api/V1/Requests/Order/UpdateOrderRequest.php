@@ -67,6 +67,11 @@ class UpdateOrderRequest extends StoreOrderRequest
 
             'tracking_number' => ['nullable', 'string', 'max:100'],
 
+            // «مستعجلة». `sometimes`, not `nullable`: on an edit the key being absent means
+            // «اتركها كما هي», and a null arriving in its place would be a third state nothing
+            // downstream has a meaning for. See `OrderData::$isUrgent`.
+            'is_urgent' => ['sometimes', 'boolean'],
+
             // Optional here: omit to leave the lines untouched, send to replace the whole set.
             'items' => ['sometimes', 'array', 'min:1', 'max:100'],
             'items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->withoutTrashed()],

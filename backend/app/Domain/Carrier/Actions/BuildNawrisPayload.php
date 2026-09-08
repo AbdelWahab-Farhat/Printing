@@ -67,10 +67,10 @@ final class BuildNawrisPayload
 
             'return_amount' => 0.0,
 
-            // **Who pays the courier's own fee.** Normally the customer, at the door — we already
-            // took our delivery line off the COD. It flips when there is no COD left to carry it;
-            // see {@see feeIsOnSender()}.
-            'shipment_on_sender' => $this->feeIsOnSender($order),
+            // **Who pays the courier's own fee. Always the customer, at the door.** Delivery is
+            // no longer part of what we bill — see {@see amountToCollect()} — so there is no
+            // case left in which the fee falls on us, and `0` is also their default.
+            'shipment_on_sender' => 0,
 
             'can_open' => (int) ($defaults['can_open'] ?? 0),
             'is_measurable' => (int) ($defaults['is_measurable'] ?? 0),
@@ -90,48 +90,30 @@ final class BuildNawrisPayload
     }
 
     /**
-     * What we ask Nawris to collect and remit: what the customer still owes us, less our own
-     * delivery fee.
+     * What we ask Nawris to collect and remit: what the customer still owes us.
      *
      * ```
      * grand_total − paid_amount − written_off_amount − carrier_settled_amount   (remainingAmount)
-     *              − delivery_price                                             (this section)
      * ```
      *
      * **Every deposit and installment is already off it**, through `remainingAmount()` — that is
      * the contract's field rule #1, and the reason a payment recorded after dispatch triggers an
      * edit rather than being left to drift.
      *
-     * **The delivery fee comes off because the courier collects it at the door on their own
-     * account**, so billing it here as well would charge the customer for delivery twice. See
-     * NAWRIS-INTEGRATION.md §5.2.
+     * **Nothing is taken off for delivery any more, because nothing was put on.** The fee left
+     * `grand_total` — see {@see \App\Domain\Order\Actions\RecalculateOrderTotals} — so the
+     * courier charging it at the door on their own account bills it exactly once, which is what
+     * the old subtraction was arranging by hand. Subtracting it from a total that no longer
+     * contains it would collect less than the customer owes. NAWRIS-INTEGRATION.md §5.2.
      *
      * Clamped at zero: a negative figure confuses the carrier's own tracking, and «اجمع مبلغاً
-     * سالباً» is not an instruction.
+     * سالباً» is not an instruction — an overpaid order needs a refund, not a negative COD.
      */
     public function amountToCollect(Order $order): string
     {
-        $net = bcsub($order->remainingAmount(), (string) $order->delivery_price, 8);
-
-        return bccomp($net, '0', Money::SCALE) > 0 ? Money::round($net) : '0.00';
-    }
-
-    /**
-     * Whether the courier's own fee is billed to us instead of to the customer.
-     *
-     * **The edge the clamp above creates.** When the order owes less than the delivery fee — a
-     * prepaid order is the clearest case — the subtraction cannot be fully absorbed and the COD
-     * is floored at zero. Leaving the fee on the customer would then have them pay for a delivery
-     * they have already settled with us, so it goes on us instead.
-     *
-     * `0` in every ordinary case, which is their default and what the contract describes.
-     */
-    public function feeIsOnSender(Order $order): int
-    {
         $remaining = $order->remainingAmount();
-        $fee = (string) $order->delivery_price;
 
-        return bccomp($remaining, $fee, Money::SCALE) <= 0 ? 1 : 0;
+        return bccomp($remaining, '0', Money::SCALE) > 0 ? Money::round($remaining) : '0.00';
     }
 
     /**

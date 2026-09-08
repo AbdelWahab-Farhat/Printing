@@ -28,6 +28,12 @@ use Illuminate\Support\Collection;
  * the new ones under the next sequence, so the ledger keeps both the wrong answer and its
  * correction, which is the rule every money table in this application follows.
  *
+ * **And zero is a figure like any other.** A source whose amount has fallen to nothing — a
+ * restated line that no longer draws on this deal, a correction that cancels the margin exactly —
+ * reverses every standing row and writes none. Returning early on a zero would leave the first
+ * payment standing for a source that owes nothing, which is the one shape of this bug that pays a
+ * man for goods he still has on the shelf.
+ *
  * The caller holds the deal's row lock; the partial unique index behind
  * `(investor, deal, source_type, source_id, source_sequence)` is the database's own backstop for
  * the day a future one forgets.
@@ -47,10 +53,6 @@ final class PostDealShare
         int $sourceId,
         string $correctionNote,
     ): array {
-        if (bccomp($investorsAmount, '0', 2) === 0) {
-            return [];
-        }
-
         $shares = $deal->shares()->get();
 
         if ($shares->isEmpty()) {

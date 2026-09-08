@@ -248,6 +248,7 @@ final class AuditAttributeLabels
             'region_id' => 'المنطقة',
             'region_name' => 'اسم المنطقة',
             'design_source' => 'مصدر التصميم',
+            'is_urgent' => 'مستعجلة',
             'recipient_name' => 'اسم المستلم',
             'recipient_phone' => 'هاتف المستلم',
             'address_details' => 'تفاصيل العنوان',
@@ -410,6 +411,9 @@ final class AuditAttributeLabels
             'received_by' => 'استلمها',
             'invoice_number' => 'رقم الفاتورة',
             'purchase_order_id' => 'أمر الشراء',
+            'reversed_at' => 'تاريخ التراجع',
+            'reversed_by' => 'تراجع عنها',
+            'reversal_reason' => 'سبب التراجع',
         ],
         'stock_arrival_item' => [
             'stock_arrival_id' => 'التوريد',
@@ -516,6 +520,17 @@ final class AuditAttributeLabels
         'company_setting' => [
             'investor_profit_share_percent' => 'نسبة المستثمرين من الربح (الافتراضية)',
             'updated_by' => 'عدّلها',
+        ],
+        // Only ever an announcement. Notifications as a class are outside the audit trail — see
+        // the model — but «اجتماع الساعة ٤» is a deliberate act performed under somebody's name,
+        // and the one row that has to outlive the retention prune.
+        'notification' => [
+            'type' => 'نوع الإشعار',
+            'subject_type' => 'نوع السجل',
+            'subject_id' => 'رقم السجل',
+            'payload' => 'محتوى الإشعار',
+            'dedupe_key' => 'مفتاح منع التكرار',
+            'causer_id' => 'أرسله',
         ],
     ];
 

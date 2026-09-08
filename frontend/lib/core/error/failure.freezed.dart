@@ -159,14 +159,14 @@ return unexpected(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String message,  int? statusCode,  Map<String, List<String>>? fieldErrors)?  server,TResult Function( String message)?  network,TResult Function( String message)?  unauthorized,TResult Function( String message)?  forbidden,TResult Function( String message)?  unexpected,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String message,  int? statusCode,  Map<String, List<String>>? fieldErrors)?  server,TResult Function( String message)?  network,TResult Function( String message)?  unauthorized,TResult Function( String message)?  forbidden,TResult Function( String message,  String? cause)?  unexpected,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ServerFailure() when server != null:
 return server(_that.message,_that.statusCode,_that.fieldErrors);case NetworkFailure() when network != null:
 return network(_that.message);case UnauthorizedFailure() when unauthorized != null:
 return unauthorized(_that.message);case ForbiddenFailure() when forbidden != null:
 return forbidden(_that.message);case UnexpectedFailure() when unexpected != null:
-return unexpected(_that.message);case _:
+return unexpected(_that.message,_that.cause);case _:
   return orElse();
 
 }
@@ -184,14 +184,14 @@ return unexpected(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String message,  int? statusCode,  Map<String, List<String>>? fieldErrors)  server,required TResult Function( String message)  network,required TResult Function( String message)  unauthorized,required TResult Function( String message)  forbidden,required TResult Function( String message)  unexpected,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String message,  int? statusCode,  Map<String, List<String>>? fieldErrors)  server,required TResult Function( String message)  network,required TResult Function( String message)  unauthorized,required TResult Function( String message)  forbidden,required TResult Function( String message,  String? cause)  unexpected,}) {final _that = this;
 switch (_that) {
 case ServerFailure():
 return server(_that.message,_that.statusCode,_that.fieldErrors);case NetworkFailure():
 return network(_that.message);case UnauthorizedFailure():
 return unauthorized(_that.message);case ForbiddenFailure():
 return forbidden(_that.message);case UnexpectedFailure():
-return unexpected(_that.message);}
+return unexpected(_that.message,_that.cause);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -205,14 +205,14 @@ return unexpected(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String message,  int? statusCode,  Map<String, List<String>>? fieldErrors)?  server,TResult? Function( String message)?  network,TResult? Function( String message)?  unauthorized,TResult? Function( String message)?  forbidden,TResult? Function( String message)?  unexpected,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String message,  int? statusCode,  Map<String, List<String>>? fieldErrors)?  server,TResult? Function( String message)?  network,TResult? Function( String message)?  unauthorized,TResult? Function( String message)?  forbidden,TResult? Function( String message,  String? cause)?  unexpected,}) {final _that = this;
 switch (_that) {
 case ServerFailure() when server != null:
 return server(_that.message,_that.statusCode,_that.fieldErrors);case NetworkFailure() when network != null:
 return network(_that.message);case UnauthorizedFailure() when unauthorized != null:
 return unauthorized(_that.message);case ForbiddenFailure() when forbidden != null:
 return forbidden(_that.message);case UnexpectedFailure() when unexpected != null:
-return unexpected(_that.message);case _:
+return unexpected(_that.message,_that.cause);case _:
   return null;
 
 }
@@ -504,10 +504,11 @@ as String,
 
 
 class UnexpectedFailure implements Failure {
-  const UnexpectedFailure({required this.message});
+  const UnexpectedFailure({required this.message, this.cause});
   
 
 @override final  String message;
+ final  String? cause;
 
 /// Create a copy of Failure
 /// with the given fields replaced by the non-null parameter values.
@@ -519,16 +520,16 @@ $UnexpectedFailureCopyWith<UnexpectedFailure> get copyWith => _$UnexpectedFailur
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnexpectedFailure&&(identical(other.message, message) || other.message == message));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnexpectedFailure&&(identical(other.message, message) || other.message == message)&&(identical(other.cause, cause) || other.cause == cause));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message);
+int get hashCode => Object.hash(runtimeType,message,cause);
 
 @override
 String toString() {
-  return 'Failure.unexpected(message: $message)';
+  return 'Failure.unexpected(message: $message, cause: $cause)';
 }
 
 
@@ -539,7 +540,7 @@ abstract mixin class $UnexpectedFailureCopyWith<$Res> implements $FailureCopyWit
   factory $UnexpectedFailureCopyWith(UnexpectedFailure value, $Res Function(UnexpectedFailure) _then) = _$UnexpectedFailureCopyWithImpl;
 @override @useResult
 $Res call({
- String message
+ String message, String? cause
 });
 
 
@@ -556,10 +557,11 @@ class _$UnexpectedFailureCopyWithImpl<$Res>
 
 /// Create a copy of Failure
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? message = null,Object? cause = freezed,}) {
   return _then(UnexpectedFailure(
 message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,
+as String,cause: freezed == cause ? _self.cause : cause // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "627605931055",
+    "project_id": "daya-bdf70",
+    "storage_bucket": "daya-bdf70.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:627605931055:android:69751ceedcee24fbedf2da",
+        "android_client_info": {
+          "package_name": "ly.dayaa.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-IaE6avnlOIsZpGLiJHL8OcKsg7Bg4c0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

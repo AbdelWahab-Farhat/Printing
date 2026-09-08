@@ -235,6 +235,13 @@ abstract final class PurchaseOrderEndpoints {
   /// `purchase_orders.manage` — it writes to the stock ledger.
   static String arrivals(int purchaseOrderId) =>
       '/purchase-orders/$purchaseOrderId/arrivals';
+
+  /// Undoing a receipt entered in error. Guarded by `inventory.manage`, like [arrivals] — it
+  /// takes stock back off the shelf, and whoever may put it there by mistake must be able to
+  /// take it back. `purchase_orders.reverse_receipt_any_time` does not open this door; it only
+  /// waives the 24-hour window once inside.
+  static String receiptReversal(int purchaseOrderId) =>
+      '/purchase-orders/$purchaseOrderId/receipt-reversal';
 }
 
 /// معدلات تكلفة التصنيع — the standing prices an order is charged when it enters printing.
@@ -408,4 +415,31 @@ abstract final class CarrierEndpoints {
 
   /// Drops our claim on a parcel **without telling Nawris**, for one they deleted themselves.
   static String unlink(int orderId) => '/carrier/orders/$orderId/unlink';
+}
+
+/// الإشعارات — every account's own mailbox, plus the device registry push needs.
+///
+/// **Reading is behind no permission.** Every account has a mailbox, so there is nothing to
+/// grant; the scoping is done by removing the surface rather than by a check — a foreign
+/// notification id answers 404, never 403, because a 403 would confirm the id names something
+/// real. Only [announcements] is guarded, by `notifications.broadcast`.
+abstract final class NotificationEndpoints {
+  /// Newest first, paginated. `?unread=true` narrows it to the unread ones.
+  static const String list = '/notifications';
+
+  /// `{ "count": 3 }` — what the bell draws, and the only thing it needs.
+  static const String unreadCount = '/notifications/unread-count';
+
+  static const String readAll = '/notifications/read-all';
+
+  /// POST registers this device's FCM token, DELETE releases it. **The DELETE is the one that
+  /// matters**: skipped at sign-out, a shared counter phone keeps receiving the previous
+  /// employee's notifications.
+  static const String devices = '/notifications/devices';
+
+  /// The only endpoint here that writes to everybody. Throttled server-side as well as
+  /// permissioned.
+  static const String announcements = '/notifications/announcements';
+
+  static String read(int id) => '/notifications/$id/read';
 }

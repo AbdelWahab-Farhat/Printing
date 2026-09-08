@@ -1,3 +1,4 @@
+import 'package:dayaa/core/push/push_service.dart';
 import 'package:dayaa/features/settings/usecases/get_settings.dart';
 import 'package:dayaa/features/settings/usecases/set_notifications_enabled.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,10 +16,24 @@ class SettingsCubit extends Cubit<SettingsState> {
   SettingsCubit({
     required GetSettings getSettings,
     required SetNotificationsEnabled setNotificationsEnabled,
+    required PushService push,
   }) : _setNotificationsEnabled = setNotificationsEnabled,
+       _push = push,
        super(SettingsState(notificationsEnabled: getSettings.notificationsEnabled));
 
   final SetNotificationsEnabled _setNotificationsEnabled;
+  final PushService _push;
+
+  /// Asks the phone what it currently allows, without prompting.
+  ///
+  /// Called when the screen opens and again on resume, because the user may have just come back
+  /// from the system settings having granted it.
+  Future<void> refreshOsPermission() async {
+    final allows = await _push.hasOsPermission();
+    if (isClosed) return;
+
+    emit(state.copyWith(osAllows: allows));
+  }
 
   /// Flips the switch, then writes.
   ///
@@ -28,8 +43,25 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> toggleNotifications({required bool isEnabled}) async {
     if (isEnabled == state.notificationsEnabled) return;
 
-    emit(SettingsState(notificationsEnabled: isEnabled));
+    emit(state.copyWith(notificationsEnabled: isEnabled));
 
     await _setNotificationsEnabled(isEnabled: isEnabled);
+
+    // The preference and the server's device registry are two different facts, and this is the
+    // only place that keeps them in step outside sign-in and sign-out.
+    //
+    // **Turning it off releases the token rather than just remembering a `false`.** A device
+    // that stays registered would go on being pushed to; the switch would have changed nothing
+    // the user could observe.
+    if (isEnabled) {
+      final registered = await _push.register();
+      if (isClosed) return;
+      // Refused at the OS level: the stored preference stays *on*, because the user's answer to
+      // our question is still yes and must survive them granting permission later. The row
+      // shows blocked instead.
+      emit(state.copyWith(osAllows: registered));
+    } else {
+      await _push.release();
+    }
   }
 }

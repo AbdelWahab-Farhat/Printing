@@ -761,6 +761,9 @@ class _Body extends StatelessWidget {
                   title: 'البنود',
                   child: _Items(
                     items: order.items!,
+                    // What is being printed, in the slot the catalogue photograph holds — see
+                    // [Order.artwork]. Null on a كيس سادة, and the product is shown as before.
+                    artworkUrl: order.artwork?.fileUrl,
                     // The lines' own sum, under the lines — see [_Items].
                     weight: order.weightLabel,
                     showCosts: showCosts,
@@ -1121,6 +1124,7 @@ class _Items extends StatelessWidget {
   const _Items({
     required this.items,
     required this.weight,
+    required this.artworkUrl,
     required this.showCosts,
     required this.showOutsourcingCosts,
     required this.onScrap,
@@ -1128,6 +1132,10 @@ class _Items extends StatelessWidget {
   });
 
   final List<OrderItem> items;
+
+  /// The order's artwork, drawn on every line in place of the product photograph — see
+  /// [OrderItemCard.artworkUrl].
+  final String? artworkUrl;
 
   /// «12.5 كجم», or null on an order with no weight to state — see [Order.totalWeight],
   /// where null covers both «nothing here is weighed» and «nothing has been weighed yet». The
@@ -1155,6 +1163,7 @@ class _Items extends StatelessWidget {
           OrderItemCard(
             item: item,
             showCosts: showCosts,
+            artworkUrl: artworkUrl,
             showOutsourcingCosts: showOutsourcingCosts,
             // Only for a line whose product came with the payload: a card with nothing to open
             // is the arrow onto a 403 in another costume.

@@ -91,6 +91,13 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [NAWRIS-CHANGES.md](nawris/NAWRIS-CHANGES.md) | What actually changed: parcels, webhooks, carrier settlement. |
 | [NAWRIS-FRONTEND-INTEGRATION.md](nawris/NAWRIS-FRONTEND-INTEGRATION.md) | Connecting the Flutter app to it. |
 
+## [notifications/](notifications/)
+
+| Document | |
+|---|---|
+| [NOTIFICATIONS-BACKEND-CHANGES.md](notifications/NOTIFICATIONS-BACKEND-CHANGES.md) | الإشعارات — مركز داخل التطبيق ودفع FCM. **مخطَّط، لم يُبنَ بعد.** ابدأ من هنا. |
+| [NOTIFICATIONS-FRONTEND-INTEGRATION.md](notifications/NOTIFICATIONS-FRONTEND-INTEGRATION.md) | الجانب التطبيقي — الجرس، رمز الجهاز، إذن النظام. **لم يبدأ.** |
+
 ## [orders/](orders/)
 
 | Document | |
@@ -138,6 +145,8 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [PURCHASE-ORDERS-FRONTEND-INTEGRATION.md](purchase-orders/PURCHASE-ORDERS-FRONTEND-INTEGRATION.md) | Connecting the Flutter app to it. |
 | [PURCHASE-ORDER-ADDITIONAL-COSTS-BACKEND-CHANGES.md](purchase-orders/PURCHASE-ORDER-ADDITIONAL-COSTS-BACKEND-CHANGES.md) | Additional costs & line proportioning — backend. |
 | [PURCHASE-ORDER-ADDITIONAL-COSTS-FRONTEND-INTEGRATION.md](purchase-orders/PURCHASE-ORDER-ADDITIONAL-COSTS-FRONTEND-INTEGRATION.md) | The same, in the app. **Implemented.** |
+| [PURCHASE-ORDER-RECEIPT-REVERSAL.md](purchase-orders/PURCHASE-ORDER-RECEIPT-REVERSAL.md) | Undoing a receipt entered in error — 24 hours, and only while nothing has been drawn on. **Implemented.** |
+| [PURCHASE-ORDER-RECEIPT-REVERSAL-FRONTEND-INTEGRATION.md](purchase-orders/PURCHASE-ORDER-RECEIPT-REVERSAL-FRONTEND-INTEGRATION.md) | The same, in the app. **Planned — not built.** |
 
 ## [vendors/](vendors/)
 

@@ -36,6 +36,7 @@ use App\Domain\Investor\Models\InvestorDealItem;
 use App\Domain\Investor\Models\InvestorDealShare;
 use App\Domain\Investor\Models\InvestorDealSupply;
 use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Notification\Models\Notification;
 use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
@@ -142,6 +143,16 @@ enum AuditSubject: string
     // Company-wide settings
     case CompanySetting = 'company_setting';
 
+    // **Only announcements ever appear here.** Notifications are exempt from the audit trail as
+    // a class — they are system consequences, and a log row recording that a log row arrived is
+    // the recursion `ActivityLog` itself is excluded to avoid. An announcement is the one that
+    // is not: a person wrote it, it landed on every employee's phone, and it cannot be recalled,
+    // so «من أرسل هذا؟» has to have an answer that outlives the retention prune.
+    //
+    // The alias exists so that row publishes `notification` rather than a PHP class name, the
+    // same bargain every other case here makes.
+    case Notification = 'notification';
+
     /**
      * @return class-string<Model>
      */
@@ -194,6 +205,7 @@ enum AuditSubject: string
             self::InvestorDealExpense => InvestorDealExpense::class,
             self::InvestorWalletEntry => InvestorWalletEntry::class,
             self::CompanySetting => CompanySetting::class,
+            self::Notification => Notification::class,
         };
     }
 
@@ -249,6 +261,7 @@ enum AuditSubject: string
             self::InvestorDealExpense => 'مصروف صفقة',
             self::InvestorWalletEntry => 'حركة محفظة مستثمر',
             self::CompanySetting => 'إعدادات الشركة',
+            self::Notification => 'إشعار عام',
         };
     }
 

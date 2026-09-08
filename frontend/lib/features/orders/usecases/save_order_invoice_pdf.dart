@@ -5,6 +5,7 @@ import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_invoice_pdf.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -39,11 +40,19 @@ class SaveOrderInvoicePdf {
       await file.writeAsBytes(bytes);
 
       return Right(file.path);
-    } on Object {
-      // Broad on purpose: this touches the asset bundle, a font parser and a filesystem, and
-      // none of the three failing is something the user can be told anything useful about beyond
-      // "it did not happen".
-      return const Left(Failure.unexpected(message: 'تعذّر إنشاء ملف الفاتورة'));
+    } on Object catch (error, stack) {
+      // Broad on purpose: this touches the asset bundle, a font parser, an image decoder and a
+      // filesystem, and any of the four can be what failed.
+      //
+      // **The exception is carried out with the message, and that is not decoration.** «تعذّر
+      // إنشاء ملف الفاتورة» on its own was reported off a phone and left nothing to work from —
+      // a missing asset, a logo that would not decode and a `MissingPluginException` from a
+      // build older than `path_provider` all read identically. The trace goes to the console for
+      // whoever is attached; the one line goes to the person holding the phone, who is usually
+      // the only one who ever sees it.
+      debugPrint('⚠️ الفاتورة لم تُبنَ: $error\n$stack');
+
+      return Left(Failure.unexpected(message: 'تعذّر إنشاء ملف الفاتورة', cause: '$error'));
     }
   }
 

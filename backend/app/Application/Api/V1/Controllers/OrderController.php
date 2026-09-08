@@ -65,14 +65,22 @@ class OrderController extends Controller
     /**
      * List orders
      *
-     * Newest first. `search` matches the order number, the tracking number, or the customer's
-     * name, code or phone. Filter with `status` (repeatable), `payment_status` (repeatable —
-     * `unpaid`, `partially_paid`, `paid`, `overpaid`), `customer_id`, `city_id`, `from` and `to`.
+     * Newest first unless `sort=oldest`, which reads the queue from its far end — «ما الذي
+     * ينتظر منذ أطول وقت؟». A `sort` naming neither falls back to newest rather than being
+     * refused: a typo in a query string should not produce a screen with no orders on it.
+     *
+     * `search` matches the order number, the tracking number, or the customer's name, code or
+     * phone. Filter with `status` (repeatable), `payment_status` (repeatable — `unpaid`,
+     * `partially_paid`, `paid`, `overpaid`), `urgent` (`1` for the rush jobs, `0` for everything
+     * else), `customer_id`, `city_id`, `from` and `to`.
      */
     public function index(Request $request): JsonResponse
     {
         $filters = OrderFilters::fromArray(
-            $request->only(['search', 'status', 'payment_status', 'customer_id', 'city_id', 'from', 'to']),
+            $request->only([
+                'search', 'status', 'payment_status', 'urgent', 'sort',
+                'customer_id', 'city_id', 'from', 'to',
+            ]),
         );
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
@@ -85,8 +93,9 @@ class OrderController extends Controller
      * How many orders are in each status
      *
      * The number beside each row of the status filter. Accepts the same filters as the list —
-     * `search`, `payment_status`, `customer_id`, `city_id`, `from`, `to` — so the counts describe
-     * the set the user is actually looking at.
+     * `search`, `payment_status`, `urgent`, `customer_id`, `city_id`, `from`, `to` — so the counts
+     * describe the set the user is actually looking at. `sort` is meaningless here and ignored:
+     * a total does not have an order.
      *
      * `status` itself is ignored here on purpose: counts narrowed to the status already chosen
      * would every one of them equal the list's own length. `payment_status` is *not* ignored,
@@ -99,7 +108,7 @@ class OrderController extends Controller
     public function statusCounts(Request $request): JsonResponse
     {
         $filters = OrderFilters::fromArray(
-            $request->only(['search', 'payment_status', 'customer_id', 'city_id', 'from', 'to']),
+            $request->only(['search', 'payment_status', 'urgent', 'customer_id', 'city_id', 'from', 'to']),
         );
 
         $counts = $this->orders->statusCounts($filters);

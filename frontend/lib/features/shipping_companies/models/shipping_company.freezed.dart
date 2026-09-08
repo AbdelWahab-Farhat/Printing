@@ -18,7 +18,12 @@ mixin _$ShippingCompany {
  int get id; String get name;/// The office you ring. Null because a company can be added the moment it is needed, from
 /// a screen where nobody has the number to hand.
  String? get phone; String? get notes;/// Whether it is offered on a new dispatch. Old orders naming it are unaffected.
-@JsonKey(name: 'is_active') bool get isActive;@JsonKey(name: 'created_at') DateTime? get createdAt;
+@JsonKey(name: 'is_active') bool get isActive;/// Whether a dispatch form opens on this company.
+///
+/// At most one does — «من سيأخذها» has the same answer nine times in ten, and this is the
+/// business saying which. Absent means no: a server too old to know the flag is a business
+/// that has not named one.
+@JsonKey(name: 'is_default') bool get isDefault;@JsonKey(name: 'created_at') DateTime? get createdAt;
 /// Create a copy of ShippingCompany
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -31,16 +36,16 @@ $ShippingCompanyCopyWith<ShippingCompany> get copyWith => _$ShippingCompanyCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShippingCompany&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShippingCompany&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,notes,isActive,createdAt);
+int get hashCode => Object.hash(runtimeType,id,name,phone,notes,isActive,isDefault,createdAt);
 
 @override
 String toString() {
-  return 'ShippingCompany(id: $id, name: $name, phone: $phone, notes: $notes, isActive: $isActive, createdAt: $createdAt)';
+  return 'ShippingCompany(id: $id, name: $name, phone: $phone, notes: $notes, isActive: $isActive, isDefault: $isDefault, createdAt: $createdAt)';
 }
 
 
@@ -51,7 +56,7 @@ abstract mixin class $ShippingCompanyCopyWith<$Res>  {
   factory $ShippingCompanyCopyWith(ShippingCompany value, $Res Function(ShippingCompany) _then) = _$ShippingCompanyCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, String? phone, String? notes,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, String name, String? phone, String? notes,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'is_default') bool isDefault,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -68,13 +73,14 @@ class _$ShippingCompanyCopyWithImpl<$Res>
 
 /// Create a copy of ShippingCompany
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? phone = freezed,Object? notes = freezed,Object? isActive = null,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? phone = freezed,Object? notes = freezed,Object? isActive = null,Object? isDefault = null,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
+as bool,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -161,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'is_default')  bool isDefault, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ShippingCompany() when $default != null:
-return $default(_that.id,_that.name,_that.phone,_that.notes,_that.isActive,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.phone,_that.notes,_that.isActive,_that.isDefault,_that.createdAt);case _:
   return orElse();
 
 }
@@ -182,10 +188,10 @@ return $default(_that.id,_that.name,_that.phone,_that.notes,_that.isActive,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'is_default')  bool isDefault, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _ShippingCompany():
-return $default(_that.id,_that.name,_that.phone,_that.notes,_that.isActive,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.phone,_that.notes,_that.isActive,_that.isDefault,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +208,10 @@ return $default(_that.id,_that.name,_that.phone,_that.notes,_that.isActive,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String? phone,  String? notes, @JsonKey(name: 'is_active')  bool isActive, @JsonKey(name: 'is_default')  bool isDefault, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _ShippingCompany() when $default != null:
-return $default(_that.id,_that.name,_that.phone,_that.notes,_that.isActive,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.phone,_that.notes,_that.isActive,_that.isDefault,_that.createdAt);case _:
   return null;
 
 }
@@ -217,7 +223,7 @@ return $default(_that.id,_that.name,_that.phone,_that.notes,_that.isActive,_that
 @JsonSerializable()
 
 class _ShippingCompany extends ShippingCompany {
-  const _ShippingCompany({required this.id, required this.name, this.phone, this.notes, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'created_at') this.createdAt}): super._();
+  const _ShippingCompany({required this.id, required this.name, this.phone, this.notes, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'is_default') this.isDefault = false, @JsonKey(name: 'created_at') this.createdAt}): super._();
   factory _ShippingCompany.fromJson(Map<String, dynamic> json) => _$ShippingCompanyFromJson(json);
 
 @override final  int id;
@@ -228,6 +234,12 @@ class _ShippingCompany extends ShippingCompany {
 @override final  String? notes;
 /// Whether it is offered on a new dispatch. Old orders naming it are unaffected.
 @override@JsonKey(name: 'is_active') final  bool isActive;
+/// Whether a dispatch form opens on this company.
+///
+/// At most one does — «من سيأخذها» has the same answer nine times in ten, and this is the
+/// business saying which. Absent means no: a server too old to know the flag is a business
+/// that has not named one.
+@override@JsonKey(name: 'is_default') final  bool isDefault;
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
 
 /// Create a copy of ShippingCompany
@@ -243,16 +255,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShippingCompany&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShippingCompany&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,notes,isActive,createdAt);
+int get hashCode => Object.hash(runtimeType,id,name,phone,notes,isActive,isDefault,createdAt);
 
 @override
 String toString() {
-  return 'ShippingCompany(id: $id, name: $name, phone: $phone, notes: $notes, isActive: $isActive, createdAt: $createdAt)';
+  return 'ShippingCompany(id: $id, name: $name, phone: $phone, notes: $notes, isActive: $isActive, isDefault: $isDefault, createdAt: $createdAt)';
 }
 
 
@@ -263,7 +275,7 @@ abstract mixin class _$ShippingCompanyCopyWith<$Res> implements $ShippingCompany
   factory _$ShippingCompanyCopyWith(_ShippingCompany value, $Res Function(_ShippingCompany) _then) = __$ShippingCompanyCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, String? phone, String? notes,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, String name, String? phone, String? notes,@JsonKey(name: 'is_active') bool isActive,@JsonKey(name: 'is_default') bool isDefault,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -280,13 +292,14 @@ class __$ShippingCompanyCopyWithImpl<$Res>
 
 /// Create a copy of ShippingCompany
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? phone = freezed,Object? notes = freezed,Object? isActive = null,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? phone = freezed,Object? notes = freezed,Object? isActive = null,Object? isDefault = null,Object? createdAt = freezed,}) {
   return _then(_ShippingCompany(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
+as bool,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));

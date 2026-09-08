@@ -47,6 +47,7 @@ class TakeOrderCubit extends Cubit<TakeOrderState> {
     String? notes,
     List<int> designIds = const [],
     int? vendorId,
+    bool? isUrgent,
   }) async {
     // Ignored rather than queued, for the reason above: a second tap while the first is in
     // flight is a second order.
@@ -72,6 +73,7 @@ class TakeOrderCubit extends Cubit<TakeOrderState> {
       notes: notes,
       designIds: designIds,
       vendorId: vendorId,
+      isUrgent: isUrgent,
     );
 
     // The screen may have been popped while the request was in flight, and emitting into a

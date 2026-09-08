@@ -1,13 +1,16 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/core/push/push_service.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/storage/token_storage.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/auth/repositories/auth_repository.dart';
+import 'package:dayaa/features/settings/repositories/settings_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -22,10 +25,26 @@ import 'package:flutter/foundation.dart';
 /// concern, and if the ViewModel had to remember to save it, the one screen that forgot would
 /// produce a session that works until the app restarts and then mysteriously does not.
 class AuthRepositoryImpl implements AuthRepository {
-  const AuthRepositoryImpl(this._dio, this._tokens, this._session);
+  const AuthRepositoryImpl(
+    this._dio,
+    this._tokens,
+    this._session,
+    this._push,
+    this._settings,
+  );
 
   final Dio _dio;
   final TokenStorage _tokens;
+
+  /// Push belongs to the logout path for the same reason the token and the session do: if a
+  /// screen had to remember to release the device, the one that forgot would leave a shared
+  /// counter phone receiving the previous employee's notifications — and nothing on either side
+  /// would look wrong.
+  final PushService _push;
+
+  /// Read for one question only: has this device been told it does not want notifications?
+  /// [PushService] deliberately never asks it — one place decides, one place obeys.
+  final SettingsRepository _settings;
 
   /// Identity has the same shape as persistence: if a ViewModel had to remember to adopt the
   /// user, the one screen that forgot would leave every gated control hidden with no clue why.
@@ -92,6 +111,14 @@ class AuthRepositoryImpl implements AuthRepository {
         // widget can exist. Do not move this up into the ViewModel.
         _session.adopt(user);
 
+        // **Permission is asked for here, at sign-in, and never on the splash.** A prompt
+        // before the user has seen anything worth being notified about is the reliable way to
+        // earn a permanent denial, and iOS will not ask a second time.
+        //
+        // Unawaited: a slow round trip to FCM must not hold up the screen behind the login
+        // button, and a device that fails to register still has a working mailbox.
+        if (_settings.notificationsEnabled) unawaited(_push.register());
+
         return Right(user);
       },
     );
@@ -99,6 +126,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, Unit>> logout() async {
+    // **Before the request and before the token is cleared**, because releasing the device is
+    // itself an authenticated call — after either of those it would 401 and the registration
+    // would outlive the session.
+    await _push.release();
+
     final result = await safeCommand(() => _dio.post(AuthEndpoints.logout));
 
     // Cleared whatever the server said. If the request failed because the device is offline,

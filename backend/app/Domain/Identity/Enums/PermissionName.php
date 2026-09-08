@@ -171,6 +171,12 @@ enum PermissionName: string
     // reverse, neither of which this pair is meant to grant.
     case ViewPurchaseOrders = 'purchase_orders.view';
     case ManagePurchaseOrders = 'purchase_orders.manage';
+    // Stepping past the 24-hour window a receipt may ordinarily be taken back in. Its own grant
+    // rather than part of `inventory.manage`, the same reasoning `inventory.revalue` carries:
+    // undoing a receipt nobody can still walk over and verify is a different level of trust from
+    // posting one. It waives the *clock* and nothing else — the guards that refuse a reversal
+    // once the stock has moved or been repriced are arithmetic, and no grant reaches them.
+    case ReverseReceiptAnyTime = 'purchase_orders.reverse_receipt_any_time';
 
     // Investors. Reading and administering the deals is the usual pair; the three money verbs
     // are split off it for the same reason `orders.payments.*` splits three ways — recording a
@@ -201,6 +207,21 @@ enum PermissionName: string
     // it is the one screen that puts revenue and cost side by side, which is a different
     // sensitivity from being allowed to see either alone.
     case ViewProfitAndLossReport = 'reports.pnl.view';
+
+    // Sending a message to every employee's phone at once. Its own permission rather than part
+    // of any other: it is not a view of anything, it is a power over other people's attention,
+    // and the person who edits products is not automatically the person who may interrupt the
+    // whole shop.
+    //
+    // **A permission rather than a Gate — unlike `users.create`, and deliberately.** The
+    // business expects to delegate this (a floor manager announcing a shift change), so it must
+    // be a tick box rather than a rule only a deploy can change. Today **no role holds it**, so
+    // it is administrators-only through `Gate::before` alone, with nothing seeded and nothing to
+    // remove later.
+    //
+    // Reading one's own notifications is deliberately *not* a permission: every account has a
+    // mailbox, and there is nothing to grant.
+    case BroadcastNotifications = 'notifications.broadcast';
 
     public function label(): string
     {
@@ -258,6 +279,7 @@ enum PermissionName: string
             self::ManageVendors => 'إضافة وتعديل الموردين',
             self::ViewPurchaseOrders => 'عرض أوامر الشراء',
             self::ManagePurchaseOrders => 'إنشاء وتعديل أوامر الشراء وإرسالها وإلغاؤها',
+            self::ReverseReceiptAnyTime => 'التراجع عن استلام شحنة بعد انتهاء مهلة الـ٢٤ ساعة',
             self::ViewInvestors => 'عرض المستثمرين وصفقاتهم',
             self::ManageInvestors => 'إضافة وتعديل المستثمرين والصفقات',
             self::RecordInvestorMoney => 'تسجيل إيداع أو تمويل أو سحب لمستثمر',
@@ -267,6 +289,9 @@ enum PermissionName: string
             self::ViewCompanySettings => 'عرض إعدادات الشركة',
             self::ManageCompanySettings => 'تعديل إعدادات الشركة',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
+            // Deliberately explicit about the blast radius: whoever ticks this on the roles
+            // screen should read what they are granting before they grant it.
+            self::BroadcastNotifications => 'إرسال إشعار عام لكل الموظفين',
             self::ViewProfitAndLossReport => 'عرض تقرير الأرباح والخسائر',
         };
     }
@@ -306,13 +331,15 @@ enum PermissionName: string
             self::ViewInventory, self::ManageInventory,
             self::RevalueStock, self::ViewStockCost => 'المخازن والمخزون',
             self::ViewVendors, self::ManageVendors => 'الموردون',
-            self::ViewPurchaseOrders, self::ManagePurchaseOrders => 'أوامر الشراء',
+            self::ViewPurchaseOrders, self::ManagePurchaseOrders,
+            self::ReverseReceiptAnyTime => 'أوامر الشراء',
             self::ViewInvestors, self::ManageInvestors,
             self::RecordInvestorMoney, self::ReverseInvestorMoney,
             self::RecordDealExpenses, self::ViewInvestorPortal => 'المستثمرون',
             self::ViewCompanySettings, self::ManageCompanySettings => 'إعدادات الشركة',
             self::ViewActivityLogs => 'سجل النشاطات',
             self::ViewProfitAndLossReport => 'التقارير المالية',
+            self::BroadcastNotifications => 'الإشعارات',
         };
     }
 

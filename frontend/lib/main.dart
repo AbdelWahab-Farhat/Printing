@@ -1,6 +1,11 @@
+import 'dart:async';
 import 'package:dayaa/app.dart';
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/push/push_service.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
+import 'package:dayaa/firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
@@ -20,6 +25,20 @@ Future<void> main() async {
   // Held, the two screens are one picture: same mark, same background, no seam.
   FlutterNativeSplash.preserve(widgetsBinding: binding);
 
+  // Before `Injector.init`, because the container builds a `PushService` that reaches for
+  // `FirebaseMessaging.instance` — and that throws rather than returning null on an app that was
+  // never configured.
+  //
+  // **A failure here must not stop the app.** Push is one feature; the order book, the customers
+  // and the whole in-app notification centre are plain authenticated endpoints that owe Firebase
+  // nothing. A missing google-services.json on somebody's machine should cost them notifications,
+  // not the application.
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } on Exception catch (error) {
+    debugPrint('Firebase did not start; push is off for this run: $error');
+  }
+
   await Injector.init(
     // The interceptor has just cleared a rejected token; all that is left is to get the user
     // somewhere sensible. Passed in as a callback so the network layer never imports the
@@ -33,10 +52,36 @@ Future<void> main() async {
     },
   );
 
+  // Wired after the container exists and before the first frame, so a notification tapped on a
+  // cold start has somewhere to be delivered by the time the router is up.
+  //
+  // **The terminated case is read by the splash, not here** — `getInitialMessage()` must not be
+  // acted on until the splash has decided whether there is a usable session, or a cold-start tap
+  // sends an unauthenticated user at an authenticated screen.
+  final push = sl<PushService>()
+    ..onOpenRoute = _openFromNotification
+    ..onForegroundMessage = () => sl<UnreadBadgeCubit>().load();
+  await push.start();
+
   runApp(const DayaaApp());
 
   // Taken down only now, with the app built and its first frame on the way. Removing it any
   // earlier — before `runApp` — would uncover a blank window; leaving it to the package's own
   // default would have uncovered one mid-`Injector.init`.
   FlutterNativeSplash.remove();
+}
+
+
+/// Where a tapped notification goes.
+///
+/// **An unrecognised route must not reach the router's error page.** An older app against a
+/// newer backend is the ordinary case for this, not a corruption: the server may name a
+/// destination this build has never heard of. Landing on the notifications list instead is the
+/// honest fallback — the message is still there to read.
+void _openFromNotification(String route) {
+  try {
+    unawaited(AppRouter.instance.push(route));
+  } on Exception {
+    unawaited(AppRouter.instance.push(Routes.notifications));
+  }
 }

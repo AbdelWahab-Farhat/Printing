@@ -6,35 +6,42 @@ part of 'stock_arrival.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_StockArrival _$StockArrivalFromJson(Map<String, dynamic> json) =>
-    _StockArrival(
-      id: (json['id'] as num).toInt(),
-      vendorId: (json['vendor_id'] as num).toInt(),
-      vendor: json['vendor'] == null
-          ? null
-          : ArrivalRef.fromJson(json['vendor'] as Map<String, dynamic>),
-      purchaseOrderId: (json['purchase_order_id'] as num?)?.toInt(),
-      warehouseId: (json['warehouse_id'] as num?)?.toInt(),
-      warehouse: json['warehouse'] == null
-          ? null
-          : ArrivalRef.fromJson(json['warehouse'] as Map<String, dynamic>),
-      invoiceNumber: json['invoice_number'] as String?,
-      notes: json['notes'] as String?,
-      receivedBy: (json['received_by'] as num).toInt(),
-      receivedByUser: json['received_by_user'] == null
-          ? null
-          : ArrivalRef.fromJson(
-              json['received_by_user'] as Map<String, dynamic>,
-            ),
-      items:
-          (json['items'] as List<dynamic>?)
-              ?.map((e) => StockArrivalItem.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const <StockArrivalItem>[],
-      createdAt: json['created_at'] == null
-          ? null
-          : DateTime.parse(json['created_at'] as String),
-    );
+_StockArrival _$StockArrivalFromJson(
+  Map<String, dynamic> json,
+) => _StockArrival(
+  id: (json['id'] as num).toInt(),
+  vendorId: (json['vendor_id'] as num).toInt(),
+  vendor: json['vendor'] == null
+      ? null
+      : ArrivalRef.fromJson(json['vendor'] as Map<String, dynamic>),
+  purchaseOrderId: (json['purchase_order_id'] as num?)?.toInt(),
+  warehouseId: (json['warehouse_id'] as num?)?.toInt(),
+  warehouse: json['warehouse'] == null
+      ? null
+      : ArrivalRef.fromJson(json['warehouse'] as Map<String, dynamic>),
+  invoiceNumber: json['invoice_number'] as String?,
+  notes: json['notes'] as String?,
+  receivedBy: (json['received_by'] as num).toInt(),
+  receivedByUser: json['received_by_user'] == null
+      ? null
+      : ArrivalRef.fromJson(json['received_by_user'] as Map<String, dynamic>),
+  reversedAt: json['reversed_at'] == null
+      ? null
+      : DateTime.parse(json['reversed_at'] as String),
+  reversalReason: json['reversal_reason'] as String?,
+  reversedBy: (json['reversed_by'] as num?)?.toInt(),
+  reversedByUser: json['reversed_by_user'] == null
+      ? null
+      : ArrivalRef.fromJson(json['reversed_by_user'] as Map<String, dynamic>),
+  items:
+      (json['items'] as List<dynamic>?)
+          ?.map((e) => StockArrivalItem.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <StockArrivalItem>[],
+  createdAt: json['created_at'] == null
+      ? null
+      : DateTime.parse(json['created_at'] as String),
+);
 
 Map<String, dynamic> _$StockArrivalToJson(_StockArrival instance) =>
     <String, dynamic>{
@@ -48,6 +55,10 @@ Map<String, dynamic> _$StockArrivalToJson(_StockArrival instance) =>
       'notes': instance.notes,
       'received_by': instance.receivedBy,
       'received_by_user': instance.receivedByUser?.toJson(),
+      'reversed_at': instance.reversedAt?.toIso8601String(),
+      'reversal_reason': instance.reversalReason,
+      'reversed_by': instance.reversedBy,
+      'reversed_by_user': instance.reversedByUser?.toJson(),
       'items': instance.items.map((e) => e.toJson()).toList(),
       'created_at': instance.createdAt?.toIso8601String(),
     };

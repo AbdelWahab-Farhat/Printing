@@ -49,6 +49,10 @@ _PurchaseOrder _$PurchaseOrderFromJson(
       const <PurchaseOrderFunding>[],
   defaultInvestorProfitSharePercent:
       json['default_investor_profit_share_percent'] as String?,
+  receiptReversibleUntil: json['receipt_reversible_until'] == null
+      ? null
+      : DateTime.parse(json['receipt_reversible_until'] as String),
+  canReverseReceipt: json['can_reverse_receipt'] as bool? ?? false,
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -77,6 +81,9 @@ Map<String, dynamic> _$PurchaseOrderToJson(
   'investor_funding': instance.investorFunding.map((e) => e.toJson()).toList(),
   'default_investor_profit_share_percent':
       instance.defaultInvestorProfitSharePercent,
+  'receipt_reversible_until': instance.receiptReversibleUntil
+      ?.toIso8601String(),
+  'can_reverse_receipt': instance.canReverseReceipt,
   'created_at': instance.createdAt?.toIso8601String(),
   'updated_at': instance.updatedAt?.toIso8601String(),
 };

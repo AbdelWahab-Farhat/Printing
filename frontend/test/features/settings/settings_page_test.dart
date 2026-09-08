@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/push/push_service.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/auth/presentation/viewmodel/logout_cubit.dart';
 import 'package:dayaa/features/auth/repositories/auth_repository.dart';
@@ -47,6 +48,7 @@ void main() {
         () => SettingsCubit(
           getSettings: GetSettings(settings),
           setNotificationsEnabled: SetNotificationsEnabled(settings),
+          push: _FakePushService(),
         ),
       )
       ..registerFactory<LogoutCubit>(() => LogoutCubit(logout: Logout(auth)))
@@ -102,4 +104,22 @@ void main() {
       reason: 'a ListTile with no Material above it has nowhere to paint its ink',
     );
   });
+}
+
+
+/// The settings row asks the phone what it allows; this one always says yes, so the card renders
+/// in its ordinary state rather than the blocked one. What the blocked state does is proved in
+/// `settings_cubit_test.dart`, where it belongs.
+class _FakePushService implements PushService {
+  @override
+  Future<bool> hasOsPermission() async => true;
+
+  @override
+  Future<bool> register({bool askPermission = true}) async => true;
+
+  @override
+  Future<void> release() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

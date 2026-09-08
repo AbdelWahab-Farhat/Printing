@@ -31,7 +31,16 @@ enum PurchaseOrderStatus: string
     /** In motion — sent, awaiting the vendor. See the class docblock. */
     case Arrived = 'arrived';
 
-    /** A delivery has been posted against it — short, exact or over. The end of the road. */
+    /**
+     * A delivery has been posted against it — short, exact or over. The end of the road.
+     *
+     * **With one exit, and it is not a transition.** A receipt entered in error is undone by
+     * `ReversePurchaseOrderReceipt`, which puts the order back to {@see Arrived} — but only by
+     * taking the stock off the shelf again first, and only while `ReverseStockArrival` allows
+     * it. That is why `allowedNext()` below still says nothing follows `completed`: undoing a
+     * receipt is a correction to the ledger that happens to reopen the paperwork, never a status
+     * somebody may choose. `ChangePurchaseOrderStatusRequest` keeps refusing it.
+     */
     case Completed = 'completed';
 
     case Cancelled = 'cancelled';
@@ -65,7 +74,7 @@ enum PurchaseOrderStatus: string
         return in_array($target, $this->allowedNext(), true);
     }
 
-    /** Finished. Nothing follows, and nothing may reopen it. */
+    /** Finished. Nothing follows, and no *transition* may reopen it — see {@see Completed}. */
     public function isFinal(): bool
     {
         return $this === self::Completed || $this === self::Cancelled;

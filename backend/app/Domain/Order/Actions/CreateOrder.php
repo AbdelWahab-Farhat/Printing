@@ -103,6 +103,10 @@ final class CreateOrder
                 'address_details' => $data->addressDetails,
                 'notes' => $data->notes,
                 'tracking_number' => $data->trackingNumber,
+                // False when nothing was said, because «لم يُسأل» and «ليست مستعجلة» are the
+                // same answer for a new order — unlike on an edit, where the silence means
+                // «اتركها كما هي». See OrderData::$isUrgent.
+                'is_urgent' => $data->isUrgent ?? false,
             ]);
 
             // Server-assigned, so they go on directly rather than through the fillable list —

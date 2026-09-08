@@ -182,14 +182,40 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
   /// time the destination is chosen. Leaving «نواقص» is the case it exists for: the box asking
   /// what arrived of the shortage opens holding the whole of it, and a clerk who agrees submits
   /// without typing.
+  ///
+  /// **A value is seeded in the shape its widget holds, not the shape it crossed the wire in.**
+  /// Every kind but one is its own answer — a number is the text in the box. «شركة التوصيل» is
+  /// an id, and the widget holds the whole company so the button can say its name, so the two
+  /// halves the field carried are put back together here. Anywhere else this would be a `switch`
+  /// with a case per kind, which is the thing this screen exists not to have; it is one case
+  /// because exactly one kind answers in ids.
   Map<String, Object?> _prefilled(OrderTransition transition) {
     final seeded = <String, Object?>{};
 
     for (final field in transition.fields) {
-      if (field.value != null) seeded[field.key] = field.value;
+      final answer = switch (field.type) {
+        TransitionFieldType.shippingCompany => _carrierIn(field),
+        _ => field.value,
+      };
+
+      if (answer != null) seeded[field.key] = answer;
     }
 
     return seeded;
+  }
+
+  /// The carrier a dispatch field opens on, out of the id and the name it arrived with.
+  ///
+  /// Null unless both halves are there and the id is a number: an id the screen cannot name
+  /// would sit on the form as an answer nobody could see and nobody agreed to, and the picker
+  /// was always one tap away.
+  static ShippingCompany? _carrierIn(TransitionField field) {
+    final id = int.tryParse(field.value ?? '');
+    final name = field.valueLabel;
+
+    if (id == null || name == null || name.isEmpty) return null;
+
+    return ShippingCompany(id: id, name: name);
   }
 
   /// Records an answer, from a clean form **or from a refused one**.

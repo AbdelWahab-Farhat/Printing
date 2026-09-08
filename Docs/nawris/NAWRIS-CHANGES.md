@@ -243,7 +243,9 @@ to someone else, the price check that froze orders, codes 6 and 12 falling throu
    which is honest rather than lax — but the token alone is a thin gate on an endpoint that writes
    money.
 4. **Create the Nawris row in `shipping_companies`** and point `NAWRIS_SHIPPING_COMPANY_ID` at it, so
-   existing carrier filters and reports keep working.
+   existing carrier filters and reports keep working. **تأكّد أنه يشير إلى «النورس» نفسها** —
+   كان على قاعدة التطوير يشير إلى «درب السبيل»، فكانت الطلبية تسمّي ناقلاً وصفُّ شحنتها ناقلاً
+   آخر. وإن تُرك فارغاً تُقيَّد الشحنة على الشركة المعلَّمة `is_default`، فلا يبقى للطرد جوابان.
 5. **Map the cities.** A delivery city with no `nawris_government_id` refuses dispatch by name.
 6. **Verify `shipment_on_sender` with Nawris directly.** Our whole COD subtraction rests on the
    courier adding their fee at the door. This needs a phone call, not API access — see §11.

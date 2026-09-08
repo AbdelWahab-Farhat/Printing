@@ -218,14 +218,15 @@ void main() {
       remainingAmount: '450.00',
     );
 
-    // Act
+    // Act — «التوصيل» last, under «المتبقي»: it is not money owed to us, and a line for it
+    // among the charges would have the reader adding it into the remainder.
     final positions = <String>[
       'المنتجات: 420 د',
       'التصميم: 20 د',
-      'التوصيل: 50 د',
       'الخصم: - 10 د',
       'المدفوع: 30 د',
       'المتبقي: 450 د',
+      'التوصيل (يُدفع للمندوب): 50 د',
     ].map(OrderMessage.of(order).indexOf).toList();
 
     // Assert — every one found, each below the one before it.
@@ -247,12 +248,12 @@ void main() {
     final broken = OrderMessage.of(fractional);
 
     // Assert — a whole number loses the point entirely; a real fraction keeps only its digits.
-    expect(round, contains('التوصيل: 40 د'));
+    expect(round, contains('التوصيل (يُدفع للمندوب): 40 د'));
     expect(round, contains('المدفوع: 30 د'));
     expect(round, isNot(contains('.00')));
     expect(broken, contains('- الكمية: 100 قطعة'));
     expect(broken, contains('- القيمة: 12.25 د'));
-    expect(broken, contains('التوصيل: 1.5 د'));
+    expect(broken, contains('التوصيل (يُدفع للمندوب): 1.5 د'));
     expect(broken, contains('المتبقي: 13.75 د'));
   });
 
@@ -281,7 +282,7 @@ void main() {
     expect(quiet, isNot(contains('التوصيل')));
     expect(quiet, isNot(contains('الخصم')));
     expect(full, contains('التصميم: 25 د'));
-    expect(full, contains('التوصيل: 50 د'));
+    expect(full, contains('التوصيل (يُدفع للمندوب): 50 د'));
     expect(full, contains('الخصم: - 10 د'));
   });
 
@@ -357,13 +358,13 @@ void main() {
     final message = OrderMessage.of(order);
     final charge = message.indexOf('التكلفة الإضافية');
 
-    // Assert — what it was for, in the same words the order screen uses, and after the
-    // delivery it follows on the server's own running of the sum.
+    // Assert — what it was for, in the same words the order screen uses, and above «التوصيل»,
+    // which is now the last line of the section and no part of the sum.
     expect(
       message,
       contains('التكلفة الإضافية (تغليف خاص — علبة كرتون مزدوجة): 10 د'),
     );
-    expect(charge, greaterThan(message.indexOf('التوصيل')));
+    expect(charge, lessThan(message.indexOf('التوصيل')));
   });
 
   test('an order charged nothing extra says nothing about it', () {

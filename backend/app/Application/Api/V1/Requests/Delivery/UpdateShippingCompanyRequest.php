@@ -27,6 +27,7 @@ class UpdateShippingCompanyRequest extends StoreShippingCompanyRequest
             'phone' => ['nullable', 'string', 'max:20'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'is_active' => ['sometimes', 'boolean'],
+            'is_default' => ['sometimes', 'boolean'],
         ];
     }
 

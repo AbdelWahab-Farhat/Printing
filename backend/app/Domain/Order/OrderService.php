@@ -343,6 +343,26 @@ class OrderService
         return ($this->stockPurchaseAttribution)($orderId);
     }
 
+    /**
+     * Every line of this order, whatever it drew and whether it drew at all.
+     *
+     * The companion to `stockPurchaseAttributionFor()` above, and needed for the same settlement:
+     * a restated line that stopped buying leaves that list, so Investment cannot ask it which
+     * lines might still be holding money for a purchase they are no longer credited with. This
+     * one names the whole order; which of them the ledger still owes is the ledger's own question.
+     *
+     * @return list<int>
+     */
+    public function lineIdsFor(int $orderId): array
+    {
+        return OrderItem::query()
+            ->where('order_id', $orderId)
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
     public function profitAttributionFor(int $orderId): ?array
     {
         return ($this->profitAttribution)($orderId);

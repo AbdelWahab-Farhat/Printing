@@ -130,9 +130,11 @@ class OrderMessage {
 
   /// Every charge that made the bill, then what is left of it.
   ///
-  /// **«التوصيل» is a line here**, unlike in the first version of this message: on an order that
-  /// was charged for delivery, the fee is a figure the customer is being asked to pay, and
-  /// leaving it out left a gap between the products and what was owed that nothing explained.
+  /// **«التوصيل» is a line here, and it is the last one, after «المتبقي».** The fee is not part
+  /// of what the customer owes us — the courier collects it at the door on their own account —
+  /// so a line for it among the charges would leave the reader adding it into «المتبقي» and
+  /// arriving at a figure nobody will ask them for. Printed all the same, and printed last,
+  /// because the customer still has to have that much in hand when the parcel arrives.
   ///
   /// A charge of nothing is still absent, delivery included. The screen prints the `0.00` an
   /// office pickup costs because a member of staff checking a total wants to see that it is
@@ -143,18 +145,19 @@ class OrderMessage {
   static String _money(Order order) => _section(moneyHeading, [
     'المنتجات: ${_amount(order.itemsTotal)}',
     if (order.hasDesignFee) 'التصميم: ${_amount(order.designFee)}',
-    if (order.hasDeliveryPrice) 'التوصيل: ${_amount(order.deliveryPrice)}',
     if (order.hasAdditionalCost) _additionalCost(order),
     if (order.hasDiscount) 'الخصم: - ${_amount(order.discount)}',
     'المدفوع: ${_amount(order.paidAmount)}',
     'المتبقي: ${_amount(order.remainingAmount)}',
+    if (order.hasDeliveryPrice) 'التوصيل (يُدفع للمندوب): ${_amount(order.deliveryPrice)}',
   ]);
 
   /// «التكلفة الإضافية (تغليف خاص — علبة كرتون مزدوجة): ١٠٫٠٠ د».
   ///
-  /// **Named on the customer's copy, and that is not the delivery's case.** «التوصيل» is off the
-  /// invoice by the owner's own instruction; this is a charge the customer is being asked to pay
-  /// and can see no name for anywhere else, which is exactly the line that gets telephoned about.
+  /// **Named on the customer's copy, and that is not the delivery's case.** «التوصيل» stands
+  /// under «المتبقي» because it is nothing of ours to name; this is a charge the customer is
+  /// being asked to pay us and can see no name for anywhere else, which is exactly the line that
+  /// gets telephoned about.
   ///
   /// The words are [Order.additionalCostCaption]'s — the same sentence the order screen shows,
   /// so nobody is told two different things about one charge. A charge the server sent with no

@@ -99,5 +99,12 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
-	</dict>
+		<!-- Lets a push wake the app to handle a data payload while it is in the background.
+	     Without it, iOS delivers the banner but the app never runs, so nothing is refreshed
+	     until the user taps. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+</dict>
 </plist>

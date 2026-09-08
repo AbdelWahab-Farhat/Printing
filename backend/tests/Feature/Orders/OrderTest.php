@@ -191,12 +191,29 @@ class OrderTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $payload);
 
-        // Assert — the catalogue's 1.100 wins, and the total is 300 × 1.100 + 20.00 delivery.
+        // Assert — the catalogue's 1.100 wins, and the total is 300 × 1.100. The 20.00 of
+        // delivery is stated beside it and added to nothing.
         $response->assertCreated()
             ->assertJsonPath('data.items.0.unit_price', '1.100')
             ->assertJsonPath('data.items_total', '330.00')
             ->assertJsonPath('data.delivery_price', '20.00')
-            ->assertJsonPath('data.grand_total', '350.00');
+            ->assertJsonPath('data.grand_total', '330.00');
+    }
+
+    public function test_the_delivery_fee_is_not_part_of_the_order_total(): void
+    {
+        // Arrange — a destination that costs 20 to reach, on an order of 330 of bags.
+        $headers = $this->clerk();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload());
+
+        // Assert — the fee is still stated, and the total is the bags alone. The courier
+        // collects the fee from the customer at the door; it is neither our revenue nor our cost.
+        $response->assertCreated()
+            ->assertJsonPath('data.delivery_price', '20.00')
+            ->assertJsonPath('data.items_total', '330.00')
+            ->assertJsonPath('data.grand_total', '330.00');
     }
 
     public function test_the_destination_is_copied_onto_the_order(): void
@@ -411,10 +428,10 @@ class OrderTest extends TestCase
             ]],
         ]));
 
-        // Assert — 50 × 2.500 = 125.00, plus 20.00 delivery.
+        // Assert — 50 × 2.500 = 125.00, and the delivery is beside it rather than in it.
         $response->assertCreated()
             ->assertJsonPath('data.items_total', '125.00')
-            ->assertJsonPath('data.grand_total', '145.00');
+            ->assertJsonPath('data.grand_total', '125.00');
     }
 
     public function test_the_shops_name_is_copied_onto_the_order(): void
@@ -505,7 +522,7 @@ class OrderTest extends TestCase
         // Assert — 330.00 + 20.00 − 50.00.
         $response->assertCreated()
             ->assertJsonPath('data.discount', '50.00')
-            ->assertJsonPath('data.grand_total', '300.00');
+            ->assertJsonPath('data.grand_total', '280.00');
     }
 
     public function test_a_discount_larger_than_the_order_is_refused(): void
@@ -561,13 +578,13 @@ class OrderTest extends TestCase
             'additional_cost_note' => 'علبة كرتون مزدوجة',
         ]));
 
-        // Assert — 330.00 + 20.00 + 10.00, and the reason travels with its label.
+        // Assert — 330.00 + 10.00, and the reason travels with its label.
         $response->assertCreated()
             ->assertJsonPath('data.additional_cost', '10.00')
             ->assertJsonPath('data.additional_cost_reason', 'special_packaging')
             ->assertJsonPath('data.additional_cost_reason_label', 'تغليف خاص')
             ->assertJsonPath('data.additional_cost_note', 'علبة كرتون مزدوجة')
-            ->assertJsonPath('data.grand_total', '360.00');
+            ->assertJsonPath('data.grand_total', '340.00');
     }
 
     public function test_the_worked_example_from_the_brief(): void
@@ -629,12 +646,12 @@ class OrderTest extends TestCase
             'discount' => '50.00',
         ]));
 
-        // Assert — 330.00 + 20.00 + 10.00 − 50.00, and neither figure folded into the other:
+        // Assert — 330.00 + 10.00 − 50.00, and neither figure folded into the other:
         // reading why a total moved needs both halves standing on their own.
         $response->assertCreated()
             ->assertJsonPath('data.additional_cost', '10.00')
             ->assertJsonPath('data.discount', '50.00')
-            ->assertJsonPath('data.grand_total', '310.00');
+            ->assertJsonPath('data.grand_total', '290.00');
     }
 
     public function test_a_discount_may_reach_the_widened_base(): void
@@ -648,11 +665,11 @@ class OrderTest extends TestCase
             PermissionName::AddOrderAdditionalCost,
         );
 
-        // Act — 330.00 + 20.00 + 10.00, taken off in full.
+        // Act — 330.00 + 10.00, taken off in full.
         $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
             'additional_cost' => '10.00',
             'additional_cost_reason' => AdditionalCostReason::ExtraService->value,
-            'discount' => '360.00',
+            'discount' => '340.00',
         ]));
 
         // Assert
@@ -801,10 +818,10 @@ class OrderTest extends TestCase
             'additional_cost_reason' => AdditionalCostReason::Transport->value,
         ]);
 
-        // Assert — nothing is charged, and the sum goes back to 330.00 + 20.00.
+        // Assert — nothing is charged, and the sum goes back to the bags' own 330.00.
         $response->assertOk()
             ->assertJsonPath('data.additional_cost', '0.00')
-            ->assertJsonPath('data.grand_total', '350.00');
+            ->assertJsonPath('data.grand_total', '330.00');
     }
 
     public function test_a_design_fee_is_only_charged_when_we_did_the_design(): void
@@ -821,7 +838,7 @@ class OrderTest extends TestCase
         // Assert
         $response->assertCreated()
             ->assertJsonPath('data.design_fee', '0.00')
-            ->assertJsonPath('data.grand_total', '350.00');
+            ->assertJsonPath('data.grand_total', '330.00');
     }
 
     public function test_our_own_design_is_added_to_the_total(): void
@@ -835,10 +852,10 @@ class OrderTest extends TestCase
             'design_fee' => '80.00',
         ]));
 
-        // Assert — 330.00 + 80.00 + 20.00.
+        // Assert — 330.00 + 80.00.
         $response->assertCreated()
             ->assertJsonPath('data.design_fee', '80.00')
-            ->assertJsonPath('data.grand_total', '430.00');
+            ->assertJsonPath('data.grand_total', '410.00');
     }
 
     /**
@@ -958,7 +975,7 @@ class OrderTest extends TestCase
 
         // Assert — every one of those is server-assigned and none of them lands.
         $response->assertCreated()
-            ->assertJsonPath('data.grand_total', '350.00')
+            ->assertJsonPath('data.grand_total', '330.00')
             ->assertJsonPath('data.status', 'new');
 
         $this->assertNotSame('FREE', $response->json('data.code'));
@@ -1394,7 +1411,7 @@ class OrderTest extends TestCase
         $this->assertSame('35.00', $moved->delivery_price);
     }
 
-    public function test_moving_an_order_re_prices_the_delivery_and_the_total(): void
+    public function test_moving_an_order_re_prices_the_delivery_and_leaves_the_total_alone(): void
     {
         // Arrange
         $order = Order::factory()->status(OrderStatus::Ready)->create();
@@ -1411,11 +1428,11 @@ class OrderTest extends TestCase
             'city_id' => $dearer->getKey(),
         ]);
 
-        // Assert — the rate travels with the address, and the total is recomputed rather than
-        // left saying what the old city cost.
+        // Assert — the rate travels with the address, and the total does not move with it: the
+        // goods cost what they cost wherever they are going, and the trip is the courier's bill.
         $response->assertOk()
             ->assertJsonPath('data.delivery_price', '50.00')
-            ->assertJsonPath('data.grand_total', '150.00');
+            ->assertJsonPath('data.grand_total', '100.00');
     }
 
     public function test_a_finished_order_cannot_be_edited(): void

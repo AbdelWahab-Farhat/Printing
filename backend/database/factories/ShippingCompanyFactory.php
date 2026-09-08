@@ -26,6 +26,7 @@ class ShippingCompanyFactory extends Factory
             'phone' => '091'.str_pad((string) self::$nameSequence, 7, '0', STR_PAD_LEFT),
             'notes' => null,
             'is_active' => true,
+            'is_default' => false,
         ];
     }
 
@@ -33,5 +34,16 @@ class ShippingCompanyFactory extends Factory
     public function inactive(): static
     {
         return $this->state(fn () => ['is_active' => false]);
+    }
+
+    /**
+     * The one a dispatch opens on.
+     *
+     * At most one live company may be this — the database enforces it — so a test making a
+     * second default is a test that fails loudly rather than one that quietly has two.
+     */
+    public function asDefault(): static
+    {
+        return $this->state(fn () => ['is_active' => true, 'is_default' => true]);
     }
 }

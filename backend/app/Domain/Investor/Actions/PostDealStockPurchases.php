@@ -6,6 +6,7 @@ namespace App\Domain\Investor\Actions;
 
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Inventory\InventoryService;
+use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Support\StockPurchaseMargins;
@@ -41,12 +42,20 @@ use Illuminate\Support\Facades\DB;
  * reverse what it wrote before and post the new one. Keyed on the movement, the first payment
  * would stand beside the second forever.
  *
+ * **A payment is reversed by what was posted, never by what is now computed.** The corrected
+ * figure decides the new amount; the *set of deals and lines to correct* is read from the ledger
+ * itself, because a restatement can drop a deal — or a whole line — out of the draw entirely, and
+ * a deal nobody recomputes is a deal nobody reverses.
+ *
  * **And a cancellation is deliberately not undone.** Nothing calls this on the way to «ملغاة»;
  * the entries stay, and `ReverseOrderStockDeduction` hands the goods back to the company rather
  * than to the deal. That is «المطبعة تتحمّل» in the ledger.
  */
 final class PostDealStockPurchases
 {
+    /** The note a corrected line's reversal carries in the ledger. */
+    private const LINE_NOTE = 'تصحيح بيع السادة للمطبعة';
+
     public function __construct(
         private readonly OrderService $orders,
         private readonly InventoryService $inventory,
@@ -60,11 +69,7 @@ final class PostDealStockPurchases
     {
         $lines = $this->orders->stockPurchaseAttributionFor($orderId);
 
-        if ($lines === []) {
-            return [];
-        }
-
-        $breakdown = $this->inventory->consumptionBreakdownFor(
+        $breakdown = $lines === [] ? [] : $this->inventory->consumptionBreakdownFor(
             array_map(fn (array $line) => $line['movement_id'], $lines),
         );
 
@@ -76,7 +81,45 @@ final class PostDealStockPurchases
             }
         }
 
+        // **The lines that used to be here.** A restatement recomputes the line's cost off a
+        // fresh draw, and a corrected run that no longer reaches a priced layer clears
+        // `stock_purchased_at` — so the line leaves {@see StockPurchaseAttributionQuery}
+        // altogether and the loop above never sees it again. Its first payment would stand
+        // forever, against goods the credit-back has already put back on the investor's own
+        // shelf. Posted with no draws at all, which reverses everything standing and writes
+        // nothing.
+        foreach ($this->strandedLines($orderId, array_column($lines, 'line_id')) as $lineId) {
+            foreach ($this->post([], AuditSubject::OrderItem->value, $lineId, self::LINE_NOTE) as $row) {
+                $written[] = $row;
+            }
+        }
+
         return $written;
+    }
+
+    /**
+     * The order's lines that still hold money for a purchase they are no longer credited with.
+     *
+     * @param  list<int>  $attributed  the lines the attribution query still returns
+     * @return list<int>
+     */
+    private function strandedLines(int $orderId, array $attributed): array
+    {
+        $candidates = array_values(array_diff($this->orders->lineIdsFor($orderId), $attributed));
+
+        if ($candidates === []) {
+            return [];
+        }
+
+        return InvestorWalletEntry::query()
+            ->where('source_type', AuditSubject::OrderItem->value)
+            ->whereIn('source_id', $candidates)
+            ->whereIn('type', [WalletEntryType::Profit->value, WalletEntryType::Loss->value])
+            ->whereDoesntHave('reversedBy')
+            ->distinct()
+            ->pluck('source_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
     }
 
     /**
@@ -119,7 +162,7 @@ final class PostDealStockPurchases
             $breakdown[$line['movement_id']] ?? [],
             AuditSubject::OrderItem->value,
             $line['line_id'],
-            'تصحيح بيع السادة للمطبعة',
+            self::LINE_NOTE,
         );
     }
 
@@ -133,18 +176,30 @@ final class PostDealStockPurchases
     {
         $margins = StockPurchaseMargins::byDeal($draws);
 
-        if ($margins === []) {
+        // **Every deal this source has ever paid, not only the ones it still owes.** A corrected
+        // draw can stop reaching a deal's layer entirely — a smaller run that FIFO satisfies out
+        // of an older layer, or a margin that recomputes to exactly zero, which
+        // {@see StockPurchaseMargins::byDeal()} drops. Iterating the new margins alone would
+        // never visit that deal again, and {@see PostDealShare} scopes its reversal by deal, so
+        // its first payment would stand against stock that is back on its own shelf. A deal that
+        // has fallen out is posted at zero, which reverses it.
+        $dealIds = array_unique(array_merge(
+            array_keys($margins),
+            $this->dealsStandingOn($sourceType, $sourceId),
+        ));
+
+        if ($dealIds === []) {
             return [];
         }
 
         // Ascending by id, always — the deadlock discipline this whole context shares with
         // CreditBackStockBatches.
-        ksort($margins);
+        sort($dealIds);
 
-        return DB::transaction(function () use ($margins, $sourceType, $sourceId, $correctionNote): array {
+        return DB::transaction(function () use ($dealIds, $margins, $sourceType, $sourceId, $correctionNote): array {
             $written = [];
 
-            foreach ($margins as $dealId => $margin) {
+            foreach ($dealIds as $dealId) {
                 $deal = InvestorDeal::query()->whereKey($dealId)->lockForUpdate()->first();
 
                 if ($deal === null) {
@@ -153,7 +208,7 @@ final class PostDealStockPurchases
 
                 $rows = ($this->postShare)(
                     $deal,
-                    $deal->ownersCutOf($margin),
+                    $deal->ownersCutOf($margins[$dealId] ?? '0.00'),
                     $sourceType,
                     $sourceId,
                     $correctionNote,
@@ -166,5 +221,24 @@ final class PostDealStockPurchases
 
             return $written;
         });
+    }
+
+    /**
+     * The deals holding un-reversed money for this source, whatever the draws now say.
+     *
+     * @return list<int>
+     */
+    private function dealsStandingOn(string $sourceType, int $sourceId): array
+    {
+        return InvestorWalletEntry::query()
+            ->where('source_type', $sourceType)
+            ->where('source_id', $sourceId)
+            ->whereIn('type', [WalletEntryType::Profit->value, WalletEntryType::Loss->value])
+            ->whereNotNull('investor_deal_id')
+            ->whereDoesntHave('reversedBy')
+            ->distinct()
+            ->pluck('investor_deal_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
     }
 }

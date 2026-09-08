@@ -14,11 +14,16 @@ abstract interface class ShippingCompanyRepository {
     int perPage,
   });
 
+  /// [isDefault] null says nothing about the flag, and the server leaves it where it is. That
+  /// is the server's own rule, mirrored rather than restated: turning the flag on takes it off
+  /// whichever company held it, so it may not move as a side effect of a save that never
+  /// mentioned it.
   Future<Either<Failure, ShippingCompany>> create({
     required String name,
     String? phone,
     String? notes,
     bool isActive,
+    bool? isDefault,
   });
 
   Future<Either<Failure, ShippingCompany>> update(
@@ -27,6 +32,7 @@ abstract interface class ShippingCompanyRepository {
     String? phone,
     String? notes,
     bool isActive,
+    bool? isDefault,
   });
 
   /// Answers with the server's own message, like every other command here.

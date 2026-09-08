@@ -365,4 +365,78 @@ void main() {
       expect(line['quantity'], '40.5');
     });
   });
+
+  group('undoing a receipt', () {
+    test('is a POST carrying the reason alone', () async {
+      // Act
+      await repository.reverseReceipt(7, reason: 'سُجّلت الكمية خطأً');
+
+      // Assert — which shipment, which lines and which warehouse are all already known to the
+      // server. A client that could name them could take stock off the wrong shelf.
+      final body = captured.data as Map<String, dynamic>;
+
+      expect(captured.method, 'POST');
+      expect(captured.path, '/purchase-orders/7/receipt-reversal');
+      expect(body, {'reason': 'سُجّلت الكمية خطأً'});
+    });
+
+    test('the reason is trimmed and its Arabic digits are left alone', () async {
+      // Arrange — every other write in this feature normalises digits, because the server's
+      // numeric rules are ASCII-only. This field is a sentence about a mistake, not a figure
+      // anybody computes with, and rewriting «٥٠٠ بدل ٥٠» would edit the record that exists to
+      // say what somebody meant.
+      final reverse = ReverseReceipt(repository);
+
+      // Act
+      await reverse(7, reason: '  سُجّلت ٥٠٠ بدل ٥٠  ');
+
+      // Assert
+      final body = captured.data as Map<String, dynamic>;
+
+      expect(body['reason'], 'سُجّلت ٥٠٠ بدل ٥٠');
+    });
+  });
+
+  group('reading the reversal window off an order', () {
+    test('the detail endpoint carries the deadline and the caller\'s own answer', () {
+      // Arrange — both fields are computed per caller and sent only where the arrivals were
+      // loaded, which is the show endpoint alone.
+      final json = <String, dynamic>{
+        'id': 412,
+        'vendor_id': 3,
+        'status': 'completed',
+        'status_label': 'مكتمل',
+        'order_date': '2026-09-06',
+        'receipt_reversible_until': '2026-09-10T10:00:00+00:00',
+        'can_reverse_receipt': true,
+      };
+
+      // Act
+      final order = PurchaseOrder.fromJson(json);
+
+      // Assert
+      expect(order.canReverseReceipt, isTrue);
+      expect(order.receiptReversibleUntil, DateTime.parse('2026-09-10T10:00:00+00:00'));
+    });
+
+    test('a list row, which carries neither, reads as «no»', () {
+      // Arrange — `PurchaseOrderResource` sends both under `whenLoaded('stockArrivals')`, so a
+      // row from the list has the keys missing rather than false.
+      final json = <String, dynamic>{
+        'id': 412,
+        'vendor_id': 3,
+        'status': 'completed',
+        'status_label': 'مكتمل',
+        'order_date': '2026-09-06',
+      };
+
+      // Act
+      final order = PurchaseOrder.fromJson(json);
+
+      // Assert — «unknown» must read as «no». A missing answer that defaulted to true would
+      // offer the button on every completed order in the list.
+      expect(order.canReverseReceipt, isFalse);
+      expect(order.receiptReversibleUntil, isNull);
+    });
+  });
 }

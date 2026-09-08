@@ -1,5 +1,8 @@
 plugins {
     id("com.android.application")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    // END: FlutterFire Configuration
     // Applied here, not left to the plugins that need it. `file_picker`, `share_plus` and
     // `flutter_plugin_android_lifecycle` are written in Kotlin, and on AGP 8 the Kotlin Gradle
     // Plugin is what compiles them. The version is declared once, in settings.gradle.kts.

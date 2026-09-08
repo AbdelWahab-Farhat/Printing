@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\DB;
  *
  * Only `delivered` and `settled` are safe: from those the state machine offers no road back.
  *
+ * **And a draw already bought at سعر السادة waits on one thing only — the restatement.** Its
+ * money is settled and a cancellation hands its goods to the company, so delivery is no longer
+ * this deal's business; but the press correcting the weight at «جاهزة» credits the draw back to
+ * the deal's own layers. `ready_at` is what says that door has shut.
+ *
  * Written as a query builder rather than through OrderService because it reads nothing but ids
  * and a status string, and returning order *codes* for a refusal message is the whole of it.
  */
@@ -39,14 +44,25 @@ final class DealOrdersInFlightQuery
             ->whereNull('oi.deleted_at')
             ->whereNull('o.deleted_at')
             ->whereNotIn('o.status', ['delivered', 'settled', 'cancelled'])
-            // **A draw the press has already bought is not waiting on anything.** It was paid
-            // for at سعر السادة the day it left the shelf, and a cancellation now returns the
-            // goods to the company rather than to this deal — so the parcel's fate cannot reach
-            // the layers here, and holding the deal open for it would be waiting for news that
-            // never arrives. Only the deal's *unsold* road still waits on delivery.
+            // **A draw the press has already bought is not waiting on anything — once the press
+            // can no longer change its mind about it.** It was paid for at سعر السادة the day it
+            // left the shelf, and a *cancellation* now returns the goods to the company rather
+            // than to this deal, so the parcel's fate cannot reach the layers here.
+            //
+            // **But a restatement can, and that is why `ready_at` is read.** The press correcting
+            // what the run actually used credits the whole draw back to the deal's *own* layers —
+            // `RestateOrderStockDeduction` deliberately does not hand them over, because it is
+            // undoing the draw rather than writing off a sale. That correction happens on the
+            // move to «جاهزة» and nowhere else, so an order with no `ready_at` still holds a
+            // road back onto this shelf. Closed in that window, the deal releases capital and
+            // profit for withdrawal and then has stock reappear on it.
+            //
+            // Reinstating a cancelled order does not re-open the window: `ready_at` is never
+            // cleared, and «جاهزة» is reached once.
             ->where(fn ($q) => $q
                 ->whereNull('b.printing_sale_price')
-                ->orWhereNull('oi.stock_purchased_at'))
+                ->orWhereNull('oi.stock_purchased_at')
+                ->orWhereNull('o.ready_at'))
             // A reversed draw is not holding anything: the goods went back to the shelf.
             ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
                 ->from('stock_movements as r')

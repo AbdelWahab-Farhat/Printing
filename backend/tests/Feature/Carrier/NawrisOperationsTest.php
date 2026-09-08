@@ -73,13 +73,15 @@ class NawrisOperationsTest extends TestCase
             'fulfilment_type' => FulfilmentType::Delivery,
             'items_total' => '100.00',
             'delivery_price' => '20.00',
-            'grand_total' => '120.00',
+            'grand_total' => '100.00',
             'paid_amount' => $paid,
         ]);
 
         $parcel = NawrisParcel::factory()->create([
             'amount_to_collect' => '100.00',
-            'delivery_price_deducted' => '20.00',
+            // Nothing is taken off the COD for delivery any more — the fee is in no total of
+            // ours to take off. See `BuildNawrisPayload::amountToCollect()`.
+            'delivery_price_deducted' => '0.00',
             'government' => '5',
             'area' => '204',
         ]);
@@ -105,7 +107,7 @@ class NawrisOperationsTest extends TestCase
         // Act
         app(CarrierService::class)->syncMoneyFor($order);
 
-        // Assert — 120 − 50 paid − 20 delivery.
+        // Assert — 100 − 50 paid.
         Http::assertSent(fn ($request) => (float) $request->data()['amount_to_be_collected'] === 50.0);
         $this->assertSame('50.00', (string) $parcel->fresh()->amount_to_collect);
     }

@@ -97,6 +97,30 @@ final class InvestorService
             ->first();
     }
 
+    /**
+     * Every account that belongs to an investor rather than to an employee.
+     *
+     * The set complement of {@see investorFor}, and it exists for one caller: a staff-wide
+     * announcement has to reach employees and **not** the people whose money is in the stock.
+     * Asked here rather than by querying `investors` from another context, because this Service
+     * is the door — and because «is this account an investor?» has exactly one correct answer
+     * and should have exactly one implementation of it.
+     *
+     * Active investors only, matching `investorFor` and `UserResource.is_investor`: a retired
+     * investor whose login was never removed is an ordinary account again.
+     *
+     * @return list<int>
+     */
+    public function linkedUserIds(): array
+    {
+        return Investor::query()
+            ->whereNotNull('user_id')
+            ->where('is_active', true)
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
     // ── deals ────────────────────────────────────────────────────────────────
 
     /**

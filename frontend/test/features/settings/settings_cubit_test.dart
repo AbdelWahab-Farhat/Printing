@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dayaa/core/push/push_service.dart';
 import 'package:dayaa/features/settings/presentation/viewmodel/settings_cubit.dart';
 import 'package:dayaa/features/settings/repositories/settings_repository.dart';
 import 'package:dayaa/features/settings/usecases/get_settings.dart';
@@ -12,6 +13,36 @@ import 'package:flutter_test/flutter_test.dart';
 /// afterwards says more than asserting that a method was called.
 ///
 /// Arrange - Act - Assert throughout.
+/// A fake push service, for the same reason as the fake store: what matters is *what it was
+/// told to do*, and counting that reads better than verifying a mock.
+///
+/// The registry and the stored preference are two different facts, and the Cubit is the only
+/// thing that keeps them in step outside sign-in and sign-out — so «turning the switch off
+/// released the device» is exactly the assertion worth making here.
+class _FakePushService implements PushService {
+  int registers = 0;
+  int releases = 0;
+
+  /// What the phone will claim when asked. False stands for a user who denied the OS prompt.
+  bool osAllows = true;
+
+  @override
+  Future<bool> register({bool askPermission = true}) async {
+    registers++;
+
+    return osAllows;
+  }
+
+  @override
+  Future<void> release() async => releases++;
+
+  @override
+  Future<bool> hasOsPermission() async => osAllows;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class _FakeSettingsRepository implements SettingsRepository {
   _FakeSettingsRepository({bool notificationsEnabled = true})
     : _notificationsEnabled = notificationsEnabled;
@@ -39,6 +70,7 @@ void main() {
     final cubit = SettingsCubit(
       getSettings: GetSettings(store),
       setNotificationsEnabled: SetNotificationsEnabled(store),
+      push: _FakePushService(),
     );
 
     // Assert
@@ -56,6 +88,7 @@ void main() {
     final cubit = SettingsCubit(
       getSettings: GetSettings(store),
       setNotificationsEnabled: SetNotificationsEnabled(store),
+      push: _FakePushService(),
     );
 
     // Assert
@@ -66,13 +99,18 @@ void main() {
 
   group('toggling', () {
     late _FakeSettingsRepository store;
+    late _FakePushService push;
 
     SettingsCubit build() => SettingsCubit(
       getSettings: GetSettings(store),
       setNotificationsEnabled: SetNotificationsEnabled(store),
+      push: push,
     );
 
-    setUp(() => store = _FakeSettingsRepository());
+    setUp(() {
+      store = _FakeSettingsRepository();
+      push = _FakePushService();
+    });
 
     blocTest<SettingsCubit, SettingsState>(
       'turning it off is written down, not just drawn',
@@ -110,6 +148,38 @@ void main() {
       verify: (_) {
         expect(store.notificationsEnabled, isTrue);
         expect(store.writes, 2);
+      },
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'turning it off releases the device rather than only remembering a false',
+      build: build,
+      // Act
+      act: (cubit) => cubit.toggleNotifications(isEnabled: false),
+      // Assert — a device left registered would go on being pushed to, and the switch would
+      // have changed nothing the user could observe.
+      verify: (_) {
+        expect(push.releases, 1);
+        expect(push.registers, 0);
+      },
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'a phone that refuses shows blocked, and does not flip the stored answer back to off',
+      build: build,
+      seed: () => const SettingsState(notificationsEnabled: false),
+      // Arrange — the user says yes to us and no to the OS prompt.
+      act: (cubit) async {
+        push.osAllows = false;
+        await cubit.toggleNotifications(isEnabled: true);
+      },
+      // Assert — the preference stays on, because the user's answer to *our* question is still
+      // yes and has to survive them granting permission later. The row shows blocked instead.
+      verify: (cubit) {
+        expect(cubit.state.notificationsEnabled, isTrue);
+        expect(cubit.state.osAllows, isFalse);
+        expect(cubit.state.isBlockedByOs, isTrue);
+        expect(store.notificationsEnabled, isTrue);
       },
     );
   });

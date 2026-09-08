@@ -93,6 +93,10 @@ reads «سبب التكلفة الإضافية: تغليف خاص ← نقل» w
 
 ```
 grand_total = items_total + design_fee + delivery_price + additional_cost − discount
+
+// Superseded 2026-09-08: `delivery_price` left this sum by the owner's instruction — the fee is
+// the courier's, billed to the customer at the door. See NAWRIS-INTEGRATION.md §5.2.
+grand_total = items_total + design_fee + additional_cost − discount
 ```
 
 The additional cost joins `beforeDiscount`, the base the discount is measured against — so an

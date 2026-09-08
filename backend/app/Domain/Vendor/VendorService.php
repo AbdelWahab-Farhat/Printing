@@ -8,7 +8,9 @@ use App\Domain\Customer\CustomerService;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Vendor\Actions\CreateVendor;
 use App\Domain\Vendor\Actions\RecordStockArrival;
+use App\Domain\Vendor\Actions\ReverseStockArrival;
 use App\Domain\Vendor\Actions\UpdateVendor;
+use App\Domain\Vendor\DTOs\ReverseStockArrivalData;
 use App\Domain\Vendor\DTOs\StockArrivalData;
 use App\Domain\Vendor\DTOs\VendorData;
 use App\Domain\Vendor\Models\StockArrival;
@@ -35,6 +37,7 @@ class VendorService
         private readonly UpdateVendor $updateVendor,
         private readonly VendorListQuery $vendorListQuery,
         private readonly RecordStockArrival $recordStockArrival,
+        private readonly ReverseStockArrival $reverseStockArrival,
         private readonly StockArrivalListQuery $stockArrivalListQuery,
     ) {}
 
@@ -87,7 +90,7 @@ class VendorService
     public function findStockArrival(int $id): StockArrival
     {
         return StockArrival::query()
-            ->with(['vendor', 'warehouse', 'receivedByUser', 'items.stockItem', 'items.stockMovement'])
+            ->with(['vendor', 'warehouse', 'receivedByUser', 'reversedByUser', 'items.stockItem', 'items.stockMovement'])
             ->findOrFail($id);
     }
 
@@ -98,5 +101,20 @@ class VendorService
     public function recordStockArrival(StockArrivalData $data): StockArrival
     {
         return ($this->recordStockArrival)($data);
+    }
+
+    /**
+     * Takes a shipment entered in error back off the shelf and marks the document saying so,
+     * atomically. See {@see ReverseStockArrival} for the four things it refuses and which single
+     * one of them a manager's grant may step past.
+     *
+     * Reachable from `PurchaseOrder` as well as from this module's own screens: undoing a receipt
+     * posted against an order is the same act on the same document, and the ordering paperwork
+     * that has to be rolled back alongside it is that module's own business — see
+     * `ReversePurchaseOrderReceipt`.
+     */
+    public function reverseStockArrival(StockArrival $arrival, ReverseStockArrivalData $data): StockArrival
+    {
+        return ($this->reverseStockArrival)($arrival, $data);
     }
 }

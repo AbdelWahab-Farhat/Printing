@@ -8,6 +8,7 @@ import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/models/orders_sort.dart';
 import 'package:dayaa/features/orders/models/production_cost_entry.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 
@@ -25,6 +26,8 @@ abstract interface class OrderRepository {
     String? search,
     List<String> statuses,
     List<String> paymentStatuses,
+    bool? isUrgent,
+    OrdersSort sort,
     int? customerId,
     String? from,
     String? to,
@@ -85,6 +88,7 @@ abstract interface class OrderRepository {
     String? additionalCost,
     AdditionalCostReason? additionalCostReason,
     String? additionalCostNote,
+    bool? isUrgent,
   });
 
   /// Undoes a cancellation made by mistake, and answers with the order as the server left it.

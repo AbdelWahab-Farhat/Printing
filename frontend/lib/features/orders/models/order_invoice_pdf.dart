@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:dayaa/core/utils/arabic_text.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:pdf/pdf.dart';
@@ -160,13 +161,13 @@ class OrderInvoicePdf {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               mainAxisAlignment: pw.MainAxisAlignment.center,
               children: [
-                pw.Text(
+                _text(
                   brand.name,
                   style: const pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: _brand),
                 ),
                 if (brand.tagline case final tagline?) ...[
                   pw.SizedBox(height: 3),
-                  pw.Text(tagline, style: const pw.TextStyle(fontSize: 10, color: _quiet)),
+                  _text(tagline, style: const pw.TextStyle(fontSize: 10, color: _quiet)),
                 ],
               ],
             ),
@@ -174,7 +175,7 @@ class OrderInvoicePdf {
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text(
+                _text(
                   'فاتورة',
                   style: const pw.TextStyle(fontSize: 17, fontWeight: pw.FontWeight.bold, color: _ink),
                 ),
@@ -199,8 +200,8 @@ class OrderInvoicePdf {
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.end,
         children: [
-          pw.Text('$label: ', style: const pw.TextStyle(fontSize: 9.5, color: _quiet)),
-          pw.Text(value, style: const pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
+          _text('$label: ', style: const pw.TextStyle(fontSize: 9.5, color: _quiet)),
+          _text(value, style: const pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
         ],
       ),
     );
@@ -260,7 +261,7 @@ class OrderInvoicePdf {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(
+          _text(
             title,
             style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: _brand),
           ),
@@ -271,8 +272,8 @@ class OrderInvoicePdf {
               child: pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('$label: ', style: const pw.TextStyle(fontSize: 9, color: _quiet)),
-                  pw.Expanded(child: pw.Text(value, style: const pw.TextStyle(fontSize: 9))),
+                  _text('$label: ', style: const pw.TextStyle(fontSize: 9, color: _quiet)),
+                  pw.Expanded(child: _text(value, style: const pw.TextStyle(fontSize: 9))),
                 ],
               ),
             ),
@@ -351,6 +352,16 @@ class OrderInvoicePdf {
   /// somebody describing the invoice would say out loud.
   static List<pw.Widget> _rtl(List<pw.Widget> cells) => cells.reversed.toList(growable: false);
 
+  /// Every word on the page goes through here, and it exists for one reason: [String.deshaped].
+  ///
+  /// **A [pw.Text] is never written directly in this file.** An order carrying Arabic that was
+  /// keyed already-shaped — «ﺷﺮﻛﺔ» rather than «شركة», the presentation-forms block — draws the
+  /// wrong letters in this font when it draws at all, and threw on order 1228 rather than
+  /// drawing anything. Folding at each of nineteen call sites is a rule somebody eventually
+  /// forgets; folding at the only door into the page is not.
+  static pw.Widget _text(String text, {pw.TextStyle? style, pw.TextAlign? textAlign}) =>
+      pw.Text(text.deshaped, style: style, textAlign: textAlign);
+
   static pw.Widget _cell(
     String text, {
     bool bold = false,
@@ -363,7 +374,7 @@ class OrderInvoicePdf {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
-          pw.Text(
+          _text(
             text,
             textAlign: align,
             style: pw.TextStyle(
@@ -374,7 +385,7 @@ class OrderInvoicePdf {
           ),
           if (note != null) ...[
             pw.SizedBox(height: 2),
-            pw.Text(
+            _text(
               note,
               textAlign: align,
               style: const pw.TextStyle(fontSize: 8, color: _danger, fontWeight: pw.FontWeight.bold),
@@ -424,12 +435,12 @@ class OrderInvoicePdf {
                 ),
                 child: pw.Row(
                   children: [
-                    pw.Text(
+                    _text(
                       'المتبقي',
                       style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
                     ),
                     pw.Spacer(),
-                    pw.Text(
+                    _text(
                       _amount(order.remainingAmount),
                       style: pw.TextStyle(
                         fontSize: 12,
@@ -444,7 +455,7 @@ class OrderInvoicePdf {
                 pw.SizedBox(height: 4),
                 pw.Align(
                   alignment: pw.Alignment.centerLeft,
-                  child: pw.Text(
+                  child: _text(
                     // The server's own Arabic — «مدفوعة جزئياً» — so a state added later still
                     // prints correctly.
                     order.paymentStatusLabel,
@@ -475,9 +486,9 @@ class OrderInvoicePdf {
       padding: const pw.EdgeInsets.only(bottom: 3),
       child: pw.Row(
         children: [
-          pw.Text(label, style: style),
+          _text(label, style: style),
           pw.Spacer(),
-          pw.Text(_amount(value), style: style.copyWith(color: colour ?? _ink)),
+          _text(_amount(value), style: style.copyWith(color: colour ?? _ink)),
         ],
       ),
     );
@@ -495,12 +506,12 @@ class OrderInvoicePdf {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(
+          _text(
             'ملاحظات',
             style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: _brand),
           ),
           pw.SizedBox(height: 4),
-          pw.Text(text, style: pw.TextStyle(fontSize: 9.5, color: tone)),
+          _text(text, style: pw.TextStyle(fontSize: 9.5, color: tone)),
         ],
       ),
     );
@@ -523,12 +534,12 @@ class OrderInvoicePdf {
         pw.SizedBox(height: 6),
         pw.Row(
           children: [
-            pw.Text(
+            _text(
               'صفحة ${context.pageNumber} من ${context.pagesCount}',
               style: const pw.TextStyle(fontSize: 8, color: _quiet),
             ),
             pw.Spacer(),
-            pw.Text(
+            _text(
               reach.isEmpty ? 'شكراً لتعاملكم معنا' : reach,
               style: const pw.TextStyle(fontSize: 8, color: _quiet),
             ),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Support;
 
 use App\Application\Api\V1\Resources\OrderResource;
+use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\TransitionField;
@@ -98,6 +99,12 @@ final class TransitionFields
         // before it reaches here, so an office pickup never sees these: nobody carries a parcel
         // the customer is coming to collect.
         if ($target === OrderStatus::OutForDelivery) {
+            // **The usual carrier, filled in rather than asked for.** Through the module's front
+            // door, never `ShippingCompany::query()` — the same seam {@see ChangeOrderStatus}
+            // reads the chosen company through. Null when nobody named one, and the box opens
+            // empty exactly as it always did.
+            $preferred = app(DeliveryService::class)->defaultShippingCompany();
+
             $fields[] = TransitionField::shippingCompany(
                 key: 'shipping_company_id',
                 label: 'شركة التوصيل',
@@ -105,6 +112,10 @@ final class TransitionFields
                 // can chase. This is the question the return chain is answered from later.
                 required: true,
                 hint: 'تُسجَّل على الطلبية، ويبقى اسمها فيها ولو حُذفت الشركة لاحقاً',
+                // The id crosses back; the name is what the button says. Both, or neither: an
+                // id the app cannot name is an answer nobody on the screen agreed to.
+                value: $preferred !== null ? (string) $preferred->getKey() : null,
+                valueLabel: $preferred?->name,
             );
 
             $fields[] = TransitionField::text(

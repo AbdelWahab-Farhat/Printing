@@ -233,6 +233,26 @@ class ReceivePurchaseOrderArrival {
   }
 }
 
+/// Undoes a receipt posted against an order in error.
+///
+/// **The reason is trimmed and nothing else is done to it.** Every other write in this file
+/// normalises digits, because the server's numeric rules are ASCII-only — this one carries free
+/// Arabic text, and «سُجّلت ٥٠٠ بدل ٥٠» is a sentence about the mistake, not a figure anybody
+/// computes with. Converting its digits would rewrite what somebody typed into the record that
+/// exists to say what they meant.
+class ReverseReceipt {
+  const ReverseReceipt(this._repository);
+
+  final PurchaseOrderRepository _repository;
+
+  Future<Either<Failure, PurchaseOrder>> call(
+    int purchaseOrderId, {
+    required String reason,
+  }) {
+    return _repository.reverseReceipt(purchaseOrderId, reason: reason.trim());
+  }
+}
+
 /// Arabic-Indic digits to ASCII, and a comma to a decimal point.
 ///
 /// `٢٥` is what a Libyan keyboard produces and every numeric rule on the server is ASCII-only.

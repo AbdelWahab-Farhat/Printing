@@ -140,6 +140,26 @@ class DeliveryService
         return ShippingCompany::query()->findOrFail($id);
     }
 
+    /**
+     * The carrier a dispatch form opens on, or null when nobody named one.
+     *
+     * **Asked of the list rather than guessed from it.** The app fills the field in by itself
+     * when the business deals with exactly one company and gives the choice back the moment
+     * there is a second — which is most shops, and which is why «من سيأخذها» was answered by
+     * hand thirty times a day for a company that takes nine parcels in ten.
+     *
+     * `is_active` as well as the flag, though the actions do not let the two disagree: the
+     * picker refuses a retired carrier, so a form opening on one would be a suggestion the next
+     * screen contradicts.
+     */
+    public function defaultShippingCompany(): ?ShippingCompany
+    {
+        return ShippingCompany::query()
+            ->where('is_default', true)
+            ->where('is_active', true)
+            ->first();
+    }
+
     public function createShippingCompany(ShippingCompanyData $data): ShippingCompany
     {
         return ($this->createShippingCompany)($data);

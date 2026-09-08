@@ -67,6 +67,13 @@ abstract class NewOrder with _$NewOrder {
     @JsonKey(name: 'recipient_phone', includeIfNull: false) String? recipientPhone,
     @JsonKey(name: 'address_details', includeIfNull: false) String? addressDetails,
     @JsonKey(includeIfNull: false) String? notes,
+
+    /// «مستعجلة» — said at the counter, when the order is agreed.
+    ///
+    /// Omitted from the body when absent rather than sent as false, so this model follows the
+    /// same rule the server does: a key that never arrived means «لم يُذكر». On the way in the
+    /// server reads that as «ليست مستعجلة»; on an edit it means «اتركها كما هي».
+    @JsonKey(name: 'is_urgent', includeIfNull: false) bool? isUrgent,
   }) = _NewOrder;
 
   factory NewOrder.fromJson(Map<String, dynamic> json) => _$NewOrderFromJson(json);

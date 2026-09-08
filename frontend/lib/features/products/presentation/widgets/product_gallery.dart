@@ -194,18 +194,36 @@ class _Dots extends StatelessWidget {
 /// **Always exactly [side] square, before the photograph arrives and if it never does.** A
 /// catalogue that reflows as each row's picture lands is unreadable while it settles.
 class ProductThumbnail extends StatelessWidget {
-  const ProductThumbnail({required this.image, required this.side, this.radius, super.key});
+  const ProductThumbnail({
+    required this.image,
+    required this.side,
+    this.imageUrl,
+    this.radius,
+    super.key,
+  });
 
   /// Null draws the placeholder square — a product whose photos have not been loaded with it.
   final ProductImage? image;
 
+  /// A picture to draw **instead of** the product's own, when the caller has a better answer to
+  /// "what is this line?" than the catalogue does.
+  ///
+  /// The order screen passes the artwork here: what tells one printed order from another is what
+  /// is being printed on it, not the same white bag every line would otherwise show — see
+  /// `Order.artwork`. Null everywhere else, and the product photograph is drawn as it always was.
+  final String? imageUrl;
+
   final double side;
   final double? radius;
+
+  /// What this square will actually draw. [imageUrl] wins; the product's photograph is the
+  /// fallback, and null draws the placeholder.
+  String? get url => imageUrl ?? image?.url;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final url = image?.url;
+    final url = this.url;
 
     Widget panel(IconData glyph) => ColoredBox(
       color: scheme.surfaceContainerHigh,

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dayaa/features/orders/models/orders_sort.dart';
 import 'package:dayaa/features/orders/repositories/order_repository_impl.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -98,6 +99,72 @@ void main() {
       contains('listFormat: ListFormat.multiCompatible'),
       reason: 'without it every repeatable filter silently narrows to its last value',
     );
+  });
+
+  test('the sort is absent while the list is in its default order', () async {
+    // Arrange — the common request keeps the URL it has always had, so a server that predates
+    // the parameter answers it exactly the way it always did.
+    // Act
+    await repository.orders();
+
+    // Assert
+    expect(capture.uri!.query, isNot(contains('sort')));
+  });
+
+  test('«الأقدم أولاً» is spelled out for the server', () async {
+    // Arrange - Act
+    await repository.orders(sort: OrdersSort.oldest);
+
+    // Assert — the enum's own wire value, never a direction on a column the app has no
+    // business naming.
+    expect(capture.uri!.queryParameters['sort'], 'oldest');
+  });
+
+  test('urgency travels as a digit, and only when it was asked', () async {
+    // Arrange — `true`/`false` reach PHP as the words, which it reads too; the digits are what
+    // this API documents and what every other filter here sends.
+    // Act
+    await repository.orders(isUrgent: true);
+
+    // Assert
+    expect(capture.uri!.queryParameters['urgent'], '1');
+  });
+
+  test('«غير المستعجلة» is a question, not a missing filter', () async {
+    // Arrange — `urgent=0` narrows to the calm ones. Nothing in the app asks it yet; the
+    // repository answers it because the two are different requests and null is the third.
+    // Act
+    await repository.orders(isUrgent: false);
+
+    // Assert
+    expect(capture.uri!.queryParameters['urgent'], '0');
+  });
+
+  test('no urgency filter sends no key at all', () async {
+    // Arrange - Act
+    await repository.orders();
+
+    // Assert — a `urgent=` with nothing after it would be read as false by PHP, which is a
+    // filter nobody asked for.
+    expect(capture.uri!.query, isNot(contains('urgent')));
+  });
+
+  test('all four axes travel together', () async {
+    // Arrange — «الجاهزة غير المدفوعة المستعجلة، الأقدم أولاً» is one question, and every part
+    // of it has to survive the same request.
+    // Act
+    await repository.orders(
+      statuses: const ['ready'],
+      paymentStatuses: const ['unpaid'],
+      isUrgent: true,
+      sort: OrdersSort.oldest,
+    );
+
+    // Assert
+    expect(capture.uri!.queryParametersAll['status[]'], ['ready']);
+    expect(capture.uri!.queryParametersAll['payment_status[]'], ['unpaid']);
+    expect(capture.uri!.queryParameters['urgent'], '1');
+    expect(capture.uri!.queryParameters['sort'], 'oldest');
   });
 
   test('both axes travel together', () async {

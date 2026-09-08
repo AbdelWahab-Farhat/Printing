@@ -41,6 +41,20 @@ abstract class StockArrival with _$StockArrival {
     @JsonKey(name: 'received_by') required int receivedBy,
     @JsonKey(name: 'received_by_user') ArrivalRef? receivedByUser,
 
+    /// When this shipment was undone, and why — null on the ordinary arrival that stands.
+    ///
+    /// **The document is kept and annotated, never deleted.** A receipt entered in error takes
+    /// its stock back off the shelf, but the paper it was posted on is real history: a shipment
+    /// somebody remembers booking in must not look like it never happened. So the screens keep
+    /// the row and mark it — see [isReversed].
+    @JsonKey(name: 'reversed_at') DateTime? reversedAt,
+    @JsonKey(name: 'reversal_reason') String? reversalReason,
+
+    /// Who undid it, stamped by the server from the authenticated user — the pair
+    /// [receivedBy] / [receivedByUser] already follows.
+    @JsonKey(name: 'reversed_by') int? reversedBy,
+    @JsonKey(name: 'reversed_by_user') ArrivalRef? reversedByUser,
+
     @Default(<StockArrivalItem>[]) List<StockArrivalItem> items,
 
     @JsonKey(name: 'created_at') DateTime? createdAt,
@@ -59,6 +73,12 @@ abstract class StockArrival with _$StockArrival {
   /// How many lines the document has — the count worth showing on a row, since the quantities
   /// are in different units and cannot be added together.
   int get lineCount => items.length;
+
+  /// Whether this shipment was undone.
+  ///
+  /// Named so no screen tests the timestamp itself: «was it undone» and «when» are two
+  /// questions, and only one of them belongs in an `if`.
+  bool get isReversed => reversedAt != null;
 }
 
 /// One line: how much of one stock item this shipment brought, and the ledger row it wrote.

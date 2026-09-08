@@ -6,6 +6,7 @@ namespace App\Domain\Investor\Queries;
 
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Investor\Support\Money;
+use App\Domain\Order\Enums\OrderStatus;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,8 +26,12 @@ use Illuminate\Support\Facades\DB;
  *
  * A reversed movement is excluded whole: `CreditBackStockBatches` returns a draw in its entirety
  * and there is no partial credit anywhere in Inventory, so «the movement a live reversal points
- * at» is exactly the set to walk past. Internal transfers are excluded too — the source draw is
- * not a sale, and its stock is sitting in the destination layer carrying the same deal.
+ * at» is exactly the set to walk past — **with one exception, and it is the whole of سعر السادة**:
+ * a cancellation does not credit a priced layer back to the deal at all, it hands those goods to
+ * the company. They left and stayed left, so they are counted sold.
+ *
+ * Internal transfers are excluded too — the source draw is not a sale, and its stock is sitting
+ * in the destination layer carrying the same deal.
  */
 final class DealStockPosition
 {
@@ -68,7 +73,23 @@ final class DealStockPosition
             ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
                 ->from('stock_movements as r')
                 ->whereColumn('r.reverses_movement_id', 'm.id')
-                ->whereNull('r.deleted_at'))
+                ->whereNull('r.deleted_at')
+                // **Except the draw a cancellation never gave back.** A printed line's priced
+                // layers are not credited to the deal when the customer refuses the parcel —
+                // `ReverseOrderStockDeduction` hands them to the company at what the company
+                // paid, because the investor was paid for them the day they left the shelf. Those
+                // kilos are gone from his layers for good, so walking past the draw would drop
+                // them out of `quantity_sold` *and* out of the `quantity_received` derived from
+                // it: a 500 kg shipment reading «وصل ٢٠٠ · بِيع ٠». They were sold — to the
+                // company. A restatement, which does credit everything back, is excluded as
+                // before: its reversal does not belong to a cancelled order.
+                ->where(fn ($credited) => $credited
+                    ->whereNull('b.printing_sale_price')
+                    ->orWhereNotExists(fn ($cancelled) => $cancelled->select(DB::raw(1))
+                        ->from('orders as o')
+                        ->whereColumn('o.id', 'r.reference_id')
+                        ->where('o.status', OrderStatus::Cancelled->value)
+                        ->whereNull('o.deleted_at'))))
             ->selectRaw('b.stock_item_id, m.movement_type, m.adjustment_reason, m.from_warehouse_id, SUM(c.quantity) as qty, SUM(c.total_cost) as cost')
             ->groupBy('b.stock_item_id', 'm.movement_type', 'm.adjustment_reason', 'm.from_warehouse_id')
             ->get();

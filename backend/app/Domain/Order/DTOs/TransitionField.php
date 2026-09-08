@@ -34,6 +34,16 @@ final class TransitionField
         public readonly ?float $max = null,
         public readonly ?string $value = null,
         /**
+         * What to write on the box when [$value] is an id rather than something a person reads.
+         *
+         * **Only the types whose list the app owns set it.** «شركة التوصيل» travels as
+         * `shipping_companies.id`, so a form opening on the usual carrier would open on a
+         * number nobody recognises — and making the app fetch the list to learn one name is a
+         * request over a mobile connection to answer a question the server had already answered.
+         * An answer nobody can read is an answer nobody agreed to.
+         */
+        public readonly ?string $valueLabel = null,
+        /**
          * The choices, for the one type that carries its own — see
          * {@see TransitionFieldType::PaymentMethod}.
          *
@@ -208,13 +218,18 @@ final class TransitionField
     /**
      * One of the carriers the business deals with.
      *
-     * No options travel with it — see {@see TransitionFieldType::ShippingCompany}.
+     * No options travel with it — see {@see TransitionFieldType::ShippingCompany} — but the one
+     * the business named as usual does, in [$value] and [$valueLabel]: the id to send back and
+     * the name to write on the button. An answer, not a placeholder, and changeable with the
+     * same tap that would have chosen it in the first place.
      */
     public static function shippingCompany(
         string $key,
         string $label,
         bool $required = false,
         ?string $hint = null,
+        ?string $value = null,
+        ?string $valueLabel = null,
     ): self {
         return new self(
             key: $key,
@@ -222,6 +237,8 @@ final class TransitionField
             label: $label,
             required: $required,
             hint: $hint,
+            value: $value,
+            valueLabel: $valueLabel,
         );
     }
 
@@ -268,6 +285,9 @@ final class TransitionField
             // What the box opens holding, and null for almost every field. An app too old to
             // know the key simply opens empty, which is what it did before the key existed.
             'value' => $this->value,
+            // What to write on the box when the value above is an id. Null for every field
+            // whose value is already the thing a person reads.
+            'value_label' => $this->valueLabel,
             // Empty for every type that fetches its own list. An app that reads it blindly draws
             // no picker for those, which is exactly what it drew before the key existed.
             'options' => $this->options,

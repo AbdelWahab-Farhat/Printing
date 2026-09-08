@@ -3,7 +3,7 @@ description: "دعاية Dayaa — إدارة مطبعة أكياس: العمل�
 publish_to: "none"
 
 # major.minor.patch+build — the build number is what the stores order releases by.
-version: 1.1.0+2
+version: 1.2.0+2
 
 environment:
   sdk: ^3.12.0
@@ -45,6 +45,20 @@ dependencies:
   google_fonts: ^7.0.0 # the generated theme's util.dart needs it
   cached_network_image: ^3.4.1
 
+
+  # ── push notifications ───────────────────────────────────────────────────────
+  # FCM HTTP v1, against the `daya-bdf70` Firebase project. `firebase_core` is not optional
+  # padding around `firebase_messaging` — it is what reads google-services.json /
+  # GoogleService-Info.plist and hands the messaging plugin a configured app; without it the
+  # first `getToken()` throws rather than returning null.
+  #
+  # **No `flutter_local_notifications`.** It buys exactly one thing — a banner while the app is
+  # already open on Android — and costs an icon asset, a second channel definition to keep in
+  # step with the server's `dayaa_default`, and a second tap-handling path that must agree with
+  # `onMessageOpenedApp`. The badge already updates on `onMessage`; a banner over a screen the
+  # user is looking at is the weakest case for all that. Add it when someone asks for it.
+  firebase_core: ^4.1.1
+  firebase_messaging: ^16.0.2
 
   # ── misc ─────────────────────────────────────────────────────────────────────
   flutter_dotenv: ^5.2.1

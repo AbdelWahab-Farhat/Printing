@@ -43,7 +43,13 @@ mixin _$TransitionField {
 /// Leaving «نواقص» asks how much of the shortage arrived, and nearly always the answer is
 /// all of it: the server fills that in, and agreeing costs a tap. Null on almost every
 /// field, because a box that suggests a wrong number is worse than an empty one.
- String? get value;
+ String? get value;/// What to write on the box when [value] is an id rather than something a person reads.
+///
+/// «شركة التوصيل» travels as an id, so a form opening on the usual carrier would open on a
+/// number nobody recognises. The name comes down beside it and the button says «النورس»
+/// without this app fetching the list to learn one word. Both halves or neither: an answer
+/// nobody can read is an answer nobody agreed to.
+@JsonKey(name: 'value_label') String? get valueLabel;
 /// Create a copy of TransitionField
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -56,16 +62,16 @@ $TransitionFieldCopyWith<TransitionField> get copyWith => _$TransitionFieldCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionField&&(identical(other.key, key) || other.key == key)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.multiline, multiline) || other.multiline == multiline)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&const DeepCollectionEquality().equals(other.options, options)&&(identical(other.requiredIf, requiredIf) || other.requiredIf == requiredIf)&&const DeepCollectionEquality().equals(other.extensions, extensions)&&(identical(other.maxKilobytes, maxKilobytes) || other.maxKilobytes == maxKilobytes)&&(identical(other.requiredWith, requiredWith) || other.requiredWith == requiredWith)&&(identical(other.value, value) || other.value == value));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionField&&(identical(other.key, key) || other.key == key)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.multiline, multiline) || other.multiline == multiline)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&const DeepCollectionEquality().equals(other.options, options)&&(identical(other.requiredIf, requiredIf) || other.requiredIf == requiredIf)&&const DeepCollectionEquality().equals(other.extensions, extensions)&&(identical(other.maxKilobytes, maxKilobytes) || other.maxKilobytes == maxKilobytes)&&(identical(other.requiredWith, requiredWith) || other.requiredWith == requiredWith)&&(identical(other.value, value) || other.value == value)&&(identical(other.valueLabel, valueLabel) || other.valueLabel == valueLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,key,type,label,isRequired,multiple,multiline,hint,min,max,const DeepCollectionEquality().hash(options),requiredIf,const DeepCollectionEquality().hash(extensions),maxKilobytes,requiredWith,value);
+int get hashCode => Object.hash(runtimeType,key,type,label,isRequired,multiple,multiline,hint,min,max,const DeepCollectionEquality().hash(options),requiredIf,const DeepCollectionEquality().hash(extensions),maxKilobytes,requiredWith,value,valueLabel);
 
 @override
 String toString() {
-  return 'TransitionField(key: $key, type: $type, label: $label, isRequired: $isRequired, multiple: $multiple, multiline: $multiline, hint: $hint, min: $min, max: $max, options: $options, requiredIf: $requiredIf, extensions: $extensions, maxKilobytes: $maxKilobytes, requiredWith: $requiredWith, value: $value)';
+  return 'TransitionField(key: $key, type: $type, label: $label, isRequired: $isRequired, multiple: $multiple, multiline: $multiline, hint: $hint, min: $min, max: $max, options: $options, requiredIf: $requiredIf, extensions: $extensions, maxKilobytes: $maxKilobytes, requiredWith: $requiredWith, value: $value, valueLabel: $valueLabel)';
 }
 
 
@@ -76,7 +82,7 @@ abstract mixin class $TransitionFieldCopyWith<$Res>  {
   factory $TransitionFieldCopyWith(TransitionField value, $Res Function(TransitionField) _then) = _$TransitionFieldCopyWithImpl;
 @useResult
 $Res call({
- String key,@JsonKey(unknownEnumValue: TransitionFieldType.unknown) TransitionFieldType type, String label,@JsonKey(name: 'required') bool isRequired, bool multiple, bool multiline, String? hint, num? min, num? max, List<TransitionFieldOption> options,@JsonKey(name: 'required_if') TransitionFieldCondition? requiredIf, List<String> extensions,@JsonKey(name: 'max_kilobytes') int? maxKilobytes,@JsonKey(name: 'required_with') String? requiredWith, String? value
+ String key,@JsonKey(unknownEnumValue: TransitionFieldType.unknown) TransitionFieldType type, String label,@JsonKey(name: 'required') bool isRequired, bool multiple, bool multiline, String? hint, num? min, num? max, List<TransitionFieldOption> options,@JsonKey(name: 'required_if') TransitionFieldCondition? requiredIf, List<String> extensions,@JsonKey(name: 'max_kilobytes') int? maxKilobytes,@JsonKey(name: 'required_with') String? requiredWith, String? value,@JsonKey(name: 'value_label') String? valueLabel
 });
 
 
@@ -93,7 +99,7 @@ class _$TransitionFieldCopyWithImpl<$Res>
 
 /// Create a copy of TransitionField
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? key = null,Object? type = null,Object? label = null,Object? isRequired = null,Object? multiple = null,Object? multiline = null,Object? hint = freezed,Object? min = freezed,Object? max = freezed,Object? options = null,Object? requiredIf = freezed,Object? extensions = null,Object? maxKilobytes = freezed,Object? requiredWith = freezed,Object? value = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? key = null,Object? type = null,Object? label = null,Object? isRequired = null,Object? multiple = null,Object? multiline = null,Object? hint = freezed,Object? min = freezed,Object? max = freezed,Object? options = null,Object? requiredIf = freezed,Object? extensions = null,Object? maxKilobytes = freezed,Object? requiredWith = freezed,Object? value = freezed,Object? valueLabel = freezed,}) {
   return _then(_self.copyWith(
 key: null == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
@@ -110,6 +116,7 @@ as TransitionFieldCondition?,extensions: null == extensions ? _self.extensions :
 as List<String>,maxKilobytes: freezed == maxKilobytes ? _self.maxKilobytes : maxKilobytes // ignore: cast_nullable_to_non_nullable
 as int?,requiredWith: freezed == requiredWith ? _self.requiredWith : requiredWith // ignore: cast_nullable_to_non_nullable
 as String?,value: freezed == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String?,valueLabel: freezed == valueLabel ? _self.valueLabel : valueLabel // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -207,10 +214,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max,  List<TransitionFieldOption> options, @JsonKey(name: 'required_if')  TransitionFieldCondition? requiredIf,  List<String> extensions, @JsonKey(name: 'max_kilobytes')  int? maxKilobytes, @JsonKey(name: 'required_with')  String? requiredWith,  String? value)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max,  List<TransitionFieldOption> options, @JsonKey(name: 'required_if')  TransitionFieldCondition? requiredIf,  List<String> extensions, @JsonKey(name: 'max_kilobytes')  int? maxKilobytes, @JsonKey(name: 'required_with')  String? requiredWith,  String? value, @JsonKey(name: 'value_label')  String? valueLabel)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TransitionField() when $default != null:
-return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max,_that.options,_that.requiredIf,_that.extensions,_that.maxKilobytes,_that.requiredWith,_that.value);case _:
+return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max,_that.options,_that.requiredIf,_that.extensions,_that.maxKilobytes,_that.requiredWith,_that.value,_that.valueLabel);case _:
   return orElse();
 
 }
@@ -228,10 +235,10 @@ return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max,  List<TransitionFieldOption> options, @JsonKey(name: 'required_if')  TransitionFieldCondition? requiredIf,  List<String> extensions, @JsonKey(name: 'max_kilobytes')  int? maxKilobytes, @JsonKey(name: 'required_with')  String? requiredWith,  String? value)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max,  List<TransitionFieldOption> options, @JsonKey(name: 'required_if')  TransitionFieldCondition? requiredIf,  List<String> extensions, @JsonKey(name: 'max_kilobytes')  int? maxKilobytes, @JsonKey(name: 'required_with')  String? requiredWith,  String? value, @JsonKey(name: 'value_label')  String? valueLabel)  $default,) {final _that = this;
 switch (_that) {
 case _TransitionField():
-return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max,_that.options,_that.requiredIf,_that.extensions,_that.maxKilobytes,_that.requiredWith,_that.value);case _:
+return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max,_that.options,_that.requiredIf,_that.extensions,_that.maxKilobytes,_that.requiredWith,_that.value,_that.valueLabel);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -248,10 +255,10 @@ return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max,  List<TransitionFieldOption> options, @JsonKey(name: 'required_if')  TransitionFieldCondition? requiredIf,  List<String> extensions, @JsonKey(name: 'max_kilobytes')  int? maxKilobytes, @JsonKey(name: 'required_with')  String? requiredWith,  String? value)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown)  TransitionFieldType type,  String label, @JsonKey(name: 'required')  bool isRequired,  bool multiple,  bool multiline,  String? hint,  num? min,  num? max,  List<TransitionFieldOption> options, @JsonKey(name: 'required_if')  TransitionFieldCondition? requiredIf,  List<String> extensions, @JsonKey(name: 'max_kilobytes')  int? maxKilobytes, @JsonKey(name: 'required_with')  String? requiredWith,  String? value, @JsonKey(name: 'value_label')  String? valueLabel)?  $default,) {final _that = this;
 switch (_that) {
 case _TransitionField() when $default != null:
-return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max,_that.options,_that.requiredIf,_that.extensions,_that.maxKilobytes,_that.requiredWith,_that.value);case _:
+return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple,_that.multiline,_that.hint,_that.min,_that.max,_that.options,_that.requiredIf,_that.extensions,_that.maxKilobytes,_that.requiredWith,_that.value,_that.valueLabel);case _:
   return null;
 
 }
@@ -263,7 +270,7 @@ return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple
 @JsonSerializable()
 
 class _TransitionField extends TransitionField {
-  const _TransitionField({required this.key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown) required this.type, required this.label, @JsonKey(name: 'required') this.isRequired = false, this.multiple = false, this.multiline = false, this.hint, this.min, this.max, final  List<TransitionFieldOption> options = const <TransitionFieldOption>[], @JsonKey(name: 'required_if') this.requiredIf, final  List<String> extensions = const <String>[], @JsonKey(name: 'max_kilobytes') this.maxKilobytes, @JsonKey(name: 'required_with') this.requiredWith, this.value}): _options = options,_extensions = extensions,super._();
+  const _TransitionField({required this.key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown) required this.type, required this.label, @JsonKey(name: 'required') this.isRequired = false, this.multiple = false, this.multiline = false, this.hint, this.min, this.max, final  List<TransitionFieldOption> options = const <TransitionFieldOption>[], @JsonKey(name: 'required_if') this.requiredIf, final  List<String> extensions = const <String>[], @JsonKey(name: 'max_kilobytes') this.maxKilobytes, @JsonKey(name: 'required_with') this.requiredWith, this.value, @JsonKey(name: 'value_label') this.valueLabel}): _options = options,_extensions = extensions,super._();
   factory _TransitionField.fromJson(Map<String, dynamic> json) => _$TransitionFieldFromJson(json);
 
 /// What the value is sent back as, inside `fields`.
@@ -325,6 +332,13 @@ class _TransitionField extends TransitionField {
 /// all of it: the server fills that in, and agreeing costs a tap. Null on almost every
 /// field, because a box that suggests a wrong number is worse than an empty one.
 @override final  String? value;
+/// What to write on the box when [value] is an id rather than something a person reads.
+///
+/// «شركة التوصيل» travels as an id, so a form opening on the usual carrier would open on a
+/// number nobody recognises. The name comes down beside it and the button says «النورس»
+/// without this app fetching the list to learn one word. Both halves or neither: an answer
+/// nobody can read is an answer nobody agreed to.
+@override@JsonKey(name: 'value_label') final  String? valueLabel;
 
 /// Create a copy of TransitionField
 /// with the given fields replaced by the non-null parameter values.
@@ -339,16 +353,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionField&&(identical(other.key, key) || other.key == key)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.multiline, multiline) || other.multiline == multiline)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&const DeepCollectionEquality().equals(other._options, _options)&&(identical(other.requiredIf, requiredIf) || other.requiredIf == requiredIf)&&const DeepCollectionEquality().equals(other._extensions, _extensions)&&(identical(other.maxKilobytes, maxKilobytes) || other.maxKilobytes == maxKilobytes)&&(identical(other.requiredWith, requiredWith) || other.requiredWith == requiredWith)&&(identical(other.value, value) || other.value == value));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionField&&(identical(other.key, key) || other.key == key)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.multiline, multiline) || other.multiline == multiline)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&const DeepCollectionEquality().equals(other._options, _options)&&(identical(other.requiredIf, requiredIf) || other.requiredIf == requiredIf)&&const DeepCollectionEquality().equals(other._extensions, _extensions)&&(identical(other.maxKilobytes, maxKilobytes) || other.maxKilobytes == maxKilobytes)&&(identical(other.requiredWith, requiredWith) || other.requiredWith == requiredWith)&&(identical(other.value, value) || other.value == value)&&(identical(other.valueLabel, valueLabel) || other.valueLabel == valueLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,key,type,label,isRequired,multiple,multiline,hint,min,max,const DeepCollectionEquality().hash(_options),requiredIf,const DeepCollectionEquality().hash(_extensions),maxKilobytes,requiredWith,value);
+int get hashCode => Object.hash(runtimeType,key,type,label,isRequired,multiple,multiline,hint,min,max,const DeepCollectionEquality().hash(_options),requiredIf,const DeepCollectionEquality().hash(_extensions),maxKilobytes,requiredWith,value,valueLabel);
 
 @override
 String toString() {
-  return 'TransitionField(key: $key, type: $type, label: $label, isRequired: $isRequired, multiple: $multiple, multiline: $multiline, hint: $hint, min: $min, max: $max, options: $options, requiredIf: $requiredIf, extensions: $extensions, maxKilobytes: $maxKilobytes, requiredWith: $requiredWith, value: $value)';
+  return 'TransitionField(key: $key, type: $type, label: $label, isRequired: $isRequired, multiple: $multiple, multiline: $multiline, hint: $hint, min: $min, max: $max, options: $options, requiredIf: $requiredIf, extensions: $extensions, maxKilobytes: $maxKilobytes, requiredWith: $requiredWith, value: $value, valueLabel: $valueLabel)';
 }
 
 
@@ -359,7 +373,7 @@ abstract mixin class _$TransitionFieldCopyWith<$Res> implements $TransitionField
   factory _$TransitionFieldCopyWith(_TransitionField value, $Res Function(_TransitionField) _then) = __$TransitionFieldCopyWithImpl;
 @override @useResult
 $Res call({
- String key,@JsonKey(unknownEnumValue: TransitionFieldType.unknown) TransitionFieldType type, String label,@JsonKey(name: 'required') bool isRequired, bool multiple, bool multiline, String? hint, num? min, num? max, List<TransitionFieldOption> options,@JsonKey(name: 'required_if') TransitionFieldCondition? requiredIf, List<String> extensions,@JsonKey(name: 'max_kilobytes') int? maxKilobytes,@JsonKey(name: 'required_with') String? requiredWith, String? value
+ String key,@JsonKey(unknownEnumValue: TransitionFieldType.unknown) TransitionFieldType type, String label,@JsonKey(name: 'required') bool isRequired, bool multiple, bool multiline, String? hint, num? min, num? max, List<TransitionFieldOption> options,@JsonKey(name: 'required_if') TransitionFieldCondition? requiredIf, List<String> extensions,@JsonKey(name: 'max_kilobytes') int? maxKilobytes,@JsonKey(name: 'required_with') String? requiredWith, String? value,@JsonKey(name: 'value_label') String? valueLabel
 });
 
 
@@ -376,7 +390,7 @@ class __$TransitionFieldCopyWithImpl<$Res>
 
 /// Create a copy of TransitionField
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? key = null,Object? type = null,Object? label = null,Object? isRequired = null,Object? multiple = null,Object? multiline = null,Object? hint = freezed,Object? min = freezed,Object? max = freezed,Object? options = null,Object? requiredIf = freezed,Object? extensions = null,Object? maxKilobytes = freezed,Object? requiredWith = freezed,Object? value = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? key = null,Object? type = null,Object? label = null,Object? isRequired = null,Object? multiple = null,Object? multiline = null,Object? hint = freezed,Object? min = freezed,Object? max = freezed,Object? options = null,Object? requiredIf = freezed,Object? extensions = null,Object? maxKilobytes = freezed,Object? requiredWith = freezed,Object? value = freezed,Object? valueLabel = freezed,}) {
   return _then(_TransitionField(
 key: null == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
@@ -393,6 +407,7 @@ as TransitionFieldCondition?,extensions: null == extensions ? _self._extensions 
 as List<String>,maxKilobytes: freezed == maxKilobytes ? _self.maxKilobytes : maxKilobytes // ignore: cast_nullable_to_non_nullable
 as int?,requiredWith: freezed == requiredWith ? _self.requiredWith : requiredWith // ignore: cast_nullable_to_non_nullable
 as String?,value: freezed == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String?,valueLabel: freezed == valueLabel ? _self.valueLabel : valueLabel // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

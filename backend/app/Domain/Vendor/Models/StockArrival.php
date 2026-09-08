@@ -9,6 +9,7 @@ use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Vendor\Actions\RecordStockArrival;
+use App\Domain\Vendor\Actions\ReverseStockArrival;
 use Database\Factories\StockArrivalFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -24,6 +25,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * **Nothing updates or deletes one, and there is no route that does.** Editing it after the
  * balances it produced have already moved would let a warehouse's count and its own paperwork
  * disagree — the same reason `StockMovement` itself is append-only.
+ *
+ * **Except that it may be marked as having been entered in error.** `reversed_at`,
+ * `reversed_by` and `reversal_reason` are stamped on by {@see ReverseStockArrival} within the
+ * window that action guards, and what actually leaves the shelf is a further `arrival_reversal`
+ * movement per line — the document is annotated, never rewritten and never removed. A receipt
+ * that was reversed is re-entered as a *new* arrival; nothing un-reverses this one.
  *
  * `vendor_id`, `warehouse_id` and `received_by` are deliberately absent from the fillable list.
  * They come from the route and the authenticated user, never from the payload, the same rule
@@ -42,6 +49,23 @@ class StockArrival extends Model implements HasAuditTrail
 {
     /** @use HasFactory<StockArrivalFactory> */
     use Auditable, HasFactory, SoftDeletes;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            // Null on every receipt anybody got right, which is nearly all of them.
+            'reversed_at' => 'datetime',
+        ];
+    }
+
+    /** Whether this receipt has already been undone. */
+    public function isReversed(): bool
+    {
+        return $this->reversed_at !== null;
+    }
 
     /**
      * @return BelongsTo<Vendor, $this>
@@ -73,6 +97,17 @@ class StockArrival extends Model implements HasAuditTrail
     public function receivedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'received_by');
+    }
+
+    /**
+     * Who undid it, on the receipt that was entered in error. Read-only, for rendering — see the
+     * note on {@see self::warehouse()}.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function reversedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reversed_by');
     }
 
     /**
