@@ -6,6 +6,8 @@ namespace App\Domain\Reporting;
 
 use App\Domain\Reporting\Queries\ProfitAndLossFilters;
 use App\Domain\Reporting\Queries\ProfitAndLossSummaryQuery;
+use App\Domain\Reporting\Queries\SalesStatisticsFilters;
+use App\Domain\Reporting\Queries\SalesStatisticsQuery;
 
 /**
  * The Reporting module's public front door.
@@ -19,6 +21,7 @@ class ReportingService
 {
     public function __construct(
         private readonly ProfitAndLossSummaryQuery $profitAndLossSummary,
+        private readonly SalesStatisticsQuery $salesStatistics,
     ) {}
 
     /**
@@ -27,5 +30,16 @@ class ReportingService
     public function profitAndLossSummary(ProfitAndLossFilters $filters): array
     {
         return ($this->profitAndLossSummary)($filters);
+    }
+
+    /**
+     * حجم المبيعات وحركة الأكياس over a period — the second report to come through this door, and
+     * the reason the door was worth having.
+     *
+     * @return array<string, mixed>
+     */
+    public function salesStatistics(SalesStatisticsFilters $filters): array
+    {
+        return ($this->salesStatistics)($filters);
     }
 }

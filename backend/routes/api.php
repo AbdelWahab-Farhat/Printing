@@ -26,6 +26,7 @@ use App\Application\Api\V1\Controllers\ProfitAndLossController;
 use App\Application\Api\V1\Controllers\PurchaseOrderController;
 use App\Application\Api\V1\Controllers\RegionController;
 use App\Application\Api\V1\Controllers\RoleController;
+use App\Application\Api\V1\Controllers\SalesStatisticsController;
 use App\Application\Api\V1\Controllers\ShippingCompanyController;
 use App\Application\Api\V1\Controllers\StockArrivalController;
 use App\Application\Api\V1\Controllers\StockBatchController;
@@ -709,6 +710,12 @@ Route::prefix('v1')->group(function (): void {
         // order's cost side by side, which is a different sensitivity from either alone.
         Route::get('reports/profit-loss', [ProfitAndLossController::class, 'summary'])
             ->middleware('can:reports.pnl.view')->name('reports.profit-loss');
+
+        // حجم المبيعات وحركة الأكياس over a period. Its own permission rather than a ride on the
+        // one above: this board puts no cost or margin on the screen, so the press and the
+        // warehouse can be shown their own output without being shown what the shop earns on it.
+        Route::get('reports/sales-statistics', [SalesStatisticsController::class, 'summary'])
+            ->middleware('can:reports.sales.view')->name('reports.sales-statistics');
 
         // ── audit trail ─────────────────────────────────────────────────────────────────
         // Every record's history hangs off the record itself, so `{product}` resolves, 404s

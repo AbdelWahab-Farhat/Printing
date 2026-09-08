@@ -202,6 +202,14 @@ enum PermissionName: string
     // sensitivity from being allowed to see either alone.
     case ViewProfitAndLossReport = 'reports.pnl.view';
 
+    // إحصائيات المبيعات. Its own permission rather than a ride on `reports.pnl.view`: this board
+    // carries no cost and no margin, only what was sold and how much of it left the warehouse, so
+    // gating it behind the one screen that exposes profit would withhold it from exactly the
+    // people — the press, the warehouse — whose own work it reports. Nor does it belong to
+    // `orders.view`: reading one customer's order is a different decision from reading every
+    // customer's revenue at once.
+    case ViewSalesStatisticsReport = 'reports.sales.view';
+
     public function label(): string
     {
         return match ($this) {
@@ -268,6 +276,7 @@ enum PermissionName: string
             self::ManageCompanySettings => 'تعديل إعدادات الشركة',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
             self::ViewProfitAndLossReport => 'عرض تقرير الأرباح والخسائر',
+            self::ViewSalesStatisticsReport => 'عرض إحصائيات المبيعات',
         };
     }
 
@@ -312,7 +321,8 @@ enum PermissionName: string
             self::RecordDealExpenses, self::ViewInvestorPortal => 'المستثمرون',
             self::ViewCompanySettings, self::ManageCompanySettings => 'إعدادات الشركة',
             self::ViewActivityLogs => 'سجل النشاطات',
-            self::ViewProfitAndLossReport => 'التقارير المالية',
+            self::ViewProfitAndLossReport,
+            self::ViewSalesStatisticsReport => 'التقارير المالية',
         };
     }
 
