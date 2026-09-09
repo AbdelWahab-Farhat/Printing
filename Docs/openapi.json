@@ -111,6 +111,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -1050,6 +1051,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -2409,6 +2411,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -3196,6 +3199,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -3716,6 +3720,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -4987,6 +4992,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -5808,6 +5814,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -6679,6 +6686,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -6855,10 +6863,443 @@
                 "security": []
             }
         },
+        "/v1/notifications": {
+            "get": {
+                "operationId": "notifications.index",
+                "description": "Newest first. Pass `unread=true` for only the ones not yet opened.",
+                "summary": "My notifications",
+                "tags": [
+                    "Notification"
+                ],
+                "parameters": [
+                    {
+                        "name": "unread",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "boolean"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "": {
+                                                            "type": "string"
+                                                        },
+                                                        "current_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "per_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "last_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "total": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        null,
+                                                        "current_page",
+                                                        "per_page",
+                                                        "last_page",
+                                                        "total"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "data",
+                                                "meta"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "boolean"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/NotificationResource"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "data"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/notifications/unread-count": {
+            "get": {
+                "operationId": "notifications.unread-count",
+                "description": "What the bell's badge shows. Kept as its own endpoint rather than a field on the list,\nbecause the app asks for it far more often than it opens the list \u2014 on resume, and after\na push arrives.",
+                "summary": "How many I have not read",
+                "tags": [
+                    "Notification"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "count": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "count"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/notifications/read-all": {
+            "post": {
+                "operationId": "notifications.read-all",
+                "summary": "Mark everything as read",
+                "tags": [
+                    "Notification"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062a\u0639\u0644\u064a\u0645 \u0643\u0644 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0643\u0645\u0642\u0631\u0648\u0621\u0629"
+                                        },
+                                        "data": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/notifications/devices": {
+            "post": {
+                "operationId": "notifications.devices.store",
+                "description": "Called on sign-in, when notifications are switched on, and whenever FCM rotates the token.\nRe-registering a token already known moves it to this account rather than creating a\nsecond row \u2014 which is what stops a shared shop phone delivering the previous employee's\nnotifications.",
+                "summary": "Register this device for push",
+                "tags": [
+                    "Notification"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterDeviceRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062c\u0647\u0627\u0632"
+                                        },
+                                        "data": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "notifications.devices.destroy",
+                "description": "**Call this on sign-out**, before the token is cleared from the phone's own storage.\nReleasing a device that was never registered is a success, not an error.",
+                "summary": "Release this device",
+                "tags": [
+                    "Notification"
+                ],
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "minLength": 10,
+                            "maxLength": 255
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u0625\u0644\u063a\u0627\u0621 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062c\u0647\u0627\u0632"
+                                        },
+                                        "data": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/notifications/announcements": {
+            "post": {
+                "operationId": "notifications.announcements.store",
+                "description": "\u00ab\u0627\u062c\u062a\u0645\u0627\u0639 \u0627\u0644\u0633\u0627\u0639\u0629 \u0664\u00bb. Reaches every active employee, or one role. **Investors never receive\nit.** It cannot be recalled, cannot be scheduled, and the sender does not receive their\nown \u2014 a quiet bell after sending is correct, not a delivery that went missing.\n\nBehind `notifications.broadcast` and a rate limit: this is the one endpoint that can put a\nmessage on every phone in the company.",
+                "summary": "Send an announcement to staff",
+                "tags": [
+                    "Notification"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendAnnouncementRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0625\u0634\u0639\u0627\u0631"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {},
+                                                "recipients": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "recipients"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/notifications/{notification}/read": {
+            "post": {
+                "operationId": "notifications.read",
+                "description": "Idempotent: the first time it was opened is kept. A notification belonging to somebody\nelse answers 404.",
+                "summary": "Mark one as read",
+                "tags": [
+                    "Notification"
+                ],
+                "parameters": [
+                    {
+                        "name": "notification",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062a\u0639\u0644\u064a\u0645 \u0627\u0644\u0625\u0634\u0639\u0627\u0631 \u0643\u0645\u0642\u0631\u0648\u0621"
+                                        },
+                                        "data": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/v1/orders/summary": {
             "get": {
                 "operationId": "orders.summary",
-                "description": "The number beside each row of the status filter. Accepts the same filters as the list \u2014\n`search`, `payment_status`, `customer_id`, `city_id`, `from`, `to` \u2014 so the counts describe\nthe set the user is actually looking at.\n\n`status` itself is ignored here on purpose: counts narrowed to the status already chosen\nwould every one of them equal the list's own length. `payment_status` is *not* ignored,\nbecause it narrows a different axis \u2014 \u00ab\u0643\u0645 \u0637\u0644\u0628\u064a\u0629 \u063a\u064a\u0631 \u0645\u062f\u0641\u0648\u0639\u0629 \u0641\u064a \u0643\u0644 \u062d\u0627\u0644\u0629\u061f\u00bb is a real question,\nand it is the whole reason the two were never merged into one enum.\n\nEvery status is present, zeros included. A missing key would leave a client choosing\nbetween a blank and a zero, and those mean different things.",
+                "description": "The number beside each row of the status filter. Accepts the same filters as the list \u2014\n`search`, `payment_status`, `urgent`, `customer_id`, `city_id`, `from`, `to` \u2014 so the counts\ndescribe the set the user is actually looking at. `sort` is meaningless here and ignored:\na total does not have an order.\n\n`status` itself is ignored here on purpose: counts narrowed to the status already chosen\nwould every one of them equal the list's own length. `payment_status` is *not* ignored,\nbecause it narrows a different axis \u2014 \u00ab\u0643\u0645 \u0637\u0644\u0628\u064a\u0629 \u063a\u064a\u0631 \u0645\u062f\u0641\u0648\u0639\u0629 \u0641\u064a \u0643\u0644 \u062d\u0627\u0644\u0629\u061f\u00bb is a real question,\nand it is the whole reason the two were never merged into one enum.\n\nEvery status is present, zeros included. A missing key would leave a client choosing\nbetween a blank and a zero, and those mean different things.",
                 "summary": "How many orders are in each status",
                 "tags": [
                     "Order"
@@ -6933,7 +7374,7 @@
         "/v1/orders": {
             "get": {
                 "operationId": "orders.index",
-                "description": "Newest first. `search` matches the order number, the tracking number, or the customer's\nname, code or phone. Filter with `status` (repeatable), `payment_status` (repeatable \u2014\n`unpaid`, `partially_paid`, `paid`, `overpaid`), `customer_id`, `city_id`, `from` and `to`.",
+                "description": "Newest first unless `sort=oldest`, which reads the queue from its far end \u2014 \u00ab\u0645\u0627 \u0627\u0644\u0630\u064a\n\u064a\u0646\u062a\u0638\u0631 \u0645\u0646\u0630 \u0623\u0637\u0648\u0644 \u0648\u0642\u062a\u061f\u00bb. A `sort` naming neither falls back to newest rather than being\nrefused: a typo in a query string should not produce a screen with no orders on it.\n\n`search` matches the order number, the tracking number, or the customer's name, code or\nphone. Filter with `status` (repeatable), `payment_status` (repeatable \u2014 `unpaid`,\n`partially_paid`, `paid`, `overpaid`), `urgent` (`1` for the rush jobs, `0` for everything\nelse), `customer_id`, `city_id`, `from` and `to`.",
                 "summary": "List orders",
                 "tags": [
                     "Order"
@@ -7888,6 +8329,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -9352,6 +9794,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -10199,6 +10642,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -11432,6 +11876,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -12082,6 +12527,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -12642,6 +13088,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -12767,6 +13214,182 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/reports/sales-statistics": {
+            "get": {
+                "operationId": "reports.sales-statistics",
+                "description": "`from` and `to` are both required and inclusive of their whole day.",
+                "summary": "Summarise a period",
+                "tags": [
+                    "SalesStatistics"
+                ],
+                "parameters": [
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "required": true,
+                        "description": "Inclusive: a board for \"today\" carries everything recognised today, rather than\nstopping at midnight.",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "period": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "from": {
+                                                            "type": "string"
+                                                        },
+                                                        "to": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "from",
+                                                        "to"
+                                                    ]
+                                                },
+                                                "sales_value": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "plain": {
+                                                            "type": "string"
+                                                        },
+                                                        "printed": {
+                                                            "type": "string"
+                                                        },
+                                                        "total": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "plain",
+                                                        "printed",
+                                                        "total"
+                                                    ]
+                                                },
+                                                "by_type": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "weight_comparison": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "plain_kg": {
+                                                            "type": "string"
+                                                        },
+                                                        "printed_kg": {
+                                                            "type": "string"
+                                                        },
+                                                        "total_kg": {
+                                                            "type": "string"
+                                                        },
+                                                        "printed_share_percent": {
+                                                            "type": "string",
+                                                            "description": "\u00ab\u0643\u0645 \u0646\u0633\u0628\u0629 \u0627\u0644\u0645\u0637\u0628\u0648\u0639\u061f\u00bb \u2014 the question the whole comparison exists to answer, given\nonce here rather than left to a reader dividing two figures on a phone."
+                                                        },
+                                                        "weight_coverage_percent": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "plain_kg",
+                                                        "printed_kg",
+                                                        "total_kg",
+                                                        "printed_share_percent",
+                                                        "weight_coverage_percent"
+                                                    ]
+                                                },
+                                                "printed_pieces": {
+                                                    "type": "object",
+                                                    "description": "**A count, kept apart from the weight beside it, because it is the figure the\npress's own share will one day be computed from.** Plain bags are absent from it by\nconstruction: they are summed out of the `none` bucket, never this one.",
+                                                    "properties": {
+                                                        "count": {
+                                                            "description": "A piece is a bag; there is no such thing as two thirds of one, and\n`PricingUnit::requiresWholeQuantities()` is what stops one being ordered.",
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "integer",
+                                                                    "enum": [
+                                                                        0
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        "weight_kg": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "count",
+                                                        "weight_kg"
+                                                    ]
+                                                },
+                                                "orders_counted": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "period",
+                                                "sales_value",
+                                                "by_type",
+                                                "weight_comparison",
+                                                "printed_pieces",
+                                                "orders_counted"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "403": {
                         "$ref": "#/components/responses/AuthorizationException"
@@ -13226,6 +13849,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -13724,6 +14348,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -14662,6 +15287,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -15259,6 +15885,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -16567,6 +17194,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -17170,6 +17798,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -17690,6 +18319,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -18276,6 +18906,7 @@
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
                                 "company_setting",
+                                "notification",
                                 null
                             ]
                         }
@@ -19027,7 +19658,10 @@
                         ]
                     },
                     "nawris_government_id": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "description": "Nawris's own name for this destination, frozen onto a parcel at dispatch. Null\nmeans the city is not a Nawris destination, which dispatch refuses by name\nrather than by sending a null the carrier would reject unreadably."
                     },
                     "latitude": {
@@ -19614,7 +20248,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "code": {
                         "type": "string"
@@ -19623,10 +20257,16 @@
                         "type": "string"
                     },
                     "status_label": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": [
+                            "\u0645\u0633\u0648\u062f\u0629",
+                            "\u0645\u0641\u062a\u0648\u062d\u0629",
+                            "\u0645\u063a\u0644\u0642\u0629",
+                            "\u0645\u0644\u063a\u0627\u0629"
+                        ]
                     },
                     "can_be_edited": {
-                        "type": "string"
+                        "type": "boolean"
                     },
                     "investor_profit_share_percent": {
                         "type": "string",
@@ -19647,11 +20287,17 @@
                         "description": "\u0633\u0639\u0631 \u0627\u0644\u0633\u0627\u062f\u0629 \u2014 what the press pays this deal for a unit of its plain stock, agreed\nwhile the lorry was being funded. Null puts the deal on the other road entirely:\nits investors are paid out of the delivered order's profit instead."
                     },
                     "purchase_order_id": {
-                        "type": "string",
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
                         "description": "The order this deal was born from, when it was. A deal assembled by hand out of\nseveral orders has none, and that is a real deal too \u2014 hence nullable rather than\na promise the screen can lean on."
                     },
                     "product_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "product": {
                         "type": [
@@ -19672,10 +20318,7 @@
                         ]
                     },
                     "opened_on": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
+                        "type": "string"
                     },
                     "opened_at": {
                         "type": [
@@ -19690,10 +20333,16 @@
                         ]
                     },
                     "cancellation_reason": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notes": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "items": {
                         "type": "array",
@@ -19701,10 +20350,10 @@
                             "type": "object",
                             "properties": {
                                 "id": {
-                                    "type": "string"
+                                    "type": "integer"
                                 },
                                 "stock_item_id": {
-                                    "type": "string"
+                                    "type": "integer"
                                 },
                                 "stock_item": {
                                     "type": [
@@ -19763,10 +20412,10 @@
                             "type": "object",
                             "properties": {
                                 "id": {
-                                    "type": "string"
+                                    "type": "integer"
                                 },
                                 "investor_id": {
-                                    "type": "string"
+                                    "type": "integer"
                                 },
                                 "investor": {
                                     "type": [
@@ -19914,7 +20563,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "code": {
                         "type": "string",
@@ -19924,10 +20573,16 @@
                         "type": "string"
                     },
                     "phone": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notes": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "is_active": {
                         "type": "boolean"
@@ -19980,13 +20635,26 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "type": {
                         "type": "string"
                     },
                     "type_label": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": [
+                            "\u0625\u064a\u062f\u0627\u0639 \u0631\u0623\u0633 \u0645\u0627\u0644",
+                            "\u0633\u062d\u0628 \u0631\u0623\u0633 \u0645\u0627\u0644",
+                            "\u062a\u0645\u0648\u064a\u0644 \u0635\u0641\u0642\u0629",
+                            "\u0625\u0631\u062c\u0627\u0639 \u0631\u0623\u0633 \u0627\u0644\u0645\u0627\u0644 \u0645\u0646 \u0627\u0644\u0635\u0641\u0642\u0629",
+                            "\u0631\u0628\u062d \u0645\u0646 \u0637\u0644\u0628\u064a\u0629",
+                            "\u062e\u0633\u0627\u0631\u0629 \u0645\u0646 \u0637\u0644\u0628\u064a\u0629",
+                            "\u062e\u0635\u0645 \u062e\u0633\u0627\u0631\u0629 \u0645\u0646 \u0631\u0623\u0633 \u0627\u0644\u0645\u0627\u0644",
+                            "\u062e\u0633\u0627\u0631\u0629 \u062a\u062d\u0645\u0651\u0644\u062a\u0647\u0627 \u0627\u0644\u0634\u0631\u0643\u0629",
+                            "\u0625\u062a\u0627\u062d\u0629 \u0623\u0631\u0628\u0627\u062d \u0627\u0644\u0635\u0641\u0642\u0629 \u0644\u0644\u0633\u062d\u0628",
+                            "\u0633\u062d\u0628 \u0623\u0631\u0628\u0627\u062d",
+                            "\u0639\u0643\u0633 \u062d\u0631\u0643\u0629"
+                        ]
                     },
                     "amount": {
                         "type": "string"
@@ -20019,13 +20687,22 @@
                         ]
                     },
                     "method": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "reference": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "investor_deal_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "deal": {
                         "type": [
@@ -20034,7 +20711,7 @@
                         ],
                         "properties": {
                             "id": {
-                                "type": "string"
+                                "type": "integer"
                             },
                             "code": {
                                 "type": "string"
@@ -20050,14 +20727,23 @@
                         ]
                     },
                     "source_type": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "description": "Where the money came from \u2014 an order, an expense. This is \u00ab\u0645\u0646 \u0623\u064a\u0646 \u062c\u0627\u0621 \u0643\u0644 \u062f\u064a\u0646\u0627\u0631\u00bb,\nand it is the reason an earning is one row per source rather than a running delta."
                     },
                     "source_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "reverses_entry_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "is_reversed": {
                         "type": "boolean"
@@ -20066,13 +20752,13 @@
                         "type": "boolean"
                     },
                     "occurred_at": {
+                        "type": "string"
+                    },
+                    "notes": {
                         "type": [
                             "string",
                             "null"
                         ]
-                    },
-                    "notes": {
-                        "type": "string"
                     },
                     "recorded_by": {
                         "type": [
@@ -20253,22 +20939,31 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "code": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "reference": {
                         "type": "string"
                     },
                     "bar_code": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "government": {
                         "type": "string"
                     },
                     "area": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "amount_to_collect": {
                         "type": "string",
@@ -20284,11 +20979,17 @@
                         ]
                     },
                     "remote_status_code": {
-                        "type": "string",
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
                         "description": "Their integer and their prose, both \u2014 the mapping is written against the first and\nsupport reads the second."
                     },
                     "remote_status_text": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "is_open": {
                         "type": "boolean"
@@ -20346,16 +21047,25 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "code": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "reference": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "status_code": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "collected_amount": {
                         "type": [
@@ -20371,20 +21081,24 @@
                         "type": "boolean"
                     },
                     "error": {
-                        "type": "string"
-                    },
-                    "nawris_parcel_id": {
-                        "type": "string"
-                    },
-                    "payload": {
-                        "type": "string",
-                        "description": "Verbatim, because the whole point of storing it is that they never re-send and\nwhatever we did not keep is gone."
-                    },
-                    "received_at": {
                         "type": [
                             "string",
                             "null"
                         ]
+                    },
+                    "nawris_parcel_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "payload": {
+                        "type": "array",
+                        "description": "Verbatim, because the whole point of storing it is that they never re-send and\nwhatever we did not keep is gone.",
+                        "items": {}
+                    },
+                    "received_at": {
+                        "type": "string"
                     },
                     "processed_at": {
                         "type": [
@@ -20408,6 +21122,85 @@
                     "processed_at"
                 ],
                 "title": "NawrisWebhookEventResource"
+            },
+            "NotificationResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "description": "The notification's id, not the recipient row's \u2014 it is what the client marks read\nand what a push carries, and the join row is an implementation detail."
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "The value and its Arabic label, the same bargain every enum in this API makes:\nthe client renders the label and branches on the value, and never keeps its own\ntranslation table in step with ours."
+                    },
+                    "type_label": {
+                        "type": "string",
+                        "enum": [
+                            "\u0646\u0648\u0627\u0642\u0635 \u0637\u0644\u0628\u064a\u0629",
+                            "\u062d\u0627\u0644\u0629 \u0637\u0644\u0628\u064a\u0629",
+                            "\u0625\u0634\u0639\u0627\u0631 \u0639\u0627\u0645"
+                        ]
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "body": {
+                        "type": "string"
+                    },
+                    "icon": {
+                        "type": "string",
+                        "description": "A small stable vocabulary \u2014 `warning`, `order`, `announcement`. Never an icon\nname from any particular toolkit: the app owns how it draws.",
+                        "enum": [
+                            "warning",
+                            "order",
+                            "announcement"
+                        ]
+                    },
+                    "route": {
+                        "type": "string",
+                        "description": "**Nullable, and that is ordinary rather than an edge case.** An announcement has\nnothing to open, so the client must render a tile that simply does not navigate."
+                    },
+                    "subject_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "A stable morph alias \u2014 `order` \u2014 never a PHP class name. Null for an announcement,\nwhich is about nothing."
+                    },
+                    "subject_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "is_read": {
+                        "type": "boolean"
+                    },
+                    "read_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "type",
+                    "type_label",
+                    "title",
+                    "body",
+                    "icon",
+                    "route",
+                    "subject_type",
+                    "subject_id",
+                    "is_read",
+                    "read_at",
+                    "created_at"
+                ],
+                "title": "NotificationResource"
             },
             "OrderDesignResource": {
                 "type": "object",
@@ -20948,12 +21741,22 @@
                             "\u0625\u0644\u063a\u0627\u0621 \u062a\u0627\u0645"
                         ]
                     },
+                    "is_urgent": {
+                        "type": "boolean",
+                        "description": "**\u00ab\u0645\u0633\u062a\u0639\u062c\u0644\u0629\u00bb \u2014 a decision, not a status.** It rides beside the status rather than\ninside it because it is true of an order at *any* step: a rush job is rushed while\nit is being designed, printed and delivered, and folding it into the state machine\nwould double every case in it. No label travels with it: unlike a status, it is one\nword the app already knows and has nothing to translate."
+                    },
                     "vendor_id": {
-                        "type": "string",
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
                         "description": "Who is making it, for an order a vendor executes. The name travels with the id\nbecause it is what this order said at the time \u2014 a vendor renamed since keeps its\nnew name everywhere except here. Null on every order that is made in-house."
                     },
                     "vendor_name": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "production_flow": {
                         "type": "string",
@@ -21430,6 +22233,7 @@
                     "code",
                     "status",
                     "status_label",
+                    "is_urgent",
                     "vendor_id",
                     "vendor_name",
                     "production_flow",
@@ -21779,10 +22583,18 @@
                         "description": "How goods under this heading come to exist \u2014 \u0645\u0637\u0628\u0648\u0639\u0629\u060c \u0633\u0627\u062f\u0629\u060c \u0623\u0648 \u0648\u0633\u064a\u0637. **This row's\nown answer, not the effective one** \u2014 a child that inherits its parent's mode reads\n`in_house` here, and that is deliberate: this is the value an edit form puts back,\nso showing the inherited answer would have somebody save a mode onto a child that\nnever asked for one. The effective answer is the domain's, and it is asked through\n`ProductCategory::productionMode()`."
                     },
                     "production_mode_label": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": [
+                            "\u062a\u0635\u0645\u064a\u0645 \u0648\u0637\u0628\u0627\u0639\u0629 \u0644\u062f\u064a\u0646\u0627",
+                            "\u0628\u0644\u0627 \u062a\u0635\u0645\u064a\u0645 \u0648\u0637\u0628\u0627\u0639\u0629",
+                            "\u0648\u0633\u064a\u0637 \u2014 \u0644\u062f\u0649 \u0645\u0648\u0631\u062f \u062e\u0627\u0631\u062c\u064a"
+                        ]
                     },
                     "is_investable": {
-                        "type": "string",
+                        "type": [
+                            "boolean",
+                            "null"
+                        ],
                         "description": "Whether a deal may be opened against the shelves under this heading. **This row's\nown answer**, for the reason given just above: null means \u00ab\u0627\u0633\u0623\u0644 \u0627\u0644\u0623\u0628\u00bb, and sending\nthe inherited answer instead would have the edit sheet save it onto a subheading\nthat never gave one. The effective answer is the domain's \u2014 `isInvestable()` \u2014 and\nno screen needs it, because a shelf is refused by name and not by heading."
                     },
                     "skips_production": {
@@ -22983,7 +23795,10 @@
                         ]
                     },
                     "nawris_area_id": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "latitude": {
                         "type": [
@@ -23023,6 +23838,32 @@
                     "updated_at"
                 ],
                 "title": "RegionResource"
+            },
+            "RegisterDeviceRequest": {
+                "type": "object",
+                "description": "A phone asking to be woken.",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "FCM registration tokens have no documented maximum; 255 is the column and fits the\ncurrent format twice over.",
+                        "minLength": 10,
+                        "maxLength": 255
+                    },
+                    "platform": {
+                        "type": "string",
+                        "description": "The device says which it is, because a token cannot be asked \u2014 and the push\npayload's override blocks differ per platform.",
+                        "enum": [
+                            "android",
+                            "ios",
+                            "web"
+                        ]
+                    }
+                },
+                "required": [
+                    "token",
+                    "platform"
+                ],
+                "title": "RegisterDeviceRequest"
             },
             "RegisterRequest": {
                 "type": "object",
@@ -23238,6 +24079,36 @@
                 ],
                 "title": "RoleResource"
             },
+            "SendAnnouncementRequest": {
+                "type": "object",
+                "description": "\u00ab\u0627\u062c\u062a\u0645\u0627\u0639 \u0627\u0644\u0633\u0627\u0639\u0629 \u0664\u00bb \u2014 the message, and who it reaches.",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Short, because it is what a phone shows on a locked screen before anything else.",
+                        "minLength": 2,
+                        "maxLength": 100
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Long enough for a real message, bounded because this goes out as a push and\nnobody reads a paragraph on a notification shade.",
+                        "minLength": 2,
+                        "maxLength": 500
+                    },
+                    "role_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Absent or null means \u00ab\u0627\u0644\u062c\u0645\u064a\u0639\u00bb \u2014 every active employee. A role narrows it.\n`exists` without `withoutTrashed`: roles are not soft deleted."
+                    }
+                },
+                "required": [
+                    "title",
+                    "body"
+                ],
+                "title": "SendAnnouncementRequest"
+            },
             "SetActivationRequest": {
                 "type": "object",
                 "description": "Activating or deactivating a record.\n\nShared across contexts because the payload genuinely is the same one flag \u2014 a Customer-named\nrequest used by Products would tie two contexts together for no reason.",
@@ -23392,6 +24263,10 @@
                     "is_active": {
                         "type": "boolean"
                     },
+                    "is_default": {
+                        "type": "boolean",
+                        "description": "The one a dispatch form opens on. At most one company says true."
+                    },
                     "created_at": {
                         "type": [
                             "string",
@@ -23411,6 +24286,7 @@
                     "phone",
                     "notes",
                     "is_active",
+                    "is_default",
                     "created_at",
                     "updated_at"
                 ],
@@ -23723,7 +24599,10 @@
                         ]
                     },
                     "investor_deal_id": {
-                        "type": "string",
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
                         "description": "**Whose money bought this layer.** Null on the ordinary layer the company paid for\nitself, which is most of them. The code is attached by the controller rather than\nread through a relation: Inventory does not import Investment, and a `belongsTo`\nhere would be the dependency running the wrong way."
                     },
                     "investor_deal_code": {
@@ -24084,10 +24963,20 @@
                         "type": [
                             "string",
                             "null"
+                        ],
+                        "enum": [
+                            "\u0647\u0627\u0644\u0643",
+                            "\u0639\u062c\u0632",
+                            "\u0641\u0631\u0642 \u062c\u0631\u062f",
+                            "\u062a\u063a\u064a\u064a\u0631 \u0648\u062d\u062f\u0629 \u0627\u0644\u0642\u064a\u0627\u0633",
+                            null
                         ]
                     },
                     "reverses_movement_id": {
-                        "type": "string",
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
                         "description": "Which fulfillment this credited back. Published so a ledger screen can mark the\npair rather than leaving two rows that look like unrelated traffic."
                     },
                     "quantity": {
@@ -24809,6 +25698,10 @@
                         ],
                         "maxLength": 100
                     },
+                    "is_urgent": {
+                        "type": "boolean",
+                        "description": "\u00ab\u0645\u0633\u062a\u0639\u062c\u0644\u0629\u00bb. `sometimes`, not `nullable`: on an edit the key being absent means\n\u00ab\u0627\u062a\u0631\u0643\u0647\u0627 \u0643\u0645\u0627 \u0647\u064a\u00bb, and a null arriving in its place would be a third state nothing\ndownstream has a meaning for. See `OrderData::$isUrgent`."
+                    },
                     "items": {
                         "type": "array",
                         "items": {
@@ -25299,7 +26192,9 @@
                                 "settings.view",
                                 "settings.manage",
                                 "logs.view",
-                                "reports.pnl.view"
+                                "reports.pnl.view",
+                                "reports.sales.view",
+                                "notifications.broadcast"
                             ]
                         }
                     }
@@ -25336,6 +26231,10 @@
                     "is_active": {
                         "type": "boolean",
                         "description": "Whether it is offered on a new dispatch. Absent means yes."
+                    },
+                    "is_default": {
+                        "type": "boolean",
+                        "description": "Whether a dispatch form opens on this company. At most one does, so switching it\non here switches it off wherever it was \u2014 and **absent means \u00ab\u0627\u062a\u0631\u0643\u0647\u0627 \u0643\u0645\u0627 \u0647\u064a\u00bb**\nrather than \u00ab\u0644\u0627\u00bb, so an edit that never mentioned it cannot move the shop's\ndefault. A company being switched off loses it either way."
                     }
                 },
                 "required": [
@@ -26060,6 +26959,10 @@
                         ],
                         "maxLength": 100
                     },
+                    "is_urgent": {
+                        "type": "boolean",
+                        "description": "\u00ab\u0645\u0633\u062a\u0639\u062c\u0644\u0629\u00bb. `sometimes`, not `nullable`: on an edit the key being absent means\n\u00ab\u0627\u062a\u0631\u0643\u0647\u0627 \u0643\u0645\u0627 \u0647\u064a\u00bb, and a null arriving in its place would be a third state nothing\ndownstream has a meaning for. See `OrderData::$isUrgent`."
+                    },
                     "items": {
                         "type": "array",
                         "description": "Optional here: omit to leave the lines untouched, send to replace the whole set.",
@@ -26576,7 +27479,9 @@
                                 "settings.view",
                                 "settings.manage",
                                 "logs.view",
-                                "reports.pnl.view"
+                                "reports.pnl.view",
+                                "reports.sales.view",
+                                "notifications.broadcast"
                             ]
                         }
                     }
@@ -26610,6 +27515,9 @@
                         "maxLength": 1000
                     },
                     "is_active": {
+                        "type": "boolean"
+                    },
+                    "is_default": {
                         "type": "boolean"
                     }
                 },
