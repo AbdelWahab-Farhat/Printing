@@ -61,6 +61,7 @@ import 'package:dayaa/features/purchase_orders/presentation/views/purchase_order
 import 'package:dayaa/features/purchase_orders/presentation/views/purchase_order_form_page.dart';
 import 'package:dayaa/features/purchase_orders/presentation/views/purchase_orders_page.dart';
 import 'package:dayaa/features/reports/presentation/views/profit_and_loss_page.dart';
+import 'package:dayaa/features/reports/presentation/views/sales_statistics_page.dart';
 import 'package:dayaa/features/root/presentation/views/inventory_tab_page.dart';
 import 'package:dayaa/features/root/presentation/views/parties_page.dart';
 import 'package:dayaa/features/root/presentation/views/root_page.dart';
@@ -171,6 +172,10 @@ abstract final class Routes {
   /// الأرباح والخسائر. A flat route with no id: the report is about a period the screen itself
   /// chooses, so there is nothing to put in the path.
   static const String profitAndLoss = '/reports/profit-loss';
+
+  /// إحصائيات المبيعات. A flat route with no id, for the same reason as the one above — and a
+  /// sibling of it rather than a tab inside it, because the two answer to different permissions.
+  static const String salesStatistics = '/reports/sales-statistics';
   static const String cities = '/cities';
 
   /// مجالات العمل — the trades a customer's shop can be in.
@@ -607,6 +612,17 @@ abstract final class AppRouter {
             ? null
             : Routes.home,
         builder: (context, state) => const ProfitAndLossPage(),
+      ),
+      // **Guarded by its own grant, never by the one above.** The whole point of a separate
+      // permission is that the press and the warehouse can be shown their own output without
+      // being shown the shop's margin; reusing `reports.pnl.view` here would quietly undo it.
+      GoRoute(
+        path: Routes.salesStatistics,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewSalesStatisticsReport)
+            ? null
+            : Routes.home,
+        builder: (context, state) => const SalesStatisticsPage(),
       ),
       // Declared **before** `/orders/:id`, or go_router reads the literal word «filter» as an
       // id and `int.parse` throws — the same trap `/products/new` sits beside.

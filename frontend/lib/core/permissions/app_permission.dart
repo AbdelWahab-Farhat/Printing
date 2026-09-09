@@ -207,6 +207,13 @@ enum AppPermission {
   // different sensitivity from being allowed to see either alone.
   viewProfitAndLossReport('reports.pnl.view', 'عرض تقرير الأرباح والخسائر'),
 
+  // إحصائيات المبيعات. Separate from the one above, and not a ride on `orders.view` either:
+  // the board shows what was sold and how much of it left the warehouse, with no cost and no
+  // margin anywhere on it — so it can be handed to the press and the storekeeper, whose own
+  // work it reports, without handing them the profit screen. Reusing `reports.pnl.view` here
+  // would quietly undo that.
+  viewSalesStatisticsReport('reports.sales.view', 'عرض إحصائيات المبيعات'),
+
   // Investors. Reading and administering are the usual pair; the three money verbs are split
   // off it for the reason `orders.payments.*` splits three ways — recording a deposit, paying an
   // investor out and undoing either are different levels of trust, and whoever edits a deal's

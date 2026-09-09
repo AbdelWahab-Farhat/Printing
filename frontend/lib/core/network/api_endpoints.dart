@@ -389,6 +389,11 @@ abstract final class ReportEndpoints {
   /// this call has no unfiltered form: a report without a period is not a smaller report, it is
   /// a question nobody asked.
   static const String profitAndLoss = '/reports/profit-loss';
+
+  /// إحصائيات المبيعات وحركة الأكياس. The same two required days, behind a different grant:
+  /// this board carries no cost and no margin, so the press and the warehouse can be shown
+  /// their own output without being shown what the shop earns on it.
+  static const String salesStatistics = '/reports/sales-statistics';
 }
 
 /// شحنات نورس — the carrier integration's operations surface.

@@ -149,6 +149,14 @@ class _RootDrawerState extends State<RootDrawer> {
           route: Routes.profitAndLoss,
           permission: AppPermission.viewProfitAndLossReport,
         ),
+        // Beside it rather than under it: the two are read together, and a person may hold
+        // either grant without the other.
+        _Link(
+          icon: _LinkIcon.salesStatistics,
+          label: 'إحصائيات المبيعات',
+          route: Routes.salesStatistics,
+          permission: AppPermission.viewSalesStatisticsReport,
+        ),
       ],
     ),
     _Section(
@@ -379,6 +387,7 @@ enum _LinkIcon {
   manufacturingCostRates,
   investorDeals,
   report,
+  salesStatistics,
   employees,
   roles;
 
@@ -392,6 +401,7 @@ enum _LinkIcon {
     _LinkIcon.manufacturingCostRates => AppIcons.manufacturingCostRates,
     _LinkIcon.investorDeals => AppIcons.investorDeals,
     _LinkIcon.report => AppIcons.report,
+    _LinkIcon.salesStatistics => AppIcons.products,
     _LinkIcon.employees => AppIcons.employees,
     _LinkIcon.roles => AppIcons.roles,
   };

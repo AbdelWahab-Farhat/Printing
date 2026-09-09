@@ -3,6 +3,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/features/reports/models/profit_and_loss_summary.dart';
+import 'package:dayaa/features/reports/models/sales_statistics.dart';
 import 'package:dayaa/features/reports/repositories/report_repository.dart';
 import 'package:dio/dio.dart';
 
@@ -31,6 +32,23 @@ class ReportRepositoryImpl implements ReportRepository {
         queryParameters: <String, dynamic>{'from': from, 'to': to},
       ),
       parse: (data) => ProfitAndLossSummary.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  /// The same call shape as [profitAndLoss] against a different path, for the same reasons — one
+  /// object, no `meta`, and the two days on the wire exactly as the picker or the preset produced
+  /// them.
+  @override
+  Future<Either<Failure, SalesStatistics>> salesStatistics({
+    required String from,
+    required String to,
+  }) {
+    return safeRequest<SalesStatistics>(
+      () => _dio.get(
+        ReportEndpoints.salesStatistics,
+        queryParameters: <String, dynamic>{'from': from, 'to': to},
+      ),
+      parse: (data) => SalesStatistics.fromJson(data as Map<String, dynamic>),
     );
   }
 }

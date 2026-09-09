@@ -180,9 +180,11 @@ import 'package:dayaa/features/purchase_orders/repositories/purchase_order_repos
 import 'package:dayaa/features/purchase_orders/repositories/purchase_order_repository_impl.dart';
 import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
 import 'package:dayaa/features/reports/presentation/viewmodel/profit_and_loss_cubit.dart';
+import 'package:dayaa/features/reports/presentation/viewmodel/sales_statistics_cubit.dart';
 import 'package:dayaa/features/reports/repositories/report_repository.dart';
 import 'package:dayaa/features/reports/repositories/report_repository_impl.dart';
 import 'package:dayaa/features/reports/usecases/get_profit_and_loss.dart';
+import 'package:dayaa/features/reports/usecases/get_sales_statistics.dart';
 import 'package:dayaa/features/settings/presentation/viewmodel/settings_cubit.dart';
 import 'package:dayaa/features/settings/repositories/settings_repository.dart';
 import 'package:dayaa/features/settings/repositories/settings_repository_impl.dart';
@@ -919,6 +921,15 @@ abstract final class Injector {
       // dispose.
       ..registerFactory<ProfitAndLossCubit>(
         () => ProfitAndLossCubit(getSummary: sl<GetProfitAndLoss>()),
+      )
+      ..registerLazySingleton<GetSalesStatistics>(
+        () => GetSalesStatistics(sl<ReportRepository>()),
+      )
+      // Factory for the same reason as the one above, plus one of its own: the chosen preset
+      // lives on this Cubit too, and a singleton would carry one reader's «اليوم» into the next
+      // opening of the screen.
+      ..registerFactory<SalesStatisticsCubit>(
+        () => SalesStatisticsCubit(getStatistics: sl<GetSalesStatistics>()),
       );
   }
 
