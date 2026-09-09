@@ -44,6 +44,11 @@ dependencies:
   flutter_screenutil: ^5.9.3
   google_fonts: ^7.0.0 # the generated theme's util.dart needs it
   cached_network_image: ^3.4.1
+  # Charts. Earned by one screen — مبيعات الأكياس حسب النوع, where six materials are compared as
+  # shares of one period's takings and a list of figures makes the reader do the comparing. Every
+  # other proportion in this app is one measure split two or three ways, and those stay hand-drawn
+  # strips: a picture of two numbers costs a screenful and says nothing the numbers did not.
+  fl_chart: ^1.2.0
 
 
   # ── push notifications ───────────────────────────────────────────────────────

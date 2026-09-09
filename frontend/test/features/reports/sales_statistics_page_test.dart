@@ -6,6 +6,7 @@ import 'package:dayaa/features/reports/presentation/viewmodel/sales_statistics_c
 import 'package:dayaa/features/reports/presentation/views/sales_statistics_page.dart';
 import 'package:dayaa/features/reports/repositories/report_repository.dart';
 import 'package:dayaa/features/reports/usecases/get_sales_statistics.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -188,6 +189,85 @@ void main() {
     expect(find.text('مبيعات الأكياس حسب النوع'), findsOneWidget);
     expect(find.text('أكياس ورقية عادية -'), findsOneWidget);
     expect(find.text('1,072.5'), findsOneWidget);
+  });
+
+  testWidgets('the takings are cut into one slice per material that earned money', (tester) async {
+    // Arrange — «كم نصيب كل نوع؟» is the question a pie answers better than a column of figures
+    stub();
+
+    // Act
+    await openTheBoard(tester);
+
+    // Assert — cut by value, not by weight: the heading says «مبيعات», so the slices are dinars
+    final chart = tester.widget<PieChart>(find.byType(PieChart));
+    expect(chart.data.sections, hasLength(2));
+    expect(
+      chart.data.sections.map((section) => section.value),
+      [9157.90, 1072.50],
+    );
+  });
+
+  testWidgets('a material that earned nothing takes no slice but keeps its row', (tester) async {
+    // Arrange — fl_chart draws a zero-value section as a hairline that still takes a colour out
+    // of the palette, and the material is still worth reading for its weight
+    stub(
+      statistics: const SalesStatistics(
+        period: StatisticsPeriod(from: '2026-03-01', to: '2026-03-31'),
+        salesValue: SalesValue(plain: '0.00', printed: '1800.00', total: '1800.00'),
+        byType: [
+          BagTypeRow(
+            type: 'كيس شحن',
+            value: '1800.00',
+            weightKg: '20.500',
+            plainKg: '0.000',
+            printedKg: '20.500',
+            pieces: 1000,
+          ),
+          BagTypeRow(
+            type: 'عينات',
+            value: '0.00',
+            weightKg: '4.000',
+            plainKg: '4.000',
+            printedKg: '0.000',
+            pieces: 0,
+          ),
+        ],
+        weightComparison: WeightComparison(
+          plainKg: '4.000',
+          printedKg: '20.500',
+          totalKg: '24.500',
+          printedSharePercent: '83.6',
+          weightCoveragePercent: '100.0',
+        ),
+        printedPieces: PrintedPieces(count: 1000, weightKg: '20.500'),
+        ordersCounted: 1,
+      ),
+    );
+
+    // Act
+    await openTheBoard(tester);
+
+    // Assert
+    final chart = tester.widget<PieChart>(find.byType(PieChart));
+    expect(chart.data.sections, hasLength(1));
+    expect(find.text('عينات'), findsOneWidget);
+  });
+
+  testWidgets('the legend carries every figure the pie cannot', (tester) async {
+    // Arrange — a slice can only ever say «this much of the whole», and the reader came for the
+    // numbers too
+    stub();
+
+    // Act
+    await openTheBoard(tester);
+
+    // Assert
+    expect(find.text('أكياس الشحن'), findsOneWidget);
+    expect(find.text('9,157.9'), findsOneWidget);
+    expect(find.text('294.7'), findsOneWidget);
+    expect(find.text('111.2'), findsOneWidget);
+    expect(find.text('183.5'), findsOneWidget);
+    expect(find.text('4,150'), findsOneWidget);
   });
 
   testWidgets('the coverage caveat is drawn when some value has no weight', (tester) async {
