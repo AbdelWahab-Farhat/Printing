@@ -41,8 +41,14 @@ class SalesStatisticsCubit extends Cubit<SalesStatisticsState> {
   String from;
   String to;
 
-  /// Which chip is lit. Moved to [StatisticsPeriodPreset.custom] the moment a picker is used.
+  /// Which chip is lit.
   ///
+  /// **Opens on [StatisticsPeriodPreset.custom], so the two days are on screen from the first
+  /// frame.** The window is still this month — what changes is that the reader can see which days
+  /// they are being shown and move either one, without first working out that a chip is hiding
+  /// them. The presets stay for what they are good at: reaching اليوم or هذا الأسبوع in one tap.
+  ///
+
   /// **Changing it emits nothing, and no caller should expect it to.** A `Cubit` drops an `emit`
   /// whose state equals the one it already holds, so `emit(state)` after moving a field that
   /// lives *beside* the state is a call that silently does nothing — the chips would light a
@@ -50,7 +56,7 @@ class SalesStatisticsCubit extends Cubit<SalesStatisticsState> {
   /// its own; the two that do not — revealing the pickers, and re-picking the day already
   /// showing — are repainted by the selector's own `setState`, which is where that piece of
   /// screen state belongs anyway.
-  StatisticsPeriodPreset preset = StatisticsPeriodPreset.month;
+  StatisticsPeriodPreset preset = StatisticsPeriodPreset.custom;
 
   /// First load, and every change of period: there is nothing on screen worth keeping, because
   /// figures kept from the old window would sit under the new one's dates and read as its answer.

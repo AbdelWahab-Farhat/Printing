@@ -121,16 +121,16 @@ void main() {
     expect(find.text('8,193'), findsOneWidget);
   });
 
-  testWidgets('the period drawn is the window the server echoed back', (tester) async {
-    // Arrange — the app sends what a preset computed from the phone's clock; the server answers
-    // about its own days, and those are the ones the figures belong to
+  testWidgets('the period is named once, by the pickers, and never restated', (tester) async {
+    // Arrange — the server echoes back the same two day strings it was handed, so a second copy
+    // of «من … إلى …» under the chips could only ever agree with the boxes above it
     stub();
 
     // Act
     await openTheBoard(tester);
 
     // Assert
-    expect(find.text('من 2026-08-01 إلى 2026-09-08'), findsOneWidget);
+    expect(find.text('من 2026-08-01 إلى 2026-09-08'), findsNothing);
   });
 
   testWidgets('the denominator is on the board beside the money', (tester) async {
@@ -165,10 +165,15 @@ void main() {
     // Act
     await openTheBoard(tester);
 
-    // Assert — the figure the press's own share will be computed from
+    // Assert — the figure the press's own share will be computed from. «قطعة» also appears on
+    // the type cards below, so the unit is asserted where this block puts it rather than by
+    // counting it across the page.
     expect(find.text('عدد الأكياس المطبوعة'), findsOneWidget);
     expect(find.text('5,270'), findsOneWidget);
-    expect(find.text('قطعة'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(Row), matching: find.text('قطعة')),
+      findsWidgets,
+    );
   });
 
   testWidgets('a row that earned money and weighs nothing is still drawn', (tester) async {
@@ -192,9 +197,11 @@ void main() {
     // Act
     await openTheBoard(tester);
 
-    // Assert
-    expect(find.text('تغطية الوزن'), findsOneWidget);
+    // Assert — «تغطية الوزن» was the label and nobody could read it; the figure is the share of
+    // the period's money that has a weight behind it, and the label now says so
+    expect(find.text('من المبيعات لها وزن'), findsOneWidget);
     expect(find.text('92.2'), findsOneWidget);
+    expect(find.textContaining('تدخل في المال، ولا وزن لها'), findsOneWidget);
   });
 
   testWidgets('the coverage caveat is absent when everything was weighed', (tester) async {
@@ -229,7 +236,7 @@ void main() {
     await openTheBoard(tester);
 
     // Assert
-    expect(find.text('تغطية الوزن'), findsNothing);
+    expect(find.text('من المبيعات لها وزن'), findsNothing);
   });
 
   testWidgets('a period with nothing in it is answered in words', (tester) async {
@@ -260,29 +267,40 @@ void main() {
     expect(find.text('مبيعات الأكياس حسب النوع'), findsNothing);
   });
 
-  testWidgets('the pickers appear only once a custom period is asked for', (tester) async {
-    // Arrange
+  testWidgets('the two days are on screen from the first frame', (tester) async {
+    // Arrange — the screen opens on فترة مخصصة, so nothing has to be tapped before the reader
+    // can see which days they are being shown
     stub();
-    await openTheBoard(tester);
-
-    // Assert — the presets answer «أي فترة؟» on their own to begin with
-    expect(find.text('من'), findsNothing);
 
     // Act
-    await tester.tap(find.text('فترة مخصصة'));
-    await tester.pumpAndSettle();
+    await openTheBoard(tester);
 
     // Assert
     expect(find.text('من'), findsOneWidget);
     expect(find.text('إلى'), findsOneWidget);
   });
 
-  testWidgets('a refused period reveals the pickers and is shown under one of them', (
-    tester,
-  ) async {
-    // Arrange — the refusal arrives while «هذا الشهر» is still the lit chip, so the two pickers
-    // are not on screen. A page that says «صحّح الفترة أعلاه» with nothing correctable above it
-    // is a dead end, so the boxes come out with the message.
+  testWidgets('a preset overwrites both days in the boxes', (tester) async {
+    // Arrange
+    stub();
+    await openTheBoard(tester);
+
+    // Act
+    await tester.tap(find.text('اليوم'));
+    await tester.pumpAndSettle();
+
+    // Assert — the pickers stay put and simply carry the preset's window
+    final today = DateTime.now();
+    final day =
+        '${today.year.toString().padLeft(4, '0')}-'
+        '${today.month.toString().padLeft(2, '0')}-'
+        '${today.day.toString().padLeft(2, '0')}';
+    expect(find.text(day), findsNWidgets(2));
+  });
+
+  testWidgets('a refused period is shown under the picker it belongs to', (tester) async {
+    // Arrange — the page behind the message says «صحّح الفترة أعلاه», which is only true while
+    // there is a box above to correct; the pickers are always drawn, so there always is.
     stub(
       failure: const Failure.server(
         message: 'البيانات المدخلة غير صحيحة',

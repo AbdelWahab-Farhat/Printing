@@ -85,12 +85,22 @@ class _SalesStatisticsView extends StatelessWidget {
   }
 }
 
-/// The four chips, and the two pickers they hide behind «فترة مخصصة».
+/// The two days, and three chips that fill them.
+///
+/// **The pickers are always on screen, and the presets are shortcuts to them rather than an
+/// alternative to them.** They used to hide behind a «فترة مخصصة» chip, which meant the reader
+/// could not see which days they were being shown without first working out that a chip was
+/// hiding them — and tapping اليوم would then make the boxes disappear again. One control that is
+/// always there, and three one-tap ways to fill it, is the same feature with nothing to discover.
+///
+/// **So there is no «فترة مخصصة» chip.** [StatisticsPeriodPreset.custom] is still the state a
+/// hand-picked window is in — it is simply the state where no chip is lit, which is what a person
+/// who just used the pickers expects to see.
 ///
 /// **Stateful for one reason: the chip that is lit is not in the Cubit's state.** The period lives
-/// *beside* the state, on the Cubit, so a preset that only reveals the pickers changes nothing a
-/// `Cubit` would emit — see the note on `SalesStatisticsCubit.preset`. Every other change runs a
-/// load and repaints anyway; this `setState` is what covers the two that do not.
+/// *beside* the state, on the Cubit, so moving it changes nothing a `Cubit` would emit — see the
+/// note on `SalesStatisticsCubit.preset`. Every change that alters the figures runs a load and
+/// repaints anyway; this `setState` is what covers the one that does not.
 class _PeriodSelector extends StatefulWidget {
   const _PeriodSelector({required this.state});
 
@@ -149,28 +159,24 @@ class _PeriodSelectorState extends State<_PeriodSelector> {
             spacing: 8.w,
             runSpacing: 8.h,
             children: [
+              // `custom` is a state, not a shortcut: it is what «no chip lit» means, and a chip
+              // that only ever says «you used the boxes below» is a chip with nothing to do.
               for (final preset in StatisticsPeriodPreset.values)
-                ChoiceChip(
-                  label: Text(preset.label),
-                  selected: cubit.preset == preset,
-                  onSelected: (_) => _select(preset),
-                ),
+                if (preset != StatisticsPeriodPreset.custom)
+                  ChoiceChip(
+                    label: Text(preset.label),
+                    selected: cubit.preset == preset,
+                    onSelected: (_) => _select(preset),
+                  ),
             ],
           ),
-          // The pickers are the «فترة مخصصة» chip's own contents, so they appear with it rather
-          // than sitting above four chips that would then have nothing to do.
-          //
-          // **And they appear whenever the period itself was refused**, whichever chip is lit. A
-          // preset cannot produce a 422 today — it always computes a valid `from` on or before a
-          // valid `to` — but the page behind it says «صحّح الفترة أعلاه», and a screen that says
-          // that while showing nothing correctable is a dead end. The message is keyed by field
-          // precisely so it can be shown under the box it is about; this is what guarantees there
-          // is a box.
-          if (cubit.preset == StatisticsPeriodPreset.custom ||
-              state.fromError != null ||
-              state.toError != null) ...[
-            SizedBox(height: 12.h),
-            Row(
+          // **Always drawn.** A preset fills these rather than replacing them, so the two days
+          // never leave the screen — and the page behind a refusal says «صحّح الفترة أعلاه»,
+          // which is only true while there is something above to correct. The 422 is keyed by
+          // field precisely so it can be shown under the box it is about; this is what
+          // guarantees there is a box.
+          SizedBox(height: 12.h),
+          Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
@@ -196,7 +202,6 @@ class _PeriodSelectorState extends State<_PeriodSelector> {
                 ),
               ],
             ),
-          ],
         ],
       ),
     );
@@ -215,15 +220,10 @@ class _Board extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 32.h),
       children: [
-        // **The server's window, not the one the app sent.** The two differ whenever a preset was
-        // computed from the phone's clock and the server's day begins somewhere else, and this is
-        // the line that says which days the figures below are actually about.
-        Text(
-          statistics.period.label,
-          style: context.textTheme.bodySmall?.copyWith(color: context.colorScheme.onSurfaceVariant),
-        ),
-        SizedBox(height: 12.h),
-
+        // **The period is not restated here.** `SalesStatisticsQuery` echoes back the same two
+        // day strings it was handed — `from` and `to` are formatted straight off the filters —
+        // so the echo never differs from what the pickers above are already showing, and a
+        // second copy of «من … إلى …» is a line that can only ever agree with itself.
         if (!statistics.hasCountedOrders)
           const _EmptyPeriod()
         else ...[
@@ -307,25 +307,37 @@ class _WeightBlock extends StatelessWidget {
       child: Column(
         children: [
           _FigureRow(label: 'الإجمالي', value: weight.totalKg, emphasised: true),
-          SizedBox(height: 10.h),
-          _FigureRow(label: 'سادة', value: weight.plainKg, dot: scheme.tertiary.withValues(alpha: 0.45)),
+          SizedBox(height: 12.h),
+          _SplitBar(plain: weight.plainKg, printed: weight.printedKg),
+          SizedBox(height: 12.h),
+          _FigureRow(
+            label: 'سادة',
+            value: weight.plainKg,
+            dot: scheme.tertiary.withValues(alpha: 0.40),
+          ),
           SizedBox(height: 10.h),
           _FigureRow(label: 'مطبوع', value: weight.printedKg, dot: scheme.tertiary),
-          SizedBox(height: 12.h),
-          _WeightMix(weight: weight),
-          SizedBox(height: 12.h),
+          SizedBox(height: 10.h),
           // The server's own division, printed rather than recomputed — the question the whole
           // comparison exists to answer, given once here rather than left to a reader dividing
           // two figures on a phone.
           _FigureRow(label: 'نسبة المطبوع', value: weight.printedSharePercent, unit: '٪'),
           if (!weight.isFullyCovered) ...[
             SizedBox(height: 10.h),
-            _FigureRow(label: 'تغطية الوزن', value: weight.weightCoveragePercent, unit: '٪'),
+            // **«تغطية الوزن» was the label here and nobody could read it.** The figure is the
+            // share of the period's *money* that has a weight behind it, and naming it after the
+            // coverage rather than after what is covered left a reader guessing at both. At 100
+            // it is noise and is not drawn at all.
+            _FigureRow(
+              label: 'من المبيعات لها وزن',
+              value: weight.weightCoveragePercent,
+              unit: '٪',
+            ),
             SizedBox(height: 8.h),
             // Without this the kilograms look wrong beside their own dinars, and no reader can
-            // tell «باعوا قليلاً» from «ما وزنوهش». At 100 it is noise, so it is not drawn.
+            // tell «باعوا قليلاً» from «ما وزنوهش».
             Text(
-              'جزء من المبيعات بلا وزن — أكياس تُعَدّ بالقطعة أو عمل لدى مورّد.',
+              'الباقي أكياس تُعَدّ بالقطعة أو عمل لدى مورّد: تدخل في المال، ولا وزن لها.',
               style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
@@ -335,58 +347,66 @@ class _WeightBlock extends StatelessWidget {
   }
 }
 
-/// The سادة/مطبوع split as one strip the width of the block.
+/// The سادة/مطبوع split, as one pill the width of the block.
 ///
-/// Proportions of the two weights against each other, which is the same thing as against their
-/// total — the server folds the total up from exactly these two, so unlike the cost strip on
-/// الأرباح والخسائر there is no third table here for them to disagree with.
+/// **One track cut in two, not two boxes set beside each other.** The earlier version drew a
+/// segment per part with a gap between them, which is right for الأرباح والخسائر — three costs
+/// that come from different tables and are only *displayed* together. These two are one
+/// measurement split once, and a seam down the middle of a single rounded track is what says so.
+/// Rounded on the outside only: the ends belong to the whole, the join does not.
 ///
-/// Drawn by hand rather than by the chart library: a one-dimensional strip is two boxes in a row,
-/// and there is no axis, scale or touch layer for `fl_chart` to be carrying. The two colours are
-/// the ones the rows above wear, which is what ties a segment to its figure.
-class _WeightMix extends StatelessWidget {
-  const _WeightMix({required this.weight});
+/// **It grows into place.** A bar that is simply present when the figures land reads as a static
+/// picture; one that runs out to its share in under half a second reads as a proportion being
+/// measured, which is what it is. `TweenAnimationBuilder` re-runs the tween whenever the share
+/// changes, so moving the period animates from the old split to the new one rather than cutting.
+///
+/// Drawn by hand rather than by the chart library: there is no axis, scale or touch layer here
+/// for `fl_chart` to be carrying. The two colours are the ones the rows beside it wear, which is
+/// what ties a length to its figure — the bar itself is never asked to carry a label.
+class _SplitBar extends StatelessWidget {
+  const _SplitBar({required this.plain, required this.printed, this.height});
 
-  final WeightComparison weight;
+  final String plain;
+  final String printed;
+
+  /// Slimmer inside a type card than under the totals, where it is the block's own summary.
+  final double? height;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final parts = [
-      weight.plainKg,
-      weight.printedKg,
-    ].map((value) => num.tryParse(value)?.toDouble() ?? 0).toList();
-    final tones = [scheme.tertiary.withValues(alpha: 0.45), scheme.tertiary];
+    final plainKg = num.tryParse(plain)?.toDouble() ?? 0;
+    final printedKg = num.tryParse(printed)?.toDouble() ?? 0;
+    final total = plainKg + printedKg;
 
-    // A period nothing was weighed in is a row of zeros, and a strip of nothing is worse than no
-    // strip: an empty bar reads as a bar that failed to draw.
-    if (parts.every((part) => part <= 0)) return const SizedBox.shrink();
+    // Nothing was weighed. An empty track reads as a bar that failed to draw, which is worse than
+    // no bar at all — and the figures around it already say the period weighs nothing.
+    if (total <= 0) return const SizedBox.shrink();
 
-    return SizedBox(
-      height: 8.h,
-      child: Row(
-        // A `DecoratedBox` with no child has no height of its own, and a `Row` centres its
-        // children by default — which lays every segment out at zero and leaves a strip that is
-        // silently not there while every figure around it still reads correctly.
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var index = 0; index < parts.length; index++)
-            if (parts[index] > 0) ...[
-              // The gap between two segments is what keeps a pale one from bleeding into the
-              // segment beside it; it is surface, not a colour of its own.
-              if (index > 0) SizedBox(width: 2.w),
-              Expanded(
-                key: ValueKey('weight-mix-$index'),
-                flex: (parts[index] * 1000).round(),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: tones[index],
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: SizedBox(
+        height: height ?? 12.h,
+        child: Stack(
+          children: [
+            // The whole, in سادة's ink: what is not printed is plain, so the track needs no
+            // segment of its own and the two can never round to more than their container.
+            Positioned.fill(
+              child: ColoredBox(color: scheme.tertiary.withValues(alpha: 0.40)),
+            ),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: printedKg / total),
+              duration: const Duration(milliseconds: 450),
+              curve: Curves.easeOutCubic,
+              builder: (context, share, _) => FractionallySizedBox(
+                // Directional, so the fill runs from the side the page is read from.
+                alignment: AlignmentDirectional.centerStart,
+                widthFactor: share,
+                child: ColoredBox(color: scheme.tertiary),
               ),
-            ],
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -458,12 +478,23 @@ class _PrintedPiecesBlock extends StatelessWidget {
   }
 }
 
-/// مبيعات الأكياس حسب النوع — one row per material, heaviest first as the server sorts it.
+/// مبيعات الأكياس حسب النوع — one card per material, heaviest first as the server sorts it.
+///
+/// **This was a five-column table and it did not survive a phone.** «النوع · كجم · سادة · مطبوع ·
+/// د.ل» across 430 logical pixels left «أكياس يد خارجية -» wrapped over two lines beside four
+/// figures each scaled down until they were smaller than the label above them, and a reader had
+/// to carry a column heading in their head all the way down the page to know which number was
+/// which. Six materials of that is a grid to be decoded rather than a list to be read.
+///
+/// **So each material is a card that says its own name for every figure it carries.** The weight
+/// is the number the eye lands on, because it is what the list is ordered by; the split runs
+/// underneath as a bar with its two figures named beneath it; the money and the piece count sit
+/// on the closing line. Nothing is a column, so nothing depends on a heading three screens up.
 ///
 /// **A row with real value and no weight is correct, not a bug.** أكياس ورقية عادية is stocked by
-/// the piece, so it earns money and weighs nothing; its `0.000` is drawn as the figure it is
-/// rather than as «—», because its value is part of the total above and hiding the row would make
-/// the table stop adding up.
+/// the piece, so it earns money and weighs nothing. Its card keeps its money and its pieces and
+/// simply has no bar to draw — the value is part of the total above, and dropping the card would
+/// make the list stop adding up to it.
 class _ByTypeBlock extends StatelessWidget {
   const _ByTypeBlock({required this.rows});
 
@@ -471,8 +502,6 @@ class _ByTypeBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
     if (rows.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -482,128 +511,171 @@ class _ByTypeBlock extends StatelessWidget {
           'مبيعات الأكياس حسب النوع',
           style: context.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w800,
-            color: scheme.primary,
+            color: context.colorScheme.primary,
           ),
         ),
         SizedBox(height: 8.h),
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
-          ),
-          child: Table(
-            // The name takes what is left; the four figures take exactly what they need, so a
-            // long material name shortens itself rather than squeezing the numbers it qualifies.
-            columnWidths: const {
-              0: FlexColumnWidth(),
-              1: IntrinsicColumnWidth(),
-              2: IntrinsicColumnWidth(),
-              3: IntrinsicColumnWidth(),
-              4: IntrinsicColumnWidth(),
-            },
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-            children: [
-              // The units are stated once, here, rather than beside twenty figures.
-              const TableRow(
-                children: [
-                  _HeadCell(label: 'النوع'),
-                  _HeadCell(label: 'كجم'),
-                  _HeadCell(label: 'سادة'),
-                  _HeadCell(label: 'مطبوع'),
-                  _HeadCell(label: 'د.ل'),
-                ],
-              ),
-              for (final row in rows)
-                TableRow(
-                  children: [
-                    _TypeCell(label: row.type),
-                    _NumberCell(value: row.weightKg, emphasised: true),
-                    _NumberCell(value: row.plainKg),
-                    _NumberCell(value: row.printedKg),
-                    _NumberCell(value: row.value),
-                  ],
-                ),
-            ],
-          ),
-        ),
+        for (final row in rows) ...[
+          _TypeCard(row: row),
+          SizedBox(height: 10.h),
+        ],
       ],
     );
   }
 }
 
-class _HeadCell extends StatelessWidget {
-  const _HeadCell({required this.label});
+/// One material: what it weighed, how that split, and what it earned.
+class _TypeCard extends StatelessWidget {
+  const _TypeCard({required this.row});
 
-  final String label;
+  final BagTypeRow row;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
-      child: Text(
-        label,
-        textAlign: TextAlign.end,
-        style: context.textTheme.bodySmall?.copyWith(color: context.colorScheme.outline),
+    final scheme = context.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 12.h),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  // Rendered exactly as it arrived — trailing dash included. See the page note.
+                  row.type,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              // The number the list is sorted by, so it is the one drawn largest.
+              _Amount(value: row.weightKg, unit: 'كجم', emphasised: true),
+            ],
+          ),
+          if (row.hasWeight) ...[
+            SizedBox(height: 10.h),
+            _SplitBar(plain: row.plainKg, printed: row.printedKg, height: 8.h),
+            SizedBox(height: 8.h),
+            Row(
+              children: [
+                _Dot(tone: scheme.tertiary.withValues(alpha: 0.40)),
+                SizedBox(width: 6.w),
+                _SplitFigure(label: 'سادة', value: row.plainKg),
+                SizedBox(width: 14.w),
+                _Dot(tone: scheme.tertiary),
+                SizedBox(width: 6.w),
+                _SplitFigure(label: 'مطبوع', value: row.printedKg),
+              ],
+            ),
+          ],
+          SizedBox(height: 10.h),
+          Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.5)),
+          SizedBox(height: 10.h),
+          Row(
+            children: [
+              if (row.pieces > 0) ...[
+                Text(
+                  'مطبوع',
+                  style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+                SizedBox(width: 6.w),
+                _Amount(value: row.pieces.grouped, unit: 'قطعة'),
+              ],
+              const Spacer(),
+              _Amount(value: row.value, unit: 'د.ل'),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _TypeCell extends StatelessWidget {
-  const _TypeCell({required this.label});
+/// One half of a split, named beside its own figure rather than under a column heading.
+class _SplitFigure extends StatelessWidget {
+  const _SplitFigure({required this.label, required this.value});
 
   final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
-      child: Text(
-        // Rendered exactly as it arrived — trailing dash included. See the class note.
-        label,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: context.textTheme.bodyMedium?.copyWith(
-          color: context.colorScheme.onSurfaceVariant,
+    final scheme = context.colorScheme;
+
+    return Flexible(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerStart,
+        child: Row(
+          children: [
+            Text(
+              label,
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            SizedBox(width: 6.w),
+            Text(
+              groupedDecimal(value),
+              textDirection: TextDirection.ltr,
+              style: context.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// One figure in the table, at body size rather than caption size.
-class _NumberCell extends StatelessWidget {
-  const _NumberCell({required this.value, this.emphasised = false});
+/// A figure and the unit it is in, kept together so neither can be read without the other.
+class _Amount extends StatelessWidget {
+  const _Amount({required this.value, required this.unit, this.emphasised = false});
 
+  /// Already grouped where it is a count; grouped here where it is a decimal string.
   final String value;
-
-  /// The column the table is sorted by, drawn in the ink the eye lands on first.
+  final String unit;
   final bool emphasised;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final text = context.textTheme;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
-      child: Align(
+    return Flexible(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
         alignment: AlignmentDirectional.centerEnd,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: AlignmentDirectional.centerEnd,
-          child: Text(
-            groupedDecimal(value),
-            // A Latin run: `12,450` renders as `450,12` without this, which is a different number
-            // rather than a rendering glitch.
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.bodyMedium?.copyWith(
-              fontWeight: emphasised ? FontWeight.w800 : FontWeight.w600,
-              color: emphasised ? scheme.onSurface : scheme.onSurfaceVariant,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              groupedDecimal(value),
+              // A Latin run: `12,450` renders as `450,12` without this, which is a different
+              // number rather than a rendering glitch.
+              textDirection: TextDirection.ltr,
+              style: (emphasised ? text.titleMedium : text.bodyMedium)?.copyWith(
+                fontWeight: emphasised ? FontWeight.w800 : FontWeight.w600,
+                color: scheme.onSurface,
+              ),
             ),
-          ),
+            SizedBox(width: 4.w),
+            Text(unit, style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
+          ],
         ),
       ),
     );

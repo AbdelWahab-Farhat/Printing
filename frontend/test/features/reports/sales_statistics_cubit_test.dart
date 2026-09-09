@@ -60,9 +60,18 @@ void main() {
       // Act - the constructor
 
       // Assert
-      expect(cubit.preset, StatisticsPeriodPreset.month);
       expect(cubit.from, '${now.year}-$month-01');
       expect(cubit.to, '${now.year}-$month-$day');
+    });
+
+    test('opens on فترة مخصصة, so the two days are on screen from the first frame', () {
+      // Arrange — the window is still this month; what changes is that the reader can see which
+      // days they are being shown without first working out that a chip is hiding them
+
+      // Act - the constructor
+
+      // Assert
+      expect(cubit.preset, StatisticsPeriodPreset.custom);
     });
   });
 
