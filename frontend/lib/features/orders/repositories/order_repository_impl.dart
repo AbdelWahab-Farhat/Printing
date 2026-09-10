@@ -39,9 +39,76 @@ class OrderRepositoryImpl implements OrderRepository {
     int page = 1,
     int perPage = 20,
   }) {
+    return _pageFrom(
+      OrderEndpoints.index,
+      search: search,
+      statuses: statuses,
+      paymentStatuses: paymentStatuses,
+      isUrgent: isUrgent,
+      sort: sort,
+      customerId: customerId,
+      from: from,
+      to: to,
+      page: page,
+      perPage: perPage,
+    );
+  }
+
+  /// The same page from الأرشيف.
+  ///
+  /// Every argument forwarded untouched, which is the design rather than convenience: الأرشيف
+  /// is the orders screen with a different source, so a filter that reached one list and not
+  /// the other would make «نفس الفلاتر» a promise the screen quietly broke.
+  @override
+  Future<Either<Failure, Paginated<Order>>> archivedOrders({
+    String? search,
+    List<String> statuses = const <String>[],
+    List<String> paymentStatuses = const <String>[],
+    bool? isUrgent,
+    OrdersSort sort = OrdersSort.fallback,
+    int? customerId,
+    String? from,
+    String? to,
+    int page = 1,
+    int perPage = 20,
+  }) {
+    return _pageFrom(
+      OrderEndpoints.archive,
+      search: search,
+      statuses: statuses,
+      paymentStatuses: paymentStatuses,
+      isUrgent: isUrgent,
+      sort: sort,
+      customerId: customerId,
+      from: from,
+      to: to,
+      page: page,
+      perPage: perPage,
+    );
+  }
+
+  /// One page of orders from [path] — the live list or the archive.
+  ///
+  /// **The query is written once for both**, so the two lists cannot drift apart in what they
+  /// are able to ask. Two copies of this map is exactly how «المحذوفة المستعجلة» would have
+  /// become unaskable without anybody noticing: the archive would simply return everything and
+  /// the button would still look pressed.
+  Future<Either<Failure, Paginated<Order>>> _pageFrom(
+    String path, {
+    required String? search,
+    required List<String> statuses,
+    required List<String> paymentStatuses,
+    required bool? isUrgent,
+    required OrdersSort sort,
+    required int? customerId,
+    required String? from,
+    required String? to,
+    required int page,
+    required int perPage,
+  }) {
     return safePaginatedRequest<Order>(
       () => _dio.get(
-        OrderEndpoints.index,
+        path,
         queryParameters: <String, dynamic>{
           'page': page,
           'per_page': perPage,
@@ -77,10 +144,24 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
-  Future<Either<Failure, OrderCounts>> statusCounts({String? search, int? customerId}) {
+  Future<Either<Failure, OrderCounts>> statusCounts({String? search, int? customerId}) =>
+      _countsFrom(OrderEndpoints.summary, search: search, customerId: customerId);
+
+  @override
+  Future<Either<Failure, OrderCounts>> archivedStatusCounts({
+    String? search,
+    int? customerId,
+  }) => _countsFrom(OrderEndpoints.archiveSummary, search: search, customerId: customerId);
+
+  /// The numbers beside the filter, for whichever of the two lists asked.
+  Future<Either<Failure, OrderCounts>> _countsFrom(
+    String path, {
+    required String? search,
+    required int? customerId,
+  }) {
     return safeRequest<OrderCounts>(
       () => _dio.get(
-        OrderEndpoints.summary,
+        path,
         queryParameters: <String, dynamic>{
           if (search != null && search.isNotEmpty) 'search': search,
           'customer_id': ?customerId,
@@ -94,6 +175,28 @@ class OrderRepositoryImpl implements OrderRepository {
   Future<Either<Failure, Order>> order(int orderId) {
     return safeRequest<Order>(
       () => _dio.get(OrderEndpoints.show(orderId)),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Order>> deleteOrder(int orderId) {
+    return safeRequest<Order>(
+      // The order comes back in the envelope's `data`, trashed — with `deleted_at` set and
+      // without `available_transitions` or `progress`. Both lists read that row directly, which
+      // is why this is not the one endpoint in the app whose answer is discarded.
+      () => _dio.delete(OrderEndpoints.show(orderId)),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Order>> restoreOrder(int orderId) {
+    return safeRequest<Order>(
+      // No body at all: there is nothing to choose. The order goes back exactly where it was,
+      // and the one thing worth saying about it — that the stock is drawn again at today's cost
+      // — was said in the confirmation before this was called.
+      () => _dio.post(OrderEndpoints.restore(orderId)),
       parse: (data) => Order.fromJson(data as Map<String, dynamic>),
     );
   }

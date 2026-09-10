@@ -1,15 +1,16 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_card.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_sort_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 /// The orders behind one number.
 ///
@@ -19,7 +20,10 @@ import 'package:go_router/go_router.dart';
 /// tab, so the tab could not answer it without growing a second axis nobody asked for.
 ///
 /// No filter control on it: the question was settled by the tap. What it keeps is the search,
-/// because narrowing a long answer by a customer's name is a reasonable second thought.
+/// because narrowing a long answer by a customer's name is a reasonable second thought — and
+/// the sort, which is not a filter: it narrows nothing, and the second thing anybody asks a
+/// counted queue after «كم» is «أيّها ينتظر منذ أطول وقت؟». «جاهزة للطباعة» opens already
+/// turned round, see [OrdersFilter.initialSort].
 class FilteredOrdersPage extends StatelessWidget {
   const FilteredOrdersPage({required this.filter, super.key});
 
@@ -49,9 +53,23 @@ class _FilteredOrdersView extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
-            child: SearchField(
-              hint: 'رقم الطلبية · كود العميل · رقم الهاتف',
-              onChanged: cubit.search,
+            child: Row(
+              children: [
+                Expanded(
+                  child: SearchField(
+                    hint: 'رقم الطلبية · كود العميل · رقم الهاتف',
+                    onChanged: cubit.search,
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                // Rebuilt with the list, so which way the arrow points cannot disagree with
+                // what is on screen — including the first draw, where the arrow is the only
+                // thing saying this queue opened at its far end.
+                BlocBuilder<FilteredOrdersCubit, FilteredOrdersState>(
+                  builder: (context, state) =>
+                      OrderSortButton(sort: cubit.sort, onToggled: cubit.showSort),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -71,7 +89,7 @@ class _FilteredOrdersView extends StatelessWidget {
                     // The detail screen hands back the order if it moved it, so the row updates
                     // without a round trip — and leaves this screen when the move took it out
                     // of the answer.
-                    final moved = await context.push<Order>(Routes.order(order.id));
+                    final moved = await context.pushForResult<Order>(Routes.order(order.id));
                     if (moved != null) cubit.replace(moved);
                   },
                 ),

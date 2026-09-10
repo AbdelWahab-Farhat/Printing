@@ -176,6 +176,21 @@ enum AppPermission {
   resendOrders('orders.status.resend', 'إعادة إرسال طلبية راجعة'),
   cancelOrders('orders.status.cancelled', 'إلغاء الطلبية'),
 
+  // الأرشيف. Three grants and not one, because they answer three different questions — and
+  // none of them is [cancelOrders], which is the neighbour they are most likely to be confused
+  // with. «إلغاء تام» says the order happened and ended without a delivery; «حذف» says it
+  // should never have been written at all, and its undo puts the stock back on the order
+  // rather than leaving the shelf alone. See §١ of ORDER-DELETE-AND-ARCHIVE.md.
+  //
+  // Deleting and restoring are split for the reason `orders.payments.*` splits three ways: the
+  // person who may take a wrong entry out of the shop is not automatically the person who may
+  // put one back, and restoring is the heavier of the two — it draws stock again, at today's
+  // cost. Reading the archive is split off both, because the supervisor who checks what was
+  // deleted is auditing rather than deleting.
+  deleteOrders('orders.delete', 'حذف الطلبات'),
+  restoreOrders('orders.restore', 'استعادة الطلبات المحذوفة'),
+  viewOrderArchive('orders.archive.view', 'عرض أرشيف الطلبات'),
+
   // The money ledger on an order. Three, and the split that matters is the third: money going
   // *out* — refunded to the customer, or an entry cancelled as a mistake — is a different
   // decision from money coming in. Taking a deposit is a receptionist's daily work; putting a

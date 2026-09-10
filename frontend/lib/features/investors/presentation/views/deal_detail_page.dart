@@ -2,6 +2,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
@@ -40,8 +41,8 @@ class _DealDetailView extends StatefulWidget {
   State<_DealDetailView> createState() => _DealDetailViewState();
 }
 
-/// Stateful for one reason: it remembers the deal as it changed, so `pop` can hand the list
-/// behind the new row instead of making it re-read the page it is already showing. Opening a
+/// Stateful for one reason: it remembers the deal as it changed, so the list behind is handed
+/// the new row instead of made to re-read the page it is already showing. Opening a
 /// deal and closing one both move the status pill, and the row behind used to keep the old one
 /// until something else refreshed it.
 class _DealDetailViewState extends State<_DealDetailView> {
@@ -51,14 +52,7 @@ class _DealDetailViewState extends State<_DealDetailView> {
   Widget build(BuildContext context) {
     final cubit = context.read<DealDetailCubit>();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        // Always through here, so the back button and the app bar's arrow return the same thing.
-        context.pop(_changes.result);
-      },
-      child: Scaffold(
+    return Scaffold(
       floatingActionButtonLocation: AppSpeedDial.location,
       appBar: AppBar(
         title: BlocBuilder<DealDetailCubit, DealDetailState>(
@@ -77,8 +71,9 @@ class _DealDetailViewState extends State<_DealDetailView> {
       body: BlocConsumer<DealDetailCubit, DealDetailState>(
         // Every reading goes past here, whatever produced it — opening the deal, closing it, a
         // pull that picked up somebody else's change.
-        listener: (context, state) =>
-            _changes.saw(state is DealDetailLoaded ? state.deal : null),
+        listener: (context, state) => context.handBack(
+          _changes.saw(state is DealDetailLoaded ? state.deal : null),
+        ),
         builder: (context, state) => switch (state) {
           DealDetailLoading() => const Center(child: CircularProgressIndicator()),
           DealDetailFailure(:final failure) => _FailureView(
@@ -90,7 +85,6 @@ class _DealDetailViewState extends State<_DealDetailView> {
             child: _Body(deal: deal),
           ),
         },
-      ),
       ),
     );
   }

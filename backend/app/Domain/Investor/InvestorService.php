@@ -14,6 +14,7 @@ use App\Domain\Investor\Actions\PostDealStockPurchases;
 use App\Domain\Investor\Actions\RecordDealExpense;
 use App\Domain\Investor\Actions\RecordWalletEntry;
 use App\Domain\Investor\Actions\SetInvestorActivation;
+use App\Domain\Investor\Actions\UnwindDealEarningsForOrder;
 use App\Domain\Investor\Actions\UpdateInvestor;
 use App\Domain\Investor\DTOs\DealExpenseData;
 use App\Domain\Investor\DTOs\FundPurchaseOrderData;
@@ -33,6 +34,7 @@ use App\Domain\Investor\Queries\InvestorListQuery;
 use App\Domain\Investor\Queries\OrderInvestorSharesQuery;
 use App\Domain\Investor\Queries\PurchaseOrderFundingQuery;
 use App\Domain\Investor\Support\Money;
+use App\Domain\Order\Events\OrderProfitUnwound;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Settings\SettingsService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -57,6 +59,7 @@ final class InvestorService
         private readonly RecordDealExpense $recordExpense,
         private readonly PostDealEarningsForOrder $postEarnings,
         private readonly PostDealStockPurchases $postStockPurchases,
+        private readonly UnwindDealEarningsForOrder $unwindEarnings,
         private readonly InvestorBalances $balances,
         private readonly InvestorListQuery $investorList,
         private readonly DealListQuery $dealList,
@@ -289,6 +292,21 @@ final class InvestorService
     public function postEarningsForOrder(int $orderId): array
     {
         return ($this->postEarnings)($orderId);
+    }
+
+    /**
+     * An order has been archived — take what it paid back out again.
+     *
+     * Called from `DeleteOrder` through {@see OrderProfitUnwound}, and not by re-running
+     * {@see postEarningsForOrder()}: that road reads the order through a soft-delete-scoped
+     * query and returns early on an archived one, having reversed nothing. See §٢٫١ of
+     * Docs/orders/ORDER-DELETE-AND-ARCHIVE.md.
+     *
+     * @return list<InvestorWalletEntry> always empty; what this writes is reversals
+     */
+    public function unwindEarningsForOrder(int $orderId): array
+    {
+        return ($this->unwindEarnings)($orderId);
     }
 
     /**

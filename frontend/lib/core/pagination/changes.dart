@@ -1,3 +1,5 @@
+import 'package:dayaa/core/router/pop_result.dart';
+
 /// What a detail screen hands back to the list it was opened from.
 ///
 /// The other half of `PagedCubit`'s patching. That one can replace a row without a request —
@@ -16,6 +18,9 @@
 /// case work: the question is not "did anything happen on this screen" but "is the row behind me
 /// out of date", and those differ exactly when a change was undone.
 ///
+/// The row leaves through [PopResult] rather than through the pop, so the back gesture returns
+/// it too — [saw] answers with what to hand over.
+///
 /// Equality is the model's, and every model here is Freezed — so this compares what the row
 /// says, not which object says it.
 class Changes<T> {
@@ -24,11 +29,17 @@ class Changes<T> {
 
   /// One reading of the thing this screen is about. Null states — loading, a failure before
   /// anything arrived — are not readings and are ignored.
-  void saw(T? reading) {
-    if (reading == null) return;
+  ///
+  /// Answers with [result], so a screen hands the row over in the same breath as it sees it:
+  /// `context.handBack(_changes.saw(state.customer))`. Nothing carries the row out of the screen
+  /// any more — see [PopResult] for why — so every reading has to update the answer as it lands.
+  T? saw(T? reading) {
+    if (reading == null) return result;
 
     _first ??= reading;
     _latest = reading;
+
+    return result;
   }
 
   /// The row worth handing back, or null when the list behind is already showing it.

@@ -1,0 +1,199 @@
+import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/stock_effect.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+/// What the confirmation dialog is going to say, parsed rather than composed.
+///
+/// **Every Arabic sentence in `stock_effect` is the server's, and none of it is written here.**
+/// The precedent is `TransitionFields::deductionPreview()`, whose own comment gives the two
+/// rules this inherits: it is a *hint* rather than a field, so it reaches every build without a
+/// release; and it cannot drift from what the action will do, because the preview and the action
+/// read the same accessor. A `switch` in Dart that turned `kind` into a sentence would break
+/// both — it would ship on the app's release cycle, and it would be a second opinion about what
+/// the delete is about to do.
+///
+/// So this file pins the *shape* and nothing about the wording: the three kinds, the lines, and
+/// the note that only the restore carries.
+///
+/// Arrange - Act - Assert throughout.
+void main() {
+  group('deleted_at', () {
+    test('a live order carries no stamp, and says so', () {
+      // Arrange
+      final json = _orderJson();
+
+      // Act
+      final order = Order.fromJson(json);
+
+      // Assert
+      expect(order.deletedAt, isNull);
+      expect(order.isArchived, isFalse);
+    });
+
+    test('an archived order carries the instant it was archived', () {
+      // Arrange — the one key both lists read: الطلبيات drops the row when it appears and the
+      // archive drops it when it goes.
+      final json = _orderJson(deletedAt: '2026-09-10T09:00:00+00:00');
+
+      // Act
+      final order = Order.fromJson(json);
+
+      // Assert
+      expect(order.deletedAt, DateTime.parse('2026-09-10T09:00:00+00:00'));
+      expect(order.isArchived, isTrue);
+    });
+
+    test('a list row without the key at all is a live order', () {
+      // Arrange — an older server, or a payload trimmed on the way. «مفقود» is «حيّة» and never
+      // «محذوفة»: the safe reading of a missing stamp is the order still being in the shop.
+      final json = _orderJson()..remove('deleted_at');
+
+      // Act
+      final order = Order.fromJson(json);
+
+      // Assert
+      expect(order.isArchived, isFalse);
+    });
+  });
+
+  group('stock_effect', () {
+    test('a delete that returns goods lists them, line by line', () {
+      // Arrange — the headline and each label are the server's own words.
+      const json = <String, dynamic>{
+        'kind': 'return',
+        'warning': 'سيُعاد إلى المخزن ما خصمته هذه الطلبية:',
+        'lines': [
+          {'label': 'كيس شحن 25*35', 'quantity': '300', 'unit': 'قطعة'},
+        ],
+        'note': null,
+      };
+
+      // Act
+      final effect = StockEffect.fromJson(json);
+
+      // Assert
+      expect(effect.kind, StockEffectKind.returnToShelf);
+      expect(effect.warning, 'سيُعاد إلى المخزن ما خصمته هذه الطلبية:');
+      expect(effect.lines.single.label, 'كيس شحن 25*35');
+      expect(effect.lines.single.quantity, '300');
+      expect(effect.lines.single.unit, 'قطعة');
+      expect(effect.note, isNull);
+      expect(effect.movesStock, isTrue);
+    });
+
+    test('a restore warns that the cost changes, in a second paragraph', () {
+      // Arrange — the note exists for the one thing nobody would guess: the new deduction eats
+      // today's layers, so the order comes back costing something else.
+      const json = <String, dynamic>{
+        'kind': 'rededuct',
+        'warning': 'سيُخصم من المخزن من جديد:',
+        'lines': [
+          {'label': 'كيس شحن 25*35', 'quantity': '300', 'unit': 'قطعة'},
+        ],
+        'note': 'وقد تختلف تكلفة الطلبية عمّا كانت، لأن الخصم الجديد يأكل طبقات اليوم',
+      };
+
+      // Act
+      final effect = StockEffect.fromJson(json);
+
+      // Assert
+      expect(effect.kind, StockEffectKind.rededuct);
+      expect(
+        effect.note,
+        'وقد تختلف تكلفة الطلبية عمّا كانت، لأن الخصم الجديد يأكل طبقات اليوم',
+      );
+      expect(effect.movesStock, isTrue);
+    });
+
+    test('«none» is an empty list and a sentence, not an absent block', () {
+      // Arrange — an order whose stock a cancellation already put back. The server still sends a
+      // warning, and it still gets shown: «لا شيء يتحرّك» is an answer worth reading before a
+      // delete, and a dialog that showed nothing would read as a dialog that failed to load.
+      const json = <String, dynamic>{
+        'kind': 'none',
+        'warning': 'لن يتحرّك أي مخزون بحذف هذه الطلبية.',
+        'lines': <Map<String, dynamic>>[],
+        'note': null,
+      };
+
+      // Act
+      final effect = StockEffect.fromJson(json);
+
+      // Assert
+      expect(effect.kind, StockEffectKind.none);
+      expect(effect.lines, isEmpty);
+      expect(effect.movesStock, isFalse);
+    });
+
+    test('a kind this build has never heard of still renders its sentence', () {
+      // Arrange — the same forward compatibility `OrderStatus.unknown` buys the list: a server
+      // that grows a fourth kind must not blank the warning it sent with it.
+      const json = <String, dynamic>{
+        'kind': 'something_new',
+        'warning': 'كلامٌ من خادمٍ أحدث.',
+        'lines': <Map<String, dynamic>>[],
+        'note': null,
+      };
+
+      // Act
+      final effect = StockEffect.fromJson(json);
+
+      // Assert
+      expect(effect.kind, StockEffectKind.unknown);
+      expect(effect.warning, 'كلامٌ من خادمٍ أحدث.');
+    });
+
+    test('the list rows never carry one — it belongs to the order that was opened', () {
+      // Arrange — building it costs a per-line read of the movement ledger, and no row on a
+      // list is about to be deleted.
+      final json = _orderJson();
+
+      // Act
+      final order = Order.fromJson(json);
+
+      // Assert
+      expect(order.stockEffect, isNull);
+    });
+
+    test('an opened order carries the preview of what its button would do', () {
+      // Arrange
+      final json = _orderJson()
+        ..['stock_effect'] = <String, dynamic>{
+          'kind': 'return',
+          'warning': 'سيُعاد إلى المخزن ما خصمته هذه الطلبية:',
+          'lines': [
+            {'label': 'كيس شحن 25*35', 'quantity': '300', 'unit': 'قطعة'},
+          ],
+          'note': null,
+        };
+
+      // Act
+      final order = Order.fromJson(json);
+
+      // Assert
+      expect(order.stockEffect?.kind, StockEffectKind.returnToShelf);
+      expect(order.stockEffect?.lines, hasLength(1));
+    });
+  });
+}
+
+Map<String, dynamic> _orderJson({String? deletedAt}) => <String, dynamic>{
+  'id': 7,
+  'code': '7',
+  'status': 'ready',
+  'status_label': 'جاهزة',
+  'is_final': false,
+  'customer_id': 5,
+  'city_id': 3,
+  'design_source': 'none',
+  'city_name': 'طرابلس',
+  'fulfilment_type_label': 'توصيل',
+  'is_office_pickup': false,
+  'design_source_label': 'بدون تصميم',
+  'items_total': '330.00',
+  'design_fee': '0.00',
+  'delivery_price': '20.00',
+  'discount': '0.00',
+  'grand_total': '350.00',
+  'deleted_at': deletedAt,
+};

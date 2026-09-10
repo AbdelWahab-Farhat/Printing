@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -22,7 +23,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 /// Everything about one order that can be changed: its lines, its discount, the charge added to
 /// it, and its artwork.
@@ -72,10 +72,6 @@ class _OrderEditView extends StatefulWidget {
 }
 
 class _OrderEditViewState extends State<_OrderEditView> {
-  /// Whether anything at all was written — a saved invoice or an added version — so `pop` can
-  /// tell the screen behind whether to re-read.
-  bool _changed = false;
-
   Future<void> _addDesigns() async {
     final cubit = context.read<OrderDetailCubit>();
     final order = cubit.state.order;
@@ -93,7 +89,7 @@ class _OrderEditViewState extends State<_OrderEditView> {
     if (!mounted) return;
 
     if (failure == null) {
-      setState(() => _changed = true);
+      context.handBack(true);
       context.showSuccess('تمت إضافة التصميم');
     } else {
       context.showFailure(failure);
@@ -134,7 +130,7 @@ class _OrderEditViewState extends State<_OrderEditView> {
       context.showFailure,
       (updated) {
         cubit.replace(updated);
-        setState(() => _changed = true);
+        context.handBack(true);
       },
     );
   }
@@ -155,7 +151,7 @@ class _OrderEditViewState extends State<_OrderEditView> {
     if (!mounted) return;
 
     if (failure == null) {
-      setState(() => _changed = true);
+      context.handBack(true);
       context.showSuccess(isApproved ? 'تم اعتماد التصميم' : 'تم رفض التصميم');
     } else {
       context.showFailure(failure);
@@ -167,73 +163,65 @@ class _OrderEditViewState extends State<_OrderEditView> {
     final cubit = context.read<OrderDetailCubit>();
     final session = sl<Session>();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        // Always through here, so the back button and the app bar's arrow return the same thing.
-        context.pop(_changed);
-      },
-      child: Scaffold(
-        appBar: AppBar(title: const Text('تعديل الطلبية')),
-        body: BlocBuilder<OrderDetailCubit, OrderDetailState>(
-          builder: (context, state) {
-            final order = state.order;
+    return Scaffold(
+      appBar: AppBar(title: const Text('تعديل الطلبية')),
+      body: BlocBuilder<OrderDetailCubit, OrderDetailState>(
+        builder: (context, state) {
+          final order = state.order;
 
-            if (order == null) {
-              return switch (state) {
-                OrderDetailFailure(:final failure) => _FailureView(
-                  message: failure.message,
-                  onRetry: cubit.load,
-                ),
-                _ => const Center(child: CircularProgressIndicator()),
-              };
-            }
-
-            // Built once and kept: this provider is not re-created when the order is read
-            // again after a version is added, so quantities typed and not yet saved survive
-            // that reload.
-            return BlocProvider<OrderInvoiceCubit>(
-              create: (_) => sl<OrderInvoiceCubit>(param1: order),
-              child: _Form(
-                order: order,
-                isWorking: state.isWorking,
-                mayDiscount: session.can(AppPermission.discountOrders),
-                mayEditItems:
-                    order.itemsAreEditable && session.can(AppPermission.manageOrders),
-                // A third line, and later than the other two: the address stays correctable
-                // until somebody is driving to it.
-                mayEditDestination: session.can(AppPermission.manageOrders),
-                // **`is_closed`, the server's own line, not a status checked here.**
-                // `UpdateOrder` refuses a closed order and accepts every other, so a switch
-                // drawn on this condition never leads to a refusal — and «استعجل ما وصل» means
-                // nothing anyway. The grant is `orders.manage`, the one every other edit costs.
-                mayFlagUrgent: session.can(AppPermission.manageOrders) && !order.isClosed,
-                // **`is_closed`, which is the server's own line rather than one chosen here.**
-                // `UpdateOrder` refuses a closed order and accepts every other, so a button
-                // drawn on that condition never leads to a refusal — and the grant is the
-                // charge's own, not the discount's, because the two are different acts.
-                onEditAdditionalCost:
-                    session.can(AppPermission.addOrderAdditionalCost) && !order.isClosed
-                    ? _editAdditionalCost
-                    : null,
-                onSaved: () => setState(() => _changed = true),
-                // Both lines come from the server — `designs_are_editable` closes when the
-                // press starts, which `items_are_editable` deliberately does not.
-                onAddDesign:
-                    order.designsAreEditable &&
-                        session.can(AppPermission.manageOrderDesigns)
-                    ? _addDesigns
-                    : null,
-                onReviewDesign:
-                    order.designsAreEditable &&
-                        session.can(AppPermission.manageOrderDesigns)
-                    ? _reviewDesign
-                    : null,
+          if (order == null) {
+            return switch (state) {
+              OrderDetailFailure(:final failure) => _FailureView(
+                message: failure.message,
+                onRetry: cubit.load,
               ),
-            );
-          },
-        ),
+              _ => const Center(child: CircularProgressIndicator()),
+            };
+          }
+
+          // Built once and kept: this provider is not re-created when the order is read
+          // again after a version is added, so quantities typed and not yet saved survive
+          // that reload.
+          return BlocProvider<OrderInvoiceCubit>(
+            create: (_) => sl<OrderInvoiceCubit>(param1: order),
+            child: _Form(
+              order: order,
+              isWorking: state.isWorking,
+              mayDiscount: session.can(AppPermission.discountOrders),
+              mayEditItems:
+                  order.itemsAreEditable && session.can(AppPermission.manageOrders),
+              // A third line, and later than the other two: the address stays correctable
+              // until somebody is driving to it.
+              mayEditDestination: session.can(AppPermission.manageOrders),
+              // **`is_closed`, the server's own line, not a status checked here.**
+              // `UpdateOrder` refuses a closed order and accepts every other, so a switch
+              // drawn on this condition never leads to a refusal — and «استعجل ما وصل» means
+              // nothing anyway. The grant is `orders.manage`, the one every other edit costs.
+              mayFlagUrgent: session.can(AppPermission.manageOrders) && !order.isClosed,
+              // **`is_closed`, which is the server's own line rather than one chosen here.**
+              // `UpdateOrder` refuses a closed order and accepts every other, so a button
+              // drawn on that condition never leads to a refusal — and the grant is the
+              // charge's own, not the discount's, because the two are different acts.
+              onEditAdditionalCost:
+                  session.can(AppPermission.addOrderAdditionalCost) && !order.isClosed
+                  ? _editAdditionalCost
+                  : null,
+              onSaved: () => context.handBack(true),
+              // Both lines come from the server — `designs_are_editable` closes when the
+              // press starts, which `items_are_editable` deliberately does not.
+              onAddDesign:
+                  order.designsAreEditable &&
+                      session.can(AppPermission.manageOrderDesigns)
+                  ? _addDesigns
+                  : null,
+              onReviewDesign:
+                  order.designsAreEditable &&
+                      session.can(AppPermission.manageOrderDesigns)
+                  ? _reviewDesign
+                  : null,
+            ),
+          );
+        },
       ),
     );
   }

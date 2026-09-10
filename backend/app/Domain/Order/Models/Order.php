@@ -13,10 +13,14 @@ use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Order\Actions\AllocateOrderIdentifier;
 use App\Domain\Order\Actions\ChangeOrderStatus;
+use App\Domain\Order\Actions\DeleteOrder;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Actions\ReinstateCancelledOrder;
+use App\Domain\Order\Actions\RestoreOrder;
+use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderFlow;
@@ -28,6 +32,7 @@ use App\Domain\Order\Support\Money;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -148,6 +153,11 @@ class Order extends Model implements HasAuditTrail
             // DeductOrderStock. Unlike ready_at, never overwritten by a later visit:
             // its whole job is to remember whether stock has already left the warehouse.
             'stock_deducted_at' => 'datetime',
+            // What the *delete* did to the warehouse, so the restore can be an exact undo rather
+            // than a guess — see {@see DeleteOrder}. Deliberately not the same fact as
+            // `stock_deducted_at` above: that one remembers history and is never cleared, this
+            // one describes what the archive is currently holding and is cleared by the restore.
+            'delete_returned_stock_at' => 'datetime',
             'ready_at' => 'datetime',
             'dispatched_at' => 'datetime',
             'delivered_at' => 'datetime',
@@ -195,6 +205,24 @@ class Order extends Model implements HasAuditTrail
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * The warehouse this order's goods actually left, denormalised onto the order at the
+     * handover — see the migration for why it is a column rather than a walk through the lines.
+     *
+     * **Soft-delete scoped, and that is what it is for.** `fulfillment_warehouse_id` is declared
+     * `nullOnDelete`, but `DeleteWarehouse` soft deletes, so the foreign key never fires and the
+     * column keeps naming a retired warehouse. `$order->fulfillmentWarehouse()->exists()` is
+     * therefore the whole of «هل ما زال المخزن حيّاً؟» — the question {@see DeleteOrder} and
+     * {@see RestoreOrder} both have to answer before they move a single bag, see
+     * {@see FulfillmentWarehouseIsDeleted}.
+     *
+     * @return BelongsTo<Warehouse, $this>
+     */
+    public function fulfillmentWarehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
     }
 
     /**
@@ -315,6 +343,88 @@ class Order extends Model implements HasAuditTrail
         return $this->status->isFinal()
             && $this->status !== OrderStatus::Cancelled
             && bccomp($this->remainingAmount(), '0', Money::SCALE) > 0;
+    }
+
+    /**
+     * The ledger entries a delete would have to reverse — **the rows themselves, never the three
+     * derived columns.**
+     *
+     * The exact shape of {@see linesWithStockStillDrawn()} one ledger along, and it replaces the
+     * `carriesMoney()` that read `paid_amount`/`written_off_amount`/`carrier_settled_amount`.
+     * That reading answered a *yes/no* question, which was all the superseded §٩٫١ refusal
+     * needed; §٢٫١ now asks «أيّ القيود؟» instead, and a column cannot say — it is a sum, and
+     * the sum of an entry and its reversal is zero on an order that still carries two rows.
+     *
+     * **Credits only, and only those not already undone.** A refund is money that genuinely left
+     * the drawer, so reversing it would claim it never did — {@see ReverseOrderPayment} refuses
+     * one outright via {@see OrderPaymentType::isCredit()}, and this filter is what keeps the
+     * delete from ever handing it one. An entry somebody already reversed by hand is skipped for
+     * a harder reason: a second reversal breaks
+     * `order_payments_reverses_payment_id_unique` and would read as money taken back twice.
+     *
+     * **The one source both the delete and its confirmation read**, which is what §٧٫١ means by
+     * «ومن نفس الدفتر الذي سيعكسه الحذف»: the amount on the screen cannot differ from the amount
+     * written, because there is only one query.
+     *
+     * `reversal` is soft-delete scoped like every other relation, which is what «حيّ» means here.
+     *
+     * @return EloquentCollection<int, OrderPayment>
+     */
+    public function liveCreditEntries(): EloquentCollection
+    {
+        $credits = array_map(
+            fn (OrderPaymentType $type) => $type->value,
+            array_filter(OrderPaymentType::cases(), fn (OrderPaymentType $type) => $type->isCredit()),
+        );
+
+        return $this->payments()
+            ->whereIn('type', $credits)
+            ->whereDoesntHave('reversal')
+            ->get();
+    }
+
+    /**
+     * The lines whose goods are still out of the warehouse — **read from the ledger, never from
+     * `stock_deducted_at`.**
+     *
+     * That column is the wrong answer twice over: it is a fact about the *order* where the
+     * question is about a *line*, and nothing ever clears it — not a cancellation's reversal, not
+     * a reinstatement. An order cancelled after its stock left, and therefore already credited
+     * back, still reads «خُصم منها مخزون» for ever. A delete built on it would promise to return
+     * goods that are on the shelf already, try to reverse a movement that has a reversal, and
+     * break `stock_movements_reverses_movement_id_unique` — a raw 500 in place of a message.
+     *
+     * So the test is per line and in two parts: the line names the draw it made, and that draw
+     * has no live reversal standing against it. `reversedBy` is soft-delete scoped like every
+     * other relation, which is what «حيّ» means here — the same shape
+     * `whereDoesntHave('stockMovement.reversedBy')` already carries wherever a cancelled draw has
+     * to be walked past.
+     *
+     * A restatement at «جاهزة» leaves the old movement reversed and the column pointing at the
+     * new one, so this keeps answering about the draw that actually stands.
+     *
+     * @return EloquentCollection<int, OrderItem>
+     */
+    public function linesWithStockStillDrawn(): EloquentCollection
+    {
+        return $this->items()
+            ->whereNotNull('fulfillment_stock_movement_id')
+            ->whereDoesntHave('fulfillmentStockMovement.reversedBy')
+            ->get();
+    }
+
+    /**
+     * Whether the delete that archived this order is the one that put its goods back.
+     *
+     * The single fact {@see RestoreOrder} branches on. Asked of the column rather than recomputed
+     * from the ledger because the two are not the same question: «هل لهذه الطلبية عكسٌ حيّ؟» is
+     * true straight after *any* reversal, so a cancelled-then-deleted order would look exactly
+     * like a deleted-only one — and re-deducting for the first would take goods off the shelf
+     * that this delete never returned.
+     */
+    public function deleteReturnedStock(): bool
+    {
+        return $this->delete_returned_stock_at !== null;
     }
 
     /**

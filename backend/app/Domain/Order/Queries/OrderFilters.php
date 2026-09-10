@@ -6,6 +6,7 @@ namespace App\Domain\Order\Queries;
 
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentStatus;
+use App\Domain\Order\Queries\Concerns\FiltersOrders;
 
 final readonly class OrderFilters
 {
@@ -37,6 +38,21 @@ final readonly class OrderFilters
         public ?bool $isUrgent = null,
         /** Which end of the queue the list starts at. Never null: there is always an order. */
         public OrderSort $sort = OrderSort::Newest,
+        /**
+         * Which of the two lists this is: the live one, or the archive of deleted orders.
+         *
+         * **A filter rather than a query of its own, and that is the whole reason it is here.**
+         * Three queries seed their own `Order::query()` — the list, the status counts and the
+         * payment-state counts — so `onlyTrashed()` written into one of them would leave the
+         * other two describing a different set, and the screen would show archived rows under
+         * live numbers. Carried on the filters, all three inherit it through
+         * {@see FiltersOrders}.
+         *
+         * A bool and not a nullable one: unlike «مستعجلة», there is no «كلاهما» to ask for. A
+         * deleted order is not a row the live list is entitled to show, and mixing the two would
+         * put an order somebody deleted back in the work queue.
+         */
+        public bool $archived = false,
     ) {}
 
     /**
@@ -56,6 +72,10 @@ final readonly class OrderFilters
             paymentStatuses: self::paymentStatuses($query),
             isUrgent: self::boolOrNull($query['urgent'] ?? null),
             sort: OrderSort::fromRequest($query['sort'] ?? null),
+            // Read the same way «مستعجلة» is, and then defaulted rather than left null: an
+            // unanswered question here means the live list, which is what every caller written
+            // before the archive existed was asking for.
+            archived: self::boolOrNull($query['archived'] ?? null) ?? false,
         );
     }
 
@@ -67,6 +87,11 @@ final readonly class OrderFilters
      * as a copy rather than a flag on `applyFilters()` because it is the *filter* that is being
      * asked a different question here, not the query — the status counts use the flag because
      * they genuinely share this object with the list.
+     *
+     * **Every field is named by hand below, so a new one has to be added here too.** Left out, it
+     * silently reverts to its default for the payment counts alone: the archive would draw its
+     * status chips over the deleted orders and its payment chips over the live ones, two rows of
+     * numbers describing two different sets, side by side on one screen, with nothing to say so.
      */
     public function withoutPaymentStatuses(): self
     {
@@ -80,6 +105,7 @@ final readonly class OrderFilters
             paymentStatuses: null,
             isUrgent: $this->isUrgent,
             sort: $this->sort,
+            archived: $this->archived,
         );
     }
 

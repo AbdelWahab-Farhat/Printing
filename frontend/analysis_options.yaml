@@ -14,6 +14,12 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+    # Not source at all: `build/` is where the tooling drops what it generated, and an iOS
+    # build pulls whole package checkouts into it — `flutter analyze` then reads their own
+    # test suites and reports ninety-odd errors in code nobody here wrote or can fix. The
+    # alternative was deleting the directory before every analyze, which lasts until the next
+    # build.
+    - "build/**"
     # Vendored, not written here: both come straight out of Material Theme Builder and are
     # replaced wholesale whenever the palette changes. Linting them would mean re-applying
     # the same fixes after every export, so they are left exactly as the tool emits them.

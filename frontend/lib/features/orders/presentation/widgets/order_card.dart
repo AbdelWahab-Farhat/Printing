@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
+import 'package:dayaa/features/customers/presentation/widgets/design_viewer.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
-import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -199,8 +203,8 @@ class OrderCard extends StatelessWidget {
                   // **آخر ما على البطاقة، لا وسطها.** «طلبية إيه؟» سؤالٌ يأتي بعد «لمن» و«بكام»
                   // و«فين»، وهو أول ما كان يفتح الموظفُ الطلبية لأجله. صفٌّ واحد لا قائمة:
                   // البطاقة أصلاً بطول ثلاثة صفوف، وقائمةُ بنودٍ تحتها تُخرج اثنتين من كل ثلاث
-                  // بطاقات خارج الشاشة.
-                  if (order.items case final items? when items.isNotEmpty) _Items(items: items),
+                  // بطاقات خارج الشاشة. والغلاف فوقها، لأنه يُلمَح ولا يُقرأ.
+                  _Footer(covers: order.artworks, items: order.items ?? const []),
                 ],
               ),
             ),
@@ -210,7 +214,14 @@ class OrderCard extends StatelessWidget {
     );
   }
 }
-/// ما في الطلبية، بنداً بنداً، أسفل البطاقة.
+/// ذيل البطاقة: ما يُطبع على الطلبية، ثم ما فيها بنداً بنداً.
+///
+/// **الغلاف أولاً.** ما يميّز طلبيةً عن أخرى في قائمة تُقرأ بالعين هو الصورة المطبوعة عليها، لا
+/// اسم المنتج ولا رقمه — فهي أعلى الذيل، والأسماء تحتها.
+///
+/// **وصورة المنتج نُزعت.** كانت تُرسم بجانب كل بند، وهي صورة الكتالوج نفسها — الكيس الأبيض
+/// إيّاه على كل سطر من كل طلبية في المحل — فلا تقول شيئاً عن الطلبية التي هي تحتها، وتزاحم
+/// الاسمَ وحدَه القادر على قوله.
 ///
 /// **بندٌ في سطر، ومعه كميته.** «أكياس الشحن السادة» وحده لا يقول كم منها، و«طلبية ٢١٬٢٣٢ د.ل»
 /// بلا كمية هي نفس السؤال الذي كانت البطاقة تُفتح لأجله. الكمية هنا هي **المطلوبة** لا
@@ -220,11 +231,14 @@ class OrderCard extends StatelessWidget {
 /// **وما زاد عن بندين يُطوى.** خمسة أسطر تحت كل بطاقة تُخرج ما بعدها من الشاشة، فالاثنان
 /// الأولان ظاهران دائماً والبقية خلف زرٍّ يقول عددها.
 ///
-/// **صورةٌ لمن له صورة فقط** — والمكان محجوزٌ لها في الطلبية التي فيها صورةٌ واحدة على الأقل،
-/// لتبقى الأسماء على استقامة واحدة. المربّع الرمادي البديل تعلّمت الشاشةُ تخطّيه في
-/// `ProductCard`، وهو هنا أسوأ: مربّعٌ فارغ أسفل كل بطاقة في قائمة تُقرأ سطراً سطراً.
-class _Items extends StatefulWidget {
-  const _Items({required this.items});
+/// ويغيب الذيل كلّه — الخطُّ الفاصل معه — عن طلبيةٍ لا أغلفة فيها ولا بنود: خطٌّ تحته فراغ في
+/// قائمة تُقرأ سطراً سطراً هو سطرٌ يُقرأ ولا يقول شيئاً.
+class _Footer extends StatefulWidget {
+  const _Footer({required this.covers, required this.items});
+
+  /// ما يُطبع على الطلبية، بالترتيب الذي اختير به. فارغةٌ في كيسٍ سادة — ولا مربّع رمادي بديل:
+  /// مكانٌ محجوزٌ لصورة لا وجود لها أسفل كل بطاقة في القائمة أسوأ من غيابه.
+  final List<CustomerDesign> covers;
 
   final List<OrderItem> items;
 
@@ -232,24 +246,25 @@ class _Items extends StatefulWidget {
   static const int _collapsedCount = 2;
 
   @override
-  State<_Items> createState() => _ItemsState();
+  State<_Footer> createState() => _FooterState();
 }
 
-class _ItemsState extends State<_Items> {
+class _FooterState extends State<_Footer> {
   bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final items = widget.items;
-    final foldable = items.length > _Items._collapsedCount;
+    final covers = widget.covers;
+
+    if (covers.isEmpty && items.isEmpty) return const SizedBox.shrink();
+
+    final foldable = items.length > _Footer._collapsedCount;
 
     final shown = _expanded || !foldable
         ? items
-        : items.take(_Items._collapsedCount).toList();
-
-    // يُحجز مكان الصورة متى كان في الطلبية صورةٌ واحدة على الأقل، فلا تتعرّج الأسماء.
-    final hasAnyImage = items.any((item) => item.productImage != null);
+        : items.take(_Footer._collapsedCount).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -257,6 +272,10 @@ class _ItemsState extends State<_Items> {
         SizedBox(height: 20.h),
         Divider(height: 1, thickness: 1, color: scheme.outlineVariant.withValues(alpha: 0.5)),
         SizedBox(height: 10.h),
+        if (covers.isNotEmpty) ...[
+          _Covers(covers: covers),
+          SizedBox(height: 10.h),
+        ],
         // الفتح والطيّ حركةٌ واحدة متّصلة، لا قفزة في ارتفاع البطاقة.
         AnimatedSize(
           duration: const Duration(milliseconds: 180),
@@ -264,9 +283,7 @@ class _ItemsState extends State<_Items> {
           alignment: Alignment.topCenter,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final item in shown) _Line(item: item, reserveImageSlot: hasAnyImage),
-            ],
+            children: [for (final item in shown) _Line(item: item)],
           ),
         ),
         if (foldable)
@@ -293,39 +310,93 @@ class _ItemsState extends State<_Items> {
   }
 }
 
-/// سطر واحد: صورته، اسمه، وكم منه.
+/// أغلفة الطلبية، صفّاً واحداً.
+///
+/// **الواحد أكبر، والاثنان فأكثر أصغر.** الغلاف الوحيد هو وجه الطلبية فيأخذ حجمه، وحين يصير
+/// اثنين فالمطلوب أن يُعرفا معاً من نظرة لا أن يطول ذيل البطاقة بمربّعين كبيرين.
+///
+/// و`Wrap` لا `Row`: طلبيةٌ بأربعة تصاميم تنزل إلى سطر ثانٍ بدل أن تفيض عن عرض الهاتف — وهي
+/// نادرة بقدر ما هي ممكنة، ولا شيء هنا يستحق شريطاً يُسحب بالإصبع داخل بطاقةٍ تُسحب بالإصبع.
+///
+/// **وللغلاف ضغطته وحده.** البطاقة كلها ضغطةٌ تفتح الطلبية، وهذا هو الاستثناء الوحيد فيها:
+/// مربّعٌ بهذا الحجم يقول «هذا هو التصميم» ولا يقول ما فيه، ومن ضغط على الصورة أراد الصورة لا
+/// الطلبية. يفتحها [showDesign] بملء الشاشة — والعارض نفسه الذي تفتحه صفحة الطلبية، بزرّ
+/// التحميل والفتح خارج التطبيق، فلا نسخة ثانية منه تتفرّع عنه.
+class _Covers extends StatelessWidget {
+  const _Covers({required this.covers});
+
+  final List<CustomerDesign> covers;
+
+  @override
+  Widget build(BuildContext context) {
+    final side = covers.length == 1 ? 64.0 : 44.0;
+
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Wrap(
+        spacing: 8.w,
+        runSpacing: 8.h,
+        children: [
+          for (final cover in covers)
+            InkWell(
+              // أعمق في الحلبة من `GestureDetector` البطاقة، فيفوز بالضغطة عليه وحده.
+              onTap: () => unawaited(showDesign(context, cover)),
+              borderRadius: BorderRadius.circular(10.r),
+              child: DesignThumbnail(design: cover, size: side, radius: 10.r),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// سطر واحد: اسمه، مقاسه، وكم منه.
+///
+/// **والمقاس ليس زينة.** «أكياس شحن ــ سادة» تُكتب مرتين على الطلبية الواحدة — مقاسان من منتج
+/// واحد — فكان السطران توأمين لا يفرّق بينهما شيء، والمقاس هو الفارق كلّه وهو ما يُسأل عنه.
+/// بجانب الاسم لا تحته: البطاقة في قائمة، وسطرٌ ثانٍ لكل بند يضاعف طول ذيلها.
+///
+/// وهو أخفت من الاسم لا مثله: الاسم يُقرأ أولاً ويقود العين إلى مقاسه، كما تفعل [_Cell] بعنوانها
+/// وقيمتها.
 class _Line extends StatelessWidget {
-  const _Line({required this.item, required this.reserveImageSlot});
+  const _Line({required this.item});
 
   final OrderItem item;
-
-  /// يبقي الأسماء على استقامة واحدة في طلبيةٍ بعض بنودها مصوَّر وبعضها لا.
-  final bool reserveImageSlot;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final image = item.productImage;
-    final side = 30.w;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 5.h),
       child: Row(
         children: [
-          if (image != null)
-            ProductThumbnail(image: image, side: side, radius: 9.r)
-          else if (reserveImageSlot)
-            SizedBox(width: side),
-          if (image != null || reserveImageSlot) SizedBox(width: 8.w),
+          // الاسم والمقاس صفٌّ داخل الصفّ، يتقاسمان ما تركته الكمية: المقاس يُقصّ آخرَ الاسم
+          // حين يطول، ولا يُدفع هو خارج السطر — فبغيابه يصير السطران توأمين.
           Expanded(
-            child: Text(
-              item.productName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: scheme.onSurface,
-              ),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    item.productName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  item.variantLabel,
+                  // مقاسٌ يُكتب «25*35»، فيُقرأ من اليسار كما يُكتب على الكيس.
+                  textDirection: TextDirection.ltr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ],
             ),
           ),
           SizedBox(width: 8.w),

@@ -14,6 +14,7 @@ use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
 use App\Domain\Order\Exceptions\OrderIsClosed;
+use App\Domain\Order\Exceptions\OrderIsDeletedForStatusChange;
 use App\Domain\Order\Exceptions\PaymentRequiresAnActor;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
 use App\Domain\Order\Exceptions\ShortageMustBeResolved;
@@ -77,6 +78,7 @@ final class ChangeOrderStatus
      * @param  array<string, mixed>  $fields  What the move asked for — see {@see TransitionFields}.
      *
      * @throws OrderIsClosed
+     * @throws OrderIsDeletedForStatusChange
      * @throws TransitionNotAllowed
      * @throws TransitionRequiresReason
      * @throws SettlementRequiresFullPayment
@@ -114,6 +116,10 @@ final class ChangeOrderStatus
         }
 
         return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields): Order {
+            // **Before anything else, because an archived order must not move.** See §٤ of
+            // Docs/orders/ORDER-DELETE-AND-ARCHIVE.md and {@see OrderIsDeletedForStatusChange}.
+            $this->guardTheOrderIsNotDeleted($order);
+
             // **Money first, because the guard below reads what this writes.** «تم الاستلام» and
             // «تم التسوية» each carry a box for what was just handed over, and an accountant who
             // types the remainder into it is settling the order *with* that payment — so it has
@@ -513,6 +519,34 @@ final class ChangeOrderStatus
 
         if (! $recorded) {
             throw ShortageNeedsAQuantity::make();
+        }
+    }
+
+    /**
+     * Refuses to move an order that is sitting in the archive.
+     *
+     * **Locked and re-read rather than answered from `$order`, because the whole point is the
+     * race.** A delete and a forward move can both bind the same live order, and both then think
+     * it is live: the delete archives it and credits its goods back while this action walks on
+     * into «جاهزة للطباعة», draws 300 bags out of the warehouse for an order that no longer
+     * appears in any list, and dispatches `OrderStockDrawn` so an investor is paid for them.
+     * Nothing in the database catches it — a *deduction* has no reversal to collide with, unlike
+     * the two double-delete cases beside it (§٤). Asking `$order->trashed()` from the model bound
+     * before the transaction opened would read the answer from before the race and re-lose it.
+     *
+     * The lock is the same one {@see DeleteOrder} takes as its own first statement, so whichever
+     * of the two arrives second waits for the first to commit and then reads the truth.
+     * `withTrashed()` for the reason that action gives: the scoped query cannot see the very row
+     * this is asking about.
+     *
+     * @throws OrderIsDeletedForStatusChange
+     */
+    private function guardTheOrderIsNotDeleted(Order $order): void
+    {
+        $locked = Order::withTrashed()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+        if ($locked->trashed()) {
+            throw OrderIsDeletedForStatusChange::make((string) $locked->code);
         }
     }
 

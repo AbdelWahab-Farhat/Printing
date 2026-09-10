@@ -191,13 +191,15 @@ class OrdersCubit extends PagedCubit<Order> {
     await load(search: currentSearch);
   }
 
-  /// Whether an order still belongs under the filters on screen.
+  /// Whether an order matches the three narrowing axes on screen — the status, the payment
+  /// states and urgency.
   ///
-  /// Both axes, for the same reason: an order that has just been paid off while «غير مدفوعة»
-  /// is selected should leave that list, exactly as one marked delivered leaves «جاهزة».
-  /// [PagedCubit.replace] drops the row when this says no.
-  @override
-  bool belongs(Order item) =>
+  /// **Split out of [belongs] so الأرشيف can share it and still disagree about one thing.** The
+  /// archive asks these same three questions of the same rows; what it answers differently is
+  /// which side of the soft-delete line an order has to be on. Written once here, a fourth axis
+  /// added tomorrow reaches both lists — which is exactly what a second copy would not do.
+  @protected
+  bool matchesFilters(Order item) =>
       (status == null || item.status == status) &&
       (paymentStatuses.isEmpty || paymentStatuses.contains(item.paymentStatus)) &&
       // The third axis, and it moves for the same reason: an order that has just been marked
@@ -205,6 +207,19 @@ class OrdersCubit extends PagedCubit<Order> {
       // The *sort* is deliberately not consulted — a patched row keeps its place rather than
       // jumping the queue, because nothing about it moved except the flag.
       (isUrgent == null || item.isUrgent == isUrgent);
+
+  /// Whether an order still belongs under the filters on screen.
+  ///
+  /// Every axis, for the same reason: an order that has just been paid off while «غير مدفوعة»
+  /// is selected should leave that list, exactly as one marked delivered leaves «جاهزة».
+  /// [PagedCubit.replace] drops the row when this says no.
+  ///
+  /// **And an archived order leaves it too.** Deleting one on its detail screen hands the
+  /// trashed row straight back here, and this is the line that takes it off الطلبيات — with no
+  /// request, because the list already holds the answer. [ArchivedOrdersCubit] is this same
+  /// class with that one comparison turned round.
+  @override
+  bool belongs(Order item) => matchesFilters(item) && !item.isArchived;
 
   /// Replaces one row in place, without a round trip — and re-reads the numbers beside the
   /// filter, which are the one thing on this screen a status change makes stale everywhere at

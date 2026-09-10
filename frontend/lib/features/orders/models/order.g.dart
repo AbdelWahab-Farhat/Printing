@@ -122,6 +122,12 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
+  deletedAt: json['deleted_at'] == null
+      ? null
+      : DateTime.parse(json['deleted_at'] as String),
+  stockEffect: json['stock_effect'] == null
+      ? null
+      : StockEffect.fromJson(json['stock_effect'] as Map<String, dynamic>),
   createdBy: json['created_by'] == null
       ? null
       : OrderActor.fromJson(json['created_by'] as Map<String, dynamic>),
@@ -201,6 +207,8 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'delivered_at': instance.deliveredAt?.toIso8601String(),
   'settled_at': instance.settledAt?.toIso8601String(),
   'created_at': instance.createdAt?.toIso8601String(),
+  'deleted_at': instance.deletedAt?.toIso8601String(),
+  'stock_effect': instance.stockEffect?.toJson(),
   'created_by': instance.createdBy?.toJson(),
 };
 

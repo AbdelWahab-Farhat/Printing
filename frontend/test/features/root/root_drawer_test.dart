@@ -25,6 +25,7 @@ void main() {
     'reports.pnl.view',
     'users.view',
     'roles.manage',
+    'orders.archive.view',
   ];
 
   /// Every screen the drawer can reach — the router has to know them, because tapping a row
@@ -41,6 +42,9 @@ void main() {
     '/employees',
     '/roles',
     '/settings',
+    '/tools/qr',
+    '/orders/archive',
+    '/tools/bag-preview',
   ];
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -217,6 +221,56 @@ void main() {
     expect(find.text('الإعدادات'), findsOneWidget);
   });
 
+  testWidgets('الأدوات survives an account that holds no grant at all', (tester) async {
+    // Arrange — a reader granted nothing: every heading whose rows all need something is gone.
+    await arrange([]);
+
+    // Act
+    await open(tester);
+
+    // Assert — the tools are not a register to be shown or withheld; withholding a QR generator
+    // from a member of staff is withholding a calculator.
+    expect(find.text('الأدوات'), findsOneWidget);
+    expect(find.text('الإدارة والصلاحيات'), findsNothing);
+
+    // And it really is open to them: the heading holds a row, not an empty promise.
+    await tester.tap(find.text('الأدوات'));
+    await tester.pumpAndSettle();
+    expect(find.text('إنشاء QR'), findsOneWidget);
+  });
+
+  testWidgets('الأدوات opens onto its rows like every other heading', (tester) async {
+    // Arrange
+    await arrange(allGrants);
+    await open(tester);
+
+    // Assert — folded, the tool is not a row yet.
+    expect(find.text('إنشاء QR'), findsNothing);
+
+    // Act
+    await tester.tap(find.text('الأدوات'));
+    await tester.pumpAndSettle();
+
+    // Assert — one tap to the heading, a second to the tool. No page in between.
+    expect(find.text('إنشاء QR'), findsOneWidget);
+    expect(find.text('معاينة التصميم'), findsOneWidget);
+  });
+
+  testWidgets('إنشاء QR pushes the tool itself', (tester) async {
+    // Arrange
+    await arrange(allGrants);
+    await open(tester);
+    await tester.tap(find.text('الأدوات'));
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('إنشاء QR'));
+    await tester.pumpAndSettle();
+
+    // Assert — the drawer closed behind it, and the row pushed its screen.
+    expect(find.text('إنشاء QR'), findsNothing);
+  });
+
   testWidgets('the screen being read opens its heading and marks its row', (tester) async {
     // Arrange
     await arrange(allGrants);
@@ -248,5 +302,75 @@ void main() {
     // Assert — no overflow was painted, and الإعدادات is still reachable at the foot.
     expect(tester.takeException(), isNull);
     expect(find.text('الإعدادات'), findsOneWidget);
+  });
+
+  testWidgets('الأرشيف is a heading of its own, not a row under الإدارة', (tester) async {
+    // Arrange — §٨'s decision, and it breaks the panel's own rule that a heading gathers rows.
+    // The alternative was filing it beside الموظفون and الأدوار, and it was rejected because of
+    // who opens this screen and when: somebody hunting a طلبية that has gone missing, who
+    // would not think to look for it under a heading about staff.
+    await arrange(allGrants);
+
+    // Act
+    await open(tester);
+
+    // Assert — folded like every other heading, so the row it holds is not on screen yet.
+    expect(find.text('الأرشيف'), findsOneWidget);
+    expect(find.text('أرشيف الطلبيات'), findsNothing);
+
+    await tester.tap(find.text('الأرشيف'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('أرشيف الطلبيات'), findsOneWidget);
+  });
+
+  testWidgets('الأرشيف sits before الأدوات، which stays the last heading', (tester) async {
+    // Arrange — the ordering is the half of the decision that is easy to lose. Everything above
+    // الأدوات is the map of the system, and الأرشيف is a register like the rest of it; الأدوات
+    // is the one heading that classifies no record, so it stays at the foot where the hand that
+    // uses it daily already expects it.
+    await arrange(allGrants);
+
+    // Act
+    await open(tester);
+
+    // Assert — read down the panel by where each heading was painted.
+    double top(String heading) => tester.getTopLeft(find.text(heading)).dy;
+
+    expect(top('الأرشيف'), greaterThan(top('الإدارة والصلاحيات')));
+    expect(top('الأدوات'), greaterThan(top('الأرشيف')));
+  });
+
+  testWidgets('a reader without orders.archive.view is shown no الأرشيف at all', (tester) async {
+    // Arrange — its own grant, separate from deleting and from restoring: whoever audits what
+    // was removed is not necessarily whoever removes or brings back. And with the one row gone
+    // the heading goes with it, by the same rule that takes الإدارة away from an account that
+    // may open neither screen under it.
+    await arrange(['users.view', 'roles.manage']);
+
+    // Act
+    await open(tester);
+
+    // Assert — الإدارة is still there for the two rows this reader may open; الأرشيف is not.
+    expect(find.text('الإدارة والصلاحيات'), findsOneWidget);
+    expect(find.text('الأرشيف'), findsNothing);
+    expect(find.text('أرشيف الطلبيات'), findsNothing);
+  });
+
+  testWidgets('the archive row opens the archive and nothing else', (tester) async {
+    // Arrange — the row and the route are declared in two files, and a typo in either is a tap
+    // that lands on go_router's error page rather than anywhere a test would notice.
+    await arrange(allGrants);
+    await open(tester);
+    await tester.tap(find.text('الأرشيف'));
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('أرشيف الطلبيات'));
+    await tester.pumpAndSettle();
+
+    // Assert — the drawer closed behind it, and no route was missing.
+    expect(tester.takeException(), isNull);
+    expect(find.text('أرشيف الطلبيات'), findsNothing);
   });
 }

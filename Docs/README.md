@@ -148,6 +148,12 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [PURCHASE-ORDER-RECEIPT-REVERSAL.md](purchase-orders/PURCHASE-ORDER-RECEIPT-REVERSAL.md) | Undoing a receipt entered in error — 24 hours, and only while nothing has been drawn on. **Implemented.** |
 | [PURCHASE-ORDER-RECEIPT-REVERSAL-FRONTEND-INTEGRATION.md](purchase-orders/PURCHASE-ORDER-RECEIPT-REVERSAL-FRONTEND-INTEGRATION.md) | The same, in the app. **Planned — not built.** |
 
+## [tools/](tools/)
+
+| Document | |
+|---|---|
+| [TOOLS-DESIGN.md](tools/TOOLS-DESIGN.md) | قسم الأدوات: **أداة QR مُنفَّذة**، ومعاينة التصميم على الكيس تنتظر أجوبة §٧. |
+
 ## [vendors/](vendors/)
 
 | Document | |

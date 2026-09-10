@@ -2,6 +2,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -65,8 +66,8 @@ class _VendorDetailView extends StatefulWidget {
   State<_VendorDetailView> createState() => _VendorDetailViewState();
 }
 
-/// Stateful for one reason: it remembers the supplier as it changed, so `pop` can hand the list
-/// behind the new row instead of making it re-read the page. That is screen lifecycle, not
+/// Stateful for one reason: it remembers the supplier as it changed, so the list behind is
+/// handed the new row instead of made to re-read the page. That is screen lifecycle, not
 /// business state — the Cubit owns the supplier itself.
 class _VendorDetailViewState extends State<_VendorDetailView> {
   final _changes = Changes<Vendor>();
@@ -155,62 +156,54 @@ class _VendorDetailViewState extends State<_VendorDetailView> {
   Widget build(BuildContext context) {
     final cubit = context.read<VendorDetailCubit>();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        // Always through here, so the back button and the app bar's arrow return the same thing.
-        context.pop(_changes.result);
-      },
-      child: Scaffold(
-        floatingActionButtonLocation: AppSpeedDial.location,
-        appBar: AppBar(
-          title: BlocBuilder<VendorDetailCubit, VendorDetailState>(
-            // The name once it is known, so the bar stops saying something generic the moment
-            // it can say something useful.
-            builder: (context, state) =>
-                Text(state.vendor?.name ?? 'تفاصيل المورد'),
-          ),
+    return Scaffold(
+      floatingActionButtonLocation: AppSpeedDial.location,
+      appBar: AppBar(
+        title: BlocBuilder<VendorDetailCubit, VendorDetailState>(
+          // The name once it is known, so the bar stops saying something generic the moment
+          // it can say something useful.
+          builder: (context, state) =>
+              Text(state.vendor?.name ?? 'تفاصيل المورد'),
         ),
-        floatingActionButton: BlocBuilder<VendorDetailCubit, VendorDetailState>(
-          builder: (context, state) {
-            final vendor = state.vendor;
-            if (vendor == null) return const SizedBox.shrink();
+      ),
+      floatingActionButton: BlocBuilder<VendorDetailCubit, VendorDetailState>(
+        builder: (context, state) {
+          final vendor = state.vendor;
+          if (vendor == null) return const SizedBox.shrink();
 
-            return _Actions(
-              vendor: vendor,
-              onEdit: _edit,
-              onToggleActive: _toggleActive,
-            );
-          },
-        ),
-        body: BlocConsumer<VendorDetailCubit, VendorDetailState>(
-          // Every reading goes past here, whatever produced it — the form, the activation
-          // toggle, a pull that picked up somebody else's change. What differs from the first
-          // one is what the list behind is handed on the way out.
-          listener: (context, state) => _changes.saw(state.vendor),
-          builder: (context, state) {
-            final vendor = state.vendor;
+          return _Actions(
+            vendor: vendor,
+            onEdit: _edit,
+            onToggleActive: _toggleActive,
+          );
+        },
+      ),
+      body: BlocConsumer<VendorDetailCubit, VendorDetailState>(
+        // Every reading goes past here, whatever produced it — the form, the activation
+        // toggle, a pull that picked up somebody else's change. What differs from the first
+        // one is what the list behind is handed on the way out.
+        listener: (context, state) => context.handBack(_changes.saw(state.vendor)),
+        builder: (context, state) {
+          final vendor = state.vendor;
 
-            if (vendor == null) {
-              return switch (state) {
-                VendorDetailFailure(:final failure) => _FailureView(
-                  message: failure.message,
-                  onRetry: cubit.load,
-                ),
-                _ => const Center(child: CircularProgressIndicator()),
-              };
-            }
-
-            return RefreshIndicator(
-              onRefresh: () => _reload(context),
-              child: _Body(
-                vendor: vendor,
-                showPurchaseOrders: _maySeePurchaseOrders,
+          if (vendor == null) {
+            return switch (state) {
+              VendorDetailFailure(:final failure) => _FailureView(
+                message: failure.message,
+                onRetry: cubit.load,
               ),
-            );
-          },
-        ),
+              _ => const Center(child: CircularProgressIndicator()),
+            };
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => _reload(context),
+            child: _Body(
+              vendor: vendor,
+              showPurchaseOrders: _maySeePurchaseOrders,
+            ),
+          );
+        },
       ),
     );
   }

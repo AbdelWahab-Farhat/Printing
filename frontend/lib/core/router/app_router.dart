@@ -1,5 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/storage/token_storage.dart';
 import 'package:dayaa/features/access/models/role.dart';
@@ -40,6 +42,7 @@ import 'package:dayaa/features/notifications/presentation/views/compose_announce
 import 'package:dayaa/features/notifications/presentation/views/notifications_page.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
+import 'package:dayaa/features/orders/presentation/views/archived_orders_page.dart';
 import 'package:dayaa/features/orders/presentation/views/filtered_orders_page.dart';
 import 'package:dayaa/features/orders/presentation/views/new_order_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_detail_page.dart';
@@ -73,6 +76,8 @@ import 'package:dayaa/features/splash/presentation/views/splash_page.dart';
 import 'package:dayaa/features/stock_item_groups/presentation/views/stock_item_groups_page.dart';
 import 'package:dayaa/features/stock_items/presentation/views/stock_item_form_page.dart';
 import 'package:dayaa/features/stock_items/presentation/views/stock_items_page.dart';
+import 'package:dayaa/features/tools/presentation/views/bag_preview_page.dart';
+import 'package:dayaa/features/tools/presentation/views/qr_tool_page.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/views/vendor_detail_page.dart';
 import 'package:dayaa/features/vendors/presentation/views/vendor_form_page.dart';
@@ -123,6 +128,18 @@ abstract final class Routes {
   /// The orders behind one number on the home screen. Takes an [OrdersFilter] as `extra` — the
   /// Arabic title travels with it, because this app deliberately holds no table of status names.
   static const String ordersFiltered = '/orders/filter';
+
+  /// أرشيف الطلبيات — المحذوفة وحدها.
+  ///
+  /// **يُعلَن قبل `/orders/:id`** كجاره [ordersFiltered]، وإلا قرأ go_router كلمة «archive»
+  /// رقمَ طلبية ورماها إلى `int.parse`. نفس الترتيب مفروضٌ على الخادم للسبب نفسه — الربط
+  /// الضمني هناك يجيب ٤٠٤ على طلبيةٍ اسمها «archive» — ونفس المسار لِيقرأ من يقرأ الاثنين معاً
+  /// أنهما شيءٌ واحد على طرفَي السلك.
+  ///
+  /// خارج الصدفة: يُدخَل من الدرج، والشريط السفلي يجب ألّا يدّعي أن القارئ على تبويبٍ غادره.
+  /// وبلا `extra`: الشاشة تفتح على «الكل» وتُفلتَر من داخلها بنفس ورقة الطلبيات، لأن
+  /// [OrdersFilter] لا يستطيع حمل السؤال الذي تطرحه — انظر §٨.
+  static const String archivedOrders = '/orders/archive';
   static const String warehouse = '/warehouse';
   static const String customers = '/customers';
 
@@ -291,6 +308,25 @@ abstract final class Routes {
   /// nowhere else, and the list is where the sender returns to see it landed.
   static const String composeAnnouncement = '/notifications/compose';
 
+  /// إنشاء رمز QR.
+  ///
+  /// تحت `/tools` رغم أنه **لا شاشة على `/tools` نفسها**: «الأدوات» عنوانٌ في الدرج ينفتح على
+  /// صفوفه، لا صفحةٌ تُفتح لتُفتح منها صفحة ثانية. المسار يبقى مصنَّفاً لأن الأداة الثانية
+  /// ستقف بجانبه، ولأن المسار الذي يقول أيَّ قسمٍ هذا يقرأه من يقرأ سجلّاً بعد شهر.
+  static const String qrTool = '/tools/qr';
+
+  /// نفس الأداة، تُفتح لتُعيد ملفاً بدل أن تسلّمه لورقة النظام — انظر [QrToolPage.picking].
+  ///
+  /// مسارٌ ثانٍ لا مُعامل `extra`: النهاية مختلفة لا الشاشة، ومسارٌ يقول ذلك يظهر في السجلّ
+  /// ويُفتح في الاختبار بسطر.
+  static const String qrToolPick = '/tools/qr/pick';
+
+  /// معاينة التصميم على الكيس.
+  ///
+  /// تقبل `extra` من نوع [PickedFile] — تصميمٌ تفتح عليه الشاشة حين تُفتح من ملفٍ موجود بدل أن
+  /// يُرفع واحدٌ من الصفر. وبلا `extra` تفتح فارغة، وهي حالة الرابط العميق.
+  static const String bagPreview = '/tools/bag-preview';
+
   /// Preferences, what this build is, and the way out. Outside the shell: it is a place the
   /// user goes *to*, not a tab they browse between.
   static const String settings = '/settings';
@@ -418,6 +454,10 @@ abstract final class Routes {
 /// GoRouter only: no `Navigator.push(MaterialPageRoute(...))` anywhere. One router means deep
 /// links, the Android back button and the browser's history all behave, and every one of those
 /// is something an imperative push quietly breaks.
+///
+/// **Every builder here reads `state.payload`, never `state.extra`.** A screen opened for a
+/// result carries its slot in the `extra` seat — see [PopResult] — and `payload` is that seat
+/// with the slot lifted off it.
 abstract final class AppRouter {
   static final GoRouter instance = GoRouter(
     // Always the splash: it is the one place that decides whether there is a usable session,
@@ -453,7 +493,7 @@ abstract final class AppRouter {
         path: '/investor-deals/:id/orders',
         builder: (context, state) => DealOrdersPage(
           dealId: int.parse(state.pathParameters['id']!),
-          dealCode: state.extra as String?,
+          dealCode: state.payload as String?,
         ),
       ),
       GoRoute(
@@ -532,7 +572,7 @@ abstract final class AppRouter {
               ? const _UnknownWarehouse()
               : WarehouseStocksPage(
                   warehouseId: id,
-                  warehouse: state.extra as Warehouse?,
+                  warehouse: state.payload as Warehouse?,
                 );
         },
       ),
@@ -550,7 +590,7 @@ abstract final class AppRouter {
           // `extra` is ours and is absent on a deep link, which is exactly why the screen
           // has to work without it: the wider feed is still a correct answer.
           final shelf =
-              state.extra as ({Warehouse? warehouse, WarehouseStock stock})?;
+              state.payload as ({Warehouse? warehouse, WarehouseStock stock})?;
 
           return StockMovementsPage(
             warehouseId: id,
@@ -582,7 +622,7 @@ abstract final class AppRouter {
         builder: (context, state) {
           // `extra` is ours and is absent on a deep link. Both fields are optional anyway —
           // nothing carried means «open a new shelf under no material», which is a real answer.
-          final args = state.extra as StockItemFormArgs?;
+          final args = state.payload as StockItemFormArgs?;
 
           return StockItemFormPage(item: args?.item, group: args?.group);
         },
@@ -629,7 +669,7 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.ordersFiltered,
         builder: (context, state) {
-          final filter = state.extra as OrdersFilter?;
+          final filter = state.payload as OrdersFilter?;
 
           // A deep link carries no `extra`. Rather than an error screen, it answers the widest
           // honest version of the question it was given.
@@ -637,6 +677,17 @@ abstract final class AppRouter {
             filter: filter ?? const OrdersFilter(title: 'الطلبيات'),
           );
         },
+      ),
+      // Declared **before** `/orders/:id` too, and for exactly the reason above it: `:id` would
+      // otherwise capture the literal word «archive». Guarded on its own grant, because there
+      // is no guarded parent to inherit one from — `can()` answers synchronously, so a deep
+      // link, a notification tap or a stale back-stack entry cannot open it either.
+      GoRoute(
+        path: Routes.archivedOrders,
+        redirect: (context, state) => sl<Session>().can(AppPermission.viewOrderArchive)
+            ? null
+            : Routes.home,
+        builder: (context, state) => const ArchivedOrdersPage(),
       ),
       // Declared outside the shell and *after* the tab, so `/orders` still selects the tab
       // while `/orders/7` covers it.
@@ -665,7 +716,7 @@ abstract final class AppRouter {
             path: Routes.orderNotesPath,
             builder: (context, state) => OrderNotesPage(
               orderId: int.parse(state.pathParameters['id']!),
-              order: state.extra is Order ? state.extra! as Order : null,
+              order: state.payload is Order ? state.payload! as Order : null,
             ),
           ),
           // Guarded here rather than only on the arm that opens it, so a deep link cannot walk
@@ -679,7 +730,7 @@ abstract final class AppRouter {
                 : Routes.order(int.parse(state.pathParameters['id']!)),
             builder: (context, state) => OrderPaymentsPage(
               orderId: int.parse(state.pathParameters['id']!),
-              orderCode: state.extra is String ? state.extra! as String : '',
+              orderCode: state.payload is String ? state.payload! as String : '',
             ),
           ),
         ],
@@ -693,7 +744,7 @@ abstract final class AppRouter {
             ? null
             : Routes.vendors,
         builder: (context, state) =>
-            VendorFormPage(vendor: state.extra as Vendor?),
+            VendorFormPage(vendor: state.payload as Vendor?),
       ),
       GoRoute(
         path: Routes.vendors,
@@ -712,10 +763,10 @@ abstract final class AppRouter {
         builder: (context, state) => PurchaseOrderFormPage(
           // Both arrive as `extra` and only one is ever present: an order when the form is
           // opened to correct it, a vendor when it is opened from that supplier's screen.
-          order: state.extra is PurchaseOrder
-              ? state.extra! as PurchaseOrder
+          order: state.payload is PurchaseOrder
+              ? state.payload! as PurchaseOrder
               : null,
-          vendor: state.extra is Vendor ? state.extra! as Vendor : null,
+          vendor: state.payload is Vendor ? state.payload! as Vendor : null,
         ),
       ),
       // Before `:id` for the same reason the form is, and behind `investors.manage`: this
@@ -729,8 +780,8 @@ abstract final class AppRouter {
         redirect: (context, state) =>
             sl<Session>().can(AppPermission.manageInventory) ? null : Routes.home,
         builder: (context, state) => RecordMovementPage(
-          warehouse: state.extra is Warehouse ? state.extra! as Warehouse : null,
-          context: state.extra is MovementContext ? state.extra! as MovementContext : null,
+          warehouse: state.payload is Warehouse ? state.payload! as Warehouse : null,
+          context: state.payload is MovementContext ? state.payload! as MovementContext : null,
         ),
       ),
       GoRoute(
@@ -740,7 +791,7 @@ abstract final class AppRouter {
             ? null
             : Routes.purchaseOrders,
         builder: (context, state) {
-          final order = state.extra as PurchaseOrder?;
+          final order = state.payload as PurchaseOrder?;
 
           // A deep link carries no `extra`, and there is no order to fund without one.
           return order == null
@@ -765,7 +816,7 @@ abstract final class AppRouter {
             ? null
             : Routes.home,
         builder: (context, state) {
-          final filter = state.extra as PurchaseOrdersFilter?;
+          final filter = state.payload as PurchaseOrdersFilter?;
 
           // A deep link carries no `extra`. Rather than an error screen, it answers the widest
           // honest version of the question it was given.
@@ -799,7 +850,7 @@ abstract final class AppRouter {
         builder: (context, state) => CommentsPage(
           subject: CommentSubject.vendor(int.parse(state.pathParameters['id']!)),
           // Whose notes these are, without a second request. Null on a cold deep link.
-          ownerName: state.extra as String?,
+          ownerName: state.payload as String?,
         ),
       ),
       GoRoute(
@@ -813,7 +864,7 @@ abstract final class AppRouter {
           // screen copes with a missing vendor — it cannot cope with a missing id.
           return id == null
               ? const _UnknownVendor()
-              : VendorDetailPage(vendorId: id, vendor: state.extra as Vendor?);
+              : VendorDetailPage(vendorId: id, vendor: state.payload as Vendor?);
         },
       ),
       // Declared **before** the list, so the literal word is not captured by a sibling and, as
@@ -825,7 +876,7 @@ abstract final class AppRouter {
             ? null
             : Routes.shippingCompanies,
         builder: (context, state) =>
-            ShippingCompanyFormPage(company: state.extra as ShippingCompany?),
+            ShippingCompanyFormPage(company: state.payload as ShippingCompany?),
       ),
       GoRoute(
         path: Routes.shippingCompanies,
@@ -857,7 +908,7 @@ abstract final class AppRouter {
             : Routes.manufacturingCostRates,
         // `extra` is ours, and the screen works without it: a cold link opens «معدل تكلفة جديد».
         builder: (context, state) => ManufacturingCostRateFormPage(
-          rate: state.extra as ManufacturingCostRate?,
+          rate: state.payload as ManufacturingCostRate?,
         ),
       ),
       GoRoute(
@@ -881,7 +932,7 @@ abstract final class AppRouter {
               // The screen copes with a missing city — it cannot cope with a missing id.
               return id == null
                   ? const _UnknownCity()
-                  : CityRegionsPage(cityId: id, city: state.extra as City?);
+                  : CityRegionsPage(cityId: id, city: state.payload as City?);
             },
           ),
         ],
@@ -912,7 +963,7 @@ abstract final class AppRouter {
         builder: (context, state) {
           // The employee comes through `extra`, which a deep link cannot carry — so a pasted
           // URL lands on the screen that *can* fetch them rather than on an empty form.
-          final user = state.extra as AuthUser?;
+          final user = state.payload as AuthUser?;
 
           return user == null
               ? const _UnknownEmployee()
@@ -964,13 +1015,31 @@ abstract final class AppRouter {
             // `extra` carries the role the user was just looking at, so the form opens with its
             // name and ticks already in place instead of fetching what the caller already held.
             builder: (context, state) =>
-                RoleFormPage(role: state.extra as Role?),
+                RoleFormPage(role: state.payload as Role?),
           ),
         ],
       ),
       GoRoute(
         path: Routes.settings,
         builder: (context, state) => const SettingsPage(),
+      ),
+      // بلا `redirect`: لا بيانات خلف هذه الشاشة تُحجب، فليس ثمّة ما يُمنع منه أحد — حجبُ
+      // مولّد رمز QR عن موظف هو منعُه من أداةِ حاسبة.
+      GoRoute(
+        path: Routes.qrTool,
+        builder: (context, state) => const QrToolPage(),
+        routes: [
+          GoRoute(
+            path: 'pick',
+            builder: (context, state) => const QrToolPage.picking(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: Routes.bagPreview,
+        builder: (context, state) => BagPreviewPage(
+          initialDesign: state.payload as PickedFile?,
+        ),
       ),
       GoRoute(
         path: Routes.notifications,
@@ -1008,7 +1077,7 @@ abstract final class AppRouter {
           GoRoute(
             path: 'edit',
             builder: (context, state) =>
-                AddCustomerPage(customer: state.extra as Customer?),
+                AddCustomerPage(customer: state.payload as Customer?),
           ),
           GoRoute(
             path: 'designs',
@@ -1016,7 +1085,7 @@ abstract final class AppRouter {
               customerId: int.parse(state.pathParameters['id']!),
               // The name, so the bar can say whose library this is without a second request.
               // Null on a cold deep link, where the heading stands alone.
-              customerName: state.extra as String?,
+              customerName: state.payload as String?,
             ),
           ),
           GoRoute(
@@ -1024,7 +1093,7 @@ abstract final class AppRouter {
             builder: (context, state) => CommentsPage(
               subject: CommentSubject.customer(int.parse(state.pathParameters['id']!)),
               // As above: whose notes these are, without a second request.
-              ownerName: state.extra as String?,
+              ownerName: state.payload as String?,
             ),
           ),
           // Guarded here rather than only on the arm that opens it, so a deep link cannot walk
@@ -1040,7 +1109,7 @@ abstract final class AppRouter {
               customerId: int.parse(state.pathParameters['id']!),
               // The customer the caller was looking at, so the form opens with their name in
               // place. Null on a cold deep link, where the screen fetches them.
-              customer: state.extra as Customer?,
+              customer: state.payload as Customer?,
             ),
           ),
         ],
@@ -1060,14 +1129,14 @@ abstract final class AppRouter {
               : ActivityLogPage(
                   subject: subject,
                   recordId: id,
-                  title: state.extra as String?,
+                  title: state.payload as String?,
                 );
         },
       ),
       GoRoute(
         path: Routes.pickLocation,
         builder: (context, state) =>
-            PickLocationPage(initial: state.extra as LatLng?),
+            PickLocationPage(initial: state.payload as LatLng?),
       ),
       // The catalogue itself, reached from the drawer since المخزن took its tab. Guarded on
       // the permission its every request needs, exactly as its drawer row is gated.
@@ -1115,7 +1184,7 @@ abstract final class AppRouter {
               productId: int.parse(state.pathParameters['id']!),
               // The name, so the bar can say whose photographs these are without a second
               // request. Null on a cold deep link, where the heading stands alone.
-              productName: state.extra as String?,
+              productName: state.payload as String?,
             ),
           ),
           GoRoute(
@@ -1129,7 +1198,7 @@ abstract final class AppRouter {
               // already had it. A deep link carries none, and rather than a blank form
               // pretending to be an edit — which would save an empty product over a real one —
               // it sends the reader to the product itself to open it from there.
-              final product = state.extra as Product?;
+              final product = state.payload as Product?;
               final id = int.tryParse(state.pathParameters['id'] ?? '');
 
               if (product != null) return ProductFormPage(product: product);

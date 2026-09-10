@@ -35,6 +35,12 @@ trait FiltersOrders
     private function applyFilters(Builder $query, OrderFilters $filters, bool $withStatus = true): Builder
     {
         return $query
+            // **Which of the two lists this is, and it is applied first because it decides the
+            // set everything below narrows.** `onlyTrashed()` here rather than in one of the
+            // three queries that seed their own `Order::query()`: the list, the status counts and
+            // the payment-state counts all pass through this method, so the archive cannot end up
+            // with archived rows under live numbers. See {@see OrderFilters::$archived}.
+            ->when($filters->archived, fn (Builder $q) => $q->onlyTrashed())
             ->when(
                 $filters->search !== null,
                 fn (Builder $q) => $this->applySearch($q, OrderSearchTerm::from($filters->search)),

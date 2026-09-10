@@ -332,8 +332,14 @@ class OrderReinstatementTest extends TestCase
 
     public function test_it_needs_a_signed_in_user(): void
     {
-        // Arrange
+        // Arrange — **and the flush is the arrangement.** `withHeaders()` merges into
+        // `$this->defaultHeaders` and they stand for the rest of the test, so the foreman's
+        // bearer token that walked this order to «إلغاء تام» would still be attached to the
+        // "unauthenticated" request below — which is why this test answered 200 instead of 401
+        // while asserting nothing at all.
         $order = $this->cancelledAtThePress($this->foreman());
+
+        $this->flushHeaders();
 
         // Act
         $response = $this->postJson("/api/v1/orders/{$order->id}/reinstate");

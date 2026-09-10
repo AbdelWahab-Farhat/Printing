@@ -5,6 +5,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -33,6 +34,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_timeline.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_totals.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_scrap_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/reinstate_order_dialog.dart';
+import 'package:dayaa/features/orders/presentation/widgets/stock_effect_dialog.dart';
 import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
 import 'package:flutter/material.dart';
@@ -84,124 +86,125 @@ class _OrderDetailView extends StatefulWidget {
   State<_OrderDetailView> createState() => _OrderDetailViewState();
 }
 
-/// Stateful for one reason: it remembers whether anything was moved, so `pop` can hand the
-/// result back. That is screen lifecycle, not business state — the Cubit owns the order itself.
+/// Stateful for one reason: the moves it makes are all asynchronous, and each one has to know
+/// afterwards whether this screen is still on the tree. What moved goes straight to the list
+/// behind through `handBack`, so nothing about the order is kept here — the Cubit owns that.
 class _OrderDetailViewState extends State<_OrderDetailView> {
-  Order? _moved;
-
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<OrderDetailCubit>();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        // Always through here, so the back button and the app bar's arrow return the same thing.
-        context.pop(_moved);
-      },
-      child: Scaffold(
-        // The dial pins to the edge that leaves room for its labels in Arabic — see
-        // AppSpeedDial's own notes on why the three parts of that only work together.
-        floatingActionButtonLocation: AppSpeedDial.location,
-        floatingActionButton: BlocBuilder<OrderDetailCubit, OrderDetailState>(
-          builder: (context, state) {
-            final order = state.order;
-            if (order == null) return const SizedBox.shrink();
+    return Scaffold(
+      // The dial pins to the edge that leaves room for its labels in Arabic — see
+      // AppSpeedDial's own notes on why the three parts of that only work together.
+      floatingActionButtonLocation: AppSpeedDial.location,
+      floatingActionButton: BlocBuilder<OrderDetailCubit, OrderDetailState>(
+        builder: (context, state) {
+          final order = state.order;
+          if (order == null) return const SizedBox.shrink();
 
-            return _Actions(
-              order: order,
-              onChangeStatus: _changeStatus,
-              onEdit: _edit,
-              onEditShortages: _editShortages,
-              onOpenPayments: _openPayments,
-            );
-          },
-        ),
-        // No `appBar`: the order's own header *is* the bar — see [OrderDetailHeader] — and it
-        // needs the order to draw itself. The two states that have no order yet put a plain one
-        // of their own on top, so «رجوع» is never missing.
-        body: BlocConsumer<OrderDetailCubit, OrderDetailState>(
-          listener: (context, state) {
-            // Only when there is still a page underneath: with nothing to fall back to, the
-            // body already shows the failure and a snackbar would say it twice.
-            if (state case OrderDetailFailure(:final failure)) {
-              if (state.order != null) context.showFailure(failure);
-            }
-          },
-          builder: (context, state) => switch (state) {
-            OrderDetailLoading() => const _BeforeTheOrder(
-              child: Center(child: CircularProgressIndicator()),
+          return _Actions(
+            order: order,
+            onChangeStatus: _changeStatus,
+            onEdit: _edit,
+            onEditShortages: _editShortages,
+            onOpenPayments: _openPayments,
+            onArchive: _archive,
+            onRestore: _restore,
+          );
+        },
+      ),
+      // No `appBar`: the order's own header *is* the bar — see [OrderDetailHeader] — and it
+      // needs the order to draw itself. The two states that have no order yet put a plain one
+      // of their own on top, so «رجوع» is never missing.
+      body: BlocConsumer<OrderDetailCubit, OrderDetailState>(
+        listener: (context, state) {
+          // Only when there is still a page underneath: with nothing to fall back to, the
+          // body already shows the failure and a snackbar would say it twice.
+          if (state case OrderDetailFailure(:final failure)) {
+            if (state.order != null) context.showFailure(failure);
+          }
+        },
+        builder: (context, state) => switch (state) {
+          OrderDetailLoading() => const _BeforeTheOrder(
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          OrderDetailFailure(:final failure) when state.order == null => _BeforeTheOrder(
+            child: _FailureView(message: failure.message, onRetry: cubit.load),
+          ),
+          _ => RefreshIndicator(
+            onRefresh: cubit.load,
+            child: _Body(
+              order: state.order!,
+              // A courtesy, never a boundary: the customer screen refuses on its own. Without
+              // the grant the card still shows the three facts the order carries — it simply
+              // stops advertising a door that opens onto a 403.
+              onOpenCustomer: sl<Session>().can(AppPermission.viewCustomers)
+                  ? _openCustomer
+                  : null,
+              // The same courtesy the customer card is given, and the same grant logic: the
+              // product screen refuses on its own, so this only decides whether a door is
+              // advertised. Without `products.view` the line still names what was sold.
+              onOpenProduct: sl<Session>().can(AppPermission.viewProducts) ? _openProduct : null,
+              // **`reports.pnl.view`, and there is no closer grant.** The API publishes the
+              // cost side to anybody who may read the order, so this is the app choosing a
+              // line rather than enforcing one — and the line it chooses is the one the
+              // permission was written for: «هذه هي الشاشة التي تضع الإيراد والتكلفة جنباً
+              // إلى جنب», which is a different sensitivity from being allowed to see either
+              // alone. A clerk taking orders reads the invoice; what the bags cost us is not
+              // part of that job.
+              showCosts: sl<Session>().can(AppPermission.viewProfitAndLossReport),
+              // **`products.view_cost`, and this one *is* enforced by the API**: the vendor's
+              // figures on a وسيط line are omitted from the payload without it, so the grant
+              // is checked rather than the null — a null here also means «not a وسيط line».
+              // The same grant that guards the catalogue number the line's cost was copied
+              // from, because hiding a figure on one screen and sending it on another is a
+              // lock on one door of two.
+              showOutsourcingCosts: sl<Session>().can(AppPermission.viewProductCost),
+              // `inventory.manage`, because scrapping draws stock and posts its FIFO cost —
+              // it is a movement on the ledger, exactly like booking a shipment in, and the
+              // route is guarded by that same grant rather than by any `orders.*` one.
+              onScrap: sl<Session>().can(AppPermission.manageInventory) ? _recordScrap : null,
+              // Always offered, unlike a sheet that could only ever show the order's own
+              // note: the page gathers what was written at every status too, and «لا توجد
+              // ملاحظات» is an answer worth reaching rather than a button that vanished.
+              onOpenNotes: _openNotes,
+              // `logs.view`, not `orders.view`, and that is the server's own line: a history
+              // shows what everyone has done, including prices the reader may have no other
+              // way to see.
+              onOpenLog: sl<Session>().can(AppPermission.viewActivityLogs) ? _openLog : null,
+              // «إرسال للنورس». `carrier.manage` is the grant — a different one from
+              // `orders.manage`, because handing goods to a courier is not editing paperwork.
+              // The other two conditions are the order's own and are read in [_Body].
+              onSendToCarrier: sl<Session>().can(AppPermission.manageCarrierParcels)
+                  ? _sendToCarrier
+                  : null,
+              onResendShipment: sl<Session>().can(AppPermission.manageCarrierParcels)
+                  ? _resendShipment
+                  : null,
+              onDeleteShipment: sl<Session>().can(AppPermission.manageCarrierParcels)
+                  ? _deleteShipment
+                  : null,
+              onUnlinkShipment: sl<Session>().can(AppPermission.manageCarrierParcels)
+                  ? _unlinkShipment
+                  : null,
+              // **Not gated here, and that is the point.** Whether the undo is on offer is
+              // three conditions the server already answered — cancelled, granted, and a
+              // timeline that records what it was cancelled from — and it sent the answer as
+              // `reinstateTo`. A permission check in Dart beside it would be a fourth opinion
+              // with nothing keeping it honest.
+              //
+              // **الأرشيف is the one condition the server does not fold into that answer**:
+              // `reinstate_to` is sent on a trashed order too, where every write route refuses
+              // it — so the button would sit under a note that has just said the order is in
+              // الأرشيف and earn a 404 for whoever believed it. Read off the order's own
+              // `deleted_at` rather than from a grant, so it stays one fact and not a rule.
+              onReinstate: state.order!.canReinstate && !state.order!.isArchived
+                  ? _reinstate
+                  : null,
             ),
-            OrderDetailFailure(:final failure) when state.order == null => _BeforeTheOrder(
-              child: _FailureView(message: failure.message, onRetry: cubit.load),
-            ),
-            _ => RefreshIndicator(
-              onRefresh: cubit.load,
-              child: _Body(
-                order: state.order!,
-                // A courtesy, never a boundary: the customer screen refuses on its own. Without
-                // the grant the card still shows the three facts the order carries — it simply
-                // stops advertising a door that opens onto a 403.
-                onOpenCustomer: sl<Session>().can(AppPermission.viewCustomers)
-                    ? _openCustomer
-                    : null,
-                // The same courtesy the customer card is given, and the same grant logic: the
-                // product screen refuses on its own, so this only decides whether a door is
-                // advertised. Without `products.view` the line still names what was sold.
-                onOpenProduct: sl<Session>().can(AppPermission.viewProducts) ? _openProduct : null,
-                // **`reports.pnl.view`, and there is no closer grant.** The API publishes the
-                // cost side to anybody who may read the order, so this is the app choosing a
-                // line rather than enforcing one — and the line it chooses is the one the
-                // permission was written for: «هذه هي الشاشة التي تضع الإيراد والتكلفة جنباً
-                // إلى جنب», which is a different sensitivity from being allowed to see either
-                // alone. A clerk taking orders reads the invoice; what the bags cost us is not
-                // part of that job.
-                showCosts: sl<Session>().can(AppPermission.viewProfitAndLossReport),
-                // **`products.view_cost`, and this one *is* enforced by the API**: the vendor's
-                // figures on a وسيط line are omitted from the payload without it, so the grant
-                // is checked rather than the null — a null here also means «not a وسيط line».
-                // The same grant that guards the catalogue number the line's cost was copied
-                // from, because hiding a figure on one screen and sending it on another is a
-                // lock on one door of two.
-                showOutsourcingCosts: sl<Session>().can(AppPermission.viewProductCost),
-                // `inventory.manage`, because scrapping draws stock and posts its FIFO cost —
-                // it is a movement on the ledger, exactly like booking a shipment in, and the
-                // route is guarded by that same grant rather than by any `orders.*` one.
-                onScrap: sl<Session>().can(AppPermission.manageInventory) ? _recordScrap : null,
-                // Always offered, unlike a sheet that could only ever show the order's own
-                // note: the page gathers what was written at every status too, and «لا توجد
-                // ملاحظات» is an answer worth reaching rather than a button that vanished.
-                onOpenNotes: _openNotes,
-                // `logs.view`, not `orders.view`, and that is the server's own line: a history
-                // shows what everyone has done, including prices the reader may have no other
-                // way to see.
-                onOpenLog: sl<Session>().can(AppPermission.viewActivityLogs) ? _openLog : null,
-                // «إرسال للنورس». `carrier.manage` is the grant — a different one from
-                // `orders.manage`, because handing goods to a courier is not editing paperwork.
-                // The other two conditions are the order's own and are read in [_Body].
-                onSendToCarrier: sl<Session>().can(AppPermission.manageCarrierParcels)
-                    ? _sendToCarrier
-                    : null,
-                onResendShipment: sl<Session>().can(AppPermission.manageCarrierParcels)
-                    ? _resendShipment
-                    : null,
-                onDeleteShipment: sl<Session>().can(AppPermission.manageCarrierParcels)
-                    ? _deleteShipment
-                    : null,
-                onUnlinkShipment: sl<Session>().can(AppPermission.manageCarrierParcels)
-                    ? _unlinkShipment
-                    : null,
-                // **Not gated here, and that is the point.** Whether the undo is on offer is
-                // three conditions the server already answered — cancelled, granted, and a
-                // timeline that records what it was cancelled from — and it sent the answer as
-                // `reinstateTo`. A permission check in Dart beside it would be a fourth opinion
-                // with nothing keeping it honest.
-                onReinstate: state.order!.canReinstate ? _reinstate : null,
-              ),
-            ),
-          },
-        ),
+          ),
+        },
       ),
     );
   }
@@ -344,13 +347,15 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     final order = cubit.state.order;
     if (order == null) return;
 
-    final changed = await context.push<bool>(Routes.editOrder(order.id));
-    if (changed != true || !mounted) return;
+    final changed = await context.pushForResult<bool>(Routes.editOrder(order.id));
+    if (changed != true || !context.mounted) return;
 
     await cubit.load();
 
+    if (!context.mounted) return;
+
     final updated = cubit.state.order;
-    if (updated != null) setState(() => _moved = updated);
+    if (updated != null) context.handBack(updated);
   }
 
   /// Corrects what is missing, which corrects what the order costs.
@@ -370,19 +375,19 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     if (order == null || lines.isEmpty) return;
 
     final shortages = await showEditShortagesSheet(context: context, items: lines);
-    if (shortages == null || !mounted) return;
+    if (shortages == null || !context.mounted) return;
 
     final result = await sl<SetOrderShortages>()(order.id, shortages: shortages);
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     await result.fold(
       (failure) async => context.showFailure(failure),
       (_) async {
         await cubit.load();
-        if (!mounted) return;
+        if (!context.mounted) return;
 
         final updated = cubit.state.order;
-        if (updated != null) setState(() => _moved = updated);
+        if (updated != null) context.handBack(updated);
       },
     );
   }
@@ -410,10 +415,10 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     if (order == null) return;
 
     final draft = await showReinstateOrderDialog(context: context, order: order);
-    if (draft == null || !mounted) return;
+    if (draft == null || !context.mounted) return;
 
     final failure = await cubit.reinstate(reason: draft.reason);
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     if (failure != null) {
       // The server's own Arabic. «لا يوجد في سجل الطلبية الحالة التي أُلغيت منها» names what is
@@ -427,7 +432,126 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     if (updated == null) return;
 
     context.showSuccess('رجعت الطلبية إلى «${updated.statusLabel}»');
-    setState(() => _moved = updated);
+    context.handBack(updated);
+  }
+
+  /// Archives the order — «حذف».
+  ///
+  /// **Asked with the server's own preview of what it does to the warehouse**, never with a
+  /// sentence composed here. `stock_effect` arrives on the order and says whether goods come
+  /// back and which ones; §٧ gives the two reasons that has to be the server's: it reaches
+  /// every installed build without a release, and it is built from the same accessor the action
+  /// reads, so the promise and the act cannot drift.
+  ///
+  /// **The screen stays open on the archived order.** The response *is* the order, trashed, so
+  /// the dial redraws with «استعادة» where «حذف» stood and a mistake is undone from where it was
+  /// made. What is handed back is that same row: الطلبيات drops it, and الأرشيف — if this was
+  /// opened from there — keeps it.
+  Future<void> _archive(BuildContext context) => _moveArchive(
+    context,
+    title: 'حذف الطلبية؟',
+    confirmLabel: 'حذف',
+    destructive: true,
+    send: (cubit) => cubit.archive(),
+    done: 'نُقلت الطلبية إلى الأرشيف',
+  );
+
+  /// Brings it back — «استعادة».
+  ///
+  /// **Not destructive, and not free either**, which is why it asks at all: the goods are drawn
+  /// off the shelf a second time, at today's cost. The dialog says both, in the server's words.
+  Future<void> _restore(BuildContext context) => _moveArchive(
+    context,
+    title: 'استعادة الطلبية؟',
+    confirmLabel: 'استعادة',
+    destructive: false,
+    send: (cubit) => cubit.restore(),
+    done: 'رجعت الطلبية من الأرشيف',
+  );
+
+  /// The shape both share: show the preview, send, and say which way it went.
+  ///
+  /// The send happens here rather than in the dialog, for the reason every other form on this
+  /// screen works that way — a dialog's answer is «yes», and what to do about a refusal belongs
+  /// to the screen that has somewhere to show it. And there is a lot to show: «عليها مبلغ
+  /// مدفوع»، «لها طرد مفتوح لدى نورس»، «الرصيد لا يكفي»، «المخزن لم يعد موجوداً» are all the
+  /// server's, all name what to do next, and not one of them could be written here without this
+  /// app holding a copy of a ledger, of a parcel's state at the carrier, and of a shelf.
+  Future<void> _moveArchive(
+    BuildContext context, {
+    required String title,
+    required String confirmLabel,
+    required bool destructive,
+    required Future<Failure?> Function(OrderDetailCubit cubit) send,
+    required String done,
+  }) async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    // **No preview, no dialog — but never no answer either.** Asking «هل أنت متأكد؟» with
+    // nothing underneath it is the one thing §٧ exists to prevent, and a tap that draws nothing
+    // and says nothing is the other: this arm used to return here in silence, so «حذف الطلبية»
+    // simply did nothing on any order the screen had taken back from «تغيير الحالة» — that
+    // response carries no `stock_effect`, and [OrderDetailCubit.replace] keeps it as it is.
+    //
+    // So it is fetched. The one request this screen makes for something it was not handed, and
+    // «lists patch, they do not refresh» allows exactly that: the preview is read off the
+    // movement ledger and no amount of arithmetic here reconstructs it. See
+    // [OrderDetailCubit.refreshStockEffect], which also says why the last known preview is not
+    // kept across a move instead.
+    var effect = order.stockEffect;
+
+    if (effect == null) {
+      final failure = await cubit.refreshStockEffect();
+      if (!context.mounted) return;
+
+      if (failure != null) {
+        // The server's own sentence, and it is not parked in the state — so this is the only
+        // place it is said. See [OrderDetailCubit.refreshStockEffect].
+        context.showFailure(failure);
+
+        return;
+      }
+
+      effect = cubit.state.order?.stockEffect;
+    }
+
+    if (effect == null) {
+      // **The one sentence in this feature written in Dart, and it is written because there is
+      // no server sentence to show**: the payload came back without the block — an older build
+      // behind the app, or a response trimmed on the way. Loud rather than silent, because a
+      // button that does nothing is pressed again, harder.
+      context.showError('تعذّر معرفة ما ستفعله هذه العملية بالمخزون — أعد المحاولة');
+
+      return;
+    }
+
+    final confirmed = await showStockEffectDialog(
+      context: context,
+      title: title,
+      confirmLabel: confirmLabel,
+      effect: effect,
+      destructive: destructive,
+    );
+
+    if (!(confirmed ?? false) || !context.mounted) return;
+
+    final failure = await send(cubit);
+
+    if (!context.mounted) return;
+
+    if (failure != null) {
+      context.showFailure(failure);
+
+      return;
+    }
+
+    final updated = cubit.state.order;
+    if (updated == null) return;
+
+    context.showSuccess(done);
+    context.handBack(updated);
   }
 
   /// Writes off bags that were ruined making this line.
@@ -480,23 +604,26 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
   ///
   /// Re-read rather than trusting a result: `paid_amount`, `remaining_amount` and
   /// `payment_status` live on the **order's** payload — they are what the three numbers at the
-  /// top of this screen draw — and the ledger's page has no way to hand those back. Kept as
-  /// `_moved` too, so backing out gives the list behind a row whose total is current.
+  /// top of this screen draw — and the ledger's page has no way to hand those back. Handed on
+  /// to the list behind too, so its row's total is current the moment this screen closes.
   Future<void> _openPayments(BuildContext context) async {
     final cubit = context.read<OrderDetailCubit>();
     final order = cubit.state.order;
     if (order == null) return;
 
-    final changed = await context.push<bool>(Routes.orderPayments(order.id), extra: order.code);
+    final changed = await context.pushForResult<bool>(
+      Routes.orderPayments(order.id),
+      extra: order.code,
+    );
 
-    if (changed != true || !mounted) return;
+    if (changed != true || !context.mounted) return;
 
     await cubit.load();
 
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     final updated = cubit.state.order;
-    if (updated != null) setState(() => _moved = updated);
+    if (updated != null) context.handBack(updated);
   }
 
   /// Opens the customer's own screen.
@@ -561,10 +688,10 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     if (order == null) return;
 
     final moved = await context.push<Order>(Routes.orderStatus(order.id));
-    if (moved == null || !mounted) return;
+    if (moved == null || !context.mounted) return;
 
     cubit.replace(moved);
-    setState(() => _moved = moved);
+    context.handBack(moved);
   }
 }
 
@@ -723,10 +850,18 @@ class _Body extends StatelessWidget {
               if (!order.hasActions) ...[
                 SizedBox(height: 16.h),
                 _Note(
+                  // **الأرشيف is asked first, because it is the reason that outranks the other
+                  // three.** A trashed order arrives with no `available_transitions` at all —
+                  // §٦ — so `hasActions` is false whoever is reading, and the last branch used
+                  // to tell an administrator holding every grant that they lacked a permission.
+                  // The archive is where the order is, not something the reader is short of.
+                  //
                   // **A cancellation that may be undone is not «لا مزيد من الإجراءات».** The
                   // sentence under it is about to be followed by a button, and a note claiming
                   // the road ends here would be arguing with it.
-                  text: order.canReinstate
+                  text: order.isArchived
+                      ? 'الطلبية في الأرشيف — لا تُغيَّر حالتها قبل استعادتها'
+                      : order.canReinstate
                       ? 'الطلبية ${order.statusLabel} — والإلغاء وحده ما يمكن التراجع عنه'
                       : order.isFinal
                       ? 'الطلبية ${order.statusLabel} — لا مزيد من الإجراءات'
@@ -976,6 +1111,8 @@ class _Actions extends StatelessWidget {
     required this.onEdit,
     required this.onEditShortages,
     required this.onOpenPayments,
+    required this.onArchive,
+    required this.onRestore,
   });
 
   final Order order;
@@ -983,6 +1120,11 @@ class _Actions extends StatelessWidget {
   final Future<void> Function(BuildContext context) onEdit;
   final Future<void> Function(BuildContext context) onEditShortages;
   final Future<void> Function(BuildContext context) onOpenPayments;
+
+  /// The two halves of الأرشيف. Never both on the dial at once — an order is either in the shop
+  /// or in the archive, and [Order.isArchived] is which.
+  final Future<void> Function(BuildContext context) onArchive;
+  final Future<void> Function(BuildContext context) onRestore;
 
   /// Whether «تعديل الطلبية» has anything at all to offer this person.
   ///
@@ -1068,6 +1210,35 @@ class _Actions extends StatelessWidget {
         // «سجل التعديلات» used to stand here. It reads and never writes, which is what the two
         // buttons in the header are for — see [OrderDetailHeader] — and an action on the dial
         // that only opens a page to look at was the odd one out among five that change things.
+
+        // الأرشيف, from whichever side the order is standing on. **Last on the dial**, so the
+        // reversed order [AppSpeedDial] draws puts it furthest from the thumb: it is the one
+        // arm here that takes the order out of every list, and the one that is worth an extra
+        // centimetre of reach.
+        //
+        // **Not «إلغاء تام», and the labels are chosen so nobody has to be told.** «إلغاء» is a
+        // status on the map, reached through «تغيير الحالة» like every other; «حذف» says the
+        // order should not have been written at all. The pair sits behind two grants rather than
+        // one, because taking a wrong row out of the shop and putting one back are different
+        // decisions — and the second draws stock again.
+        //
+        // The `permission` slot rather than a check here: [AppSpeedDial] filters the list, so
+        // an account without the grant sees the dial without the arm and never the arm greyed.
+        if (order.isArchived)
+          AppAction(
+            label: 'استعادة الطلبية',
+            icon: AppIcons.restore,
+            permission: AppPermission.restoreOrders,
+            onTap: onRestore,
+          )
+        else
+          AppAction(
+            label: 'حذف الطلبية',
+            icon: AppIcons.delete,
+            tone: AppActionTone.warning,
+            permission: AppPermission.deleteOrders,
+            onTap: onArchive,
+          ),
       ],
     );
   }

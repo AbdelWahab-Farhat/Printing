@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/orders/models/order.dart';
@@ -10,7 +11,6 @@ import 'package:dayaa/features/orders/presentation/widgets/order_sort_button.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 /// الطلبيات — the work queue.
 ///
@@ -102,7 +102,7 @@ class _OrdersView extends StatelessWidget {
                     // The detail screen hands back the order if it moved it, so the row updates
                     // without a round trip — and drops out of the list when it no longer belongs
                     // to the queue on screen.
-                    final moved = await context.push<Order>(Routes.order(order.id));
+                    final moved = await context.pushForResult<Order>(Routes.order(order.id));
                     if (moved != null) cubit.replace(moved);
                   },
                 ),

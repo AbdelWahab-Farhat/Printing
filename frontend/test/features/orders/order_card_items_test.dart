@@ -14,8 +14,13 @@ import 'package:flutter_test/flutter_test.dart';
 /// with no bag named on it is a row nobody can recognise without opening it, so the strip at the
 /// foot of the card is the answer to «طلبية إيه؟» before the tap.
 ///
-/// **بندٌ في سطر، ومعه كميته.** «أكياس الشحن السادة» وحده لا يقول كم منها، وهو نصف الجواب؛
-/// والأسعار وحدها تبقى في صفحة الطلبية.
+/// **بندٌ في سطر، ومعه مقاسه وكميته.** «أكياس الشحن السادة» وحده لا يقول كم منها ولا أيّ مقاس،
+/// وطلبيةٌ من مقاسين تكتب الاسم نفسه مرتين فلا يُفرَّق بين سطريها إلا بالمقاس؛ والأسعار وحدها
+/// تبقى في صفحة الطلبية.
+///
+/// **ولا صورة منتج بجانب الاسم.** كانت صورة الكتالوج تُرسم على كل سطر — الكيس الأبيض إيّاه على
+/// كل بند من كل طلبية في المحل — فلا تميّز شيئاً وتزاحم الاسم. غلاف التصميم أخذ مكانها أعلى
+/// الذيل، وله ملفّ اختبار خاص به: `order_card_design_cover_test.dart`.
 ///
 /// **وما زاد عن بندين يُطوى.** بطاقة بخمسة أسطر تُخرج ما تحتها من الشاشة، فالاثنان الأولان
 /// ظاهران دائماً والبقية خلف «عرض الكل».
@@ -43,12 +48,12 @@ void main() {
     );
   }
 
-  OrderItem line(int id, String name, {ProductImage? image}) => OrderItem(
+  OrderItem line(int id, String name, {ProductImage? image, String size = '25*35'}) => OrderItem(
     id: id,
     productId: id,
     productVariantId: id,
     productName: name,
-    variantLabel: '25*35',
+    variantLabel: size,
     productImage: image,
     pricingUnitLabel: 'قطعة',
     quantity: '100.000',
@@ -79,7 +84,7 @@ void main() {
 
   const image = ProductImage(id: 1, url: 'https://example.test/bag.jpg', isPrimary: true);
 
-  testWidgets('a line names itself and says how much of it', (tester) async {
+  testWidgets('a line names itself, sizes itself and says how much of it', (tester) async {
     // Arrange
     await tester.pumpWidget(
       host(OrderCard(order: orderWith([line(1, 'أكياس الشحن السادة', image: image)]))),
@@ -88,10 +93,29 @@ void main() {
     // Act
     await tester.pump();
 
-    // Assert — الاسم، والكمية بوحدتها، والصورة بجانبهما.
+    // Assert — الاسم والمقاس والكمية بوحدتها، ولا صورة.
     expect(find.text('أكياس الشحن السادة'), findsOneWidget);
+    expect(find.text('25*35'), findsOneWidget);
     expect(find.text('100 قطعة'), findsOneWidget);
-    expect(find.byType(ProductThumbnail), findsOneWidget);
+    expect(find.byType(ProductThumbnail), findsNothing);
+  });
+
+  testWidgets('والمقاس هو ما يفرّق بين سطرين باسم واحد', (tester) async {
+    // Arrange — «أكياس شحن ــ سادة» مرتين على طلبية واحدة: سطران لا يميّز بينهما شيء بلا
+    // المقاس، وهو ما يُفتح السطر للسؤال عنه.
+    final items = [
+      line(1, 'أكياس شحن - سادة'),
+      line(2, 'أكياس شحن - سادة', size: '30*40'),
+    ];
+    await tester.pumpWidget(host(OrderCard(order: orderWith(items))));
+
+    // Act
+    await tester.pump();
+
+    // Assert
+    expect(find.text('أكياس شحن - سادة'), findsNWidgets(2));
+    expect(find.text('25*35'), findsOneWidget);
+    expect(find.text('30*40'), findsOneWidget);
   });
 
   testWidgets('كل بند في سطره', (tester) async {
@@ -108,7 +132,6 @@ void main() {
     // Assert — سطران، ولا زرّ طيّ: بندان يسعهما ذيل البطاقة.
     expect(find.text('أكياس الشحن السادة'), findsOneWidget);
     expect(find.text('أكياس مطبوعة'), findsOneWidget);
-    expect(find.byType(ProductThumbnail), findsNWidgets(2));
     expect(find.textContaining('عرض الكل'), findsNothing);
   });
 
@@ -168,14 +191,16 @@ void main() {
     expect(find.text('منتج 3'), findsOneWidget);
   });
 
-  testWidgets('products without photographs still name themselves', (tester) async {
-    // Arrange — most of the catalogue, most of the time.
-    await tester.pumpWidget(host(OrderCard(order: orderWith([line(1, 'أكياس الشحن السادة')]))));
+  testWidgets('a photographed product draws no picture either', (tester) async {
+    // Arrange — the catalogue's own photograph, which the card no longer has a slot for.
+    await tester.pumpWidget(
+      host(OrderCard(order: orderWith([line(1, 'أكياس الشحن السادة', image: image)]))),
+    );
 
     // Act
     await tester.pump();
 
-    // Assert — no slot held open for a picture that does not exist.
+    // Assert — the name is the whole row, and it is the half of it that identifies the line.
     expect(find.text('أكياس الشحن السادة'), findsOneWidget);
     expect(find.byType(ProductThumbnail), findsNothing);
   });
@@ -193,8 +218,7 @@ void main() {
   });
 
   testWidgets('the whole card still opens the order', (tester) async {
-    // Arrange — the rows are something to read, not a second destination: a thumbnail that
-    // walked off to the catalogue would steal the tap that opens the order.
+    // Arrange — the rows are something to read, not a second destination.
     var taps = 0;
     await tester.pumpWidget(
       host(
@@ -206,7 +230,7 @@ void main() {
     );
 
     // Act
-    await tester.tap(find.byType(ProductThumbnail));
+    await tester.tap(find.text('أكياس الشحن السادة'));
     await tester.pump();
 
     // Assert

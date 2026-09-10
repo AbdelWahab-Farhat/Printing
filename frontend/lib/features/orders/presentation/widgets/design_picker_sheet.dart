@@ -8,6 +8,7 @@ import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/models/design_rules.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
+import 'package:dayaa/features/tools/presentation/views/qr_tool_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -101,6 +102,31 @@ class _DesignPickerState extends State<_DesignPicker> {
     await cubit.add(files);
   }
 
+  /// Draws a QR code straight into this customer's library, from where it is ticked like any
+  /// other design.
+  ///
+  /// **Into the library, not onto the order** — the same rule the upload above obeys, and for
+  /// the same reason: the code is the customer's, and the next order should be able to point at
+  /// it rather than have it made a second time. [_tickWhatArrived] ticks it on arrival, so the
+  /// errand ends where it was going.
+  Future<void> _addQrCode() async {
+    final cubit = context.read<CustomerDesignsCubit>();
+
+    if ((cubit.state.designs?.length ?? 0) >= DesignRules.maxPerCustomer) {
+      context.showError(
+        'وصل هذا العميل إلى الحد الأقصى (${DesignRules.maxPerCustomer} تصميم). '
+        'احذف تصميماً قديماً من شاشة العميل لإضافة جديد.',
+      );
+
+      return;
+    }
+
+    final file = await pickQrCodeFile(context);
+    if (file == null) return;
+
+    await cubit.add([file]);
+  }
+
   void _confirm(List<CustomerDesign> library) {
     Navigator.of(context).pop([
       for (final design in library)
@@ -184,6 +210,10 @@ class _DesignPickerState extends State<_DesignPicker> {
                 },
               ),
               SizedBox(height: 12.h),
+              // Two ways to put a design in the library on one line, and the one action that
+              // ends the sheet on its own beneath them. «تم» kept the full width because it is
+              // what the sheet is for; sharing a row with «رفع تصميم» made the two read as a
+              // pair of equals, which they are not.
               Row(
                 children: [
                   Expanded(
@@ -195,14 +225,20 @@ class _DesignPickerState extends State<_DesignPicker> {
                   ),
                   SizedBox(width: 12.w),
                   Expanded(
-                    child: AppButton(
-                      label: 'تم (${_chosen.length})',
-                      // Nothing chosen is a legitimate answer — it is how somebody undoes a
-                      // selection they made a moment ago and leaves the field empty.
-                      onPressed: () => _confirm(library ?? const []),
+                    child: AppButton.outlined(
+                      label: 'إنشاء QR',
+                      icon: AppIcons.qrCode,
+                      onPressed: _addQrCode,
                     ),
                   ),
                 ],
+              ),
+              SizedBox(height: 12.h),
+              AppButton(
+                label: 'تم (${_chosen.length})',
+                // Nothing chosen is a legitimate answer — it is how somebody undoes a
+                // selection they made a moment ago and leaves the field empty.
+                onPressed: () => _confirm(library ?? const []),
               ),
             ],
           ),

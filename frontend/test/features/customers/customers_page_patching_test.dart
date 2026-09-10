@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
@@ -166,12 +167,17 @@ void main() {
             ),
           ),
         ),
+        // Left the way a detail screen is really left: it hands its row over as it reads it,
+        // and the pop itself carries nothing — which is all the back gesture ever does.
         GoRoute(
           path: '/customers/:id',
           builder: (context, state) => Scaffold(
             body: Center(
               child: TextButton(
-                onPressed: () => context.pop(detailAnswers),
+                onPressed: () {
+                  context.handBack(detailAnswers);
+                  context.pop();
+                },
                 child: const Text('أغلق'),
               ),
             ),

@@ -53,6 +53,13 @@ class RoleSeeder extends Seeder
             // size is on the shelf. Recording a transfer or a stocktake is the storekeeper's
             // job, and `inventory.manage` is what the business grants when it decides who that is.
             PermissionName::ViewInventory->value,
+            // **`orders.delete`, `orders.restore` and `orders.archive.view` are deliberately not
+            // here**, and the omission is the decision rather than an oversight. This role does
+            // not hold `orders.view` to begin with, so an archive it could open would be a screen
+            // listing orders it may not read; and of the three, two move stock — a delete puts
+            // goods back on the shelf and a restore takes them off again at today's cost. Who is
+            // trusted with that is the business's answer to give from the roles screen, and the
+            // administrator satisfies all three by rule in the meantime.
         ]);
 
         // «محاسب» is left deliberately empty — it is the worked example of a role waiting for

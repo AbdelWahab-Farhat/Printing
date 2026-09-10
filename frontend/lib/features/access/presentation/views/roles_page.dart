@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/appear.dart';
@@ -82,7 +83,7 @@ class _RolesView extends StatelessWidget {
                           // nothing to patch with, so this one re-reads rather than patches.
                           // Walking in to read the permissions and walking back out changes
                           // nothing, and used to cost a request all the same.
-                          final changed = await context.push<bool>(
+                          final changed = await context.pushForResult<bool>(
                             Routes.role(roles[index].id),
                           );
 

@@ -44,7 +44,64 @@ abstract interface class OrderRepository {
   /// part-paid, paid and overpaid. One request, because the filter sheet shows them together.
   Future<Either<Failure, OrderCounts>> statusCounts({String? search, int? customerId});
 
+  /// The same page, taken from الأرشيف — the orders that were deleted.
+  ///
+  /// **Its own method rather than a flag on [orders]**, because it is its own route: the server
+  /// declares `orders/archive` before the resource so the word is not read as an id, and the
+  /// three queries behind the list and its two rows of counters are seeded separately. A flag
+  /// threaded through one of them is how the chips end up describing a different set from the
+  /// rows under them — see §٦.
+  ///
+  /// Takes every filter [orders] takes, and that is the point: الأرشيف is the orders screen
+  /// with a different source, so «المحذوفة الجاهزة غير المدفوعة» has to be askable there too.
+  Future<Either<Failure, Paginated<Order>>> archivedOrders({
+    String? search,
+    List<String> statuses,
+    List<String> paymentStatuses,
+    bool? isUrgent,
+    OrdersSort sort,
+    int? customerId,
+    String? from,
+    String? to,
+    int page,
+    int perPage,
+  });
+
+  /// [statusCounts] over the archive. Separate for the same reason [archivedOrders] is.
+  Future<Either<Failure, OrderCounts>> archivedStatusCounts({String? search, int? customerId});
+
   Future<Either<Failure, Order>> order(int orderId);
+
+  /// Archives an order, and answers with it as the server left it — trashed.
+  ///
+  /// **Not «إلغاء تام», and the table in §١ is the whole distinction.** A cancellation says the
+  /// order happened and ended without a delivery; this says it should never have been written —
+  /// a duplicate entry, a wrong number, a test. So the goods it drew go back on the shelf, and
+  /// the order leaves every list but الأرشيف.
+  ///
+  /// **It is refused on an order that has money on it or a parcel open at the carrier**, and
+  /// both refusals arrive as the server's own Arabic naming what to do first. Neither is
+  /// re-derived here: the app would be guessing at a ledger it does not hold and at a parcel
+  /// only Nawris can close.
+  ///
+  /// The order comes back rather than a bare success, for the reason [changeStatus] does: it
+  /// carries `deleted_at`, and it has *lost* `available_transitions` and `progress`, so the row
+  /// the list is handed is already the archived one.
+  Future<Either<Failure, Order>> deleteOrder(int orderId);
+
+  /// Puts an archived order back in the shop, and answers with it live again.
+  ///
+  /// **The stock is deducted a second time**, which is exactly what «تراجع عن الإلغاء» refuses
+  /// to do — see [reinstate]. The two are undoing different things: a cancellation is a real
+  /// event that credited the goods back, while an archive is the claim that the order was never
+  /// real, so it has to come back the way it left, with its stock drawn. The price is that the
+  /// new deduction eats today's cost layers and the order returns costing something else; the
+  /// server says so in `stock_effect.note` and the dialog shows it.
+  ///
+  /// Refused when the balance is short, or when the order's warehouse has since been retired —
+  /// again in the server's own words, because «كل المقاسات صفر» is what an app that guessed
+  /// would say about a store that no longer exists.
+  Future<Either<Failure, Order>> restoreOrder(int orderId);
 
   /// Takes an order, and answers with the one the server stored.
   ///

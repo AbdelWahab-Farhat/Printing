@@ -5,6 +5,7 @@ import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/models/stock_effect.dart';
 import 'package:dayaa/features/orders/models/transition_field.dart';
 import 'package:dayaa/features/products/models/product.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -302,6 +303,29 @@ abstract class Order with _$Order {
     @JsonKey(name: 'settled_at') DateTime? settledAt,
     @JsonKey(name: 'created_at') DateTime? createdAt,
 
+    /// When the order was archived, or null while it is still in the shop.
+    ///
+    /// **On every list row, and it is what makes both lists correct themselves for free.**
+    /// [PagedCubit.belongs] already existed and [PagedCubit.replace] already drops a row that
+    /// stopped belonging, so الطلبيات refusing `deletedAt != null` and الأرشيف refusing
+    /// `deletedAt == null` is the whole of the patching — no request either way. See §٨ of
+    /// ORDER-DELETE-AND-ARCHIVE.md.
+    ///
+    /// **«حذف» is not «إلغاء تام», and the difference is on the shelf.** A cancellation says the
+    /// order happened and ended; an archive says it should never have been written — so a
+    /// restore draws the stock again, where «تراجع عن الإلغاء» deliberately does not. That is
+    /// [cancellationReason] versus this, and neither implies the other: an order can be
+    /// cancelled *and* archived.
+    ///
+    /// Absent is «حيّة». An older server, or a payload trimmed on the way, must not read as a
+    /// deleted order — the safe reading of a missing stamp is that nothing was deleted.
+    @JsonKey(name: 'deleted_at') DateTime? deletedAt,
+
+    /// What deleting this order — or restoring it — would do to the warehouse, in the server's
+    /// own Arabic. Null on every list row; see [StockEffect] for why it is built only for an
+    /// order somebody actually opened, and why not one word of it is written in Dart.
+    @JsonKey(name: 'stock_effect') StockEffect? stockEffect,
+
     /// Who took the order. Null on the list — the server sends it with the full order only —
     /// and for an order raised by a seeder or a console command.
     ///
@@ -321,6 +345,15 @@ abstract class Order with _$Order {
   /// say to them.
   bool get hasActions => availableTransitions.isNotEmpty;
 
+  /// Whether this order lives in الأرشيف rather than in the shop.
+  ///
+  /// A name for `deletedAt != null` because it is asked in four places — both lists' `belongs`,
+  /// the dial deciding between «حذف» and «استعادة», and the header — and «مؤرشفة» is the word
+  /// the workshop uses. Nothing else follows from it in Dart: a trashed order arrives with no
+  /// `available_transitions` and no `progress` at all, so the card and the bar stop offering
+  /// moves without being told to. See §٦.
+  bool get isArchived => deletedAt != null;
+
   /// Whether this screen may offer to undo the cancellation.
   ///
   /// Read from the server's own answer rather than from [isFinal] and a permission check here,
@@ -338,30 +371,35 @@ abstract class Order with _$Order {
   /// a room with two.
   bool get shortagesAreEditable => status == OrderStatus.shortage;
 
-  /// The artwork this order's lines are drawn with, or null when there is none to draw.
+  /// Every file this order is printed from, in the order the clerk attached them.
   ///
   /// **What tells one printed order from another is what is being printed on it**, and every
   /// line of every one of them was showing the same catalogue photograph of a white bag. The
   /// file was already on the payload — the screen simply drew the other picture.
   ///
-  /// Three things make it null, and none of them is a special case in the screen:
+  /// **A list, because an order is not always one picture.** «التصميم الأول» and «الثاني» on the
+  /// same job are the logo and the back of the bag as often as they are a draft and its
+  /// correction — the table cannot tell the two apart and neither can this getter — so the ones
+  /// that survive the filters below are all shown, side by side, in the order they were sent.
+  /// Ascending, which is that order: see the numbering in `AttachOrderDesigns`.
+  ///
+  /// Three things drop a version, and none of them is a special case in a screen:
   ///
   /// - **A كيس سادة carries no design at all.** Nothing is printed, so there is nothing to show
   ///   but the product, which is exactly what it showed before.
   /// - **A PDF is not drawn.** [DesignKind] arrives decided by the server for this one reason —
   ///   so nothing here tries to paint a print file into a thumbnail — and a photograph of the
   ///   bags is a better answer than a grey square.
-  /// - **A payload that never loaded the file** behind the version: the list endpoint sends no
-  ///   designs, and a version with no [CustomerDesign.fileUrl] has no picture in it.
+  /// - **A payload that never loaded the file** behind the version, and a version with no
+  ///   [CustomerDesign.fileUrl] has no picture in it.
   ///
-  /// **The newest version wins, and a rejected one never does.** The versions are a
-  /// conversation, so the last word is the current one — but a version the customer turned down
-  /// is precisely not what the shop is printing, and showing it would put the refused artwork on
-  /// the screen the press works from.
-  CustomerDesign? get artwork {
+  /// **And a rejected version never survives.** The versions are a conversation, and one the
+  /// customer turned down is precisely not what the shop is printing: showing it would put the
+  /// refused artwork on the screen the press works from.
+  List<CustomerDesign> get artworks {
     final versions = designs;
 
-    if (versions == null || versions.isEmpty) return null;
+    if (versions == null || versions.isEmpty) return const [];
 
     final drawable =
         versions
@@ -369,10 +407,16 @@ abstract class Order with _$Order {
             .where((version) => version.design?.kind == DesignKind.image)
             .where((version) => (version.design?.fileUrl ?? '').isNotEmpty)
             .toList()
-          ..sort((a, b) => b.version.compareTo(a.version));
+          ..sort((a, b) => a.version.compareTo(b.version));
 
-    return drawable.isEmpty ? null : drawable.first.design;
+    return [for (final version in drawable) version.design!];
   }
+
+  /// The single file a screen draws when it has room for one, or null when there is none.
+  ///
+  /// **The last of [artworks], which is the newest.** A screen with one square asks «ما الذي
+  /// يُطبع الآن؟», and the last word in the conversation is the answer.
+  CustomerDesign? get artwork => artworks.isEmpty ? null : artworks.last;
 
   /// Whether anything is still owed on this order.
   ///

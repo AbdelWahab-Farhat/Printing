@@ -9,9 +9,23 @@
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!--
+        The back gesture, and the animation that comes with it.
+
+        Android 13 and up hand a *predictive* back to apps that ask for it: the page follows the
+        finger and can be let go halfway, instead of vanishing at the end of the swipe. Flutter
+        draws that itself (PredictiveBackPageTransitionsBuilder is the Material default from 3.27
+        on), but only when this flag is set - without it the system falls back to the old
+        all-or-nothing back and the drag shows nothing at all.
+
+        The other half of this lives in the app: a route that says it might refuse to pop turns
+        BOTH gestures off, here and on iOS. See lib/core/router/pop_result.dart for why no screen
+        in this app says that any more.
+    -->
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

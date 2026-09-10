@@ -1,6 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
@@ -11,7 +12,6 @@ import 'package:dayaa/features/investors/presentation/widgets/deal_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 /// صفقات المستثمرين — one financed purchase of stock apiece.
 class InvestorDealsPage extends StatelessWidget {
@@ -97,7 +97,7 @@ class _DealsViewState extends State<_DealsView> {
                   // to redraw one card. A deal that no longer matches the filter leaves the
                   // list, which is what `belongs` is for.
                   onTap: () async {
-                    final changed = await context.push<InvestorDeal>(
+                    final changed = await context.pushForResult<InvestorDeal>(
                       Routes.investorDeal(deal.id),
                     );
                     if (changed != null) cubit.replace(changed);

@@ -66,5 +66,21 @@ void main() {
       // Assert
       expect(changes.result, isNull);
     });
+
+    test('answers with the row worth handing back as each reading arrives', () {
+      // Arrange
+      final changes = Changes<String>();
+
+      // Act — a screen hands back in the same breath as it sees, so this is what it hands.
+      final first = changes.saw('العميل');
+      final second = changes.saw('العميل المعدل');
+      final third = changes.saw(null);
+
+      // Assert — nothing on the first reading, the new row on the second, and a state that
+      // carries no reading changes no answer.
+      expect(first, isNull);
+      expect(second, 'العميل المعدل');
+      expect(third, 'العميل المعدل');
+    });
   });
 }

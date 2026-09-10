@@ -101,6 +101,7 @@ void main() {
       'تعديل منتج': Routes.editProduct(7),
       'مناطق مدينة': Routes.cityRegions(3),
       'الطلبيات المفلترة': Routes.ordersFiltered,
+      'أرشيف الطلبيات': Routes.archivedOrders,
       'الموردون': Routes.vendors,
       'نموذج المورد': Routes.vendorForm,
       'مورد واحد': Routes.vendor(9),
@@ -403,6 +404,25 @@ void main() {
       matches.whereType<ShellRouteBase>(),
       isEmpty,
       reason: 'a form is a task the user is in, not a tab they are browsing',
+    );
+  });
+
+  test('«/orders/archive» is the archive, not the detail screen reading «archive» as an id', () {
+    // Arrange — the same trap `/orders/filter` sits beside, and the same one the server has to
+    // avoid on its side: `:id` declared first would capture the literal word and `int.parse`
+    // would throw on the way in. The wrong answer here is silent until somebody opens the
+    // drawer row.
+    const location = Routes.archivedOrders;
+
+    // Act
+    final matches = matchedRoutes(location);
+
+    // Assert
+    expect(matches.whereType<GoRoute>().last.path, Routes.archivedOrders);
+    expect(
+      matches.whereType<ShellRouteBase>(),
+      isEmpty,
+      reason: 'the archive is a place the reader goes to, not a tab they browse between',
     );
   });
 }

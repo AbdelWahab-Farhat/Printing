@@ -306,7 +306,34 @@ abstract final class OrderEndpoints {
   /// How many orders sit in each status, under the same filters as the list.
   static const String summary = '/orders/summary';
 
+  /// أرشيف الطلبيات — the deleted ones, and nothing else.
+  ///
+  /// **Declared on the server *before* `/orders/{order}`**, or implicit binding reads the
+  /// literal word «archive» as an order id and answers 404 — the same trap `/orders/summary`
+  /// sits beside, and the same one `Routes.ordersFiltered` sits beside on this side of the
+  /// wire. It is a path rather than a flag on [index] because three separate queries seed the
+  /// list, the status counts and the payment counts, and a flag put on one of them would leave
+  /// the three describing different sets.
+  ///
+  /// Takes exactly the query [index] takes: the archive screen is the orders screen with a
+  /// different source, so every filter the reader already had travels unchanged.
+  static const String archive = '/orders/archive';
+
+  /// The archive's own counters. Under the archive rather than beside it for the reason above:
+  /// two rows of chips describing two different sets is the failure that contradicts itself in
+  /// front of the eye.
+  static const String archiveSummary = '/orders/archive/summary';
+
   static String show(int orderId) => '/orders/$orderId';
+
+  /// Putting an archived order back in the shop. A POST for the reason [status] and [reinstate]
+  /// are: the order's history gains a row.
+  ///
+  /// **And it is not [reinstate].** «تراجع عن الإلغاء» undoes a recorded business event and
+  /// deliberately leaves the warehouse alone; this undoes a *record that should never have
+  /// existed*, so the stock is drawn again — at today's cost, which is what the confirmation
+  /// says out loud. See §١ of ORDER-DELETE-AND-ARCHIVE.md.
+  static String restore(int orderId) => '/orders/$orderId/restore';
 
   /// Moving an order. A POST, not a PATCH: the server records a row on the order's timeline as
   /// well as changing the field, so it is an event rather than an edit to a value.

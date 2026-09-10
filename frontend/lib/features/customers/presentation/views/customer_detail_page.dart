@@ -4,6 +4,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -69,9 +70,9 @@ class _CustomerDetailView extends StatefulWidget {
   State<_CustomerDetailView> createState() => _CustomerDetailViewState();
 }
 
-/// Stateful for one reason: it remembers whether the customer moved while it was open, so `pop`
-/// can hand the list behind the new row. That is screen lifecycle, not business state — the
-/// Cubit owns the customer itself.
+/// Stateful for one reason: it remembers whether the customer moved while it was open, so the
+/// list behind is handed the new row. That is screen lifecycle, not business state — the Cubit
+/// owns the customer itself.
 class _CustomerDetailViewState extends State<_CustomerDetailView> {
   final _changes = Changes<Customer>();
 
@@ -92,59 +93,51 @@ class _CustomerDetailViewState extends State<_CustomerDetailView> {
   Widget build(BuildContext context) {
     final cubit = context.read<CustomerDetailCubit>();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        // Always through here, so the back button and the app bar's arrow return the same thing.
-        context.pop(_changes.result);
-      },
-      child: Scaffold(
-        floatingActionButtonLocation: AppSpeedDial.location,
-        appBar: AppBar(
-          title: BlocBuilder<CustomerDetailCubit, CustomerDetailState>(
-            // The name once it is known, so the bar stops saying something generic the moment it
-            // can say something useful.
-            builder: (context, state) => Text(state.customer?.name ?? 'تفاصيل العميل'),
+    return Scaffold(
+      floatingActionButtonLocation: AppSpeedDial.location,
+      appBar: AppBar(
+        title: BlocBuilder<CustomerDetailCubit, CustomerDetailState>(
+          // The name once it is known, so the bar stops saying something generic the moment it
+          // can say something useful.
+          builder: (context, state) => Text(state.customer?.name ?? 'تفاصيل العميل'),
+        ),
+      ),
+      floatingActionButton: BlocBuilder<CustomerDetailCubit, CustomerDetailState>(
+        builder: (context, state) {
+          final customer = state.customer;
+          if (customer == null) return const SizedBox.shrink();
+
+          return _Actions(customer: customer);
+        },
+      ),
+      body: BlocConsumer<CustomerDetailCubit, CustomerDetailState>(
+        listener: (context, state) {
+          // Every reading goes past here, whatever produced it — the form, the activation
+          // toggle, a pull that picked up somebody else's change. What differs from the first
+          // one is what the list behind is handed on the way out.
+          context.handBack(_changes.saw(state.customer));
+
+          // Only when there is still a page underneath. With nothing to fall back to the body
+          // already shows the failure, and a snackbar over it would say the same thing twice.
+          if (state case CustomerDetailFailure(:final failure)) {
+            if (state.customer != null) context.showFailure(failure);
+          }
+        },
+        builder: (context, state) => switch (state) {
+          CustomerDetailLoading() => const Center(child: CircularProgressIndicator()),
+          CustomerDetailFailure(:final failure) => _FailureView(
+            message: failure.message,
+            onRetry: cubit.load,
           ),
-        ),
-        floatingActionButton: BlocBuilder<CustomerDetailCubit, CustomerDetailState>(
-          builder: (context, state) {
-            final customer = state.customer;
-            if (customer == null) return const SizedBox.shrink();
-
-            return _Actions(customer: customer);
-          },
-        ),
-        body: BlocConsumer<CustomerDetailCubit, CustomerDetailState>(
-          listener: (context, state) {
-            // Every reading goes past here, whatever produced it — the form, the activation
-            // toggle, a pull that picked up somebody else's change. What differs from the first
-            // one is what the list behind is handed on the way out.
-            _changes.saw(state.customer);
-
-            // Only when there is still a page underneath. With nothing to fall back to the body
-            // already shows the failure, and a snackbar over it would say the same thing twice.
-            if (state case CustomerDetailFailure(:final failure)) {
-              if (state.customer != null) context.showFailure(failure);
-            }
-          },
-          builder: (context, state) => switch (state) {
-            CustomerDetailLoading() => const Center(child: CircularProgressIndicator()),
-            CustomerDetailFailure(:final failure) => _FailureView(
-              message: failure.message,
-              onRetry: cubit.load,
+          _ => RefreshIndicator(
+            onRefresh: () => _refresh(context),
+            child: _Body(
+              customer: state.customer!,
+              isChanging: state.isChanging,
+              showsOrders: showsOrders,
             ),
-            _ => RefreshIndicator(
-              onRefresh: () => _refresh(context),
-              child: _Body(
-                customer: state.customer!,
-                isChanging: state.isChanging,
-                showsOrders: showsOrders,
-              ),
-            ),
-          },
-        ),
+          ),
+        },
       ),
     );
   }

@@ -39,6 +39,7 @@ use App\Application\Api\V1\Controllers\VendorCommentController;
 use App\Application\Api\V1\Controllers\VendorController;
 use App\Application\Api\V1\Controllers\WarehouseController;
 use App\Application\Api\V1\Controllers\WarehouseStockController;
+use App\Application\Api\V1\Middleware\ArchivedOrdersNeedTheArchiveGrant;
 use App\Application\Api\V1\Middleware\VerifyNawrisWebhook;
 use Illuminate\Support\Facades\Route;
 
@@ -287,22 +288,71 @@ Route::prefix('v1')->group(function (): void {
         // Same reasoning for the discount and the additional cost: `orders.discount` and
         // `orders.additional_cost` are enforced inside the domain, so they hold for a console
         // command and a future import too, not only for this endpoint.
+        //
+        // And a third exception, of the same shape, on the three routes that read into the
+        // archive: what an archived order costs to read cannot be written as a `can:` either,
+        // because it depends on the row the route bound rather than on the route. See
+        // {@see ArchivedOrdersNeedTheArchiveGrant}, which is attached to each of the three.
         // Declared *before* the resource: `apiResource` registers `/orders/{order}`, and
         // implicit binding would try to resolve the word "summary" as an order id and 404.
         Route::get('orders/summary', [OrderController::class, 'statusCounts'])
             ->middleware('can:orders.view')->name('orders.summary');
 
+        // The archive: the deleted orders, read through the same list and the same chips. Behind
+        // its own grant rather than `orders.view` — deleting is somebody's admission of a mistake,
+        // and a shop may reasonably let the whole floor read orders without letting the whole
+        // floor read the mistakes.
+        //
+        // Declared *before* the resource, for the third time in this file and the same reason as
+        // `orders/summary` above: `apiResource` registers `/orders/{order}`, and implicit binding
+        // would try to resolve the word "archive" as an order id and 404.
+        Route::get('orders/archive', [OrderController::class, 'archive'])
+            ->middleware('can:orders.archive.view')->name('orders.archive');
+
+        Route::get('orders/archive/summary', [OrderController::class, 'archiveStatusCounts'])
+            ->middleware('can:orders.archive.view')->name('orders.archive.summary');
+
         Route::apiResource('orders', OrderController::class)
-            ->only(['index', 'show'])
+            ->only(['index'])
             ->middleware('can:orders.view');
+
+        // **`show` is written out rather than left to `apiResource`, and it is the first
+        // `withTrashed()` in this file.** Two things it needs that the resource cannot express: a
+        // binding that resolves a deleted order at all, and the archive's own grant beside
+        // `orders.view` — which is a closure, and `apiResource` casts its middleware to strings.
+        //
+        // The convention the first `withTrashed()` sets is deliberately narrow: reading an
+        // archived order is opened, and nothing else is. `update` keeps the ordinary binding
+        // below, so an archived order is a 404 to every write — which is what stops an edit
+        // landing on a row that is in no list.
+        Route::get('orders/{order}', [OrderController::class, 'show'])
+            ->withTrashed()
+            ->middleware(['can:orders.view', ArchivedOrdersNeedTheArchiveGrant::class])
+            ->name('orders.show');
 
         Route::apiResource('orders', OrderController::class)
             ->only(['store', 'update'])
             ->middleware('can:orders.manage');
 
-        // No destroy route, for the same reason customers and products have none: an order is
-        // the record everything else points at, and «ملغاة كلياً» is the business's own way of
-        // ending one — with a reason attached, which a delete would throw away.
+        // **There is a destroy route now, and it does not contradict the reason there was none.**
+        // That reason still stands for ending an order: «إلغاء تام» is how the business finishes
+        // one, with a reason attached, and it stays in the list wearing it. This deletes the row
+        // that should never have been written — a duplicate, a wrong number, somebody's trial —
+        // which is a different question with a different answer, and it is asked far less often.
+        // Its own grant for that reason. See Docs/orders/ORDER-DELETE-AND-ARCHIVE.md §1.
+        Route::delete('orders/{order}', [OrderController::class, 'destroy'])
+            ->middleware('can:orders.delete')->name('orders.destroy');
+
+        // And back out again. `withTrashed()` is not decoration here: without it the binding is
+        // soft-delete-scoped and this endpoint would 404 on the only orders it exists for.
+        //
+        // A grant of its own rather than the delete's, because it is the heavier of the two: a
+        // restore takes stock back off the shelf, at today's cost layers rather than the ones the
+        // order left with.
+        Route::post('orders/{order}/restore', [OrderController::class, 'restore'])
+            ->withTrashed()
+            ->middleware('can:orders.restore')->name('orders.restore');
+
         Route::post('orders/{order}/status', [OrderController::class, 'changeStatus'])
             ->middleware('can:orders.view')->name('orders.status');
 
@@ -384,8 +434,14 @@ Route::prefix('v1')->group(function (): void {
         // And **money going out has its own permission again** — taking a deposit is a
         // receptionist's daily work, while putting a hand back into the drawer, whether as a
         // refund or as a cancelled entry, belongs to whoever answers for it.
+        // Reading, and reading alone, reaches into the archive: «كم قبضنا على هذه الطلبية» is
+        // still a fair question about an order somebody deleted, and the answer is in the ledger
+        // either way. The write-side routes below keep the ordinary binding and stay 404 on a
+        // deleted order — no money is taken against a row that is not in the list.
         Route::get('orders/{order}/payments', [OrderPaymentController::class, 'index'])
-            ->middleware('can:orders.payments.view')->name('orders.payments.index');
+            ->withTrashed()
+            ->middleware(['can:orders.payments.view', ArchivedOrdersNeedTheArchiveGrant::class])
+            ->name('orders.payments.index');
 
         Route::post('orders/{order}/payments', [OrderPaymentController::class, 'store'])
             ->middleware('can:orders.payments.record')->name('orders.payments.store');
@@ -785,7 +841,13 @@ Route::prefix('v1')->group(function (): void {
             Route::get('product-categories/{product_category}/logs', [ProductCategoryController::class, 'logs'])
                 ->name('product-categories.logs');
             Route::get('cities/{city}/logs', [CityController::class, 'logs'])->name('cities.logs');
-            Route::get('orders/{order}/logs', [OrderController::class, 'logs'])->name('orders.logs');
+            // The third and last route that reads into the archive — and the one that needed the
+            // guard most: `logs.view` alone would otherwise open the history of every order ever
+            // deleted, from a screen built to audit colleagues rather than to browse the archive.
+            Route::get('orders/{order}/logs', [OrderController::class, 'logs'])
+                ->withTrashed()
+                ->middleware(ArchivedOrdersNeedTheArchiveGrant::class)
+                ->name('orders.logs');
             Route::get('shipping-companies/{shippingCompany}/logs', [ShippingCompanyController::class, 'logs'])
                 ->name('shipping-companies.logs');
 

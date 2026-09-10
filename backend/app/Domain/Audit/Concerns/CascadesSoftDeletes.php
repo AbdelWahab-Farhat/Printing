@@ -67,7 +67,23 @@ trait CascadesSoftDeletes
      * Restoring does not cascade. Bringing a city back leaves its regions deleted, because
      * "undo that one delete" and "undo everything that ever happened to this city" are
      * different requests and only the first one has been asked for.
-     * 🎯 Decide which it is when a restore endpoint lands.
+     *
+     * **The restore endpoint has landed, and it settles this the same way.**
+     * `POST orders/{order}/restore` is the first one — see
+     * `App\Domain\Order\Actions\RestoreOrder` and §٥ of
+     * Docs/orders/ORDER-DELETE-AND-ARCHIVE.md — and the question turned out not to need
+     * deciding, because `Order` never joins the list above and the reason is mechanical rather
+     * than a matter of taste. `Order::progress()` falls through to `furthestMainLineStep()` for
+     * every status outside the main line, and that method's first statement is
+     * `$this->transitions()->pluck('to_status')` **without `withTrashed()`**. The statuses
+     * outside the main line are «إلغاء تام», «نواقص», the three returns and «إعادة إرسال» —
+     * exactly what an archive is full of — so cascading `transitions` would draw an **empty
+     * progress bar on every archived order**, as though nothing had ever happened to it, on the
+     * first screen anybody opens. It would also break `statusBeforeCancellation()`, which reads
+     * the same timeline, and with it «تراجع عن الإلغاء» after a restore.
+     *
+     * So the rule stands as written: a restore undoes the one delete it names. Nothing has to
+     * un-cascade, because the cascade never happens.
      *
      * @return list<string>
      */

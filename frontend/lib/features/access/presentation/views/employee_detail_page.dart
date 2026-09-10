@@ -2,6 +2,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -57,8 +58,8 @@ class _EmployeeDetailView extends StatefulWidget {
 }
 
 /// Stateful for one reason: it remembers the account as it changed — renamed, re-roled, stopped
-/// — so `pop` can hand the list behind the new row instead of making it re-read the page. That
-/// is screen lifecycle, not business state.
+/// — so the list behind is handed the new row instead of made to re-read the page. That is
+/// screen lifecycle, not business state.
 class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
   final _changes = Changes<AuthUser>();
 
@@ -66,56 +67,48 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
   Widget build(BuildContext context) {
     final cubit = context.read<EmployeeDetailCubit>();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        // Always through here, so the back button and the app bar's arrow return the same thing.
-        context.pop(_changes.result);
-      },
-      child: Scaffold(
-        floatingActionButtonLocation: AppSpeedDial.location,
-        appBar: AppBar(
-          title: BlocBuilder<EmployeeDetailCubit, EmployeeDetailState>(
-            // The name once it is known, so the bar stops saying something generic the moment it
-            // can say something useful.
-            builder: (context, state) => Text(state.user?.name ?? 'تفاصيل الموظف'),
+    return Scaffold(
+      floatingActionButtonLocation: AppSpeedDial.location,
+      appBar: AppBar(
+        title: BlocBuilder<EmployeeDetailCubit, EmployeeDetailState>(
+          // The name once it is known, so the bar stops saying something generic the moment it
+          // can say something useful.
+          builder: (context, state) => Text(state.user?.name ?? 'تفاصيل الموظف'),
+        ),
+      ),
+      floatingActionButton: BlocBuilder<EmployeeDetailCubit, EmployeeDetailState>(
+        builder: (context, state) {
+          final user = state.user;
+          if (user == null) return const SizedBox.shrink();
+
+          return _Actions(user: user);
+        },
+      ),
+      body: BlocConsumer<EmployeeDetailCubit, EmployeeDetailState>(
+        listener: (context, state) {
+          // Every reading goes past here, whatever produced it — the edit form, the roles
+          // sheet, a wage, a stopped account. What differs from the first one is what the list
+          // behind is handed on the way out.
+          context.handBack(_changes.saw(state.user));
+
+          // A failure that arrived *beside* the employee — a rejected wage, a refused stop.
+          // The page stays; the reason goes to a snackbar over it, because the sheet that
+          // caused it is usually still open with the value in it.
+          if (state case EmployeeDetailLoaded(:final failure?)) {
+            context.showFailure(failure);
+          }
+        },
+        builder: (context, state) => switch (state) {
+          EmployeeDetailLoading() => const Center(child: CircularProgressIndicator()),
+          EmployeeDetailFailure(:final failure) => _FailureView(
+            message: failure.message,
+            onRetry: cubit.load,
           ),
-        ),
-        floatingActionButton: BlocBuilder<EmployeeDetailCubit, EmployeeDetailState>(
-          builder: (context, state) {
-            final user = state.user;
-            if (user == null) return const SizedBox.shrink();
-
-            return _Actions(user: user);
-          },
-        ),
-        body: BlocConsumer<EmployeeDetailCubit, EmployeeDetailState>(
-          listener: (context, state) {
-            // Every reading goes past here, whatever produced it — the edit form, the roles
-            // sheet, a wage, a stopped account. What differs from the first one is what the list
-            // behind is handed on the way out.
-            _changes.saw(state.user);
-
-            // A failure that arrived *beside* the employee — a rejected wage, a refused stop.
-            // The page stays; the reason goes to a snackbar over it, because the sheet that
-            // caused it is usually still open with the value in it.
-            if (state case EmployeeDetailLoaded(:final failure?)) {
-              context.showFailure(failure);
-            }
-          },
-          builder: (context, state) => switch (state) {
-            EmployeeDetailLoading() => const Center(child: CircularProgressIndicator()),
-            EmployeeDetailFailure(:final failure) => _FailureView(
-              message: failure.message,
-              onRetry: cubit.load,
-            ),
-            _ => RefreshIndicator(
-              onRefresh: cubit.load,
-              child: _Body(user: state.user!, isChanging: state.isChanging),
-            ),
-          },
-        ),
+          _ => RefreshIndicator(
+            onRefresh: cubit.load,
+            child: _Body(user: state.user!, isChanging: state.isChanging),
+          ),
+        },
       ),
     );
   }

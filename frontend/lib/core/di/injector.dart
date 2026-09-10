@@ -124,6 +124,7 @@ import 'package:dayaa/features/notifications/usecases/release_device_token.dart'
 import 'package:dayaa/features/notifications/usecases/send_announcement.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/archived_orders_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
@@ -136,7 +137,9 @@ import 'package:dayaa/features/orders/repositories/order_payment_repository.dart
 import 'package:dayaa/features/orders/repositories/order_payment_repository_impl.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/repositories/order_repository_impl.dart';
+import 'package:dayaa/features/orders/usecases/archive_order.dart';
 import 'package:dayaa/features/orders/usecases/change_order_status.dart';
+import 'package:dayaa/features/orders/usecases/get_archived_orders.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/get_order_counts.dart';
 import 'package:dayaa/features/orders/usecases/get_orders.dart';
@@ -217,6 +220,13 @@ import 'package:dayaa/features/stock_items/usecases/get_stock_items.dart';
 import 'package:dayaa/features/stock_items/usecases/save_stock_item.dart';
 import 'package:dayaa/features/stock_items/usecases/set_stock_item_unit.dart';
 import 'package:dayaa/features/stock_items/usecases/set_stock_item_variants.dart';
+import 'package:dayaa/features/tools/presentation/viewmodel/bag_preview_cubit.dart';
+import 'package:dayaa/features/tools/presentation/viewmodel/qr_tool_cubit.dart';
+import 'package:dayaa/features/tools/usecases/generate_qr_code.dart';
+import 'package:dayaa/features/tools/usecases/load_bag_mockup.dart';
+import 'package:dayaa/features/tools/usecases/load_design_image.dart';
+import 'package:dayaa/features/tools/usecases/save_bag_preview_image.dart';
+import 'package:dayaa/features/tools/usecases/save_qr_code_image.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/viewmodel/save_vendor_cubit.dart';
 import 'package:dayaa/features/vendors/presentation/viewmodel/vendor_detail_cubit.dart';
@@ -348,6 +358,7 @@ abstract final class Injector {
     _registerOrders();
     _registerReports();
     _registerNotifications();
+    _registerTools();
 
     _isInitialized = true;
     debugPrint('⏱️ injector ready in ${stopwatch.elapsed}');
@@ -759,6 +770,22 @@ abstract final class Injector {
       ..registerLazySingleton<GetOrderCounts>(
         () => GetOrderCounts(sl<OrderRepository>()),
       )
+      // الأرشيف's two sources. **Subclasses of the pair above rather than a second pair beside
+      // it**, so [ArchivedOrdersCubit] can be [OrdersCubit] with nothing but its `belongs`
+      // changed — the archive is the orders screen reading a different route, and expressing
+      // that as a substituted source is what keeps the six filter axes from being written
+      // twice. See [GetArchivedOrders].
+      ..registerLazySingleton<GetArchivedOrders>(
+        () => GetArchivedOrders(sl<OrderRepository>()),
+      )
+      ..registerLazySingleton<GetArchivedOrderCounts>(
+        () => GetArchivedOrderCounts(sl<OrderRepository>()),
+      )
+      // Archiving an order and taking it back. Two use cases and two grants, because a business
+      // may reasonably trust a role with exactly one of them — and because the restore is the
+      // heavier act: it draws stock again, at today's cost.
+      ..registerLazySingleton<DeleteOrder>(() => DeleteOrder(sl<OrderRepository>()))
+      ..registerLazySingleton<RestoreOrder>(() => RestoreOrder(sl<OrderRepository>()))
       ..registerLazySingleton<GetOrder>(() => GetOrder(sl<OrderRepository>()))
       // No repository: the invoice is the order the screen already has, drawn. Registered all
       // the same so it is one object per app — it caches the two parsed TrueType faces the PDF
@@ -844,6 +871,14 @@ abstract final class Injector {
           getCounts: sl<GetOrderCounts>(),
         ),
       )
+      // The same Cubit over the archive's two sources. A factory like its parent, because the
+      // screen owns it and closes it — and closing it disposes the counts notifier.
+      ..registerFactory<ArchivedOrdersCubit>(
+        () => ArchivedOrdersCubit(
+          getOrders: sl<GetArchivedOrders>(),
+          getCounts: sl<GetArchivedOrderCounts>(),
+        ),
+      )
       // Parameterised, like the customer's: the detail screen is *about* one order, so the id
       // is a construction argument rather than something the Cubit is told afterwards.
       // Parameterised on the order itself: the sheet is seeded from what the screen already
@@ -874,6 +909,11 @@ abstract final class Injector {
           addDesign: sl<AddOrderDesign>(),
           reviewDesign: sl<ReviewOrderDesign>(),
           reinstateOrder: sl<ReinstateOrder>(),
+          // Both here rather than on a Cubit of the archive's own, for the reason the reinstate
+          // is: the answer to either *is* the order, so the screen that has to redraw it is the
+          // one that should hold the call.
+          deleteOrder: sl<DeleteOrder>(),
+          restoreOrder: sl<RestoreOrder>(),
         ),
       )
       // The move screen fetches the order itself rather than being handed one: it is reachable
@@ -909,6 +949,35 @@ abstract final class Injector {
   ///
   /// No list Cubit and no `PagedCubit`: the report is one object about one period, so there is
   /// no page to ask for.
+  /// الأدوات — لا مستودع ولا Dio.
+  ///
+  /// **وهذا هو كل ما يميّزها في هذا الملف:** لا شيء خلف هذه الحالات ينادي الشبكة، فلا عقد مجرّد
+  /// ولا `*Impl`. حالتا الاستعمال حسابٌ ورسمٌ على الجهاز، مسجّلتان `LazySingleton` لأنهما بلا
+  /// حالة — بينما الـ Cubit `Factory` كعادة كل Cubit شاشة: الرمز المعروض يخصّ فتحةً واحدة
+  /// للشاشة، و`close()` في أولها كان سيترك ما بعدها يبعث في تيار ميت.
+  static void _registerTools() {
+    sl
+      ..registerLazySingleton<GenerateQrCode>(GenerateQrCode.new)
+      ..registerLazySingleton<SaveQrCodeImage>(SaveQrCodeImage.new)
+      ..registerFactory<QrToolCubit>(
+        () => QrToolCubit(generate: sl<GenerateQrCode>()),
+      )
+      ..registerLazySingleton<LoadDesignImage>(LoadDesignImage.new)
+      // Lazy singleton and not a factory, because it is the cache: five bundled mockups
+      // decoded once for the life of the process — see [LoadBagMockup].
+      ..registerLazySingleton<LoadBagMockup>(LoadBagMockup.new)
+      ..registerLazySingleton<SaveBagPreviewImage>(SaveBagPreviewImage.new)
+      // Factory, and here it buys something extra: this Cubit owns a decoded `ui.Image` and
+      // disposes it on close. A singleton would hold one customer's artwork in memory for the
+      // life of the app, and hand the next screen an image it had already released.
+      ..registerFactory<BagPreviewCubit>(
+        () => BagPreviewCubit(
+          loadImage: sl<LoadDesignImage>(),
+          loadMockup: sl<LoadBagMockup>(),
+        ),
+      );
+  }
+
   static void _registerReports() {
     sl
       ..registerLazySingleton<ReportRepository>(

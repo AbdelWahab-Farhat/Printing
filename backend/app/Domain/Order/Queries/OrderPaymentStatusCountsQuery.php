@@ -28,6 +28,11 @@ use Illuminate\Support\Facades\DB;
  * drops the status one: counts narrowed to the state already chosen would every one of them
  * equal the list's own length. Every other filter *is* applied, so the numbers describe the set
  * the user is actually looking at.
+ *
+ * **«Every other filter» is carried by {@see OrderFilters::withoutPaymentStatuses()}, which names
+ * each one by hand** — so this is the query a field forgotten there breaks, and it breaks
+ * quietly: these chips would count the live orders while the status chips beside them counted the
+ * archive, and nothing on the screen would say the two rows are about different sets.
  */
 final class OrderPaymentStatusCountsQuery
 {

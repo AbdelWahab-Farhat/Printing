@@ -115,6 +115,24 @@ enum PermissionName: string
     case ResendOrders = 'orders.status.resend';
     case CancelOrders = 'orders.status.cancelled';
 
+    // Deleting an order, and the archive it goes to. **Not a fourth way of ending one** — that is
+    // «إلغاء تام», which says the order happened and then stopped, with a reason attached. A
+    // delete says the row should never have been written: a duplicate, a wrong number, somebody's
+    // trial. See Docs/orders/ORDER-DELETE-AND-ARCHIVE.md §1.
+    //
+    // Three grants rather than one, because the three are answerable by different people. Reading
+    // the archive is the mildest — it moves nothing. Deleting returns stock to the shelf.
+    // Restoring takes it back off again, **at today's cost layers rather than yesterday's**, so
+    // the order comes back priced differently from how it left; whoever the business trusts to
+    // put an order back is not automatically whoever it trusts to take one out.
+    //
+    // `orders.archive.view` is also what makes the archive readable *at all*: an order in it is
+    // 404 on every route bar the three read ones, and those three demand this on top of their own
+    // grant — otherwise `logs.view` alone would be a back door into everything ever deleted.
+    case DeleteOrders = 'orders.delete';
+    case RestoreOrders = 'orders.restore';
+    case ViewOrderArchive = 'orders.archive.view';
+
     // The money ledger on an order. Four, and the splits that matter are the last two: money
     // going *out* — a refund to the customer, or an entry cancelled as a mistake — is a
     // different decision from money coming in. Taking a deposit is a receptionist's daily work;
@@ -271,6 +289,9 @@ enum PermissionName: string
             self::RecordOfficeReturn => 'تسجيل راجع مكتب',
             self::ResendOrders => 'إعادة إرسال طلبية راجعة',
             self::CancelOrders => 'إلغاء الطلبية',
+            self::DeleteOrders => 'حذف الطلبات',
+            self::RestoreOrders => 'استعادة الطلبات المحذوفة',
+            self::ViewOrderArchive => 'عرض أرشيف الطلبات',
 
             self::ViewOrderPayments => 'عرض دفعات الطلبية',
             self::RecordOrderPayments => 'تسجيل دفعة على الطلبية',
@@ -322,6 +343,11 @@ enum PermissionName: string
             self::ViewCarrierParcels, self::ManageCarrierParcels => 'شحنات نورس',
             self::ViewOrders, self::ManageOrders, self::DiscountOrders,
             self::AddOrderAdditionalCost,
+            // Beside the orders themselves rather than in a section of their own: the roles
+            // screen is a list to scroll, and three checkboxes are not worth a heading. They are
+            // deliberately *not* in «حالات الطلبيات» either — a delete is not a status the
+            // machine can move into, which is the whole of what that group collects.
+            self::DeleteOrders, self::RestoreOrders, self::ViewOrderArchive,
             self::ManageOrderDesigns => 'الطلبيات',
             self::MoveOrderToReadyToPrint,
             self::MoveOrderToDesigning, self::MoveOrderToPrinting,

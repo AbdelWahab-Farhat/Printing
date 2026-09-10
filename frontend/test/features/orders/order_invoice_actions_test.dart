@@ -13,6 +13,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_customer_card.d
 import 'package:dayaa/features/orders/presentation/widgets/order_invoice_actions.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
+import 'package:dayaa/features/orders/usecases/archive_order.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
@@ -110,6 +111,8 @@ void main() {
           addDesign: AddOrderDesign(repository),
           reviewDesign: ReviewOrderDesign(repository),
           reinstateOrder: ReinstateOrder(repository),
+          deleteOrder: DeleteOrder(repository),
+          restoreOrder: RestoreOrder(repository),
         ),
       );
   });

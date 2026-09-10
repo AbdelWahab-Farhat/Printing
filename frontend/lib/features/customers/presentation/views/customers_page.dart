@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/core/widgets/search_field.dart';
@@ -14,7 +15,6 @@ import 'package:dayaa/features/customers/presentation/widgets/customers_filter_b
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 /// العملاء — the customer list, searchable by name, code or phone.
 ///
@@ -96,7 +96,7 @@ class _CustomersBodyState extends State<CustomersBody> {
                 // happens at all when the screen was only read. Re-fetching page one instead
                 // threw a scrolled list back to the top to redraw one card.
                 onTap: () async {
-                  final changed = await context.push<Customer>(Routes.customer(customer.id));
+                  final changed = await context.pushForResult<Customer>(Routes.customer(customer.id));
                   if (changed != null) cubit.replace(changed);
                 },
               ),

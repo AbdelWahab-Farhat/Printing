@@ -3,6 +3,7 @@ import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
@@ -58,29 +59,16 @@ class WarehouseStocksPage extends StatelessWidget {
   }
 }
 
-class _StocksView extends StatefulWidget {
+/// **The list behind is told a bool rather than the warehouse itself**, and this is the one
+/// screen where that is the honest answer: the count on the row behind is the server's
+/// arithmetic over every shelf, and this screen never holds it. So the list is told *that* it
+/// moved and re-reads once — instead of re-reading after every visit, including the ones that
+/// only looked.
+class _StocksView extends StatelessWidget {
   const _StocksView({required this.warehouseId, this.warehouse});
 
   final int warehouseId;
   final Warehouse? warehouse;
-
-  @override
-  State<_StocksView> createState() => _StocksViewState();
-}
-
-/// Stateful for one reason: it remembers whether a movement or an alert level was written here,
-/// so `pop` can tell the warehouses list whether its counts are worth re-reading.
-///
-/// **A bool rather than the warehouse itself**, and this is the one screen where that is the
-/// honest answer: the count on the row behind is the server's arithmetic over every shelf, and
-/// this screen never holds it. So the list is told *that* it moved and re-reads once — instead
-/// of re-reading after every visit, including the ones that only looked.
-class _StocksViewState extends State<_StocksView> {
-  bool _changed = false;
-
-  int get warehouseId => widget.warehouseId;
-
-  Warehouse? get warehouse => widget.warehouse;
 
   @override
   Widget build(BuildContext context) {
@@ -88,125 +76,117 @@ class _StocksViewState extends State<_StocksView> {
     final summary = context.read<StockSummaryCubit>();
     final canManage = sl<Session>().can(AppPermission.manageInventory);
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        // Always through here, so the back button and the app bar's arrow return the same thing.
-        context.pop(_changed);
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Column(
-            children: [
-              const Text('الأرصدة'),
-              if (warehouse != null)
-                Text(
-                  warehouse!.name,
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Column(
+          children: [
+            const Text('الأرصدة'),
+            if (warehouse != null)
+              Text(
+                warehouse!.name,
+                style: context.textTheme.labelSmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
-            ],
-          ),
-          actions: [
-            IconButton(
-              tooltip: 'سجل حركات هذا المخزن',
-              onPressed: () => context.push(Routes.warehouseMovements(warehouseId)),
-              icon: Icon(AppIcons.history),
-            ),
+              ),
           ],
         ),
-        floatingActionButton: canManage
-            ? FloatingActionButton.extended(
-                heroTag: 'fab-warehouse-stocks',
-                onPressed: () async {
-                  final movement = await context.push<StockMovement>(
-                    Routes.recordStockMovement,
-                    extra: warehouse,
+        actions: [
+          IconButton(
+            tooltip: 'سجل حركات هذا المخزن',
+            onPressed: () => context.push(Routes.warehouseMovements(warehouseId)),
+            icon: Icon(AppIcons.history),
+          ),
+        ],
+      ),
+      floatingActionButton: canManage
+          ? FloatingActionButton.extended(
+              heroTag: 'fab-warehouse-stocks',
+              onPressed: () async {
+                final movement = await context.push<StockMovement>(
+                  Routes.recordStockMovement,
+                  extra: warehouse,
+                );
+
+                // Re-read rather than patch: the new balance is the server's answer, and this
+                // screen has no business computing one. The header is re-read with it — a
+                // movement is exactly the thing that changes both.
+                if (movement != null && context.mounted) {
+                  context.handBack(true);
+                  await cubit.refresh();
+                  await summary.refresh();
+                }
+              },
+              icon: Icon(AppIcons.statusChange),
+              label: const Text('تسجيل حركة'),
+            )
+          : null,
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
+            child: BlocBuilder<StockSummaryCubit, StockSummaryState>(
+              builder: (context, state) => switch (state) {
+                StockSummaryLoaded(:final summary) => StockSummaryCard(summary: summary),
+                // Nothing at all while it loads and nothing if it failed: the card is a header
+                // over a list that works without it, and a skeleton that becomes an error
+                // message is worse than a screen that simply starts at the shelves.
+                _ => const SizedBox.shrink(),
+              },
+            ),
+          ),
+          BlocBuilder<WarehouseStocksCubit, WarehouseStocksState>(
+            builder: (context, state) =>
+                _ShelfFilter(selected: cubit.filter, onSelected: cubit.filterBy),
+          ),
+          Expanded(
+            child: BlocBuilder<WarehouseStocksCubit, WarehouseStocksState>(
+              builder: (context, state) => PagedListView<StockGroup>(
+                state: _grouped(state),
+                emptyMessage: switch (cubit.filter) {
+                  StockShelfFilter.low => 'لا توجد مواد تحت حد التنبيه',
+                  StockShelfFilter.out => 'لا توجد مادة نافدة',
+                  StockShelfFilter.all => 'لا توجد أرصدة في هذا المخزن بعد',
+                },
+                onLoadMore: cubit.loadMore,
+                onRefresh: () async {
+                  // Pulled together, because the reader pulled the screen and not the list.
+                  await Future.wait([cubit.refresh(), summary.refresh()]);
+                },
+                // Between a lone shelf and a material held in four sizes — the list is a mix of
+                // both, and a skeleton the height of the shorter one jumps under every card.
+                skeletonHeight: 96.h,
+                itemBuilder: (context, group, index) {
+                  // Everyone who may read the shelf may read its history; only a manager sets
+                  // the level at which it starts asking to be refilled.
+                  void openHistory(WarehouseStock stock) => context.push(
+                    Routes.warehouseMovements(warehouseId),
+                    extra: (warehouse: warehouse, stock: stock),
                   );
 
-                  // Re-read rather than patch: the new balance is the server's answer, and this
-                  // screen has no business computing one. The header is re-read with it — a
-                  // movement is exactly the thing that changes both.
-                  if (movement != null) {
-                    _changed = true;
-                    await cubit.refresh();
-                    await summary.refresh();
-                  }
-                },
-                icon: Icon(AppIcons.statusChange),
-                label: const Text('تسجيل حركة'),
-              )
-            : null,
-        body: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
-              child: BlocBuilder<StockSummaryCubit, StockSummaryState>(
-                builder: (context, state) => switch (state) {
-                  StockSummaryLoaded(:final summary) => StockSummaryCard(summary: summary),
-                  // Nothing at all while it loads and nothing if it failed: the card is a header
-                  // over a list that works without it, and a skeleton that becomes an error
-                  // message is worse than a screen that simply starts at the shelves.
-                  _ => const SizedBox.shrink(),
+                  // One size is a row, as it always was: a heading naming a material above a
+                  // single line repeating it is a card that says everything twice.
+                  return group.isSingle
+                      ? StockRow(
+                          key: ValueKey(group.first.id),
+                          stock: group.first,
+                          onTap: () => openHistory(group.first),
+                          onEditThreshold: canManage
+                              ? () => _editThreshold(context, cubit, summary, group.first)
+                              : null,
+                        )
+                      : StockMaterialCard(
+                          key: ValueKey(group.key),
+                          group: group,
+                          onTapShelf: openHistory,
+                          onEditThreshold: canManage
+                              ? (stock) => _editThreshold(context, cubit, summary, stock)
+                              : null,
+                        );
                 },
               ),
             ),
-            BlocBuilder<WarehouseStocksCubit, WarehouseStocksState>(
-              builder: (context, state) =>
-                  _ShelfFilter(selected: cubit.filter, onSelected: cubit.filterBy),
-            ),
-            Expanded(
-              child: BlocBuilder<WarehouseStocksCubit, WarehouseStocksState>(
-                builder: (context, state) => PagedListView<StockGroup>(
-                  state: _grouped(state),
-                  emptyMessage: switch (cubit.filter) {
-                    StockShelfFilter.low => 'لا توجد مواد تحت حد التنبيه',
-                    StockShelfFilter.out => 'لا توجد مادة نافدة',
-                    StockShelfFilter.all => 'لا توجد أرصدة في هذا المخزن بعد',
-                  },
-                  onLoadMore: cubit.loadMore,
-                  onRefresh: () async {
-                    // Pulled together, because the reader pulled the screen and not the list.
-                    await Future.wait([cubit.refresh(), summary.refresh()]);
-                  },
-                  // Between a lone shelf and a material held in four sizes — the list is a mix of
-                  // both, and a skeleton the height of the shorter one jumps under every card.
-                  skeletonHeight: 96.h,
-                  itemBuilder: (context, group, index) {
-                    // Everyone who may read the shelf may read its history; only a manager sets
-                    // the level at which it starts asking to be refilled.
-                    void openHistory(WarehouseStock stock) => context.push(
-                      Routes.warehouseMovements(warehouseId),
-                      extra: (warehouse: warehouse, stock: stock),
-                    );
-
-                    // One size is a row, as it always was: a heading naming a material above a
-                    // single line repeating it is a card that says everything twice.
-                    return group.isSingle
-                        ? StockRow(
-                            key: ValueKey(group.first.id),
-                            stock: group.first,
-                            onTap: () => openHistory(group.first),
-                            onEditThreshold: canManage
-                                ? () => _editThreshold(context, cubit, summary, group.first)
-                                : null,
-                          )
-                        : StockMaterialCard(
-                            key: ValueKey(group.key),
-                            group: group,
-                            onTapShelf: openHistory,
-                            onEditThreshold: canManage
-                                ? (stock) => _editThreshold(context, cubit, summary, stock)
-                                : null,
-                          );
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -254,7 +234,7 @@ class _StocksViewState extends State<_StocksView> {
       return;
     }
 
-    _changed = true;
+    context.handBack(true);
 
     // The counts above move with it: a shelf that was «تحت الحد» a second ago may not be one now.
     await summary.refresh();

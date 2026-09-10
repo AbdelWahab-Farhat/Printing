@@ -12,6 +12,8 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
 use App\Domain\Investor\Listeners\PostPurchasesWhenStockLeaves;
 use App\Domain\Investor\Listeners\PostPurchaseWhenScrapIsDrawn;
+use App\Domain\Investor\Listeners\PostPurchaseWhenStockIsRedrawn;
+use App\Domain\Investor\Listeners\UnwindEarningsWhenOrderIsDeleted;
 use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
 use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
@@ -19,9 +21,11 @@ use App\Domain\Notification\Support\FcmClient;
 use App\Domain\Notification\Support\GoogleServiceAccountToken;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderProfitFinalised;
+use App\Domain\Order\Events\OrderProfitUnwound;
 use App\Domain\Order\Events\OrderScrapDrawn;
 use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
+use App\Domain\Order\Events\OrderStockRedrawn;
 use App\Domain\Order\Queries\OrderCustomerActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
@@ -113,8 +117,24 @@ class AppServiceProvider extends ServiceProvider
         // transaction that moved the status, so the money and the status land together or not
         // at all.
         Event::listen(OrderProfitFinalised::class, PostEarningsWhenOrderIsFinalised::class);
+
+        // **And its counterpart, for an order that leaves the books altogether.** A delete
+        // archives the row, so `ProfitAndLossSummaryQuery` stops counting the sale — while the
+        // `profit` rows it posted at «تم الاستلام» would go on standing in three wallets.
+        // Re-dispatching the event above cannot serve: `PostDealEarningsForOrder` reads the order
+        // through a soft-delete-scoped query and returns early on an archived one, having
+        // reversed nothing. See §٢٫١ of Docs/orders/ORDER-DELETE-AND-ARCHIVE.md.
+        Event::listen(OrderProfitUnwound::class, UnwindEarningsWhenOrderIsDeleted::class);
         Event::listen(OrderStockDrawn::class, PostPurchasesWhenStockLeaves::class);
         Event::listen(OrderScrapDrawn::class, PostPurchaseWhenScrapIsDrawn::class);
+
+        // **A draw beside a settled one, not a correction of it** — which is why a restore has
+        // an event of its own rather than a second dispatch of `OrderStockDrawn`: its fresh draw
+        // is paid against the movement, so the payment the *first* draw earned is left standing.
+        // That first sale really completed: the delete handed its priced layers to the company
+        // at what it paid, not back to the deal. See {@see OrderStockRedrawn}. Synchronous like
+        // the ones above, and for the same reason.
+        Event::listen(OrderStockRedrawn::class, PostPurchaseWhenStockIsRedrawn::class);
 
         // **Orders announces, the notification centre listens** — the same one-way dependency,
         // for a different reason: Notification reads Orders to build its sentence, and Orders

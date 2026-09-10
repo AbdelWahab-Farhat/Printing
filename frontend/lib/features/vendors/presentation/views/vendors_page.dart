@@ -1,6 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
@@ -83,7 +84,10 @@ class VendorsBody extends StatelessWidget {
   Future<void> _open(BuildContext context, Vendor vendor) async {
     final cubit = context.read<VendorsCubit>();
 
-    final changed = await context.push<Vendor>(Routes.vendor(vendor.id), extra: vendor);
+    final changed = await context.pushForResult<Vendor>(
+      Routes.vendor(vendor.id),
+      extra: vendor,
+    );
 
     // The supplier itself when something moved, and nothing at all after a screen the user
     // merely read. The row redraws from what came back — a re-read would fetch a page this

@@ -21,6 +21,7 @@ use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderDesign;
 use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -1069,6 +1070,49 @@ class OrderTest extends TestCase
         $response->assertOk();
         $this->assertNotNull($response->json('data.0.items.0.product_code'));
         $this->assertNotEmpty($response->json('data.0.items.0.product_image.url'));
+    }
+
+    /**
+     * The card in the list shows what is printed on the order, not the catalogue's photograph.
+     *
+     * **The one thing that tells two orders apart at a glance.** Every line of every order was
+     * drawing the same white bag, and the file that says whose order this is was already on the
+     * detail payload and missing from the list. Loaded with the page, never per row: a page of
+     * twenty that fetches its artwork one order at a time is the query per row this list exists
+     * to avoid — several orders here deliberately, because Eloquent arms `preventLazyLoading`
+     * only on a multi-row result.
+     */
+    public function test_a_page_of_orders_carries_the_artwork_printed_on_them(): void
+    {
+        // Arrange — two orders, and one of them carries two files: the logo and the back of the
+        // bag are two designs on one job, and the card puts them side by side.
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->create(['customer_id' => $customer->getKey()]);
+
+        foreach (range(1, 2) as $index) {
+            OrderDesign::factory()->for($order)->create([
+                'customer_design_id' => CustomerDesign::factory()->create([
+                    'customer_id' => $customer->getKey(),
+                ]),
+            ]);
+        }
+
+        $bare = Order::factory()->create();
+        $headers = $this->viewer();
+
+        // Act — a lazy load anywhere in here throws under `preventLazyLoading`.
+        $response = $this->withHeaders($headers)->getJson('/api/v1/orders');
+
+        // Assert — the rows are found by id rather than by position: the page is sorted by
+        // `placed_at`, which these two fixtures share.
+        $rows = collect($response->assertOk()->json('data'))->keyBy('id');
+
+        // Both versions, each with the signed link the card draws from.
+        $this->assertCount(2, $rows[$order->getKey()]['designs']);
+        $this->assertNotEmpty($rows[$order->getKey()]['designs'][0]['design']['file_url']);
+        $this->assertSame('image', $rows[$order->getKey()]['designs'][0]['design']['kind']);
+        // And the order with no artwork says so with an empty list rather than a missing key.
+        $this->assertSame([], $rows[$bare->getKey()]['designs']);
     }
 
     public function test_orders_can_be_filtered_by_status(): void

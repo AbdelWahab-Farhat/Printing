@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_orders_filter.dart';
@@ -8,7 +9,6 @@ import 'package:dayaa/features/purchase_orders/presentation/widgets/purchase_ord
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 /// The purchase orders behind one number.
 ///
@@ -59,7 +59,7 @@ class _FilteredPurchaseOrdersView extends StatelessWidget {
               // The detail screen hands the order back when it changed one, so the row redraws
               // itself with no request — and leaves this screen when the change took it out of
               // the question the screen was opened to ask.
-              final changed = await context.push<PurchaseOrder>(
+              final changed = await context.pushForResult<PurchaseOrder>(
                 Routes.purchaseOrder(order.id),
                 extra: order,
               );

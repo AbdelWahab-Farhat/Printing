@@ -18,7 +18,8 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
-  final resources = Directory('../backend/app/Application/Api/V1/Resources');
+  final backend = Directory('../backend/app');
+  final resources = Directory('${backend.path}/Application/Api/V1/Resources');
 
   /// `'warehouse_quantity' => …` — every key a resource publishes, nested summaries included.
   Set<String> publishedKeys(File php) => RegExp("'([a-z_]+)' =>")
@@ -50,6 +51,9 @@ void main() {
       'lib/features/orders/models/order.g.dart',
       'lib/features/orders/models/transition_field.g.dart',
       'lib/features/customers/models/customer.g.dart',
+      // `stock_effect` is nested inside the show response, and the resource publishes none of
+      // its keys itself — see `composedElsewhere` below for where they actually come from.
+      'lib/features/orders/models/stock_effect.g.dart',
     ],
     'OrderItemResource': ['lib/features/orders/models/order.g.dart'],
     // One file, not two: the recorder it nests is declared beside the entry rather than reached
@@ -64,6 +68,26 @@ void main() {
       'lib/features/purchase_orders/models/purchase_order.g.dart',
       'lib/features/warehouses/models/warehouse_stock.g.dart',
     ],
+  };
+
+  /// PHP files *other than the resource* that publish keys into the same payload.
+  ///
+  /// **The guard that was claimed and never existed.** `publishedKeys()` only ever opens
+  /// `Resources/<name>.php`, and `OrderResource` does not compose `stock_effect` — it hands the
+  /// whole block to `StockEffectPreview::for()` in the domain and publishes the one key it sits
+  /// under. So the resource file says `'stock_effect' =>` and nothing about what is inside it: a
+  /// field renamed in the preview would reach the order screen as a null and every test here
+  /// would stay green. A comment asserting a guarantee nothing enforces is worse than no
+  /// comment, so the file is read.
+  ///
+  /// **Paths, never a key list.** What the preview publishes is being widened — §٧٫١ of
+  /// Docs/orders/ORDER-DELETE-AND-ARCHIVE.md puts the money it reverses in the same block — and
+  /// a list of today's keys copied here would be a third place to edit and the first to be
+  /// forgotten. Whatever the file publishes on the day is what this reads.
+  ///
+  /// Relative to `backend/app`, because these are not resources and do not live beside them.
+  const composedElsewhere = <String, List<String>>{
+    'OrderResource': ['Domain/Order/Support/StockEffectPreview.php'],
   };
 
   /// Keys the server publishes that this app deliberately does not read.
@@ -109,12 +133,28 @@ void main() {
         return;
       }
 
+      final composers = [
+        for (final path in composedElsewhere[name] ?? const <String>[])
+          File('${backend.path}/$path'),
+      ];
+
       // Act
-      final published = publishedKeys(php);
+      final missing = composers.where((file) => !file.existsSync()).map((file) => file.path);
+      final published = <String>{
+        ...publishedKeys(php),
+        for (final file in composers.where((file) => file.existsSync())) ...publishedKeys(file),
+      };
       final parsed = parsedKeys(generated);
       final dropped = published.difference(parsed).difference(ignored.keys.toSet());
 
       // Assert
+      expect(
+        missing,
+        isEmpty,
+        reason: 'these compose part of the payload and are no longer where this test looks. '
+            'Point it at where they went — a path that resolves to nothing guards nothing, '
+            'which is the failure this list was added to end',
+      );
       expect(
         published,
         isNotEmpty,

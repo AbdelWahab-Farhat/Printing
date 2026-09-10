@@ -2,6 +2,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
@@ -45,8 +46,8 @@ class _PurchaseOrderDetailView extends StatefulWidget {
 }
 
 /// Stateful for one reason: it remembers the order as it changed — sent, cancelled, a shipment
-/// booked in — so `pop` can hand the list behind the new row instead of making it re-read the
-/// page. That is screen lifecycle, not business state.
+/// booked in — so the list behind is handed the new row instead of made to re-read the page.
+/// That is screen lifecycle, not business state.
 class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
   final _changes = Changes<PurchaseOrder>();
 
@@ -188,66 +189,59 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
   Widget build(BuildContext context) {
     final cubit = context.read<PurchaseOrderDetailCubit>();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        context.pop(_changes.result);
-      },
-      child: Scaffold(
-        floatingActionButtonLocation: AppSpeedDial.location,
-        appBar: AppBar(
-          title:
-              BlocBuilder<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
-                builder: (context, state) => Text(
-                  state.order == null
-                      ? 'أمر شراء'
-                      : 'أمر شراء #${state.order!.id}',
+    return Scaffold(
+      floatingActionButtonLocation: AppSpeedDial.location,
+      appBar: AppBar(
+        title:
+            BlocBuilder<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
+              builder: (context, state) => Text(
+                state.order == null
+                    ? 'أمر شراء'
+                    : 'أمر شراء #${state.order!.id}',
+              ),
+            ),
+      ),
+      floatingActionButton:
+          BlocBuilder<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
+            builder: (context, state) {
+              final order = state.order;
+              if (order == null) return const SizedBox.shrink();
+
+              return _Actions(
+                order: order,
+                onEdit: _edit,
+                onCancel: _cancel,
+                onReceive: _receive,
+                onReverseReceipt: _reverseReceipt,
+                onFund: _fund,
+              );
+            },
+          ),
+      body: BlocConsumer<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
+        // Every reading goes past here, whatever produced it — the form, a cancellation, a
+        // shipment booked in. What differs from the first one is what the list behind is
+        // handed on the way out.
+        listener: (context, state) => context.handBack(_changes.saw(state.order)),
+        builder: (context, state) {
+          final order = state.order;
+
+          if (order == null) {
+            return switch (state) {
+              PurchaseOrderDetailFailure(:final failure) => Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.w),
+                  child: Text(failure.message, textAlign: TextAlign.center),
                 ),
               ),
-        ),
-        floatingActionButton:
-            BlocBuilder<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
-              builder: (context, state) {
-                final order = state.order;
-                if (order == null) return const SizedBox.shrink();
+              _ => const Center(child: CircularProgressIndicator()),
+            };
+          }
 
-                return _Actions(
-                  order: order,
-                  onEdit: _edit,
-                  onCancel: _cancel,
-                  onReceive: _receive,
-                  onReverseReceipt: _reverseReceipt,
-                  onFund: _fund,
-                );
-              },
-            ),
-        body: BlocConsumer<PurchaseOrderDetailCubit, PurchaseOrderDetailState>(
-          // Every reading goes past here, whatever produced it — the form, a cancellation, a
-          // shipment booked in. What differs from the first one is what the list behind is
-          // handed on the way out.
-          listener: (context, state) => _changes.saw(state.order),
-          builder: (context, state) {
-            final order = state.order;
-
-            if (order == null) {
-              return switch (state) {
-                PurchaseOrderDetailFailure(:final failure) => Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24.w),
-                    child: Text(failure.message, textAlign: TextAlign.center),
-                  ),
-                ),
-                _ => const Center(child: CircularProgressIndicator()),
-              };
-            }
-
-            return RefreshIndicator(
-              onRefresh: cubit.load,
-              child: _Body(order: order),
-            );
-          },
-        ),
+          return RefreshIndicator(
+            onRefresh: cubit.load,
+            child: _Body(order: order),
+          );
+        },
       ),
     );
   }

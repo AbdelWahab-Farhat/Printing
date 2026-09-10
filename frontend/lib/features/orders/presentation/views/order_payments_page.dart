@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -18,7 +19,6 @@ import 'package:dayaa/features/orders/presentation/widgets/write_off_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 /// One order's money, on a screen of its own.
 ///
@@ -63,51 +63,39 @@ class _OrderPaymentsView extends StatefulWidget {
 }
 
 class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
-  /// Whether anything was written. Screen lifecycle, not business state — the Cubit owns the
-  /// ledger itself.
-  bool _changed = false;
-
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<OrderPaymentsCubit>();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        // Always through here, so the back button and the app bar's arrow return the same thing.
-        context.pop(_changed);
-      },
-      child: Scaffold(
-        appBar: AppBar(title: Text('دفعات الطلبية #${widget.orderCode}')),
-        body: BlocConsumer<OrderPaymentsCubit, OrderPaymentsState>(
-          listener: (context, state) {
-            // Only when there is still a ledger underneath: with nothing to fall back to, the
-            // body already shows the failure and a snackbar would say it twice.
-            if (state case OrderPaymentsFailure(:final failure)) {
-              if (state.ledger != null) context.showFailure(failure);
-            }
-          },
-          builder: (context, state) => switch (state) {
-            OrderPaymentsLoading() => const Center(child: CircularProgressIndicator()),
-            OrderPaymentsFailure(:final failure) when state.ledger == null => _FailureView(
-              message: failure.message,
-              onRetry: cubit.load,
+    return Scaffold(
+      appBar: AppBar(title: Text('دفعات الطلبية #${widget.orderCode}')),
+      body: BlocConsumer<OrderPaymentsCubit, OrderPaymentsState>(
+        listener: (context, state) {
+          // Only when there is still a ledger underneath: with nothing to fall back to, the
+          // body already shows the failure and a snackbar would say it twice.
+          if (state case OrderPaymentsFailure(:final failure)) {
+            if (state.ledger != null) context.showFailure(failure);
+          }
+        },
+        builder: (context, state) => switch (state) {
+          OrderPaymentsLoading() => const Center(child: CircularProgressIndicator()),
+          OrderPaymentsFailure(:final failure) when state.ledger == null => _FailureView(
+            message: failure.message,
+            onRetry: cubit.load,
+          ),
+          _ => RefreshIndicator(
+            onRefresh: cubit.load,
+            child: _Body(
+              summary: state.summary!,
+              payments: state.payments,
+              isWorking: state.isWorking,
+              onRecord: () => _write(PaymentDirection.incoming),
+              onRefund: () => _write(PaymentDirection.outgoing),
+              onWriteOff: _writeOff,
+              onReverse: _reverse,
             ),
-            _ => RefreshIndicator(
-              onRefresh: cubit.load,
-              child: _Body(
-                summary: state.summary!,
-                payments: state.payments,
-                isWorking: state.isWorking,
-                onRecord: () => _write(PaymentDirection.incoming),
-                onRefund: () => _write(PaymentDirection.outgoing),
-                onWriteOff: _writeOff,
-                onReverse: _reverse,
-              ),
-            ),
-          },
-        ),
+          ),
+        },
       ),
     );
   }
@@ -153,7 +141,7 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
       return;
     }
 
-    setState(() => _changed = true);
+    context.handBack(true);
     context.showSuccess(
       direction == PaymentDirection.incoming ? 'تم تسجيل الدفعة' : 'تم تسجيل الردّ',
     );
@@ -183,7 +171,7 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
       return;
     }
 
-    setState(() => _changed = true);
+    context.handBack(true);
     context.showSuccess('تم شطب الفرق');
   }
 
@@ -209,7 +197,7 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
       return;
     }
 
-    setState(() => _changed = true);
+    context.handBack(true);
     context.showSuccess('تم إلغاء الدفعة');
   }
 

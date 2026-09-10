@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
@@ -41,84 +42,67 @@ class RoleDetailPage extends StatelessWidget {
   }
 }
 
-class _RoleDetailView extends StatefulWidget {
+/// **The list behind is told a bool rather than the role itself**, and this is one of the two
+/// screens where that is the honest answer: a delete leaves nothing to hand back, and
+/// `users_count` on the row behind is the server's own counting. So the list is told *that*
+/// something moved and re-reads once — instead of re-reading after every visit, including the
+/// ones that only looked.
+class _RoleDetailView extends StatelessWidget {
   const _RoleDetailView();
-
-  @override
-  State<_RoleDetailView> createState() => _RoleDetailViewState();
-}
-
-/// Stateful for one reason: it remembers whether the role was renamed, re-permissioned or
-/// deleted here, so `pop` can tell the list behind whether it is worth re-reading.
-///
-/// **A bool rather than the role itself**, and this is one of the two screens where that is the
-/// honest answer: a delete leaves nothing to hand back, and `users_count` on the row behind is
-/// the server's own counting. So the list is told *that* something moved and re-reads once —
-/// instead of re-reading after every visit, including the ones that only looked.
-class _RoleDetailViewState extends State<_RoleDetailView> {
-  bool _changed = false;
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<RoleDetailCubit>();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        // Always through here, so the back button and the app bar's arrow return the same thing.
-        context.pop(_changed);
-      },
-      child: BlocBuilder<RoleDetailCubit, RoleDetailState>(
-        builder: (context, state) => Scaffold(
-          appBar: AppBar(
-            title: Text(switch (state) {
-              RoleDetailLoaded(:final role) => role.label,
-              _ => 'الدور',
-            }),
-            actions: [
-              if (state is RoleDetailLoaded)
-                _Actions(
-                  role: state.role,
-                  onChanged: () async {
-                    _changed = true;
-                    await cubit.refresh();
-                  },
-                  onDeleted: () {
-                    _changed = true;
-                    context.pop(true);
-                  },
-                ),
-            ],
-          ),
-          body: switch (state) {
-            RoleDetailLoading() => const Center(child: CircularProgressIndicator()),
-            RoleDetailFailure(:final failure) => _FailureView(
-              message: failure.message,
-              onRetry: cubit.refresh,
-            ),
-            RoleDetailLoaded(:final role, :final groups) => RefreshIndicator(
-              onRefresh: cubit.refresh,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 32.h),
-                children: [
-                  _Summary(role: role),
-                  SizedBox(height: 16.h),
-                  if (role.grantsEverything)
-                    const _GrantsEverythingCard()
-                  else if (groups.isEmpty)
-                    _NoPermissions(role: role)
-                  else ...[
-                    _SectionsHeading(role: role),
-                    SizedBox(height: 8.h),
-                    for (final group in groups) PermissionSection.readOnly(group: group),
-                  ],
-                ],
+    return BlocBuilder<RoleDetailCubit, RoleDetailState>(
+      builder: (context, state) => Scaffold(
+        appBar: AppBar(
+          title: Text(switch (state) {
+            RoleDetailLoaded(:final role) => role.label,
+            _ => 'الدور',
+          }),
+          actions: [
+            if (state is RoleDetailLoaded)
+              _Actions(
+                role: state.role,
+                onChanged: () async {
+                  context.handBack(true);
+                  await cubit.refresh();
+                },
+                onDeleted: () {
+                  context.handBack(true);
+                  context.pop();
+                },
               ),
-            ),
-          },
+          ],
         ),
+        body: switch (state) {
+          RoleDetailLoading() => const Center(child: CircularProgressIndicator()),
+          RoleDetailFailure(:final failure) => _FailureView(
+            message: failure.message,
+            onRetry: cubit.refresh,
+          ),
+          RoleDetailLoaded(:final role, :final groups) => RefreshIndicator(
+            onRefresh: cubit.refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 32.h),
+              children: [
+                _Summary(role: role),
+                SizedBox(height: 16.h),
+                if (role.grantsEverything)
+                  const _GrantsEverythingCard()
+                else if (groups.isEmpty)
+                  _NoPermissions(role: role)
+                else ...[
+                  _SectionsHeading(role: role),
+                  SizedBox(height: 8.h),
+                  for (final group in groups) PermissionSection.readOnly(group: group),
+                ],
+              ],
+            ),
+          ),
+        },
       ),
     );
   }

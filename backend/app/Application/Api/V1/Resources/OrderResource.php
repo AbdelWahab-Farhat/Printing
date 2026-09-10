@@ -8,6 +8,7 @@ use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Support\StockEffectPreview;
 use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -18,15 +19,37 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class OrderResource extends JsonResource
 {
     /**
+     * Whether this payload is a single order rather than a row in a list.
+     *
+     * Set by the endpoints that return one — see {@see withStockEffect()} — and false everywhere
+     * else, which is what keeps `stock_effect` off a page of twenty.
+     */
+    private bool $previewsStockEffect = false;
+
+    /**
+     * Ask this order to say what a delete — or, if it is already archived, a restore — would do
+     * to the warehouse.
+     *
+     * **Opted into by the endpoint rather than decided here, and that is deliberate.** The
+     * warning is built from the lines and the movement ledger behind each of them, so a resource
+     * that computed it unasked would read the ledger once per row for a sentence no card shows.
+     * A list cannot call this: `collection()` never touches the individual resources.
+     *
+     * The same shape {@see ActivityLogResource::withReferenceNames()} uses, for the same reason —
+     * something the caller knows and the resource cannot.
+     */
+    public function withStockEffect(): self
+    {
+        $this->previewsStockEffect = true;
+
+        return $this;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
-        // Read once: two keys below describe the same answer, and finding it means walking the
-        // order's timeline. Null on every order that is not a cancellation this user may undo,
-        // which is nearly all of them.
-        $reinstateTo = $this->reinstatableToFor($request);
-
         return [
             'id' => $this->id,
 
@@ -64,53 +87,9 @@ class OrderResource extends JsonResource
             'is_final' => $this->status->isFinal(),
             'is_closed' => $this->status->isClosed(),
 
-            // **The whole point of gating the app on the server.** The moves this order may
-            // make, already narrowed to the ones *this* user may make, so the app draws exactly
-            // the buttons that will work instead of keeping its own copy of the rules and
-            // offering one the server will refuse.
-            //
-            // `fields` carries that same idea one step further: what a move *asks for* travels
-            // with the move, so the app renders a form it was handed rather than one it wrote,
-            // and a new field on a path is a change here alone. See {@see TransitionFields}.
-            'available_transitions' => array_map(
-                fn (OrderStatus $target) => [
-                    'status' => $target->value,
-                    'label' => $target->label(),
-                    'requires_reason' => $target->requiresReason(),
-                    'fields' => array_map(
-                        fn (TransitionField $field) => $field->toArray(),
-                        // The signed-in user, because one field depends on them: money may only
-                        // be taken by somebody trusted to record it, and the box is withheld
-                        // from a driver rather than the move being withheld.
-                        TransitionFields::for($this->resource, $target, $request->user()),
-                    ),
-                ],
-                $this->availableTransitionsFor($request->user()),
-            ),
-
-            // **The way out of «إلغاء تام», and the only one there is.** An order written off by
-            // mistake is put back exactly where it stood — the destination is read from the
-            // timeline, never chosen — so what travels here is not a list of moves but the one
-            // status the undo will land on, named so the app can say «ترجع إلى «استلام مكتب»»
-            // on the button instead of asking somebody to tap and find out. Null whenever the
-            // undo is not on offer: the order is not cancelled, this user lacks the grant, or
-            // the timeline does not record what it was cancelled from. See
-            // {@see \App\Domain\Order\Actions\ReinstateCancelledOrder}.
-            'reinstate_to' => $reinstateTo?->value,
-            'reinstate_to_label' => $reinstateTo?->label(),
-
-            // The journey, in the domain's own order. Shipped with the order for the same
-            // reason `available_transitions` is: which status follows which is knowledge this
-            // API refuses to let a client keep a second copy of.
-            'progress' => $this->progress(),
-
-            // Three different lines, and the app draws each section from the one that governs
-            // it rather than keeping its own copy of where they fall. They are deliberately not
-            // the same line: a quantity may be corrected while the press runs, the artwork may
-            // not, and the address freezes later still.
-            'items_are_editable' => $this->itemsAreEditable(),
-            'designs_are_editable' => $this->designsAreEditable(),
-            'destination_is_editable' => $this->destinationIsEditable(),
+            // **Everything this payload offers to *do* to this order**, and nothing at all of
+            // it once the order is archived — see {@see offers()} for why the gate is one gate.
+            ...$this->offers($request),
 
             'customer_id' => $this->customer_id,
             'customer' => new CustomerResource($this->whenLoaded('customer')),
@@ -272,6 +251,130 @@ class OrderResource extends JsonResource
 
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
+
+            // **When this order was deleted, and null on every order that was not.** On every row
+            // of both lists rather than on the archive's alone: the app patches a row from
+            // whatever an endpoint hands back, and this is the one field that decides which of
+            // the two lists that row still belongs to. A key present only in the archive would
+            // leave the live list unable to drop an order it has just deleted without asking the
+            // server again for a page it already has.
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
+
+            // **What the warehouse is about to do, said before the button is tapped**: what a
+            // delete would put back on the shelf, or — once the order is archived — what a
+            // restore would take off it again. On the single-order endpoints only; see
+            // {@see withStockEffect()}.
+            //
+            // **Composed by the domain rather than here**, and that is the whole reason it can be
+            // trusted: {@see StockEffectPreview} reads the same accessor
+            // {@see \App\Domain\Order\Actions\DeductOrderStock} deducts against and the same
+            // ledger the delete reverses, so the sentence on the confirmation cannot promise a
+            // movement the action will not make. A copy of that arithmetic written in this
+            // resource — or in Dart — would be right the day it was written and wrong the first
+            // time either action changed.
+            'stock_effect' => $this->when(
+                $this->previewsStockEffect,
+                fn (): array => StockEffectPreview::for($this->resource),
+            ),
+        ];
+    }
+
+    /**
+     * Every key that offers to *change* this order — and, once it is archived, nothing at all.
+     *
+     * **One gate for the whole group rather than a gate per key, because the per-key version has
+     * already failed.** The first cut wrote the archive check into `available_transitions` and
+     * `progress` and left the four keys standing beside them reading from the status alone: a
+     * deleted order went on publishing `reinstate_to` and `items_are_editable: true`, so the app
+     * drew «تراجع عن الإلغاء» and opened the line editor over routes that answer 404 — every
+     * write bound to `{order}` resolves live orders only, deliberately. The rejected alternative
+     * is the obvious one, `$this->when(! $archived, …)` repeated on each key, and it is exactly
+     * what drifted: it asks whoever adds the *next* action key to remember a rule written
+     * nowhere near them. Here the rule is the method the key is being added to.
+     *
+     * **Absent, never empty or false.** «هذه الطلبية لا تملك حركة» and «هذه الطلبية ليست مما
+     * يتحرك» are two different sentences and only the missing key says the second — §٦ of
+     * Docs/orders/ORDER-DELETE-AND-ARCHIVE.md. Nothing is lost on the way: the app already reads
+     * a missing key as «لا», because `Order.itemsAreEditable` and its two neighbours default to
+     * `false` and `reinstateTo` defaults to null.
+     *
+     * `stock_effect` stays out of the group on purpose: a restore is the one move an archived
+     * order *does* have, and describing it is why the archive screen opens at all.
+     *
+     * @return array<string, mixed>
+     */
+    private function offers(Request $request): array
+    {
+        if ($this->resource->trashed()) {
+            return [];
+        }
+
+        // Read once: two keys below describe the same answer, and finding it means walking the
+        // order's timeline. Null on every order that is not a cancellation this user may undo,
+        // which is nearly all of them.
+        $reinstateTo = $this->reinstatableToFor($request);
+
+        return [
+            // **The whole point of gating the app on the server.** The moves this order may
+            // make, already narrowed to the ones *this* user may make, so the app draws exactly
+            // the buttons that will work instead of keeping its own copy of the rules and
+            // offering one the server will refuse.
+            //
+            // `fields` carries that same idea one step further: what a move *asks for* travels
+            // with the move, so the app renders a form it was handed rather than one it wrote,
+            // and a new field on a path is a change here alone. See {@see TransitionFields}.
+            //
+            // **The key that named the gate above.** The card is shared between the two lists,
+            // and it offers a status move on any row that carries this key — so an order
+            // somebody deleted would sit in the archive with «نقل إلى قيد الطباعة» under it.
+            'available_transitions' => array_map(
+                fn (OrderStatus $target) => [
+                    'status' => $target->value,
+                    'label' => $target->label(),
+                    'requires_reason' => $target->requiresReason(),
+                    'fields' => array_map(
+                        fn (TransitionField $field) => $field->toArray(),
+                        // The signed-in user, because one field depends on them: money may only
+                        // be taken by somebody trusted to record it, and the box is withheld
+                        // from a driver rather than the move being withheld.
+                        TransitionFields::for($this->resource, $target, $request->user()),
+                    ),
+                ],
+                $this->availableTransitionsFor($request->user()),
+            ),
+
+            // **The way out of «إلغاء تام», and the only one there is.** An order written off by
+            // mistake is put back exactly where it stood — the destination is read from the
+            // timeline, never chosen — so what travels here is not a list of moves but the one
+            // status the undo will land on, named so the app can say «ترجع إلى «استلام مكتب»»
+            // on the button instead of asking somebody to tap and find out. Null whenever the
+            // undo is not on offer: the order is not cancelled, this user lacks the grant, or
+            // the timeline does not record what it was cancelled from. See
+            // {@see \App\Domain\Order\Actions\ReinstateCancelledOrder}.
+            'reinstate_to' => $reinstateTo?->value,
+            'reinstate_to_label' => $reinstateTo?->label(),
+
+            // The journey, in the domain's own order. Shipped with the order for the same
+            // reason `available_transitions` is: which status follows which is knowledge this
+            // API refuses to let a client keep a second copy of.
+            //
+            // **The one member of the group that is not an offer, and it earns its place.**
+            // {@see Order::progress()} falls back to `furthestMainLineStep()` for every status
+            // off the main line — «إلغاء تام», «نواقص», the three returns, «إعادة إرسال» — and
+            // that reads `transitions` per order. Those are precisely the statuses an archive is
+            // full of, and `transitions` is not eager-loaded by the list, so drawing a progress
+            // bar nobody asked for would cost a query per row. Strict mode does not catch it:
+            // it is a relation *query*, not a lazy relation read. The gate the archive needs for
+            // that reason is the gate it needs for every key beside it, so it is the same gate.
+            'progress' => $this->progress(),
+
+            // Three different lines, and the app draws each section from the one that governs
+            // it rather than keeping its own copy of where they fall. They are deliberately not
+            // the same line: a quantity may be corrected while the press runs, the artwork may
+            // not, and the address freezes later still.
+            'items_are_editable' => $this->itemsAreEditable(),
+            'designs_are_editable' => $this->designsAreEditable(),
+            'destination_is_editable' => $this->destinationIsEditable(),
         ];
     }
 

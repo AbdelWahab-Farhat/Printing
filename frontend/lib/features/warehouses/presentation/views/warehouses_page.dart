@@ -1,6 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -14,7 +15,6 @@ import 'package:dayaa/features/warehouses/presentation/widgets/warehouse_sheet.d
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 /// المخزن — the places stock sits, and the way into everything else in this context.
 ///
@@ -91,7 +91,7 @@ class _WarehousesView extends StatelessWidget {
                     // patch it, so it re-reads. But walking in to look at the shelves and
                     // walking back out changes nothing, and used to cost a request and a jump
                     // to the top of the list all the same.
-                    final changed = await context.push<bool>(
+                    final changed = await context.pushForResult<bool>(
                       Routes.warehouseStocks(warehouse.id),
                       extra: warehouse,
                     );

@@ -21,6 +21,8 @@ use App\Application\Controller;
 use App\Domain\Audit\AuditService;
 use App\Domain\Carrier\CarrierService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Actions\DeleteOrder;
+use App\Domain\Order\Actions\RestoreOrder;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
@@ -76,12 +78,45 @@ class OrderController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $filters = OrderFilters::fromArray(
-            $request->only([
+        return $this->listing($request, archived: false);
+    }
+
+    /**
+     * The archive
+     *
+     * Deleted orders, and only those — the same list, the same filters, the same sort and the
+     * same envelope as `GET /orders`, so a client draws the archive with the screen it already
+     * has. An order in here is one somebody said should never have been recorded: a duplicate, a
+     * wrong number, a trial. «إلغاء تام» is the other thing, and those orders stay in the live
+     * list wearing their status.
+     *
+     * Rows here carry `deleted_at` and deliberately carry **no** `available_transitions` and no
+     * `progress`: an archived order does not move.
+     */
+    public function archive(Request $request): JsonResponse
+    {
+        return $this->listing($request, archived: true);
+    }
+
+    /**
+     * One page of orders, from whichever of the two lists the route reached.
+     *
+     * **[$archived] comes from the endpoint, never from the query string**, and that is a guard
+     * rather than a style. `OrderFilters` would read an `archived` key perfectly well if one were
+     * let through `only()` below — and then `GET /orders?archived=1` would hand the whole archive
+     * to anybody holding `orders.view`, walking straight past the `orders.archive.view` that the
+     * archive route costs. The one filter this API will not take from the caller is the one that
+     * decides which set is being read.
+     */
+    private function listing(Request $request, bool $archived): JsonResponse
+    {
+        $filters = OrderFilters::fromArray([
+            ...$request->only([
                 'search', 'status', 'payment_status', 'urgent', 'sort',
                 'customer_id', 'city_id', 'from', 'to',
             ]),
-        );
+            'archived' => $archived,
+        ]);
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
         return $this->successWithPagination(
@@ -107,9 +142,37 @@ class OrderController extends Controller
      */
     public function statusCounts(Request $request): JsonResponse
     {
-        $filters = OrderFilters::fromArray(
-            $request->only(['search', 'payment_status', 'urgent', 'customer_id', 'city_id', 'from', 'to']),
-        );
+        return $this->counts($request, archived: false);
+    }
+
+    /**
+     * How many archived orders are in each status
+     *
+     * The chips above the archive, answering for the deleted orders exactly as `/orders/summary`
+     * answers for the live ones, with the same filters and the same envelope.
+     *
+     * **Both rows of numbers move together.** The status counts and the payment counts are two
+     * queries, and either could have been left describing the live list while the other described
+     * the archive — two rows of figures about two different sets, side by side, with nothing on
+     * the screen to say so. They share one `OrderFilters`, which is what stops it.
+     */
+    public function archiveStatusCounts(Request $request): JsonResponse
+    {
+        return $this->counts($request, archived: true);
+    }
+
+    /**
+     * The chips for whichever of the two lists the route reached.
+     *
+     * [$archived] is the endpoint's own answer for the reason it is in {@see listing()}: taking
+     * it from the query string would let `orders.view` count the archive.
+     */
+    private function counts(Request $request, bool $archived): JsonResponse
+    {
+        $filters = OrderFilters::fromArray([
+            ...$request->only(['search', 'payment_status', 'urgent', 'customer_id', 'city_id', 'from', 'to']),
+            'archived' => $archived,
+        ]);
 
         $counts = $this->orders->statusCounts($filters);
         $paymentCounts = $this->orders->paymentStatusCounts($filters);
@@ -158,10 +221,76 @@ class OrderController extends Controller
      * Get one order
      *
      * Includes the lines, every design version and the full status timeline.
+     *
+     * Reads an archived order too — for somebody holding `orders.archive.view` on top of
+     * `orders.view`; without it a deleted order is a 403 here, as it is on the two other read
+     * endpoints. Every other route bound to an order stays 404 on one.
+     *
+     * Carries `stock_effect`: what deleting this order would put back on the shelf, or — if it is
+     * already archived — what restoring it would take off again. A list row never carries it.
      */
     public function show(Order $order): JsonResponse
     {
-        return $this->success(new OrderResource($this->withParcelCode($this->orders->loadForDisplay($order))));
+        return $this->success(
+            (new OrderResource($this->withParcelCode($this->orders->loadForDisplay($order))))
+                ->withStockEffect(),
+        );
+    }
+
+    /**
+     * Delete an order
+     *
+     * For the row that should never have been written — a duplicate, a wrong number, somebody's
+     * trial. **Not a way of ending an order**: an order the customer cancelled is moved to «إلغاء
+     * تام», which keeps it in the list with the reason attached, and a delete throws that reason
+     * away because there was never anything to explain.
+     *
+     * The order moves to the archive, and whatever stock it still has drawn comes back to the
+     * shelf it left — the exact cost layers, not an averaged batch. Read `stock_effect` on the
+     * order first and show it: it names the sizes and the figures before anybody taps.
+     *
+     * Refused with 422 while money stands against the order that has not been reversed, and while
+     * a parcel of it is still open with the carrier. Both are «افعل هذا أولاً» rather than «لا»,
+     * and the message says which.
+     *
+     * **The action is asked for on the method rather than in the constructor**, the way
+     * {@see logs()} asks for the audit service: it is wanted by two of a dozen endpoints, and
+     * resolving it for every order request — including a list of twenty — buys nothing.
+     */
+    public function destroy(Request $request, Order $order, DeleteOrder $delete): JsonResponse
+    {
+        $deleted = ($delete)($order, $this->actor($request));
+
+        return $this->success(
+            (new OrderResource($this->withParcelCode($this->orders->loadForDisplay($deleted))))
+                ->withStockEffect(),
+            'تم حذف الطلبية ونقلها إلى الأرشيف',
+        );
+    }
+
+    /**
+     * Restore an archived order
+     *
+     * Puts a deleted order back where it stood, **and takes its stock out of the warehouse
+     * again** — because the delete put it back, and an order returning without its goods leaving
+     * would leave the shelf claiming to hold bags that are in a customer's hands.
+     *
+     * **The cost may not be the cost it left with.** The new deduction eats today's FIFO layers
+     * rather than the ones the original run consumed, so the order can come back priced
+     * differently. That is said in `stock_effect` on the archived order, and it is not hidden.
+     *
+     * Refused with 422 when the warehouse the order drew from has since been retired, and when
+     * the shelf no longer holds enough — with the shortfall named per size.
+     */
+    public function restore(Request $request, Order $order, RestoreOrder $restore): JsonResponse
+    {
+        $restored = ($restore)($order, $this->actor($request));
+
+        return $this->success(
+            (new OrderResource($this->withParcelCode($this->orders->loadForDisplay($restored))))
+                ->withStockEffect(),
+            'تمت استعادة الطلبية',
+        );
     }
 
     /**

@@ -1,6 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
@@ -33,7 +34,7 @@ class _PurchaseOrdersView extends StatelessWidget {
   Future<void> _open(BuildContext context, PurchaseOrder order) async {
     final cubit = context.read<PurchaseOrdersCubit>();
 
-    final changed = await context.push<PurchaseOrder>(
+    final changed = await context.pushForResult<PurchaseOrder>(
       Routes.purchaseOrder(order.id),
       extra: order,
     );

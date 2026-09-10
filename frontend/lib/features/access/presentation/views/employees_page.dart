@@ -1,6 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
@@ -117,7 +118,9 @@ class _EmployeesView extends StatelessWidget {
                   // roles or stopped it, so the row redraws itself with no request — and
                   // nothing happens at all after a screen the user merely read.
                   onTap: () async {
-                    final changed = await context.push<AuthUser>(Routes.employee(user.id));
+                    final changed = await context.pushForResult<AuthUser>(
+                      Routes.employee(user.id),
+                    );
                     if (changed != null) cubit.replace(changed);
                   },
                 ),

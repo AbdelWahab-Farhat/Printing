@@ -404,8 +404,18 @@ any of them with `event`, `causer_id`, `subject_type`, `from` and `to`. All behi
 which is deliberately *not* the permission that guards the record: someone allowed to edit
 products is not automatically someone allowed to audit their colleagues.
 
-🎯 No restore endpoint yet. Recovering a deleted record is a console job today; when a restore
-endpoint lands, decide there whether it cascades.
+### Restoring
+
+The first restore endpoint is `POST orders/{order}/restore` — see
+[RestoreOrder](app/Domain/Order/Actions/RestoreOrder.php) and
+[the design](../Docs/orders/ORDER-DELETE-AND-ARCHIVE.md) §٥. **It does not cascade, and neither
+will the next one:** a restore undoes the one delete it names, not everything that ever happened
+to the record. `Order` never appears in `softDeleteCascades()` at all, for a reason that is
+mechanical rather than philosophical — `Order::progress()` reads `transitions()` *without*
+`withTrashed()`, so cascading them would draw an empty progress bar on every archived order and
+break «تراجع عن الإلغاء» after a restore.
+
+Recovering anything else deleted is still a console job.
 
 ---
 

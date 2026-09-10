@@ -146,6 +146,50 @@ void main() {
     });
   });
 
+  /// **وقد تكون الطلبية الواحدة أكثر من ملف.** «التصميم الأول» و«الثاني» هما الشعار وظهر الكيس
+  /// بقدر ما هما مسوّدة وتصحيحها — والجدول لا يفرّق بينهما — فتُعرض كلّها على البطاقة بجانب
+  /// بعضها، بالترتيب الذي اختيرت به.
+  group('كل ما يُطبع على الطلبية', () {
+    test('بالترتيب الذي اختير به، لا معكوساً', () {
+      // Arrange — الخادم يرسل الأحدث أولاً؛ والصفّ يُقرأ كما اختاره الموظف.
+      final order = orderWith(designs: [version(3), version(2), version(1)]);
+
+      // Act
+      final artworks = order.artworks;
+
+      // Assert
+      expect(artworks.map((design) => design.fileUrl), [
+        'https://files.test/artwork-1.png',
+        'https://files.test/artwork-2.png',
+        'https://files.test/artwork-3.png',
+      ]);
+    });
+
+    test('والمرفوض ليس منها', () {
+      // Arrange
+      final order = orderWith(
+        designs: [version(1), version(2, status: 'rejected'), version(3)],
+      );
+
+      // Act
+      final artworks = order.artworks;
+
+      // Assert
+      expect(artworks.map((design) => design.fileUrl), [
+        'https://files.test/artwork-1.png',
+        'https://files.test/artwork-3.png',
+      ]);
+    });
+
+    test('وكيسٌ سادة قائمةٌ فارغة، لا null', () {
+      // Arrange — شاشةٌ تدور على القائمة لا تحتاج حالةً خاصة لغيابها.
+      final order = orderWith();
+
+      // Act - Assert
+      expect(order.artworks, isEmpty);
+    });
+  });
+
   group('the line on the order screen', () {
     Widget host(Widget card) {
       return ScreenUtilInit(

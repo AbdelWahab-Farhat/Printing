@@ -3,7 +3,7 @@ description: "دعاية Dayaa — إدارة مطبعة أكياس: العمل�
 publish_to: "none"
 
 # major.minor.patch+build — the build number is what the stores order releases by.
-version: 1.2.0+2
+version: 1.3.0+1
 
 environment:
   sdk: ^3.12.0
@@ -44,11 +44,6 @@ dependencies:
   flutter_screenutil: ^5.9.3
   google_fonts: ^7.0.0 # the generated theme's util.dart needs it
   cached_network_image: ^3.4.1
-  # Charts. Earned by one screen — مبيعات الأكياس حسب النوع, where six materials are compared as
-  # shares of one period's takings and a list of figures makes the reader do the comparing. Every
-  # other proportion in this app is one measure split two or three ways, and those stay hand-drawn
-  # strips: a picture of two numbers costs a screenful and says nothing the numbers did not.
-  fl_chart: ^1.2.0
 
 
   # ── push notifications ───────────────────────────────────────────────────────
@@ -131,6 +126,19 @@ dependencies:
   flutter_native_splash: ^2.4.8
   pdf: ^3.13.0
 
+  # ── الأدوات: رمز QR ──────────────────────────────────────────────────────────
+  # المرمِّز وحده: بيور دارت، BSD-3، من kevmoo، وهو ما تقوم عليه كل حزم QR في pub.
+  #
+  # **وهو في شجرتنا أصلاً** — `pdf` ← `barcode` ← `qr` — فالسطر هنا لا يضيف كوداً نشحنه، بل
+  # يسمّي ما نستورده بأنفسنا، وهو بالضبط ما وُجد `depend_on_referenced_packages` لأجله. ولهذا
+  # القيد `^3.0.2` لا `^4`: `barcode` مثبَّت على `qr ^3.0.0`، ورفعُنا وحدنا يكسر الحلّ.
+  #
+  # **ولا `qr_flutter`.** هو ويدجت جاهز يحمل ألوانه وحوافه، و§7 لا تسمح بلون مكتوب في شاشة —
+  # ونحتاج خلفية شفافة ولوناً يختاره الموظف، فالويدجت الجاهز يُلتفّ حوله لا يُستعمل. آخر إصدار
+  # له ٢٠٢١. ما نحتاجه منه ثلاثون سطراً من `CustomPainter` نملكها ونختبرها — نفس قرار
+  # `flutter_map` أعلاه وللسبب نفسه.
+  qr: ^3.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -159,6 +167,9 @@ flutter:
     - .env.dev
     - assets/images/
     - assets/icons/
+    # صور الأكياس التي تُعاين عليها التصاميم، مأخوذة من `daaya.ly/preview.html` — نفس الصور
+    # التي يراها الزبون على الموقع، فالمعاينة في التطبيق تُريه ما رآه هناك.
+    - assets/mockups/
     # Not registered under `fonts:` — the app's own text is drawn by the system font. These are
     # bytes the PDF invoice embeds, because a generated PDF carries no fonts from the phone and
     # an invoice built without an Arabic face comes out a page of empty boxes. Almarai, OFL,

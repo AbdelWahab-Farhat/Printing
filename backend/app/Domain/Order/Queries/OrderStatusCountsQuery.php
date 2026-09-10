@@ -26,6 +26,10 @@ use App\Domain\Order\Queries\Concerns\FiltersOrders;
  * Shares its filters with {@see OrderListQuery} through {@see FiltersOrders}, and the status
  * filter is deliberately *not* applied: counts that only counted the status already chosen would
  * every one of them read as the list's own length.
+ *
+ * **The archive included.** It seeds its own `Order::query()`, so whether these numbers describe
+ * the live orders or the deleted ones is decided by {@see OrderFilters::$archived} rather than
+ * here — which is what keeps this count and the list it sits beside talking about one set.
  */
 final class OrderStatusCountsQuery
 {

@@ -15,6 +15,11 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
  * is the one somebody is asking about. {@see OrderSort} turns it round for the other question a
  * queue is opened with — «ما الذي ينتظر منذ أطول وقت؟» — which the default cannot answer at all
  * past the first page.
+ *
+ * **And the archive is this same query, not another one.** Which of the two lists is being asked
+ * for rides on {@see OrderFilters::$archived} and is applied by {@see FiltersOrders}, so the
+ * archive inherits every filter, every sort and every eager load here for free — and can never
+ * drift from the live list in what a status or a search means.
  */
 final class OrderListQuery
 {
@@ -49,6 +54,14 @@ final class OrderListQuery
             // Order::totalWeight(). Without it that method's own `loadMissing()` fetches the
             // pair one order at a time, which is the query per row this list is built to avoid.
             ->with('items.variant.stockItem')
+            // **And what is printed on the order.** The card draws the artwork rather than the
+            // catalogue's photograph — every line of every order shows the same white bag
+            // otherwise — so the versions and the files behind them travel with the page. Two
+            // queries for the whole page, not two per row: `customerDesign` is what holds the
+            // path, and `CustomerDesignResource` signs the link from it without touching the
+            // disk. Rejected versions come too; which of them is the one being printed is a
+            // reading rule, and the client that draws them owns it.
+            ->with('designs.customerDesign')
             ->withCount('items');
 
         $direction = $filters->sort->direction();

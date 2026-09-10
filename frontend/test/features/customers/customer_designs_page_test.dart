@@ -129,6 +129,17 @@ void main() {
     expect(find.textContaining('عند إنشاء الطلبات'), findsOneWidget);
   });
 
+  /// Opens the floating dial so its actions can be read.
+  ///
+  /// **The screen grew a second action and stopped being a plain button.** [AppSpeedDial]
+  /// renders a lone survivor as an extended button and anything more as a dial — so «إضافة
+  /// تصميم» is a label inside the dial now, and reaching it is the tap this adds. See
+  /// «إنشاء QR» beside it.
+  Future<void> openDial(WidgetTester tester) async {
+    await tester.tap(find.byType(FloatingActionButton).last);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('somebody who may only read is offered nothing to press', (tester) async {
     // Arrange — a courtesy, never a boundary: the server refuses either way, and hiding the
     // button spares them work they cannot finish.
@@ -140,6 +151,36 @@ void main() {
 
     // Assert
     expect(find.text('إضافة تصميم'), findsNothing);
+  });
+
+  testWidgets('«إنشاء QR» stands beside «إضافة تصميم», and needs the same grant', (
+    tester,
+  ) async {
+    // Arrange
+    session.adopt(userWith(['customers.view', 'customers.manage']));
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await openDial(tester);
+
+    // Assert — a QR code is not somewhere on this phone to be found, it is made here, so it is
+    // an action of its own rather than a fourth row of «من أين تريد إضافة الملف؟».
+    expect(find.text('إضافة تصميم'), findsOneWidget);
+    expect(find.text('إنشاء QR'), findsOneWidget);
+  });
+
+  testWidgets('a reader is offered neither of them', (tester) async {
+    // Arrange — both actions put a file in the library, so both need `customers.manage`.
+    session.adopt(userWith(['customers.view']));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — nothing survives the filter, so the dial is not drawn at all.
+    expect(find.text('إنشاء QR'), findsNothing);
+    expect(find.byType(FloatingActionButton), findsNothing);
   });
 
   testWidgets('the sheet, the picker and the upload are one flow', (tester) async {
@@ -173,6 +214,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Act
+    await openDial(tester);
     await tester.tap(find.text('إضافة تصميم'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('مستندات'));
@@ -203,6 +245,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Act
+    await openDial(tester);
     await tester.tap(find.text('إضافة تصميم'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('صور'));
@@ -247,6 +290,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Act
+    await openDial(tester);
     await tester.tap(find.text('إضافة تصميم'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('مستندات'));

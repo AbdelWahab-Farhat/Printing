@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -16,6 +18,8 @@ import 'package:dayaa/features/customers/models/design_rules.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_viewer.dart';
+import 'package:dayaa/features/customers/usecases/save_design_to_device.dart';
+import 'package:dayaa/features/tools/presentation/views/qr_tool_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -64,14 +68,7 @@ class _DesignsView extends StatelessWidget {
     // The server refuses past fifty — see `media.customer_designs.max_per_customer` — and it
     // refuses *after* the bytes have arrived. Saying so before the picker opens saves an
     // upload that was never going to be kept.
-    if ((cubit.state.designs?.length ?? 0) >= DesignRules.maxPerCustomer) {
-      context.showError(
-        'وصل هذا العميل إلى الحد الأقصى (${DesignRules.maxPerCustomer} تصميم). '
-        'احذف تصميماً قديماً لإضافة جديد.',
-      );
-
-      return;
-    }
+    if (_isFull(context, cubit)) return;
 
     final source = await showAttachmentSheet(context: context);
     if (source == null || !context.mounted) return;
@@ -81,6 +78,36 @@ class _DesignsView extends StatelessWidget {
     if (files.isEmpty) return;
 
     await cubit.add(files);
+  }
+
+  /// Draws a QR code and puts it in the library, through the same queue as everything else.
+  ///
+  /// **The tool hands back a file and nothing more**, so from here a generated code and a photo
+  /// out of the camera are the same errand: the progress row, the retry on a dropped
+  /// connection and the fifty-design ceiling all apply without knowing which it was.
+  Future<void> _addQrCode(BuildContext context) async {
+    final cubit = context.read<CustomerDesignsCubit>();
+
+    if (_isFull(context, cubit)) return;
+
+    final file = await pickQrCodeFile(context);
+    // Backing out of the tool without making a code is an ordinary ending.
+    if (file == null) return;
+
+    await cubit.add([file]);
+  }
+
+  /// Whether the library is at the ceiling — said before a picker opens rather than after an
+  /// upload the server was always going to refuse.
+  bool _isFull(BuildContext context, CustomerDesignsCubit cubit) {
+    if ((cubit.state.designs?.length ?? 0) < DesignRules.maxPerCustomer) return false;
+
+    context.showError(
+      'وصل هذا العميل إلى الحد الأقصى (${DesignRules.maxPerCustomer} تصميم). '
+      'احذف تصميماً قديماً لإضافة جديد.',
+    );
+
+    return true;
   }
 
   @override
@@ -130,6 +157,15 @@ class _DesignsView extends StatelessWidget {
                 tone: AppActionTone.primary,
                 permission: AppPermission.manageCustomers,
                 onTap: _addDesign,
+              ),
+              // Beside the file picker rather than inside it: a QR code is not somewhere on
+              // this phone to be found, it is made here — and «مستندات / صور / الكاميرا» is a
+              // question about where a file already is.
+              AppAction(
+                label: 'إنشاء QR',
+                icon: AppIcons.qrCode,
+                permission: AppPermission.manageCustomers,
+                onTap: _addQrCode,
               ),
             ],
           ),
@@ -478,48 +514,61 @@ Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
     ),
     builder: (sheetContext) => SafeArea(
       top: false,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(height: 8.h),
-          ListTile(
-            title: Text(
-              design.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            subtitle: Text(
-              [design.kindLabel, ?design.sizeLabel, ?design.dimensionsLabel].join(' · '),
-            ),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: Icon(AppIcons.openExternal),
-            title: const Text('فتح الملف'),
-            onTap: () => Navigator.of(sheetContext).pop(_DesignAction.open),
-          ),
-          ListTile(
-            leading: Icon(AppIcons.download),
-            title: const Text('تحميل'),
-            onTap: () => Navigator.of(sheetContext).pop(_DesignAction.save),
-          ),
-          // Hidden, not disabled, for somebody who may only read: a greyed-out «حذف» advertises
-          // a job that is not theirs. The server refuses it either way.
-          if (mayManage) ...[
+      // **يُمرَّر ولا يفيض.** الصفوف صارت ستة، وورقةٌ سفلية لا تتجاوز نصف الشاشة: على هاتفٍ
+      // قصير أو بخطِّ نظامٍ مكبَّر يقع «حذف» خارج ما يُرسم — وصفٌّ لا يُرى في ورقةٍ لا تُمرَّر
+      // هو صفٌّ لا يمكن الوصول إليه أصلاً.
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 8.h),
             ListTile(
-              leading: Icon(AppIcons.edit),
-              title: const Text('إعادة التسمية'),
-              onTap: () => Navigator.of(sheetContext).pop(_DesignAction.rename),
+              title: Text(
+                design.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              subtitle: Text(
+                [design.kindLabel, ?design.sizeLabel, ?design.dimensionsLabel].join(' · '),
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(AppIcons.openExternal),
+              title: const Text('فتح الملف'),
+              onTap: () => Navigator.of(sheetContext).pop(_DesignAction.open),
             ),
             ListTile(
-              leading: Icon(AppIcons.delete, color: context.colorScheme.error),
-              title: Text('حذف', style: TextStyle(color: context.colorScheme.error)),
-              onTap: () => Navigator.of(sheetContext).pop(_DesignAction.delete),
+              leading: Icon(AppIcons.download),
+              title: const Text('تحميل'),
+              onTap: () => Navigator.of(sheetContext).pop(_DesignAction.save),
             ),
+            // **مِن التصميم إلى الكيس، لا العكس.** أداة المعاينة تقبل رفع ملف، لكن الملف هنا
+            // موجودٌ أصلاً — ورفعه من جديد ليراه الموظف على كيس هو العمل الذي جاءت الأداة
+            // لتوفّره. وهي متاحة لمن يقرأ فقط: المعاينة لا تكتب شيئاً في النظام.
+            ListTile(
+              leading: Icon(AppIcons.bagPreview),
+              title: const Text('معاينة على كيس'),
+              onTap: () => Navigator.of(sheetContext).pop(_DesignAction.preview),
+            ),
+            // Hidden, not disabled, for somebody who may only read: a greyed-out «حذف» advertises
+            // a job that is not theirs. The server refuses it either way.
+            if (mayManage) ...[
+              ListTile(
+                leading: Icon(AppIcons.edit),
+                title: const Text('إعادة التسمية'),
+                onTap: () => Navigator.of(sheetContext).pop(_DesignAction.rename),
+              ),
+              ListTile(
+                leading: Icon(AppIcons.delete, color: context.colorScheme.error),
+                title: Text('حذف', style: TextStyle(color: context.colorScheme.error)),
+                onTap: () => Navigator.of(sheetContext).pop(_DesignAction.delete),
+              ),
+            ],
+            SizedBox(height: 8.h),
           ],
-          SizedBox(height: 8.h),
-        ],
+        ),
       ),
     ),
   );
@@ -531,6 +580,8 @@ Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
       await showDesign(context, design);
     case _DesignAction.save:
       await saveDesign(context, design);
+    case _DesignAction.preview:
+      await _previewOnBag(context, design);
     case _DesignAction.rename:
       await _rename(context, cubit, design);
     case _DesignAction.delete:
@@ -538,7 +589,41 @@ Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
   }
 }
 
-enum _DesignAction { open, save, rename, delete }
+enum _DesignAction { open, save, preview, rename, delete }
+
+/// Opens the bag preview with this design already on it.
+///
+/// **The file is fetched before the screen opens, not by it.** The preview tool knows how to
+/// draw a design and nothing about signed URLs or customers; keeping it that way is what lets
+/// the same screen serve a fresh upload from the drawer and a design out of this library.
+/// [SaveDesignToDevice] is the same call «تحميل» makes one row above.
+Future<void> _previewOnBag(BuildContext context, CustomerDesign design) async {
+  if (design.kind == DesignKind.pdf) {
+    // Said before a request rather than after one: the preview cannot draw a PDF, and the
+    // library accepts PDFs — so this is a real pairing, not a defensive branch.
+    context.showError('المعاينة تحتاج صورة — هذا الملف PDF');
+
+    return;
+  }
+
+  context.showInfo('جارٍ تجهيز المعاينة…');
+
+  final result = await sl<SaveDesignToDevice>()(design);
+
+  if (!context.mounted) return;
+
+  await result.fold(
+    (failure) async => context.showFailure(failure),
+    (path) async => context.push(
+      Routes.bagPreview,
+      extra: PickedFile(
+        path: path,
+        name: SaveDesignToDevice.fileNameFor(design),
+        sizeBytes: design.sizeBytes ?? 0,
+      ),
+    ),
+  );
+}
 
 Future<void> _rename(
   BuildContext context,

@@ -205,6 +205,12 @@ final class AuditAttributeLabels
         ],
         'shipping_company' => [
             'name' => 'اسم شركة التوصيل',
+            // **«المبدئية» rather than «الافتراضية»**: this is the company the dispatch form
+            // opens on, and at most one live company may hold it — a partial unique index says
+            // so, and `UpdateShippingCompany` *moves* the flag rather than duplicating it. So a
+            // history screen shows this column changing on two rows for one decision, and the
+            // word has to read as «التي تُقترح أولاً» rather than as a setting on one company.
+            'is_default' => 'الشركة المبدئية',
         ],
 
         // The carrier side. Everything Nawris knows a parcel by, in their words and ours — a
@@ -285,6 +291,12 @@ final class AuditAttributeLabels
             'shipping_company_id' => 'شركة التوصيل',
             'courier_phone' => 'هاتف المندوب',
             'stock_deducted_at' => 'تاريخ خصم المخزون',
+            // **Not a second «تاريخ خصم المخزون», and the difference is the whole of why the
+            // column exists.** `stock_deducted_at` remembers that goods left this order once and
+            // is never cleared; this one says the *archive* is holding goods it gave back, and
+            // the restore clears it on the way out. A reader of the history needs to tell the two
+            // apart, so the label names the delete rather than the stock.
+            'delete_returned_stock_at' => 'تاريخ إعادة المخزون عند الحذف',
             'fulfillment_warehouse_id' => 'مخزن التنفيذ',
             'total_cogs' => 'إجمالي تكلفة البضاعة',
             // Its *values* need no dictionary: `OrderFlow` names itself, and AuditValueLabels

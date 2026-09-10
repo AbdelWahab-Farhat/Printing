@@ -8,6 +8,7 @@ import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:dayaa/features/orders/presentation/views/order_edit_page.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
+import 'package:dayaa/features/orders/usecases/archive_order.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
@@ -85,21 +86,23 @@ void main() {
           addDesign: AddOrderDesign(repository),
           reviewDesign: ReviewOrderDesign(repository),
           reinstateOrder: ReinstateOrder(repository),
+          deleteOrder: DeleteOrder(repository),
+          restoreOrder: RestoreOrder(repository),
         ),
       );
   }
 
   Widget edit() => ScreenUtilInit(
     designSize: const Size(430, 932),
-    builder: (context, _) => MaterialApp(
-      locale: const Locale('ar'),
-      supportedLocales: const [Locale('ar')],
-      localizationsDelegates: const [
+    builder: (context, _) => const MaterialApp(
+      locale: Locale('ar'),
+      supportedLocales: [Locale('ar')],
+      localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const OrderEditPage(orderId: 55),
+      home: OrderEditPage(orderId: 55),
     ),
   );
 

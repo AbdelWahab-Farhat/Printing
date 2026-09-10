@@ -7,6 +7,7 @@ import 'package:dayaa/core/pagination/paged_cubit.dart';
 import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
+import 'package:dayaa/features/orders/models/orders_sort.dart';
 import 'package:dayaa/features/orders/usecases/get_orders.dart';
 
 /// One fixed question about the orders, asked once.
@@ -22,10 +23,22 @@ import 'package:dayaa/features/orders/usecases/get_orders.dart';
 class FilteredOrdersCubit extends PagedCubit<Order> {
   FilteredOrdersCubit({required GetOrders getOrders, required OrdersFilter filter})
     : _getOrders = getOrders,
-      _filter = filter;
+      _filter = filter,
+      sort = filter.initialSort;
 
   final GetOrders _getOrders;
   final OrdersFilter _filter;
+
+  /// Which end of the queue the screen is reading from.
+  ///
+  /// **The one thing on this screen that does change**, and it is not a filter: the question was
+  /// settled by the tap that opened it, and this narrows nothing — it only says where the list
+  /// starts. Which is why it is a button of its own rather than a chip, exactly as it is on the
+  /// orders tab. See [OrderSortButton].
+  ///
+  /// It starts where the filter says it should — «جاهزة للطباعة» opens at the far end, see
+  /// [OrdersFilter.initialSort] — and the reader's tap wins from then on.
+  OrdersSort sort;
 
   @override
   Object identityOf(Order item) => item.id;
@@ -42,8 +55,24 @@ class FilteredOrdersCubit extends PagedCubit<Order> {
       customerId: _filter.customerId,
       from: _filter.from,
       to: _filter.to,
+      // And so does the sort, for the same reason: page two of «الأقدم أولاً» fetched the other
+      // way round is a page of orders the reader has just read, appended under the ones they
+      // have.
+      sort: sort,
       page: page,
     );
+  }
+
+  /// Turns the list round.
+  ///
+  /// The question survives it — the statuses, the payment states, the customer, the days, and
+  /// the search typed into the box: somebody asking «أرِني الجاهزة للطباعة، الأحدث أولاً» is
+  /// asking one question in two taps, not opening a different screen.
+  Future<void> showSort(OrdersSort next) async {
+    if (next == sort) return;
+
+    sort = next;
+    await load(search: currentSearch);
   }
 
   /// Whether an order still answers the question this screen was opened to ask.
@@ -56,7 +85,13 @@ class FilteredOrdersCubit extends PagedCubit<Order> {
   bool belongs(Order item) =>
       (_filter.statuses.isEmpty || _filter.statuses.contains(item.status.wire)) &&
       (_filter.paymentStatuses.isEmpty ||
-          _filter.paymentStatuses.contains(item.paymentStatus.wire));
+          _filter.paymentStatuses.contains(item.paymentStatus.wire)) &&
+      // And an archived one leaves too, exactly as it leaves الطلبيات. This screen reads the
+      // live list, so a deleted order was never one of its answers — but the row can be deleted
+      // *from* here, on the detail screen this list opens, and the trashed order is handed
+      // straight back. Without this line it would sit under a title it no longer belongs to
+      // until somebody pulled to refresh.
+      !item.isArchived;
 }
 
 typedef FilteredOrdersState = PagedState<Order>;

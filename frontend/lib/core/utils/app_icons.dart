@@ -502,4 +502,45 @@ abstract final class AppIcons {
 
   static IconData get empty =>
       _pick(Icons.inbox_rounded, CupertinoIcons.tray);
+
+  // ── الأرشيف ────────────────────────────────────────────────────────────────
+
+  /// أرشيف الطلبيات — الصفّ في الدرج والشاشة التي يفتحها.
+  ///
+  /// صندوقٌ يُغلق، لا سلّةُ مهملات: [delete] هي السلّة، وهي **الفعل**. وهذا **المكان** الذي
+  /// تذهب إليه الطلبية بعده، وهي فيه كاملةٌ تُقرأ وتُستعاد. سلّةٌ على صفٍّ في الدرج تَعِد بمحوٍ
+  /// نهائي لا يوجد في هذا المستودع أصلاً — انظر §٩٫٢.
+  static IconData get archive =>
+      _pick(Icons.archive_outlined, CupertinoIcons.archivebox);
+
+  /// استعادة طلبيةٍ من الأرشيف.
+  ///
+  /// **ليست [undo].** ذاك سهمٌ يدور في ساعة، وهو لـ«تراجع عن الإلغاء»: إبطالُ نقلةٍ مسجَّلة
+  /// **بلا خصمٍ جديد**. وهذه تُخرج الطلبية من الصندوق وتخصم المخزون من جديد بطبقات اليوم،
+  /// فرسمُها بنفس الغلاف يجعل الفعلين المختلفين في المخزن يبدوان واحداً على شاشةٍ واحدة.
+  static IconData get restore =>
+      _pick(Icons.unarchive_outlined, CupertinoIcons.arrow_up_bin);
+
+  // ── الأدوات ────────────────────────────────────────────────────────────────
+
+  /// القسم نفسه: ما يُستعمل أثناء تجهيز طلبية ولا يُقرأ ولا يُحفظ — مفتاح ربط.
+  static IconData get tools =>
+      _pick(Icons.handyman_rounded, CupertinoIcons.wrench_fill);
+
+  /// أداة إنشاء رمز QR. الرمز نفسه، لأنه ما يبحث عنه الموظف بعينه.
+  static IconData get qrCode =>
+      _pick(Icons.qr_code_2_rounded, CupertinoIcons.qrcode);
+
+  /// أداة معاينة التصميم على الكيس.
+  static IconData get bagPreview =>
+      _pick(Icons.image_aspect_ratio_rounded, CupertinoIcons.rectangle_dock);
+
+  /// إظهار حدود منطقة الطباعة وإخفاؤها.
+  ///
+  /// عينٌ مفتوحة ومغلقة، لا مسطرةٌ وشبكة: ما يبدّله الزرّ هو **هل تُرى** الخطوط، لا ما هي.
+  static IconData get showGuides =>
+      _pick(Icons.visibility_rounded, CupertinoIcons.eye_fill);
+
+  static IconData get hideGuides =>
+      _pick(Icons.visibility_off_rounded, CupertinoIcons.eye_slash_fill);
 }
