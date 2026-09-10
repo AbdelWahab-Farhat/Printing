@@ -682,9 +682,9 @@ class OrderDeletionTest extends TestCase
         $this->assertSame(0, StockMovement::query()->count());
     }
 
-    public function test_restoring_keeps_the_purchase_stamp_a_fresh_draw_would_erase(): void
+    public function test_the_purchase_stamp_is_left_to_the_fresh_draw(): void
     {
-        // Arrange — a line whose plain material was bought off a deal on the day it left
+        // Arrange — a line carrying a purchase stamp from the draw it made before the delete
         $product = Product::factory()->create();
         $variant = ProductVariant::factory()->create(['product_id' => $product->getKey()]);
         $warehouse = Warehouse::factory()->create();
@@ -699,13 +699,17 @@ class OrderDeletionTest extends TestCase
         // Act
         app(RestoreOrder::class)($order->refresh(), $actor);
 
-        // Assert — `DeductOrderStock` writes this column unconditionally, including to null, and
-        // it is what decides whether a later cancellation credits the goods back to the deal or
-        // to the company. A restore that let it be erased would flip «المطبعة تتحمّل» round.
-        $this->assertNotNull($item->refresh()->stock_purchased_at);
+        // Assert — **the stamp is not carried over, and that is the fix rather than the bug.**
+        // It says what the draw the line points at bought, and after a restore the line points
+        // at a new draw: this warehouse holds the company's own stock, so the repeat draw meets
+        // no priced layer and `DeductOrderStock` leaves the column null. Carrying the old stamp
+        // here would make `PostDealStockPurchases` recompute a payment against a draw that
+        // reaches none of that deal's layers and reverse the سعر السادة the investor was already
+        // paid — losing him the goods and the money both. See RestoreOrder's docblock.
+        $this->assertNull($item->refresh()->stock_purchased_at);
     }
 
-    public function test_the_kept_purchase_stamp_is_the_one_the_investor_was_paid_against(): void
+    public function test_the_stamp_the_investor_was_paid_against_does_not_survive_the_round_trip(): void
     {
         // Arrange — a deal-funded line: the day the goods left, its layers were bought off a
         // deal and the investor was paid for them. `stock_purchased_at` is the record of that
@@ -727,16 +731,19 @@ class OrderDeletionTest extends TestCase
         // Act
         app(RestoreOrder::class)($order->refresh(), $actor);
 
-        // Assert — **the same instant, not merely some instant.** Re-stamping it with today
-        // would still read «not null» and would still be wrong: the delete's own credit-back has
-        // usually turned those layers into the company's own stock, so the repeat draw meets no
-        // priced layer at all. A stamp moved to today claims a purchase that never happened, and
-        // a later cancellation would credit the goods back to the deal — paying the investor for
-        // them twice, the exact reverse of «المطبعة تتحمّل».
-        $this->assertSame(
-            $boughtOn->toDateTimeString(),
-            $item->refresh()->stock_purchased_at?->toDateTimeString(),
-        );
+        // Assert — **gone, not carried and not re-stamped with today.** The delete's own
+        // credit-back handed those priced layers to the company at what it paid for them —
+        // «استلم الزبون ما استلمش، المطبعة تتحمّل» — and the investor kept his money: his sale
+        // completed. So the repeat draw meets no priced layer, and the line is holding the
+        // company's goods now.
+        //
+        // Keeping `$boughtOn` would have the line go on naming a purchase whose goods it no
+        // longer holds, which is wrong in both places the column is read: `PostDealStockPurchases`
+        // treats a second posting as a correction of the first and would reverse the سعر السادة
+        // already paid, and `ReverseOrderStockDeduction` would hand the goods to the company on a
+        // later cancellation for a line that bought nothing from anybody. Re-stamping with today
+        // would be a third wrong answer — a purchase that never happened.
+        $this->assertNull($item->refresh()->stock_purchased_at);
     }
 
     public function test_a_stamp_the_fresh_draw_earned_is_left_where_it_lands(): void

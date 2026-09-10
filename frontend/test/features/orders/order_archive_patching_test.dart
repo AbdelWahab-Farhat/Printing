@@ -66,16 +66,20 @@ void main() {
 
   /// The delete's preview, and the restore's — the server's words, carried rather than written.
   const returning = StockEffect(
+    stock: WarehouseEffect(
     kind: StockEffectKind.returnToShelf,
     warning: 'سيُعاد إلى المخزن ما خصمته هذه الطلبية:',
     lines: [StockEffectLine(label: 'كيس شحن 25*35', quantity: '300', unit: 'قطعة')],
+    ),
   );
 
   const rededucting = StockEffect(
+    stock: WarehouseEffect(
     kind: StockEffectKind.rededuct,
     warning: 'سيُخصم من المخزن من جديد:',
     lines: [StockEffectLine(label: 'كيس شحن 25*35', quantity: '300', unit: 'قطعة')],
     note: 'وقد تختلف تكلفة الطلبية عمّا كانت، لأن الخصم الجديد يأكل طبقات اليوم',
+    ),
   );
 
   Order order({int id = 55, DateTime? deletedAt, StockEffect? effect}) => Order(

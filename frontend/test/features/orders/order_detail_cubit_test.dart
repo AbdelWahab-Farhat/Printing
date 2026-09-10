@@ -25,8 +25,10 @@ void main() {
   /// back is the *server's* sentence, and a test that spelled out a list of goods would be
   /// asserting on a shape this file has no business pinning.
   const preview = StockEffect(
+    stock: WarehouseEffect(
     kind: StockEffectKind.none,
     warning: 'لن يتحرّك أي مخزون بحذف هذه الطلبية.',
+    ),
   );
 
   Order orderWith({

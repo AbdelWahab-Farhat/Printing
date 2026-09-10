@@ -49,17 +49,21 @@ void main() {
 
   /// The delete's preview: goods still drawn, so they come back.
   const returning = StockEffect(
+    stock: WarehouseEffect(
     kind: StockEffectKind.returnToShelf,
     warning: 'سيُعاد إلى المخزن ما خصمته هذه الطلبية:',
     lines: [StockEffectLine(label: 'كيس شحن 25*35', quantity: '300', unit: 'قطعة')],
+    ),
   );
 
   /// The restore's: drawn again, and the cost may not be the cost it left with.
   const rededucting = StockEffect(
+    stock: WarehouseEffect(
     kind: StockEffectKind.rededuct,
     warning: 'سيُخصم من المخزن من جديد:',
     lines: [StockEffectLine(label: 'كيس شحن 25*35', quantity: '300', unit: 'قطعة')],
     note: 'وقد تختلف تكلفة الطلبية عمّا كانت، لأن الخصم الجديد يأكل طبقات اليوم',
+    ),
   );
 
   Order order({
@@ -416,8 +420,10 @@ void main() {
       ['orders.view', 'orders.payments.view', 'orders.delete'],
       order(
         effect: const StockEffect(
+          stock: WarehouseEffect(
           kind: StockEffectKind.none,
           warning: 'لن يتحرّك أي مخزون بحذف هذه الطلبية.',
+          ),
         ),
       ),
     );

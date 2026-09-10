@@ -56,96 +56,195 @@ void main() {
     });
   });
 
-  group('stock_effect', () {
+  group('stock_effect.stock', () {
     test('a delete that returns goods lists them, line by line', () {
       // Arrange — the headline and each label are the server's own words.
-      const json = <String, dynamic>{
-        'kind': 'return',
-        'warning': 'سيُعاد إلى المخزن ما خصمته هذه الطلبية:',
-        'lines': [
-          {'label': 'كيس شحن 25*35', 'quantity': '300', 'unit': 'قطعة'},
-        ],
-        'note': null,
-      };
+      final json = _effectJson(
+        stock: <String, dynamic>{
+          'kind': 'return',
+          'warning': 'سيُعاد إلى المخزن ما خصمته هذه الطلبية:',
+          'lines': [
+            {'label': 'كيس شحن 25*35', 'quantity': '300', 'unit': 'قطعة'},
+          ],
+          'note': null,
+        },
+      );
 
       // Act
       final effect = StockEffect.fromJson(json);
 
       // Assert
-      expect(effect.kind, StockEffectKind.returnToShelf);
-      expect(effect.warning, 'سيُعاد إلى المخزن ما خصمته هذه الطلبية:');
-      expect(effect.lines.single.label, 'كيس شحن 25*35');
-      expect(effect.lines.single.quantity, '300');
-      expect(effect.lines.single.unit, 'قطعة');
-      expect(effect.note, isNull);
-      expect(effect.movesStock, isTrue);
+      expect(effect.stock.kind, StockEffectKind.returnToShelf);
+      expect(effect.stock.warning, 'سيُعاد إلى المخزن ما خصمته هذه الطلبية:');
+      expect(effect.stock.lines.single.label, 'كيس شحن 25*35');
+      expect(effect.stock.lines.single.quantity, '300');
+      expect(effect.stock.lines.single.unit, 'قطعة');
+      expect(effect.stock.note, isNull);
+      expect(effect.stock.movesStock, isTrue);
     });
 
     test('a restore warns that the cost changes, in a second paragraph', () {
       // Arrange — the note exists for the one thing nobody would guess: the new deduction eats
       // today's layers, so the order comes back costing something else.
-      const json = <String, dynamic>{
-        'kind': 'rededuct',
-        'warning': 'سيُخصم من المخزن من جديد:',
-        'lines': [
-          {'label': 'كيس شحن 25*35', 'quantity': '300', 'unit': 'قطعة'},
-        ],
-        'note': 'وقد تختلف تكلفة الطلبية عمّا كانت، لأن الخصم الجديد يأكل طبقات اليوم',
-      };
+      final json = _effectJson(
+        stock: <String, dynamic>{
+          'kind': 'rededuct',
+          'warning': 'سيُخصم من المخزن من جديد:',
+          'lines': [
+            {'label': 'كيس شحن 25*35', 'quantity': '300', 'unit': 'قطعة'},
+          ],
+          'note': 'وقد تختلف تكلفة الطلبية عمّا كانت، لأن الخصم الجديد يأكل طبقات اليوم',
+        },
+      );
 
       // Act
       final effect = StockEffect.fromJson(json);
 
       // Assert
-      expect(effect.kind, StockEffectKind.rededuct);
+      expect(effect.stock.kind, StockEffectKind.rededuct);
       expect(
-        effect.note,
+        effect.stock.note,
         'وقد تختلف تكلفة الطلبية عمّا كانت، لأن الخصم الجديد يأكل طبقات اليوم',
       );
-      expect(effect.movesStock, isTrue);
+      expect(effect.stock.movesStock, isTrue);
     });
 
     test('«none» is an empty list and a sentence, not an absent block', () {
       // Arrange — an order whose stock a cancellation already put back. The server still sends a
       // warning, and it still gets shown: «لا شيء يتحرّك» is an answer worth reading before a
       // delete, and a dialog that showed nothing would read as a dialog that failed to load.
-      const json = <String, dynamic>{
-        'kind': 'none',
-        'warning': 'لن يتحرّك أي مخزون بحذف هذه الطلبية.',
-        'lines': <Map<String, dynamic>>[],
-        'note': null,
-      };
+      final json = _effectJson(
+        stock: <String, dynamic>{
+          'kind': 'none',
+          'warning': 'لن يتحرّك أي مخزون بحذف هذه الطلبية.',
+          'lines': <Map<String, dynamic>>[],
+          'note': null,
+        },
+      );
 
       // Act
       final effect = StockEffect.fromJson(json);
 
       // Assert
-      expect(effect.kind, StockEffectKind.none);
-      expect(effect.lines, isEmpty);
-      expect(effect.movesStock, isFalse);
+      expect(effect.stock.kind, StockEffectKind.none);
+      expect(effect.stock.lines, isEmpty);
+      expect(effect.stock.movesStock, isFalse);
     });
 
     test('a kind this build has never heard of still renders its sentence', () {
       // Arrange — the same forward compatibility `OrderStatus.unknown` buys the list: a server
       // that grows a fourth kind must not blank the warning it sent with it.
-      const json = <String, dynamic>{
-        'kind': 'something_new',
-        'warning': 'كلامٌ من خادمٍ أحدث.',
-        'lines': <Map<String, dynamic>>[],
-        'note': null,
-      };
+      final json = _effectJson(
+        stock: <String, dynamic>{
+          'kind': 'something_new',
+          'warning': 'كلامٌ من خادمٍ أحدث.',
+          'lines': <Map<String, dynamic>>[],
+          'note': null,
+        },
+      );
 
       // Act
       final effect = StockEffect.fromJson(json);
 
       // Assert
-      expect(effect.kind, StockEffectKind.unknown);
-      expect(effect.warning, 'كلامٌ من خادمٍ أحدث.');
+      expect(effect.stock.kind, StockEffectKind.unknown);
+      expect(effect.stock.warning, 'كلامٌ من خادمٍ أحدث.');
+    });
+  });
+
+  group('stock_effect.money', () {
+    test('a delete names every kind of money it is about to reverse', () {
+      // Arrange — §٢٫١ made the delete write reversal entries instead of refusing to run, so the
+      // confirmation has to say what is about to be undone, kind by kind, with its figure. The
+      // amounts are the server's: it read them from the very ledger the delete will walk, so the
+      // number shown cannot differ from the number written.
+      final json = _effectJson(
+        money: <String, dynamic>{
+          'kind': 'reverse',
+          'warning': 'سيُعكس ما قُبض على هذه الطلبية:',
+          'lines': [
+            {'label': 'مدفوع', 'amount': '1200.00', 'currency': 'د.ل'},
+            {'label': 'تحصيل مندوب', 'amount': '300.00', 'currency': 'د.ل'},
+          ],
+          'note': 'والاستعادة لا تُعيدها.',
+        },
+      );
+
+      // Act
+      final effect = StockEffect.fromJson(json);
+
+      // Assert
+      expect(effect.money?.kind, MoneyEffectKind.reverse);
+      expect(effect.money?.lines, hasLength(2));
+      expect(effect.money?.lines.first.label, 'مدفوع');
+      expect(effect.money?.lines.first.amount, '1200.00');
+      expect(effect.money?.lines.first.currency, 'د.ل');
+      expect(effect.money?.note, 'والاستعادة لا تُعيدها.');
     });
 
+    test('an order with nothing collected carries no money block at all', () {
+      // Arrange — §٧٫١ is explicit that this is null rather than an empty section: a heading that
+      // resolves to «لا يوجد» is a heading somebody read for no reason.
+      final json = _effectJson();
+
+      // Act
+      final effect = StockEffect.fromJson(json);
+
+      // Assert
+      expect(effect.money, isNull);
+      expect(effect.isLoud, isFalse);
+    });
+
+    test('a restore says the reversed money is not coming back, and lists none of it', () {
+      // Arrange — the sentence this whole section exists for. Without it a reader takes «سيُعكس»
+      // for «and it can be undone», which is the one wrong idea the dialog must prevent: the
+      // payment has to be entered again by hand if the money really was taken.
+      //
+      // No lines, deliberately: the amounts belonged to the confirmation that *did* the
+      // reversing, where they could still change somebody's mind. Here they would be a bill for
+      // a decision already taken.
+      final json = _effectJson(
+        money: <String, dynamic>{
+          'kind': 'reversed',
+          'warning': 'الدفعات المعكوسة لا تعود.',
+          'lines': <Map<String, dynamic>>[],
+          'note': null,
+        },
+      );
+
+      // Act
+      final effect = StockEffect.fromJson(json);
+
+      // Assert
+      expect(effect.money?.kind, MoneyEffectKind.reversed);
+      expect(effect.money?.lines, isEmpty);
+      expect(effect.isLoud, isTrue);
+    });
+
+    test('a money kind this build has never heard of still renders its sentence', () {
+      // Arrange — as with the stock kinds: a newer server must never blank its own warning.
+      final json = _effectJson(
+        money: <String, dynamic>{
+          'kind': 'written_off_somehow',
+          'warning': 'كلامٌ ماليٌّ من خادمٍ أحدث.',
+          'lines': <Map<String, dynamic>>[],
+          'note': null,
+        },
+      );
+
+      // Act
+      final effect = StockEffect.fromJson(json);
+
+      // Assert
+      expect(effect.money?.kind, MoneyEffectKind.unknown);
+      expect(effect.money?.warning, 'كلامٌ ماليٌّ من خادمٍ أحدث.');
+    });
+  });
+
+  group('stock_effect on the order', () {
     test('the list rows never carry one — it belongs to the order that was opened', () {
-      // Arrange — building it costs a per-line read of the movement ledger, and no row on a
-      // list is about to be deleted.
+      // Arrange — building it costs a per-line read of the movement ledger and a walk of the
+      // payment ledger, and no row on a list is about to be deleted.
       final json = _orderJson();
 
       // Act
@@ -157,25 +256,43 @@ void main() {
 
     test('an opened order carries the preview of what its button would do', () {
       // Arrange
-      final json = _orderJson()
-        ..['stock_effect'] = <String, dynamic>{
+      final json = _orderJson()..['stock_effect'] = _effectJson(
+        stock: <String, dynamic>{
           'kind': 'return',
           'warning': 'سيُعاد إلى المخزن ما خصمته هذه الطلبية:',
           'lines': [
             {'label': 'كيس شحن 25*35', 'quantity': '300', 'unit': 'قطعة'},
           ],
           'note': null,
-        };
+        },
+      );
 
       // Act
       final order = Order.fromJson(json);
 
       // Assert
-      expect(order.stockEffect?.kind, StockEffectKind.returnToShelf);
-      expect(order.stockEffect?.lines, hasLength(1));
+      expect(order.stockEffect?.stock.kind, StockEffectKind.returnToShelf);
+      expect(order.stockEffect?.stock.lines, hasLength(1));
     });
   });
 }
+
+/// The envelope, money-first as the server builds it — see §٧٫١ for why that order is not Dart's
+/// to choose. `money` defaults to absent, which is the common case: most orders carry no money.
+Map<String, dynamic> _effectJson({
+  Map<String, dynamic>? money,
+  Map<String, dynamic>? stock,
+}) => <String, dynamic>{
+  'money': money,
+  'stock':
+      stock ??
+      <String, dynamic>{
+        'kind': 'none',
+        'warning': 'لن يتحرّك أي مخزون بحذف هذه الطلبية.',
+        'lines': <Map<String, dynamic>>[],
+        'note': null,
+      },
+};
 
 Map<String, dynamic> _orderJson({String? deletedAt}) => <String, dynamic>{
   'id': 7,
