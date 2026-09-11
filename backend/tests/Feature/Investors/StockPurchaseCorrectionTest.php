@@ -258,8 +258,8 @@ class StockPurchaseCorrectionTest extends TestCase
             TransitionFields::stockQuantityKey($line) => '500.000',
         ])->assertOk();
 
-        // 100 × (32 − 25) = 700, of which the partners own 2,000 ÷ 5,000 = 40%.
-        $this->assertSame('280.00', $this->paid($deal, WalletEntryType::Profit));
+        // 100 × (32 − 25) = 700, of which the partners own 2,000 ÷ 5,000 = 40% and keep half.
+        $this->assertSame('140.00', $this->paid($deal, WalletEntryType::Profit));
 
         // Act — the press reports it actually used 300 kg, which no longer reaches his layer.
         $this->move($foreman, $order->refresh(), OrderStatus::Printing)->assertOk();
@@ -275,7 +275,7 @@ class StockPurchaseCorrectionTest extends TestCase
 
         // And the reversal is written, not the original erased — every money table here is a
         // ledger with corrections in it.
-        $this->assertSame('280.00', (string) InvestorWalletEntry::query()
+        $this->assertSame('140.00', (string) InvestorWalletEntry::query()
             ->where('investor_deal_id', $deal->getKey())
             ->where('type', WalletEntryType::Reversal->value)
             ->sum('amount'));
@@ -310,10 +310,10 @@ class StockPurchaseCorrectionTest extends TestCase
             TransitionFields::stockQuantityKey($line) => '80.000',
         ])->assertOk();
 
-        // Assert — the first deal is corrected down to 80 × (32 − 25) × 80% = 448.00 (its
+        // Assert — the first deal is corrected down to 80 × (32 − 25) × 80% × 50% = 224.00 (its
         // partners put 2,000 into a 2,500 lorry), and the second, whose goods went back onto its
         // own layer whole, keeps nothing at all.
-        $this->assertSame('448.00', $this->paid($first, WalletEntryType::Profit));
+        $this->assertSame('224.00', $this->paid($first, WalletEntryType::Profit));
         $this->assertSame('0', $this->paid($second, WalletEntryType::Profit));
     }
 

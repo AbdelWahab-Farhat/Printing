@@ -47,6 +47,8 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 |---|---|
 | [COST-TRACKING-UNIT-CONVERSION.md](costing/COST-TRACKING-UNIT-CONVERSION.md) | Cost tracking, units of measurement, order fulfilment. **Implemented.** |
 | [PROFIT-AND-LOSS-COST-TRACKING.md](costing/PROFIT-AND-LOSS-COST-TRACKING.md) | P&L, batch inventory costing, manufacturing job costing. **Implemented.** |
+| [PLAIN-TRANSFER-PRICE-DESIGN.md](costing/PLAIN-TRANSFER-PRICE-DESIGN.md) | سعر السادة — المطبعة تشتري بضاعة المستثمر عند خروجها. **مُنفَّذ.** |
+| [PROFIT-FIELDS-MAP.md](costing/PROFIT-FIELDS-MAP.md) | **مرجع:** كل حقل له علاقة بالربح — مصدره وكاتبه ومتى يُكتب، بترتيب حياة الطلبية. |
 
 ## [customers/](customers/)
 
@@ -82,6 +84,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 |---|---|
 | [INVESTOR-DEALS-HOW-IT-WORKS.md](investor-deals/INVESTOR-DEALS-HOW-IT-WORKS.md) | كيف يعمل النظام: حياة صفقة، وكيف يُحسب كل رقم. **مُنفَّذ.** ابدأ من هنا. |
 | [INVESTOR-DEALS-DESIGN.md](investor-deals/INVESTOR-DEALS-DESIGN.md) | المواصفة والقرارات وأسئلة §١١ وأجوبتها؛ الفرع `investor_deals`. |
+| [INVESTOR-PROFIT-FIELDS.md](investor-deals/INVESTOR-PROFIT-FIELDS.md) | **مرجع:** حقول ربح المستثمر — الشروط، الطريقان، القيود، الأرصدة، والإقفال. |
 
 ## [nawris/](nawris/)
 

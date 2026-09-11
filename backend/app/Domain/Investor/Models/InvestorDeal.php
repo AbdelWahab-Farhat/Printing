@@ -40,9 +40,9 @@ use Illuminate\Support\Facades\DB;
  * life:
  *
  * - **Set** — the press buys this deal's plain stock off the shelf the moment a printed line
- *   takes it, at this price by weight. The margin is settled there and then, split by ownership
- *   alone ({@see ownersCutOf()}), and nothing that happens to the order afterwards reaches the
- *   investor: not the customer's price, not the press's wages, not a cancellation.
+ *   takes it, at this price by weight. The margin is settled there and then, split by the one
+ *   {@see investorsCutOf()} both roads share, and nothing that happens to the order afterwards
+ *   reaches the investor: not the customer's price, not the press's wages, not a cancellation.
  * - **Null** — the road every deal walked before 2026-09-06: the investors ride the sale itself,
  *   and are paid a share of the delivered order's profit ({@see investorsCutOf()}).
  *
@@ -184,8 +184,14 @@ class InvestorDeal extends Model implements HasAuditTrail
      * ```
      *
      * **One definition, called from everywhere a dinar reaches a wallet** — the order's profit,
-     * its loss, and an expense typed on the deal — because two of them restating it is how a
-     * 1,000 customs invoice comes to cost partners who own 750 of the profit 500 of it.
+     * its loss, an expense typed on the deal, and since 2026-09-11 the margin سعر السادة makes at
+     * the shelf too — because two of them restating it is how a 1,000 customs invoice comes to
+     * cost partners who own 750 of the profit 500 of it.
+     *
+     * **The shelf margin used to be split by ownership alone**, on the reading that a purchase at
+     * an agreed price pays for no work and so owes the company no half. The owner settled it the
+     * other way on 2026-09-11 — «نعم على اغلب حتى هو بيتوزع 5/5» — so the two roads differ now in
+     * *when* a deal is paid and *what* it is paid on, never in how the result is divided.
      *
      * The sign travels with the amount; the magnitude is rounded once at the end, and a result
      * that rounds to nothing is returned as plain zero rather than «-0.00».
@@ -202,41 +208,6 @@ class InvestorDeal extends Model implements HasAuditTrail
                 8,
             ),
             '10000',
-            8,
-        ));
-
-        return $negative && bccomp($cut, '0', Money::SCALE) !== 0 ? '-'.$cut : $cut;
-    }
-
-    /**
-     * The owners' cut of a margin this deal's goods made at the shelf — **ownership alone, with
-     * no share taken off the top for the company's work.**
-     *
-     * The owner settled this on 2026-09-06, asked how 32 a kilo should reach a man's pocket:
-     * «انت قوم بإعادة تدوير لي 32 هذي، بينهم وبين شركة — أكيد للشركة نسبة فيها، فنسبة فيها
-     * أعطيها للشركة بشكل طبيعي وانتهينا، وباقي يتوزع بينهم».
-     *
-     * **Why this is not {@see investorsCutOf()} with a second factor of 100.** They answer two
-     * different questions and it matters that they stay two methods. `investorsCutOf` prices a
-     * *sale the company made*: it went out and found a customer, printed the bags and carried
-     * the risk of the parcel coming home, so half of what the goods earned is the company's
-     * before ownership is even considered. This prices a *purchase at an agreed price*: nobody
-     * sold anything to anybody outside, there is no work to pay for, and the margin is simply
-     * split between the two parties that own the goods — the partners by
-     * `investor_funded_percent`, the company by the rest.
-     *
-     * ```
-     * cut = amount × investor_funded_percent ÷ 100
-     * ```
-     */
-    public function ownersCutOf(string $amount): string
-    {
-        $negative = bccomp($amount, '0', Money::SCALE) < 0;
-        $magnitude = $negative ? substr($amount, 1) : $amount;
-
-        $cut = Money::round(bcdiv(
-            bcmul($magnitude, (string) $this->investor_funded_percent, 8),
-            '100',
             8,
         ));
 

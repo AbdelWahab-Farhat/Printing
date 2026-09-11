@@ -301,12 +301,13 @@ class PlainStockPurchaseTest extends TestCase
         // customer, no invoice paid.
         $this->toTheePress($this->foreman(), $order, $warehouse);
 
-        // Assert — the margin is 300 × (32 − 25) = 2,100, of which the partners own 16%: 336.00,
-        // split equally between the two. No `investor_profit_share_percent` anywhere in it.
-        $this->assertSame('336.00', $this->paid($deal, WalletEntryType::Profit));
+        // Assert — the margin is 300 × (32 − 25) = 2,100, of which the partners own 16% and keep
+        // half: 168.00, split equally between the two. Same two factors as the delivered sale;
+        // only the moment and the figure they apply to differ on this road.
+        $this->assertSame('168.00', $this->paid($deal, WalletEntryType::Profit));
 
         foreach ($partners as $partner) {
-            $this->assertSame('168.00', (string) InvestorWalletEntry::query()
+            $this->assertSame('84.00', (string) InvestorWalletEntry::query()
                 ->where('investor_deal_id', $deal->getKey())
                 ->where('investor_id', $partner->getKey())
                 ->where('type', WalletEntryType::Profit->value)
@@ -332,7 +333,7 @@ class PlainStockPurchaseTest extends TestCase
 
         // Assert — still the one purchase, and nothing added by «تم الاستلام». The sale's own
         // profit is the company's alone: it bought the material and carried the job.
-        $this->assertSame('336.00', $this->paid($deal, WalletEntryType::Profit));
+        $this->assertSame('168.00', $this->paid($deal, WalletEntryType::Profit));
         $this->assertSame('0', $this->paid($deal, WalletEntryType::Loss));
     }
 
@@ -352,7 +353,7 @@ class PlainStockPurchaseTest extends TestCase
         ])->assertOk();
 
         // Assert — his money is untouched.
-        $this->assertSame('336.00', $this->paid($deal, WalletEntryType::Profit));
+        $this->assertSame('168.00', $this->paid($deal, WalletEntryType::Profit));
 
         // The deal's own layer keeps only what never left: 500 − 300.
         $funded = StockBatch::query()->where('investor_deal_id', $deal->getKey())->firstOrFail();
@@ -439,9 +440,9 @@ class PlainStockPurchaseTest extends TestCase
             ['quantity' => '20', 'notes' => 'طباعة خرجت غلط'],
         )->assertCreated();
 
-        // Assert — the first draw paid 336.00 on 300 kg; these 20 pay 20 × (32 − 25) × 16%
-        // = 22.40 on top of it, on their own row rather than in place of the first.
-        $this->assertSame('358.40', $this->paid($deal, WalletEntryType::Profit));
+        // Assert — the first draw paid 168.00 on 300 kg; these 20 pay 20 × (32 − 25) × 16% × 50%
+        // = 11.20 on top of it, on their own row rather than in place of the first.
+        $this->assertSame('179.20', $this->paid($deal, WalletEntryType::Profit));
 
         // And the press carries the spoilage at what it paid for it — 20 × 32 — not at cost.
         $this->assertSame('640.00', (string) ProductionCostEntry::query()
@@ -469,8 +470,8 @@ class PlainStockPurchaseTest extends TestCase
             ->assertOk();
 
         // Assert — one row, on the buying road, already settled: the press paid 9,600 for the
-        // goods, 2,100 of it was margin, the partners' 16% of that is 336, and it is in their
-        // ledgers before the parcel has moved.
+        // goods, 2,100 of it was margin, the partners' half of their 16% of that is 168, and it
+        // is in their ledgers before the parcel has moved.
         $response
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.deal_code', $deal->code)
@@ -478,10 +479,43 @@ class PlainStockPurchaseTest extends TestCase
             ->assertJsonPath('data.0.kind_label', 'بيع السادة للمطبعة')
             ->assertJsonPath('data.0.goods_amount', '9600.00')
             ->assertJsonPath('data.0.profit', '2100.00')
-            ->assertJsonPath('data.0.investors_share', '336.00')
-            ->assertJsonPath('data.0.company_share', '1764.00')
+            ->assertJsonPath('data.0.investors_share', '168.00')
+            ->assertJsonPath('data.0.company_share', '1932.00')
             ->assertJsonPath('data.0.is_paid', true)
-            ->assertJsonPath('data.0.paid_amount', '336.00');
+            ->assertJsonPath('data.0.paid_amount', '168.00');
+    }
+
+    public function test_the_deals_own_order_list_shows_what_the_press_bought(): void
+    {
+        // Arrange — the press has bought 300 kg off the deal and paid for them.
+        $headers = $this->partner();
+        [$deal, , $size, $warehouse] = $this->shipment($headers);
+        $order = $this->sale($size, '300', '60.000');
+        $this->toTheePress($this->foreman(), $order, $warehouse);
+
+        // Act — «طلبيات الصفقة», read from the deal's own end.
+        $this->app['auth']->forgetGuards();
+
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/investor-deals/{$deal->id}/orders")
+            ->assertOk();
+
+        // Assert — the row carries the purchase, not a row of zeros. `OrderDealSlices` leaves
+        // this draw out so that delivery cannot pay for it twice, and reading it alone would make
+        // 300 kg of the deal's own goods disappear off its statement.
+        $response
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.quantity', '300.000')
+            ->assertJsonPath('data.0.material_cost', '7500.00')
+            // What the press paid, not what the customer will: on this road the sale completed
+            // at the warehouse door.
+            ->assertJsonPath('data.0.revenue', '9600.00')
+            ->assertJsonPath('data.0.profit', '2100.00')
+            // Paid already, and posted against the line rather than the order — the row has to
+            // resolve that key back to the order or a paid purchase reads as unpaid forever.
+            ->assertJsonPath('data.0.investors_share', '168.00')
+            ->assertJsonPath('data.0.company_share', '1932.00')
+            ->assertJsonPath('data.0.is_posted', true);
     }
 
     public function test_a_deal_still_riding_the_sale_is_shown_as_not_paid_until_delivery(): void

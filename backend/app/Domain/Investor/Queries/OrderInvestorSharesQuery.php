@@ -167,7 +167,7 @@ final class OrderInvestorSharesQuery
                 continue;
             }
 
-            $share = $deal->ownersCutOf($figures['margin']);
+            $share = $deal->investorsCutOf($figures['margin']);
 
             $rows[] = [
                 'deal_id' => $dealId,

@@ -25,16 +25,16 @@ use Illuminate\Support\Facades\DB;
  * ```
  * per priced draw   margin = printing_sale_price × quantity − total_cost
  * deal margin       = Σ over that deal's priced draws on this order's printed lines
- * owners' share     = margin × investor_funded_percent ÷ 100      ← ownership ALONE
+ * investors' share  = margin × investor_funded_percent ÷ 100 × investor_profit_share_percent ÷ 100
  * each investor     = largest-remainder split of that over share_percent
  * ```
  *
- * **Ownership alone — no `investor_profit_share_percent` here**, and that is the one number that
- * separates this from {@see PostDealEarningsForOrder}. The owner settled it when asked how the
- * 32 should reach a man's pocket: «بينهم وبين شركة — أكيد للشركة نسبة فيها، فنسبة فيها أعطيها
- * للشركة بشكل طبيعي وانتهينا، وباقي يتوزع بينهم». Nothing was sold to anybody outside the
- * company and no work was done to earn a cut of it; the goods simply changed hands at an agreed
- * price, so the margin follows the goods. See {@see InvestorDeal::ownersCutOf()}.
+ * **The same {@see InvestorDeal::investorsCutOf()} {@see PostDealEarningsForOrder} pays with**,
+ * so what separates the two roads is *when* a deal is paid and *what* the figure is computed on —
+ * never how it is divided. It was ownership alone until 2026-09-11, on the reading that a
+ * purchase at an agreed price pays for no work; the owner settled it the other way that day —
+ * «نعم على اغلب حتى هو بيتوزع 5/5» — and the press keeps the printing margin whole, which is the
+ * separation he was after: «ولا يشارك مع ربح المطبعة».
  *
  * **Keyed on the order line, not on the draw.** A restatement — the press correcting what the run
  * actually used — replaces the line's movement and keeps the line, so keying here on
@@ -208,7 +208,7 @@ final class PostDealStockPurchases
 
                 $rows = ($this->postShare)(
                     $deal,
-                    $deal->ownersCutOf($margins[$dealId] ?? '0.00'),
+                    $deal->investorsCutOf($margins[$dealId] ?? '0.00'),
                     $sourceType,
                     $sourceId,
                     $correctionNote,
