@@ -383,9 +383,10 @@ class OrderRestoreCostingTest extends TestCase
      * 32.000 — the same shipment {@see PlainStockPurchaseTest} runs on,
      * down to the 16% the partners end up owning.
      *
-     * **Not parameterised by size**, deliberately: the owners' cut is `investor_funded_percent`,
-     * and 1,000 is the floor a deal accepts from one investor — so a smaller lorry funded by the
-     * same two people owns a larger share of it and no two tests here would compare.
+     * **Not parameterised by size**, deliberately: the partners' cut starts from
+     * `investor_funded_percent`, and 1,000 is the floor a deal accepts from one investor — so a
+     * smaller lorry funded by the same two people owns a larger share of it and no two tests
+     * here would compare.
      *
      * @return array{0: InvestorDeal, 1: ProductVariant, 2: Warehouse}
      */
@@ -470,7 +471,8 @@ class OrderRestoreCostingTest extends TestCase
     public function test_the_restore_pays_the_deal_whose_layers_the_fresh_draw_eats(): void
     {
         // Arrange — 500 kg at 25 landed, sold to the press at 32, and a printed order for 300.
-        // The first draw buys 300 of them: 300 × 7 = 2,100, of which the partners own 16% = 336.
+        // The first draw buys 300 of them: 300 × 7 = 2,100, of which the partners own 16% and
+        // keep half of it: 168.
         $headers = $this->partner();
         [$deal, $size, $warehouse] = $this->shipment($headers);
         $order = $this->sale($size, '300');
@@ -478,7 +480,7 @@ class OrderRestoreCostingTest extends TestCase
 
         $this->toThePress($this->foreman(), $order, $warehouse);
 
-        $this->assertSame('336.00', $this->paid($deal));
+        $this->assertSame('168.00', $this->paid($deal));
 
         // The delete hands those 300 back as the *company's* own stock at what it paid — the
         // deal keeps its money and its remaining 200 priced kilos.
@@ -487,11 +489,11 @@ class OrderRestoreCostingTest extends TestCase
         // Act — the fresh draw is FIFO: the deal's own 200 first, then 100 of the returned lot.
         app(RestoreOrder::class)($order->refresh(), $actor);
 
-        // Assert — a second sale of 200 kg: 200 × 7 = 1,400, partners' 16% = 224.00, standing
-        // *beside* the first payment rather than replacing it. The deal shipped 500 kilos and
-        // has now sold all 500: 336 + 224 = 560.00. A restore that dispatched nothing would
-        // leave this at 336.00 with 200 of his kilos in the press and unpaid for.
-        $this->assertSame('560.00', $this->paid($deal));
+        // Assert — a second sale of 200 kg: 200 × 7 × 16% × 50% = 112.00, standing *beside* the
+        // first payment rather than replacing it. The deal shipped 500 kilos and has now sold
+        // all 500: 168 + 112 = 280.00. A restore that dispatched nothing would leave this at
+        // 168.00 with 200 of his kilos in the press and unpaid for.
+        $this->assertSame('280.00', $this->paid($deal));
     }
 
     // ───────────────────────── ٣ — the sale that already completed ─────────────────────────
@@ -499,7 +501,8 @@ class OrderRestoreCostingTest extends TestCase
     public function test_the_settled_purchase_is_not_re_attributed_to_a_deal_whose_layers_are_gone(): void
     {
         // Arrange — an order for the whole lorry: all 500 priced kilos leave in one draw and are
-        // paid for, 500 × 7 = 3,500, partners' 16% = 560.00. The deal has no priced layer left.
+        // paid for, 500 × 7 = 3,500, partners' 16% of it halved = 280.00. The deal has no priced
+        // layer left.
         $headers = $this->partner();
         [$deal, $size, $warehouse] = $this->shipment($headers);
         $order = $this->sale($size, '500');
@@ -507,7 +510,7 @@ class OrderRestoreCostingTest extends TestCase
 
         $this->toThePress($this->foreman(), $order, $warehouse);
 
-        $this->assertSame('560.00', $this->paid($deal));
+        $this->assertSame('280.00', $this->paid($deal));
         $this->assertNotNull($order->items()->firstOrFail()->stock_purchased_at);
 
         app(DeleteOrder::class)($order->refresh(), $actor);
@@ -528,6 +531,6 @@ class OrderRestoreCostingTest extends TestCase
 
         // And what he was paid for the sale that did complete stands untouched: «استلم الزبون ما
         // استلمش، المطبعة تتحمّل».
-        $this->assertSame('560.00', $this->paid($deal));
+        $this->assertSame('280.00', $this->paid($deal));
     }
 }
