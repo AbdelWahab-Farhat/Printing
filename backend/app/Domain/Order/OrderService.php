@@ -9,6 +9,7 @@ use App\Domain\Order\Actions\AddOrderDesign;
 use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\CreateManufacturingCostRate;
 use App\Domain\Order\Actions\CreateOrder;
+use App\Domain\Order\Actions\MarkReadyMessageSent;
 use App\Domain\Order\Actions\RecordOrderPayment;
 use App\Domain\Order\Actions\RecordScrapLoss;
 use App\Domain\Order\Actions\RefundOrderPayment;
@@ -24,6 +25,7 @@ use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Exceptions\ReadyMessageNeedsAReadyOrder;
 use App\Domain\Order\Exceptions\ScrapRequiresAnActor;
 use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
@@ -33,6 +35,7 @@ use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\Order\Queries\ManufacturingCostRateFilters;
 use App\Domain\Order\Queries\ManufacturingCostRateListQuery;
+use App\Domain\Order\Queries\OrderCountQuery;
 use App\Domain\Order\Queries\OrderFilters;
 use App\Domain\Order\Queries\OrderListQuery;
 use App\Domain\Order\Queries\OrderPaymentStatusCountsQuery;
@@ -61,6 +64,7 @@ class OrderService
         // for why undoing a cancellation is not a move on the map.
         private readonly ReinstateCancelledOrder $reinstateOrder,
         private readonly SetOrderShortages $setShortages,
+        private readonly MarkReadyMessageSent $markReadyMessageSent,
         private readonly AddOrderDesign $addDesign,
         private readonly ReviewOrderDesign $reviewDesign,
         private readonly RecordOrderPayment $recordPayment,
@@ -73,6 +77,7 @@ class OrderService
         private readonly OrderListQuery $listQuery,
         private readonly ProfitAttributionQuery $profitAttribution,
         private readonly StockPurchaseAttributionQuery $stockPurchaseAttribution,
+        private readonly OrderCountQuery $count,
         private readonly OrderStatusCountsQuery $statusCounts,
         private readonly OrderPaymentStatusCountsQuery $paymentStatusCounts,
         private readonly OrderTotalsQuery $totals,
@@ -95,6 +100,17 @@ class OrderService
     public function statusCounts(OrderFilters $filters): array
     {
         return ($this->statusCounts)($filters);
+    }
+
+    /**
+     * How many orders answer one question, as a single number.
+     *
+     * The home board's «بانتظار رسالة الجاهزية» is this, run over the same {@see OrderFilters}
+     * the screen behind the card runs — see {@see OrderCountQuery} for why that matters.
+     */
+    public function count(OrderFilters $filters): int
+    {
+        return ($this->count)($filters);
     }
 
     /**
@@ -167,6 +183,16 @@ class OrderService
     public function setShortages(Order $order, array $shortages): Order
     {
         return ($this->setShortages)($order, $shortages);
+    }
+
+    /**
+     * Records that the customer was told their order is ready — or takes that back.
+     *
+     * @throws ReadyMessageNeedsAReadyOrder
+     */
+    public function markReadyMessageSent(Order $order, bool $sent, ?User $actor = null): Order
+    {
+        return ($this->markReadyMessageSent)($order, $sent, $actor);
     }
 
     public function addDesign(Order $order, int $customerDesignId, ?string $notes = null): OrderDesign
@@ -311,6 +337,9 @@ class OrderService
     {
         return $order->load([
             'customer', 'shop', 'city', 'region', 'creator',
+            // Who said the customer had been told — a name on the order screen, and the only
+            // reason this relation is ever loaded. The list does not: no card shows it.
+            'readyMessenger',
             // The product behind each line, with its photographs: the line draws the catalogue's
             // own card and opens it. Loaded here rather than per line — a four-line order would
             // otherwise be four queries, and `Model::shouldBeStrict()` would say so.

@@ -159,6 +159,12 @@ class Order extends Model implements HasAuditTrail
             // one describes what the archive is currently holding and is cleared by the restore.
             'delete_returned_stock_at' => 'datetime',
             'ready_at' => 'datetime',
+            // When somebody said they had told the customer their bags are ready — the one fact
+            // about an order that happens outside this system, so it is here only because a
+            // person recorded it. Never fillable: it is stamped by MarkReadyMessageSent beside
+            // the user who stamped it, and a request that could post it could put somebody
+            // else's name against work they did not do.
+            'ready_message_sent_at' => 'datetime',
             'dispatched_at' => 'datetime',
             'delivered_at' => 'datetime',
             'settled_at' => 'datetime',
@@ -228,6 +234,33 @@ class Order extends Model implements HasAuditTrail
     /**
      * @return HasMany<OrderItem, $this>
      */
+    /**
+     * Who said the customer had been told their order is ready.
+     *
+     * Null on every order nobody has marked, and null again on one whose employee has since been
+     * deleted — the stamp survives them, because the record is that a message went out.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function readyMessenger(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ready_message_sent_by');
+    }
+
+    /**
+     * Whether «رسالة الجاهزية» is a question this order has reached at all.
+     *
+     * **Read from `ready_at`, never from the status.** The stamp is written the first time an
+     * order enters «جاهزة» and is never cleared, so this stays true while the parcel is out for
+     * delivery and after the customer has it — which is exactly when «هل أُبلِغ أصلاً؟» is
+     * asked. A list of statuses written here instead would be a second copy of the map, and the
+     * copy that is forgotten the day a status is added after «جاهزة».
+     */
+    public function readyMessageApplies(): bool
+    {
+        return $this->ready_at !== null;
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class)->orderBy('sort_order')->orderBy('id');

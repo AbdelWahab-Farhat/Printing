@@ -23,6 +23,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *     monthly_orders: int,
  *     status_counts: array<string, int>,
  *     payment_counts: array<string, int>,
+ *     ready_message_count: int|null,
  * } $resource
  */
 class HomeSummaryResource extends JsonResource
@@ -74,6 +75,23 @@ class HomeSummaryResource extends JsonResource
                     'count' => $paymentCounts[$status->value] ?? 0,
                 ],
                 PaymentStatus::cases(),
+            ),
+
+            // **«بانتظار رسالة الجاهزية» — a box, not a board.** One number, because it is one
+            // queue belonging to one person: the employee who tells customers their bags are
+            // ready, and nobody else. It is absent — not zero — for a reader without
+            // `orders.ready_message`, so the screen has nothing to draw rather than an empty
+            // card in a job that is not theirs. See Docs/orders/ORDER-READY-MESSAGE.md §٦.
+            //
+            // The Arabic travels with the number, like every other card on this screen: the
+            // screen the box opens is titled with the box's own word, and this app holds no
+            // table of them.
+            'ready_message' => $this->when(
+                $summary['ready_message_count'] !== null,
+                fn (): array => [
+                    'count' => (int) $summary['ready_message_count'],
+                    'label' => 'بانتظار رسالة الجاهزية',
+                ],
             ),
         ];
     }

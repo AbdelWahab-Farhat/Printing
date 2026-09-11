@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
+use App\Application\Api\V1\Requests\Order\ConfirmReadyMessageRequest;
 use App\Application\Api\V1\Requests\Order\RecordScrapLossRequest;
 use App\Application\Api\V1\Requests\Order\ReinstateOrderRequest;
 use App\Application\Api\V1\Requests\Order\ReviewOrderDesignRequest;
@@ -112,7 +113,7 @@ class OrderController extends Controller
     {
         $filters = OrderFilters::fromArray([
             ...$request->only([
-                'search', 'status', 'payment_status', 'urgent', 'sort',
+                'search', 'status', 'payment_status', 'urgent', 'is_ready_message_sent', 'sort',
                 'customer_id', 'city_id', 'from', 'to',
             ]),
             'archived' => $archived,
@@ -170,7 +171,10 @@ class OrderController extends Controller
     private function counts(Request $request, bool $archived): JsonResponse
     {
         $filters = OrderFilters::fromArray([
-            ...$request->only(['search', 'payment_status', 'urgent', 'customer_id', 'city_id', 'from', 'to']),
+            ...$request->only([
+                'search', 'payment_status', 'urgent', 'is_ready_message_sent',
+                'customer_id', 'city_id', 'from', 'to',
+            ]),
             'archived' => $archived,
         ]);
 
@@ -432,6 +436,38 @@ class OrderController extends Controller
         return $this->success(
             new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
             'تم تحديث نواقص الطلبية',
+        );
+    }
+
+    /**
+     * Confirm the ready message
+     *
+     * «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — the one fact about an order that happens outside this
+     * system. The message goes out on WhatsApp or by telephone, so nothing here can observe it:
+     * what is recorded is the employee saying they sent it, together with their name and the
+     * moment they said so.
+     *
+     * `sent: false` takes an earlier confirmation back, for the stray tap — same grant, and both
+     * movements stay in the order's history.
+     *
+     * Accepted from the moment the order has *been* «جاهزة» and for the whole of its life
+     * afterwards — «هل أُبلِغ أصلاً؟» is asked after the parcel has gone out, not only while it
+     * waits on the shelf. Refused with 422 before that, and `ready_message_applies` on the order
+     * says so in advance so the box is never drawn on an order that would refuse it.
+     */
+    public function confirmReadyMessage(ConfirmReadyMessageRequest $request, Order $order): JsonResponse
+    {
+        $updated = $this->orders->markReadyMessageSent(
+            $order,
+            (bool) $request->validated('sent'),
+            $this->actor($request),
+        );
+
+        return $this->success(
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
+            $updated->ready_message_sent_at === null
+                ? 'أُلغي تأكيد إرسال رسالة الجاهزية'
+                : 'تم تأكيد إرسال رسالة الجاهزية للزبون',
         );
     }
 

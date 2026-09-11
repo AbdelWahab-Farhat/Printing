@@ -77,6 +77,14 @@ class HomeController extends Controller
             // shop opens the app to ask, and it is not answerable from any of the four counts
             // above — being paid and being finished are different things.
             'payment_counts' => $this->orders->paymentStatusCounts(new OrderFilters),
+            // **«بانتظار رسالة الجاهزية» — counted only for whoever the box belongs to.** It is a
+            // fourth query on the landing screen, so it is not run for the shop's other twenty
+            // people: the count is the grant's, exactly as the box is. Null means «لا تسأل»,
+            // and the resource omits the key rather than sending a zero — a zero would draw an
+            // empty box for somebody who is not doing this job. See ORDER-READY-MESSAGE.md §٦.
+            'ready_message_count' => $request->user()?->can(PermissionName::ConfirmReadyMessage->value) === true
+                ? $this->orders->count(new OrderFilters(readyMessageSent: false))
+                : null,
         ]));
     }
 }

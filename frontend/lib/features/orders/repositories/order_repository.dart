@@ -22,11 +22,18 @@ abstract interface class OrderRepository {
   /// [paymentStatuses] takes the wire values of `PaymentStatus`. It is a **second axis that
   /// crosses** [statuses] rather than narrowing it — «جاهزة وغير مدفوعة» is a real question, and
   /// both filters apply at once.
+  ///
+  /// [readyMessageSent] `false` is **the queue**, not the column's negation: the server answers
+  /// with the orders that have reached «جاهزة», have not been delivered, settled or cancelled,
+  /// and that nobody has marked as messaged. `true` is the plain question, «أيّها أُبلِغ
+  /// أصحابها؟». Null asks neither. See ORDER-READY-MESSAGE.md §٥ — the rule is the server's, and
+  /// a copy of it here is the copy that drifts.
   Future<Either<Failure, Paginated<Order>>> orders({
     String? search,
     List<String> statuses,
     List<String> paymentStatuses,
     bool? isUrgent,
+    bool? readyMessageSent,
     OrdersSort sort,
     int? customerId,
     String? from,
@@ -59,6 +66,7 @@ abstract interface class OrderRepository {
     List<String> statuses,
     List<String> paymentStatuses,
     bool? isUrgent,
+    bool? readyMessageSent,
     OrdersSort sort,
     int? customerId,
     String? from,
@@ -177,6 +185,17 @@ abstract interface class OrderRepository {
     int orderId, {
     required Map<int, String?> shortages,
   });
+
+  /// Records that the customer was told their order is ready — or takes that back.
+  ///
+  /// **The message itself is sent elsewhere**, on WhatsApp or by telephone, so this records
+  /// nothing but an employee saying they sent it. The order comes back rather than a bare
+  /// success, for the reason [changeStatus] does: it carries who was stamped on it and when, and
+  /// the screen has no way to invent either.
+  ///
+  /// Refused with the server's own Arabic before the order has ever been «جاهزة» — a refusal
+  /// nobody should meet, because `Order.readyMessageApplies` says so in advance.
+  Future<Either<Failure, Order>> confirmReadyMessage(int orderId, {required bool sent});
 
   /// Writes off bags spoiled while this line was being produced.
   ///

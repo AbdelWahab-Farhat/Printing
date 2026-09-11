@@ -135,6 +135,16 @@ enum AppPermission {
   // business may reasonably trust a role with exactly one of them.
   addOrderAdditionalCost('orders.additional_cost', 'إضافة تكلفة إضافية على الطلبية'),
   manageOrderDesigns('orders.designs.manage', 'إدارة تصاميم الطلبية واعتمادها'),
+
+  // «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — the tick an employee puts on an order to say they told
+  // the customer, and the box on the home screen counting the orders nobody has told yet.
+  //
+  // **Its own grant rather than a ride on `manageOrders`**, and the box is the reason: this is
+  // one person's morning work, and a queue put in front of the whole shop is a number everybody
+  // learns to scroll past. It gates two things — the switch on the order screen, which is drawn
+  // for every reader and enabled only for a holder, and the box, which is not drawn at all
+  // without it. See ORDER-READY-MESSAGE.md §٤.
+  confirmReadyMessage('orders.ready_message', 'تأكيد إرسال رسالة الجاهزية للزبون'),
   // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
   // the order to the press. Separate from the two production grants beside it because a
   // different desk does it — the wording is `PermissionName.php`'s, word for word.

@@ -30,6 +30,17 @@ abstract class HomeSummary with _$HomeSummary {
     ///
     /// Defaulted, so a build of the API that predates payments still parses.
     @Default(<OrderStatusCount>[]) List<OrderStatusCount> payments,
+
+    /// «بانتظار رسالة الجاهزية» — how many orders are made and waiting for somebody to tell
+    /// their customer so.
+    ///
+    /// **Null is «هذا ليس عملك», not zero.** The server omits the key entirely for a reader
+    /// without `orders.ready_message`, so the box is not drawn at all rather than drawn empty in
+    /// a job that belongs to one person. Null again on a build of the API that predates it.
+    ///
+    /// One number and its Arabic, not a list: it is a single queue, and the label travels with
+    /// it because the screen it opens is titled with the box's own word.
+    @JsonKey(name: 'ready_message') ReadyMessageQueue? readyMessage,
   }) = _HomeSummary;
 
   const HomeSummary._();
@@ -38,6 +49,21 @@ abstract class HomeSummary with _$HomeSummary {
 
   /// Nothing has happened yet — a brand-new shop, not a failure to load.
   bool get isEmpty => totalOrders == 0 && customersCount == 0;
+}
+
+/// The orders waiting for somebody to tell their customer they are ready.
+///
+/// Its own object rather than a bare `int`, so the Arabic arrives with the number exactly as it
+/// does on every other card of this screen — this app holds no table of its own words.
+@freezed
+abstract class ReadyMessageQueue with _$ReadyMessageQueue {
+  const factory ReadyMessageQueue({
+    required int count,
+    required String label,
+  }) = _ReadyMessageQueue;
+
+  factory ReadyMessageQueue.fromJson(Map<String, dynamic> json) =>
+      _$ReadyMessageQueueFromJson(json);
 }
 
 /// One status and how many orders sit in it.

@@ -13,6 +13,7 @@ import 'package:dayaa/features/orders/presentation/views/order_detail_page.dart'
 import 'package:dayaa/features/orders/presentation/widgets/order_detail_header.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
+import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
@@ -114,6 +115,7 @@ void main() {
           reinstateOrder: ReinstateOrder(repository),
           deleteOrder: DeleteOrder(repository),
           restoreOrder: RestoreOrder(repository),
+          confirmReadyMessage: ConfirmReadyMessage(repository),
         ),
       );
   }

@@ -274,6 +274,11 @@ final class AuditAttributeLabels
             'printing_started_at' => 'بدء الطباعة',
             'manufacturing_started_at' => 'بدء التصنيع لدى المورد',
             'ready_at' => 'تاريخ الجاهزية',
+            // Not a second «تاريخ الجاهزية»: that one says the bags exist, this one says a person
+            // told the customer so — a fact from outside this system, here only because somebody
+            // recorded it. See ORDER-READY-MESSAGE.md.
+            'ready_message_sent_at' => 'تاريخ إرسال رسالة الجاهزية',
+            'ready_message_sent_by' => 'مَن أرسل رسالة الجاهزية',
             'dispatched_at' => 'تاريخ الإرسال',
             'delivered_at' => 'تاريخ التسليم',
             'returned_at' => 'تاريخ الإرجاع',

@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart' show Either;
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
+import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
@@ -37,6 +38,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
     required ReinstateOrder reinstateOrder,
     required DeleteOrder deleteOrder,
     required RestoreOrder restoreOrder,
+    required ConfirmReadyMessage confirmReadyMessage,
   }) : _orderId = orderId,
        _getOrder = getOrder,
        _addDesign = addDesign,
@@ -44,6 +46,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
        _reinstateOrder = reinstateOrder,
        _deleteOrder = deleteOrder,
        _restoreOrder = restoreOrder,
+       _confirmReadyMessage = confirmReadyMessage,
        super(const OrderDetailState.loading());
 
   final int _orderId;
@@ -64,6 +67,11 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// server's own preview of what it will do to the warehouse.
   final DeleteOrder _deleteOrder;
   final RestoreOrder _restoreOrder;
+
+  /// **Not a status either, and not even about the bags.** «رسالة الجاهزية» records that an
+  /// employee told the customer their order is ready — something that happened on somebody's own
+  /// phone, which is why nothing derives it and why it lives here rather than on the move screen.
+  final ConfirmReadyMessage _confirmReadyMessage;
 
   Future<void> load() async {
     // Keeps whatever is on screen: this is also the pull-to-refresh handler, and blanking the
@@ -181,6 +189,15 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// it checks explicitly — an app left to infer it would report «كل المقاسات صفر» about a store
   /// that simply no longer exists.
   Future<Failure?> restore() => _write(() => _restoreOrder(_orderId));
+
+  /// Records that the customer was told the order is ready — or takes that back.
+  ///
+  /// **The switch follows the server, never the tap.** The order that comes back carries the
+  /// stamp and the name behind it, neither of which this app can invent, so the row redraws from
+  /// the answer; a refusal leaves the switch exactly where it was, which is [_write]'s whole
+  /// shape. Nothing is re-read afterwards, for the reason [reinstate] gives.
+  Future<Failure?> confirmReadyMessage({required bool sent}) =>
+      _write(() => _confirmReadyMessage(_orderId, sent: sent));
 
   /// Reads the order again for the one thing this app cannot work out for itself: the server's
   /// preview of what «حذف» — or «استعادة» — is about to do.

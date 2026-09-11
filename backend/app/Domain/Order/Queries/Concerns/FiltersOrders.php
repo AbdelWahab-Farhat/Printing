@@ -62,6 +62,13 @@ trait FiltersOrders
             // is why it is compared against rather than treated as «no filter»; see
             // OrderFilters::boolOrNull().
             ->when($filters->isUrgent !== null, fn (Builder $q) => $q->where('is_urgent', $filters->isUrgent))
+            // **A fourth axis, and the one place a filter means more than its column.** See
+            // {@see applyReadyMessage()} — and note it is written once, here, so the box's own
+            // number and the screen that box opens cannot describe two different sets.
+            ->when(
+                $filters->readyMessageSent !== null,
+                fn (Builder $q) => $this->applyReadyMessage($q, $filters->readyMessageSent),
+            )
             ->when($filters->customerId !== null, fn (Builder $q) => $q->where('customer_id', $filters->customerId))
             ->when($filters->cityId !== null, fn (Builder $q) => $q->where('city_id', $filters->cityId))
             // **`placed_at`, in the shop's own timezone, and both of those matter.**
@@ -77,6 +84,46 @@ trait FiltersOrders
             // every day. The day is turned into a pair of UTC instants instead.
             ->when($filters->from !== null, fn (Builder $q) => $q->where('placed_at', '>=', $this->dayStart($filters->from)))
             ->when($filters->to !== null, fn (Builder $q) => $q->where('placed_at', '<=', $this->dayEnd($filters->to)));
+    }
+
+    /**
+     * «مَن ينتظر رسالة الجاهزية؟» and «مَن أُرسلت له؟» — and only the second is a test on a column.
+     *
+     * **The queue is three conditions, not one**, and the two beside the column are what make the
+     * answer worth reading:
+     *
+     * - **It has been ready.** `ready_at` is stamped the first time an order reaches «جاهزة» and
+     *   never cleared, so this is «بلغت الجاهزية» rather than «واقفة فيها» — a parcel already out
+     *   for delivery whose customer was never told is exactly what this box exists to surface.
+     *   Without it the queue would answer with every order in the shop, most of them not made
+     *   yet.
+     * - **The customer has not already got it.** Telling somebody their bags are ready after they
+     *   have collected them is not work anybody is going to do, and a cancelled order has nobody
+     *   to tell. This is also what keeps the queue from opening on the whole history the day the
+     *   column ships: every order finished before it existed is null, and nearly all of them are
+     *   closed.
+     *
+     * The statuses are read from the enum rather than listed as strings, so a status that becomes
+     * an ending later joins this predicate by changing {@see OrderStatus::isClosed()} alone.
+     *
+     * @param  Builder<Order>  $query
+     */
+    private function applyReadyMessage(Builder $query, bool $sent): void
+    {
+        if ($sent) {
+            $query->whereNotNull('ready_message_sent_at');
+
+            return;
+        }
+
+        $closed = array_values(array_map(
+            fn (OrderStatus $status) => $status->value,
+            array_filter(OrderStatus::cases(), fn (OrderStatus $status) => $status->isClosed()),
+        ));
+
+        $query->whereNull('ready_message_sent_at')
+            ->whereNotNull('ready_at')
+            ->whereNotIn('status', $closed);
     }
 
     /**

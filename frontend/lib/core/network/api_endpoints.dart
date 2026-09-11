@@ -352,6 +352,14 @@ abstract final class OrderEndpoints {
   /// timeline, a number on the order is corrected.
   static String shortages(int orderId) => '/orders/$orderId/shortages';
 
+  /// «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — recording that an employee sent the customer the message
+  /// saying their order is ready, and taking that record back.
+  ///
+  /// A PATCH for the reason [shortages] is one: nothing is written to the order's timeline, a
+  /// field on it is corrected. The body is `{"sent": true|false}` — the second value is the undo
+  /// of a stray tap, and it costs the same grant, `orders.ready_message`.
+  static String readyMessage(int orderId) => '/orders/$orderId/ready-message';
+
   static String designs(int orderId) => '/orders/$orderId/designs';
 
   static String reviewDesign(int orderId, int designId) =>

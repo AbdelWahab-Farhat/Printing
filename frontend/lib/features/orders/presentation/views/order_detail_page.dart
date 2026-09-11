@@ -30,6 +30,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_detail_header.d
 import 'package:dayaa/features/orders/presentation/widgets/order_invoice_actions.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_item_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_ready_message_switch.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_timeline.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_totals.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_scrap_sheet.dart';
@@ -201,6 +202,15 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               // `deleted_at` rather than from a grant, so it stays one fact and not a rule.
               onReinstate: state.order!.canReinstate && !state.order!.isArchived
                   ? _reinstate
+                  : null,
+              // **مرسومٌ للجميع، ومقفلٌ لمن لا يملك المنح** — قاعدة «مستعجلة» نفسها: «أُرسلت
+              // الرسالة أمس» واقعةٌ تُقرأ، ومن يقرأ الطلبية يقرؤها. والقفل ثلاثة أسباب في سطر:
+              // لا صلاحية، أو طلبيةٌ في الأرشيف (كل كتابةٍ عليها ٤٠٤)، أو كتابةٌ في الطريق.
+              onConfirmReadyMessage:
+                  sl<Session>().can(AppPermission.confirmReadyMessage) &&
+                      !state.order!.isArchived &&
+                      !state.isWorking
+                  ? _confirmReadyMessage
                   : null,
             ),
           ),
@@ -409,6 +419,32 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
   ///
   /// Nothing is re-read afterwards: the response *is* the order, with its status, its timeline
   /// and — the one this screen cannot guess — a real `available_transitions` again.
+  /// Records — or un-records — that the customer was told their order is ready.
+  ///
+  /// **No dialog, in either direction.** The tick is a switch on a row somebody is already
+  /// reading, and asking «هل أنت متأكد؟» of a mark whose own undo is the same switch is a step
+  /// that buys nothing. The untick is that undo.
+  ///
+  /// The order comes back stamped with who and when, so the row redraws from the answer and the
+  /// list behind is handed it — the queue on the home screen drops the row it has just been
+  /// marked out of, with no request. See [FilteredOrdersCubit.belongs].
+  Future<void> _confirmReadyMessage(bool sent) async {
+    final cubit = context.read<OrderDetailCubit>();
+
+    final failure = await cubit.confirmReadyMessage(sent: sent);
+    if (!mounted) return;
+
+    if (failure != null) {
+      // The server's own Arabic — «لا تُؤكَّد رسالة الجاهزية قبل أن تبلغ الطلبية حالة «جاهزة»».
+      context.showFailure(failure);
+
+      return;
+    }
+
+    final updated = cubit.state.order;
+    if (updated != null) context.handBack(updated);
+  }
+
   Future<void> _reinstate(BuildContext context) async {
     final cubit = context.read<OrderDetailCubit>();
     final order = cubit.state.order;
@@ -710,6 +746,7 @@ class _Body extends StatelessWidget {
     required this.onDeleteShipment,
     required this.onUnlinkShipment,
     required this.onReinstate,
+    required this.onConfirmReadyMessage,
   });
 
   final Order order;
@@ -749,6 +786,10 @@ class _Body extends StatelessWidget {
 
   /// Null unless the server said this order's cancellation may be undone — see the call site.
   final Future<void> Function(BuildContext context)? onReinstate;
+
+  /// Null for a reader without `orders.ready_message`, for an archived order, and while a write
+  /// is already in flight — see the call site for why those three are one line.
+  final Future<void> Function(bool sent)? onConfirmReadyMessage;
 
   /// Whether spoiling a bag is even possible yet.
   ///
@@ -836,7 +877,29 @@ class _Body extends StatelessWidget {
               // First under the header, and that is the sequence rather than a spare slot:
               // somebody who has just read what state the order is in is one step from telling
               // the customer so. Buried on the dial it was a feature people forgot the app had.
-              CopyInvoiceButton(order: order),
+              //
+              // **والعلامة معه في البطاقة نفسها، لأنّهما فعلٌ واحد لا فعلان.** الموظف ينسخ
+              // الفاتورة، ويلصقها في محادثة الزبون، ثم يعلّم أنّه أرسلها — ثلاث خطواتٍ لعملٍ
+              // واحد، وفصلُها في بطاقتين يجعل الخطوة الأخيرة شيئاً يُبحَث عنه. ولا عنوان فوق
+              // البطاقة: الكلمة على المفتاح تقول ما يفعله، وعنوانٌ يعيدها سطرٌ ثانٍ لمعنى واحد.
+              //
+              // **والبطاقة لا تُرسم إلا حين يكون فيها اثنان.** قبل «جاهزة» لا علامة أصلاً —
+              // الخادم يقول ذلك بـ`readyMessageApplies` لا مقارنةٌ بحالةٍ تُكتب هنا — فيبقى
+              // الزرّ وحده كما كان، لا صندوقاً حول زرٍّ واحد.
+              if (order.readyMessageApplies)
+                _Section(
+                  child: Column(
+                    children: [
+                      CopyInvoiceButton(order: order),
+                      // فاصلٌ صغير: `contentPadding` صفرٌ على المفتاح عمداً حتى يحاذي حافة
+                      // البطاقة، فبغير هذا السطر يلتصق بالزرّ فوقه.
+                      SizedBox(height: 4.h),
+                      OrderReadyMessageSwitch(order: order, onChanged: onConfirmReadyMessage),
+                    ],
+                  ),
+                )
+              else
+                CopyInvoiceButton(order: order),
               SizedBox(height: 16.h),
               _Header(order: order),
               SizedBox(height: 16.h),
@@ -1372,9 +1435,13 @@ class _Items extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child});
+  const _Section({required this.child, this.title});
 
-  final String title;
+  /// Null for a card whose contents name themselves — the invoice button and the mark beside it
+  /// say what they do on their own face, and a heading over them would be one meaning printed
+  /// twice.
+  final String? title;
+
   final Widget child;
 
   @override
@@ -1392,14 +1459,16 @@ class _Section extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: context.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: scheme.onSurfaceVariant,
+          if (title case final title?) ...[
+            Text(
+              title,
+              style: context.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          SizedBox(height: 12.h),
+            SizedBox(height: 12.h),
+          ],
           child,
         ],
       ),

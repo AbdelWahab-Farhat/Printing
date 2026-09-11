@@ -19,6 +19,16 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   isFinal: json['is_final'] as bool,
   isClosed: json['is_closed'] as bool? ?? false,
   isUrgent: json['is_urgent'] as bool? ?? false,
+  readyMessageApplies: json['ready_message_applies'] as bool? ?? false,
+  isReadyMessageSent: json['is_ready_message_sent'] as bool? ?? false,
+  readyMessageSentAt: json['ready_message_sent_at'] == null
+      ? null
+      : DateTime.parse(json['ready_message_sent_at'] as String),
+  readyMessageSentBy: json['ready_message_sent_by'] == null
+      ? null
+      : OrderActor.fromJson(
+          json['ready_message_sent_by'] as Map<String, dynamic>,
+        ),
   availableTransitions:
       (json['available_transitions'] as List<dynamic>?)
           ?.map((e) => OrderTransition.fromJson(e as Map<String, dynamic>))
@@ -142,6 +152,10 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'is_final': instance.isFinal,
   'is_closed': instance.isClosed,
   'is_urgent': instance.isUrgent,
+  'ready_message_applies': instance.readyMessageApplies,
+  'is_ready_message_sent': instance.isReadyMessageSent,
+  'ready_message_sent_at': instance.readyMessageSentAt?.toIso8601String(),
+  'ready_message_sent_by': instance.readyMessageSentBy?.toJson(),
   'available_transitions': instance.availableTransitions
       .map((e) => e.toJson())
       .toList(),

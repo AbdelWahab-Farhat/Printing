@@ -21,6 +21,11 @@ _HomeSummary _$HomeSummaryFromJson(Map<String, dynamic> json) => _HomeSummary(
           ?.map((e) => OrderStatusCount.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <OrderStatusCount>[],
+  readyMessage: json['ready_message'] == null
+      ? null
+      : ReadyMessageQueue.fromJson(
+          json['ready_message'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$HomeSummaryToJson(_HomeSummary instance) =>
@@ -31,7 +36,17 @@ Map<String, dynamic> _$HomeSummaryToJson(_HomeSummary instance) =>
       'monthly_orders': instance.monthlyOrders,
       'statuses': instance.statuses.map((e) => e.toJson()).toList(),
       'payments': instance.payments.map((e) => e.toJson()).toList(),
+      'ready_message': instance.readyMessage?.toJson(),
     };
+
+_ReadyMessageQueue _$ReadyMessageQueueFromJson(Map<String, dynamic> json) =>
+    _ReadyMessageQueue(
+      count: (json['count'] as num).toInt(),
+      label: json['label'] as String,
+    );
+
+Map<String, dynamic> _$ReadyMessageQueueToJson(_ReadyMessageQueue instance) =>
+    <String, dynamic>{'count': instance.count, 'label': instance.label};
 
 _OrderStatusCount _$OrderStatusCountFromJson(Map<String, dynamic> json) =>
     _OrderStatusCount(

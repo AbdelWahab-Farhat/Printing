@@ -371,6 +371,14 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('orders/{order}/shortages', [OrderController::class, 'setShortages'])
             ->middleware('can:orders.status.shortage')->name('orders.shortages');
 
+        // «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — a note about a message somebody sent on their own
+        // phone, so the only thing this API can do is record that they say they sent it. `can:`
+        // sits here rather than in the request for the reason the shortage route's does: this
+        // endpoint costs one fixed grant whatever the body says, and the untick is the same
+        // decision as the tick.
+        Route::patch('orders/{order}/ready-message', [OrderController::class, 'confirmReadyMessage'])
+            ->middleware('can:orders.ready_message')->name('orders.ready-message');
+
         // Designs are chosen from the customer's library, never uploaded here. scoped() makes
         // {design} resolve *within* {order}, so another order's design id is a 404 by
         // construction rather than by a check somebody has to remember.

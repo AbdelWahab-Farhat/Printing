@@ -71,6 +71,30 @@ abstract class Order with _$Order {
     /// predates the column was never marked, and false is exactly what that means.
     @JsonKey(name: 'is_urgent') @Default(false) bool isUrgent,
 
+    /// Whether «رسالة الجاهزية» is a question this order has reached at all.
+    ///
+    /// **The server's answer, not a comparison made here.** It is true from the moment the order
+    /// has *been* «جاهزة» and stays true afterwards — through delivery and past it — because
+    /// «هل أُبلِغ أصلاً؟» is asked long after the parcel has gone. A list of statuses written in
+    /// Dart would be a second copy of the state machine, and the copy that is forgotten the day
+    /// a status is added after «جاهزة».
+    ///
+    /// Defaulted false, so an order from a build of the API that predates this reads as «السؤال
+    /// لا ينطبق» and the section is simply not drawn.
+    @JsonKey(name: 'ready_message_applies') @Default(false) bool readyMessageApplies,
+
+    /// Whether somebody has said the customer was told.
+    ///
+    /// **A record of work done outside this app** — the message goes out on WhatsApp or by
+    /// telephone — so nothing here observes it and nothing derives it. See [readyMessageSentBy].
+    @JsonKey(name: 'is_ready_message_sent') @Default(false) bool isReadyMessageSent,
+
+    @JsonKey(name: 'ready_message_sent_at') DateTime? readyMessageSentAt,
+
+    /// Who said so. **Null on a list row** — the server sends the name with the full order only,
+    /// because no card shows it and a page of twenty would be a query per row.
+    @JsonKey(name: 'ready_message_sent_by') OrderActor? readyMessageSentBy,
+
     /// The moves this order may make, **already narrowed to what the signed-in user may do.**
     /// The screen draws exactly these buttons and no others, which is what stops it offering an
     /// action the server would refuse.

@@ -9,6 +9,7 @@ import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/presentation/widgets/employee_card.dart';
 import 'package:dayaa/features/home/presentation/widgets/payment_board.dart';
 import 'package:dayaa/features/home/presentation/widgets/quick_actions.dart';
+import 'package:dayaa/features/home/presentation/widgets/ready_message_box.dart';
 import 'package:dayaa/features/home/presentation/widgets/status_board.dart';
 import 'package:dayaa/features/home/presentation/widgets/summary_tiles.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
@@ -75,6 +76,23 @@ class _HomeView extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 24.h),
+              // **أعلى من لوحتي الحالات والدفع، وهو الصندوق الوحيد الذي يخصّ شخصاً بعينه.**
+              // اللوحتان تحته تقسمان طلبيات الورشة كلّها على محاورها ويقرؤهما الجميع؛ هذا طابور
+              // عملٍ يُفتح ليُفرَغ، ومن يملك صلاحيته يفتح التطبيق لأجله. وغائبٌ تماماً لمن لا
+              // يملكها — الخادم لا يرسل المفتاح أصلاً، فلا يبقى مكانٌ فارغ يُسأل عنه.
+              if (summary.readyMessage case final queue?) ...[
+                ReadyMessageBox(
+                  queue: queue,
+                  onOpen: () => _openOrders(
+                    context,
+                    // نفس السؤال الذي عُدَّ به: الخادم يملك تعريف الطابور وحده — «بلغت الجاهزية،
+                    // ولم تُغلق، ولم يُعلّمها أحد» — وهذا الفلتر هو ذلك التعريف نفسه، فلا يمكن
+                    // للرقم على الصندوق أن يخالف ما تفتحه الضغطة.
+                    OrdersFilter(title: queue.label, readyMessageSent: false),
+                  ),
+                ),
+                SizedBox(height: 24.h),
+              ],
               // **The money first, above the statuses.** It sat under fourteen status cards to
               // begin with, which meant the question the shop opens this screen to ask — «كم
               // طلبية لم تُدفع» — was two screens of scrolling away. Three cards ahead of

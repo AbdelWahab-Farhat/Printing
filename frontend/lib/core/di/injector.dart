@@ -139,6 +139,7 @@ import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/repositories/order_repository_impl.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
 import 'package:dayaa/features/orders/usecases/change_order_status.dart';
+import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_archived_orders.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/get_order_counts.dart';
@@ -807,6 +808,11 @@ abstract final class Injector {
       ..registerLazySingleton<SetOrderShortages>(
         () => SetOrderShortages(sl<OrderRepository>()),
       )
+      // «تم إرسال رسالة الجاهزية للزبون» — a use case rather than a Cubit for the reason
+      // RecordScrapLoss is one: the switch asks, sends, and redraws from what came back.
+      ..registerLazySingleton<ConfirmReadyMessage>(
+        () => ConfirmReadyMessage(sl<OrderRepository>()),
+      )
       // Spoiled stock, written off against the line that was being printed. A use case rather
       // than a Cubit because there is no state to hold: the sheet asks twice and pops.
       ..registerLazySingleton<RecordScrapLoss>(
@@ -914,6 +920,7 @@ abstract final class Injector {
           // one that should hold the call.
           deleteOrder: sl<DeleteOrder>(),
           restoreOrder: sl<RestoreOrder>(),
+          confirmReadyMessage: sl<ConfirmReadyMessage>(),
         ),
       )
       // The move screen fetches the order itself rather than being handed one: it is reachable

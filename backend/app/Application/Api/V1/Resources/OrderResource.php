@@ -68,6 +68,33 @@ class OrderResource extends JsonResource
             // word the app already knows and has nothing to translate.
             'is_urgent' => (bool) $this->is_urgent,
 
+            // ── «هل أُبلِغ الزبون أنّ طلبه جاهز؟» ────────────────────────────────────────────
+            // The one fact about an order that happens outside this system — a message on
+            // WhatsApp, a telephone call — so it is here only because a person recorded it. Four
+            // keys and not one, because the screen asks four different things of them.
+
+            // **Whether the question applies at all**, answered by the server rather than left to
+            // a client comparing statuses. `Order::readyMessageApplies()` reads `ready_at`, which
+            // is stamped once and never cleared: the box is drawn on «جاهزة» and stays drawn
+            // through delivery and after it, which is exactly when «هل أُبلِغ أصلاً؟» is asked.
+            // A list of statuses written in Dart would be a second copy of the map.
+            'ready_message_applies' => $this->readyMessageApplies(),
+
+            'is_ready_message_sent' => $this->ready_message_sent_at !== null,
+            'ready_message_sent_at' => $this->ready_message_sent_at?->toIso8601String(),
+
+            // **Who said so**, because the whole purpose of the mark is confirming that the
+            // person responsible did the work. Only where the relation is in hand — the order
+            // screen loads it, a page of twenty does not and no card shows a name — so this is
+            // absent on a list row rather than costing a query per row.
+            'ready_message_sent_by' => $this->whenLoaded(
+                'readyMessenger',
+                fn () => $this->readyMessenger === null ? null : [
+                    'id' => $this->readyMessenger->id,
+                    'name' => $this->readyMessenger->name,
+                ],
+            ),
+
             // Who is making it, for an order a vendor executes. The name travels with the id
             // because it is what this order said at the time — a vendor renamed since keeps its
             // new name everywhere except here. Null on every order that is made in-house.

@@ -36,6 +36,21 @@ final readonly class OrderFilters
          * a nullable bool and not a flag.
          */
         public ?bool $isUrgent = null,
+        /**
+         * «هل أُرسلت رسالة الجاهزية؟» — and the two halves are not mirror images of each other.
+         *
+         * `true` is a plain test on the column: «أيّها أُبلِغ أصحابها؟».
+         *
+         * `false` is **the queue**, not the column's negation — it also demands that the order
+         * has reached «جاهزة» and has not been delivered, settled or cancelled. A bare
+         * `ready_message_sent_at IS NULL` would answer with every order ever taken, including the
+         * ones nobody could message yet because nothing is made, and every one the customer
+         * already collected; a filter whose answer nobody wants is a filter nobody uses. See §٥
+         * of Docs/orders/ORDER-READY-MESSAGE.md.
+         *
+         * Null is «كلاهما» — the list as it was before this existed.
+         */
+        public ?bool $readyMessageSent = null,
         /** Which end of the queue the list starts at. Never null: there is always an order. */
         public OrderSort $sort = OrderSort::Newest,
         /**
@@ -71,6 +86,9 @@ final readonly class OrderFilters
             to: self::textOrNull($query['to'] ?? null),
             paymentStatuses: self::paymentStatuses($query),
             isUrgent: self::boolOrNull($query['urgent'] ?? null),
+            // Named on the wire exactly as the column reads on the payload, so «الطلبيات التي لم
+            // تُرسل لها رسالة» is one word in both places.
+            readyMessageSent: self::boolOrNull($query['is_ready_message_sent'] ?? null),
             sort: OrderSort::fromRequest($query['sort'] ?? null),
             // Read the same way «مستعجلة» is, and then defaulted rather than left null: an
             // unanswered question here means the live list, which is what every caller written
@@ -104,6 +122,7 @@ final readonly class OrderFilters
             to: $this->to,
             paymentStatuses: null,
             isUrgent: $this->isUrgent,
+            readyMessageSent: $this->readyMessageSent,
             sort: $this->sort,
             archived: $this->archived,
         );

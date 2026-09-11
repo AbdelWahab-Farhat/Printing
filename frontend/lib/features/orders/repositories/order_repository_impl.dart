@@ -32,6 +32,7 @@ class OrderRepositoryImpl implements OrderRepository {
     List<String> statuses = const <String>[],
     List<String> paymentStatuses = const <String>[],
     bool? isUrgent,
+    bool? readyMessageSent,
     OrdersSort sort = OrdersSort.fallback,
     int? customerId,
     String? from,
@@ -45,6 +46,7 @@ class OrderRepositoryImpl implements OrderRepository {
       statuses: statuses,
       paymentStatuses: paymentStatuses,
       isUrgent: isUrgent,
+      readyMessageSent: readyMessageSent,
       sort: sort,
       customerId: customerId,
       from: from,
@@ -65,6 +67,7 @@ class OrderRepositoryImpl implements OrderRepository {
     List<String> statuses = const <String>[],
     List<String> paymentStatuses = const <String>[],
     bool? isUrgent,
+    bool? readyMessageSent,
     OrdersSort sort = OrdersSort.fallback,
     int? customerId,
     String? from,
@@ -78,6 +81,7 @@ class OrderRepositoryImpl implements OrderRepository {
       statuses: statuses,
       paymentStatuses: paymentStatuses,
       isUrgent: isUrgent,
+      readyMessageSent: readyMessageSent,
       sort: sort,
       customerId: customerId,
       from: from,
@@ -99,6 +103,7 @@ class OrderRepositoryImpl implements OrderRepository {
     required List<String> statuses,
     required List<String> paymentStatuses,
     required bool? isUrgent,
+    required bool? readyMessageSent,
     required OrdersSort sort,
     required int? customerId,
     required String? from,
@@ -125,6 +130,10 @@ class OrderRepositoryImpl implements OrderRepository {
           // word, and the server reads both — but the digits are what every other client of
           // this API sends and what its own docs say.
           if (isUrgent != null) 'urgent': isUrgent ? 1 : 0,
+          // Same digits, same reason. And `0` here asks for the *queue* rather than for the
+          // negation of the column — the server owns that difference, and this app deliberately
+          // holds no copy of it. See ORDER-READY-MESSAGE.md §٥.
+          if (readyMessageSent != null) 'is_ready_message_sent': readyMessageSent ? 1 : 0,
           // Omitted while the list is in its default order, so the common request keeps the URL
           // it has always had — and so a server that predates the parameter answers it the same
           // way it always did.
@@ -378,6 +387,17 @@ class OrderRepositoryImpl implements OrderRepository {
             for (final entry in shortages.entries) '${entry.key}': entry.value,
           },
         },
+      ),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Order>> confirmReadyMessage(int orderId, {required bool sent}) {
+    return safeRequest<Order>(
+      () => _dio.patch(
+        OrderEndpoints.readyMessage(orderId),
+        data: <String, dynamic>{'sent': sent},
       ),
       parse: (data) => Order.fromJson(data as Map<String, dynamic>),
     );

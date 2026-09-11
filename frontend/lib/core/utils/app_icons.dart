@@ -500,6 +500,15 @@ abstract final class AppIcons {
   static IconData get urgent =>
       _pick(Icons.bolt_rounded, CupertinoIcons.bolt_fill);
 
+  /// «رسالة الجاهزية» — the message telling a customer their order is ready to collect.
+  ///
+  /// A chat bubble rather than [share] or [resend]: those two are the app *sending* something
+  /// through the phone's own sheet, and this is a record that somebody already sent a message
+  /// elsewhere. And not [notifications] either — a bell is the app interrupting a member of
+  /// staff, which is the opposite direction.
+  static IconData get readyMessage =>
+      _pick(Icons.mark_chat_read_rounded, CupertinoIcons.chat_bubble_text_fill);
+
   static IconData get empty =>
       _pick(Icons.inbox_rounded, CupertinoIcons.tray);
 

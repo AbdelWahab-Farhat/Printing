@@ -17,6 +17,7 @@ class OrdersFilter {
     required this.title,
     this.statuses = const [],
     this.paymentStatuses = const [],
+    this.readyMessageSent,
     this.customerId,
     this.from,
     this.to,
@@ -33,6 +34,15 @@ class OrdersFilter {
   /// A **second axis that crosses** [statuses] rather than narrowing it — a card on the home
   /// screen reading «غير مدفوعة ١٢» opens every unpaid order, whatever stage each is at.
   final List<String> paymentStatuses;
+
+  /// «هل أُرسلت رسالة الجاهزية؟» — a fourth axis, and the only one whose `false` asks for more
+  /// than the absence of its `true`.
+  ///
+  /// `false` is **the queue**: the orders that have reached «جاهزة», are not delivered, settled
+  /// or cancelled, and that nobody has marked. That rule is the server's and this app holds no
+  /// copy of it — which is what lets the box on the home screen and the screen it opens count
+  /// the same set. Null asks nothing.
+  final bool? readyMessageSent;
 
   /// Whose orders these are. Null is the whole shop.
   ///

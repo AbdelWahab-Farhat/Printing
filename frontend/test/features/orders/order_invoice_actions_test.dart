@@ -14,6 +14,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_invoice_actions
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
+import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
@@ -113,6 +114,7 @@ void main() {
           reinstateOrder: ReinstateOrder(repository),
           deleteOrder: DeleteOrder(repository),
           restoreOrder: RestoreOrder(repository),
+          confirmReadyMessage: ConfirmReadyMessage(repository),
         ),
       );
   });
@@ -183,7 +185,9 @@ void main() {
   });
 
   testWidgets('it takes the width, like every other button in the app', (tester) async {
-    // Arrange
+    // Arrange — this order has never been «جاهزة», so the button stands alone rather than in the
+    // card it shares with «تم إرسال رسالة الجاهزية للزبون»: a box drawn round a single button is
+    // a box for nothing.
     await tester.pumpWidget(host());
 
     // Act

@@ -93,6 +93,16 @@ enum PermissionName: string
     // customer for more, and a business may reasonably trust a role with exactly one of them.
     case AddOrderAdditionalCost = 'orders.additional_cost';
     case ManageOrderDesigns = 'orders.designs.manage';
+
+    // «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — the mark an employee puts on an order to say they told
+    // the customer, and the queue of orders nobody has told yet.
+    //
+    // **Its own grant rather than a ride on `orders.manage`.** Whoever takes orders and edits
+    // them is not necessarily whoever answers for reaching the customer, and the box this opens
+    // on the home screen is one person's morning work — put in front of everybody it is noise
+    // that teaches the whole shop to scroll past a number. See ORDER-READY-MESSAGE.md §٤.
+    case ConfirmReadyMessage = 'orders.ready_message';
+
     // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
     // the order to the press. Separate from the two production statuses beside it because a
     // different desk does it.
@@ -275,6 +285,7 @@ enum PermissionName: string
             self::DiscountOrders => 'منح خصم على الطلبية',
             self::AddOrderAdditionalCost => 'إضافة تكلفة إضافية على الطلبية',
             self::ManageOrderDesigns => 'إدارة تصاميم الطلبية واعتمادها',
+            self::ConfirmReadyMessage => 'تأكيد إرسال رسالة الجاهزية للزبون',
             self::MoveOrderToReadyToPrint => 'تحويل الطلبية إلى جاهزة للطباعة',
             self::MoveOrderToDesigning => 'تحويل الطلبية إلى قيد التصميم',
             self::MoveOrderToPrinting => 'تحويل الطلبية إلى قيد الطباعة',
@@ -348,7 +359,9 @@ enum PermissionName: string
             // deliberately *not* in «حالات الطلبيات» either — a delete is not a status the
             // machine can move into, which is the whole of what that group collects.
             self::DeleteOrders, self::RestoreOrders, self::ViewOrderArchive,
-            self::ManageOrderDesigns => 'الطلبيات',
+            self::ManageOrderDesigns,
+            // Deliberately not in «حالات الطلبيات»: telling the customer is not a move on the map.
+            self::ConfirmReadyMessage => 'الطلبيات',
             self::MoveOrderToReadyToPrint,
             self::MoveOrderToDesigning, self::MoveOrderToPrinting,
             self::MoveOrderToManufacturing, self::MoveOrderToReady,
