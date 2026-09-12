@@ -43,6 +43,7 @@ backend/database/seeders/data/customers-without-a-phone.xlsx
 *.sql
 *.sql.gz
 *.dump
+*.dump.gz
 
 # Private keys never belong in the repository — an APNs .p8 and a Firebase service account
 # JSON both landed here by download default. They live in ~/secrets, and on a server outside

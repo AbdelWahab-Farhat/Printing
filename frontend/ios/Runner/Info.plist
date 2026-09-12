@@ -39,8 +39,8 @@
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 		<!--
-		Why this app asks for the camera and the photo library, in the words iOS shows the user
-		in the permission alert.
+		Why this app asks for the camera, the photo library and location, in the words iOS shows
+		the user in the permission alert.
 
 		In Arabic, and deliberately: this app has one language and its users are the staff of a
 		printing business in Libya. An English sentence in the one system alert they cannot skip
@@ -50,11 +50,20 @@
 		whose purpose string is vague, and a person reading «يحتاج التطبيق إلى الكاميرا» has been
 		told nothing they did not already infer from being asked.
 
+		Location is the odd one out: nothing here reads a position. `file_picker` links
+		DKImagePickerController on iOS, whose `DKAsset` exposes the `CLLocation` stored in a
+		photo's EXIF, and App Store validation rejects the build over that reference alone
+		(ITMS-90683) whether or not the code path is ever reached. So the string is here, and it
+		says the true thing rather than inventing a feature: the alert will not appear, because
+		the app never asks.
+
 		No NSMicrophoneUsageDescription: nothing here records video, and a permission string for
 		a capability the app never uses is one more thing to justify at review.
 	-->
 		<key>NSCameraUsageDescription</key>
 		<string>لتصوير تصميم أو عيّنة مطبوعة وإضافتها مباشرةً إلى تصاميم العميل.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>لا يتتبّع التطبيق موقعك ولا يطلبه. تظهر هذه الرسالة لأن منتقي الصور قادر على قراءة مكان التقاط الصورة المحفوظ داخلها، ولا نقرأه.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>لاختيار تصاميم العميل من صورك — كالتي تصلك عبر واتساب — ورفعها إلى ملفه.</string>
 		<key>UIApplicationSceneManifest</key>
