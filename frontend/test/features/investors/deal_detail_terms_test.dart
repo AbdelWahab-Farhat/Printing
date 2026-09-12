@@ -25,6 +25,7 @@ void main() {
     String companyStake = '0.00',
     String fundedPercent = '100.0000',
     String? printingSalePrice,
+    DealOrdersProfit? ordersProfit,
   }) => InvestorDeal(
     id: 22,
     code: 'D22',
@@ -34,6 +35,7 @@ void main() {
     companyStake: companyStake,
     investorFundedPercent: fundedPercent,
     printingSalePrice: printingSalePrice,
+    ordersProfit: ordersProfit,
   );
 
   Widget host() => ScreenUtilInit(
@@ -125,5 +127,59 @@ void main() {
     // Assert — nothing is printed for the ordinary case; «بلا سعر» would be a word on the screen
     // for every deal that ever existed before the term.
     expect(find.textContaining('تبيع السادة للمطبعة'), findsNothing);
+  });
+
+  testWidgets('a deal says what its orders made it, the road apart from the door', (tester) async {
+    // Arrange — one parcel delivered and one still out, each having made the deal 3,000.
+    when(() => repository.deal(22)).thenAnswer(
+      (_) async => Right(
+        dealWith(
+          ordersProfit: const DealOrdersProfit(
+            inFlight: DealProfitBucket(orders: 1, profit: '3000.00'),
+            delivered: DealProfitBucket(orders: 1, profit: '3000.00'),
+            total: DealProfitBucket(orders: 2, profit: '6000.00'),
+          ),
+        ),
+      ),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — the two figures the owner asked for and the sum under them. The money on the road
+    // is money the deal stands to make, so it is said in its own row rather than folded into one
+    // figure a person cannot take apart.
+    expect(find.text('ربح الطلبيات'), findsOneWidget);
+    expect(find.text('جارية'), findsOneWidget);
+    expect(find.text('مسلَّمة'), findsOneWidget);
+    expect(find.text('الإجمالي'), findsOneWidget);
+    expect(find.text('3,000 د.ل'), findsNWidgets(2));
+    expect(find.text('6,000 د.ل'), findsOneWidget);
+  });
+
+  testWidgets('a deal nothing has been sold out of yet says nothing about order profit', (
+    tester,
+  ) async {
+    // Arrange — the goods are on the shelf and no order has touched them.
+    when(() => repository.deal(22)).thenAnswer(
+      (_) async => Right(
+        dealWith(
+          ordersProfit: const DealOrdersProfit(
+            inFlight: DealProfitBucket(),
+            delivered: DealProfitBucket(),
+            total: DealProfitBucket(),
+          ),
+        ),
+      ),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — three rows of zeros is a table about nothing; «بِيع ٠» in the goods section above
+    // is where a deal that has sold nothing says so.
+    expect(find.text('ربح الطلبيات'), findsNothing);
   });
 }

@@ -101,6 +101,101 @@ final class DealOrdersQuery
     }
 
     /**
+     * The same rows, added up — what this deal has made and what it stands to make.
+     *
+     * **The question the deal's own screen asks, and the reason it could not be answered off the
+     * list.** «أرباح المستثمرين حتى الآن» is the ledger, and the ledger is written at the door:
+     * a deal whose goods left the shelf a fortnight ago and whose parcels are still on the road
+     * reads as having earned nothing at all. The money is there — it is simply not final.
+     *
+     * So two buckets, never one:
+     *
+     *   * `delivered` — orders that reached the customer («تم الاستلام» and «تمت التسوية»).
+     *     Nothing takes a dinar back out of these: the system refuses to edit, discount or
+     *     cancel an order past that door.
+     *   * `in_flight` — everything else on the list. Real goods off a real shelf, but the profit
+     *     is ordinarily a **forecast**: a parcel that comes home cancelled returns those goods to
+     *     this deal's own layers and takes its whole profit with it.
+     *
+     * **The bucket is about where the parcel is, not about whether the money is final**, and
+     * سعر السادة is the case that makes the two different questions. A draw the press bought at
+     * the warehouse door was paid for that day; a cancellation afterwards hands those goods to the
+     * company rather than back to the deal, so its margin sits in `in_flight` while being money
+     * the ledger already holds. Bucketing it as delivered would say the customer has the parcel,
+     * which is a plainer lie than calling settled money a forecast — and `balances` beside it is
+     * what says how much has actually been paid.
+     *
+     * A cancelled order is in neither, because it is not on the list at all — it gave the goods
+     * back.
+     *
+     * **Added out of the very rows the list prints**, not out of a second query with its own
+     * arithmetic: the private machinery below is what {@see __invoke} publishes per order, so a
+     * total can never disagree with the rows a person scrolls to check it against.
+     *
+     * The ledger figure is deliberately absent. What the investors were actually paid is in
+     * `balances`, walked out of the wallet entries; a second, *computed* share sitting beside it
+     * would be the same money arrived at twice, and the two would part company the first time a
+     * rounding or a reversal moved one of them.
+     *
+     * @return array{
+     *     in_flight: array{orders: int, profit: string},
+     *     delivered: array{orders: int, profit: string},
+     *     total: array{orders: int, profit: string}
+     * }
+     */
+    public function totals(int $dealId): array
+    {
+        $buckets = [
+            'in_flight' => ['orders' => 0, 'profit' => '0.00'],
+            'delivered' => ['orders' => 0, 'profit' => '0.00'],
+        ];
+
+        // Walked in pages rather than in one breath: a deal that sold a lorry in five-hundred
+        // small orders would otherwise hold every attribution and every draw behind them in
+        // memory at once, and this runs on an ordinary screen load.
+        foreach (array_chunk($this->ordersOf($dealId)->get()->all(), 100) as $chunk) {
+            $orderIds = array_map(fn (object $row): int => (int) $row->id, $chunk);
+
+            $attributions = $this->orders->profitAttributionForMany($orderIds);
+            $scrap = $this->scrapMovementsFor($orderIds);
+            $figures = $this->figuresFor(
+                $attributions,
+                $scrap,
+                $this->breakdownFor($attributions, $scrap),
+                $dealId,
+            );
+
+            foreach ($chunk as $row) {
+                $bucket = self::hasArrived((string) $row->status) ? 'delivered' : 'in_flight';
+
+                $buckets[$bucket]['orders']++;
+                $buckets[$bucket]['profit'] = bcadd(
+                    $buckets[$bucket]['profit'],
+                    $figures[(int) $row->id]['profit'] ?? '0.00',
+                    2,
+                );
+            }
+        }
+
+        return $buckets + ['total' => [
+            'orders' => $buckets['in_flight']['orders'] + $buckets['delivered']['orders'],
+            'profit' => bcadd($buckets['in_flight']['profit'], $buckets['delivered']['profit'], 2),
+        ]];
+    }
+
+    /**
+     * Whether the parcel is with the customer for good.
+     *
+     * The two statuses {@see DealOrdersInFlightQuery} treats as the end of the road, named here
+     * rather than asked of {@see OrderStatus::isClosed()}: that one answers «may this order still
+     * be edited» and says yes to a cancellation too, which on this screen is the opposite answer.
+     */
+    private static function hasArrived(string $status): bool
+    {
+        return in_array($status, [OrderStatus::Delivered->value, OrderStatus::Settled->value], true);
+    }
+
+    /**
      * The orders whose lines drew from a live layer of this deal, newest first.
      *
      * Joined through `order_items.fulfillment_stock_movement_id` rather than through

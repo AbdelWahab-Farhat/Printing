@@ -38,6 +38,11 @@ _InvestorDeal _$InvestorDealFromJson(Map<String, dynamic> json) =>
       stock: json['stock'] == null
           ? null
           : DealStock.fromJson(json['stock'] as Map<String, dynamic>),
+      ordersProfit: json['orders_profit'] == null
+          ? null
+          : DealOrdersProfit.fromJson(
+              json['orders_profit'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$InvestorDealToJson(_InvestorDeal instance) =>
@@ -58,6 +63,7 @@ Map<String, dynamic> _$InvestorDealToJson(_InvestorDeal instance) =>
       'items': instance.items.map((e) => e.toJson()).toList(),
       'balances': instance.balances?.toJson(),
       'stock': instance.stock?.toJson(),
+      'orders_profit': instance.ordersProfit?.toJson(),
     };
 
 _DealParticipant _$DealParticipantFromJson(Map<String, dynamic> json) =>
@@ -192,3 +198,33 @@ Map<String, dynamic> _$DealStockToJson(_DealStock instance) =>
       'cost_damaged': instance.costDamaged,
       'cost_short': instance.costShort,
     };
+
+_DealOrdersProfit _$DealOrdersProfitFromJson(
+  Map<String, dynamic> json,
+) => _DealOrdersProfit(
+  inFlight: json['in_flight'] == null
+      ? const DealProfitBucket()
+      : DealProfitBucket.fromJson(json['in_flight'] as Map<String, dynamic>),
+  delivered: json['delivered'] == null
+      ? const DealProfitBucket()
+      : DealProfitBucket.fromJson(json['delivered'] as Map<String, dynamic>),
+  total: json['total'] == null
+      ? const DealProfitBucket()
+      : DealProfitBucket.fromJson(json['total'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$DealOrdersProfitToJson(_DealOrdersProfit instance) =>
+    <String, dynamic>{
+      'in_flight': instance.inFlight.toJson(),
+      'delivered': instance.delivered.toJson(),
+      'total': instance.total.toJson(),
+    };
+
+_DealProfitBucket _$DealProfitBucketFromJson(Map<String, dynamic> json) =>
+    _DealProfitBucket(
+      orders: (json['orders'] as num?)?.toInt() ?? 0,
+      profit: json['profit'] as String? ?? '0.00',
+    );
+
+Map<String, dynamic> _$DealProfitBucketToJson(_DealProfitBucket instance) =>
+    <String, dynamic>{'orders': instance.orders, 'profit': instance.profit};

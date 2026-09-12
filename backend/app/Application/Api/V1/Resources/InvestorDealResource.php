@@ -107,6 +107,12 @@ class InvestorDealResource extends JsonResource
             ]),
             'stock' => $this->when(isset($this->stock), fn (): array => $this->stock),
 
+            // What the deal's orders made it, delivered and on the road kept apart — the second
+            // is a forecast, and adding it to the first without saying so would put money on the
+            // screen that a single cancellation takes back. Detail screen only, like `balances`:
+            // it walks every order the deal ever sold into.
+            'orders_profit' => $this->when(isset($this->orders_profit), fn (): array => $this->orders_profit),
+
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

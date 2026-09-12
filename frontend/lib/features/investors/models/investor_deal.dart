@@ -50,6 +50,10 @@ abstract class InvestorDeal with _$InvestorDeal {
 
     DealBalances? balances,
     DealStock? stock,
+
+    /// What the orders that sold this deal's goods made it — delivered kept apart from the ones
+    /// still on the road. Null off the deals list, which does not walk them.
+    @JsonKey(name: 'orders_profit') DealOrdersProfit? ordersProfit,
   }) = _InvestorDeal;
 
   factory InvestorDeal.fromJson(Map<String, dynamic> json) => _$InvestorDealFromJson(json);
@@ -159,4 +163,37 @@ abstract class DealStock with _$DealStock {
   }) = _DealStock;
 
   factory DealStock.fromJson(Map<String, dynamic> json) => _$DealStockFromJson(json);
+}
+
+
+/// What this deal's orders made it, the parcels still out kept apart from the ones that arrived.
+///
+/// **Not [DealBalances], and the difference is the whole point.** `balances.profit` is the
+/// ledger — what the investors were actually paid, which happens at «تم الاستلام» and not a day
+/// sooner, so a deal whose goods left the shelf a fortnight ago reads as having earned nothing.
+/// This is the deal's own money over every order that sold its goods: [delivered] is final, and
+/// [inFlight] is ordinarily a forecast, since a parcel that comes home cancelled hands those
+/// goods back to the deal and takes its profit with it.
+@freezed
+abstract class DealOrdersProfit with _$DealOrdersProfit {
+  const factory DealOrdersProfit({
+    @JsonKey(name: 'in_flight') @Default(DealProfitBucket()) DealProfitBucket inFlight,
+    @Default(DealProfitBucket()) DealProfitBucket delivered,
+    @Default(DealProfitBucket()) DealProfitBucket total,
+  }) = _DealOrdersProfit;
+
+  factory DealOrdersProfit.fromJson(Map<String, dynamic> json) =>
+      _$DealOrdersProfitFromJson(json);
+}
+
+/// One side of that: how many orders, and what the deal made on them together.
+@freezed
+abstract class DealProfitBucket with _$DealProfitBucket {
+  const factory DealProfitBucket({
+    @Default(0) int orders,
+    @Default('0.00') String profit,
+  }) = _DealProfitBucket;
+
+  factory DealProfitBucket.fromJson(Map<String, dynamic> json) =>
+      _$DealProfitBucketFromJson(json);
 }

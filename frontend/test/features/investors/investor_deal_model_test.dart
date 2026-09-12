@@ -63,4 +63,38 @@ void main() {
     // nothing». The screen and the server both branch on exactly this.
     expect(deal.printingSalePrice, isNull);
   });
+
+  test('a deal carries what its orders made it, on the road and at the door', () {
+    // Arrange — two parcels delivered and one still out, as the server adds them up.
+    final json = dealJson(
+      extra: {
+        'orders_profit': {
+          'in_flight': {'orders': 1, 'profit': '3000.00'},
+          'delivered': {'orders': 2, 'profit': '6000.00'},
+          'total': {'orders': 3, 'profit': '9000.00'},
+        },
+      },
+    );
+
+    // Act
+    final deal = InvestorDeal.fromJson(json);
+
+    // Assert
+    expect(deal.ordersProfit?.inFlight.orders, 1);
+    expect(deal.ordersProfit?.inFlight.profit, '3000.00');
+    expect(deal.ordersProfit?.delivered.profit, '6000.00');
+    expect(deal.ordersProfit?.total.profit, '9000.00');
+  });
+
+  test('a deal read off a list carries no order profit at all', () {
+    // Arrange — the deals screen sends no such block; only the detail payload walks the orders.
+    final json = dealJson();
+
+    // Act
+    final deal = InvestorDeal.fromJson(json);
+
+    // Assert — null, not a row of zeros: «nobody asked» and «nothing was sold» are different
+    // sentences, and the screen draws the section on the first of them by drawing nothing.
+    expect(deal.ordersProfit, isNull);
+  });
 }
