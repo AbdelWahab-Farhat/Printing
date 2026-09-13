@@ -1,6 +1,8 @@
 # Partial delivery — التسليم الجزئي
 
-> **Status: approved, not yet built.** Branch `feat/partial-delivery`.
+> **Status: built.** Branch `feat/partial-delivery`, 15 tests passing. The app side is
+> [PARTIAL-DELIVERY-FRONTEND-INTEGRATION.md](PARTIAL-DELIVERY-FRONTEND-INTEGRATION.md) and has
+> not started — two of its contract tests are red until it does.
 > Written in English by request; the shipped code and UI strings stay Arabic like the rest.
 > Answers the BACKLOG item **«تعديل البنود عند الاستلام»**, whose open question was explicitly
 > accounting rather than technical.
@@ -289,9 +291,25 @@ The class is currently hard-wired to "lines stocked in another unit, at «جاه
 reverse-and-redraw into a shared collaborator and give it a second caller rather than copying it —
 one FIFO-unwinding path in the codebase, as today.
 
-`OrderStockDrawn` fires as it already does for a restatement, so the investor's purchase is
-unwound and re-posted for the smaller draw. He is un-paid for bags that came back. Correct, and
-free.
+`OrderStockDrawn` is announced when any line restocked, so the investor's purchase is unwound and
+re-posted for the smaller draw. He is un-paid for the bags that came back.
+
+**This was the one thing the plan got wrong, and it was a money bug.** The sentence above used to
+read «fires as it already does for a restatement … Correct, and free». It is neither. The event is
+dispatched by `ChangeOrderStatus` on exactly two conditions — a first deduction and a restatement
+at «جاهزة» — and a partial delivery is neither of them, so nothing would have told Investment
+anything. The investor would have kept the سعر السادة paid for all 300 bags while 100 of them sat
+back on his own cost layers, and the next order would have bought the same kilo from him again.
+
+`PostDealStockPurchases` needed no change: it is keyed on `order_items.id` precisely so a redrawn
+line is recognised as the same source and re-posted, and it already hunts down lines that drop out
+of the draw entirely. It simply had to be told. So `RecordPartialDelivery` reports whether anything
+went back on a shelf and `ChangeOrderStatus` announces — by the caller rather than the action,
+exactly as the deduction's and the restatement's are.
+
+**A write-off announces nothing**, and that is the other half of the rule: printed bags were
+genuinely consumed, no line's draw changes, and whoever sold us that material keeps what he was
+rightly paid. Both directions have a test.
 
 ### 4.4 Printed and outsourced lines — write off
 
@@ -309,6 +327,19 @@ notes      = «تسليم جزئي — لم يستلمه العميل»
 it, and `RecalculateOrderItemManufacturingCost` ignores it exactly as it ignores `ScrapLoss` today.
 
 Nothing moves in the warehouse. The goods left the shelf at «جاهزة» and are gone.
+
+### 4.4b What was learned building it
+
+Two things the plan did not anticipate, recorded here rather than only in commit messages because
+both are the kind of thing a later reader would otherwise re-introduce:
+
+- **`isPrinted()` is not the question.** The first draft mapped the disposition through it. It
+  asks «does *our* press run on this line?» — the fork سعر السادة turns on — and answers **false**
+  for وسيط, whose goods a vendor prints and which were never on a shelf of ours. Mapping through
+  it would have credited a vendor's printed bags back to a shelf that cannot hold them. The
+  disposition asks the other question, «can anybody else buy these?», to which only سادة says yes,
+  so `OrderItem::productionMode()` was extracted and it reads that.
+- **The investor had to be told.** See §4.3.
 
 ### 4.5 The form
 
@@ -390,6 +421,9 @@ document planning the app side of an already-built API ends in `-FRONTEND-INTEGR
 
 Each slice is shippable and testable on its own; 1–3 are the whole feature for a shop that only
 sells سادة, and 4 adds the printing shop.
+
+**All nine are built.** Kept as written rather than ticked off and deleted, because the order
+they are in is the order they should be re-read in.
 
 | # | Slice | Where |
 |---|---|---|
