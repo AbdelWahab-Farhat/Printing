@@ -17,6 +17,21 @@
 
 ---
 
+### جرس لمن يؤكّد العربون
+
+«عربون مدفوع» لا يُنبِّه أحداً اليوم، ومَن يفتح الحساب ليتأكّد لا يعرف أنّ عليه طلبيةً تنتظره.
+
+**لماذا أُجِّل:** جمهور `NotifyWhenOrderStatusChanges` هو كل من يرى الطلبيات، وخطّه «ما يغيّر مكان
+البضاعة أو ينهي الطلبية» — والعربون ليس منهما. فتوسيعه كان سيُرسل جرساً لكل المحل عن شأنِ شخصٍ واحد.
+
+**من أين نبدأ:** تعريفٌ خاصّ في `Domain/Notification/Definitions` جمهوره
+`NotificationAudience::permission(PermissionName::ConfirmDepositReceipt)`، يستمع إلى
+`OrderStatusChanged` عند `DepositPaid`. ويستحقّ معه صندوقٌ على الشاشة الرئيسية بجوار «بانتظار رسالة
+الجاهزية» يعدّ `deposit_expected_amount IS NOT NULL AND is_deposit_received = false` — الفهرس
+الجزئيّ لذلك السؤال موجودٌ في القاعدة أصلاً. انظر [ORDER-DEPOSIT.md](orders/ORDER-DEPOSIT.md) §١١.
+
+---
+
 ### تعديل البنود عند الاستلام
 
 العميل يأخذ منتجاً ويترك آخر، فتتغير قيمة الطلبية عند التسليم.

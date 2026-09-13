@@ -37,9 +37,20 @@ class OrderStatusTest extends TestCase
     public static function transitions(): array
     {
         return [
-            'a new order is prepped for the press, or found short at intake — and nothing else' => [
+            'a new order is prepped for the press, parked for its deposit, or found short at intake' => [
                 OrderStatus::New,
-                [OrderStatus::ReadyToPrint, OrderStatus::Shortage],
+                [OrderStatus::AwaitingDeposit, OrderStatus::ReadyToPrint, OrderStatus::Shortage],
+            ],
+            'an order waiting on its deposit gets it, or is written off' => [
+                OrderStatus::AwaitingDeposit,
+                [OrderStatus::DepositPaid, OrderStatus::Cancelled],
+            ],
+            'a paid deposit rejoins the road where «جديدة» leaves it — or goes back to waiting' => [
+                OrderStatus::DepositPaid,
+                [
+                    OrderStatus::AwaitingDeposit, OrderStatus::ReadyToPrint,
+                    OrderStatus::Shortage, OrderStatus::Cancelled,
+                ],
             ],
             'the handover leads into the press, either door — or is written off' => [
                 OrderStatus::ReadyToPrint,
@@ -131,7 +142,14 @@ class OrderStatusTest extends TestCase
         return [
             'goods that are already made go straight to the shelf' => [
                 OrderStatus::New,
-                [OrderStatus::Ready, OrderStatus::Shortage],
+                [OrderStatus::AwaitingDeposit, OrderStatus::Ready, OrderStatus::Shortage],
+            ],
+            'a paid deposit reaches the shelf directly too — the deposit is about the deal, not the work' => [
+                OrderStatus::DepositPaid,
+                [
+                    OrderStatus::AwaitingDeposit, OrderStatus::Ready,
+                    OrderStatus::Shortage, OrderStatus::Cancelled,
+                ],
             ],
             'a plain order parked short rejoins at the shelf, not at a design queue' => [
                 OrderStatus::Shortage,
@@ -232,7 +250,7 @@ class OrderStatusTest extends TestCase
         }
     }
 
-    public function test_the_two_roads_differ_in_exactly_two_places(): void
+    public function test_the_two_roads_differ_only_where_the_work_is_dispatched_from(): void
     {
         // Act
         $differing = array_values(array_filter(
@@ -240,11 +258,15 @@ class OrderStatusTest extends TestCase
             fn (OrderStatus $s) => $s->allowedNext() !== $s->allowedNext(OrderFlow::NoProduction),
         ));
 
-        // Assert — the whole cost of the feature, stated as a number. «جديدة» is where the work
-        // is dispatched from and «نواقص» is where it is rejoined; nothing else about an order's
-        // life depends on whether the press ran. A third entry appearing here is a change worth
-        // arguing about rather than one worth discovering later.
-        $this->assertEqualsCanonicalizing([OrderStatus::New, OrderStatus::Shortage], $differing);
+        // Assert — the whole cost of the feature, stated as a list. Every entry is a status the
+        // work is *dispatched from*: «جديدة» sends it, «نواقص» rejoins it, «عربون مدفوع» sends
+        // it once the money is in. Nothing else about an order's life depends on whether the
+        // press ran — and an entry appearing here that is not one of those three is a change
+        // worth arguing about rather than one worth discovering later.
+        $this->assertEqualsCanonicalizing(
+            [OrderStatus::New, OrderStatus::Shortage, OrderStatus::DepositPaid],
+            $differing,
+        );
     }
 
     // ── the وسيط road ────────────────────────────────────────────────────────────────────────
@@ -257,8 +279,23 @@ class OrderStatusTest extends TestCase
         $fromIntake = OrderStatus::New->allowedNext(OrderFlow::Outsourced);
 
         // Assert — «يمكن الانتقال من جديدة مباشرة إلى قيد التصنيع»، و«يمكن المرور بقيد التصميم
-        // أولاً إذا كان الطلب يحتاج تصميماً». Two doors, and nothing else at intake.
-        $this->assertSame([OrderStatus::Designing, OrderStatus::Manufacturing], $fromIntake);
+        // أولاً إذا كان الطلب يحتاج تصميماً». Two doors into the work, and «انتظار العربون»
+        // beside them: a وسيط job is money paid to somebody else before any of it comes back,
+        // so asking for a deposit first is if anything commoner here than on our own road.
+        $this->assertSame(
+            [OrderStatus::AwaitingDeposit, OrderStatus::Designing, OrderStatus::Manufacturing],
+            $fromIntake,
+        );
+
+        // And a deposit paid on this road opens the same two doors «جديدة» did, plus the way back
+        // to waiting and the ending.
+        $this->assertSame(
+            [
+                OrderStatus::AwaitingDeposit, OrderStatus::Designing,
+                OrderStatus::Manufacturing, OrderStatus::Cancelled,
+            ],
+            OrderStatus::DepositPaid->allowedNext(OrderFlow::Outsourced),
+        );
 
         // And the design queue leads to the vendor rather than to a press of ours.
         $this->assertSame(
@@ -385,8 +422,13 @@ class OrderStatusTest extends TestCase
         $this->assertEqualsCanonicalizing($longRoad, $shortRoad);
 
         // Stated outright too, so the comparison above cannot pass by both roads being wrong.
+        // The deposit pair is on this list for the same reason «نواقص» is: a road most orders
+        // never walk is not a step on the way to anywhere, and a progress bar that placed it
+        // would claim every order stops to be paid for.
         $this->assertEqualsCanonicalizing([
             OrderStatus::Shortage,
+            OrderStatus::AwaitingDeposit,
+            OrderStatus::DepositPaid,
             OrderStatus::OfficePickup,
             OrderStatus::ReturnedCourier,
             OrderStatus::ReturnedCarrier,
@@ -428,10 +470,16 @@ class OrderStatusTest extends TestCase
             fn (OrderStatus $s) => in_array(OrderStatus::ReadyToPrint, $s->allowedNext(), true),
         ));
 
-        // Assert — the two places an order can be while inventory still has it. Nothing comes
-        // *back* to the handover: once the press has the order, finishing it is the press's
-        // business and re-handing it over would describe a second delivery that never happened.
-        $this->assertEqualsCanonicalizing([OrderStatus::New, OrderStatus::Shortage], $waysIn);
+        // Assert — the places an order can be while inventory still has it. «عربون مدفوع» is one
+        // of them and is intake wearing a second name: the order has not been started, it has
+        // been *paid for*, and the next thing that happens to it is the same handover «جديدة»
+        // leads to. Nothing comes *back* to the handover: once the press has the order,
+        // finishing it is the press's business and re-handing it over would describe a second
+        // delivery that never happened.
+        $this->assertEqualsCanonicalizing(
+            [OrderStatus::New, OrderStatus::Shortage, OrderStatus::DepositPaid],
+            $waysIn,
+        );
     }
 
     public function test_a_design_can_never_skip_printing(): void
@@ -500,6 +548,11 @@ class OrderStatusTest extends TestCase
 
     public function test_a_shortage_is_declared_at_intake_and_nowhere_else(): void
     {
+        // Arrange — intake is both doors an un-started order can be standing in: taken, or taken
+        // and paid for. Neither has had a hand laid on the goods yet, which is the whole of what
+        // this test is about.
+        $intake = [OrderStatus::New, OrderStatus::DepositPaid];
+
         // Act
         $waysIn = array_values(array_filter(
             OrderStatus::cases(),
@@ -510,7 +563,11 @@ class OrderStatusTest extends TestCase
         // there, and the order is parked before any work is done on it. Offering it from «قيد
         // الطباعة» and «جاهزة» too made it a second name for «the run came up short», which is a
         // different event and one the press already answers by going back a step.
-        $this->assertSame([OrderStatus::New], $waysIn);
+        //
+        // **Both intake statuses offer it, and that is the same rule rather than a second one.**
+        // The stock is discovered missing when somebody goes to start the job, and a deposit
+        // being paid is exactly when they go to start it.
+        $this->assertEqualsCanonicalizing($intake, $waysIn);
     }
 
     public function test_a_parcel_comes_back_the_way_it_went_out(): void
@@ -721,13 +778,13 @@ class OrderStatusTest extends TestCase
 
     // ─────────────────────────── the order the board reads ───────────────────────────
 
-    public function test_the_board_opens_on_the_seven_statuses_the_workshop_lives_in(): void
+    public function test_the_board_opens_on_the_statuses_the_workshop_lives_in(): void
     {
         // Act — `cases()` is what the home screen draws, in the order it draws them: the app
         // holds no list of its own, so this sequence *is* the board.
         $opening = array_map(
             fn (OrderStatus $s) => $s->value,
-            array_slice(OrderStatus::cases(), 0, 7),
+            array_slice(OrderStatus::cases(), 0, 9),
         );
 
         // Assert — two cards to a row on the phone, and each row pairs the work with the thing
@@ -738,9 +795,13 @@ class OrderStatusTest extends TestCase
         // machine's — «جاهزة للطباعة» comes after «قيد التصميم» here and before it in
         // allowedNext(), and both are right about different questions. Seven rather than six
         // since «قيد التصنيع» arrived (OUTSOURCED-PRODUCTS.md §4); it earns a board slot because
-        // it is work somebody is waiting on, exactly like the press.
+        // it is work somebody is waiting on, exactly like the press. The deposit pair joined for
+        // the same reason and sits third rather than first: «انتظار العربون» is money the job is
+        // waiting on and «عربون مدفوع» is money that arrived and work nobody has started, but a
+        // board opens on what the shop has, and most orders never walk that road at all.
         $this->assertSame([
             'new', 'shortage',
+            'awaiting_deposit', 'deposit_paid',
             'designing', 'ready_to_print',
             'printing', 'manufacturing',
             'ready',

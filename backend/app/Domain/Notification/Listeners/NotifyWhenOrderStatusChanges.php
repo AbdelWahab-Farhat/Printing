@@ -103,6 +103,15 @@ final class NotifyWhenOrderStatusChanges implements ShouldQueue
             OrderStatus::Cancelled => true,
 
             OrderStatus::New,
+            // **The deposit is a conversation with one customer, not a move of the goods.**
+            // Parking an order until its عربون arrives, and being told it has, are the counter's
+            // own work and happen on the screen of the person doing them — the line this method
+            // draws. The person who *does* need telling is whoever confirms the money reached the
+            // account, and they are a narrower audience than «كل من يرى الطلبيات»: a bell for
+            // them belongs in its own definition aimed at `orders.deposit.confirm`, not in a
+            // broadcast to the whole shop. See Docs/orders/ORDER-DEPOSIT-PLAN.md §٣٫٦.
+            OrderStatus::AwaitingDeposit,
+            OrderStatus::DepositPaid,
             OrderStatus::ReadyToPrint,
             OrderStatus::Designing,
             OrderStatus::Printing,
