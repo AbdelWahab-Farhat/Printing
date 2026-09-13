@@ -7,7 +7,8 @@
 >
 > **Every decision in §3 is settled** — all eight were answered on 14 September 2026. The
 > options are kept beside each answer rather than deleted: a decision is only readable next to
-> the ones it beat, and two of these went against the recommendation.
+> the ones it beat. Decision 5 was answered, reopened, and answered differently; Decision 7 went
+> against the recommendation and was right to.
 
 ---
 
@@ -65,7 +66,7 @@ load-bearing.
 | 2 | Loss added to COGS? | **No** — reported beside `write_offs`, never subtracted |
 | 3 | Loss valued at? | **Cost** of the goods |
 | 4 | Where recorded, given the item lock? | **A new derived column**, written by its own action |
-| 5 | Permission? | **No new one** — `orders.status.delivered` is enough *(against the recommendation)* |
+| 5 | Permission? | **New `orders.partial_delivery`**, granted day one to the roles that already deliver |
 | 6 | Restocked quantity when units differ? | **Ask**, pre-filled with the pro-rata |
 | 7 | Flag in the orders list? | **Yes, a chip**, like «نواقص» *(against the recommendation)* |
 | 8 | Fix the `ScrapLoss` P&L gap here? | **Yes** — both losses in one section |
@@ -139,27 +140,43 @@ is held by anyone who can hand a parcel over, including a driver.
 
 | | Option | |
 |---|---|---|
-| **A** ✅ **chosen** | **`orders.status.delivered` is enough.** Whoever may hand the parcel over may record what was handed over. | No new grant to hand out, nothing to seed, one less thing on the roles screen. |
-| B | *(was recommended)* A new `orders.partial_delivery`, withholding the **fields** and not the move — the precedent `TransitionFields::money()` sets for the payment box. | A driver could not shrink an invoice. Costs a permission, a seeder grant and a role-screen row. |
+| **A** ✅ **chosen** | **A new `orders.partial_delivery`**, withholding the **fields** and not the move — the precedent `TransitionFields::money()` sets for the payment box. **Granted on day one to every role that already holds `orders.status.delivered`.** | Same people do the same work from the first day, through a switch that can be thrown on its own. |
+| B | `orders.status.delivered` is enough — whoever may hand the parcel over may record what was handed over. | Nothing to define, seed or tick. And no way to take the power back except by taking delivery back with it. |
+| C | A new permission granted to **nobody** at first, decided later from the roles screen. | Zero day-one exposure, and a feature nobody can find. |
+| D | Reuse `orders.payments.record`. | Widens the *money* permission instead, under a name that answers no question a person would ask of it. |
 
-**Settled: A.** The recommendation was B and it lost, for a defensible reason: the person holding
-the parcel is the only person who *knows* what was taken, and a form that withholds the question
-from them just moves the fiction one desk along — the order gets marked delivered in full and the
-correction never happens.
+**Settled: A**, and this one was reopened before it was settled. The first answer was B, on the
+grounds that the person holding the parcel is the only one who *knows* what was taken — which is
+true, and turned out to be an argument about **who to grant it to**, not about whether to have a
+permission at all.
 
-**What that costs, recorded here so it is not discovered later.** A driver can now reduce what a
-customer owes, from the phone, with no second pair of eyes. Three things already in the codebase
-make that survivable, and they are the reason this is acceptable rather than merely cheaper:
+**What decided it: reusing a permission widens it silently.** `RoleSeeder` calls itself «a
+starting point, not a policy» and seeds only `admin` and `staff`; the roles that actually exist
+were built from the roles screen. So folding this into `orders.status.delivered` hands
+invoice-editing power to everyone already holding it — without a box being ticked, and without the
+business being asked. A new permission defaults to nobody, which is the safe direction, and the
+day-one grant to the delivery roles makes the *observed* behaviour identical to B:
+
+|  | B — reuse | A — new permission, granted day one |
+|---|---|---|
+| Who can record a partial delivery on day one | Drivers and clerks | **The same drivers and clerks** |
+| Was anyone asked before they got the power | No | Yes — it is a grant |
+| If one driver abuses it | Revoke `orders.status.delivered`: they can no longer mark **anything** delivered | Untick one box; they keep delivering |
+| If the business never ticks anything | n/a | n/a — the grant ships with the feature (that is why C lost) |
+
+**Three existing things still carry the residual risk**, and they are why granting it broadly is
+reasonable rather than merely convenient:
 
 - **`order_item` is audited.** Every movement of `undelivered_quantity` writes a row saying who
   and when, readable from the order's own history screen.
 - **Nothing is destroyed.** `quantity` never moves; the figure is derived, so an invoice wrongly
   shrunk is put back by clearing one field — no reversing entry, no correction of a correction.
-- **The money box is still separately guarded.** `orders.payments.record` is unchanged, so the
-  driver who records a partial delivery still cannot take the payment against it.
+- **The money box is separately guarded.** `orders.payments.record` is untouched, so a driver who
+  records a partial delivery still cannot take the payment against it.
 
-If abuse ever shows up in the audit log, B is a one-line addition to `TransitionFields::for()` —
-the field list is built in one place precisely so that this stays a small change.
+**Withholds the fields, never the move.** A user without the grant sees «تم الاستلام» exactly as
+today and delivers in full — the same shape `TransitionFields::money()` already uses to keep a
+driver away from the till without keeping them away from the parcel.
 
 ### Decision 6 — The restocked quantity, when the units differ
 
@@ -204,18 +221,51 @@ API parameter and a control on the list screen, and the P&L losses section (§4.
 
 ## 4. The mechanism
 
-### 4.1 One new column
+### 4.1 Two new columns
 
 ```
-order_items.undelivered_quantity   decimal(12,3) nullable
+order_items.undelivered_quantity      decimal(12,3) nullable
+order_items.undelivered_disposition   string(12)    nullable   // UndeliveredDisposition
 ```
 
-In the line's own **pricing** unit. Null means "took it all" — «nothing recorded» is not
-«nothing left», the same distinction `shortage_quantity` already makes.
+`undelivered_quantity` is in the line's own **pricing** unit. Null means «took it all» — «nothing
+recorded» is not «nothing left», the same distinction `shortage_quantity` already makes.
 
-Nothing else is stored. The disposition is not a column: it is `isPrinted()`, asked at the moment
-of delivery and recorded implicitly by *which* of the two things happened — a stock movement, or
-a loss entry. Both are rows with dates on them.
+**The disposition is a column, and an earlier draft of this document was wrong to say it need not
+be.** That draft argued it was `isPrinted()`, asked at the moment of delivery and recorded
+implicitly by which of the two things happened — a stock movement or a loss entry. Two problems,
+and the second is the serious one:
+
+- **`isPrinted()` reads the category as it stands *now*.** File the product under a different
+  heading next year and a delivery from last March silently changes its story from «عادت إلى
+  المخزن» to «خسارة». That is the retroactive rewrite `product_name` and `variant_label` are
+  copied onto the line to prevent — «renaming a product must not rewrite an invoice issued last
+  year», and re-filing one must not rewrite a delivery either.
+- **It costs a query per line to read back.** `isPrinted()` needs
+  `product.productCategory.parent` loaded; the resource that has to say which happened would
+  either eager-load a chain nothing else on that screen wants, or throw under strict mode.
+
+```php
+enum UndeliveredDisposition: string
+{
+    case Restocked = 'restocked';      // عادت إلى المخزن
+    case WrittenOff = 'written_off';   // خسارة
+
+    public function label(): string { /* … */ }
+}
+```
+
+`label()` is not decoration: `AuditValueLabels` auto-translates any enum-cast column whose enum
+can name itself, so the order's history prints Arabic without a second dictionary — the same
+reason `OrderFlow` and `ProductionMode` carry one.
+
+Both columns are written together by one action and cleared together. A line with a quantity and
+no disposition is not a state the domain can reach.
+
+**The loss *amount* is not a third column.** It is `cogs × undelivered ÷ quantity` — derived on
+the model as `OrderItem::deliveryLoss()`, returning null unless the disposition is `WrittenOff`,
+exactly as `unitMaterialCost()` already derives a figure from columns beside it. The authoritative
+record of the loss is still the `ProductionCostEntry` (§4.4); this is the cheap read for a screen.
 
 ### 4.2 One line changed in the money rule
 
@@ -262,13 +312,16 @@ Nothing moves in the warehouse. The goods left the shelf at «جاهزة» and a
 
 ### 4.5 The form
 
-Added to `TransitionFields::for()` on the move into `Delivered`. **Ungated** — Decision 5: anyone
-who may make the move is asked the question, driver included.
+Added to `TransitionFields::for()` on the move into `Delivered`, gated on
+`orders.partial_delivery` — and gating the **fields**, not the move (Decision 5). Somebody without
+the grant sees «تم الاستلام» exactly as today.
 
-- Per line: **«المُستلَم من {size} ({unit})»** — a `number`, `max = billableQuantity()`,
-  pre-filled with the full billable quantity. The common case (took everything) is one tap.
-- Per restocked line whose units differ: **«المُعاد إلى المخزن ({stock unit})»**, pre-filled with
-  the pro-rata.
+- Per line, key **`delivered_{item_id}`**: «المُستلَم من {size} ({unit})» — a `number`,
+  `max = billableQuantity()`, pre-filled with the full billable quantity. The common case (took
+  everything) is one tap. Named like `shortage_{id}` and `received_{id}`, which the same class
+  already emits.
+- Per restocked line whose units differ, key **`returned_{item_id}`**: «المُعاد إلى المخزن
+  ({stock unit})», pre-filled with the pro-rata.
 - A server-built hint per line naming what will happen to the remainder — «يعود إلى المخزن» or
   «يُسجَّل خسارة» — built the same way `deductionPreview()` is, so it cannot drift from the action.
 
@@ -330,28 +383,34 @@ this is one query with a `CASE`, not two.
 
 ## 6. Slices
 
+**Backend only.** The app side is a document of its own —
+[PARTIAL-DELIVERY-FRONTEND-INTEGRATION.md](PARTIAL-DELIVERY-FRONTEND-INTEGRATION.md) — written
+against the contract §4 defines, and started after this ships. The repo's own naming rule: a
+document planning the app side of an already-built API ends in `-FRONTEND-INTEGRATION.md`.
+
 Each slice is shippable and testable on its own; 1–3 are the whole feature for a shop that only
-sells سادة, and 4–5 are the whole feature for a printing shop.
+sells سادة, and 4 adds the printing shop.
 
 | # | Slice | Where |
 |---|---|---|
-| 1 | `undelivered_quantity` column + `billableQuantity()` + `OrderItemResource` + backfill-free migration | backend |
-| 2 | `RecordPartialDelivery` action (writes the column, re-derives `line_total`, calls `RecalculateOrderTotals`) | backend |
+| 1 | `undelivered_quantity` + `undelivered_disposition` columns, `UndeliveredDisposition` enum, `billableQuantity()`, `deliveryLoss()` | backend |
+| 2 | `RecordPartialDelivery` action — writes both columns, re-derives `line_total`, calls `RecalculateOrderTotals` | backend |
 | 3 | Restock path: extract the reverse-and-redraw collaborator out of `RestateOrderStockDeduction`, second caller, `OrderStockDrawn` | backend |
 | 4 | Write-off path: `ManufacturingCostType::DeliveryLoss` + the per-line entry + `isRateDriven()` | backend |
-| 5 | `TransitionFields` on `Delivered` + `ChangeOrderStatus` wiring and ordering | backend |
-| 6 | P&L `losses` section — partial delivery **and** the existing scrap gap | backend |
-| 7 | `is_partially_delivered` on `OrderResource` — derived, no new query | backend |
-| 8 | Order detail: «غير مُستلَم» per line beside «ناقص», and the loss figure | frontend |
-| 9 | The orders-list chip | frontend |
-| 10 | P&L screen: the new losses rows | frontend |
-| 11 | `openapi.json` regen | backend |
+| 5 | `orders.partial_delivery` in `PermissionName` (group «حالات الطلبيات») + `RoleSeeder` grant | backend |
+| 6 | `TransitionFields` on `Delivered` + `ChangeOrderStatus` wiring and ordering | backend |
+| 7 | P&L `losses` section — partial delivery **and** the existing scrap gap | backend |
+| 8 | `is_partially_delivered` on `OrderResource`, `undelivered_*` + `delivery_loss` on `OrderItemResource` | backend |
+| 9 | `openapi.json` regen — the app side is written against it | backend |
 
-**No permission slice** — Decision 5 reuses `orders.status.delivered`, so there is nothing to
-define, nothing to seed and nothing to add to the roles screen.
+**Slice 5 ships the grant with the permission**, which is the whole of why option C lost: a
+permission nobody holds is a feature nobody finds. It goes to every role already holding
+`orders.status.delivered` — read from the role, not hard-coded to a role name, since the real
+roles were built from the roles screen rather than seeded.
 
 **The status-change form itself needs no Dart at all** — the app renders server-described `number`
-fields already. Slices 8–10 are display only.
+fields already, so the whole of §4.5 arrives in the app the day slice 6 ships, with no release.
+What the app side does need is display work, and that is what the companion document covers.
 
 ### Tests to write
 
@@ -361,8 +420,11 @@ fields already. Slices 8–10 are display only.
 - Cancel, then delete, then restore an order that was partially delivered — the movement pointer
   and the loss entries survive the round trip.
 - Investor split on a partially delivered order: slice falls, purchase for returned goods unwound.
-- **A driver with only `orders.status.delivered` is offered the per-line boxes** and the write
-  stands — Decision 5 is a rule, so it gets a test rather than a sentence.
+- **The permission gates the fields and not the move**: somebody holding `orders.status.delivered`
+  without `orders.partial_delivery` is offered «تم الاستلام», sees no per-line boxes, and has the
+  keys rejected by `ChangeOrderStatusRequest` if they post them anyway — which the request's
+  «هذه الحقول غير مطلوبة» rule already does for free, and the test is what proves it.
+- Somebody holding both records a partial delivery and the write stands.
 - The audit trail: moving `undelivered_quantity` writes an `order_item` entry naming who and when.
 - P&L: revenue falls, COGS does not, the loss lines report and do not subtract.
 - P&L: an order carrying **both** a scrap loss and a partial-delivery loss reports them on their
@@ -373,9 +435,9 @@ fields already. Slices 8–10 are display only.
 
 ### Rough size
 
-Backend slices 1–6 are the bulk of it, and slice 3 is the one with real risk (FIFO). Frontend 7–8
-are small. Slice 3 should be built and tested before 5 is wired, so that a half-finished restock
-can never be reachable from a screen.
+Slice 3 is the one with real risk — it is the only one touching FIFO — and should be built and
+tested before slice 6 wires anything to a screen, so that a half-finished restock is never
+reachable. Slices 1, 5, 8 and 9 are small. Slice 7 is a single query with a `CASE`.
 
 ---
 
@@ -386,10 +448,12 @@ All eight decisions in §3 are answered. What is left is building it, in the ord
 **The two that went against the recommendation are worth re-reading before anyone changes them
 back**, because both were argued and both have a reason that outlives this document:
 
-- **No permission (5).** The person holding the parcel is the only one who knows what was taken.
-  Withholding the question from them does not prevent a wrong invoice — it just moves the fiction
-  one desk along. The audit trail and the derived, clearable column are what make that safe.
-- **A chip in the list (7).** Recommended against on a cost that turned out not to exist:
+- **The permission (5)** was answered as «reuse `orders.status.delivered`», reopened, and settled
+  the other way once the deciding fact surfaced: reusing a grant widens it for everyone who
+  already holds it, silently, and welds the new power to the old one. The day-one grant makes the
+  behaviour identical to reuse while keeping the two switches apart. **Do not "simplify" this
+  back into `orders.status.delivered» later** — that is the change that was examined and rejected.
+- **A chip in the list (7)** was recommended against on a cost that turned out not to exist:
   `OrderListQuery` already eager-loads `items`, so the flag is free.
 
 **One thing deliberately still deferred:** the return policy *after* delivery — a customer coming
