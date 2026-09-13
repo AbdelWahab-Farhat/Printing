@@ -6,6 +6,7 @@ namespace App\Domain\Order\Actions;
 
 use App\Domain\Order\Enums\ManufacturingCostType;
 use App\Domain\Order\Enums\UndeliveredDisposition;
+use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\ProductionCostEntry;
@@ -62,8 +63,10 @@ final class RecordPartialDelivery
 
     /**
      * @param  array<string, mixed>  $fields  What the move asked for — see {@see TransitionFields}.
+     * @return bool whether anything went back on a shelf, which the caller owes
+     *              {@see OrderStockDrawn} — see the note on {@see restock()}.
      */
-    public function __invoke(Order $order, array $fields, int $employeeId): Order
+    public function __invoke(Order $order, array $fields, int $employeeId): bool
     {
         // `product.productCategory.parent` because the disposition walks it, `variant.stockItem`
         // because the restock resolves a shelf through it. Once, here, rather than per line:
@@ -71,6 +74,7 @@ final class RecordPartialDelivery
         $order->items->loadMissing(['variant.stockItem', 'product.productCategory.parent']);
 
         $recorded = false;
+        $restocked = false;
 
         foreach ($order->items as $item) {
             $left = $this->undeliveredQuantity($item, $fields);
@@ -91,20 +95,24 @@ final class RecordPartialDelivery
             ]);
             $item->forceFill(['line_total' => $item->deriveLineTotal()])->save();
 
-            $disposition->returnsToStock()
-                ? $this->restock($order, $item, $fields, $employeeId)
-                : $this->writeOff($order, $item, $left, $employeeId);
+            if ($disposition->returnsToStock()) {
+                $this->restock($order, $item, $fields, $employeeId);
+                $restocked = true;
+            } else {
+                $this->writeOff($order, $item, $left, $employeeId);
+            }
         }
 
         if (! $recorded) {
-            return $order;
+            return false;
         }
 
         // The invoice first, then the cost — `RecalculateOrderCogs` sums what the restock above
         // may have just lowered, and both must stand before `OrderProfitFinalised` is announced.
         ($this->recalculateTotals)($order->load('items'));
+        ($this->recalculateCogs)($order->load('items'));
 
-        return ($this->recalculateCogs)($order->load('items'));
+        return $restocked;
     }
 
     /**
@@ -145,6 +153,19 @@ final class RecordPartialDelivery
 
     /**
      * Plain goods, back on the shelf.
+     *
+     * **Whoever sold us those bags has to be un-paid for them, and that is the caller's job.**
+     * A سادة line that drew on an investor's deal bought its material at سعر السادة the day it
+     * left the shelf, and his wallet was credited then. {@see RedrawOrderLineStock} credits the
+     * goods back to *his* cost layers rather than to the company's — a partial delivery is
+     * un-buying, not writing off — so leaving the payment standing would have him holding both
+     * the money and the bags, and the next order would buy the same kilo from him a second time.
+     *
+     * `PostDealStockPurchases` already knows how to correct that: it is keyed on
+     * `order_items.id` precisely so a redrawn line is recognised as the same source, reversed
+     * and re-posted, and a line that drops out of the draw entirely is found and reversed too.
+     * What it needs is to be told, which is why this method's caller returns a flag and
+     * {@see ChangeOrderStatus} announces {@see OrderStockDrawn}.
      *
      * **The quantity is in the shelf's unit, and where it comes from depends on whether the two
      * units agree.** A line sold and stocked in the same unit converts exactly: what is left of

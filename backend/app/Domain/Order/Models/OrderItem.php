@@ -168,10 +168,10 @@ class OrderItem extends Model
      * What the goods this customer left behind cost us — null unless they were a loss.
      *
      * **A read for a screen, not the record itself.** The authoritative row is the
-     * `delivery_loss` {@see \App\Domain\Order\Models\ProductionCostEntry} that
-     * {@see RecordPartialDelivery} writes: reversible, audited, and what the profit-and-loss
-     * statement actually sums. This is the same figure derived from three columns already on the
-     * line, so an order screen can print it without a query — exactly the arrangement
+     * `delivery_loss` {@see ProductionCostEntry} that {@see RecordPartialDelivery} writes:
+     * reversible, audited, and what the profit-and-loss statement actually sums. This is the
+     * same figure derived from three columns already on the line, so an order screen can print
+     * it without a query — exactly the arrangement
      * {@see unitMaterialCost()} already has.
      *
      * **Null for a restocked line, and that is the point of asking the disposition first.** Bags

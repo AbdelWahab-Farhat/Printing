@@ -19,9 +19,11 @@ use App\Domain\Order\Actions\ResolveOrderFlow;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\UndeliveredDisposition;
+use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -534,6 +536,53 @@ class PartialDeliveryTest extends TestCase
         // about the ceiling being the whole billable quantity, not about its PHP type.
         $this->assertEquals(300, $box['max']);
         $this->assertFalse($box['required']);
+    }
+
+    // ──────────────────────── telling Investment about it ────────────────────────
+
+    public function test_a_restock_announces_that_the_draw_changed(): void
+    {
+        // Arrange — the investor behind a سادة line was paid سعر السادة the day the bags left
+        // the shelf. A hundred of them just came back, credited to *his* cost layers rather than
+        // the company's, so leaving that payment standing would have him holding the money and
+        // the goods at once — and the next order would buy the same kilo from him again.
+        //
+        // `PostDealStockPurchases` already knows how to reverse and re-post a redrawn line; what
+        // it needs is to be told, and `OrderStockDrawn` is the telling.
+        $headers = $this->clerk();
+        $size = $this->sizeUnder($this->blankCategory());
+        [$order] = $this->readyOrder([$size], $headers);
+        $item = $order->items()->sole();
+
+        Event::fake([OrderStockDrawn::class]);
+
+        // Act
+        $this->deliver($order, $headers, [$this->key($item) => '200'])->assertOk();
+
+        // Assert
+        Event::assertDispatched(
+            OrderStockDrawn::class,
+            fn (OrderStockDrawn $event): bool => $event->orderId === $order->getKey(),
+        );
+    }
+
+    public function test_a_write_off_announces_nothing_because_no_stock_moved(): void
+    {
+        // Arrange — printed bags left the shelf at «جاهزة» and are gone. Nothing is credited
+        // back, no line's draw changes, and whoever sold us the plain material keeps the money
+        // he was rightly paid for goods that were genuinely consumed.
+        $headers = $this->clerk();
+        $size = $this->sizeUnder($this->printedCategory());
+        [$order] = $this->readyOrder([$size], $headers);
+        $item = $order->items()->sole();
+
+        Event::fake([OrderStockDrawn::class]);
+
+        // Act
+        $this->deliver($order, $headers, [$this->key($item) => '200'])->assertOk();
+
+        // Assert
+        Event::assertNotDispatched(OrderStockDrawn::class);
     }
 
     // ───────────────────────────── the resources ─────────────────────────────

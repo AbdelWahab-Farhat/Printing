@@ -8,6 +8,8 @@ use App\Application\Api\V1\Resources\OrderResource;
 use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Actions\DeductOrderStock;
+use App\Domain\Order\Actions\RecordPartialDelivery;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
@@ -406,8 +408,7 @@ final class TransitionFields
      * **It asks what was *taken*, not what was left.** The person at the counter is holding the
      * goods they just handed across and counting those; asking for the remainder would make them
      * subtract, which is arithmetic done by the wrong party at the worst moment.
-     * {@see \App\Domain\Order\Actions\RecordPartialDelivery} turns the answer into the
-     * remainder on the way in.
+     * {@see RecordPartialDelivery} turns the answer into the remainder on the way in.
      *
      * **Pre-filled with the whole billable quantity**, so the common case — they took all of it —
      * is one tap and an untouched form behaves exactly as this move did before the boxes existed.
@@ -416,7 +417,7 @@ final class TransitionFields
      *
      * **A second box only where nobody could work the answer out.** A سادة line goes back on
      * the shelf, and a line sold by the piece and stocked by the kilo has no per-piece weight to
-     * convert with — {@see \App\Domain\Order\Actions\DeductOrderStock} refuses to invent one —
+     * convert with — {@see DeductOrderStock} refuses to invent one —
      * so the storekeeper is asked, in the shelf's unit, holding the pro-rata as a figure to
      * correct on the scale. Every other line is silent: where the units agree the conversion is
      * exact, and a printed or وسيط line puts nothing back at all.

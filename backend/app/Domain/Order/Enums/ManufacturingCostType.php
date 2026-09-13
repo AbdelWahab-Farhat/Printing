@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Enums;
 
+use App\Domain\Order\Actions\RecalculateOrderItemManufacturingCost;
 use App\Domain\Order\Models\ProductionCostEntry;
 
 /**
@@ -68,8 +69,8 @@ enum ManufacturingCostType: string
      *
      * **The line the profit-and-loss statement is drawn along.** A loss is reported in its own
      * section and never summed into `order_items.labor_cost`/`overhead_cost` — see
-     * {@see \App\Domain\Order\Actions\RecalculateOrderItemManufacturingCost}, which has always
-     * skipped `ScrapLoss` and now skips both by asking this instead of naming one.
+     * {@see RecalculateOrderItemManufacturingCost}, which has always skipped `ScrapLoss` and
+     * now skips both by asking this instead of naming one.
      *
      * Adding it to COGS would double-count: the undelivered bags' cost is already inside the
      * `material_cost` frozen at «جاهزة», and gross profit already falls because revenue fell

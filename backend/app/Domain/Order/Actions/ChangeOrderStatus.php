@@ -131,7 +131,7 @@ final class ChangeOrderStatus
             // **Deliberately before the status is written**, unlike the stock work further down.
             // Nothing here reads the status; everything here is read by the guards and the
             // ledger entry between this line and that one.
-            $this->recordPartialDeliveryForOrder($order, $target, $fields, $actor);
+            $restockedOnDelivery = $this->recordPartialDeliveryForOrder($order, $target, $fields, $actor);
 
             // **Money next, because the guard below reads what this writes.** «تم الاستلام» and
             // «تم التسوية» each carry a box for what was just handed over, and an accountant who
@@ -289,7 +289,7 @@ final class ChangeOrderStatus
             // `fulfillment_stock_movement_id` already names the draw that will stand — the
             // figure a purchase is booked against must not be one a correction is about to
             // replace. Announced, not acted on; see {@see OrderStockDrawn}.
-            if ($deductStock || $restateStock) {
+            if ($deductStock || $restateStock || $restockedOnDelivery) {
                 OrderStockDrawn::dispatch((int) $order->getKey());
             }
 
@@ -410,14 +410,23 @@ final class ChangeOrderStatus
      * rewrote `items_total` and `grand_total` through its own query, and the instance in hand
      * would otherwise still be holding the figures the customer did not agree to.
      *
+     * **The return value is a debt.** A سادة line that goes back on the shelf is credited to the
+     * cost layers it came off — which, for material bought off an investor's deal, are *his* — so
+     * whoever was paid سعر السادة for those bags at «جاهزة» must be un-paid for the ones that
+     * came back, or he holds the money and the goods at once. `OrderStockDrawn` above is what
+     * tells Investment to recompute; it is announced by this method's caller rather than by the
+     * action, exactly as the deduction's and the restatement's are, so there is one place that
+     * decides when that recomputation happens.
+     *
      * @param  array<string, mixed>  $fields
+     * @return bool whether anything went back on a shelf
      *
      * @throws FulfillmentRequiresAnActor
      */
-    private function recordPartialDeliveryForOrder(Order $order, OrderStatus $target, array $fields, ?User $actor): void
+    private function recordPartialDeliveryForOrder(Order $order, OrderStatus $target, array $fields, ?User $actor): bool
     {
         if ($target !== OrderStatus::Delivered) {
-            return;
+            return false;
         }
 
         // Cheap and total: the action itself skips every line whose box came back holding the
@@ -430,16 +439,18 @@ final class ChangeOrderStatus
         );
 
         if ($answered === []) {
-            return;
+            return false;
         }
 
         if ($actor === null) {
             throw FulfillmentRequiresAnActor::make();
         }
 
-        ($this->recordPartialDelivery)($order->loadMissing('items'), $fields, (int) $actor->getKey());
+        $restocked = ($this->recordPartialDelivery)($order->loadMissing('items'), $fields, (int) $actor->getKey());
 
         $order->refresh();
+
+        return $restocked;
     }
 
     /**
