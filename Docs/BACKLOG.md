@@ -25,7 +25,7 @@
 
 **من أين نبدأ:** الشرط الذي كان ينقصه — محور الدفع — **صار موجوداً**: انظر [PAYMENTS-DESIGN.md](payments/PAYMENTS-DESIGN.md). فالسؤال المتبقي هو أيّ الطريقين: تعديل بنود الطلبية (فيتحرك `grand_total` تحت مدفوعات قائمة، وهو ما يُنتج حالة `overpaid` المعروفة أصلاً)، أم قيدُ فرقٍ في سجل المدفوعات دون لمس البنود. القرار محاسبي لا تقني.
 
-**وله الآن جوابٌ مقترح:** [PARTIAL-DELIVERY-DESIGN.md](orders/PARTIAL-DELIVERY-DESIGN.md) — لا هذا ولا ذاك، بل عمودٌ مشتقّ ثالث (`undelivered_quantity`) على غرار `shortage_quantity`، والباقي يعود إلى المخزن إن كان سادة ويُسجَّل خسارة مسمّاة إن كان مطبوعاً. الفرع `feat/partial-delivery`، وأسئلة §٧ فيه تنتظر جواب صاحب العمل.
+**وله الآن جوابٌ مقترح:** [PARTIAL-DELIVERY-DESIGN.md](orders/PARTIAL-DELIVERY-DESIGN.md) — لا هذا ولا ذاك، بل عمودٌ مشتقّ ثالث (`undelivered_quantity`) على غرار `shortage_quantity`، والباقي يعود إلى المخزن إن كان سادة ويُسجَّل خسارة مسمّاة إن كان مطبوعاً. القرارات الثمانية كلها محسومة؛ الفرع `feat/partial-delivery`، وما بقي هو البناء.
 
 ---
 
