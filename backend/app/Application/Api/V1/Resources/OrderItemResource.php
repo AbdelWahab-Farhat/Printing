@@ -48,6 +48,32 @@ class OrderItemResource extends JsonResource
                 ? null
                 : (string) $this->shortage_quantity,
 
+            // What the customer left on the counter, in the same unit, and what became of it.
+            // Null on every line of every order delivered whole, which is nearly all of them —
+            // «nothing recorded» rather than «nothing left», the distinction `shortage_quantity`
+            // above already makes.
+            //
+            // The disposition travels as a value *and* a label because the screen prints one and
+            // branches on the other, exactly as `pricing_unit` beside it does. It is read off
+            // the line rather than re-derived from the product's heading: re-filing a product
+            // must not rewrite a delivery recorded last March — see the migration that added
+            // the pair.
+            'undelivered_quantity' => $this->undelivered_quantity === null
+                ? null
+                : (string) $this->undelivered_quantity,
+            'undelivered_disposition' => $this->undelivered_disposition?->value,
+            'undelivered_disposition_label' => $this->undelivered_disposition?->label(),
+
+            // What those goods cost us, for the lines where they were a loss rather than a
+            // return — see OrderItem::deliveryLoss(). Null for a restocked line, because bags
+            // back on the shelf cost the shop nothing and their material cost was restated down
+            // when they were credited back.
+            //
+            // Derived on the way out rather than stored, and from columns already on the row, so
+            // this costs no query. The authoritative record is still the `delivery_loss`
+            // production-cost entry the P&L sums; this is the cheap read for a screen.
+            'delivery_loss' => $this->deliveryLoss(),
+
             'pricing_unit' => $this->pricing_unit->value,
             'pricing_unit_label' => $this->pricing_unit->label(),
 
@@ -55,9 +81,11 @@ class OrderItemResource extends JsonResource
             // catalogue printed, where 1.1 has already stopped being it.
             'quantity' => (string) $this->quantity,
 
-            // What the line is actually priced on: everything ordered, less whatever is missing.
-            // Sent rather than left to the client to subtract, because the rule about which
-            // quantity an invoice is built on has one home — see OrderItem::billableQuantity().
+            // What the line is actually priced on: everything ordered, less whatever never
+            // arrived, less whatever the customer did not take. Sent rather than left to the
+            // client to subtract, because the rule about which quantity an invoice is built on
+            // has one home — see OrderItem::billableQuantity(), and note that it now has two
+            // subtrahends rather than one.
             'billable_quantity' => $this->billableQuantity(),
 
             'unit_price' => (string) $this->unit_price,

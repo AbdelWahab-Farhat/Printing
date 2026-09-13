@@ -25,6 +25,15 @@ use Illuminate\Database\Eloquent\Collection;
  * COGS distinguishes material from everything else it took to produce; the finer split between
  * machine time and general overhead lives on the `production_cost_entries` rows themselves for
  * whoever wants it, not on two more columns every reader would otherwise have to add together.
+ *
+ * **The losses fold into neither, and that is a rule rather than an omission.** `ScrapLoss` has
+ * always been left out; `DeliveryLoss` joins it, and the test is now
+ * {@see ManufacturingCostType::isLoss()} rather than one type named by hand — so a third kind of
+ * loss cannot be added and quietly land in COGS. What was lost is *reported* beside the
+ * statement, never subtracted inside it: the money is already in gross profit by construction,
+ * because revenue fell while the cost frozen at «جاهزة» did not, and summing it here as well
+ * would charge the same goods twice. See `ProfitAndLossSummaryQuery` and
+ * PARTIAL-DELIVERY-DESIGN.md §3, Decision 2.
  */
 final class RecalculateOrderItemManufacturingCost
 {

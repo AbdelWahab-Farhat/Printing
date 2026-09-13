@@ -13,7 +13,9 @@ use App\Domain\Inventory\Actions\SetStockItemUnit;
 use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Order\Actions\DeductOrderStock;
+use App\Domain\Order\Actions\RecordPartialDelivery;
 use App\Domain\Order\Actions\ResolveOrderFlow;
+use App\Domain\Order\Enums\UndeliveredDisposition;
 use App\Domain\Order\Support\Money;
 use App\Domain\Order\Support\TransitionFields;
 use Database\Factories\OrderItemFactory;
@@ -67,6 +69,11 @@ class OrderItem extends Model
             // What is missing from this line, in this line's own unit. Null until somebody has
             // counted — «nothing recorded» is not «nothing missing».
             'shortage_quantity' => 'decimal:3',
+            // What the customer left on the counter, in this line's own unit, and what became of
+            // it — see the migration that added the pair, and {@see RecordPartialDelivery}, their
+            // only writer. Both null or both set; never one of the two.
+            'undelivered_quantity' => 'decimal:3',
+            'undelivered_disposition' => UndeliveredDisposition::class,
             'unit_price' => 'decimal:3',
             // The copy of what this size cost us on the day — see the migration that added it.
             // Three places, like the price it sits beside, so the two round the same way.
@@ -99,28 +106,163 @@ class OrderItem extends Model
      */
     public function isPrinted(): bool
     {
-        return ($this->product?->productCategory?->productionMode() ?? ProductionMode::InHouse)
-            === ProductionMode::InHouse;
+        return $this->productionMode() === ProductionMode::InHouse;
     }
 
     /**
-     * What this line is actually charged for: everything ordered, less whatever is missing.
+     * How the goods on this line came to exist — the heading's answer, copied down to the line.
      *
-     * **The one place the shortage becomes money.** `quantity` is what the customer asked for
-     * and never moves — an order that overwrote it would lose the question a shortage is the
-     * answer to — so the number the invoice is built on is derived here instead, and every
+     * **Extracted from {@see isPrinted()} rather than added beside it**, because a second reader
+     * appeared that needs all three modes and not the boolean.
+     * {@see UndeliveredDisposition::forItem()} asks «can anybody else buy these?», and وسيط
+     * answers no while `isPrinted()` answers false — the one case where the two questions come
+     * apart. Left as one method, the disposition would have quietly sent a vendor's printed bags
+     * back to a shelf they were never on.
+     *
+     * The unknown case is `in_house`, the same answer `ResolveOrderFlow` gives and for the same
+     * reason: a product filed under no heading is production work until somebody says otherwise.
+     *
+     * Callers must eager-load `product.productCategory.parent`; strict mode turns a forgotten
+     * load into an exception rather than a query per line.
+     */
+    public function productionMode(): ProductionMode
+    {
+        return $this->product?->productCategory?->productionMode() ?? ProductionMode::InHouse;
+    }
+
+    /**
+     * What this line is actually charged for: everything ordered, less whatever never arrived,
+     * less whatever the customer did not take.
+     *
+     * **The one place a quantity becomes money.** `quantity` is what the customer asked for and
+     * never moves — an order that overwrote it would lose the question the other two are the
+     * answers to — so the number the invoice is built on is derived here instead, and every
      * caller that prices a line goes through it. That is also what makes the money reversible
-     * without a reversing entry: put `shortage_quantity` back and this returns the number it
-     * was, because it was never a written balance.
+     * without a reversing entry: put either subtrahend back to null and this returns the number
+     * it was, because it was never a written balance.
      *
-     * Floored at zero. The bound belongs to validation, but a negative line total is bad enough
-     * that the arithmetic refuses it too.
+     * **Two subtrahends, and they are different facts about different moments.**
+     * `shortage_quantity` is what we never had — recorded at «نواقص», while the lines are
+     * still editable and the goods still expected. `undelivered_quantity` is what was made,
+     * counted and then left on the counter — recorded at «تم الاستلام», long after the lines
+     * lock. They can both be non-null on one line and neither cancels the other out: an order
+     * short fifty of five hundred, whose customer then took only three hundred of the four
+     * hundred and fifty that existed, is charged for three hundred.
+     *
+     * Floored at zero. The bound belongs to validation — and `TransitionFields` caps the
+     * delivered box at this very figure so the two can never sum past the quantity — but a
+     * negative line total is bad enough that the arithmetic refuses it too.
      */
     public function billableQuantity(): string
     {
-        $billable = bcsub((string) $this->quantity, (string) ($this->shortage_quantity ?? '0'), 3);
+        $billable = bcsub(
+            bcsub((string) $this->quantity, (string) ($this->shortage_quantity ?? '0'), 3),
+            (string) ($this->undelivered_quantity ?? '0'),
+            3,
+        );
 
         return bccomp($billable, '0', 3) < 0 ? '0.000' : $billable;
+    }
+
+    /**
+     * What the goods this customer left behind cost us — null unless they were a loss.
+     *
+     * **A read for a screen, not the record itself.** The authoritative row is the
+     * `delivery_loss` {@see \App\Domain\Order\Models\ProductionCostEntry} that
+     * {@see RecordPartialDelivery} writes: reversible, audited, and what the profit-and-loss
+     * statement actually sums. This is the same figure derived from three columns already on the
+     * line, so an order screen can print it without a query — exactly the arrangement
+     * {@see unitMaterialCost()} already has.
+     *
+     * **Null for a restocked line, and that is the point of asking the disposition first.** Bags
+     * that went back on the shelf cost the shop nothing; their material cost was restated down
+     * when they were credited back, so a figure here would be a loss that both did not happen
+     * and has already been un-charged.
+     *
+     * Null too while `cogs` is unknown — a line that never reached «جاهزة» has no cost to take
+     * a share of, and a zero would read as «these goods were free».
+     *
+     * Two decimals, like the money columns it is derived from and unlike
+     * {@see unitMaterialCost()}, which is a rate.
+     */
+    /**
+     * How much of this line's draw the customer left behind, in the **shelf's** unit.
+     *
+     * **Two units, one of which has no conversion — so there are two answers.** A line sold and
+     * stocked the same way converts exactly: three hundred bags left of five hundred is three
+     * hundred bags off the shelf. A line sold by the piece and stocked by the kilo has no
+     * meaningful per-piece weight — {@see DeductOrderStock} refuses to multiply one out, because
+     * bags weighed together do not have one — so what comes back is a **pro-rata of the weight
+     * that actually left**, which is a suggestion for somebody standing at a scale rather than a
+     * figure to act on unread.
+     *
+     * That is exactly how {@see TransitionFields} uses it: as the pre-filled value of the box
+     * that asks the storekeeper what went back, on the lines where the two units differ. Where
+     * they agree nothing is asked and this is used as it stands.
+     *
+     * Zero when nothing was left behind, which keeps {@see deliveredStockQuantity()} total.
+     */
+    public function undeliveredStockQuantity(): string
+    {
+        $left = (string) ($this->undelivered_quantity ?? '0');
+
+        if (bccomp($left, '0', 3) <= 0) {
+            return '0.000';
+        }
+
+        if (! $this->isStockedInAnotherUnit()) {
+            return $left;
+        }
+
+        $ordered = (string) $this->quantity;
+
+        // A line of zero cannot have anything left over; the guard is here because the division
+        // is, not because the domain can reach it.
+        if (bccomp($ordered, '0', 3) <= 0) {
+            return '0.000';
+        }
+
+        return bcdiv(bcmul($this->producedQuantity(), $left, 8), $ordered, 3);
+    }
+
+    /**
+     * What should remain drawn from the shelf once the customer's leavings are put back — the
+     * figure {@see RedrawOrderLineStock} re-draws.
+     *
+     * The complement of {@see undeliveredStockQuantity()} against what actually left, so the two
+     * always sum to {@see producedQuantity()} and no part of a draw can go missing between them.
+     *
+     * Floored at zero, for the same reason {@see billableQuantity()} is: the bound belongs to
+     * validation, and a negative quantity handed to the warehouse is bad enough that the
+     * arithmetic refuses it too.
+     */
+    public function deliveredStockQuantity(): string
+    {
+        $kept = bcsub($this->producedQuantity(), $this->undeliveredStockQuantity(), 3);
+
+        return bccomp($kept, '0', 3) < 0 ? '0.000' : $kept;
+    }
+
+    public function deliveryLoss(): ?string
+    {
+        if ($this->undelivered_disposition !== UndeliveredDisposition::WrittenOff
+            || $this->cogs === null) {
+            return null;
+        }
+
+        $ordered = (string) $this->quantity;
+
+        // Unreachable through the domain — a line of zero cannot have something left over — but
+        // the division is here and a guard costs less than the day it is not.
+        if (bccomp($ordered, '0', 3) <= 0) {
+            return null;
+        }
+
+        return Money::round(bcdiv(
+            bcmul((string) $this->cogs, (string) ($this->undelivered_quantity ?? '0'), 8),
+            $ordered,
+            8,
+        ));
     }
 
     /**

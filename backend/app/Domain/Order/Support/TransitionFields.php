@@ -11,6 +11,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
+use App\Domain\Order\Enums\UndeliveredDisposition;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 
@@ -254,6 +255,22 @@ final class TransitionFields
             }
         }
 
+        // **«كم أخذ العميل فعلاً؟»** — asked at the one moment the answer exists, and of the one
+        // person who has it. A customer who takes three hundred of five hundred is an ordinary
+        // thing at a counter, and until this existed the order was marked delivered in full and
+        // the difference was argued about afterwards with nothing written down.
+        //
+        // **The boxes are withheld, never the move** — see
+        // {@see PermissionName::RecordPartialDelivery}. Somebody without that grant sees
+        // «تم الاستلام» exactly as they did before and hands the whole order over, which is the
+        // same shape {@see money()} below uses to keep a driver away from the till without
+        // keeping them away from the parcel. Null — a console command, an importer — is nobody,
+        // and gets no boxes.
+        if ($target === OrderStatus::Delivered
+            && $actor?->can(PermissionName::RecordPartialDelivery->value)) {
+            array_push($fields, ...self::partialDelivery($order));
+        }
+
         // What was just handed over, and how.
         //
         // **The money box, at the two moments money actually appears.** The customer collecting
@@ -381,6 +398,101 @@ final class TransitionFields
                 hint: 'مطلوب مع الحوالة، ويُقبل مع غيرها',
             ),
         ];
+    }
+
+    /**
+     * The per-line boxes that turn «تم الاستلام» into a record of what was actually handed over.
+     *
+     * **It asks what was *taken*, not what was left.** The person at the counter is holding the
+     * goods they just handed across and counting those; asking for the remainder would make them
+     * subtract, which is arithmetic done by the wrong party at the worst moment.
+     * {@see \App\Domain\Order\Actions\RecordPartialDelivery} turns the answer into the
+     * remainder on the way in.
+     *
+     * **Pre-filled with the whole billable quantity**, so the common case — they took all of it —
+     * is one tap and an untouched form behaves exactly as this move did before the boxes existed.
+     * Capped at the same figure: a customer cannot take more than the order is charging for, and
+     * being told so at the field beats being told so after the move is attempted.
+     *
+     * **A second box only where nobody could work the answer out.** A سادة line goes back on
+     * the shelf, and a line sold by the piece and stocked by the kilo has no per-piece weight to
+     * convert with — {@see \App\Domain\Order\Actions\DeductOrderStock} refuses to invent one —
+     * so the storekeeper is asked, in the shelf's unit, holding the pro-rata as a figure to
+     * correct on the scale. Every other line is silent: where the units agree the conversion is
+     * exact, and a printed or وسيط line puts nothing back at all.
+     *
+     * **And each line says what will become of its leftover**, in its hint, built from the same
+     * {@see UndeliveredDisposition::forItem()} the action disposes by — so the sentence on the
+     * screen cannot drift from what the button does. That is the rule {@see deductionPreview()}
+     * already keeps with `DeductOrderStock`.
+     *
+     * @return list<TransitionField>
+     */
+    private static function partialDelivery(Order $order): array
+    {
+        // `product.productCategory.parent` because the disposition walks it, and
+        // `variant.stockItem` because the shelf's unit is read off it. Eagerly, because strict
+        // mode turns a forgotten load into an exception rather than a query per line.
+        $order->loadMissing(['items.product.productCategory.parent', 'items.variant.stockItem']);
+
+        $fields = [];
+
+        foreach ($order->items as $item) {
+            $billable = $item->billableQuantity();
+
+            // A line already charging nothing — wholly short, or wholly left behind on an earlier
+            // pass — has nothing to hand over and nothing to ask about.
+            if (bccomp($billable, '0', 3) <= 0) {
+                continue;
+            }
+
+            $disposition = UndeliveredDisposition::forItem($item);
+
+            $fields[] = TransitionField::number(
+                key: self::deliveredQuantityKey($item),
+                label: "المُستلَم من {$item->variant_label} ({$item->pricing_unit->label()})",
+                // Never required: the pre-filled value *is* the answer for almost every order,
+                // and a form insisting on a number somebody has to retype to agree with is a
+                // form that teaches people to stop reading it.
+                required: false,
+                max: (float) $billable,
+                hint: sprintf(
+                    'من أصل %s — وما لا يأخذه يُخصم من الفاتورة و%s',
+                    $billable,
+                    $disposition->returnsToStock() ? 'يعود إلى المخزن' : 'يُسجّل خسارة',
+                ),
+                value: $billable,
+            );
+
+            if (! $disposition->returnsToStock() || ! $item->isStockedInAnotherUnit()) {
+                continue;
+            }
+
+            $fields[] = TransitionField::number(
+                key: self::returnedQuantityKey($item),
+                label: "المُعاد إلى المخزن من {$item->variant_label} ({$item->stockUnit()->label()})",
+                // Optional, and the reason is that it is meaningless on its own: a value here
+                // with a full delivery beside it describes goods nobody left behind. The action
+                // ignores it unless the line has a remainder.
+                required: false,
+                max: (float) $item->producedQuantity(),
+                hint: "خرج من المخزن {$item->producedQuantity()} {$item->stockUnit()->label()} — صحّح المُعاد إن وزنته",
+            );
+        }
+
+        return $fields;
+    }
+
+    /** What the «what did they take» box for one line is called in the payload. */
+    public static function deliveredQuantityKey(OrderItem $item): string
+    {
+        return "delivered_{$item->getKey()}";
+    }
+
+    /** What the «what went back on the shelf» box for one line is called in the payload. */
+    public static function returnedQuantityKey(OrderItem $item): string
+    {
+        return "returned_{$item->getKey()}";
     }
 
     /** What the per-line box for one line is called in the payload. */

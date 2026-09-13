@@ -72,6 +72,7 @@ final class ChangeOrderStatus
         // at the counter gets the same lock, the same ceiling and the same row as money taken on
         // the payments screen, because it *is* the same event.
         private readonly RecordOrderPayment $recordPayment,
+        private readonly RecordPartialDelivery $recordPartialDelivery,
     ) {}
 
     /**
@@ -120,7 +121,19 @@ final class ChangeOrderStatus
             // Docs/orders/ORDER-DELETE-AND-ARCHIVE.md and {@see OrderIsDeletedForStatusChange}.
             $this->guardTheOrderIsNotDeleted($order);
 
-            // **Money first, because the guard below reads what this writes.** «تم الاستلام» and
+            // **What the customer actually took, before the money that pays for it.** «تم
+            // الاستلام» can carry a per-line count of what was handed over — see
+            // {@see RecordPartialDelivery} — and recording it shrinks the invoice. The payment
+            // below is bounded by what is still owed, so the two are in this order or an
+            // accountant handing over three hundred of five hundred bags could pay against the
+            // five hundred and leave the order overpaid by the difference.
+            //
+            // **Deliberately before the status is written**, unlike the stock work further down.
+            // Nothing here reads the status; everything here is read by the guards and the
+            // ledger entry between this line and that one.
+            $this->recordPartialDeliveryForOrder($order, $target, $fields, $actor);
+
+            // **Money next, because the guard below reads what this writes.** «تم الاستلام» and
             // «تم التسوية» each carry a box for what was just handed over, and an accountant who
             // types the remainder into it is settling the order *with* that payment — so it has
             // to land before the settlement rule looks at the balance. Everything is one
@@ -379,6 +392,53 @@ final class ChangeOrderStatus
         // action is holding still carries the old `paid_amount` — and the settlement guard three
         // lines down reads exactly that. Refreshing here rather than there keeps the reason
         // beside the write that caused it.
+        $order->refresh();
+    }
+
+    /**
+     * Records what the customer left behind, on the one move that can know.
+     *
+     * **Only «تم الاستلام».** That is the moment the goods and the customer are in the same
+     * place; every other status is a statement about work, not about a handover.
+     *
+     * **An actor is required, and its absence is a refusal rather than a silent skip.** The loss
+     * entry names who recorded it and the stock return names who moved it — the same reason
+     * {@see deductStockForOrder()} refuses. A console command moving an order carries no fields,
+     * so it never reaches this.
+     *
+     * `$order->refresh()` afterwards for the reason the payment below refreshes: the action
+     * rewrote `items_total` and `grand_total` through its own query, and the instance in hand
+     * would otherwise still be holding the figures the customer did not agree to.
+     *
+     * @param  array<string, mixed>  $fields
+     *
+     * @throws FulfillmentRequiresAnActor
+     */
+    private function recordPartialDeliveryForOrder(Order $order, OrderStatus $target, array $fields, ?User $actor): void
+    {
+        if ($target !== OrderStatus::Delivered) {
+            return;
+        }
+
+        // Cheap and total: the action itself skips every line whose box came back holding the
+        // figure it was given, but building the collection to discover that on an ordinary
+        // delivery is work nobody asked for.
+        $answered = array_filter(
+            $fields,
+            fn (string $key): bool => str_starts_with($key, 'delivered_'),
+            ARRAY_FILTER_USE_KEY,
+        );
+
+        if ($answered === []) {
+            return;
+        }
+
+        if ($actor === null) {
+            throw FulfillmentRequiresAnActor::make();
+        }
+
+        ($this->recordPartialDelivery)($order->loadMissing('items'), $fields, (int) $actor->getKey());
+
         $order->refresh();
     }
 
