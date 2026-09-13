@@ -152,6 +152,15 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [PURCHASE-ORDER-RECEIPT-REVERSAL.md](purchase-orders/PURCHASE-ORDER-RECEIPT-REVERSAL.md) | Undoing a receipt entered in error — 24 hours, and only while nothing has been drawn on. **Implemented.** |
 | [PURCHASE-ORDER-RECEIPT-REVERSAL-FRONTEND-INTEGRATION.md](purchase-orders/PURCHASE-ORDER-RECEIPT-REVERSAL-FRONTEND-INTEGRATION.md) | The same, in the app. **Planned — not built.** |
 
+## [shortages/](shortages/)
+
+| Document | |
+|---|---|
+| [SHORTAGES-DESIGN.md](shortages/SHORTAGES-DESIGN.md) | النواقص — قسمٌ مستقل، والمطابقة مع `order_items.shortage_quantity`. **الخادم مُنفَّذ.** |
+| [SHORTAGES-FLOW.md](shortages/SHORTAGES-FLOW.md) | **ابدأ من هنا:** التدفق كاملاً بأمثلة، وكل سيناريو — الإنشاء والإسناد والتوفير والعكس ودورة حياة الطلبية. |
+| [SHORTAGES-SCENARIOS.md](shortages/SHORTAGES-SCENARIOS.md) | كل سيناريو مشروحاً بمثال: الطلب، الرد، وما يبقى في قاعدة البيانات — ٦٨ حالة. |
+| [SHORTAGES-FRONTEND-INTEGRATION.md](shortages/SHORTAGES-FRONTEND-INTEGRATION.md) | ربط التطبيق بالمنافذ التسعة. **لم يبدأ.** |
+
 ## [tools/](tools/)
 
 | Document | |

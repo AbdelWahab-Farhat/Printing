@@ -60,6 +60,12 @@ class RoleSeeder extends Seeder
             // goods back on the shelf and a restore takes them off again at today's cost. Who is
             // trusted with that is the business's answer to give from the roles screen, and the
             // administrator satisfies all three by rule in the meantime.
+            //
+            // **`shortages.*` is absent for a narrower reason.** Reading and chasing shortages is
+            // plausibly this role's work — but two of the five spend money, and which employee is
+            // trusted to hand over cash for a sack is not a question a seeder should answer on the
+            // business's behalf. The pair that are safe are no use without the three that are not,
+            // so the whole group waits for the roles screen.
         ]);
 
         // «محاسب» is left deliberately empty — it is the worked example of a role waiting for

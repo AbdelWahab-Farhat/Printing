@@ -22,9 +22,11 @@ use App\Domain\Order\Actions\UpdateOrder;
 use App\Domain\Order\Actions\WriteOffOrderBalance;
 use App\Domain\Order\DTOs\ManufacturingCostRateData;
 use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\DTOs\OrderLineShortage;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\ShortageRevision;
 use App\Domain\Order\Exceptions\ReadyMessageNeedsAReadyOrder;
 use App\Domain\Order\Exceptions\ScrapRequiresAnActor;
 use App\Domain\Order\Models\ManufacturingCostRate;
@@ -40,6 +42,7 @@ use App\Domain\Order\Queries\OrderFilters;
 use App\Domain\Order\Queries\OrderListQuery;
 use App\Domain\Order\Queries\OrderPaymentStatusCountsQuery;
 use App\Domain\Order\Queries\OrderStatusCountsQuery;
+use App\Domain\Order\Queries\OrderStockShortfallQuery;
 use App\Domain\Order\Queries\OrderTotalsQuery;
 use App\Domain\Order\Queries\ProfitAttributionQuery;
 use App\Domain\Order\Queries\StockPurchaseAttributionQuery;
@@ -78,6 +81,7 @@ class OrderService
         private readonly ProfitAttributionQuery $profitAttribution,
         private readonly StockPurchaseAttributionQuery $stockPurchaseAttribution,
         private readonly OrderCountQuery $count,
+        private readonly OrderStockShortfallQuery $stockShortfall,
         private readonly OrderStatusCountsQuery $statusCounts,
         private readonly OrderPaymentStatusCountsQuery $paymentStatusCounts,
         private readonly OrderTotalsQuery $totals,
@@ -179,10 +183,16 @@ class OrderService
      * Correct what is missing from an order, and the invoice with it.
      *
      * @param  array<int|string, mixed>  $shortages  line id → what is missing from it.
+     * @param  ShortageRevision  $reason  defaults to a correction, which is what the order screen
+     *                                    is: the two status paths name their own — see the enum.
      */
-    public function setShortages(Order $order, array $shortages): Order
-    {
-        return ($this->setShortages)($order, $shortages);
+    public function setShortages(
+        Order $order,
+        array $shortages,
+        ?User $actor = null,
+        ShortageRevision $reason = ShortageRevision::Corrected,
+    ): Order {
+        return ($this->setShortages)($order, $shortages, $actor, $reason);
     }
 
     /**
@@ -390,6 +400,69 @@ class OrderService
             ->pluck('id')
             ->map(fn ($id): int => (int) $id)
             ->all();
+    }
+
+    /**
+     * Every line of this order with what is still missing from it — the door Shortages reads
+     * through.
+     *
+     * **`withTrashed()` on the order, and deliberately.** The row that context has most to say
+     * about is often one a colleague archived a moment ago: a delete has to close the shortages
+     * it left behind, and a scoped read would answer "no such order" in exactly the moment the
+     * honest answer is "here it is, and it has gone". The same reason `DeleteOrder` locks
+     * `withTrashed()`. Whether a *reader* may then see any of it is decided far from here, by
+     * grants this method cannot know.
+     *
+     * **Lines that are not short are returned too.** «لا ينقص من هذا السطر شيء» is an answer the
+     * reconciliation needs — it is how a shortage that has just been filled is told apart from a
+     * line nobody mentioned — and the same reason `SetOrderShortages` writes every line rather
+     * than merging a partial map.
+     *
+     * Empty for an order that does not exist, rather than throwing: a listener firing on a
+     * deleted-then-purged row has nothing to do, and that is not a failure.
+     *
+     * @return list<OrderLineShortage>
+     */
+    public function shortageLinesFor(int $orderId): array
+    {
+        $order = Order::withTrashed()->whereKey($orderId)->first();
+
+        if ($order === null) {
+            return [];
+        }
+
+        return $order->items()
+            ->orderBy('id')
+            ->get()
+            ->map(fn (OrderItem $item): OrderLineShortage => new OrderLineShortage(
+                lineId: (int) $item->getKey(),
+                orderId: $orderId,
+                customerId: $order->customer_id === null ? null : (int) $order->customer_id,
+                productId: (int) $item->product_id,
+                productVariantId: (int) $item->product_variant_id,
+                // The two halves of the snapshot joined the way every screen prints them, so the
+                // shortage's own name needs no knowledge of how an order line is spelled.
+                name: trim($item->product_name.' — '.$item->variant_label),
+                unit: $item->pricing_unit->value,
+                shortageQuantity: $item->shortage_quantity === null
+                    ? null
+                    : (string) $item->shortage_quantity,
+            ))
+            ->all();
+    }
+
+    /**
+     * What this order is short of, line by line, as the shelves stand right now.
+     *
+     * A read that decides nothing: the deduction still refuses what it cannot cover, exactly as
+     * before. This is what lets a screen fill in the «نواقص» form instead of leaving a foreman to
+     * work four numbers out of one refusal. See {@see OrderStockShortfallQuery}.
+     *
+     * @return array{warehouse_id: int|null, available_scope: string, lines: list<array<string, mixed>>, is_short: bool}
+     */
+    public function stockShortfallFor(Order $order, ?int $warehouseId = null): array
+    {
+        return ($this->stockShortfall)($order, $warehouseId);
     }
 
     public function profitAttributionFor(int $orderId): ?array

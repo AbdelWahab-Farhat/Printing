@@ -19,14 +19,20 @@ use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
 use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
 use App\Domain\Notification\Support\FcmClient;
 use App\Domain\Notification\Support\GoogleServiceAccountToken;
+use App\Domain\Notification\Listeners\NotifyWhenShortageIsAssigned;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderProfitUnwound;
 use App\Domain\Order\Events\OrderScrapDrawn;
 use App\Domain\Order\Events\OrderStatusChanged;
+use App\Domain\Order\Events\OrderShortagesRecorded;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Events\OrderStockRedrawn;
 use App\Domain\Order\Queries\OrderCustomerActivity;
+use App\Domain\Shortage\Events\ShortageAssigned;
+use App\Domain\Shortage\Listeners\CloseShortagesWhenOrderEnds;
+use App\Domain\Shortage\Listeners\ReopenShortagesWhenOrderIsRestored;
+use App\Domain\Shortage\Listeners\SyncWhenOrderShortagesChange;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -151,6 +157,41 @@ class AppServiceProvider extends ServiceProvider
         // of what is worth a bell, so a second listener can want a different subset without
         // touching Orders. Same queued, after-commit bargain as the line above.
         Event::listen(OrderStatusChanged::class, NotifyWhenOrderStatusChanges::class);
+
+        /*
+         * **Orders announces, the shortages section mirrors** — the same one-way dependency once
+         * more, and the reason `Domain/Order` gained exactly one line for this whole feature:
+         * `SetOrderShortages` is the only writer of `shortage_quantity`, so its single event
+         * covers declaring a shortage, receiving against it, and correcting it from the order
+         * screen alike.
+         *
+         * Queued and after commit, the bargain the two lines above make rather than the one the
+         * money listeners make. A mirror of a transaction that then rolled back would put a
+         * shortage on the board that nobody is short of — and because the reconciliation is
+         * declarative, running it a moment late costs nothing and running it twice changes
+         * nothing. See Docs/shortages/SHORTAGES-DESIGN.md §٣.
+         */
+        Event::listen(OrderShortagesRecorded::class, SyncWhenOrderShortagesChange::class);
+
+        /*
+         * **An order that ends stops being chased**, whether it ended by cancellation or by
+         * delete — a distinction that matters a great deal to the order and not at all to a sack
+         * nobody is going to buy now. Two events into one listener, because the reaction is one
+         * reaction.
+         *
+         * Neither reverses a purchase already made against a shortage: the cash left the till and
+         * the goods exist. §٧٫٣ of the design document, and `CloseShortagesForOrder`.
+         */
+        Event::listen(OrderStatusChanged::class, [CloseShortagesWhenOrderEnds::class, 'handleCancellation']);
+        Event::listen(OrderProfitUnwound::class, [CloseShortagesWhenOrderEnds::class, 'handleDeletion']);
+
+        // And the restore puts them back, by re-running the same reconciliation over lines that
+        // still carry the quantities they were archived with.
+        Event::listen(OrderStockRedrawn::class, ReopenShortagesWhenOrderIsRestored::class);
+
+        // An audience of one, unlike every other notification here — the work now belongs to a
+        // named person. See ShortageAssignedToYou.
+        Event::listen(ShortageAssigned::class, NotifyWhenShortageIsAssigned::class);
 
         // Turns three silent classes of bug into loud exceptions everywhere except
         // production: lazy-loaded relations (N+1), reading an attribute that was never

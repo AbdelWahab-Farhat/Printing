@@ -40,6 +40,7 @@ use App\Domain\Inventory\Queries\FindStockItem;
 use App\Domain\Inventory\Queries\FindStockItemGroup;
 use App\Domain\Inventory\Queries\MovementFilters;
 use App\Domain\Inventory\Queries\MovementListQuery;
+use App\Domain\Inventory\Queries\OnHandBalancesQuery;
 use App\Domain\Inventory\Queries\StockBatchFilters;
 use App\Domain\Inventory\Queries\StockBatchListQuery;
 use App\Domain\Inventory\Queries\StockFilters;
@@ -95,6 +96,7 @@ class InventoryService
         private readonly StockListQuery $stockListQuery,
         private readonly StockSummaryQuery $stockSummaryQuery,
         private readonly WarehouseBalancesQuery $warehouseBalancesQuery,
+        private readonly OnHandBalancesQuery $onHandBalancesQuery,
         private readonly MovementListQuery $movementListQuery,
         private readonly StockBatchListQuery $stockBatchListQuery,
         private readonly RevalueStockBatch $revalueStockBatch,
@@ -307,6 +309,21 @@ class InventoryService
     public function balancesFor(int $warehouseId, array $stockItemIds): array
     {
         return ($this->warehouseBalancesQuery)($warehouseId, $stockItemIds);
+    }
+
+    /**
+     * The same question asked of the whole business rather than one site.
+     *
+     * For the screen that has to report what is on hand before a warehouse has been chosen — see
+     * {@see OnHandBalancesQuery}, which also explains why a sum across sites is the weaker fact
+     * and has to be labelled as one.
+     *
+     * @param  list<int>  $stockItemIds
+     * @return array<int, string>
+     */
+    public function onHandFor(array $stockItemIds): array
+    {
+        return ($this->onHandBalancesQuery)($stockItemIds);
     }
 
     /**

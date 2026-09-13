@@ -48,6 +48,8 @@ use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderAdditionalCost;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use App\Domain\Settings\Models\CompanySetting;
+use App\Domain\Shortage\Models\Shortage;
+use App\Domain\Shortage\Models\ShortageSupply;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\Models\StockArrivalItem;
 use App\Domain\Vendor\Models\Vendor;
@@ -140,6 +142,10 @@ enum AuditSubject: string
     case InvestorDealExpense = 'investor_deal_expense';
     case InvestorWalletEntry = 'investor_wallet_entry';
 
+    // Shortages
+    case Shortage = 'shortage';
+    case ShortageSupply = 'shortage_supply';
+
     // Company-wide settings
     case CompanySetting = 'company_setting';
 
@@ -204,6 +210,8 @@ enum AuditSubject: string
             self::InvestorDealSupply => InvestorDealSupply::class,
             self::InvestorDealExpense => InvestorDealExpense::class,
             self::InvestorWalletEntry => InvestorWalletEntry::class,
+            self::Shortage => Shortage::class,
+            self::ShortageSupply => ShortageSupply::class,
             self::CompanySetting => CompanySetting::class,
             self::Notification => Notification::class,
         };
@@ -260,6 +268,8 @@ enum AuditSubject: string
             self::InvestorDealSupply => 'إقرار تمويل',
             self::InvestorDealExpense => 'مصروف صفقة',
             self::InvestorWalletEntry => 'حركة محفظة مستثمر',
+            self::Shortage => 'نقص',
+            self::ShortageSupply => 'عملية توفير',
             self::CompanySetting => 'إعدادات الشركة',
             self::Notification => 'إشعار عام',
         };

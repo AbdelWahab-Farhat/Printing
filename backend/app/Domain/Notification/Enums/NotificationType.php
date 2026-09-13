@@ -9,6 +9,7 @@ use App\Domain\Notification\Contracts\NotificationDefinition;
 use App\Domain\Notification\Definitions\ManualAnnouncement;
 use App\Domain\Notification\Definitions\OrderReachedShortage;
 use App\Domain\Notification\Definitions\OrderReachedStatus;
+use App\Domain\Notification\Definitions\ShortageAssignedToYou;
 
 /**
  * Every kind of notification the system can send — the catalogue.
@@ -36,6 +37,14 @@ enum NotificationType: string
      */
     case OrderStatusChanged = 'order.status';
 
+    /**
+     * A shortage is now somebody's to chase.
+     *
+     * The one type whose audience is a single named person rather than everybody holding a
+     * permission — see {@see ShortageAssignedToYou}.
+     */
+    case ShortageAssigned = 'shortage.assigned';
+
     /** Somebody wrote a message and sent it to staff. The only one a human composes. */
     case Announcement = 'announcement.manual';
 
@@ -53,6 +62,7 @@ enum NotificationType: string
         return match ($this) {
             self::OrderShortage => OrderReachedShortage::class,
             self::OrderStatusChanged => OrderReachedStatus::class,
+            self::ShortageAssigned => ShortageAssignedToYou::class,
             self::Announcement => ManualAnnouncement::class,
         };
     }
@@ -69,6 +79,10 @@ enum NotificationType: string
         return match ($this) {
             self::OrderShortage => 'warning',
             self::OrderStatusChanged => 'order',
+            // Not 'warning': a shortage landing in somebody's queue is work arriving, not an
+            // alarm — and the app falls back to a plain bell on a key it does not know, so a
+            // build compiled last month degrades gracefully rather than drawing the wrong thing.
+            self::ShortageAssigned => 'task',
             self::Announcement => 'announcement',
         };
     }
@@ -81,6 +95,7 @@ enum NotificationType: string
         return match ($this) {
             self::OrderShortage => 'نواقص طلبية',
             self::OrderStatusChanged => 'حالة طلبية',
+            self::ShortageAssigned => 'نقص مُسنَد',
             self::Announcement => 'إشعار عام',
         };
     }

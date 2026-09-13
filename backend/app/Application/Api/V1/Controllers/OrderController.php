@@ -426,11 +426,37 @@ class OrderController extends Controller
      * counted. If the invoice drops below what has already been collected, the order simply
      * reads as overpaid and the difference is refunded through the ledger.
      */
+    /**
+     * What this order is short of
+     *
+     * Line by line, against a warehouse's shelves — or against every warehouse at once when none
+     * is named, which is the only figure available before an order has chosen one.
+     *
+     * **A read that decides nothing.** Moving an order still fails on its own terms if the stock
+     * is not there; this exists so a screen can fill in the «نواقص» form with real numbers
+     * instead of leaving somebody to work four of them out of one refusal. `suggested_shortage`
+     * on each line is what to put in that line's box.
+     *
+     * `available_scope` says which question was answered — `warehouse` or `all_warehouses`. A sum
+     * across sites is the weaker fact and must be labelled as one: three hundred spread over
+     * three warehouses is not three hundred anybody can pick from one shelf.
+     */
+    public function stockShortfall(Request $request, Order $order): JsonResponse
+    {
+        $warehouseId = $request->integer('warehouse_id');
+
+        return $this->success($this->orders->stockShortfallFor(
+            $order,
+            $warehouseId > 0 ? $warehouseId : null,
+        ));
+    }
+
     public function setShortages(SetOrderShortagesRequest $request, Order $order): JsonResponse
     {
         $updated = $this->orders->setShortages(
             $order,
             (array) $request->validated('shortages', []),
+            $request->user(),
         );
 
         return $this->success(

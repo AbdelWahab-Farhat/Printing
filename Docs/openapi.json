@@ -110,6 +110,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -1050,6 +1052,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -2410,6 +2414,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -3198,6 +3204,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -3719,6 +3727,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -4991,6 +5001,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -5813,6 +5825,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -6685,6 +6699,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -8754,6 +8770,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -10219,6 +10237,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -11067,6 +11087,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -12301,6 +12323,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -12952,6 +12976,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -13513,6 +13539,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -14274,6 +14302,1008 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
+                                "company_setting",
+                                "notification",
+                                null
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Inclusive on both ends: `to` counts the whole of its day.",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Not validated, clamped \u2014 see perPage(). Declared so it appears in the spec.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "boolean"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "event_counts": {
+                                                            "type": "object",
+                                                            "description": "What tapping each filter chip would give. In `meta` and not derived from\n`data`, because a client counting the rows in front of it is counting one\npage \u2014 and the count under an \u00ab\u0625\u0646\u0634\u0627\u0621\u00bb chip has to mean the whole trail.",
+                                                            "additionalProperties": {
+                                                                "type": "integer"
+                                                            }
+                                                        },
+                                                        "current_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "per_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "last_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "total": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "event_counts",
+                                                        "current_page",
+                                                        "per_page",
+                                                        "last_page",
+                                                        "total"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "data",
+                                                "meta"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "boolean"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                                },
+                                                "data": {
+                                                    "$ref": "#/components/schemas/ActivityLogCollection"
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "data"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/shortages/summary": {
+            "get": {
+                "operationId": "shortages.summary",
+                "description": "How many stand in each status, under the same filters the list takes. What the chip row\n\u00ab\u062c\u062f\u064a\u062f \u0661\u0662 | \u062c\u0627\u0631\u064a \u0627\u0644\u0628\u062d\u062b \u0667 | \u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631 \u0663 | \u0645\u0643\u062a\u0645\u0644 \u0662\u0665\u00bb is drawn from \u2014 one call rather than one\nper status.\n\nEvery status is present, zeros included: a missing key would leave the caller choosing\nbetween a blank and a zero, and the two mean different things.\n\n`status` is accepted and ignored, so a screen may hand its whole filter over without\nstripping the one field that would make every chip but one read zero.\n\n**Wrapped in `counts` with a `total` beside it**, the shape `/orders/summary` and\n`/purchase-orders/summary` already answer in. A flat map would have been one key shorter\nand a third thing for the app to special-case \u2014 and the total is read rather than summed\non the client, so a status added after a build shipped is still inside the number.",
+                "summary": "Shortages by status",
+                "tags": [
+                    "Shortage"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "counts": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "total": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "integer"
+                                                        },
+                                                        {
+                                                            "type": "number"
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "counts",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/shortages": {
+            "get": {
+                "operationId": "shortages.index",
+                "description": "Newest first. Filter with `status` (repeatable), `assigned_to`, `product_id`, `source`,\n`order_id` and `customer_id`, and narrow with `search` \u2014 the shortage's own name, its code,\nor the order's code.\n\n`assigned_to=me` is the employee's own queue and `assigned_to=none` is what nobody has\npicked up yet. Both are words rather than ids because neither is one: \u00abme\u00bb is only known\nhere, and \u00abnone\u00bb is a null the query string cannot otherwise carry.",
+                "summary": "List shortages",
+                "tags": [
+                    "Shortage"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "boolean"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "": {
+                                                            "type": "string"
+                                                        },
+                                                        "current_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "per_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "last_page": {
+                                                            "type": "string"
+                                                        },
+                                                        "total": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        null,
+                                                        "current_page",
+                                                        "per_page",
+                                                        "last_page",
+                                                        "total"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "data",
+                                                "meta"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "boolean"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                                },
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/ShortageResource"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "data"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "shortages.store",
+                "description": "Manual entry. The product link is optional \u2014 what gets written down by hand is often\nsomething the catalogue has never heard of \u2014 but the name and the quantity are not.\n\nShortages that come from an order are not created here: they are generated when an order\nenters \u00ab\u0646\u0648\u0627\u0642\u0635\u00bb, against the line that is short.",
+                "summary": "Create a shortage",
+                "tags": [
+                    "Shortage"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreShortageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u0646\u0642\u0635"
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/ShortageResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "order",
+                                                        "customer",
+                                                        "product",
+                                                        "variant",
+                                                        "assignee",
+                                                        "creator",
+                                                        "supplies"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/shortages/{shortage}": {
+            "get": {
+                "operationId": "shortages.show",
+                "description": "With its whole supply ledger \u2014 \u00a7\u0669's table, reversals included, so a total that looks wrong\ncan be read rather than guessed at.",
+                "summary": "Show a shortage",
+                "tags": [
+                    "Shortage"
+                ],
+                "parameters": [
+                    {
+                        "name": "shortage",
+                        "in": "path",
+                        "required": true,
+                        "description": "The shortage ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u0628\u0646\u062c\u0627\u062d"
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/ShortageResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "order",
+                                                        "customer",
+                                                        "product",
+                                                        "variant",
+                                                        "assignee",
+                                                        "creator",
+                                                        "supplies"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "shortages.update",
+                "description": "Manual shortages only. What an order-born one is short *of* comes from its line and is\ncorrected on the order screen, where the invoice changes with it \u2014 422 here.",
+                "summary": "Update a shortage",
+                "tags": [
+                    "Shortage"
+                ],
+                "parameters": [
+                    {
+                        "name": "shortage",
+                        "in": "path",
+                        "required": true,
+                        "description": "The shortage ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateShortageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0627\u0644\u0646\u0642\u0635"
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/ShortageResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "order",
+                                                        "customer",
+                                                        "product",
+                                                        "variant",
+                                                        "assignee",
+                                                        "creator",
+                                                        "supplies"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/shortages/{shortage}/status": {
+            "patch": {
+                "operationId": "shortages.status",
+                "description": "`searching` and `unavailable` are the only targets a person may ask for. \u00ab\u0645\u0643\u062a\u0645\u0644\u00bb is written\nby the arithmetic when the remaining quantity reaches zero, and \u00ab\u062c\u062f\u064a\u062f\u00bb is where a shortage\nstarts and nothing leads back to it.\n\n\u00ab\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631\u00bb is not the end: recording a supply against one puts it back in the chase.",
+                "summary": "Change a shortage's status",
+                "tags": [
+                    "Shortage"
+                ],
+                "parameters": [
+                    {
+                        "name": "shortage",
+                        "in": "path",
+                        "required": true,
+                        "description": "The shortage ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeShortageStatusRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u062d\u0627\u0644\u0629 \u0627\u0644\u0646\u0642\u0635"
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/ShortageResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "order",
+                                                        "customer",
+                                                        "product",
+                                                        "variant",
+                                                        "assignee",
+                                                        "creator",
+                                                        "supplies"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/shortages/{shortage}/assignee": {
+            "patch": {
+                "operationId": "shortages.assignee",
+                "description": "Send `assigned_to_user_id: null` to take it out of everybody's queue \u2014 the field is\nrequired to be present either way, so an omission is a mistake rather than an instruction.\n\nA shortage still reading \u00ab\u062c\u062f\u064a\u062f\u00bb moves to \u00ab\u062c\u0627\u0631\u064a \u0627\u0644\u0628\u062d\u062b\u00bb on the way: \u00ab\u0644\u0645 \u062a\u0628\u062f\u0623 \u0645\u062a\u0627\u0628\u0639\u062a\u0647 \u0628\u0639\u062f\u00bb\nstops being true the moment it lands in somebody's queue.",
+                "summary": "Assign a shortage",
+                "tags": [
+                    "Shortage"
+                ],
+                "parameters": [
+                    {
+                        "name": "shortage",
+                        "in": "path",
+                        "required": true,
+                        "description": "The shortage ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AssignShortageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "enum": [
+                                                "\u062a\u0645 \u0625\u0644\u063a\u0627\u0621 \u0625\u0633\u0646\u0627\u062f \u0627\u0644\u0646\u0642\u0635",
+                                                "\u062a\u0645 \u0625\u0633\u0646\u0627\u062f \u0627\u0644\u0646\u0642\u0635"
+                                            ]
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/ShortageResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "order",
+                                                        "customer",
+                                                        "product",
+                                                        "variant",
+                                                        "assignee",
+                                                        "creator",
+                                                        "supplies"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/shortages/{shortage}/supplies": {
+            "post": {
+                "operationId": "shortages.supplies.store",
+                "description": "\u00ab\u062a\u0633\u062c\u064a\u0644 \u062a\u0648\u0641\u064a\u0631\u00bb \u2014 the quantity that came back, what was paid for it, and how. All three are\nrequired, and the quantity may not exceed what is left.\n\nPartial is ordinary: twenty kilos of a thirty-kilo shortage leaves it open with ten\nremaining. The shortage closes itself, and only closes itself, when the remainder reaches\nzero.\n\nOn a shortage that came from an order, this also puts the goods back on the customer's\ninvoice \u2014 the quantity is subtracted from the line's shortage, which is what\n`OrderItem::billableQuantity()` reads. An order whose lines have already closed, or that\nhas been archived, keeps its invoice as it stands; the purchase is recorded either way.",
+                "summary": "Record a supply",
+                "tags": [
+                    "Shortage"
+                ],
+                "parameters": [
+                    {
+                        "name": "shortage",
+                        "in": "path",
+                        "required": true,
+                        "description": "The shortage ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecordShortageSupplyRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u062a\u0633\u062c\u064a\u0644 \u0639\u0645\u0644\u064a\u0629 \u0627\u0644\u062a\u0648\u0641\u064a\u0631"
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/ShortageSupplyResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "recorder"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/shortages/{shortage}/supplies/{supply}/reversal": {
+            "post": {
+                "operationId": "shortages.supplies.reversal",
+                "description": "For an entry made in error. Nothing is edited and nothing is removed: a second row is\nwritten that names the first and carries the same figures, and the totals are restated from\nwhat is left standing \u2014 which reopens a shortage this un-completes.\n\nThe reason is required. \u00ab\u0639\u064f\u0643\u0633\u062a\u00bb with no sentence beside it answers nothing six months later.\n\nThis does **not** take the goods back off the customer's invoice: a reversal here means the\nentry was wrong, not that sacks were returned. An order whose goods really did not arrive\nis corrected on the order screen.",
+                "summary": "Reverse a supply",
+                "tags": [
+                    "Shortage"
+                ],
+                "parameters": [
+                    {
+                        "name": "shortage",
+                        "in": "path",
+                        "required": true,
+                        "description": "The shortage ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "supply",
+                        "in": "path",
+                        "required": true,
+                        "description": "The supply ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReverseShortageSupplyRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "\u062a\u0645 \u0639\u0643\u0633 \u0639\u0645\u0644\u064a\u0629 \u0627\u0644\u062a\u0648\u0641\u064a\u0631"
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/ShortageSupplyResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "recorder"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/shortages/{shortage}/logs": {
+            "get": {
+                "operationId": "shortages.logs",
+                "description": "Every change made to it and who made it \u2014 including the ones the reconciliation made on its\nown when the order behind it moved.",
+                "summary": "A shortage's history",
+                "tags": [
+                    "Shortage"
+                ],
+                "parameters": [
+                    {
+                        "name": "shortage",
+                        "in": "path",
+                        "required": true,
+                        "description": "The shortage ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "event",
+                        "in": "query",
+                        "description": "Only one of created \u00b7 updated \u00b7 deleted \u00b7 restored.",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "created",
+                                "updated",
+                                "deleted",
+                                "restored",
+                                null
+                            ]
+                        }
+                    },
+                    {
+                        "name": "causer_id",
+                        "in": "query",
+                        "description": "Only what this user did. Not `exists:users,id` \u2014 a deleted user's entries are\nexactly what someone auditing them is looking for.",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "subject_type",
+                        "in": "query",
+                        "description": "Only this kind of record. Ignored by the per-record endpoints, which already know.",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "user",
+                                "role",
+                                "customer",
+                                "customer_shop",
+                                "customer_design",
+                                "comment",
+                                "business_field",
+                                "product",
+                                "product_category",
+                                "product_variant",
+                                "product_price_tier",
+                                "product_image",
+                                "order",
+                                "order_item",
+                                "order_design",
+                                "order_status_transition",
+                                "order_payment",
+                                "manufacturing_cost_rate",
+                                "production_cost_entry",
+                                "city",
+                                "region",
+                                "shipping_company",
+                                "nawris_parcel",
+                                "nawris_parcel_order",
+                                "stock_item_group",
+                                "stock_item",
+                                "warehouse",
+                                "warehouse_stock",
+                                "stock_movement",
+                                "stock_batch",
+                                "stock_batch_consumption",
+                                "stock_batch_revaluation",
+                                "vendor",
+                                "stock_arrival",
+                                "stock_arrival_item",
+                                "purchase_order",
+                                "purchase_order_item",
+                                "purchase_order_additional_cost",
+                                "investor",
+                                "investor_deal",
+                                "investor_deal_item",
+                                "investor_deal_share",
+                                "investor_deal_supply",
+                                "investor_deal_expense",
+                                "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -14773,6 +15803,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -15712,6 +16744,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -16310,6 +17344,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -17619,6 +18655,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -18223,6 +19261,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -18744,6 +19784,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -19331,6 +20373,8 @@
                                 "investor_deal_supply",
                                 "investor_deal_expense",
                                 "investor_wallet_entry",
+                                "shortage",
+                                "shortage_supply",
                                 "company_setting",
                                 "notification",
                                 null
@@ -19957,6 +21001,22 @@
                 ],
                 "title": "AdjustmentDirection"
             },
+            "AssignShortageRequest": {
+                "type": "object",
+                "description": "Handing a shortage to somebody, or taking it out of everybody's queue.\n\n**`present` rather than `required`**, which is the whole of the rule: unassigning sends\n`assigned_to_user_id: null` and must be told apart from a payload that forgot the field. The\nfirst is a decision and the second is a bug, and `required` would refuse them both alike.",
+                "properties": {
+                    "assigned_to_user_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "assigned_to_user_id"
+                ],
+                "title": "AssignShortageRequest"
+            },
             "BusinessFieldResource": {
                 "type": "object",
                 "properties": {
@@ -20043,6 +21103,23 @@
                     "status"
                 ],
                 "title": "ChangePurchaseOrderStatusRequest"
+            },
+            "ChangeShortageStatusRequest": {
+                "type": "object",
+                "description": "Moving a shortage along the chase by hand.\n\n**\u00ab\u0645\u0643\u062a\u0645\u0644\u00bb is not in the list, and \u00ab\u062c\u062f\u064a\u062f\u00bb is not either.** The first is written by\n{@see RecalculateShortageTotals} when the last of the quantity comes back and is never chosen \u2014\na clerk who could pick it could close a shortage with twenty kilos still missing. The second is\nwhere every shortage starts and nothing leads back to it: \u00ab\u0644\u0645 \u062a\u0628\u062f\u0623 \u0645\u062a\u0627\u0628\u0639\u062a\u0647 \u0628\u0639\u062f\u00bb stops being true\nthe moment somebody starts.\n\nWhether the *move* is legal from where the shortage stands is a domain question, answered by\n`ShortageStatus::canMoveTo()`. This only checks that the word means something a person may ask\nfor.",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "searching",
+                            "unavailable"
+                        ]
+                    }
+                },
+                "required": [
+                    "status"
+                ],
+                "title": "ChangeShortageStatusRequest"
             },
             "CityResource": {
                 "type": "object",
@@ -21595,6 +22672,7 @@
                         "enum": [
                             "\u0646\u0648\u0627\u0642\u0635 \u0637\u0644\u0628\u064a\u0629",
                             "\u062d\u0627\u0644\u0629 \u0637\u0644\u0628\u064a\u0629",
+                            "\u0646\u0642\u0635 \u0645\u064f\u0633\u0646\u064e\u062f",
                             "\u0625\u0634\u0639\u0627\u0631 \u0639\u0627\u0645"
                         ]
                     },
@@ -21610,6 +22688,7 @@
                         "enum": [
                             "warning",
                             "order",
+                            "task",
                             "announcement"
                         ]
                     },
@@ -24221,6 +25300,53 @@
                 ],
                 "title": "RecordScrapLossRequest"
             },
+            "RecordShortageSupplyRequest": {
+                "type": "object",
+                "description": "Recording that some of a shortage came back.\n\n**The three required fields are the three the brief names** \u2014 \u00ab\u0627\u0644\u0643\u0645\u064a\u0629 + \u0627\u0644\u0642\u064a\u0645\u0629 + \u0637\u0631\u064a\u0642\u0629 \u0627\u0644\u062f\u0641\u0639\u00bb \u2014\nand all three are required here, in the DTO's types, and a third time as a CHECK on the table.\nThree layers because each catches a different caller: the form produces the readable 422, the\ntypes stop a console command, and the constraint is the actual guarantee. RULES \u00a78.\n\n**The ceiling is not checked here.** Whether the quantity fits in what is left is a question\nabout the shortage's own ledger under a lock, and asking it in validation would be a read\noutside the transaction that the write then races \u2014 see {@see SupplyExceedsRemaining} and\n`RecordShortageSupply`, which takes the lock first and answers it there.\n\nThe payment method is chosen from what the system already knows, never typed: `PaymentMethod`\nis the same vocabulary a customer's payment uses.",
+                "properties": {
+                    "quantity": {
+                        "type": "number"
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "method": {
+                        "type": "string",
+                        "enum": [
+                            "cash",
+                            "bank_transfer",
+                            "bank_card",
+                            "libyana"
+                        ]
+                    },
+                    "reference": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "occurred_on": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Not in the future: goods that have not been bought yet are not a supply, and a\nfat-fingered year would sit at the top of every ledger forever."
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "quantity",
+                    "amount",
+                    "method",
+                    "occurred_on"
+                ],
+                "title": "RecordShortageSupplyRequest"
+            },
             "RecordTransferRequest": {
                 "type": "object",
                 "description": "Stock moving between two of our own warehouses.\n\nThe only movement with both ends filled, and the only one that can deadlock \u2014 see\n{@see RecordStockMovement::moveBalances()} for the lock ordering\nthat stops it.",
@@ -24532,6 +25658,20 @@
                 ],
                 "title": "ReversePurchaseOrderReceiptRequest"
             },
+            "ReverseShortageSupplyRequest": {
+                "type": "object",
+                "description": "Undoing a supply entered in error.\n\n**The reason is required**, unlike the notes on the entry being undone. A correction to a money\nledger is read later by somebody trying to work out what happened, and \u00ab\u0639\u064f\u0643\u0633\u062a\u00bb with no sentence\nbeside it answers nothing \u2014 the same rule a cancellation's reason follows.",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 500
+                    }
+                },
+                "required": [
+                    "reason"
+                ],
+                "title": "ReverseShortageSupplyRequest"
+            },
             "ReviewOrderDesignRequest": {
                 "type": "object",
                 "properties": {
@@ -24832,6 +25972,442 @@
                     "updated_at"
                 ],
                 "title": "ShippingCompanyResource"
+            },
+            "ShortageResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "type": "string"
+                    },
+                    "source_label": {
+                        "type": "string",
+                        "enum": [
+                            "\u064a\u062f\u0648\u064a",
+                            "\u0645\u0646 \u0637\u0644\u0628\u064a\u0629"
+                        ]
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "unit": {
+                        "type": "string"
+                    },
+                    "unit_label": {
+                        "type": "string",
+                        "enum": [
+                            "\u0642\u0637\u0639\u0629",
+                            "\u0643\u062c\u0645"
+                        ]
+                    },
+                    "required_quantity": {
+                        "type": "string",
+                        "description": "The three numbers \u00a7\u0667 asks for, and the fourth derived from them."
+                    },
+                    "supplied_quantity": {
+                        "type": "string"
+                    },
+                    "remaining_quantity": {
+                        "type": "string"
+                    },
+                    "total_paid": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "status_label": {
+                        "type": "string",
+                        "enum": [
+                            "\u062c\u062f\u064a\u062f",
+                            "\u062c\u0627\u0631\u064a \u0627\u0644\u0628\u062d\u062b",
+                            "\u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631",
+                            "\u0645\u0643\u062a\u0645\u0644"
+                        ]
+                    },
+                    "is_final": {
+                        "type": "boolean"
+                    },
+                    "available_transitions": {
+                        "type": "array",
+                        "description": "What a person may choose from here \u2014 \u00ab\u0645\u0643\u062a\u0645\u0644\u00bb never among them, because the\narithmetic writes it. See ShortageStatus.",
+                        "items": {}
+                    },
+                    "is_editable": {
+                        "type": "boolean",
+                        "description": "Whether the section may still change what this shortage is *about*. False on an\norder-born one, where the line is the authority \u2014 so the app greys the form rather\nthan offering an edit the API will refuse."
+                    },
+                    "order_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "order_item_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "order": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "code": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "is_archived": {
+                                "type": "boolean",
+                                "description": "**Published deliberately.** A reader who can see this row has already been\nallowed to \u2014 the list filters archived orders out and the detail route charges\nthe archive grant \u2014 so hiding the flag here would only stop the app saying why\nan order's link leads somewhere unusual."
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "code",
+                            "status",
+                            "is_archived"
+                        ]
+                    },
+                    "customer_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "customer": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "phone": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name",
+                            "phone"
+                        ]
+                    },
+                    "product_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "product_variant_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "product": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "variant": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "label": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "label"
+                        ]
+                    },
+                    "assigned_to_user_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "assignee": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "employee_code": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name",
+                            "employee_code"
+                        ]
+                    },
+                    "created_by_user_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "creator": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "supplies": {
+                        "type": "array",
+                        "description": "\u00a7\u0669's table, on the detail screen alone \u2014 a list of forty shortages has no use for\nfour hundred ledger rows.",
+                        "items": {
+                            "$ref": "#/components/schemas/ShortageSupplyResource"
+                        }
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "code",
+                    "source",
+                    "source_label",
+                    "name",
+                    "unit",
+                    "unit_label",
+                    "required_quantity",
+                    "supplied_quantity",
+                    "remaining_quantity",
+                    "total_paid",
+                    "status",
+                    "status_label",
+                    "is_final",
+                    "available_transitions",
+                    "is_editable",
+                    "order_id",
+                    "order_item_id",
+                    "customer_id",
+                    "product_id",
+                    "product_variant_id",
+                    "assigned_to_user_id",
+                    "created_by_user_id",
+                    "description",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "ShortageResource"
+            },
+            "ShortageSupplyResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "shortage_id": {
+                        "type": "integer"
+                    },
+                    "kind": {
+                        "type": "string"
+                    },
+                    "kind_label": {
+                        "type": "string",
+                        "enum": [
+                            "\u0634\u0631\u0627\u0621",
+                            "\u0648\u0635\u0644\u062a \u0645\u0646 \u0627\u0644\u0637\u0644\u0628\u064a\u0629"
+                        ]
+                    },
+                    "quantity": {
+                        "type": "string",
+                        "description": "Strings, like every quantity and every money field: what was stored reaches the\nclient exactly, without a float's opinion in the middle."
+                    },
+                    "amount": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Null on a quantity that merely arrived from the order \u2014 nothing was bought, so\nthere is no price and no method. See SupplyKind."
+                    },
+                    "method": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "method_label": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "\u0643\u0627\u0634",
+                            "\u062d\u0648\u0627\u0644\u0629",
+                            "\u0628\u0637\u0627\u0642\u0629 \u0645\u0635\u0631\u0641\u064a\u0629",
+                            "\u0644\u064a\u0628\u064a\u0627\u0646\u0627",
+                            null
+                        ]
+                    },
+                    "reference": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "occurred_on": {
+                        "type": "string",
+                        "description": "When the goods were got. `created_at` beside it is when somebody typed it in, and\nthe two genuinely differ on an entry made the following morning."
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_reversal": {
+                        "type": "boolean",
+                        "description": "**The two flags the app draws its ledger from**, so no copy of the rules lives in\nDart \u2014 the `OrderPaymentResource` arrangement. `is_reversed` strikes the row\nthrough; `is_reversible` is what puts a cancel action on it, and the server has\nalready decided that an arrival and a reversal are not candidates."
+                    },
+                    "is_reversed": {
+                        "type": "boolean"
+                    },
+                    "is_reversible": {
+                        "type": "string"
+                    },
+                    "reverses_supply_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "recorded_by_user_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "recorder": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "employee_code": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name",
+                            "employee_code"
+                        ]
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "No `updated_at`: a ledger entry is never updated, and publishing one would invite a\nclient to believe it could be."
+                    }
+                },
+                "required": [
+                    "id",
+                    "shortage_id",
+                    "kind",
+                    "kind_label",
+                    "quantity",
+                    "amount",
+                    "method",
+                    "method_label",
+                    "reference",
+                    "occurred_on",
+                    "notes",
+                    "is_reversal",
+                    "is_reversed",
+                    "is_reversible",
+                    "reverses_supply_id",
+                    "recorded_by_user_id",
+                    "created_at"
+                ],
+                "title": "ShortageSupplyResource"
             },
             "StockArrivalItemResource": {
                 "type": "object",
@@ -26740,6 +28316,11 @@
                                 "investors.money.reverse",
                                 "investor_deals.expenses.record",
                                 "investor_portal.view",
+                                "shortages.view",
+                                "shortages.manage",
+                                "shortages.assign",
+                                "shortages.supplies.record",
+                                "shortages.supplies.reverse",
                                 "settings.view",
                                 "settings.manage",
                                 "logs.view",
@@ -26792,6 +28373,55 @@
                     "name"
                 ],
                 "title": "StoreShippingCompanyRequest"
+            },
+            "StoreShortageRequest": {
+                "type": "object",
+                "description": "Writing a shortage down by hand.\n\n**The product is optional and the name is not**, which is the decision this form exists to\nexpress. What gets written down manually is very often something the catalogue has never heard\nof, and a required product link makes an employee pick the nearest wrong row to get past the\nfield \u2014 putting a wrong answer in the column that answers \u00ab\u0643\u0645 \u0645\u0631\u0629 \u0646\u0642\u0635 \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062a\u062c\u061f\u00bb. See\nSHORTAGES-DESIGN \u00a7\u0662\u066b\u0661.\n\nNothing here can create an order-born shortage. Those are the reconciliation's alone \u2014 an\nendpoint that could make one would write a row no order knows about, which the next sync would\nthen delete as an orphan.",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "unit": {
+                        "$ref": "#/components/schemas/PricingUnit"
+                    },
+                    "required_quantity": {
+                        "type": "number",
+                        "description": "Three places, and the `gt:0` is the readable half of a rule the database also\nholds as a CHECK \u2014 RULES \u00a78."
+                    },
+                    "product_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "product_variant_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Not merely \"a variant that exists\": one that belongs to the product named beside\nit, or the shortage would report a size of something else entirely."
+                    },
+                    "assigned_to_user_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "name",
+                    "unit",
+                    "required_quantity"
+                ],
+                "title": "StoreShortageRequest"
             },
             "StoreStockArrivalRequest": {
                 "type": "object",
@@ -28031,6 +29661,11 @@
                                 "investors.money.reverse",
                                 "investor_deals.expenses.record",
                                 "investor_portal.view",
+                                "shortages.view",
+                                "shortages.manage",
+                                "shortages.assign",
+                                "shortages.supplies.record",
+                                "shortages.supplies.reverse",
                                 "settings.view",
                                 "settings.manage",
                                 "logs.view",
@@ -28080,6 +29715,49 @@
                     "name"
                 ],
                 "title": "UpdateShippingCompanyRequest"
+            },
+            "UpdateShortageRequest": {
+                "type": "object",
+                "description": "Correcting a hand-written shortage.\n\nThe same fields as creating one, minus the assignee \u2014 that has its own endpoint and its own\ngrant, because routing work is a different job from describing it.\n\nWhether this shortage may be edited at all is a domain question and is answered there: an\norder-born one is refused by {@see UpdateShortage}, not by a rule here, because the reason is\nabout where its numbers come from rather than about the shape of the payload.",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "unit": {
+                        "$ref": "#/components/schemas/PricingUnit"
+                    },
+                    "required_quantity": {
+                        "type": "number",
+                        "description": "Three places, and the `gt:0` is the readable half of a rule the database also\nholds as a CHECK \u2014 RULES \u00a78."
+                    },
+                    "product_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "product_variant_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Not merely \"a variant that exists\": one that belongs to the product named beside\nit, or the shortage would report a size of something else entirely."
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2000
+                    }
+                },
+                "required": [
+                    "name",
+                    "unit",
+                    "required_quantity"
+                ],
+                "title": "UpdateShortageRequest"
             },
             "UpdateStockItemGroupRequest": {
                 "type": "object",

@@ -8,6 +8,8 @@ use App\Domain\Inventory\Actions\RecordStockMovement;
 use App\Domain\Inventory\Enums\AdjustmentDirection;
 use App\Domain\Inventory\Enums\MovementType;
 use App\Domain\Inventory\Enums\StockAdjustmentReason;
+use App\Domain\Inventory\Exceptions\ArrivalBatchAlreadyDrawnOn;
+use App\Domain\Inventory\Exceptions\ArrivalBatchWasRevalued;
 
 /**
  * One movement, in the shape the ledger stores it.
@@ -208,9 +210,11 @@ final readonly class StockMovementData
      * drawing FIFO.
      *
      * The mirror of `orderReversal()` in every respect, including this one: built directly from
-     * typed values, never posted through an HTTP endpoint. Only `Vendor\Actions\ReverseStockArrival`
-     * constructs it, because only that action has established that the receipt may be undone at
-     * all.
+     * typed values, never posted through an HTTP endpoint. Two actions construct it —
+     * `Vendor\Actions\ReverseStockArrival` and `Shortage\Actions\ReverseShortageSupply` — because
+     * each has established, in its own way, that the receipt it undoes may be undone at all. The
+     * guards that decide whether the *layer* may be withdrawn are the ledger's own and apply to
+     * both alike: see {@see ArrivalBatchAlreadyDrawnOn} and {@see ArrivalBatchWasRevalued}.
      */
     public static function arrivalReversal(
         int $stockItemId,
@@ -229,6 +233,45 @@ final readonly class StockMovementData
             employeeId: $employeeId,
             referenceId: $referenceId,
             reversedMovementId: $reversedMovementId,
+        );
+    }
+
+    /**
+     * Sacks bought to cover a shortage, arriving on a shelf.
+     *
+     * **A `PurchaseArrival` like any other**, and deliberately not a type of its own: what
+     * reaches the warehouse is stock bought from a supplier, opening a cost layer the order that
+     * was short then draws FIFO. A separate movement type would have to be taught to every
+     * balance, every valuation and every report that already understands an arrival, to describe
+     * something that differs only in which screen it was typed on.
+     *
+     * Built from typed values, like `scrapLoss()` and the two reversals: this is never posted
+     * through the generic stock-movements endpoint. Only `Shortage\Actions\RecordShortageSupply`
+     * constructs it, because only that action has established that there is a shortage to cover,
+     * a shelf to put it on and a price to open the layer at.
+     *
+     * `referenceId` is the **order** the shortage belongs to, keeping the column's one meaning —
+     * null for a shortage written down by hand, which belongs to no order.
+     */
+    public static function shortagePurchase(
+        int $stockItemId,
+        int $warehouseId,
+        string $quantity,
+        string $unitCost,
+        int $employeeId,
+        ?int $orderId = null,
+        ?string $notes = null,
+    ): self {
+        return new self(
+            stockItemId: $stockItemId,
+            movementType: MovementType::PurchaseArrival,
+            quantity: self::quantity($quantity),
+            fromWarehouseId: null,
+            toWarehouseId: $warehouseId,
+            employeeId: $employeeId,
+            referenceId: $orderId,
+            notes: self::textOrNull($notes),
+            unitCost: self::costOrNull($unitCost),
         );
     }
 
