@@ -261,6 +261,27 @@ enum PermissionName: string
     // order's cost and profit, which OrderResource publishes to anyone who has it.
     case ViewInvestorPortal = 'investor_portal.view';
 
+    // النواقص. The usual view/manage pair, and three verbs split off it for the reason
+    // `orders.payments.*` splits three ways — they are different levels of trust.
+    //
+    // **`shortages.assign` is separate from `shortages.manage`** because routing work and doing it
+    // are different jobs: a supervisor hands a shortage to somebody without being trusted to spend
+    // money on it, and whoever writes shortages down all day should not thereby be able to move
+    // other people's queues. The same argument `orders.ready_message` makes for its own grant.
+    //
+    // **And recording a supply is split from reversing one.** Recording is a purchase at a
+    // counter; reversing is an admission that one was entered wrongly, and it restates a total
+    // somebody may already have reported. `orders.payments.record` / `.reverse` draws the line in
+    // the same place for the same reason.
+    //
+    // What is deliberately *not* here is a grant for «مكتمل»: no permission reaches it, because
+    // it is written by arithmetic rather than chosen. See ShortageStatus.
+    case ViewShortages = 'shortages.view';
+    case ManageShortages = 'shortages.manage';
+    case AssignShortages = 'shortages.assign';
+    case RecordShortageSupplies = 'shortages.supplies.record';
+    case ReverseShortageSupplies = 'shortages.supplies.reverse';
+
     // The company's editable defaults. Its own pair rather than riding on an existing one:
     // everybody's screens read them and almost nobody should change them.
     case ViewCompanySettings = 'settings.view';
@@ -371,6 +392,11 @@ enum PermissionName: string
             self::ReverseInvestorMoney => 'عكس حركة مالية لمستثمر',
             self::RecordDealExpenses => 'تسجيل مصاريف الصفقة',
             self::ViewInvestorPortal => 'بوابة المستثمر — رأس ماله وأرباحه وحدها',
+            self::ViewShortages => 'عرض النواقص',
+            self::ManageShortages => 'إضافة وتعديل النواقص وتغيير حالتها',
+            self::AssignShortages => 'إسناد النواقص إلى الموظفين',
+            self::RecordShortageSupplies => 'تسجيل عملية توفير',
+            self::ReverseShortageSupplies => 'عكس عملية توفير',
             self::ViewCompanySettings => 'عرض إعدادات الشركة',
             self::ManageCompanySettings => 'تعديل إعدادات الشركة',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
@@ -438,6 +464,8 @@ enum PermissionName: string
             self::ViewInvestors, self::ManageInvestors,
             self::RecordInvestorMoney, self::ReverseInvestorMoney,
             self::RecordDealExpenses, self::ViewInvestorPortal => 'المستثمرون',
+            self::ViewShortages, self::ManageShortages, self::AssignShortages,
+            self::RecordShortageSupplies, self::ReverseShortageSupplies => 'النواقص',
             self::ViewCompanySettings, self::ManageCompanySettings => 'إعدادات الشركة',
             self::ViewActivityLogs => 'سجل النشاطات',
             self::ViewProfitAndLossReport,

@@ -29,6 +29,7 @@ use App\Application\Api\V1\Controllers\RegionController;
 use App\Application\Api\V1\Controllers\RoleController;
 use App\Application\Api\V1\Controllers\SalesStatisticsController;
 use App\Application\Api\V1\Controllers\ShippingCompanyController;
+use App\Application\Api\V1\Controllers\ShortageController;
 use App\Application\Api\V1\Controllers\StockArrivalController;
 use App\Application\Api\V1\Controllers\StockBatchController;
 use App\Application\Api\V1\Controllers\StockItemController;
@@ -39,6 +40,7 @@ use App\Application\Api\V1\Controllers\VendorCommentController;
 use App\Application\Api\V1\Controllers\VendorController;
 use App\Application\Api\V1\Controllers\WarehouseController;
 use App\Application\Api\V1\Controllers\WarehouseStockController;
+use App\Application\Api\V1\Middleware\ArchivedOrderShortagesNeedTheArchiveGrant;
 use App\Application\Api\V1\Middleware\ArchivedOrdersNeedTheArchiveGrant;
 use App\Application\Api\V1\Middleware\VerifyNawrisWebhook;
 use Illuminate\Support\Facades\Route;
@@ -368,6 +370,16 @@ Route::prefix('v1')->group(function (): void {
         // line is billed for what is left of it. `can:` sits here rather than in the request
         // because unlike a status change this endpoint costs the same grant whatever it says:
         // the person who declares a shortage is the person who corrects one.
+        // **What the shelves say this order is short of** — a read, and only a read. The
+        // deduction still refuses what it cannot cover on its own terms; this is what lets the
+        // «نواقص» screen arrive with its boxes already filled rather than making a foreman work
+        // four numbers out of one refusal about a balance.
+        //
+        // Behind `orders.status.shortage` rather than `orders.view`: the one thing it is for is
+        // declaring a shortage, and whoever may not do that has no use for the suggestion.
+        Route::get('orders/{order}/stock-shortfall', [OrderController::class, 'stockShortfall'])
+            ->middleware('can:orders.status.shortage')->name('orders.stock-shortfall');
+
         Route::patch('orders/{order}/shortages', [OrderController::class, 'setShortages'])
             ->middleware('can:orders.status.shortage')->name('orders.shortages');
 
@@ -821,6 +833,66 @@ Route::prefix('v1')->group(function (): void {
         Route::get('stock-arrivals/{stock_arrival}', [StockArrivalController::class, 'show'])
             ->middleware('can:inventory.view')->name('stock-arrivals.show');
 
+        // ── shortages ───────────────────────────────────────────────────────────────────
+        // What the shop is short of, written by hand or generated from an order line entering
+        // «نواقص». Its own section rather than a corner of the order screen: a shortage outlives
+        // the order that produced it, carries money spent chasing it, and belongs to a person
+        // rather than to a status.
+        //
+        // **Five grants, and the splits are deliberate** — see PermissionName. Reading and
+        // writing are the usual pair; assigning is separate because routing work is a different
+        // job from doing it; and recording a purchase is separate from reversing one, the same
+        // three-way split `orders.payments.*` makes.
+        //
+        // **`summary` is declared before `{shortage}`**, or the router reads the word «summary»
+        // as an id and answers 404 — the trap `orders/archive` documents one screen over.
+        Route::get('shortages/summary', [ShortageController::class, 'statusCounts'])
+            ->middleware('can:shortages.view')->name('shortages.summary');
+
+        Route::get('shortages', [ShortageController::class, 'index'])
+            ->middleware('can:shortages.view')->name('shortages.index');
+
+        Route::post('shortages', [ShortageController::class, 'store'])
+            ->middleware('can:shortages.manage')->name('shortages.store');
+
+        // **Every route that binds `{shortage}` carries the archive guard**, reading and writing
+        // alike. These rows name an order and a customer, so without it this section would answer
+        // for every order ever deleted — the hole `ArchivedOrdersNeedTheArchiveGrant` closes in
+        // front of `logs.view`, reached from a new direction. See SHORTAGES-DESIGN §٥.
+        //
+        // The list above needs no guard because `ShortageListQuery` filters archived rows out in
+        // SQL: a page that fetched them and then dropped them would paginate short, and a reader
+        // would learn how many were hidden by counting.
+        Route::get('shortages/{shortage}', [ShortageController::class, 'show'])
+            ->middleware(['can:shortages.view', ArchivedOrderShortagesNeedTheArchiveGrant::class])
+            ->name('shortages.show');
+
+        Route::put('shortages/{shortage}', [ShortageController::class, 'update'])
+            ->middleware(['can:shortages.manage', ArchivedOrderShortagesNeedTheArchiveGrant::class])
+            ->name('shortages.update');
+
+        Route::patch('shortages/{shortage}/status', [ShortageController::class, 'changeStatus'])
+            ->middleware(['can:shortages.manage', ArchivedOrderShortagesNeedTheArchiveGrant::class])
+            ->name('shortages.status');
+
+        Route::patch('shortages/{shortage}/assignee', [ShortageController::class, 'assign'])
+            ->middleware(['can:shortages.assign', ArchivedOrderShortagesNeedTheArchiveGrant::class])
+            ->name('shortages.assignee');
+
+        // No destroy route for a supply, and no update: the ledger is append-only and a mistake
+        // is corrected by a reversal that names it — `order_payments` is the precedent.
+        Route::post('shortages/{shortage}/supplies', [ShortageController::class, 'recordSupply'])
+            ->middleware(['can:shortages.supplies.record', ArchivedOrderShortagesNeedTheArchiveGrant::class])
+            ->name('shortages.supplies.store');
+
+        // `scopeBindings()`: {supply} resolves *within* {shortage}, so another shortage's entry
+        // is a 404 by construction rather than by a check somebody has to remember. The domain
+        // refuses it too — belt and braces on a route that moves money.
+        Route::post('shortages/{shortage}/supplies/{supply}/reversal', [ShortageController::class, 'reverseSupply'])
+            ->middleware(['can:shortages.supplies.reverse', ArchivedOrderShortagesNeedTheArchiveGrant::class])
+            ->scopeBindings()
+            ->name('shortages.supplies.reversal');
+
         // ── reports ─────────────────────────────────────────────────────────────────────
         // Revenue against cost of goods sold, over a period. Its own permission rather than a
         // ride on `orders.view`: this is the one screen that puts every order's money and every
@@ -868,6 +940,13 @@ Route::prefix('v1')->group(function (): void {
                 ->name('orders.logs');
             Route::get('shipping-companies/{shippingCompany}/logs', [ShippingCompanyController::class, 'logs'])
                 ->name('shipping-companies.logs');
+
+            // The archive guard again, for the same reason it is on the order's own history: a
+            // shortage's log names its order, so `logs.view` alone would read into the archive
+            // through the one screen built to audit colleagues.
+            Route::get('shortages/{shortage}/logs', [ShortageController::class, 'logs'])
+                ->middleware(ArchivedOrderShortagesNeedTheArchiveGrant::class)
+                ->name('shortages.logs');
 
             // The warehouse and the alert thresholds set on its shelves. Not the movements —
             // those are a ledger rather than a change log, and `/stock-movements?warehouse_id=`

@@ -9,6 +9,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
+use App\Domain\Order\Enums\ShortageRevision;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderStatusChanged;
@@ -313,7 +314,7 @@ final class ChangeOrderStatus
             // arrived of a shortage is a fact about the order as it still stands in «نواقص»,
             // where its lines are open; the status it is heading for closes them. See the
             // method's own docblock.
-            $this->recordArrivedShortages($order, $from, $target, $fields);
+            $this->recordArrivedShortages($order, $from, $target, $fields, $actor);
 
             // And judged immediately after, so the order is refused on what it actually still
             // owes rather than on what it owed before the delivery was counted in.
@@ -325,7 +326,7 @@ final class ChangeOrderStatus
                 $this->attachDesigns($order, $fields);
             }
 
-            $this->recordDeclaredShortages($order, $target, $fields);
+            $this->recordDeclaredShortages($order, $target, $fields, $actor);
 
             $this->guardShortage($order, $target);
 
@@ -606,10 +607,14 @@ final class ChangeOrderStatus
      *
      * @param  array<string, mixed>  $fields
      */
-    private function recordDeclaredShortages(Order $order, OrderStatus $target, array $fields): void
-    {
+    private function recordDeclaredShortages(
+        Order $order,
+        OrderStatus $target,
+        array $fields,
+        ?User $actor,
+    ): void {
         if ($target === OrderStatus::Shortage) {
-            ($this->setShortages)($order, $this->declared($order, $fields));
+            ($this->setShortages)($order, $this->declared($order, $fields), $actor, ShortageRevision::Declared);
         }
     }
 
@@ -628,10 +633,15 @@ final class ChangeOrderStatus
      *
      * @param  array<string, mixed>  $fields
      */
-    private function recordArrivedShortages(Order $order, OrderStatus $from, OrderStatus $target, array $fields): void
-    {
+    private function recordArrivedShortages(
+        Order $order,
+        OrderStatus $from,
+        OrderStatus $target,
+        array $fields,
+        ?User $actor,
+    ): void {
         if ($from === OrderStatus::Shortage && ! $target->isFinal()) {
-            ($this->setShortages)($order, $this->remaining($order, $fields));
+            ($this->setShortages)($order, $this->remaining($order, $fields), $actor, ShortageRevision::Received);
         }
     }
 

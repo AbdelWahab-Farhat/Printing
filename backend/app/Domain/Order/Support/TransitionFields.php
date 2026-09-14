@@ -8,6 +8,7 @@ use App\Application\Api\V1\Resources\OrderResource;
 use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\InventoryService;
 use App\Domain\Order\Actions\DeductOrderStock;
 use App\Domain\Order\Actions\RecordPartialDelivery;
 use App\Domain\Order\DTOs\TransitionField;
@@ -231,6 +232,10 @@ final class TransitionFields
         // field per line, each in that line's own unit and bounded by what was ordered of it —
         // so the app draws the whole thing without knowing what an order line is.
         if ($target === OrderStatus::Shortage) {
+            // **What the shelves hold, read once for the whole form.** Without this the hint
+            // below would query per line, and `shouldBeStrict()` would be right to object.
+            $onHand = self::onHand($order);
+
             foreach ($order->items as $item) {
                 $fields[] = TransitionField::number(
                     key: "shortage_{$item->getKey()}",
@@ -239,7 +244,7 @@ final class TransitionFields
                     // most shortages are one size out of several, and marking the whole form
                     // required would have staff typing zeros to get past it.
                     max: (float) $item->quantity,
-                    hint: 'من أصل '.DecimalText::trim((string) $item->quantity).' — يُخصم من الفاتورة',
+                    hint: self::shortageHint($item, $onHand[(int) $item->getKey()] ?? null),
                 );
             }
         }
@@ -508,6 +513,82 @@ final class TransitionFields
                 hint: 'مطلوب مع الحوالة، ويُقبل مع غيرها',
             ),
         ];
+    }
+
+    /**
+     * What the shelves hold of each line's size, keyed by line.
+     *
+     * **Summed across every warehouse, because at this moment there is no other figure.**
+     * «نواقص» is reachable only from «جديد», and `orders.fulfillment_warehouse_id` is not written
+     * until the stock actually leaves — so nothing here knows which site the foreman means. The
+     * wording in {@see shortageHint()} says «في كل المخازن» for exactly that reason: three hundred
+     * spread over three warehouses is not three hundred anybody can pick from one shelf.
+     *
+     * A line whose size has no shelf behind it is absent from the map, and its hint simply does
+     * not mention stock — {@see InventoryService::stockItemFor()}'s named refusal belongs to the
+     * deduction, not to a hint on a form.
+     *
+     * @return array<int, string>
+     */
+    private static function onHand(Order $order): array
+    {
+        $order->loadMissing('items.variant.stockItem');
+
+        $shelves = [];
+
+        foreach ($order->items as $item) {
+            $shelf = $item->variant?->stockItem;
+
+            if ($shelf !== null) {
+                $shelves[(int) $item->getKey()] = (int) $shelf->getKey();
+            }
+        }
+
+        if ($shelves === []) {
+            return [];
+        }
+
+        $balances = app(InventoryService::class)->onHandFor(array_values(array_unique($shelves)));
+
+        $byLine = [];
+
+        foreach ($shelves as $lineId => $shelfId) {
+            // Absent from the balances map means the size has never been stocked anywhere, which
+            // reads to a person as zero — and zero is the useful thing to print here.
+            $byLine[$lineId] = $balances[$shelfId] ?? '0.000';
+        }
+
+        return $byLine;
+    }
+
+    /**
+     * «من أصل ٣٠٠ — المتوفر في كل المخازن ٢٧٠ — يُخصم من الفاتورة».
+     *
+     * **A hint, not a default.** The number is printed for a person to read against what they can
+     * see on the shelf; it is not written into the box, because the balance is a record and the
+     * shortage is an observation, and the two disagree exactly when this screen matters most —
+     * a miscount, breakage, stock promised elsewhere. Pre-filling would turn «كم الناقص؟» into
+     * «أكّد ما يقوله النظام», which is the same trade `receive_arrival_sheet` refuses on the
+     * purchasing side.
+     *
+     * The stock half is omitted for a size the warehouse does not carry, rather than printed as
+     * zero — «المتوفر ٠» about something that was never stocked is a fact about the catalogue,
+     * not about today.
+     */
+    private static function shortageHint(OrderItem $item, ?string $onHand): string
+    {
+        // **وكل رقمٍ فيه مشذَّب**، وهي قاعدة `DecimalText` القادمة مع التسليم الجزئي: «من أصل
+        // 300» جملة، و«من أصل 300.000» مقياسُ العمود الذي قُرئ منه الرقم، ولا شأن لواقفٍ عند
+        // الطاولة به. خيّر الدمجُ بين هذه الدالّة وبين تلميحٍ مشذَّبٍ أبسط، فأُخذ من كلٍّ ما
+        // يقوله: بناؤها هي، وتشذيبه هو.
+        $hint = 'من أصل '.DecimalText::trim((string) $item->quantity);
+
+        if ($onHand !== null) {
+            $hint .= ' — المتوفر في كل المخازن '.DecimalText::trim($onHand)
+                .' '.$item->stockUnit()->label();
+        }
+
+        return $hint.' — يُخصم من الفاتورة';
     }
 
     /**

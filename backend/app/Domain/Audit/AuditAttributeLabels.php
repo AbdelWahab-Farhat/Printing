@@ -334,6 +334,8 @@ final class AuditAttributeLabels
             'shortage_quantity' => 'الكمية الناقصة',
             'undelivered_quantity' => 'الكمية غير المستلمة',
             'undelivered_disposition' => 'مصير الكمية غير المستلمة',
+            // In the shelf's unit, not the line's — it is what actually went back on the shelf.
+            'restocked_quantity' => 'الكمية المعادة إلى المخزن',
             'warehouse_quantity' => 'الكمية من المخزن',
             // What a vendor charged us for this line, recognised when the job came back — see
             // OUTSOURCED-PRODUCTS.md §6. The rate behind it is `unit_cost`, which the shared
@@ -548,6 +550,42 @@ final class AuditAttributeLabels
             'source_sequence' => 'رقم المحاولة على المصدر',
             'occurred_at' => 'تاريخ الحركة',
             'reverses_entry_id' => 'تعكس الحركة',
+        ],
+        'shortage' => [
+            'source' => 'مصدر النقص',
+            'order_item_id' => 'بند الطلبية',
+            'customer_id' => 'العميل',
+            'product_id' => 'المنتج',
+            // The snapshot, not a join — «كيس شحن — ٢٥*٣٥» as it was when the shortage was
+            // written. A product renamed since then does not rewrite this row's history.
+            'name' => 'الصنف الناقص',
+            'required_quantity' => 'الكمية المطلوبة',
+            // Both are caches restated from `shortage_supplies` by one action, so a change here
+            // is always the consequence of an entry in that ledger rather than somebody typing.
+            'supplied_quantity' => 'الكمية التي تم توفيرها',
+            'total_paid' => 'إجمالي المدفوع',
+            'assigned_to_user_id' => 'الموظف المسؤول',
+            'created_by_user_id' => 'سجّله',
+            'description' => 'الوصف',
+        ],
+        'shortage_supply' => [
+            'shortage_id' => 'النقص',
+            'kind' => 'نوع العملية',
+            'method' => 'طريقة الدفع',
+            'reference' => 'رقم العملية',
+            'receipt_disk' => 'قرص الإيصال',
+            'receipt_path' => 'مسار الإيصال',
+            'receipt_original_filename' => 'اسم ملف الإيصال',
+            'receipt_size_bytes' => 'حجم الإيصال',
+            'receipt_checksum' => 'بصمة الإيصال',
+            // When the goods were got, not when somebody typed it in — `created_at` beside it
+            // answers the second question, and the two differ on an entry made the next morning.
+            'occurred_on' => 'تاريخ التوفير',
+            // `warehouse_id` beside it needs no entry — the shared list above already names it
+            // «المخزن», and it means the same thing here as everywhere else.
+            'stock_movement_id' => 'الإدخال المخزني',
+            'reverses_supply_id' => 'تعكس عملية',
+            'recorded_by_user_id' => 'سجّلها',
         ],
         'company_setting' => [
             'investor_profit_share_percent' => 'نسبة المستثمرين من الربح (الافتراضية)',
