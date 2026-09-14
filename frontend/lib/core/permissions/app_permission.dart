@@ -279,6 +279,26 @@ enum AppPermission {
   /// him every customer's margin.
   viewInvestorPortal('investor_portal.view', 'بوابة المستثمر — رأس ماله وأرباحه وحدها'),
 
+  // النواقص. The usual view/manage pair, and three verbs split off it because they are
+  // different levels of trust — the same split `orders.payments.*` draws.
+  //
+  // **`shortages.assign` is separate from `shortages.manage`**: routing work and doing it are
+  // different jobs. A supervisor hands a shortage to somebody without being trusted to spend
+  // money on it, and whoever writes shortages down all day should not thereby be able to move
+  // other people's queues.
+  //
+  // **And recording a supply is split from reversing one**: recording is a purchase at a
+  // counter, reversing is an admission that one was entered wrongly — and it restates a total
+  // somebody may already have reported.
+  //
+  // There is deliberately no grant for «مكتمل»: that status is written by arithmetic rather
+  // than chosen, so no permission reaches it. See `ShortageStatus.php`.
+  viewShortages('shortages.view', 'عرض النواقص'),
+  manageShortages('shortages.manage', 'إضافة وتعديل النواقص وتغيير حالتها'),
+  assignShortages('shortages.assign', 'إسناد النواقص إلى الموظفين'),
+  recordShortageSupplies('shortages.supplies.record', 'تسجيل عملية توفير'),
+  reverseShortageSupplies('shortages.supplies.reverse', 'عكس عملية توفير'),
+
   // The company's editable defaults. Its own pair rather than riding on an existing one:
   // everybody's screens read them and almost nobody should change them.
   viewCompanySettings('settings.view', 'عرض إعدادات الشركة'),
