@@ -54,10 +54,10 @@ void main() {
     );
   }
 
-  Widget input(TransitionField field, {ValueChanged<Object?>? onChanged}) {
+  Widget input(TransitionField field, {Object? value, ValueChanged<Object?>? onChanged}) {
     return TransitionFieldInput(
       field: field,
-      value: null,
+      value: value,
       customerId: 5,
       onChanged: onChanged ?? (_) {},
     );
@@ -71,7 +71,7 @@ void main() {
       type: TransitionFieldType.number,
       label: 'المخصوم من 25*35 (كجم)',
       isRequired: true,
-      hint: 'المباع 500.000 قطعة — والمخزن يُنقص بالكجم',
+      hint: 'المباع 500 قطعة — والمخزن يُنقص بالكجم',
     );
 
     // Act
@@ -80,7 +80,7 @@ void main() {
 
     // Assert — the label is the server's, and the hint under it too.
     expect(find.text('المخصوم من 25*35 (كجم)'), findsOneWidget);
-    expect(find.text('المباع 500.000 قطعة — والمخزن يُنقص بالكجم'), findsOneWidget);
+    expect(find.text('المباع 500 قطعة — والمخزن يُنقص بالكجم'), findsOneWidget);
   });
 
   testWidgets('an optional field says so, so nobody hunts for what is blocking them', (
@@ -109,7 +109,7 @@ void main() {
       type: TransitionFieldType.number,
       label: 'الناقص من 30*30 (قطعة)',
       max: 100,
-      hint: 'من أصل 100.000',
+      hint: 'من أصل 100',
     );
 
     Object? reported;
@@ -122,6 +122,28 @@ void main() {
     // Assert — the string, not a parsed number: a half-typed «12.» is not this app's to judge,
     // and the server parses what it is sent.
     expect(reported, '40');
+  });
+
+  testWidgets('a box opens on the figure alone, not on the column it was read out of', (
+    tester,
+  ) async {
+    // Arrange — «المُستلَم» on a partial delivery, pre-filled with the whole billable quantity.
+    // A thousand bags come out of a `decimal:3` column, and three zeros nobody typed are three
+    // characters somebody has to clear before the box can be agreed with.
+    const delivered = TransitionField(
+      key: 'delivered_31',
+      type: TransitionFieldType.number,
+      label: 'المُستلَم من 31*40 (قطعة)',
+      max: 1000,
+    );
+
+    // Act
+    await tester.pumpWidget(host(input(delivered, value: '1000.000')));
+    await tester.pump();
+
+    // Assert — and a measured fraction would survive: this drops the padding, never a digit.
+    expect(find.text('1000'), findsOneWidget);
+    expect(find.text('1000.000'), findsNothing);
   });
 
   testWidgets('the warehouse a run comes off is a picker, not a note', (tester) async {

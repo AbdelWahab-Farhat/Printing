@@ -500,6 +500,16 @@ abstract final class AppIcons {
   static IconData get urgent =>
       _pick(Icons.bolt_rounded, CupertinoIcons.bolt_fill);
 
+  /// «استلام جزئي» — أخذ العميل بعض الطلبية وترك الباقي.
+  ///
+  /// **دائرةٌ نصفها مملوء**، وهي صورةُ الكلمة نفسها: بعضٌ أُخذ وبعضٌ بقي. وليست [urgent] ولا
+  /// [error] — تلك عن طلبيةٍ فيها مشكلة، وهذه عن طلبيةٍ انتهت كما ينبغي واختار صاحبها ألّا
+  /// يأخذ كلّها.
+  ///
+  /// والشارة التي تحملها تُفتح بالضغط، فالشكل يقول «هنا شيء» قبل أن تُقرأ الكلمتان.
+  static IconData get partialDelivery =>
+      _pick(Icons.contrast_rounded, CupertinoIcons.circle_righthalf_fill);
+
   /// «رسالة الجاهزية» — the message telling a customer their order is ready to collect.
   ///
   /// A chat bubble rather than [share] or [resend]: those two are the app *sending* something

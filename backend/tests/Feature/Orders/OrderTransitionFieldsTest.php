@@ -408,7 +408,7 @@ class OrderTransitionFieldsTest extends TestCase
         $hint = $ready['fields'][0]['hint'];
 
         $this->assertStringContainsString('25*35', $hint);
-        $this->assertStringContainsString('12.500', $hint);
+        $this->assertStringContainsString('12.5', $hint);
         $this->assertStringContainsString(PricingUnit::Kilogram->label(), $hint);
         $this->assertStringNotContainsString('300', $hint);
     }
@@ -441,7 +441,7 @@ class OrderTransitionFieldsTest extends TestCase
         $hint = $ready['fields'][0]['hint'];
 
         $this->assertStringContainsString('45*50', $hint);
-        $this->assertStringContainsString('200.000', $hint);
+        $this->assertStringContainsString('200', $hint);
         $this->assertStringContainsString(PricingUnit::Piece->label(), $hint);
     }
 
@@ -463,7 +463,7 @@ class OrderTransitionFieldsTest extends TestCase
         // guessing at one.
         $this->assertNotContains('warehouse_id', array_column($ready['fields'], 'key'));
         $this->assertStringContainsString('خرج من المخزن', $field['hint']);
-        $this->assertStringContainsString('12.500', $field['hint']);
+        $this->assertStringContainsString('12.5', $field['hint']);
     }
 
     // ────────────── what actually leaves the shelf, asked line by line ──────────────
@@ -568,7 +568,7 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert — an answer, not a placeholder: re-asking from an empty box invites a second,
         // different figure for one parcel that was weighed once.
-        $this->assertSame('12.500', $field['value']);
+        $this->assertSame('12.5', $field['value']);
     }
 
     public function test_the_shelf_quantity_is_still_demanded_once_stock_has_left(): void

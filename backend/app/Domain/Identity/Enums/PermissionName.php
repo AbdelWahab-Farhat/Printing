@@ -129,6 +129,25 @@ enum PermissionName: string
     case MoveOrderToShortage = 'orders.status.shortage';
     case DispatchOrders = 'orders.status.dispatch';
     case MarkOrdersDelivered = 'orders.status.delivered';
+
+    // **Recording that the customer took only part of the order**, which shrinks the invoice —
+    // see PARTIAL-DELIVERY-DESIGN.md §3, Decision 5, where this was argued twice.
+    //
+    // Its own grant rather than a ride on `orders.status.delivered`, and the reason is not
+    // distrust of drivers: folding it in would widen a permission everybody already holds,
+    // silently, without the business ticking a box or being asked. It would also weld the two
+    // powers together — the only way to stop one person shrinking invoices would be to stop them
+    // marking anything delivered at all.
+    //
+    // **Granted to the delivery roles from day one** (see `RoleSeeder`), so the observed
+    // behaviour is the same as if it had ridden along; what is gained is a switch that can be
+    // thrown on its own.
+    //
+    // Withholds the *fields*, never the move: somebody without it sees «تم الاستلام» exactly
+    // as before and delivers in full — the shape `TransitionFields::money()` already uses to keep
+    // a driver away from the till without keeping them away from the parcel.
+    case RecordPartialDelivery = 'orders.partial_delivery';
+
     case SettleOrders = 'orders.status.settled';
     case RecordCourierReturn = 'orders.status.returned_courier';
     case RecordCarrierReturn = 'orders.status.returned_carrier';
@@ -319,6 +338,7 @@ enum PermissionName: string
             self::MoveOrderToShortage => 'تحويل الطلبية إلى نواقص',
             self::DispatchOrders => 'تسليم الطلبية للتوصيل أو للاستلام من المكتب',
             self::MarkOrdersDelivered => 'تأكيد استلام العميل للطلبية',
+            self::RecordPartialDelivery => 'تسجيل تسليم جزئي — يُنقص الفاتورة',
             self::SettleOrders => 'تسوية مبلغ الطلبية',
             self::RecordCourierReturn => 'تسجيل راجع لدى المندوب',
             self::RecordCarrierReturn => 'تسجيل راجع لدى شركة التوصيل',
@@ -392,6 +412,10 @@ enum PermissionName: string
             self::MoveOrderToDesigning, self::MoveOrderToPrinting,
             self::MoveOrderToManufacturing, self::MoveOrderToReady,
             self::MoveOrderToShortage, self::DispatchOrders, self::MarkOrdersDelivered,
+            // Beside the move it rides on rather than in «مدفوعات الطلبيات»: it moves money,
+            // but it is answered on the status screen by whoever is making that move, and the
+            // roles screen is read by somebody deciding what a job involves.
+            self::RecordPartialDelivery,
             self::SettleOrders, self::RecordCourierReturn, self::RecordCarrierReturn,
             self::RecordOfficeReturn, self::ResendOrders,
             self::CancelOrders => 'حالات الطلبيات',

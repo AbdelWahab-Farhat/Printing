@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Actions;
 
-use App\Domain\Inventory\Actions\CreditBackStockBatches;
-use App\Domain\Inventory\DTOs\StockMovementData;
-use App\Domain\Inventory\InventoryService;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
-use App\Domain\Order\Support\MaterialCost;
 use App\Domain\Order\Support\TransitionFields;
 
 /**
@@ -20,22 +16,13 @@ use App\Domain\Order\Support\TransitionFields;
  * consumed by the time it reaches «جاهزة». Asking again there is not a duplicate question — it is
  * the only moment the true figure exists — and this action is what makes the shelf agree with it.
  *
- * **A correction is a restatement, not a patch.** Where a line's figure moved, the original
- * movement is reversed *in full* and the corrected quantity fulfilled fresh, rather than a delta
- * movement being recorded for the difference. Four reasons, and the first is what settles it:
+ * **The correction itself is {@see RedrawOrderLineStock}**, which used to live in this class and
+ * was lifted out of it when partial delivery needed the same two movements. Read that class for
+ * why a correction is a reversal and a fresh draw rather than a delta movement; all four reasons
+ * are still this action's reasons.
  *
- * - {@see CreditBackStockBatches} credits a movement back **in its entirety** — it sums that
- *   movement's `stock_batch_consumptions` and returns them to their batches. There is no partial
- *   credit anywhere in Inventory, and inventing one means new FIFO-unwinding logic underneath the
- *   one number nobody can afford to have drift.
- * - It works identically in both directions. More used than pulled, or less: the same two steps,
- *   no sign branching in the stock layer at all.
- * - The corrected quantity lands on the **exact original cost layers**. They are credited back
- *   before the re-draw, inside the one transaction the whole move already runs in, so the batches
- *   are there to be drawn from again and `material_cost` comes out right rather than averaged.
- * - `order_items.fulfillment_stock_movement_id` stays **singular**, pointing at the new movement.
- *   That is what lets {@see ReverseOrderStockDeduction} and the entire cancellation path stay
- *   exactly as they are: a delta movement would have left that column naming one of two.
+ * What stays here is the only part that was ever about *this* move: deciding which lines the
+ * press actually corrected, and refusing to touch the ones it did not.
  *
  * **A line whose figure did not move is skipped entirely** — no reversal, no re-draw, no row in
  * the ledger. That is the common case, and a ledger that recorded a pair of movements every time
@@ -43,10 +30,7 @@ use App\Domain\Order\Support\TransitionFields;
  */
 final class RestateOrderStockDeduction
 {
-    public function __construct(
-        private readonly InventoryService $inventory,
-        private readonly RecalculateOrderItemCost $recalculateItemCost,
-    ) {}
+    public function __construct(private readonly RedrawOrderLineStock $redraw) {}
 
     /**
      * @param  array<string, mixed>  $fields  What the move asked for — see {@see TransitionFields}.
@@ -55,8 +39,6 @@ final class RestateOrderStockDeduction
     {
         $order->items->loadMissing(['variant.stockItem', 'product.productCategory.parent']);
 
-        $warehouseId = (int) $order->fulfillment_warehouse_id;
-
         foreach ($order->items as $item) {
             $corrected = $this->correctedQuantity($item, $fields);
 
@@ -64,7 +46,7 @@ final class RestateOrderStockDeduction
                 continue;
             }
 
-            $this->restate($order, $item, $corrected, $warehouseId, $employeeId);
+            ($this->redraw)($order, $item, $corrected, $employeeId);
         }
     }
 
@@ -95,69 +77,5 @@ final class RestateOrderStockDeduction
         // Compared numerically, not as strings: «3.5» and «3.500» are the same weight, and a
         // string comparison would reverse and re-draw the whole line to record no change at all.
         return bccomp((string) $answer, $was, 3) === 0 ? null : (string) $answer;
-    }
-
-    /**
-     * Puts the line's original draw back on the shelf, then takes the corrected one.
-     *
-     * The order of the two is the whole safety of it: crediting first restores both the balance
-     * and the cost layers, so the re-draw is checked against — and priced from — a shelf that
-     * holds everything it held before this order touched it.
-     */
-    private function restate(
-        Order $order,
-        OrderItem $item,
-        string $corrected,
-        int $warehouseId,
-        int $employeeId,
-    ): void {
-        $stockItem = $this->inventory->stockItemFor($item->variant);
-
-        // Recorded as an OrderReversal rather than an Adjustment for the reason
-        // ReverseOrderStockDeduction gives: this is a system correction with a cause the ledger
-        // can name, not an operator's stocktake.
-        if ($item->fulfillment_stock_movement_id !== null) {
-            $this->inventory->recordMovement(StockMovementData::orderReversal(
-                stockItemId: (int) $stockItem->getKey(),
-                warehouseId: $warehouseId,
-                quantity: (string) ($item->warehouse_quantity ?? $item->quantity),
-                reversedMovementId: $item->fulfillment_stock_movement_id,
-                referenceId: (int) $order->getKey(),
-                employeeId: $employeeId,
-            ));
-        }
-
-        // Written before the re-draw, because `producedQuantity()` is what the movement below
-        // takes off the shelf and it reads this column.
-        $item->forceFill(['warehouse_quantity' => $corrected])->save();
-
-        $movement = $this->inventory->recordMovement(StockMovementData::fulfillment([
-            'stock_item_id' => $stockItem->getKey(),
-            'from_warehouse_id' => $warehouseId,
-            'quantity' => $item->producedQuantity(),
-            'reference_id' => $order->getKey(),
-        ], $employeeId));
-
-        // Derived exactly as the original deduction derived it — see {@see MaterialCost}. The
-        // credit-back above deliberately did **not** hand the priced layers to the company: a
-        // restatement is undoing the draw, not writing off a sale, so those layers are on the
-        // shelf again and this fresh draw buys them again at the same price.
-        $cost = MaterialCost::forDraws(
-            $this->inventory->consumptionBreakdownFor([(int) $movement->getKey()])[(int) $movement->getKey()] ?? [],
-            $item->isPrinted(),
-        );
-
-        // The pointer moves with it. Cancelling this order later credits back the *corrected*
-        // draw against the batches it actually came from — see the class docblock. Investment
-        // follows the same pointer: the purchase it booked against the old movement is reversed
-        // and rebooked against this one, because that movement is no longer any line's.
-        $item->forceFill([
-            'material_cost' => $cost->charged,
-            'material_cost_actual' => $cost->actual,
-            'stock_purchased_at' => $cost->purchased ? now() : null,
-            'fulfillment_stock_movement_id' => $movement->getKey(),
-        ])->save();
-
-        ($this->recalculateItemCost)($item);
     }
 }

@@ -199,7 +199,7 @@ class OrderTransitionPaymentTest extends TestCase
         $this->assertSame('المبلغ المقبوض', $amount['label']);
         $this->assertFalse($amount['required']);
         $this->assertEquals(250.0, $amount['max']);
-        $this->assertSame('المتبقي 250.00', $amount['hint']);
+        $this->assertSame('المتبقي 250', $amount['hint']);
         $this->assertNull($amount['value']);
     }
 
@@ -571,7 +571,7 @@ class OrderTransitionPaymentTest extends TestCase
         // المستلم» used to be: it asked the same question and answered none of it, because it
         // wrote a column nothing added up.
         $this->assertNotNull($amount);
-        $this->assertSame('150.00', $amount['value']);
+        $this->assertSame('150', $amount['value']);
         $this->assertEquals(150.0, $amount['max']);
         $this->assertNull($this->field($settling, 'collected_amount'));
     }

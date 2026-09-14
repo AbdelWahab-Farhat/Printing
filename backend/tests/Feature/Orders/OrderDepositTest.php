@@ -218,8 +218,11 @@ class OrderDepositTest extends TestCase
             ->firstWhere('status', OrderStatus::DepositPaid->value);
 
         $this->assertNotNull($fields);
+        // «300», not «300.00»: TransitionField::number() trims what it suggests — the scale
+        // belongs to the column the figure was read out of, not to a box somebody is about to
+        // agree with. See DecimalText, which arrived with the partial-delivery work.
         $this->assertSame(
-            '300.00',
+            '300',
             collect($response->json('data.available_transitions'))
                 ->firstWhere('status', OrderStatus::DepositPaid->value)['fields'][0]['value'],
         );

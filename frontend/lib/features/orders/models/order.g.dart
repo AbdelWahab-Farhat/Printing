@@ -29,6 +29,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
       : OrderActor.fromJson(
           json['ready_message_sent_by'] as Map<String, dynamic>,
         ),
+  isPartiallyDelivered: json['is_partially_delivered'] as bool?,
   availableTransitions:
       (json['available_transitions'] as List<dynamic>?)
           ?.map((e) => OrderTransition.fromJson(e as Map<String, dynamic>))
@@ -156,6 +157,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'is_ready_message_sent': instance.isReadyMessageSent,
   'ready_message_sent_at': instance.readyMessageSentAt?.toIso8601String(),
   'ready_message_sent_by': instance.readyMessageSentBy?.toJson(),
+  'is_partially_delivered': instance.isPartiallyDelivered,
   'available_transitions': instance.availableTransitions
       .map((e) => e.toJson())
       .toList(),
@@ -344,6 +346,11 @@ _OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => _OrderItem(
   pricingUnitLabel: json['pricing_unit_label'] as String,
   quantity: json['quantity'] as String,
   shortageQuantity: json['shortage_quantity'] as String?,
+  undeliveredQuantity: json['undelivered_quantity'] as String?,
+  undeliveredDisposition: json['undelivered_disposition'] as String?,
+  undeliveredDispositionLabel: json['undelivered_disposition_label'] as String?,
+  restockedQuantity: json['restocked_quantity'] as String?,
+  deliveryLoss: json['delivery_loss'] as String?,
   billableQuantity: json['billable_quantity'] as String?,
   warehouseQuantity: json['warehouse_quantity'] as String?,
   unitPrice: json['unit_price'] as String,
@@ -373,6 +380,11 @@ Map<String, dynamic> _$OrderItemToJson(_OrderItem instance) =>
       'pricing_unit_label': instance.pricingUnitLabel,
       'quantity': instance.quantity,
       'shortage_quantity': instance.shortageQuantity,
+      'undelivered_quantity': instance.undeliveredQuantity,
+      'undelivered_disposition': instance.undeliveredDisposition,
+      'undelivered_disposition_label': instance.undeliveredDispositionLabel,
+      'restocked_quantity': instance.restockedQuantity,
+      'delivery_loss': instance.deliveryLoss,
       'billable_quantity': instance.billableQuantity,
       'warehouse_quantity': instance.warehouseQuantity,
       'unit_price': instance.unitPrice,

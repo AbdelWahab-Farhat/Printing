@@ -332,6 +332,8 @@ final class AuditAttributeLabels
             'unit_price' => 'سعر الوحدة',
             'line_total' => 'إجمالي البند',
             'shortage_quantity' => 'الكمية الناقصة',
+            'undelivered_quantity' => 'الكمية غير المستلمة',
+            'undelivered_disposition' => 'مصير الكمية غير المستلمة',
             'warehouse_quantity' => 'الكمية من المخزن',
             // What a vendor charged us for this line, recognised when the job came back — see
             // OUTSOURCED-PRODUCTS.md §6. The rate behind it is `unit_cost`, which the shared
