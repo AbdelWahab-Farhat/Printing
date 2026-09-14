@@ -174,11 +174,15 @@ enum OrderStatus {
     OrderStatus.manufacturing => OrderStatusTone.working,
     OrderStatus.ready => OrderStatusTone.ready,
     OrderStatus.shortage => OrderStatusTone.attention,
-    // The same family «نواقص» draws from, and for the same reason: both say «لا يمكن البدء
-    // بعد», and both are waiting on somebody outside this workshop.
-    OrderStatus.awaitingDeposit => OrderStatusTone.attention,
-    // Money in, nothing started — «جديدة» one step later.
-    OrderStatus.depositPaid => OrderStatusTone.fresh,
+    // **الأحمر جُرّب هنا ورُفض.** أُعطيت «انتظار العربون» عائلة «نواقص» أول الأمر، بحجّة أنّ
+    // كليهما يقول «لا يمكن البدء بعد» — والحجّة خاطئة: «نواقص» عطلٌ عندنا يستدعي عملاً، أمّا
+    // طلبيةٌ تنتظر عربونها فهي تسير كما اتُّفق عليه بالضبط. والأحمر في قائمةٍ تُقرأ سطراً سطراً
+    // يعني «هنا مشكلة»، فيجعل كل طلبيةٍ عاديةٍ تنتظر دفعتها تبدو مشكلة.
+    //
+    // فهما معاً في هدوء «جديدة»: طلبيةٌ أوّلها، لم يُبدأ فيها عمل، ولا شيء فيها يستدعي أحداً.
+    // والشكل هو ما يفرّق بينهما — ساعةٌ رمليّة وأوراقٌ نقديّة — وهي القاعدة التي يقوم عليها
+    // `iconFor` أصلاً: اللون يقول النوع، والأيقونة تقول الحالة بعينها.
+    OrderStatus.awaitingDeposit || OrderStatus.depositPaid => OrderStatusTone.fresh,
     OrderStatus.officePickup || OrderStatus.outForDelivery => OrderStatusTone.moving,
     OrderStatus.delivered || OrderStatus.settled => OrderStatusTone.done,
     OrderStatus.returnedCourier ||
