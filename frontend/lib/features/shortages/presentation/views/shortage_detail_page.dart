@@ -1,4 +1,5 @@
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/router/pop_result.dart';
@@ -41,6 +42,10 @@ class _ShortageDetailView extends StatefulWidget {
 }
 
 class _ShortageDetailViewState extends State<_ShortageDetailView> {
+  /// Every reading this screen saw, so the list behind is handed the row only when it is out of
+  /// date — see [Changes].
+  final _changes = Changes<Shortage>();
+
   /// Runs a write and prints whatever the server said, as it said it.
   ///
   /// **Every refusal here is a 422 with its own sentence** — an illegal move, a quantity above
@@ -93,77 +98,78 @@ class _ShortageDetailViewState extends State<_ShortageDetailView> {
     final cubit = context.read<ShortageDetailCubit>();
     final session = sl<Session>();
 
-    return BlocBuilder<ShortageDetailCubit, ShortageDetailState>(
+    return BlocConsumer<ShortageDetailCubit, ShortageDetailState>(
+      // **Every reading goes past here**, whatever produced it — the first load, a status move,
+      // an assignment, a supply and its undo. What differs from the first reading is what the
+      // النواقص list behind is handed, and it travels **beside** the route rather than through
+      // the pop, so the arrow, the Android button and the edge swipe all deliver it.
+      //
+      // This screen used to intercept the pop and hand the row over from there. That bought the
+      // row and sold every way out: `PopScope(canPop: false)` switches the iOS edge gesture off
+      // — `ModalRoute.popGestureEnabled` returns false for any route that says it might veto —
+      // and the callback never popped, so the screen could not be left at all. It is the exact
+      // trap [PopResult] was written to end; see its note.
+      listener: (context, state) => context.handBack(_changes.saw(state.shortage)),
       builder: (context, state) {
         final shortage = state.shortage;
 
-        return PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (didPop, _) {
-            if (didPop) return;
-
-            // The row the list is holding is stale the moment anything here succeeds, so it is
-            // handed back rather than re-fetched — «lists patch, they do not refresh».
-            context.handBack(shortage);
-          },
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(shortage == null ? 'النقص' : shortage.name),
-              actions: [
-                if (shortage != null && shortage.isEditable && session.can(AppPermission.manageShortages))
-                  IconButton(
-                    onPressed: () => context.push(Routes.shortageForm, extra: shortage),
-                    icon: Icon(AppIcons.edit),
-                    tooltip: 'تعديل',
-                  ),
-              ],
-            ),
-            floatingActionButton:
-                shortage != null &&
-                    shortage.isOutstanding &&
-                    session.can(AppPermission.recordShortageSupplies)
-                ? FloatingActionButton.extended(
-                    heroTag: 'fab-shortage-supply',
-                    onPressed: state.isWorking ? null : () => _recordSupply(shortage),
-                    icon: Icon(AppIcons.add),
-                    label: const Text('تسجيل توفير'),
-                  )
-                : null,
-            body: switch ((shortage, state)) {
-              (null, ShortageDetailFailure(:final failure)) => _Failure(
-                failure: failure,
-                onRetry: cubit.load,
-              ),
-              (null, _) => const Center(child: CircularProgressIndicator()),
-              (final loaded?, _) => RefreshIndicator(
-                onRefresh: cubit.load,
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
-                  children: [
-                    _Numbers(shortage: loaded),
-                    SizedBox(height: 16.h),
-                    _Facts(
-                      shortage: loaded,
-                      onAssign: session.can(AppPermission.assignShortages) && !state.isWorking
-                          ? () => _assign(loaded)
-                          : null,
-                    ),
-                    SizedBox(height: 16.h),
-                    if (session.can(AppPermission.manageShortages))
-                      _StatusActions(shortage: loaded, isWorking: state.isWorking),
-                    SizedBox(height: 16.h),
-                    SuppliesTable(
-                      shortage: loaded,
-                      onReverse: session.can(AppPermission.reverseShortageSupplies)
-                          ? (supply) => _run(() => cubit.reverseSupply(supply.id))
-                          : null,
-                    ),
-                  ],
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(shortage == null ? 'النقص' : shortage.name),
+            actions: [
+              if (shortage != null && shortage.isEditable && session.can(AppPermission.manageShortages))
+                IconButton(
+                  onPressed: () => context.push(Routes.shortageForm, extra: shortage),
+                  icon: Icon(AppIcons.edit),
+                  tooltip: 'تعديل',
                 ),
-              ),
-            },
+            ],
           ),
+          floatingActionButton:
+              shortage != null &&
+                  shortage.isOutstanding &&
+                  session.can(AppPermission.recordShortageSupplies)
+              ? FloatingActionButton.extended(
+                  heroTag: 'fab-shortage-supply',
+                  onPressed: state.isWorking ? null : () => _recordSupply(shortage),
+                  icon: Icon(AppIcons.add),
+                  label: const Text('تسجيل توفير'),
+                )
+              : null,
+          body: switch ((shortage, state)) {
+            (null, ShortageDetailFailure(:final failure)) => _Failure(
+              failure: failure,
+              onRetry: cubit.load,
+            ),
+            (null, _) => const Center(child: CircularProgressIndicator()),
+            (final loaded?, _) => RefreshIndicator(
+              onRefresh: cubit.load,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
+                children: [
+                  _Numbers(shortage: loaded),
+                  SizedBox(height: 16.h),
+                  _Facts(
+                    shortage: loaded,
+                    onAssign: session.can(AppPermission.assignShortages) && !state.isWorking
+                        ? () => _assign(loaded)
+                        : null,
+                  ),
+                  SizedBox(height: 16.h),
+                  if (session.can(AppPermission.manageShortages))
+                    _StatusActions(shortage: loaded, isWorking: state.isWorking),
+                  SizedBox(height: 16.h),
+                  SuppliesTable(
+                    shortage: loaded,
+                    onReverse: session.can(AppPermission.reverseShortageSupplies)
+                        ? (supply) => _run(() => cubit.reverseSupply(supply.id))
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          },
         );
       },
     );
