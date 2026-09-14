@@ -72,6 +72,11 @@ import 'package:dayaa/features/settings/presentation/views/settings_page.dart';
 import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
 import 'package:dayaa/features/shipping_companies/presentation/views/shipping_companies_page.dart';
 import 'package:dayaa/features/shipping_companies/presentation/views/shipping_company_form_page.dart';
+import 'package:dayaa/features/shortages/models/shortage.dart';
+import 'package:dayaa/features/shortages/models/shortages_filter.dart';
+import 'package:dayaa/features/shortages/presentation/views/shortage_detail_page.dart';
+import 'package:dayaa/features/shortages/presentation/views/shortage_form_page.dart';
+import 'package:dayaa/features/shortages/presentation/views/shortages_page.dart';
 import 'package:dayaa/features/splash/presentation/views/splash_page.dart';
 import 'package:dayaa/features/stock_item_groups/presentation/views/stock_item_groups_page.dart';
 import 'package:dayaa/features/stock_items/presentation/views/stock_item_form_page.dart';
@@ -222,6 +227,23 @@ abstract final class Routes {
   static const String vendorDetailPath = '/vendors/:id';
 
   static String vendor(int vendorId) => '/vendors/$vendorId';
+
+  // ── النواقص ───────────────────────────────────────────────────────────────
+  static const String shortages = '/shortages';
+
+  /// Writing one down by hand, or correcting one. Declared **before** `/shortages/:id`, so the
+  /// literal word «form» is not read as an id — the same trap `/purchase-orders/form` sits
+  /// beside.
+  static const String shortageForm = '/shortages/form';
+
+  /// The نواقص behind one question — one order's, reached from that order. Takes a
+  /// [ShortagesFilter] as `extra`, so the Arabic title travels with the question, exactly as
+  /// [purchaseOrdersFiltered] does. Declared **before** `:id`, or «filter» is read as an id.
+  static const String shortagesFiltered = '/shortages/filter';
+
+  static const String shortageDetailPath = '/shortages/:id';
+
+  static String shortage(int id) => '/shortages/$id';
 
   // ── أوامر الشراء ──────────────────────────────────────────────────────────
   static const String purchaseOrders = '/purchase-orders';
@@ -752,6 +774,42 @@ abstract final class AppRouter {
         redirect: (context, state) =>
             sl<Session>().can(AppPermission.viewVendors) ? null : Routes.home,
         builder: (context, state) => const VendorsPage(),
+      ),
+      // النواقص. The form is declared **before** the list and before `:id`, so the literal word
+      // «form» is not read as an id.
+      GoRoute(
+        path: Routes.shortageForm,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.manageShortages) ? null : Routes.shortages,
+        // The shortage arrives as `extra` when the form is opened to correct one, and not at all
+        // when it is opened to write a new one down.
+        builder: (context, state) =>
+            ShortageFormPage(shortage: state.payload is Shortage ? state.payload! as Shortage : null),
+      ),
+      GoRoute(
+        path: Routes.shortages,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewShortages) ? null : Routes.home,
+        builder: (context, state) => const ShortagesPage(),
+      ),
+      GoRoute(
+        path: Routes.shortagesFiltered,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewShortages) ? null : Routes.home,
+        // A deep link carries no `extra`. Rather than an error screen, it answers the widest
+        // honest version of the question it was given.
+        builder: (context, state) =>
+            ShortagesPage(filter: state.payload as ShortagesFilter?),
+      ),
+      GoRoute(
+        path: Routes.shortageDetailPath,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewShortages) ? null : Routes.home,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          return id == null ? const _UnknownShortage() : ShortageDetailPage(shortageId: id);
+        },
       ),
       // Declared **before** the list and before `:id`, so the literal word «form» is not read
       // as an id — the same trap `/products/new` sits beside.
@@ -1291,6 +1349,19 @@ class _UnknownRole extends StatelessWidget {
 
 /// A `/cities/<something that is not a number>/regions` link.
 /// A `/purchase-orders/<something that is not a number>` link.
+/// A `/shortages/<something that is not a number>` link.
+class _UnknownShortage extends StatelessWidget {
+  const _UnknownShortage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('النقص')),
+      body: const Center(child: Text('رقم النقص غير صحيح')),
+    );
+  }
+}
+
 class _UnknownPurchaseOrder extends StatelessWidget {
   const _UnknownPurchaseOrder();
 

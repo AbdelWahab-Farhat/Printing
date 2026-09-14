@@ -201,6 +201,12 @@ import 'package:dayaa/features/shipping_companies/repositories/shipping_company_
 import 'package:dayaa/features/shipping_companies/repositories/shipping_company_repository_impl.dart';
 import 'package:dayaa/features/shipping_companies/usecases/get_shipping_companies.dart';
 import 'package:dayaa/features/shipping_companies/usecases/save_shipping_company.dart';
+import 'package:dayaa/features/shortages/presentation/viewmodel/save_shortage_cubit.dart';
+import 'package:dayaa/features/shortages/presentation/viewmodel/shortage_detail_cubit.dart';
+import 'package:dayaa/features/shortages/presentation/viewmodel/shortages_cubit.dart';
+import 'package:dayaa/features/shortages/repositories/shortage_repository.dart';
+import 'package:dayaa/features/shortages/repositories/shortage_repository_impl.dart';
+import 'package:dayaa/features/shortages/usecases/shortage_usecases.dart';
 import 'package:dayaa/features/splash/presentation/viewmodel/splash_cubit.dart';
 import 'package:dayaa/features/stock_item_groups/presentation/viewmodel/save_stock_item_group_cubit.dart';
 import 'package:dayaa/features/stock_item_groups/presentation/viewmodel/stock_item_group_items_cubit.dart';
@@ -355,6 +361,7 @@ abstract final class Injector {
     _registerPurchaseOrders();
     _registerManufacturingCostRates();
     _registerShippingCompanies();
+    _registerShortages();
     _registerCustomers();
     _registerSettings();
     _registerOrders();
@@ -1080,6 +1087,51 @@ abstract final class Injector {
 
   /// The picker's [VendorsCubit], as opposed to the management screen's.
   static const String activeVendorsCubit = 'vendors:active';
+
+  /// النواقص — the repository and its use cases as lazy singletons, the three Cubits as
+  /// factories: two of them carry a question or an id, and a screen opened twice must not share
+  /// the first one's state.
+  static void _registerShortages() {
+    sl
+      ..registerLazySingleton<ShortageRepository>(() => ShortageRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetShortages>(() => GetShortages(sl<ShortageRepository>()))
+      ..registerLazySingleton<GetShortageCounts>(() => GetShortageCounts(sl<ShortageRepository>()))
+      ..registerLazySingleton<GetShortage>(() => GetShortage(sl<ShortageRepository>()))
+      ..registerLazySingleton<CreateShortage>(() => CreateShortage(sl<ShortageRepository>()))
+      ..registerLazySingleton<UpdateShortage>(() => UpdateShortage(sl<ShortageRepository>()))
+      ..registerLazySingleton<ChangeShortageStatus>(
+        () => ChangeShortageStatus(sl<ShortageRepository>()),
+      )
+      ..registerLazySingleton<AssignShortage>(() => AssignShortage(sl<ShortageRepository>()))
+      ..registerLazySingleton<RecordShortageSupply>(
+        () => RecordShortageSupply(sl<ShortageRepository>()),
+      )
+      ..registerLazySingleton<ReverseShortageSupply>(
+        () => ReverseShortageSupply(sl<ShortageRepository>()),
+      )
+      ..registerFactory<ShortagesCubit>(
+        () => ShortagesCubit(
+          getShortages: sl<GetShortages>(),
+          getCounts: sl<GetShortageCounts>(),
+        ),
+      )
+      ..registerFactoryParam<ShortageDetailCubit, int, void>(
+        (shortageId, _) => ShortageDetailCubit(
+          shortageId: shortageId,
+          getShortage: sl<GetShortage>(),
+          changeStatus: sl<ChangeShortageStatus>(),
+          assignShortage: sl<AssignShortage>(),
+          recordSupply: sl<RecordShortageSupply>(),
+          reverseSupply: sl<ReverseShortageSupply>(),
+        ),
+      )
+      ..registerFactory<SaveShortageCubit>(
+        () => SaveShortageCubit(
+          createShortage: sl<CreateShortage>(),
+          updateShortage: sl<UpdateShortage>(),
+        ),
+      );
+  }
 
   static void _registerPurchaseOrders() {
     sl

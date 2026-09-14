@@ -106,6 +106,15 @@ class _RootDrawerState extends State<RootDrawer> {
           route: Routes.purchaseOrders,
           permission: AppPermission.viewPurchaseOrders,
         ),
+        // **النواقص belongs beside أوامر الشراء, not in a section of its own.** A shortage is
+        // something to go out and buy; it sits in the same person's day as the paperwork above
+        // it. And a heading exists to group rows — one row does not earn one.
+        _Link(
+          icon: _LinkIcon.shortages,
+          label: 'النواقص',
+          route: Routes.shortages,
+          permission: AppPermission.viewShortages,
+        ),
         // Gated: unlike the map of cities below, this list is not needed to fill any form in —
         // a carrier is chosen from the dispatch screen's own picker.
         _Link(
@@ -410,6 +419,7 @@ enum _LinkIcon {
   productCategory,
   businessField,
   purchaseOrders,
+  shortages,
   warehouse,
   city,
   manufacturingCostRates,
@@ -425,6 +435,7 @@ enum _LinkIcon {
     _LinkIcon.productCategory => AppIcons.productCategory,
     _LinkIcon.businessField => AppIcons.businessField,
     _LinkIcon.purchaseOrders => AppIcons.purchaseOrders,
+    _LinkIcon.shortages => AppIcons.error,
     _LinkIcon.warehouse => AppIcons.warehouse,
     _LinkIcon.city => AppIcons.city,
     _LinkIcon.manufacturingCostRates => AppIcons.manufacturingCostRates,

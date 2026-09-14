@@ -38,6 +38,7 @@ import 'package:dayaa/features/orders/presentation/widgets/reinstate_order_dialo
 import 'package:dayaa/features/orders/presentation/widgets/stock_effect_dialog.dart';
 import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
+import 'package:dayaa/features/shortages/models/shortages_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -1015,6 +1016,29 @@ class _Body extends StatelessWidget {
               if (_hasDestinationDetails) ...[
                 SizedBox(height: 16.h),
                 _Destination(order: order),
+              ],
+              // **The other half of the deep link.** A shortage names its order and taps
+              // through to it; this is the way back — the النواقص list, already narrowed to
+              // this order. Drawn on the order having come up short at all rather than on its
+              // status, because the chase outlives «نواقص»: an order moves on while somebody is
+              // still out buying the sacks.
+              if (order.hasShortages && sl<Session>().can(AppPermission.viewShortages)) ...[
+                SizedBox(height: 16.h),
+                _Section(
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(AppIcons.error, color: context.colorScheme.onSurfaceVariant),
+                    title: const Text('نواقص هذه الطلبية'),
+                    trailing: Icon(AppIcons.forward, size: 18.sp),
+                    onTap: () => context.push(
+                      Routes.shortagesFiltered,
+                      extra: ShortagesFilter(
+                        title: 'نواقص الطلبية #${order.code}',
+                        orderId: order.id,
+                      ),
+                    ),
+                  ),
+                ),
               ],
               if (order.items != null && order.items!.isNotEmpty) ...[
                 SizedBox(height: 16.h),

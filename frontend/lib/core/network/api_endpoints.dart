@@ -216,6 +216,47 @@ abstract final class StockArrivalEndpoints {
 }
 
 /// The paperwork raised against a supplier.
+/// النواقص — what the shop is short of, and the chase to get it.
+///
+/// Nine paths behind five grants. Every one of the per-shortage routes also carries an **archive
+/// rule**: a shortage whose order has been archived additionally demands `orders.archive.view`
+/// and otherwise answers 403 with its own sentence — «هذا النقص يخصّ طلبية في الأرشيف…» — which
+/// is deliberately not the blanket «ليس لديك صلاحية». Show it as sent: the reader holds the
+/// grant the endpoint asks for and is being refused by a fact about *this row*.
+abstract final class ShortageEndpoints {
+  static const String index = '/shortages';
+
+  /// How many sit in each status — what the chip row above the list draws its numbers from.
+  ///
+  /// Declared on the server *before* `/shortages/{id}`, or the word «summary» would be read as an
+  /// id. It takes the same filters as the list and **ignores `status`**: a chip row exists to say
+  /// what *else* there is, and counting only the status already selected would make every chip
+  /// but one read zero.
+  static const String summary = '/shortages/summary';
+
+  static String show(int shortageId) => '/shortages/$shortageId';
+
+  /// Moving it along the chase. `PATCH` — and «مكتمل» is not reachable through it, because it is
+  /// written by arithmetic when the remainder reaches zero.
+  static String status(int shortageId) => '/shortages/$shortageId/status';
+
+  /// Handing it to somebody. Its own grant, `shortages.assign`: routing work and doing it are
+  /// different jobs.
+  static String assignee(int shortageId) => '/shortages/$shortageId/assignee';
+
+  /// Recording what was bought. **This posts goods onto a shelf**, not a note beside them — see
+  /// the record-supply sheet for why the warehouse is required on a stockable shortage.
+  static String supplies(int shortageId) => '/shortages/$shortageId/supplies';
+
+  /// Undoing one. Its own grant, `shortages.supplies.reverse`, and it takes the goods back off
+  /// the shelf — so Inventory can refuse it in its own words.
+  static String supplyReversal(int shortageId, int supplyId) =>
+      '/shortages/$shortageId/supplies/$supplyId/reversal';
+
+  /// The history, identical in shape to every other `logs` endpoint and read by the same screen.
+  static String logs(int shortageId) => '/shortages/$shortageId/logs';
+}
+
 abstract final class PurchaseOrderEndpoints {
   static const String index = '/purchase-orders';
 
@@ -368,6 +409,17 @@ abstract final class OrderEndpoints {
   /// server also refuses whoever moved the order to «عربون مدفوع», so that the claim and its
   /// confirmation are two people; `Order.canConfirmDeposit` carries the answer to both.
   static String depositReceipt(int orderId) => '/orders/$orderId/deposit-receipt';
+
+  /// What the shelves are short of for this order, line by line — the numbers that fill the
+  /// «نواقص» form instead of somebody counting them by hand.
+  ///
+  /// Read-only, and behind `orders.status.shortage` because it is the move it serves. Omit
+  /// `warehouse_id` and it answers across every warehouse; `available_scope` says which question
+  /// was answered, so a cross-site sum can be labelled as one. `suggested_shortage` is what to
+  /// put in a line's box — **a suggestion, not a fact**: two lines can share a shelf, the server
+  /// apportions earlier lines first, and only the total is certain. There is no new write path;
+  /// the answer is typed into the existing `PATCH /orders/{order}/status`.
+  static String stockShortfall(int orderId) => '/orders/$orderId/stock-shortfall';
 
   static String designs(int orderId) => '/orders/$orderId/designs';
 

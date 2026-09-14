@@ -523,6 +523,15 @@ abstract class Order with _$Order {
   bool get asksForADeposit =>
       depositExpectedAmount != null && (double.tryParse(depositExpectedAmount!) ?? 1) > 0;
 
+  /// Whether any line of this order came up short.
+  ///
+  /// **Read off the lines, and true long after «نواقص» is behind the order.** The chase outlives
+  /// the status: an order moves on while somebody is still out buying the sacks, and «هل كان
+  /// عليها نواقص؟» is asked then. False on a list payload that carried no lines, which is «not
+  /// asked» rather than «no» — and drawing nothing there is right, since there is nowhere to
+  /// tap through to either.
+  bool get hasShortages => items?.any((item) => item.hasShortage) ?? false;
+
   /// A discount worth showing a line for. `'0.00'` is not one.
   bool get hasDiscount => discount != '0.00';
 

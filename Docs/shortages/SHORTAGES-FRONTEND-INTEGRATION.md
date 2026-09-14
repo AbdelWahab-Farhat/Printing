@@ -1,8 +1,11 @@
 # النواقص — connecting the Flutter app
 
-> **Status: not started.** The backend is built, tested and green — see
-> [SHORTAGES-DESIGN.md](SHORTAGES-DESIGN.md). **Nothing in `frontend/` has been touched, by
-> instruction.**
+> **Status: built.** The section exists — list, detail, form, the supply sheet with its
+> conditional warehouse picker, the assign sheet, the advanced filter, the routes, the drawer
+> link and the DI wiring — with 42 tests beside it. §١٠ records the two places the build
+> departed from this document, both on the owner's word.
+>
+> The backend is described in [SHORTAGES-DESIGN.md](SHORTAGES-DESIGN.md).
 >
 > This file is the handover: what the endpoints answer, what to build against them, and the
 > traps that will otherwise be discovered on a phone.
@@ -500,22 +503,67 @@ Minimum Cubit coverage per `frontend/RULES.md` §٩, mirroring `test/features/pu
 
 ## ٨. Checklist
 
-- [ ] `shortage.dart`, `shortage_supply.dart` + `build_runner`
-- [ ] `shortage_counts.dart`, `shortages_filter.dart` (plain classes)
-- [ ] `ShortageRepository` + impl
-- [ ] Use cases
-- [ ] `ShortageEndpoints`
-- [ ] Five `AppPermission` cases
-- [ ] `_registerShortages()` in the injector
-- [ ] Routes + guarded `GoRoute`s
-- [ ] Drawer link in «المشتريات والتوصيل» behind `PermissionGate`
-- [ ] `ShortagesCubit` (list + chips + filters), `ShortageDetailCubit`, `SaveShortageCubit`
-- [ ] `ShortagesPage`, `ShortageDetailPage`, `ShortageFormPage`
-- [ ] The three sheets — filter, assign, record supply (**with the conditional warehouse picker**)
-- [ ] Prefill «نواقص» from `GET orders/{order}/stock-shortfall`
-- [ ] Deep link both ways: order → its shortages, shortage → its order
-- [ ] Tests
-- [ ] `flutter analyze` clean, `dart format -l 100` on changed files only
+- [x] `shortage.dart`, `shortage_supply.dart` + `build_runner`
+- [x] `shortage_counts.dart`, `shortages_filter.dart` (plain classes)
+- [x] `ShortageRepository` + impl
+- [x] Use cases
+- [x] `ShortageEndpoints` (+ `OrderEndpoints.stockShortfall`)
+- [x] Five `AppPermission` cases
+- [x] `_registerShortages()` in the injector
+- [x] Routes + guarded `GoRoute`s
+- [x] Drawer link in «المشتريات والتوصيل»
+- [x] `ShortagesCubit` (list + chips + filters), `ShortageDetailCubit`, `SaveShortageCubit`
+- [x] `ShortagesPage`, `ShortageDetailPage`, `ShortageFormPage`
+- [x] The record-supply sheet, **with the conditional warehouse picker**
+- [x] The filter sheet — **and it replaced the chip row**, see §١٠
+- [x] The assign sheet
+- [ ] Prefill «نواقص» from `GET orders/{order}/stock-shortfall` — see §١٠
+- [x] Deep link both ways — shortage → its order, and order → its نواقص
+- [x] Tests — 42 of them
+- [x] `flutter analyze` clean
+
+---
+
+## ١٠. What was built, and the three things that were not
+
+**The status buttons are drawn from `available_transitions` and from nothing else**, so «مكتمل»
+is never offered — it is written by arithmetic when the remainder reaches zero. `is_editable`
+decides whether the pencil appears at all, and each supply row's own `is_reversible` decides
+whether it is offered an undo. All three are the server's answers, read rather than re-derived.
+
+**The two queues are chips on the list, not screens.** «المسندة إليّ» and «غير مُسنَدة» sit under
+the status board and travel as `assigned_to=me` and `assigned_to=none` — two words rather than
+ids, because neither is one.
+
+**The board is asked without the status.** `ShortagesCubit` refreshes it beside page one only,
+and a failed board leaves the last numbers standing rather than blanking the row: the list
+underneath still answered, and zeros nobody measured would be a worse lie than stale ones.
+
+**§٦٫١'s chip row was built and then removed, on the owner's word.** The list opened with a
+scrolling status row *and* a second row for «المسندة إليّ» / «غير مُسنَدة»: a hundred points of
+every screen spent saying «الكل», «مكتمل» off the edge of a row nothing suggested continued, and
+two rows disagreeing about which of them was «the» filter. Everything they did now lives in
+`ShortageFilterButton` — status, assignment and source, answered together and applied in **one**
+request — and the counts went in with the statuses, which is the one thing the row was good for.
+The list is back to the band every other list in this app opens with: a search box and one round
+button. `shortage_filter_button_test.dart` pins that the chips are gone and that nothing is
+applied until «تطبيق».
+
+**Order → its نواقص is drawn on `Order.hasShortages`, not on the status.** The chase outlives
+«نواقص»: an order moves on while somebody is still out buying the sacks, and «هل كان عليها
+نواقص؟» is asked then. It opens `/shortages/filter` with a `ShortagesFilter` carrying the order's
+id and the Arabic title, the same arrangement `purchaseOrdersFiltered` uses.
+
+**What is still not built, and it does not block the section:**
+
+1. **Prefilling «نواقص» from `stock-shortfall`.** The endpoint is on `OrderEndpoints` and the
+   hint the server already sends renders as sent — §٣٫٦'s read-only half works. The «سجّلها
+   كنواقص» button that fetches the suggestion and fills the boxes belongs to the order screen,
+   not this section, and it was left where it belongs.
+
+**And one caution kept from §٦٫٤:** the detail screen has a single `FloatingActionButton` for
+«تسجيل توفير». Adding a second action there turns it into a closed dial, and widget tests then
+fail silently on `tap(find.text(...))`.
 
 ---
 
