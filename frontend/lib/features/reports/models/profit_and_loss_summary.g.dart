@@ -16,6 +16,10 @@ _ProfitAndLossSummary _$ProfitAndLossSummaryFromJson(
   ),
   grossProfit: json['gross_profit'] as String,
   cashCollected: json['cash_collected'] as String,
+  writeOffs: json['write_offs'] as String?,
+  losses: json['losses'] == null
+      ? null
+      : PnlLosses.fromJson(json['losses'] as Map<String, dynamic>),
   ordersRecognized: (json['orders_recognized'] as num).toInt(),
 );
 
@@ -27,6 +31,8 @@ Map<String, dynamic> _$ProfitAndLossSummaryToJson(
   'cost_of_goods_sold': instance.costOfGoodsSold.toJson(),
   'gross_profit': instance.grossProfit,
   'cash_collected': instance.cashCollected,
+  'write_offs': instance.writeOffs,
+  'losses': instance.losses?.toJson(),
   'orders_recognized': instance.ordersRecognized,
 };
 
@@ -46,6 +52,19 @@ Map<String, dynamic> _$PnlRevenueToJson(_PnlRevenue instance) =>
     <String, dynamic>{
       'product': instance.product,
       'service': instance.service,
+      'total': instance.total,
+    };
+
+_PnlLosses _$PnlLossesFromJson(Map<String, dynamic> json) => _PnlLosses(
+  scrap: json['scrap'] as String,
+  partialDelivery: json['partial_delivery'] as String,
+  total: json['total'] as String,
+);
+
+Map<String, dynamic> _$PnlLossesToJson(_PnlLosses instance) =>
+    <String, dynamic>{
+      'scrap': instance.scrap,
+      'partial_delivery': instance.partialDelivery,
       'total': instance.total,
     };
 

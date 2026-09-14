@@ -18,8 +18,10 @@ part 'profit_and_loss_summary.g.dart';
 ///
 /// Money is a `String` end to end, at exactly two decimals, and [grossProfit] carries a leading
 /// `-` when the period lost money. The server builds this as a plain array rather than a
-/// Resource, so there is no `whenLoaded` anywhere in it: **every key is always present**, which
-/// is why nothing here is nullable and an empty period reads as `'0.00'` rather than as a gap.
+/// Resource, so there is no `whenLoaded` anywhere in it: **every key a given server publishes is
+/// always present**, and an empty period reads as `'0.00'` rather than as a gap. The one
+/// nullable field is [losses], and it is nullable against *older servers* rather than against
+/// an empty period — see its own note.
 ///
 /// Mirrors `ProfitAndLossSummaryQuery::__invoke()`.
 @freezed
@@ -33,6 +35,33 @@ abstract class ProfitAndLossSummary with _$ProfitAndLossSummary {
     /// Money that came in over these same days — and nothing more than that. See [PnlPeriod]
     /// for what the days mean and the class note on the screen for why it is never netted.
     @JsonKey(name: 'cash_collected') required String cashCollected,
+
+    /// What the business decided it will never collect — the difference on an order that came
+    /// back short, closed on the record rather than typed in as a payment nobody received.
+    ///
+    /// **Not a loss, and deliberately not on the «الخسائر» card.** Nothing was made and nothing
+    /// was spoiled: a write-off forgives a receivable. This statement recognises revenue when
+    /// the order is delivered and carries no expense side at all, so there is nowhere in the
+    /// arithmetic above to hang a bad debt — which is why the server publishes it beside
+    /// [cashCollected] rather than inside [losses], and why it is read on the same
+    /// reconciliation shelf. A write-off that was undone is not counted.
+    ///
+    /// Nullable for the reason [losses] is, and for one more: this key has been on the wire
+    /// since the write-off feature shipped and no screen in this app has ever read it.
+    @JsonKey(name: 'write_offs') String? writeOffs,
+
+    /// Goods this business made and never sold — تلف on the press, and what a customer left on
+    /// the counter.
+    ///
+    /// **Reported, never subtracted.** Both figures are already inside [grossProfit] by
+    /// construction — the material left the shelf and its cost was recognised — so showing them
+    /// as a deduction would tell the same story twice and make the arithmetic on screen fail to
+    /// add up.
+    ///
+    /// The one nullable field in this class, and for a reason the others are not: it is the one
+    /// key `ProfitAndLossSummaryQuery` did not always publish, so an app talking to a server
+    /// older than the feature still parses its report rather than failing on a missing block.
+    PnlLosses? losses,
 
     /// How many orders the revenue and cost blocks are actually about.
     ///
@@ -113,6 +142,30 @@ abstract class PnlRevenue with _$PnlRevenue {
   }) = _PnlRevenue;
 
   factory PnlRevenue.fromJson(Map<String, dynamic> json) => _$PnlRevenueFromJson(json);
+}
+
+/// What was made and never sold, over the same period.
+///
+/// **Two failures, named apart, because they have two different fixes.** [scrap] is bags spoiled
+/// on the press — ours to reduce by printing better. [partialDelivery] is bags made exactly as
+/// ordered, counted, and left on the counter by the customer who asked for them: printed artwork
+/// nobody else can buy. A single «خسائر» figure would hide which of the two a bad month was.
+///
+/// **[total] is the server's sum, not one made here**, for the reason every other figure on this
+/// screen is the server's: two answers to one question is one answer too many.
+@freezed
+abstract class PnlLosses with _$PnlLosses {
+  const factory PnlLosses({
+    /// تلف — spoiled during production.
+    required String scrap,
+
+    /// ما لم يستلمه العميل — made, counted, refused.
+    @JsonKey(name: 'partial_delivery') required String partialDelivery,
+
+    required String total,
+  }) = _PnlLosses;
+
+  factory PnlLosses.fromJson(Map<String, dynamic> json) => _$PnlLossesFromJson(json);
 }
 
 /// What those same orders cost to make.

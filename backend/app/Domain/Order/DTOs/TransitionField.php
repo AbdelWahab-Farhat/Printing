@@ -7,6 +7,7 @@ namespace App\Domain\Order\DTOs;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\TransitionFieldType;
 use App\Domain\Order\Support\TransitionFields;
+use App\Support\DecimalText;
 use Illuminate\Validation\Rule;
 
 /**
@@ -109,6 +110,11 @@ final class TransitionField
      * leaving «نواقص» nearly always means, and a clerk who agrees taps once. Left null by every
      * field with no obvious answer — an empty box that suggests nothing is honest, one that
      * suggests a wrong number is not.
+     *
+     * **And it opens holding «1000», not «1000.000».** The scale belongs to the column the
+     * figure was read out of; what the box holds is a number somebody is about to agree with or
+     * correct. Trimmed here rather than at each caller so no field can be added that forgets —
+     * see {@see DecimalText}.
      */
     public static function number(
         string $key,
@@ -127,7 +133,7 @@ final class TransitionField
             hint: $hint,
             min: $min,
             max: $max,
-            value: $value,
+            value: $value === null ? null : DecimalText::trim($value),
         );
     }
 

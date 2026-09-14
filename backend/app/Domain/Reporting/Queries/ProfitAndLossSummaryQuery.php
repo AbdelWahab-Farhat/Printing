@@ -6,11 +6,13 @@ namespace App\Domain\Reporting\Queries;
 
 use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Enums\DesignSource;
+use App\Domain\Order\Enums\ManufacturingCostType;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderPayment;
+use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\Order\Support\Money;
 use Illuminate\Support\Facades\DB;
 
@@ -51,6 +53,11 @@ use Illuminate\Support\Facades\DB;
  * disagree with its own delivery line, which is the inconsistency the omission avoids. A
  * business that later wants «كم حصّلنا مقابل التغليف؟» answered has the column and its reason
  * code waiting — that is a new figure on this statement, not a redefinition of an existing one.
+ *
+ * **The `losses` section is reported, never subtracted** — see the query that builds it. Both
+ * kinds of loss are already inside gross profit by construction, so the section names money the
+ * shop could otherwise see only as a margin that came out thin. It is the one place `ScrapLoss`
+ * has ever appeared on this statement.
  *
  * `design_fee` carries no cost of its own anywhere in this codebase — see BUSINESS-FIELDS-DESIGN
  * and the plan's own note — so service revenue is, by construction, 100% margin here. Not a bug:
@@ -129,6 +136,55 @@ final class ProfitAndLossSummaryQuery
             ->whereDoesntHave('reversal')
             ->sum('amount');
 
+        // **Goods this business made and never sold** — spoiled on the press, or made, counted
+        // and left on the counter by the customer who ordered them.
+        //
+        // **Reported beside the statement and deliberately not subtracted from it**, the same
+        // shelf `cash_collected` and `write_offs` already sit on. Both figures are *already* in
+        // gross profit by construction and subtracting them here would charge the same goods
+        // twice:
+        //
+        // - Scrap draws fresh stock off a shelf and never reaches a line's `cogs`; what it costs
+        //   the business shows up as inventory that left without revenue beside it.
+        // - A partial delivery lowers revenue through `billableQuantity()` while the cost frozen
+        //   at «جاهزة» stays whole, so the whole of it has already come out of the margin.
+        //
+        // What this section adds is a *name* for money the shop can otherwise see only as a
+        // margin that came out thin — and the two are named apart because they are fixed by
+        // different people. A press problem and a counter problem are not one number.
+        //
+        // **Scrap is here for the first time**, and it predates partial delivery by a year:
+        // `RecordScrapLoss` has been writing entries that no statement ever read, because the
+        // report sums the cached item columns and
+        // `RecalculateOrderItemManufacturingCost` folds a loss into neither of them. Shipping
+        // «خسارة التسليم الجزئي» alone under a heading called «الخسائر» would have made that
+        // silence look like an answer.
+        //
+        // One query with a CASE rather than two: both rows read the same table with the same
+        // active-entry rule and differ only in `cost_type`.
+        //
+        // Active entries only — neither a reversal itself nor one that has been undone — which
+        // is the rule `RecalculateOrderItemManufacturingCost::activeEntriesFor()` already states
+        // and `write_offs` above already follows for its own reversals. A loss that was reversed
+        // because the goods turned up is not a loss.
+        $losses = ProductionCostEntry::query()
+            ->whereIn('order_id', $orderIds)
+            ->whereIn('cost_type', [
+                ManufacturingCostType::ScrapLoss->value,
+                ManufacturingCostType::DeliveryLoss->value,
+            ])
+            ->whereNull('reverses_entry_id')
+            ->whereDoesntHave('reversal')
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN cost_type = ? THEN amount ELSE 0 END), 0) as scrap, '.
+                'COALESCE(SUM(CASE WHEN cost_type = ? THEN amount ELSE 0 END), 0) as partial_delivery',
+                [
+                    ManufacturingCostType::ScrapLoss->value,
+                    ManufacturingCostType::DeliveryLoss->value,
+                ],
+            )
+            ->first();
+
         $revenueTotal = Money::sum($productRevenue, $serviceRevenue);
 
         return [
@@ -150,6 +206,17 @@ final class ProfitAndLossSummaryQuery
             'gross_profit' => Money::round(bcsub($revenueTotal, $cogs, 8)),
             'cash_collected' => Money::round($cashCollected),
             'write_offs' => Money::round($writeOffs),
+
+            // Named, never netted — see the query above. `total` is here so a reader who wants
+            // one figure is not left adding two on a phone.
+            'losses' => [
+                'scrap' => Money::round((string) $losses->scrap),
+                'partial_delivery' => Money::round((string) $losses->partial_delivery),
+                'total' => Money::sum(
+                    (string) $losses->scrap,
+                    (string) $losses->partial_delivery,
+                ),
+            ],
             'orders_recognized' => $orderIds->count(),
         ];
     }

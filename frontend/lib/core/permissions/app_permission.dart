@@ -173,6 +173,13 @@ enum AppPermission {
     'تسليم الطلبية للتوصيل أو للاستلام من المكتب',
   ),
   markOrdersDelivered('orders.status.delivered', 'تأكيد استلام العميل للطلبية'),
+
+  /// Recording that the customer took only part of the order — which shrinks the invoice.
+  ///
+  /// **The app never checks this.** The server withholds the *fields* from anybody lacking it,
+  /// so a screen that renders what it is handed is correct either way. It is here because the
+  /// roles screen lists every permission by name.
+  recordPartialDelivery('orders.partial_delivery', 'تسجيل تسليم جزئي — يُنقص الفاتورة'),
   settleOrders('orders.status.settled', 'تسوية مبلغ الطلبية'),
   recordCourierReturn(
     'orders.status.returned_courier',

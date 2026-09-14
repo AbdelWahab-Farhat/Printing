@@ -8,6 +8,7 @@ use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Support\StockEffectPreview;
 use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Http\Request;
@@ -238,6 +239,27 @@ class OrderResource extends JsonResource
             'total_weight' => $this->when(
                 $this->resource->relationLoaded('items'),
                 fn () => $this->totalWeight(),
+            ),
+
+            // **Whether the customer left part of this order behind** — the chip in the orders
+            // list, and the reason the order screen draws a line about it at all.
+            //
+            // Derived rather than cached, for the reason `Order::grossProfit()` gives about
+            // itself: the inputs are already here, and a column to keep in step could only ever
+            // come to disagree with them. It costs no query for exactly the same reason
+            // `total_weight` above costs none — `OrderListQuery` already eager-loads the lines
+            // for the moves it offers per row — which is what made the chip affordable and
+            // overturned the recommendation against it. See PARTIAL-DELIVERY-DESIGN.md §3,
+            // Decision 7.
+            //
+            // Guarded on the relation like its neighbour, and for the same reason: a key that
+            // *fetches* the lines would be a query per row on a page of twenty.
+            'is_partially_delivered' => $this->when(
+                $this->resource->relationLoaded('items'),
+                fn (): bool => $this->items->contains(
+                    fn (OrderItem $item): bool => $item->undelivered_quantity !== null
+                        && bccomp((string) $item->undelivered_quantity, '0', 3) > 0,
+                ),
             ),
 
             'placed_at' => $this->placed_at?->toIso8601String(),
