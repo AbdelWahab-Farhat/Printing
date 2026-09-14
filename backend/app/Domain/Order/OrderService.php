@@ -7,6 +7,7 @@ namespace App\Domain\Order;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\AddOrderDesign;
 use App\Domain\Order\Actions\ChangeOrderStatus;
+use App\Domain\Order\Actions\ConfirmDepositReceipt;
 use App\Domain\Order\Actions\CreateManufacturingCostRate;
 use App\Domain\Order\Actions\CreateOrder;
 use App\Domain\Order\Actions\MarkReadyMessageSent;
@@ -25,6 +26,8 @@ use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Exceptions\DepositConfirmationNeedsADeposit;
+use App\Domain\Order\Exceptions\DepositConfirmationNeedsASecondPerson;
 use App\Domain\Order\Exceptions\ReadyMessageNeedsAReadyOrder;
 use App\Domain\Order\Exceptions\ScrapRequiresAnActor;
 use App\Domain\Order\Models\ManufacturingCostRate;
@@ -65,6 +68,7 @@ class OrderService
         private readonly ReinstateCancelledOrder $reinstateOrder,
         private readonly SetOrderShortages $setShortages,
         private readonly MarkReadyMessageSent $markReadyMessageSent,
+        private readonly ConfirmDepositReceipt $confirmDepositReceipt,
         private readonly AddOrderDesign $addDesign,
         private readonly ReviewOrderDesign $reviewDesign,
         private readonly RecordOrderPayment $recordPayment,
@@ -193,6 +197,17 @@ class OrderService
     public function markReadyMessageSent(Order $order, bool $sent, ?User $actor = null): Order
     {
         return ($this->markReadyMessageSent)($order, $sent, $actor);
+    }
+
+    /**
+     * Records that somebody checked the account and the عربون is there — or takes that back.
+     *
+     * @throws DepositConfirmationNeedsADeposit
+     * @throws DepositConfirmationNeedsASecondPerson
+     */
+    public function confirmDepositReceipt(Order $order, bool $received, ?User $actor = null): Order
+    {
+        return ($this->confirmDepositReceipt)($order, $received, $actor);
     }
 
     public function addDesign(Order $order, int $customerDesignId, ?string $notes = null): OrderDesign
@@ -340,6 +355,10 @@ class OrderService
             // Who said the customer had been told — a name on the order screen, and the only
             // reason this relation is ever loaded. The list does not: no card shows it.
             'readyMessenger',
+            // The two names on the عربون: who claimed it was paid and who confirmed it arrived.
+            // The order screen prints both beside the tick — they are the whole point of a rule
+            // that says the two must differ — and, like the messenger above, no card shows them.
+            'depositClaimer', 'depositConfirmer',
             // The product behind each line, with its photographs: the line draws the catalogue's
             // own card and opens it. Loaded here rather than per line — a four-line order would
             // otherwise be four queries, and `Model::shouldBeStrict()` would say so.

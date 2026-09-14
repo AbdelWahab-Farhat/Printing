@@ -7694,6 +7694,8 @@
                                                         "ready_message_sent_by",
                                                         "customer",
                                                         "shop",
+                                                        "deposit_claimed_by",
+                                                        "deposit_confirmed_by",
                                                         "total_weight",
                                                         "items",
                                                         "designs",
@@ -7770,6 +7772,8 @@
                                                         "ready_message_sent_by",
                                                         "customer",
                                                         "shop",
+                                                        "deposit_claimed_by",
+                                                        "deposit_confirmed_by",
                                                         "total_weight",
                                                         "items",
                                                         "designs",
@@ -7854,6 +7858,8 @@
                                                         "ready_message_sent_by",
                                                         "customer",
                                                         "shop",
+                                                        "deposit_claimed_by",
+                                                        "deposit_confirmed_by",
                                                         "total_weight",
                                                         "items",
                                                         "designs",
@@ -7931,6 +7937,8 @@
                                                         "ready_message_sent_by",
                                                         "customer",
                                                         "shop",
+                                                        "deposit_claimed_by",
+                                                        "deposit_confirmed_by",
                                                         "total_weight",
                                                         "items",
                                                         "designs",
@@ -8007,6 +8015,8 @@
                                                         "ready_message_sent_by",
                                                         "customer",
                                                         "shop",
+                                                        "deposit_claimed_by",
+                                                        "deposit_confirmed_by",
                                                         "total_weight",
                                                         "items",
                                                         "designs",
@@ -8092,6 +8102,8 @@
                                                         "ready_message_sent_by",
                                                         "customer",
                                                         "shop",
+                                                        "deposit_claimed_by",
+                                                        "deposit_confirmed_by",
                                                         "total_weight",
                                                         "items",
                                                         "designs",
@@ -8179,6 +8191,8 @@
                                                         "ready_message_sent_by",
                                                         "customer",
                                                         "shop",
+                                                        "deposit_claimed_by",
+                                                        "deposit_confirmed_by",
                                                         "total_weight",
                                                         "items",
                                                         "designs",
@@ -8268,6 +8282,8 @@
                                                         "ready_message_sent_by",
                                                         "customer",
                                                         "shop",
+                                                        "deposit_claimed_by",
+                                                        "deposit_confirmed_by",
                                                         "total_weight",
                                                         "items",
                                                         "designs",
@@ -8360,6 +8376,102 @@
                                                         "ready_message_sent_by",
                                                         "customer",
                                                         "shop",
+                                                        "deposit_claimed_by",
+                                                        "deposit_confirmed_by",
+                                                        "total_weight",
+                                                        "items",
+                                                        "designs",
+                                                        "transitions",
+                                                        "created_by"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/orders/{order}/deposit-receipt": {
+            "patch": {
+                "operationId": "orders.deposit-receipt",
+                "description": "\u00ab\u0647\u0644 \u0648\u0635\u0644 \u0627\u0644\u0639\u0631\u0628\u0648\u0646 \u0641\u0639\u0644\u0627\u064b\u061f\u00bb \u2014 and it is a different question from the order's status. Moving an\norder to \u00ab\u0639\u0631\u0628\u0648\u0646 \u0645\u062f\u0641\u0648\u0639\u00bb is the counter saying the customer paid, made on their word so the\njob can start; this is a second employee saying they looked at the account and the money is\nthere, made whenever they get to it \u2014 an hour later, or after the bags have shipped.\n\n**The person who made the claim may not confirm it.** The domain refuses them with 422, and\n`can_confirm_deposit` on the order says so in advance so the box is greyed rather than\ntapped. At least two users therefore need this grant.\n\n`received: false` takes an earlier confirmation back, for the stray tap \u2014 **allowed to\nanyone holding the grant, the claimer included**, because withdrawing a statement is not\nmaking one. Both movements stay in the order's history.\n\n**Nothing is gated by the answer.** An order whose deposit is unconfirmed prints, ships and\nis delivered exactly like one whose deposit was confirmed; what the flag feeds is the\naccountant's own queue.",
+                "summary": "Confirm the deposit was received",
+                "tags": [
+                    "Order"
+                ],
+                "parameters": [
+                    {
+                        "name": "order",
+                        "in": "path",
+                        "required": true,
+                        "description": "The order ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConfirmDepositReceiptRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "enum": [
+                                                "\u062a\u0645 \u062a\u0623\u0643\u064a\u062f \u0627\u0633\u062a\u0644\u0627\u0645 \u0627\u0644\u0639\u0631\u0628\u0648\u0646",
+                                                "\u0623\u064f\u0644\u063a\u064a \u062a\u0623\u0643\u064a\u062f \u0627\u0633\u062a\u0644\u0627\u0645 \u0627\u0644\u0639\u0631\u0628\u0648\u0646"
+                                            ]
+                                        },
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/OrderResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "ready_message_sent_by",
+                                                        "customer",
+                                                        "shop",
+                                                        "deposit_claimed_by",
+                                                        "deposit_confirmed_by",
                                                         "total_weight",
                                                         "items",
                                                         "designs",
@@ -20209,6 +20321,20 @@
                 ],
                 "title": "CommentResource"
             },
+            "ConfirmDepositReceiptRequest": {
+                "type": "object",
+                "description": "Confirming \u2014 or unconfirming \u2014 that the \u0639\u0631\u0628\u0648\u0646 actually reached the account.\n\nThe permission is on the route (`orders.deposit.confirm`): this endpoint costs the same grant\nwhatever the body says. **The rule that the person who claimed the deposit may not confirm it\nis not here**, because it is a fact about the order rather than about the request \u2014 it lives in\n`ConfirmDepositReceipt`, where a console command meets it too, and is published to the app as\n`can_confirm_deposit` so the box is greyed before anybody taps it.\n\n**`received` is required and not defaulted**, exactly as `sent` is on the ready-message\nendpoint: a missing key would silently mean \u00ab\u0646\u0639\u0645\u00bb on the one request where guessing is worst \u2014\nits other direction is the correction of a stray tap.",
+                "properties": {
+                    "received": {
+                        "type": "boolean",
+                        "description": "Whether the \u0639\u0631\u0628\u0648\u0646 has been seen in the account. `false` takes an earlier confirmation back."
+                    }
+                },
+                "required": [
+                    "received"
+                ],
+                "title": "ConfirmDepositReceiptRequest"
+            },
             "ConfirmReadyMessageRequest": {
                 "type": "object",
                 "description": "Confirming \u2014 or unconfirming \u2014 that the customer was told their order is ready.\n\nThe permission is on the route: unlike a status change this endpoint costs the same grant\nwhatever the body says, and unlike an order edit it has exactly one field.\n\n**`sent` is required and not defaulted.** A missing key would silently mean \u00ab\u0646\u0639\u0645\u00bb on an\nendpoint whose other direction is a correction of a stray tap \u2014 the one request where guessing\nis worst.",
@@ -22181,6 +22307,8 @@
                         "type": "string",
                         "enum": [
                             "\u062c\u062f\u064a\u062f\u0629",
+                            "\u0627\u0646\u062a\u0638\u0627\u0631 \u0627\u0644\u0639\u0631\u0628\u0648\u0646",
+                            "\u0639\u0631\u0628\u0648\u0646 \u0645\u062f\u0641\u0648\u0639",
                             "\u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629",
                             "\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645",
                             "\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629",
@@ -22291,6 +22419,8 @@
                                         ],
                                         "enum": [
                                             "\u062c\u062f\u064a\u062f\u0629",
+                                            "\u0627\u0646\u062a\u0638\u0627\u0631 \u0627\u0644\u0639\u0631\u0628\u0648\u0646",
+                                            "\u0639\u0631\u0628\u0648\u0646 \u0645\u062f\u0641\u0648\u0639",
                                             "\u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629",
                                             "\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645",
                                             "\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629",
@@ -22563,6 +22693,87 @@
                         "type": "boolean",
                         "description": "**An order that finished without its money accounted for.** Settling an order\nwrites no ledger entry \u2014 nothing records a payment except the person who took it \u2014\nso this is how that gap is surfaced rather than papered over with an entry nobody\nmade. See Order::hasUnrecordedMoney()."
                     },
+                    "deposit_expected_amount": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "\u2500\u2500 \u0627\u0644\u0639\u0631\u0628\u0648\u0646 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n*Three facts, deliberately not merged.** What was asked for, what the counter\nclaimed, and whether a second person has checked. Published even on orders that\nnever asked for a deposit \u2014 null and false \u2014 because a client distinguishing\n\"absent\" from \"no\" is a client written against one server's mood.\nThe arrangement. **Not money that has moved**, and nothing sums it: the real\ndeposit is an ordinary entry in `payments`, already counted in `paid_amount` above."
+                    },
+                    "deposit_expected_method": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "deposit_expected_method_label": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "deposit_paid_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The claim: when the order was said to have been paid. Cleared if it is walked back."
+                    },
+                    "is_deposit_received": {
+                        "type": "boolean",
+                        "description": "The confirmation, and who made it."
+                    },
+                    "deposit_confirmed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "can_confirm_deposit": {
+                        "type": "boolean",
+                        "description": "**Whether the box may be tapped, answered by the server.** It folds two things a\nclient cannot see together: the `orders.deposit.confirm` grant, and the rule that\nwhoever moved the order to \u00ab\u0639\u0631\u0628\u0648\u0646 \u0645\u062f\u0641\u0648\u0639\u00bb is not the one who confirms it. Without\nthis the app would have to keep its own copy of a rule it cannot evaluate \u2014 it does\nnot know who made the claim \u2014 and would grey the box wrongly or not at all."
+                    },
+                    "awaits_deposit_confirmation": {
+                        "type": "boolean",
+                        "description": "**A claim nobody has checked yet \u2014 the accountant's queue, and not a problem.** The\norder goes on being printed and delivered throughout; this exists so the screen can\nshow the row and the report can count it."
+                    },
+                    "deposit_claimed_by": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "Who said the \u0639\u0631\u0628\u0648\u0646 was paid, and who confirmed it \u2014 two different people by rule.\nLoaded only where the relations are in hand, like `ready_message_sent_by` above:\nthe order screen loads them, a page of twenty does not.",
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
+                    "deposit_confirmed_by": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name"
+                        ]
+                    },
                     "collected_amount": {
                         "type": [
                             "string",
@@ -22821,6 +23032,14 @@
                     "payment_status",
                     "payment_status_label",
                     "has_unrecorded_money",
+                    "deposit_expected_amount",
+                    "deposit_expected_method",
+                    "deposit_expected_method_label",
+                    "deposit_paid_at",
+                    "is_deposit_received",
+                    "deposit_confirmed_at",
+                    "can_confirm_deposit",
+                    "awaits_deposit_confirmation",
                     "collected_amount",
                     "shipping_company_id",
                     "shipping_company",
@@ -22848,10 +23067,12 @@
             },
             "OrderStatus": {
                 "type": "string",
-                "description": "Where an order is, and the only moves it may make from there. **This enum is the state machine.** The map in {@see allowedNext()} is the single definition of what is legal; the API refuses anything else, the app draws its buttons from it, and the permission each move costs is answered here too. Nothing else is allowed to hold an opinion about what follows what \u2014 a second copy of these rules is a second thing to keep in step, and the copy that drifts is always the one guarding the write.  **The map reads two things about the order, and neither is a status.** {@see FulfilmentType} decides which of the two dispatch statuses \"it is leaving\" means, and {@see OrderFlow} decides whether the artwork and the press are on this order's road at all \u2014 a \u0643\u064a\u0633 \u0633\u0627\u062f\u0629 is picked off a shelf, so \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb leads straight to \u00ab\u062c\u0627\u0647\u0632\u0629\u00bb. Both are passed *in* rather than looked up: this enum knows the rules and knows nothing about orders, customers or the catalogue, which is what lets `OrderStatusTest` assert the whole machine without touching the database.  **Adding a status is a `case` and a few lines in the matches below.** That is deliberately a code change rather than a row in a table: half of these statuses carry behaviour a row cannot express \u2014 dispatch is chosen by the server from the city, cancelling demands a reason, the final two are closed, and each one costs a different permission. A `order_statuses` table would offer the *appearance* of runtime extensibility while leaving all of that in PHP anyway. `OrderStatusTest` walks every case and every pair, so an addition that forgets a label, a permission, or a way in fails the build naming exactly what is missing.  Order depends on Delivery and Identity; neither knows this enum exists.\n| |\n|---|\n| `new` <br/> Taken, not started. The only status nothing leads back to. |\n| `shortage` <br/> The stock to start the job is not there. Reachable from \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb and nowhere else \u2014 it describes an order that could not be begun, not a run that came out short. |\n| `designing` <br/> Artwork is being agreed with the customer \u2014 see {@see OrderDesignStatus}. |\n| `ready_to_print` <br/> Prepped by the warehouse and handed to the press. **The line between two departments, and the reason this status exists.** \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb and \u00ab\u0646\u0648\u0627\u0642\u0635\u00bb are inventory's \u2014 the goods are being found, counted and weighed \u2014 while \u00ab\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645\u00bb and \u00ab\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629\u00bb belong to printing. An order used to cross that line invisibly, so the press had no queue to read and no moment marked the handover.  **It is also where the stock leaves the warehouse**, which is what makes it more than a label: entering it names a warehouse and a weight, and the shelf drops. \u00ab\u062c\u0627\u0647\u0632\u0629\u00bb later measures again and corrects the difference \u2014 see `RestateOrderStockDeduction`. |\n| `printing` <br/>  |\n| `manufacturing` <br/> The job is with an outside vendor, being made \u2014 \u00ab\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0646\u064a\u0639\u00bb. **Only on the \u0648\u0633\u064a\u0637 road, and it is the whole of that road's work.** \u062f\u0639\u0627\u064a\u0629 sells the goods and somebody else makes them: there is nothing here to prepare, nothing to weigh and no press of ours to queue for, so this status has no \u00ab\u062c\u0627\u0647\u0632 \u0644\u0644\u062a\u0635\u0646\u064a\u0639\u00bb in front of it. Sending the job out *is* the move. See OUTSOURCED-PRODUCTS.md.  **Not \u00ab\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629\u00bb wearing a different word.** One status, one word, wherever it is drawn \u2014 a label that changed with the road would fork the chip, the filter, the audit dictionary and the home board, all four of which read {@see label()}. |\n| `ready` <br/> Finished and on the shelf, waiting to leave. |\n| `office_pickup` <br/> Waiting at one of our branches for the customer to collect. |\n| `out_for_delivery` <br/>  |\n| `returned_courier` <br/>  |\n| `returned_carrier` <br/>  |\n| `returned_office` <br/> Physically back on our shelf. |\n| `resend` <br/> Going out a second time \u2014 off our shelf, or from the carrier's depot without coming back. |\n| `cancelled` <br/>  |\n| `delivered` <br/> The customer has it. Closed to editing, but not finished: the money it was sent out to collect still has to come back \u2014 see {@see Settled}. |\n| `settled` <br/> The money is agreed. The end of the road. |",
+                "description": "Where an order is, and the only moves it may make from there. **This enum is the state machine.** The map in {@see allowedNext()} is the single definition of what is legal; the API refuses anything else, the app draws its buttons from it, and the permission each move costs is answered here too. Nothing else is allowed to hold an opinion about what follows what \u2014 a second copy of these rules is a second thing to keep in step, and the copy that drifts is always the one guarding the write.  **The map reads two things about the order, and neither is a status.** {@see FulfilmentType} decides which of the two dispatch statuses \"it is leaving\" means, and {@see OrderFlow} decides whether the artwork and the press are on this order's road at all \u2014 a \u0643\u064a\u0633 \u0633\u0627\u062f\u0629 is picked off a shelf, so \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb leads straight to \u00ab\u062c\u0627\u0647\u0632\u0629\u00bb. Both are passed *in* rather than looked up: this enum knows the rules and knows nothing about orders, customers or the catalogue, which is what lets `OrderStatusTest` assert the whole machine without touching the database.  **Adding a status is a `case` and a few lines in the matches below.** That is deliberately a code change rather than a row in a table: half of these statuses carry behaviour a row cannot express \u2014 dispatch is chosen by the server from the city, cancelling demands a reason, the final two are closed, and each one costs a different permission. A `order_statuses` table would offer the *appearance* of runtime extensibility while leaving all of that in PHP anyway. `OrderStatusTest` walks every case and every pair, so an addition that forgets a label, a permission, or a way in fails the build naming exactly what is missing.  Order depends on Delivery and Identity; neither knows this enum exists.\n| |\n|---|\n| `new` <br/> Taken, not started. The only status nothing leads back to. |\n| `shortage` <br/> The stock to start the job is not there. Reachable from \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb and nowhere else \u2014 it describes an order that could not be begun, not a run that came out short. |\n| `awaiting_deposit` <br/> The order is waiting on its \u0639\u0631\u0628\u0648\u0646 \u2014 the part-payment the shop asks for before it starts. **A commercial gate, not a step of the work**, which is why it sits between \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb and everything that costs money to do. Entering it names a figure and the way it is expected to arrive; neither is money that has moved, and neither writes anything to the ledger \u2014 see `TransitionFields` and Docs/orders/ORDER-DEPOSIT-PLAN.md \u00a7\u0663\u066b\u0662.  **Optional, and reached from \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb alone.** An order nobody asks a deposit for never comes near this status: \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb keeps every arm it had. A deposit demanded halfway through printing is a different conversation from this one, and not one the map offers. |\n| `deposit_paid` <br/> The \u0639\u0631\u0628\u0648\u0646 has been paid \u2014 *said* to have been paid, by whoever moved the order here. **A claim, and deliberately a cheap one to make.** The move demands no payment: the clerk at the counter is told the money is in and needs the job to start, while the \u062d\u0648\u0627\u0644\u0629 may take two days to appear in an account somebody else watches. Whether it truly arrived is `orders.is_deposit_received` \u2014 a second employee's tick, made whenever they have checked, and gating nothing. See `ConfirmDepositReceipt`.  **The ledger is still the ledger.** If money *is* taken at this moment it is recorded as an ordinary payment through `RecordOrderPayment`, exactly as \u00ab\u062a\u0645 \u0627\u0644\u0627\u0633\u062a\u0644\u0627\u0645\u00bb does \u2014 there is no such thing here as a deposit that counts differently from any other money.  Leads to the same places \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb does, because that is where the order was going before the deposit stopped it \u2014 and back to \u00ab\u0627\u0646\u062a\u0638\u0627\u0631 \u0627\u0644\u0639\u0631\u0628\u0648\u0646\u00bb, for the claim that turns out to be wrong. That way back is the only move on this pair that touches the ledger. |\n| `designing` <br/> Artwork is being agreed with the customer \u2014 see {@see OrderDesignStatus}. |\n| `ready_to_print` <br/> Prepped by the warehouse and handed to the press. **The line between two departments, and the reason this status exists.** \u00ab\u062c\u062f\u064a\u062f\u0629\u00bb and \u00ab\u0646\u0648\u0627\u0642\u0635\u00bb are inventory's \u2014 the goods are being found, counted and weighed \u2014 while \u00ab\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645\u00bb and \u00ab\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629\u00bb belong to printing. An order used to cross that line invisibly, so the press had no queue to read and no moment marked the handover.  **It is also where the stock leaves the warehouse**, which is what makes it more than a label: entering it names a warehouse and a weight, and the shelf drops. \u00ab\u062c\u0627\u0647\u0632\u0629\u00bb later measures again and corrects the difference \u2014 see `RestateOrderStockDeduction`. |\n| `printing` <br/>  |\n| `manufacturing` <br/> The job is with an outside vendor, being made \u2014 \u00ab\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0646\u064a\u0639\u00bb. **Only on the \u0648\u0633\u064a\u0637 road, and it is the whole of that road's work.** \u062f\u0639\u0627\u064a\u0629 sells the goods and somebody else makes them: there is nothing here to prepare, nothing to weigh and no press of ours to queue for, so this status has no \u00ab\u062c\u0627\u0647\u0632 \u0644\u0644\u062a\u0635\u0646\u064a\u0639\u00bb in front of it. Sending the job out *is* the move. See OUTSOURCED-PRODUCTS.md.  **Not \u00ab\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629\u00bb wearing a different word.** One status, one word, wherever it is drawn \u2014 a label that changed with the road would fork the chip, the filter, the audit dictionary and the home board, all four of which read {@see label()}. |\n| `ready` <br/> Finished and on the shelf, waiting to leave. |\n| `office_pickup` <br/> Waiting at one of our branches for the customer to collect. |\n| `out_for_delivery` <br/>  |\n| `returned_courier` <br/>  |\n| `returned_carrier` <br/>  |\n| `returned_office` <br/> Physically back on our shelf. |\n| `resend` <br/> Going out a second time \u2014 off our shelf, or from the carrier's depot without coming back. |\n| `cancelled` <br/>  |\n| `delivered` <br/> The customer has it. Closed to editing, but not finished: the money it was sent out to collect still has to come back \u2014 see {@see Settled}. |\n| `settled` <br/> The money is agreed. The end of the road. |",
                 "enum": [
                     "new",
                     "shortage",
+                    "awaiting_deposit",
+                    "deposit_paid",
                     "designing",
                     "ready_to_print",
                     "printing",
@@ -22889,6 +23110,8 @@
                         ],
                         "enum": [
                             "\u062c\u062f\u064a\u062f\u0629",
+                            "\u0627\u0646\u062a\u0638\u0627\u0631 \u0627\u0644\u0639\u0631\u0628\u0648\u0646",
+                            "\u0639\u0631\u0628\u0648\u0646 \u0645\u062f\u0641\u0648\u0639",
                             "\u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629",
                             "\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645",
                             "\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629",
@@ -22914,6 +23137,8 @@
                         "type": "string",
                         "enum": [
                             "\u062c\u062f\u064a\u062f\u0629",
+                            "\u0627\u0646\u062a\u0638\u0627\u0631 \u0627\u0644\u0639\u0631\u0628\u0648\u0646",
+                            "\u0639\u0631\u0628\u0648\u0646 \u0645\u062f\u0641\u0648\u0639",
                             "\u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629",
                             "\u0642\u064a\u062f \u0627\u0644\u062a\u0635\u0645\u064a\u0645",
                             "\u0642\u064a\u062f \u0627\u0644\u0637\u0628\u0627\u0639\u0629",
@@ -26702,6 +26927,8 @@
                                 "orders.additional_cost",
                                 "orders.designs.manage",
                                 "orders.ready_message",
+                                "orders.status.awaiting_deposit",
+                                "orders.status.deposit_paid",
                                 "orders.status.ready_to_print",
                                 "orders.status.designing",
                                 "orders.status.printing",
@@ -26719,6 +26946,7 @@
                                 "orders.delete",
                                 "orders.restore",
                                 "orders.archive.view",
+                                "orders.deposit.confirm",
                                 "orders.payments.view",
                                 "orders.payments.record",
                                 "orders.payments.reverse",
@@ -27993,6 +28221,8 @@
                                 "orders.additional_cost",
                                 "orders.designs.manage",
                                 "orders.ready_message",
+                                "orders.status.awaiting_deposit",
+                                "orders.status.deposit_paid",
                                 "orders.status.ready_to_print",
                                 "orders.status.designing",
                                 "orders.status.printing",
@@ -28010,6 +28240,7 @@
                                 "orders.delete",
                                 "orders.restore",
                                 "orders.archive.view",
+                                "orders.deposit.confirm",
                                 "orders.payments.view",
                                 "orders.payments.record",
                                 "orders.payments.reverse",

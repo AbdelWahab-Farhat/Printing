@@ -25,6 +25,22 @@ enum OrderStatus {
   taken('new', 'جديدة'),
   @JsonValue('shortage')
   shortage('shortage', 'نواقص'),
+
+  /// The order is parked until the customer pays what was agreed up front.
+  ///
+  /// Third in `cases()` because that is where `OrderStatus.php` declares it, and this list is a
+  /// hand-copy of that one — the filter sheet and the home board both read down it.
+  @JsonValue('awaiting_deposit')
+  awaitingDeposit('awaiting_deposit', 'انتظار العربون'),
+
+  /// Somebody has said the عربون was paid, so the work may start.
+  ///
+  /// **A claim, not a confirmation.** Whether the money actually arrived is a separate tick an
+  /// employee makes afterwards — see `Order.isDepositReceived` — and nothing about this status
+  /// waits for it.
+  @JsonValue('deposit_paid')
+  depositPaid('deposit_paid', 'عربون مدفوع'),
+
   @JsonValue('designing')
   designing('designing', 'قيد التصميم'),
 
@@ -158,6 +174,15 @@ enum OrderStatus {
     OrderStatus.manufacturing => OrderStatusTone.working,
     OrderStatus.ready => OrderStatusTone.ready,
     OrderStatus.shortage => OrderStatusTone.attention,
+    // **الأحمر جُرّب هنا ورُفض.** أُعطيت «انتظار العربون» عائلة «نواقص» أول الأمر، بحجّة أنّ
+    // كليهما يقول «لا يمكن البدء بعد» — والحجّة خاطئة: «نواقص» عطلٌ عندنا يستدعي عملاً، أمّا
+    // طلبيةٌ تنتظر عربونها فهي تسير كما اتُّفق عليه بالضبط. والأحمر في قائمةٍ تُقرأ سطراً سطراً
+    // يعني «هنا مشكلة»، فيجعل كل طلبيةٍ عاديةٍ تنتظر دفعتها تبدو مشكلة.
+    //
+    // فهما معاً في هدوء «جديدة»: طلبيةٌ أوّلها، لم يُبدأ فيها عمل، ولا شيء فيها يستدعي أحداً.
+    // والشكل هو ما يفرّق بينهما — ساعةٌ رمليّة وأوراقٌ نقديّة — وهي القاعدة التي يقوم عليها
+    // `iconFor` أصلاً: اللون يقول النوع، والأيقونة تقول الحالة بعينها.
+    OrderStatus.awaitingDeposit || OrderStatus.depositPaid => OrderStatusTone.fresh,
     OrderStatus.officePickup || OrderStatus.outForDelivery => OrderStatusTone.moving,
     OrderStatus.delivered || OrderStatus.settled => OrderStatusTone.done,
     OrderStatus.returnedCourier ||

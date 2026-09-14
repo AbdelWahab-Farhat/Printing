@@ -103,6 +103,17 @@ enum PermissionName: string
     // that teaches the whole shop to scroll past a number. See ORDER-READY-MESSAGE.md §٤.
     case ConfirmReadyMessage = 'orders.ready_message';
 
+    // The عربون, both halves of it: parking an order until the customer pays, and declaring that
+    // they have. The counter's work, and not the warehouse's or the press's.
+    //
+    // **Neither of these is `ConfirmDepositReceipt`.** Declaring a deposit paid is a claim; the
+    // tick that says the money is really in the account is a different grant held by a different
+    // person, and the domain refuses it to whoever made the claim. Splitting the two *statuses*
+    // as well lets the business decide separately who may ask for money and who may say it came
+    // — the same reason every other status carries its own.
+    case MoveOrderToAwaitingDeposit = 'orders.status.awaiting_deposit';
+    case MoveOrderToDepositPaid = 'orders.status.deposit_paid';
+
     // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
     // the order to the press. Separate from the two production statuses beside it because a
     // different desk does it.
@@ -175,6 +186,17 @@ enum PermissionName: string
     //
     // Viewing is separate from `orders.view` on purpose: the person printing the bags sees the
     // order and has no business with what the customer has paid.
+    // **Confirming that a عربون actually arrived — and it is an accounting control, not a status
+    // move.** Whoever moved the order to «عربون مدفوع» told the shop the customer paid;
+    // `ConfirmDepositReceipt` is a second person saying they looked at the account and the money
+    // is there. The domain refuses the tick to the person who made the claim, so **at least two
+    // users must hold this** or no deposit can ever be confirmed.
+    //
+    // Its own grant rather than a ride on `orders.payments.record`: posting an entry to the
+    // ledger and vouching for money nobody has posted yet are different responsibilities, and
+    // the second is the one the books rest on. See Docs/orders/ORDER-DEPOSIT-PLAN.md §٣٫٥.
+    case ConfirmDepositReceipt = 'orders.deposit.confirm';
+
     case ViewOrderPayments = 'orders.payments.view';
     case RecordOrderPayments = 'orders.payments.record';
     case ReverseOrderPayments = 'orders.payments.reverse';
@@ -305,6 +327,9 @@ enum PermissionName: string
             self::AddOrderAdditionalCost => 'إضافة تكلفة إضافية على الطلبية',
             self::ManageOrderDesigns => 'إدارة تصاميم الطلبية واعتمادها',
             self::ConfirmReadyMessage => 'تأكيد إرسال رسالة الجاهزية للزبون',
+            self::MoveOrderToAwaitingDeposit => 'تحويل الطلبية إلى انتظار العربون',
+            self::MoveOrderToDepositPaid => 'تحويل الطلبية إلى عربون مدفوع',
+            self::ConfirmDepositReceipt => 'تأكيد استلام العربون',
             self::MoveOrderToReadyToPrint => 'تحويل الطلبية إلى جاهزة للطباعة',
             self::MoveOrderToDesigning => 'تحويل الطلبية إلى قيد التصميم',
             self::MoveOrderToPrinting => 'تحويل الطلبية إلى قيد الطباعة',
@@ -382,6 +407,7 @@ enum PermissionName: string
             self::ManageOrderDesigns,
             // Deliberately not in «حالات الطلبيات»: telling the customer is not a move on the map.
             self::ConfirmReadyMessage => 'الطلبيات',
+            self::MoveOrderToAwaitingDeposit, self::MoveOrderToDepositPaid,
             self::MoveOrderToReadyToPrint,
             self::MoveOrderToDesigning, self::MoveOrderToPrinting,
             self::MoveOrderToManufacturing, self::MoveOrderToReady,
@@ -394,6 +420,10 @@ enum PermissionName: string
             self::RecordOfficeReturn, self::ResendOrders,
             self::CancelOrders => 'حالات الطلبيات',
 
+            // Beside the money rather than in «حالات الطلبيات»: confirming a عربون arrived is a
+            // check on the books, not a move on the map — the two statuses it answers for are
+            // over there, and this is the grant that vouches for them.
+            self::ConfirmDepositReceipt,
             self::ViewOrderPayments, self::RecordOrderPayments,
             self::ReverseOrderPayments, self::WriteOffOrderPayments => 'مدفوعات الطلبيات',
 

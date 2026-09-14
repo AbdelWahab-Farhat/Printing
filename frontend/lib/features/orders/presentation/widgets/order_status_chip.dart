@@ -134,6 +134,12 @@ class OrderStatusChip extends StatelessWidget {
     // *here* against finished *there*.
     OrderStatus.ready => AppIcons.activate,
     OrderStatus.shortage => AppIcons.error,
+    // Waiting on the customer, not stuck on us — an hourglass rather than «نواقص»'s warning,
+    // which is the other status wearing this colour.
+    OrderStatus.awaitingDeposit => AppIcons.awaitingDeposit,
+    // Banknotes, never a tick: the tick belongs to the person who confirms the money landed,
+    // and that is a different control and a different person.
+    OrderStatus.depositPaid => AppIcons.depositPaid,
     OrderStatus.officePickup => AppIcons.officePickup,
     OrderStatus.outForDelivery => AppIcons.outForDelivery,
     OrderStatus.delivered => AppIcons.ordersReceived,

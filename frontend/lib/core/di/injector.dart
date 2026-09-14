@@ -139,6 +139,7 @@ import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/repositories/order_repository_impl.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
 import 'package:dayaa/features/orders/usecases/change_order_status.dart';
+import 'package:dayaa/features/orders/usecases/confirm_deposit_receipt.dart';
 import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_archived_orders.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
@@ -810,6 +811,9 @@ abstract final class Injector {
       )
       // «تم إرسال رسالة الجاهزية للزبون» — a use case rather than a Cubit for the reason
       // RecordScrapLoss is one: the switch asks, sends, and redraws from what came back.
+      ..registerLazySingleton<ConfirmDepositReceipt>(
+        () => ConfirmDepositReceipt(sl<OrderRepository>()),
+      )
       ..registerLazySingleton<ConfirmReadyMessage>(
         () => ConfirmReadyMessage(sl<OrderRepository>()),
       )
@@ -921,6 +925,7 @@ abstract final class Injector {
           deleteOrder: sl<DeleteOrder>(),
           restoreOrder: sl<RestoreOrder>(),
           confirmReadyMessage: sl<ConfirmReadyMessage>(),
+          confirmDepositReceipt: sl<ConfirmDepositReceipt>(),
         ),
       )
       // The move screen fetches the order itself rather than being handed one: it is reachable

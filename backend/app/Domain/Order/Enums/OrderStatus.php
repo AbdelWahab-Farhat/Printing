@@ -35,10 +35,13 @@ use App\Domain\Identity\Enums\PermissionName;
  */
 enum OrderStatus: string
 {
-    // ── the six the workshop lives in, in the order the board reads them ─────────────────────
+    // ── the ones the workshop lives in, in the order the board reads them ────────────────────
     // **Two cards to a row on the phone, and each row is a pair.** «جديدة»/«نواقص» is what came
-    // in beside what could not be started; «قيد التصميم»/«جاهزة للطباعة» is the artwork beside
-    // the queue it feeds; «قيد الطباعة»/«جاهزة» is the press beside its shelf. That is the shop
+    // in beside what could not be started; «انتظار العربون»/«عربون مدفوع» is the money the job
+    // waits on beside the money that arrived; «قيد التصميم»/«جاهزة للطباعة» is the artwork beside
+    // the queue it feeds; «قيد الطباعة»/«قيد التصنيع» is our press beside the vendor's bench.
+    // The deposit pair sits third rather than first because it is a road most orders never walk
+    // — a board opens on what the shop has, and «جديدة» is what the shop has. That is the shop
     // asking «ما الذي عندي الآن؟», and it is not the order the state machine walks — «جاهزة
     // للطباعة» comes *before* «قيد التصميم» in {@see allowedNext()} and after it here. Both are
     // right: one answers what may follow what, the other answers what a person reads down a
@@ -53,6 +56,39 @@ enum OrderStatus: string
      * describes an order that could not be begun, not a run that came out short.
      */
     case Shortage = 'shortage';
+
+    /**
+     * The order is waiting on its عربون — the part-payment the shop asks for before it starts.
+     *
+     * **A commercial gate, not a step of the work**, which is why it sits between «جديدة» and
+     * everything that costs money to do. Entering it names a figure and the way it is expected
+     * to arrive; neither is money that has moved, and neither writes anything to the ledger —
+     * see `TransitionFields` and Docs/orders/ORDER-DEPOSIT-PLAN.md §٣٫٢.
+     *
+     * **Optional, and reached from «جديدة» alone.** An order nobody asks a deposit for never
+     * comes near this status: «جديدة» keeps every arm it had. A deposit demanded halfway through
+     * printing is a different conversation from this one, and not one the map offers.
+     */
+    case AwaitingDeposit = 'awaiting_deposit';
+
+    /**
+     * The عربون has been paid — *said* to have been paid, by whoever moved the order here.
+     *
+     * **A claim, and deliberately a cheap one to make.** The move demands no payment: the clerk
+     * at the counter is told the money is in and needs the job to start, while the حوالة may
+     * take two days to appear in an account somebody else watches. Whether it truly arrived is
+     * `orders.is_deposit_received` — a second employee's tick, made whenever they have checked,
+     * and gating nothing. See `ConfirmDepositReceipt`.
+     *
+     * **The ledger is still the ledger.** If money *is* taken at this moment it is recorded as an
+     * ordinary payment through `RecordOrderPayment`, exactly as «تم الاستلام» does — there is no
+     * such thing here as a deposit that counts differently from any other money.
+     *
+     * Leads to the same places «جديدة» does, because that is where the order was going before
+     * the deposit stopped it — and back to «انتظار العربون», for the claim that turns out to be
+     * wrong. That way back is the only move on this pair that touches the ledger.
+     */
+    case DepositPaid = 'deposit_paid';
 
     /** Artwork is being agreed with the customer — see {@see OrderDesignStatus}. */
     case Designing = 'designing';
@@ -125,6 +161,8 @@ enum OrderStatus: string
     {
         return match ($this) {
             self::New => 'جديدة',
+            self::AwaitingDeposit => 'انتظار العربون',
+            self::DepositPaid => 'عربون مدفوع',
             self::ReadyToPrint => 'جاهزة للطباعة',
             self::Designing => 'قيد التصميم',
             self::Printing => 'قيد الطباعة',
@@ -205,7 +243,17 @@ enum OrderStatus: string
             // Straight to the shelf. «نواقص» stays, and it is not an oversight: the stock for a
             // plain bag is exactly the thing that can turn out not to be there, which is what
             // that status has always meant — see the arm below.
-            self::New => [self::Ready, self::Shortage],
+            //
+            // **The deposit is on every road**, unlike the two production statuses: asking for
+            // money up front is about the deal, not about whether anything gets printed.
+            self::New => [self::AwaitingDeposit, self::Ready, self::Shortage],
+
+            // Where «جديدة» leads on this road, plus the ending. «انتظار العربون» itself needs no
+            // arm here — it offers the same two moves whatever the order is made of, so it falls
+            // through to the standard map.
+            self::DepositPaid => [
+                self::AwaitingDeposit, self::Ready, self::Shortage, self::Cancelled,
+            ],
 
             // The way back on is «جاهزة» rather than the two production statuses, because those
             // are not on this order's road at all. Written as its own arm rather than as a filter
@@ -235,7 +283,15 @@ enum OrderStatus: string
             // **«نواقص» is absent too**, and for the plainer reason: we hold no stock of a وسيط
             // product, so there is nothing to be short of. The vendor being slow is «قيد
             // التصنيع» taking a while, not a shortage.
-            self::New => [self::Designing, self::Manufacturing],
+            //
+            // **«انتظار العربون» is here too**, and it is if anything the road that wants it
+            // most: a وسيط job is money paid to somebody else before any of it comes back.
+            self::New => [self::AwaitingDeposit, self::Designing, self::Manufacturing],
+
+            // The two ways «جديدة» offers on this road, plus the ending.
+            self::DepositPaid => [
+                self::AwaitingDeposit, self::Designing, self::Manufacturing, self::Cancelled,
+            ],
 
             // Out of the designer's queue there is one place to go: the vendor.
             self::Designing => [self::Manufacturing, self::Cancelled],
@@ -272,7 +328,34 @@ enum OrderStatus: string
             // — the order has cost something by then, which is when writing it off is a decision
             // rather than a stray tap. «نواقص» is here for the opposite reason: it is not an
             // ending, it is the job failing to start.
-            self::New => [self::ReadyToPrint, self::Shortage],
+            //
+            // **«انتظار العربون» is offered beside the work rather than in front of it.** Most
+            // orders are started without one, so making the deposit compulsory would put a hop
+            // through an empty figure on every order in the shop. The clerk takes the road that
+            // matches the deal they made.
+            self::New => [self::AwaitingDeposit, self::ReadyToPrint, self::Shortage],
+
+            // Waiting on money: it arrives, or the order is written off. Nothing else can happen
+            // to an order the shop has decided not to start — and «إلغاء تام» is offered here
+            // although «جديدة» refuses it, because by this point the customer has been asked for
+            // money and calling that off is a decision somebody took rather than a stray tap.
+            self::AwaitingDeposit => [self::DepositPaid, self::Cancelled],
+
+            // **Exactly where «جديدة» leads**, because that is where the order was going before
+            // the deposit stopped it — the handover to the press, or the shortage that stops it
+            // again. Written out rather than borrowed from the arm above so this status keeps
+            // answering for itself, and so «إلغاء تام» can be on it while «جديدة» goes without.
+            //
+            // **And back, which is the one move on this pair that moves money.** A عربون declared
+            // paid and then not there — the حوالة never landed, the customer changed their mind
+            // — is an ordinary Tuesday, and the order goes back to waiting for it. The entry the
+            // forward move wrote is reversed by `ChangeOrderStatus` in the same transaction, so
+            // the ledger never carries a deposit the shop has stopped claiming. Nothing else on
+            // this road rewinds; this does, because what it rewinds is a statement rather than a
+            // piece of work.
+            self::DepositPaid => [
+                self::AwaitingDeposit, self::ReadyToPrint, self::Shortage, self::Cancelled,
+            ],
 
             // **The handover, and the only way into the press.** «جديدة» used to lead straight to
             // the designer or the machine, which meant the moment inventory finished with an
@@ -436,6 +519,15 @@ enum OrderStatus: string
     {
         return match ($this) {
             self::New => PermissionName::ManageOrders,
+            // One grant each, like every status that is not the dispatch pair: asking a customer
+            // for a deposit and declaring that they paid it are two different claims, and the
+            // business composes who may make which.
+            //
+            // **Neither of them is the permission that confirms the money arrived.** That is
+            // `orders.deposit.confirm`, held by somebody else and refused to whoever made the
+            // claim — see ConfirmDepositReceipt.
+            self::AwaitingDeposit => PermissionName::MoveOrderToAwaitingDeposit,
+            self::DepositPaid => PermissionName::MoveOrderToDepositPaid,
             self::ReadyToPrint => PermissionName::MoveOrderToReadyToPrint,
             self::Designing => PermissionName::MoveOrderToDesigning,
             self::Printing => PermissionName::MoveOrderToPrinting,
@@ -478,6 +570,16 @@ enum OrderStatus: string
     {
         return match ($this) {
             self::New => 'placed_at',
+            // «متى قيل إنّ العربون دُفع؟» is asked of every order whose deposit has not been
+            // confirmed yet — it is the age of the claim, and what the accountant's queue is
+            // ordered by. Re-entered after a walk-back it is overwritten, which is right: the
+            // earlier claim was withdrawn, and the standing one is the one being asked about.
+            self::DepositPaid => 'deposit_paid_at',
+            // Null, like «إعادة إرسال» and for the same reason: an order can be sent back to
+            // wait for its عربون more than once, and one column would keep the last visit and
+            // quietly lose the first. `order_status_transitions` holds every visit, and nothing
+            // yet asks a question a column would answer faster.
+            self::AwaitingDeposit => null,
             // Unlike «نواقص», something does ask this question: «كم تقعد الطلبية بين المخزن
             // والمطبعة؟» is the whole reason the status was added, and it cannot be answered
             // from a status that is entered at most once without a column to read.

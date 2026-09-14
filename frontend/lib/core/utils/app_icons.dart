@@ -277,6 +277,23 @@ abstract final class AppIcons {
   static IconData get orders =>
       _pick(Icons.receipt_long_rounded, CupertinoIcons.doc_text_fill);
 
+  /// «انتظار العربون» — parked until the customer pays what was agreed.
+  ///
+  /// An hourglass, because the order is not stuck and nothing is wrong with it: it is waiting on
+  /// somebody outside this workshop. Deliberately not [error]'s warning, which «نواقص» wears —
+  /// they share a colour, and sharing the shape too would make two different problems look like
+  /// one.
+  static IconData get awaitingDeposit =>
+      _pick(Icons.hourglass_top_rounded, CupertinoIcons.hourglass);
+
+  /// «عربون مدفوع» — somebody has said the money arrived, so the work may start.
+  ///
+  /// Banknotes, and **deliberately not a tick**: a tick says «تأكّدنا», and confirming the عربون
+  /// actually landed is a separate control on the order screen that a separate person operates.
+  /// This glyph says money was claimed, no more than that.
+  static IconData get depositPaid =>
+      _pick(Icons.payments_rounded, CupertinoIcons.money_dollar);
+
   /// Orders nobody has finished with — «الطلبات الجارية».
   ///
   /// A clock over a list, not [history]'s clock-with-an-arrow: the two sit on the same customer

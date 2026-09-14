@@ -197,6 +197,57 @@ class OrderResource extends JsonResource
             // made. See Order::hasUnrecordedMoney().
             'has_unrecorded_money' => $this->hasUnrecordedMoney(),
 
+            // ── العربون ──────────────────────────────────────────────────────────────────────
+            // **Three facts, deliberately not merged.** What was asked for, what the counter
+            // claimed, and whether a second person has checked. Published even on orders that
+            // never asked for a deposit — null and false — because a client distinguishing
+            // "absent" from "no" is a client written against one server's mood.
+
+            // The arrangement. **Not money that has moved**, and nothing sums it: the real
+            // deposit is an ordinary entry in `payments`, already counted in `paid_amount` above.
+            'deposit_expected_amount' => $this->deposit_expected_amount === null
+                ? null
+                : (string) $this->deposit_expected_amount,
+            'deposit_expected_method' => $this->deposit_expected_method?->value,
+            'deposit_expected_method_label' => $this->deposit_expected_method?->label(),
+
+            // The claim: when the order was said to have been paid. Cleared if it is walked back.
+            'deposit_paid_at' => $this->deposit_paid_at?->toIso8601String(),
+
+            // The confirmation, and who made it.
+            'is_deposit_received' => (bool) $this->is_deposit_received,
+            'deposit_confirmed_at' => $this->deposit_confirmed_at?->toIso8601String(),
+
+            // **Whether the box may be tapped, answered by the server.** It folds two things a
+            // client cannot see together: the `orders.deposit.confirm` grant, and the rule that
+            // whoever moved the order to «عربون مدفوع» is not the one who confirms it. Without
+            // this the app would have to keep its own copy of a rule it cannot evaluate — it does
+            // not know who made the claim — and would grey the box wrongly or not at all.
+            'can_confirm_deposit' => $this->depositIsConfirmableBy($request->user()),
+
+            // **A claim nobody has checked yet — the accountant's queue, and not a problem.** The
+            // order goes on being printed and delivered throughout; this exists so the screen can
+            // show the row and the report can count it.
+            'awaits_deposit_confirmation' => $this->awaitsDepositConfirmation(),
+
+            // Who said the عربون was paid, and who confirmed it — two different people by rule.
+            // Loaded only where the relations are in hand, like `ready_message_sent_by` above:
+            // the order screen loads them, a page of twenty does not.
+            'deposit_claimed_by' => $this->whenLoaded(
+                'depositClaimer',
+                fn () => $this->depositClaimer === null ? null : [
+                    'id' => $this->depositClaimer->id,
+                    'name' => $this->depositClaimer->name,
+                ],
+            ),
+            'deposit_confirmed_by' => $this->whenLoaded(
+                'depositConfirmer',
+                fn () => $this->depositConfirmer === null ? null : [
+                    'id' => $this->depositConfirmer->id,
+                    'name' => $this->depositConfirmer->name,
+                ],
+            ),
+
             // Null on every settlement that went to plan: the order was settled at its own
             // total. A value here is a discrepancy, deliberately.
             'collected_amount' => $this->collected_amount === null ? null : (string) $this->collected_amount,

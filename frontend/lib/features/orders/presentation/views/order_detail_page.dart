@@ -25,6 +25,7 @@ import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.
 import 'package:dayaa/features/orders/presentation/widgets/edit_shortages_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_cost_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_customer_card.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_deposit_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_detail_header.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_invoice_actions.dart';
@@ -212,6 +213,21 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                       !state.isWorking
                   ? _confirmReadyMessage
                   : null,
+              // **والعربون يُقفل على جواب الخادم لا على المنحة.** `can_confirm_deposit` تحمل
+              // المنحة *وقاعدة* أنّ من ادّعى الدفع لا يؤكّده — والثانية لا يملك التطبيق جوابها،
+              // فلا يُسأل عنها هنا. ويبقى الأرشيف والكتابة الجارية شرطَي هذه الشاشة كما في كل
+              // مفتاحٍ عليها.
+              onConfirmDeposit:
+                  state.order!.canConfirmDeposit &&
+                      !state.order!.isArchived &&
+                      !state.isWorking
+                  ? _confirmDeposit
+                  : null,
+              // لا تقرّر شيئاً — تختار الجملة تحت مفتاحٍ مقفل وحدها. انظر [OrderDepositCard].
+              depositClaimedByMe: switch (state.order!.depositClaimedBy) {
+                final claimer? => sl<Session>().isSelf(claimer.id),
+                null => false,
+              },
             ),
           ),
         },
@@ -428,6 +444,29 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
   /// The order comes back stamped with who and when, so the row redraws from the answer and the
   /// list behind is handed it — the queue on the home screen drops the row it has just been
   /// marked out of, with no request. See [FilteredOrdersCubit.belongs].
+  /// Records that the عربون actually arrived — or takes that back.
+  ///
+  /// The same shape as [_confirmReadyMessage] below, and the list behind is handed the updated
+  /// order for the same reason: «عربون أُعلن ولم يُؤكَّد» is a queue, and a row that has just
+  /// been marked out of it should leave without a request.
+  Future<void> _confirmDeposit(bool received) async {
+    final cubit = context.read<OrderDetailCubit>();
+
+    final failure = await cubit.confirmDepositReceipt(received: received);
+    if (!mounted) return;
+
+    if (failure != null) {
+      // The server's own Arabic — «لا يمكن لمن نقل الطلبية إلى «عربون مدفوع» أن يؤكّد استلام
+      // العربون — يلزم شخص آخر».
+      context.showFailure(failure);
+
+      return;
+    }
+
+    final updated = cubit.state.order;
+    if (updated != null) context.handBack(updated);
+  }
+
   Future<void> _confirmReadyMessage(bool sent) async {
     final cubit = context.read<OrderDetailCubit>();
 
@@ -747,6 +786,8 @@ class _Body extends StatelessWidget {
     required this.onUnlinkShipment,
     required this.onReinstate,
     required this.onConfirmReadyMessage,
+    required this.onConfirmDeposit,
+    required this.depositClaimedByMe,
   });
 
   final Order order;
@@ -790,6 +831,13 @@ class _Body extends StatelessWidget {
   /// Null for a reader without `orders.ready_message`, for an archived order, and while a write
   /// is already in flight — see the call site for why those three are one line.
   final Future<void> Function(bool sent)? onConfirmReadyMessage;
+
+  /// Null when the deposit tick may not be moved — see the note at the call site.
+  final Future<void> Function(bool received)? onConfirmDeposit;
+
+  /// Whether the reader is the one who claimed the deposit was paid; chooses the sentence under
+  /// a locked switch and nothing else.
+  final bool depositClaimedByMe;
 
   /// Whether spoiling a bag is even possible yet.
   ///
@@ -903,6 +951,20 @@ class _Body extends StatelessWidget {
               SizedBox(height: 16.h),
               _Header(order: order),
               SizedBox(height: 16.h),
+              // **تحت الرأس مباشرةً، وعلى وجود العربون لا على الحالة.** من فتح الطلبية وقرأ
+              // حالتها، سؤاله التالي «وهل وصل عربونها؟» — والجواب يُقرأ بعد شحنها أيضاً، فلا
+              // يربط الرسمَ بحالةٍ بعينها. وتغيب البطاقة كلّها عن طلبيةٍ لم يُطلب عليها عربون،
+              // وهي الأغلب: صندوقٌ يقول «لا عربون» أسفل كل طلبية في المحل سطرٌ يُقرأ ولا يفيد.
+              if (order.depositExpectedAmount != null) ...[
+                _Section(
+                  child: OrderDepositCard(
+                    order: order,
+                    onChanged: onConfirmDeposit,
+                    claimedByMe: depositClaimedByMe,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+              ],
               // Who it is for, and the way to them. The header names them; this is where the
               // number is rung and the door into their file is.
               OrderCustomerCard(order: order, onTap: onOpenCustomer),
