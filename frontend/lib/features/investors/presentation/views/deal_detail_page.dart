@@ -80,10 +80,7 @@ class _DealDetailViewState extends State<_DealDetailView> {
             message: failure.message,
             onRetry: () => cubit.load(widget.dealId),
           ),
-          DealDetailLoaded(:final deal) => RefreshIndicator(
-            onRefresh: () => cubit.load(deal.id),
-            child: _Body(deal: deal),
-          ),
+          DealDetailLoaded(:final deal) => _Body(deal: deal),
         },
       ),
     );
@@ -160,6 +157,17 @@ String _weighed(DealStock stock, String quantity) => stock.unitLabel == null
     ? groupedDecimal(quantity)
     : '${groupedDecimal(quantity)} ${stock.unitLabel}';
 
+/// The deal's screen: its terms, and three tabs under them.
+///
+/// **Three tabs rather than one long scroll**, because the three questions asked of a deal are
+/// separate ones — «كم صار لنا فيها» is not «وين وصلت بضاعتها» is not «مين معنا فيها» — and the
+/// order profit put a fourth block on top of a column a person already had to scroll past two
+/// sections to reach the end of.
+///
+/// **The terms stay above the bar.** The percentages the split runs on are what every figure in
+/// every tab is read against, so they belong to none of the three and to all of them.
+///
+/// The money is the tab it opens on: it is the question the screen is opened for.
 class _Body extends StatelessWidget {
   const _Body({required this.deal});
 
@@ -169,72 +177,164 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) {
     final stock = deal.stock;
     final balances = deal.balances;
+    final earned = deal.ordersProfit;
 
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
-      children: [
-        _Terms(deal: deal),
-        SizedBox(height: 16.h),
-
-        if (balances != null) ...[
-          InvestorMoneyTile(
-            label: 'رأس المال في الصفقة',
-            amount: balances.capital,
-            caption: 'ما يموّل بضاعتها الآن',
-            emphasis: true,
-          ),
-          SizedBox(height: 12.h),
-          InvestorMoneyTile(
-            label: 'أرباح المستثمرين حتى الآن',
-            amount: balances.profit,
-            caption: deal.status == 'closed'
-                ? 'أُفرج عنها إلى المحافظ'
-                : 'تُصرف عند إقفال الصفقة',
-          ),
-          SizedBox(height: 12.h),
-        ],
-
-        // Where that profit came from, one order at a time. Full width, like every action in
-        // this app: a button the size of its own label is a target the size of the words in it.
-        AppButton.tonal(
-          label: 'طلبيات الصفقة',
-          icon: AppIcons.orders,
-          onPressed: () => context.push(
-            Routes.investorDealOrders(deal.id),
-            extra: deal.code,
-          ),
-        ),
-        SizedBox(height: 24.h),
-
-        if (stock != null) ...[
-          const _SectionTitle(title: 'البضاعة'),
-          SizedBox(height: 8.h),
-          _Rows(
-            rows: [
-              ('وصل', _weighed(stock, stock.quantityReceived)),
-              ('بِيع', _weighed(stock, stock.quantitySold)),
-              ('متبقٍّ', _weighed(stock, stock.quantityRemaining)),
-              ('هالك', _weighed(stock, stock.quantityDamaged)),
-              ('عجز', _weighed(stock, stock.quantityShort)),
-            ],
-          ),
-          SizedBox(height: 24.h),
-        ],
-
-        const _SectionTitle(title: 'المستثمرون'),
-        SizedBox(height: 8.h),
-        for (final participant in deal.investors)
+    return DefaultTabController(
+      length: 3,
+      child: Column(
+        children: [
           Padding(
-            padding: EdgeInsets.only(bottom: 8.h),
-            child: _Participant(
-              participant: participant,
-              standing: balances?.perInvestor
-                  .where((row) => row.investorId == participant.investorId)
-                  .firstOrNull,
+            padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 12.h),
+            child: _Terms(deal: deal),
+          ),
+          const _Tabs(labels: ['الأرباح', 'البضاعة', 'المستثمرون']),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _Tab(
+                  dealId: deal.id,
+                  children: [
+                    if (balances != null) ...[
+                      InvestorMoneyTile(
+                        label: 'رأس المال في الصفقة',
+                        amount: balances.capital,
+                        caption: 'ما يموّل بضاعتها الآن',
+                        emphasis: true,
+                      ),
+                      SizedBox(height: 12.h),
+                      InvestorMoneyTile(
+                        label: 'أرباح المستثمرين حتى الآن',
+                        amount: balances.profit,
+                        caption: deal.status == 'closed'
+                            ? 'أُفرج عنها إلى المحافظ'
+                            : 'تُصرف عند إقفال الصفقة',
+                      ),
+                      SizedBox(height: 12.h),
+                    ],
+
+                    // **What the deal itself made, which is not what the ledger has paid.** The
+                    // tile above is written at «تم الاستلام» and not a day sooner, so a deal
+                    // whose goods left the shelf a fortnight ago and whose parcels are still out
+                    // reads as having earned nothing at all. The money on the road is said in
+                    // its own row rather than folded into one figure, because a cancellation
+                    // takes it back — and the total under the two is what the deal is worth if
+                    // every parcel arrives.
+                    //
+                    // Absent until something has been sold: three rows of zeros is a table about
+                    // nothing, and «بِيع ٠» in the goods tab is where a deal that has sold
+                    // nothing says so.
+                    if (earned != null && earned.total.orders > 0) ...[
+                      const _SectionTitle(title: 'ربح الطلبيات'),
+                      SizedBox(height: 8.h),
+                      _Rows(
+                        rows: [
+                          ('جارية', '${groupedDecimal(earned.inFlight.profit)} د.ل'),
+                          ('مسلَّمة', '${groupedDecimal(earned.delivered.profit)} د.ل'),
+                          ('الإجمالي', '${groupedDecimal(earned.total.profit)} د.ل'),
+                        ],
+                      ),
+                      SizedBox(height: 24.h),
+                    ],
+
+                    // Where that profit came from, one order at a time. Full width, like every
+                    // action in this app: a button the size of its own label is a target the
+                    // size of the words in it.
+                    AppButton.tonal(
+                      label: 'طلبيات الصفقة',
+                      icon: AppIcons.orders,
+                      onPressed: () => context.push(
+                        Routes.investorDealOrders(deal.id),
+                        extra: deal.code,
+                      ),
+                    ),
+                  ],
+                ),
+                _Tab(
+                  dealId: deal.id,
+                  children: [
+                    if (stock != null)
+                      _Rows(
+                        rows: [
+                          ('وصل', _weighed(stock, stock.quantityReceived)),
+                          ('بِيع', _weighed(stock, stock.quantitySold)),
+                          ('متبقٍّ', _weighed(stock, stock.quantityRemaining)),
+                          ('هالك', _weighed(stock, stock.quantityDamaged)),
+                          ('عجز', _weighed(stock, stock.quantityShort)),
+                        ],
+                      ),
+                  ],
+                ),
+                _Tab(
+                  dealId: deal.id,
+                  children: [
+                    for (final participant in deal.investors)
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 8.h),
+                        child: _Participant(
+                          participant: participant,
+                          standing: balances?.perInvestor
+                              .where((row) => row.investorId == participant.investorId)
+                              .firstOrNull,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
-      ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The bar itself, drawn the way the register screen draws its own — one style of tab in the app.
+class _Tabs extends StatelessWidget {
+  const _Tabs({required this.labels});
+
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return TabBar(
+      // Sized to the screen rather than scrolling: three short words fit, and a bar that can be
+      // scrolled hides the tab at its end from anybody who never drags it.
+      isScrollable: false,
+      indicatorSize: TabBarIndicatorSize.tab,
+      dividerColor: scheme.outlineVariant.withValues(alpha: 0.5),
+      labelColor: scheme.primary,
+      unselectedLabelColor: scheme.onSurfaceVariant,
+      labelStyle: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
+      unselectedLabelStyle: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+      tabs: [for (final label in labels) Tab(height: 44.h, text: label)],
+    );
+  }
+}
+
+/// One tab's column of blocks — scrolling to its own end, and reloading the deal from inside it.
+///
+/// **The pull lives here rather than around the whole screen.** A `RefreshIndicator` above a
+/// `TabBarView` never sees these lists' scroll notifications: they arrive one level deeper,
+/// having passed through the page view, and the default predicate drops them — so the gesture
+/// would quietly stop working the day the tabs went in.
+class _Tab extends StatelessWidget {
+  const _Tab({required this.dealId, required this.children});
+
+  final int dealId;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: () => context.read<DealDetailCubit>().load(dealId),
+      child: ListView(
+        // Always, so a tab short enough to need no scrolling can still be pulled.
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
+        children: children,
+      ),
     );
   }
 }

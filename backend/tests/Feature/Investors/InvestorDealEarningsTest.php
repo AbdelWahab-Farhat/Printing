@@ -674,4 +674,102 @@ class InvestorDealEarningsTest extends TestCase
         $this->assertSame(0, InvestorDeal::query()->count());
         $this->assertSame(0, InvestorWalletEntry::query()->where('type', WalletEntryType::Allocation->value)->count());
     }
+
+    // ───────────────────── what the deal is standing to make ─────────────────────
+
+    /**
+     * A helper the two totals tests share: one order for 1,000 bags at 5.000, priced and costed.
+     */
+    private function saleOf(ProductVariant $size): Order
+    {
+        $order = Order::factory()->create(['design_fee' => '0.00', 'delivery_price' => '0.00', 'discount' => '0.00']);
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $size->product_id,
+            'product_variant_id' => $size->getKey(),
+            'variant_label' => $size->label,
+            'quantity' => '1000',
+            'unit_price' => '5.000',
+            'line_total' => '5000.00',
+            'pricing_unit' => PricingUnit::Piece,
+        ]);
+        app(RecalculateOrderTotals::class)($order->refresh());
+
+        return $order->refresh();
+    }
+
+    public function test_a_deal_adds_up_the_profit_of_the_orders_on_the_road_beside_the_ones_delivered(): void
+    {
+        // Arrange — one financed shelf and two identical sales off it: 1,000 bags each, bought
+        // at 2.000 and sold at 5.000, so each one makes the deal 3,000.00. One reached the
+        // customer; the other is still on the road, its goods off the shelf since «جاهزة
+        // للطباعة».
+        $size = $this->investableSize();
+        $warehouse = Warehouse::factory()->create();
+        [$deal] = $this->fundedDeal($size);
+        $this->layer($size, $warehouse, '6000', '2.000', $deal);
+
+        $headers = $this->foreman();
+
+        $delivered = $this->saleOf($size);
+        $this->deliver($headers, $delivered, $warehouse);
+
+        $onTheRoad = $this->saleOf($size);
+        $this->move($headers, $onTheRoad, OrderStatus::ReadyToPrint, [
+            'warehouse_id' => $warehouse->getKey(),
+        ])->assertOk();
+
+        // Act
+        $response = $this->withHeaders($this->partner())->getJson("/api/v1/investor-deals/{$deal->id}");
+
+        // Assert — the two buckets and their sum. The delivered 3,000.00 is money the deal has
+        // made; the 3,000.00 on the road is money it stands to make, and the total is what the
+        // deal is worth if every parcel arrives.
+        $response->assertOk();
+
+        $this->assertSame(1, $response->json('data.orders_profit.delivered.orders'));
+        $this->assertSame('3000.00', $response->json('data.orders_profit.delivered.profit'));
+
+        $this->assertSame(1, $response->json('data.orders_profit.in_flight.orders'));
+        $this->assertSame('3000.00', $response->json('data.orders_profit.in_flight.profit'));
+
+        $this->assertSame(2, $response->json('data.orders_profit.total.orders'));
+        $this->assertSame('6000.00', $response->json('data.orders_profit.total.profit'));
+
+        // And the ledger still says only what was actually paid — half of the delivered order's
+        // profit, and nothing for the parcel that has not arrived.
+        $this->assertSame('1500.00', $response->json('data.balances.profit'));
+    }
+
+    public function test_a_cancelled_order_is_counted_in_neither_total(): void
+    {
+        // Arrange — the goods left the shelf and came back: `CreditBackStockBatches` returned
+        // them to this deal's own layers.
+        $size = $this->investableSize();
+        $warehouse = Warehouse::factory()->create();
+        [$deal] = $this->fundedDeal($size);
+        $this->layer($size, $warehouse, '6000', '2.000', $deal);
+
+        $headers = $this->foreman();
+        $order = $this->saleOf($size);
+        $this->move($headers, $order, OrderStatus::ReadyToPrint, [
+            'warehouse_id' => $warehouse->getKey(),
+        ])->assertOk();
+
+        // Act
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Cancelled->value,
+            'reason' => 'الزبون ألغى',
+        ])->assertOk();
+
+        // Assert — it took nothing off this deal and earned it nothing, so it is not on the
+        // list and not in the totals either. A screen counting it would promise a profit whose
+        // goods are back on the shelf, waiting to be sold again.
+        $response = $this->withHeaders($this->partner())->getJson("/api/v1/investor-deals/{$deal->id}");
+
+        $response->assertOk();
+
+        $this->assertSame(0, $response->json('data.orders_profit.total.orders'));
+        $this->assertSame('0.00', $response->json('data.orders_profit.total.profit'));
+        $this->assertSame('0.00', $response->json('data.orders_profit.in_flight.profit'));
+    }
 }

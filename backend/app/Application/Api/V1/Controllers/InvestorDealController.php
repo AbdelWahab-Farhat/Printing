@@ -95,6 +95,12 @@ class InvestorDealController extends Controller
      *
      * The whole screen in one payload: the deal, its shelves, its investors, what its goods are
      * doing, and what each investor is holding and has earned.
+     *
+     * **`orders_profit` is the deal's own money, and it is not `balances`.** `balances` is the
+     * ledger — what was actually paid, which happens at «تم الاستلام» and not a day sooner.
+     * `orders_profit` adds up what the deal made on every order that sold its goods, keeping the
+     * delivered ones apart from the ones still on the road, because the second figure is a
+     * forecast: a parcel that comes home cancelled hands those goods back to this deal.
      */
     public function show(InvestorDeal $deal): JsonResponse
     {
@@ -102,6 +108,7 @@ class InvestorDealController extends Controller
 
         $deal->setAttribute('balances', $this->investors->dealBalances((int) $deal->getKey()));
         $deal->setAttribute('stock', $this->investors->dealStock((int) $deal->getKey()));
+        $deal->setAttribute('orders_profit', $this->investors->dealOrdersProfit((int) $deal->getKey()));
 
         return $this->success(new InvestorDealResource($deal));
     }

@@ -383,6 +383,24 @@ final class InvestorService
         return ($this->dealOrderList)($dealId, $perPage);
     }
 
+    /**
+     * What this deal has made and what it stands to make — its orders' profit, in two buckets.
+     *
+     * `delivered` is final money; `in_flight` is a forecast over goods that are off the shelf but
+     * not yet in anybody's hands. See {@see DealOrdersQuery::totals()} for why the two are never
+     * one figure.
+     *
+     * @return array{
+     *     in_flight: array{orders: int, profit: string},
+     *     delivered: array{orders: int, profit: string},
+     *     total: array{orders: int, profit: string}
+     * }
+     */
+    public function dealOrdersProfit(int $dealId): array
+    {
+        return $this->dealOrderList->totals($dealId);
+    }
+
     /** Rounding, exposed so a controller never reimplements it. */
     public function round(string $amount): string
     {

@@ -518,6 +518,38 @@ class PlainStockPurchaseTest extends TestCase
             ->assertJsonPath('data.0.is_posted', true);
     }
 
+    public function test_the_deal_counts_a_purchase_the_press_has_paid_for_though_the_parcel_is_on_the_road(): void
+    {
+        // Arrange — 300 kg bought off the deal at سعر السادة and paid for the day they left the
+        // shelf. The parcel itself is at the press, nowhere near a customer.
+        $headers = $this->partner();
+        [$deal, , $size, $warehouse] = $this->shipment($headers);
+        $order = $this->sale($size, '300', '60.000');
+        $this->toTheePress($this->foreman(), $order, $warehouse);
+
+        // Act
+        $this->app['auth']->forgetGuards();
+
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/investor-deals/{$deal->id}")
+            ->assertOk();
+
+        // Assert — the 2,100.00 is in `in_flight`, because that bucket is about **where the
+        // parcel is** and this one is still on the road. On this road alone the money under it is
+        // not a forecast: the press paid at the warehouse door, and a cancellation now hands the
+        // goods to the company rather than back to the deal. Bucketing it as delivered instead
+        // would put an order in a row of orders that have reached a customer, which this has not.
+        $response
+            ->assertJsonPath('data.orders_profit.in_flight.orders', 1)
+            ->assertJsonPath('data.orders_profit.in_flight.profit', '2100.00')
+            ->assertJsonPath('data.orders_profit.delivered.profit', '0.00')
+            ->assertJsonPath('data.orders_profit.total.profit', '2100.00');
+
+        // And it is money the ledger already holds — the investor's share of it was paid when the
+        // press bought the bags, so this figure is not waiting on the delivery to become real.
+        $this->assertSame('168.00', $response->json('data.balances.profit'));
+    }
+
     public function test_a_deal_still_riding_the_sale_is_shown_as_not_paid_until_delivery(): void
     {
         // Arrange — no سعر السادة, so the partners are on the old road.
