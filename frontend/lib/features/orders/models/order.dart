@@ -510,6 +510,19 @@ abstract class Order with _$Order {
   /// تُسجَّل دفعة عليه» — is an accusation, and the safer mistake is not making it.
   bool get hasNoRecordedPayment => (double.tryParse(paidAmount) ?? 1) == 0;
 
+  /// Whether a عربون with money in it was asked for on this order.
+  ///
+  /// **صفر ليس عرباناً.** طلبيةٌ ابتلع خصمُها فاتورتَها تمشي طريق العربون كأي طلبية — «عربون
+  /// مدفوع» هي قائمة شغل المخزن، ولا بدّ لكلّ طلبية من طريقٍ إليها — فتُركن عليه بـ`0.00`. لكن
+  /// لا مال هناك يراه أحد في حساب: الخادم يردّ `can_confirm_deposit` كاذبة، ورسمُ بطاقةٍ
+  /// عنوانها «العربون 0» فوق مفتاحٍ لا يُضغط شرحٌ لشيءٍ لم يحدث.
+  ///
+  /// Parsed rather than compared to `'0.00'`, for the reason [hasNoRecordedPayment] gives — and
+  /// a figure it cannot read counts as a real عربون, so the card is shown rather than a fact
+  /// hidden.
+  bool get asksForADeposit =>
+      depositExpectedAmount != null && (double.tryParse(depositExpectedAmount!) ?? 1) > 0;
+
   /// A discount worth showing a line for. `'0.00'` is not one.
   bool get hasDiscount => discount != '0.00';
 

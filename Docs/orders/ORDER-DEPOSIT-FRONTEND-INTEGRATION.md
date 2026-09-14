@@ -76,7 +76,8 @@ Published by `OrderResource` on every order, deposit or not:
 ```jsonc
 {
   // The arrangement. NOT money that has moved — `paid_amount` is where a real deposit appears.
-  "deposit_expected_amount": "250.00",        // null on an order nobody asked a deposit of
+  "deposit_expected_amount": "250.00",        // null on an order nobody asked a deposit of;
+                                             // "0.00" on a zero-invoice order — §10
   "deposit_expected_method": "cash",
   "deposit_expected_method_label": "كاش",
 
@@ -321,8 +322,13 @@ a backend change first. Out of scope here.
 
 **The card is drawn under the header, not beside the money.** «هل وصل العربون؟» is the question
 that follows «ما حالتها؟», and the reader is already at the top of the screen when they ask it.
-It is drawn on `deposit_expected_amount != null` as §6 says — never on the status — and an order
-nobody asked a deposit of gets no card at all, which is most of them.
+It is drawn on a عربون that is *money* — `deposit_expected_amount` present **and above zero**,
+see `Order.asksForADeposit` — never on the status, and an order nobody asked a deposit of gets no
+card at all, which is most of them. **Zero is the third state**: a طلبية whose discount swallowed
+its invoice still walks the deposit road, because «عربون مدفوع» is the warehouse's own work list
+and an order that cannot reach it is one nobody there ever sees — it parks with `0.00` written on
+it, the server returns `can_confirm_deposit: false`, and a card headed «العربون 0» over a switch
+that cannot be tapped would explain something that never happened. See ORDER-DEPOSIT.md §٤.
 
 **`Order.hasNoRecordedPayment` parses, it does not compare.** The contradiction line needed «is
 `paid_amount` zero», and `paidAmount != '0.00'` is one migration away from reading `'0.000'` as a

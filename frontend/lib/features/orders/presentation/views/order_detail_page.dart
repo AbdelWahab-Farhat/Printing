@@ -954,7 +954,9 @@ class _Body extends StatelessWidget {
               // حالتها، سؤاله التالي «وهل وصل عربونها؟» — والجواب يُقرأ بعد شحنها أيضاً، فلا
               // يربط الرسمَ بحالةٍ بعينها. وتغيب البطاقة كلّها عن طلبيةٍ لم يُطلب عليها عربون،
               // وهي الأغلب: صندوقٌ يقول «لا عربون» أسفل كل طلبية في المحل سطرٌ يُقرأ ولا يفيد.
-              if (order.depositExpectedAmount != null) ...[
+              // وتغيب كذلك عن طلبيةٍ عربونها صفر — مرّت على الطريق ولم يُطلب عليها مال — انظر
+              // [Order.asksForADeposit].
+              if (order.asksForADeposit) ...[
                 _Section(
                   child: OrderDepositCard(
                     order: order,

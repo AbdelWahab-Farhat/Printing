@@ -228,16 +228,28 @@ final class ChangeOrderStatus
             // Re-entering after a walk back overwrites both, which is right — the figure on the
             // order is whatever was last agreed.
             if ($target === OrderStatus::AwaitingDeposit) {
-                $asked = $fields[TransitionFields::DEPOSIT_AMOUNT] ?? null;
+                // **An invoice of nothing parks here with a zero on it, and nobody was asked.**
+                // A discount that swallowed the total leaves an order with no عربون to name, so
+                // {@see TransitionFields} draws no box for it — and the figure is written here
+                // rather than left null, because «العربون 0» tells the next person to open the
+                // order that there was never money on this road, while an empty column tells
+                // them only that nobody filled it in. The method goes with it: no payment is
+                // coming, so there is no way for one to arrive.
+                if (bccomp((string) $order->grand_total, '0', Money::SCALE) <= 0) {
+                    $attributes['deposit_expected_amount'] = Money::normalize('0');
+                    $attributes['deposit_expected_method'] = null;
+                } else {
+                    $asked = $fields[TransitionFields::DEPOSIT_AMOUNT] ?? null;
 
-                if ($asked !== null && $asked !== '') {
-                    $attributes['deposit_expected_amount'] = Money::normalize($asked);
-                }
+                    if ($asked !== null && $asked !== '') {
+                        $attributes['deposit_expected_amount'] = Money::normalize($asked);
+                    }
 
-                $method = $fields[TransitionFields::DEPOSIT_METHOD] ?? null;
+                    $method = $fields[TransitionFields::DEPOSIT_METHOD] ?? null;
 
-                if ($method !== null && $method !== '') {
-                    $attributes['deposit_expected_method'] = PaymentMethod::from((string) $method);
+                    if ($method !== null && $method !== '') {
+                        $attributes['deposit_expected_method'] = PaymentMethod::from((string) $method);
+                    }
                 }
             }
 

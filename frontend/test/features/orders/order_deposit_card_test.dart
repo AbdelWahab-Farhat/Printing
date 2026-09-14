@@ -172,6 +172,22 @@ void main() {
     expect(find.text('تأكيد استلام العربون'), findsNothing);
   });
 
+  testWidgets('a deposit of nothing is not a card either', (tester) async {
+    // Arrange — طلبيةٌ ابتلع خصمُها فاتورتَها: مشت طريق العربون لتصل قائمة شغل المخزن، ولا مال
+    // عليها. الخادم يردّ `can_confirm_deposit` كاذبة لأنّ لا شيء هناك يُرى في حساب.
+    await sign(
+      ['orders.view', 'orders.deposit.confirm'],
+      order(expected: '0.00', methodLabel: null, canConfirm: false),
+    );
+
+    // Act
+    await tester.pumpWidget(detail());
+    await tester.pumpAndSettle();
+
+    // Assert — بطاقةٌ عنوانها «العربون 0» فوق مفتاحٍ لا يُضغط شرحٌ لشيءٍ لم يحدث.
+    expect(find.text('تأكيد استلام العربون'), findsNothing);
+  });
+
   testWidgets('the card states what was agreed, and how', (tester) async {
     // Arrange
     await sign(['orders.view', 'orders.deposit.confirm'], order());

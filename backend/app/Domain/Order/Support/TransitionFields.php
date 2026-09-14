@@ -347,6 +347,8 @@ final class TransitionFields
      * **The ceiling is the invoice**, not the remainder: a عربون is part of the order's own
      * price, and asking for more than the whole of it is a typo every time. There is deliberately
      * no floor beyond «أكبر من صفر» — what fraction the shop asks for is the shop's business.
+     * **And an invoice of nothing is asked nothing**, rather than being asked for a figure
+     * between 0.01 and 0 — see the guard below.
      *
      * Re-entered after a walk back from «عربون مدفوع», the boxes open holding what was agreed
      * last time: the commonest reason to be back here is that the money did not arrive, not that
@@ -357,6 +359,17 @@ final class TransitionFields
     private static function deposit(Order $order, OrderStatus $target): array
     {
         if ($target !== OrderStatus::AwaitingDeposit) {
+            return [];
+        }
+
+        // **A طلبية بلا قيمة is asked nothing at all.** A discount that swallowed the invoice
+        // leaves an order whose عربون can only be zero — and the box below would then carry a
+        // floor of 0.01 over a ceiling of 0, a required field with no answer that passes. The
+        // road itself stays open: «عربون مدفوع» is where the warehouse takes its work from, so
+        // an order that cannot reach it is an order nobody there will ever see. What it parks
+        // with is written by {@see ChangeOrderStatus}, which puts the zero on the order rather
+        // than asking a person to type the only number there is.
+        if (bccomp((string) $order->grand_total, '0', Money::SCALE) <= 0) {
             return [];
         }
 

@@ -312,10 +312,20 @@ class Order extends Model implements HasAuditTrail
         return $this->belongsTo(OrderPayment::class, 'deposit_payment_id');
     }
 
-    /** Whether a عربون was ever asked for on this order. */
+    /**
+     * Whether a عربون with money in it was ever asked for on this order.
+     *
+     * **Zero is not a عربون.** An order whose invoice is nothing still walks the deposit road —
+     * «عربون مدفوع» is where the warehouse takes its work from, so every order has to be able to
+     * reach it — and it parks with `0.00` written on it rather than with an empty column. But
+     * there is nothing there for anybody to see in an account, so it asks for no confirmation,
+     * puts no row in «عربون أُعلن ولم يُؤكَّد», and greys the tick. See `ConfirmDepositReceipt` and
+     * `TransitionFields::deposit()`.
+     */
     public function asksForADeposit(): bool
     {
-        return $this->deposit_expected_amount !== null;
+        return $this->deposit_expected_amount !== null
+            && bccomp((string) $this->deposit_expected_amount, '0', Money::SCALE) > 0;
     }
 
     /**

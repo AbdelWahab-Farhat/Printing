@@ -228,6 +228,85 @@ class OrderDepositTest extends TestCase
         );
     }
 
+    // ── طلبية بلا قيمة — الطريق نفسه، بلا مال ────────────────────────────────────────────────
+
+    public function test_an_order_with_nothing_to_pay_is_asked_for_nothing(): void
+    {
+        // Arrange — الخصم ابتلع الفاتورة: طلبية إجماليها صفر.
+        [, $clerk] = $this->clerk();
+        $order = $this->newOrder('0.00');
+
+        // Act
+        $listed = $this->withHeaders($clerk)->getJson("/api/v1/orders/{$order->id}");
+        $withAFigure = $this->move($clerk, $order, OrderStatus::AwaitingDeposit, [
+            'deposit_amount' => '0',
+        ]);
+
+        // Assert — a box whose only possible answer is «0» is a box that asks nothing, so none is
+        // drawn; and the endpoint refuses the key it never offered, like every other move.
+        $keys = array_column(
+            collect($listed->json('data.available_transitions'))
+                ->firstWhere('status', OrderStatus::AwaitingDeposit->value)['fields'],
+            'key',
+        );
+
+        $this->assertNotContains('deposit_amount', $keys);
+        $this->assertNotContains('deposit_method', $keys);
+        $withAFigure->assertStatus(422);
+        $this->assertSame(OrderStatus::New, $order->refresh()->status);
+    }
+
+    public function test_an_order_with_nothing_to_pay_walks_the_road_all_the_same(): void
+    {
+        // Arrange
+        [, $clerk] = $this->clerk();
+        $order = $this->newOrder('0.00');
+
+        // Act
+        $parked = $this->move($clerk, $order, OrderStatus::AwaitingDeposit);
+        $claimed = $this->move($clerk, $order->refresh(), OrderStatus::DepositPaid);
+
+        // Assert — «عربون مدفوع» is the warehouse's own work list, and an order that cannot reach
+        // it is an order nobody there will ever see. So the road is walked with a zero written on
+        // it rather than with nothing: the next person to open the order reads «العربون 0» and
+        // knows it was never money, instead of an empty column they have to guess about.
+        $parked->assertOk()
+            ->assertJsonPath('data.status', OrderStatus::AwaitingDeposit->value)
+            ->assertJsonPath('data.deposit_expected_amount', '0.00')
+            ->assertJsonPath('data.deposit_expected_method', null);
+        $claimed->assertOk()->assertJsonPath('data.status', OrderStatus::DepositPaid->value);
+
+        // And not one row of money for a move that moved none.
+        $order->refresh();
+        $this->assertNotNull($order->deposit_paid_at);
+        $this->assertSame('0.00', (string) $order->paid_amount);
+        $this->assertDatabaseCount('order_payments', 0);
+    }
+
+    public function test_a_deposit_of_nothing_is_not_the_accountants_to_confirm(): void
+    {
+        // Arrange
+        [, $clerk] = $this->clerk();
+        [, $books] = $this->accountant();
+        $order = $this->newOrder('0.00');
+        $this->move($clerk, $order, OrderStatus::AwaitingDeposit)->assertOk();
+        $this->move($clerk, $order->refresh(), OrderStatus::DepositPaid)->assertOk();
+
+        // Act
+        $ticked = $this->confirm($books, $order->refresh(), true);
+        $listed = $this->withHeaders($books)->getJson("/api/v1/orders/{$order->id}");
+
+        // Assert — «رأيتُ العربون في الحساب» about nothing at all is a row in the accountant's
+        // queue that no money explains. The status is the warehouse's signal; it was never a
+        // claim that anybody paid anything.
+        $ticked->assertStatus(422)
+            ->assertJsonPath('message', 'لا يوجد عربون على هذه الطلبية لتأكيد استلامه');
+        $listed->assertOk()
+            ->assertJsonPath('data.can_confirm_deposit', false)
+            ->assertJsonPath('data.awaits_deposit_confirmation', false);
+        $this->assertFalse($order->refresh()->is_deposit_received);
+    }
+
     // ── «عربون مدفوع» — a claim, with or without money behind it ─────────────────────────────
 
     public function test_a_deposit_taken_at_the_counter_becomes_an_ordinary_payment(): void
