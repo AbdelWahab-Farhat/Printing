@@ -3,6 +3,7 @@ import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
@@ -399,7 +400,12 @@ class _Number extends StatefulWidget {
 }
 
 class _NumberState extends State<_Number> {
-  late final TextEditingController _controller = TextEditingController(text: widget.value);
+  // «1000», not «1000.000». The server trims what it suggests, and this trims it again for the
+  // same reason `digits.dart` gives: a box opening with the padding of a `decimal:3` column is
+  // a box asking to be cleared before it can be agreed with. `trimDecimals` and not `grouped`,
+  // because a separator here comes back through the Arabic keyboard as a decimal point.
+  late final TextEditingController _controller =
+      TextEditingController(text: trimDecimals(widget.value));
 
   @override
   void dispose() {

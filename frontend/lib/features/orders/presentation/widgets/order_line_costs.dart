@@ -31,6 +31,13 @@ import 'package:flutter/material.dart';
 /// for, and a cost printed at the same weight beside it would compete with the number the
 /// customer is being asked to pay.
 ///
+/// **And what the customer left on the counter, when it was a loss.** `delivery_loss` is the
+/// share of this line's own cost that walked out of the accounts with the bags nobody took —
+/// printed artwork nobody else can buy. It is read as «منها», because it is a slice of the
+/// total above and not a second cost to add to it, and it is drawn for the production reader
+/// alone: it is money, and money on a line belongs where the rest of the line's money is. Null
+/// on a restocked line, which cost the shop nothing — bags back on the shelf are still stock.
+///
 /// **A وسيط line has a fourth figure and a second reader.** `outsourcing_cost` — what the vendor
 /// charged for the line, recognised at «جاهزة» and folded into `cogs` by the server — sits in the
 /// same run as the three above for whoever reads the production figures. And `unit_cost`, the
@@ -71,7 +78,10 @@ class OrderLineCosts extends StatelessWidget {
 
     final total = showProduction ? item.cogs : null;
     final vendorRate = showOutsourcing ? item.unitCost : null;
-    if (total == null && parts.isEmpty && vendorRate == null) return const SizedBox.shrink();
+    final deliveryLoss = showProduction ? item.deliveryLoss : null;
+    if (total == null && parts.isEmpty && vendorRate == null && deliveryLoss == null) {
+      return const SizedBox.shrink();
+    }
 
     final line = [
       if (total != null) 'التكلفة ${total.grouped}',
@@ -100,6 +110,10 @@ class OrderLineCosts extends StatelessWidget {
             'تكلفة المواد لل${item.stockUnitLabel ?? item.pricingUnitLabel} ${unitCost.grouped}',
             style: style,
           ),
+        // «منها», never a line of its own arithmetic: the figure is already inside the total
+        // above, and a reader who subtracts it from that number is wrong by exactly this much.
+        if (deliveryLoss != null)
+          Text('منها خسارة تسليم ${deliveryLoss.grouped}', style: style),
       ],
     );
   }

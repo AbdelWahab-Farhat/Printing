@@ -10,6 +10,7 @@ use App\Domain\Order\Actions\RestoreOrder;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
+use App\Support\DecimalText;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 /**
@@ -301,7 +302,7 @@ final class StockEffectPreview
         return $items
             ->map(fn (OrderItem $item): array => [
                 'label' => self::label($item),
-                'quantity' => self::quantity($item->producedQuantity()),
+                'quantity' => DecimalText::trim($item->producedQuantity()),
                 'unit' => $item->stockUnit()->label(),
             ])
             ->values()
@@ -315,21 +316,5 @@ final class StockEffectPreview
         $size = (string) $item->variant_label;
 
         return $product === '' ? $size : "{$product} — {$size}";
-    }
-
-    /**
-     * «300», not «300.000».
-     *
-     * The trailing zeros are an artefact of `decimal:3` — three places is what a shelf weighed in
-     * kilograms needs, and what a count of bags has no use for. The trim is the one
-     * `QuantityBelowMinimum` already does for the same reason, guarded against a value with no
-     * decimal point at all: `rtrim('300', '0')` is «3», and the cast that makes that impossible
-     * today is not a thing this sentence should depend on.
-     */
-    private static function quantity(string $value): string
-    {
-        return str_contains($value, '.')
-            ? rtrim(rtrim($value, '0'), '.')
-            : $value;
     }
 }

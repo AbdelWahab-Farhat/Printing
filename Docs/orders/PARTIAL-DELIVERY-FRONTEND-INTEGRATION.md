@@ -15,6 +15,15 @@
 >
 > Written for whoever picks up the app side. Backend status: merged on `feat/partial-delivery`,
 > 13 tests passing.
+>
+> ---
+>
+> **Done, on the same branch** — every item of §8 but the one that is a pair of eyes. The two
+> red contract tests are green, the line card, the list badge and the report card are built, and
+> 22 tests were written for them. §8 carries what was done and the one place this document sent
+> the work somewhere it did not belong. **What is left is item 3**: nobody has looked at the
+> delivery form on a real multi-line order, and nobody can — see §3 for the only question it
+> asks.
 
 ---
 
@@ -310,15 +319,32 @@ them wanting, and both are listed here so nobody solves them in Dart:
 
 ## 8. Checklist
 
-| # | | Where |
-|---|---|---|
-| 1 | `recordPartialDelivery` in `AppPermission` | §1.1 — **red now** |
-| 2 | Four keys on `OrderItem`, one on `Order`, then build_runner | §1.2 — **red now** |
-| 3 | Look at the delivery form on a real multi-line order | §3 |
-| 4 | «غير مُستلَم» under the shortage on the line card | §4 |
-| 5 | `deliveryLoss` into `OrderLineCosts`, behind the existing cost permission | §4 |
-| 6 | «تسليم جزئي» chip on the order card | §5 |
-| 7 | `PnlLosses` model + «الخسائر» card | §6 |
-| 8 | *(optional, adjacent)* `write_offs` on the same card | §6 |
+| # | | Where | |
+|---|---|---|---|
+| 1 | `recordPartialDelivery` in `AppPermission` | §1.1 | ✅ |
+| 2 | Four keys on `OrderItem`, one on `Order`, then build_runner | §1.2 | ✅ |
+| 3 | Look at the delivery form on a real multi-line order | §3 | ⬜ **the only one left** |
+| 4 | «غير مُستلَم» under the shortage on the line card | §4 | ✅ |
+| 5 | `deliveryLoss` into `OrderLineCosts`, behind the existing cost permission | §4 | ✅ |
+| 6 | «تسليم جزئي» chip on the order card | §5 | ✅ |
+| 7 | `PnlLosses` model + «الخسائر» card | §6 | ✅ |
+| 8 | `write_offs` — **beside النقد المحصَّل, not on the losses card** | below | ✅ |
 
-Items 1 and 2 are the release. Everything else can follow.
+Items 1 and 2 were the release; the rest followed on the same branch.
+
+**Item 8 was moved, and the instruction above it was wrong.** This document said `write_offs`
+«belongs on the same card». It does not. A write-off forgives a *receivable* — nothing was made
+and nothing was spoiled — and this statement recognises revenue on delivery and carries no
+expense side at all, so there is nowhere in the arithmetic above to hang a bad debt.
+`ProfitAndLossSummaryQuery` says exactly this in its own comment and publishes the key beside
+`cash_collected` rather than inside `losses`. Putting it under «الخسائر» would have sat it under
+that card's own caption — «محتسبة ضمن الربح أعلاه» — and made the sentence false. It is drawn in
+`_CashCollected`, under the break in the page, with a line of its own saying it is not taken off
+the profit above. `profit_and_loss_write_offs_test.dart` asserts the position, so the move cannot
+be undone by accident.
+
+**And what item 3 is actually asking.** The mechanism is proved: the server sends `number` fields
+carrying `max`, `hint` and `value`; `OrderStatusCubit._prefilled` seeds `field.value`; both are
+covered by tests that already existed. What no test can answer is whether five boxes on one
+status screen read well to somebody standing at a counter. If they do not, §7.1 is the fix and it
+is a server-side one.

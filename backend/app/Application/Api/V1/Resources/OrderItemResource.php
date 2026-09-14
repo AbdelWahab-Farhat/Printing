@@ -63,6 +63,11 @@ class OrderItemResource extends JsonResource
                 : (string) $this->undelivered_quantity,
             'undelivered_disposition' => $this->undelivered_disposition?->value,
             'undelivered_disposition_label' => $this->undelivered_disposition?->label(),
+            // In the **stock** unit, beside `stock_unit_label` below — never in the pricing unit
+            // the two lines above are counted in. Null where nothing came back.
+            'restocked_quantity' => $this->restocked_quantity === null
+                ? null
+                : (string) $this->restocked_quantity,
 
             // What those goods cost us, for the lines where they were a loss rather than a
             // return — see OrderItem::deliveryLoss(). Null for a restocked line, because bags

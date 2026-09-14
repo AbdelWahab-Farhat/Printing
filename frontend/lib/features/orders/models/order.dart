@@ -95,6 +95,14 @@ abstract class Order with _$Order {
     /// because no card shows it and a page of twenty would be a query per row.
     @JsonKey(name: 'ready_message_sent_by') OrderActor? readyMessageSentBy,
 
+    /// Whether the customer left part of this order behind.
+    ///
+    /// Derived on the server from the lines, which the list already loads, so it costs nothing
+    /// and arrives on **both** the list and the detail payloads. Nullable rather than defaulted
+    /// false: it is absent from any payload that did not load the lines, and «لم يُسأل» is not
+    /// «لا».
+    @JsonKey(name: 'is_partially_delivered') bool? isPartiallyDelivered,
+
     /// The moves this order may make, **already narrowed to what the signed-in user may do.**
     /// The screen draws exactly these buttons and no others, which is what stops it offering an
     /// action the server would refuse.
@@ -645,11 +653,45 @@ abstract class OrderItem with _$OrderItem {
     /// — which is not the same as nothing being missing.
     @JsonKey(name: 'shortage_quantity') String? shortageQuantity,
 
-    /// What the line is actually charged for: [quantity] less [shortageQuantity].
+    /// What the customer left on the counter, in this line's own unit.
+    ///
+    /// Null on every line of every order delivered whole, which is nearly all of them —
+    /// «nothing recorded» rather than «nothing left», the distinction [shortageQuantity]
+    /// above already makes.
+    @JsonKey(name: 'undelivered_quantity') String? undeliveredQuantity,
+
+    /// What became of it: `restocked` or `written_off`. Read off the line rather than worked
+    /// out from the product's heading — re-filing a product must not rewrite a delivery
+    /// recorded last March.
+    @JsonKey(name: 'undelivered_disposition') String? undeliveredDisposition,
+
+    /// The same thing in Arabic, ready to print — «أُعيد إلى المخزن» or «خسارة». Sent beside
+    /// the value for the reason [pricingUnitLabel] is: the app branches on one and shows the
+    /// other, and never owns the dictionary.
+    @JsonKey(name: 'undelivered_disposition_label') String? undeliveredDispositionLabel,
+
+    /// كم من المتروك وصل الرفّ فعلاً — **بوحدة المخزن**، لا بوحدة البيع التي عُدَّ بها
+    /// [undeliveredQuantity] فوقه.
+    ///
+    /// الرقمان مختلفان كلّما اختلفت الوحدتان: «١٠٠ قطعة» تركها الزبون قد تكون «٦٫٨ كجم» على
+    /// الميزان، ولا سبيل إلى اشتقاق أحدهما من الآخر — لذلك يُسأل عنه أمين المخزن ويُحفظ. اقرأه
+    /// مع [stockUnitLabel].
+    ///
+    /// خالٍ حيث لم يرجع شيء، والمطبوع منه: تلك أكياسٌ تحمل تصميم الزبون، وصفرٌ هنا ادّعاءٌ بأن
+    /// أحداً فتح الرفّ.
+    @JsonKey(name: 'restocked_quantity') String? restockedQuantity,
+
+    /// What the goods left behind cost us — **null unless they were a loss**. Bags back on the
+    /// shelf cost the shop nothing, so a restocked line has no figure here at all.
+    @JsonKey(name: 'delivery_loss') String? deliveryLoss,
+
+    /// What the line is actually charged for: [quantity] less [shortageQuantity], less
+    /// [undeliveredQuantity].
     ///
     /// Sent by the server rather than subtracted here, because which quantity an invoice is
-    /// built on is a rule and rules live in one place. Null only from a server too old to send
-    /// it — see [pricedQuantity].
+    /// built on is a rule and rules live in one place — and the rule now has **two**
+    /// subtrahends where it used to have one, so anything re-deriving it locally is wrong.
+    /// Null only from a server too old to send it — see [pricedQuantity].
     @JsonKey(name: 'billable_quantity') String? billableQuantity,
 
     /// How much of the warehouse's own unit this line takes off the shelf.
@@ -733,6 +775,16 @@ abstract class OrderItem with _$OrderItem {
     final missing = double.tryParse(shortageQuantity ?? '') ?? 0;
 
     return missing > 0;
+  }
+
+  /// Whether the customer left any of this line behind.
+  ///
+  /// Parsed rather than compared to null, for the reason [hasShortage] is: a recorded zero is
+  /// «took it all», not «left nothing».
+  bool get wasPartlyLeftBehind {
+    final left = double.tryParse(undeliveredQuantity ?? '') ?? 0;
+
+    return left > 0;
   }
 
   /// The number the line is priced on, which is what an invoice is read for.

@@ -180,11 +180,24 @@ final class RecordPartialDelivery
     {
         $answer = $fields[TransitionFields::returnedQuantityKey($item)] ?? null;
 
+        $drawn = (string) ($item->warehouse_quantity ?? $item->quantity);
+
         $keep = $answer === null || $answer === ''
             ? $item->deliveredStockQuantity()
-            : bcsub((string) ($item->warehouse_quantity ?? $item->quantity), (string) $answer, 3);
+            : bcsub($drawn, (string) $answer, 3);
 
-        ($this->redraw)($order, $item, bccomp($keep, '0', 3) < 0 ? '0.000' : $keep, $employeeId);
+        if (bccomp($keep, '0', 3) < 0) {
+            $keep = '0.000';
+        }
+
+        // **Written before the redraw, because the redraw is what makes it unknowable.**
+        // `RedrawOrderLineStock` writes `warehouse_quantity` over itself with what stays drawn,
+        // so the figure that left the shelf survives nowhere on the line afterwards — only in
+        // the two stock movements, a screen away and in another unit's company. Recording it
+        // here is what lets the order answer «كم رجع» without leaving the order.
+        $item->forceFill(['restocked_quantity' => bcsub($drawn, $keep, 3)])->save();
+
+        ($this->redraw)($order, $item, $keep, $employeeId);
     }
 
     /**

@@ -297,6 +297,46 @@ class PartialDeliveryTest extends TestCase
         $this->assertSame('800.00', (string) $item->refresh()->material_cost);
     }
 
+    /**
+     * **«كم كيلو رجع؟» سؤالٌ لا يجيبه سطر البند.**
+     *
+     * البند يقول «غير مُستلَم ١٠٠ قطعة» — بوحدة البيع، لأنها ما عدّه الزبون. أما ما وُضع على
+     * الرفّ فبوحدة المخزن، وهو ما تمحوه إعادة السحب: `warehouse_quantity` يُكتب فوقه بما بقي،
+     * فالكمية التي خرجت أصلاً تضيع من السطر ولا تبقى إلا في حركتَي المخزن.
+     *
+     * فيُكتب الرقم لحظة وقوعه.
+     */
+    public function test_what_went_back_on_the_shelf_is_recorded_on_the_line(): void
+    {
+        // Arrange — 300 plain bags drawn off a shelf, sold and stocked in the same unit.
+        $headers = $this->clerk();
+        $size = $this->sizeUnder($this->blankCategory());
+        [$order] = $this->readyOrder([$size], $headers);
+        $item = $order->items()->sole();
+
+        // Act — the customer takes 200 and leaves 100.
+        $this->deliver($order, $headers, [$this->key($item) => '200'])->assertOk();
+
+        // Assert — and it is what the shelf received, not what the invoice dropped: the two
+        // agree here only because the line is sold in the unit it is stocked in.
+        $this->assertSame('100.000', (string) $item->refresh()->restocked_quantity);
+    }
+
+    public function test_a_line_delivered_whole_puts_nothing_back_and_says_so_with_null(): void
+    {
+        // Arrange
+        $headers = $this->clerk();
+        $size = $this->sizeUnder($this->blankCategory());
+        [$order] = $this->readyOrder([$size], $headers);
+        $item = $order->items()->sole();
+
+        // Act — the whole line, which is what the pre-filled box sends back.
+        $this->deliver($order, $headers, [$this->key($item) => '300'])->assertOk();
+
+        // Assert — «لم يرجع شيء» is null, never «رجع صفر»: nobody opened the shelf.
+        $this->assertNull($item->refresh()->restocked_quantity);
+    }
+
     // ───────────────────────── مطبوع — a named loss ─────────────────────────
 
     public function test_printed_goods_left_behind_become_a_loss_and_move_no_stock(): void
@@ -323,6 +363,10 @@ class PartialDeliveryTest extends TestCase
 
         // …the cost stays whole, because we made all 300.
         $this->assertSame($costBefore, (string) $item->cogs);
+
+        // …and nothing was restocked, which is null rather than zero — the shelf was never
+        // opened for these bags.
+        $this->assertNull($item->restocked_quantity);
 
         // …and the loss is named: a third of the line's cost.
         $expected = bcdiv(bcmul($costBefore, '100', 8), '300', 2);
@@ -531,7 +575,7 @@ class PartialDeliveryTest extends TestCase
         // Assert — one box per line, holding the whole billable quantity so agreeing is a tap.
         $box = collect($delivered['fields'])->firstWhere('key', $this->key($item));
         $this->assertNotNull($box);
-        $this->assertSame('300.000', $box['value']);
+        $this->assertSame('300', $box['value']);
         // Loose, because JSON gives an integral float back as an int and the assertion is
         // about the ceiling being the whole billable quantity, not about its PHP type.
         $this->assertEquals(300, $box['max']);
@@ -605,7 +649,10 @@ class PartialDeliveryTest extends TestCase
             ->assertJsonPath('data.items.0.undelivered_quantity', '100.000')
             ->assertJsonPath('data.items.0.undelivered_disposition', 'written_off')
             ->assertJsonPath('data.items.0.undelivered_disposition_label', 'خسارة')
-            ->assertJsonPath('data.items.0.billable_quantity', '200.000');
+            ->assertJsonPath('data.items.0.billable_quantity', '200.000')
+            // Printed goods go back to nothing, and the app draws «لم يرجع — خسارة» off this
+            // being null rather than off re-reading the disposition beside it.
+            ->assertJsonPath('data.items.0.restocked_quantity', null);
     }
 
     public function test_an_order_delivered_whole_is_not_flagged(): void

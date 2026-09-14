@@ -74,6 +74,10 @@ class OrderItem extends Model
             // only writer. Both null or both set; never one of the two.
             'undelivered_quantity' => 'decimal:3',
             'undelivered_disposition' => UndeliveredDisposition::class,
+            // How much of that leftover actually reached a shelf, in the **stock** unit — which
+            // is a different figure from the one above whenever the two units differ. Null for a
+            // line nothing came back from, printed ones included.
+            'restocked_quantity' => 'decimal:3',
             'unit_price' => 'decimal:3',
             // The copy of what this size cost us on the day — see the migration that added it.
             // Three places, like the price it sits beside, so the two round the same way.

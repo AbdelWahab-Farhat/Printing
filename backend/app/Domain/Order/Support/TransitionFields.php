@@ -16,6 +16,7 @@ use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\UndeliveredDisposition;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
+use App\Support\DecimalText;
 
 /**
  * What a particular order owes for a particular move.
@@ -204,8 +205,8 @@ final class TransitionFields
                     // already given the goods up.
                     required: true,
                     hint: $deductsHere
-                        ? "المباع {$item->quantity} {$item->pricing_unit->label()} — والمخزن يُنقص بال{$item->stockUnit()->label()}"
-                        : "خرج من المخزن {$item->warehouse_quantity} {$item->stockUnit()->label()} — صحّحه إن اختلف المستهلك فعلاً",
+                        ? 'المباع '.DecimalText::trim((string) $item->quantity)." {$item->pricing_unit->label()} — والمخزن يُنقص بال{$item->stockUnit()->label()}"
+                        : 'خرج من المخزن '.DecimalText::trim((string) $item->warehouse_quantity)." {$item->stockUnit()->label()} — صحّحه إن اختلف المستهلك فعلاً",
                     // An answer, not a placeholder: a line weighed at «جاهزة للطباعة» opens here
                     // holding that figure, so an unchanged run is confirmed by leaving it be.
                     value: $item->warehouse_quantity !== null ? (string) $item->warehouse_quantity : null,
@@ -225,7 +226,7 @@ final class TransitionFields
                     // most shortages are one size out of several, and marking the whole form
                     // required would have staff typing zeros to get past it.
                     max: (float) $item->quantity,
-                    hint: "من أصل {$item->quantity} — يُخصم من الفاتورة",
+                    hint: 'من أصل '.DecimalText::trim((string) $item->quantity).' — يُخصم من الفاتورة',
                 );
             }
         }
@@ -251,7 +252,7 @@ final class TransitionFields
                     key: "received_{$item->getKey()}",
                     label: "الواصل من نواقص {$item->variant_label} ({$item->pricing_unit->label()})",
                     max: (float) $item->shortage_quantity,
-                    hint: "الناقص {$item->shortage_quantity} — ما يبقى منه يُخصم من الفاتورة",
+                    hint: 'الناقص '.DecimalText::trim((string) $item->shortage_quantity).' — ما يبقى منه يُخصم من الفاتورة',
                     value: (string) $item->shortage_quantity,
                 );
             }
@@ -365,7 +366,7 @@ final class TransitionFields
                 // The figure and nothing else. «اتركه فارغاً إن لم يُقبض شيء» said out loud what
                 // «(اختياري)» beside the label already says, under a box whose only other line
                 // is the one number the person needs.
-                hint: "المتبقي {$remaining}",
+                hint: 'المتبقي '.DecimalText::trim($remaining),
                 value: $settling ? $remaining : null,
             ),
             TransitionField::paymentMethod(
@@ -459,7 +460,7 @@ final class TransitionFields
                 max: (float) $billable,
                 hint: sprintf(
                     'من أصل %s — وما لا يأخذه يُخصم من الفاتورة و%s',
-                    $billable,
+                    DecimalText::trim($billable),
                     $disposition->returnsToStock() ? 'يعود إلى المخزن' : 'يُسجّل خسارة',
                 ),
                 value: $billable,
@@ -477,7 +478,7 @@ final class TransitionFields
                 // ignores it unless the line has a remainder.
                 required: false,
                 max: (float) $item->producedQuantity(),
-                hint: "خرج من المخزن {$item->producedQuantity()} {$item->stockUnit()->label()} — صحّح المُعاد إن وزنته",
+                hint: 'خرج من المخزن '.DecimalText::trim($item->producedQuantity())." {$item->stockUnit()->label()} — صحّح المُعاد إن وزنته",
             );
         }
 
@@ -533,7 +534,7 @@ final class TransitionFields
                 $item->variant_label,
                 $item->isStockedInAnotherUnit() && $item->warehouse_quantity === null
                     ? "بال{$item->stockUnit()->label()}، حسب ما تُدخله أدناه"
-                    : "{$item->producedQuantity()} {$item->stockUnit()->label()}",
+                    : DecimalText::trim($item->producedQuantity())." {$item->stockUnit()->label()}",
             ))
             ->all();
 
