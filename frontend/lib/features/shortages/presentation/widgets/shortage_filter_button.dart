@@ -20,11 +20,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// جاري البحث عنه؟» — so they sit beside the statuses inside the sheet instead of being lost.
 /// They are not asked for again when it opens: the list already holds the answer.
 ///
-/// **المصدر is the one question that stayed outside**, on the page. «يدوي» against «من طلبية» is
-/// the split somebody flips between while reading — a shortage the shop wants against one a
-/// customer is waiting on — rather than a question they set once and forget, and it is two words
-/// wide. It travels in [ShortageFilterSelection] all the same, so the button still knows whether
-/// the list is narrowed.
+/// **Two questions stayed outside**, on the page itself, and for one reason: each is flipped
+/// between while reading rather than set once and forgotten. المصدر — «يدوي» against «من طلبية»,
+/// a shortage the shop wants against one a customer is waiting on — is two words wide and rides
+/// in [ShortageFilterSelection] all the same, so the button still knows whether the list is
+/// narrowed. الإسناد went out later, into the tab row above the rows: the unassigned queue is a
+/// pile of work and the reader's own is their day, and neither is worth two taps and an «تطبيق».
+/// It does **not** ride in the selection — the tabs own it, and the sheet must not hand back an
+/// answer to a question it no longer asks.
 ///
 /// **Filled when anything is set, neutral when nothing is**, so whether the list is narrowed is
 /// answered before the sheet is opened.
@@ -85,23 +88,23 @@ class ShortageFilterButton extends StatelessWidget {
   }
 }
 
-/// The three questions the sheet asks, as one answer.
+/// The two questions the sheet asks, as one answer.
+///
+/// **الإسناد is not among them any more.** It sits in the tab row above the list — «مَن يلاحق
+/// ماذا» is flipped between while reading rather than set once — and a filter with two homes is
+/// a filter whose two homes disagree.
 @immutable
 class ShortageFilterSelection {
-  const ShortageFilterSelection({this.status, this.assignedTo, this.source});
+  const ShortageFilterSelection({this.status, this.source});
 
   /// Null is «الكل» — **completed ones included**, which is what the list opens on: the
   /// historical record is part of what the section is for.
   final ShortageStatus? status;
 
-  /// `'me'`, `'none'`, or null for everybody's. Two words rather than ids, because neither «me»
-  /// nor «none» is one — see `ShortageRepository.shortages`.
-  final String? assignedTo;
-
   /// `'manual'`, `'order'`, or null for both.
   final String? source;
 
-  bool get isNarrowed => status != null || assignedTo != null || source != null;
+  bool get isNarrowed => status != null || source != null;
 }
 
 class _FilterSheet extends StatefulWidget {
@@ -119,10 +122,9 @@ class _FilterSheet extends StatefulWidget {
 /// without reopening the sheet.
 class _FilterSheetState extends State<_FilterSheet> {
   late ShortageStatus? _status = widget.selection.status;
-  late String? _assignedTo = widget.selection.assignedTo;
   late String? _source = widget.selection.source;
 
-  bool get _isNarrowed => _status != null || _assignedTo != null || _source != null;
+  bool get _isNarrowed => _status != null || _source != null;
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +155,6 @@ class _FilterSheetState extends State<_FilterSheet> {
                       style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                       onPressed: () => setState(() {
                         _status = null;
-                        _assignedTo = null;
                         _source = null;
                       }),
                       child: const Text('مسح الفلاتر'),
@@ -191,32 +192,6 @@ class _FilterSheetState extends State<_FilterSheet> {
                         ),
                     ],
                   ),
-                  SizedBox(height: 20.h),
-                  const FilterSectionTitle(title: 'الإسناد'),
-                  SizedBox(height: 10.h),
-                  Wrap(
-                    spacing: 8.w,
-                    runSpacing: 8.h,
-                    children: [
-                      FilterOptionChip(
-                        label: 'الكل',
-                        isSelected: _assignedTo == null,
-                        onTap: () => setState(() => _assignedTo = null),
-                      ),
-                      FilterOptionChip(
-                        label: 'المسندة إليّ',
-                        isSelected: _assignedTo == 'me',
-                        onTap: () => setState(() => _assignedTo = 'me'),
-                      ),
-                      // **A queue, not an absence** — it is the one a supervisor actually works
-                      // from, which is why the server takes the word «none» for it.
-                      FilterOptionChip(
-                        label: 'غير مُسنَدة',
-                        isSelected: _assignedTo == 'none',
-                        onTap: () => setState(() => _assignedTo = 'none'),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -225,11 +200,7 @@ class _FilterSheetState extends State<_FilterSheet> {
               child: AppButton(
                 label: 'تطبيق',
                 onPressed: () => Navigator.of(context).pop(
-                  ShortageFilterSelection(
-                    status: _status,
-                    assignedTo: _assignedTo,
-                    source: _source,
-                  ),
+                  ShortageFilterSelection(status: _status, source: _source),
                 ),
               ),
             ),

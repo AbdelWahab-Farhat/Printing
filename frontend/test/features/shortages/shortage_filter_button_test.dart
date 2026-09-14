@@ -64,17 +64,18 @@ void main() {
     expect(find.byType(FilterOptionChip), findsNothing);
   });
 
-  testWidgets('the sheet asks the two questions that belong in it', (tester) async {
+  testWidgets('the sheet asks the one question that belongs in it', (tester) async {
     // Arrange
     await tester.pumpWidget(host());
 
     // Act
     await openTheSheet(tester);
 
-    // Assert — «المصدر» is deliberately **not** here: it lives on the page, because it is the
-    // split somebody flips between while reading rather than a question they set once.
+    // Assert — «المصدر» and «الإسناد» are deliberately **not** here: both live on the page,
+    // because both are flipped between while reading rather than set once and forgotten. The
+    // assignment is the tab row above the rows; see `shortages_page_test`.
     expect(find.text('حالة النقص'), findsOneWidget);
-    expect(find.text('الإسناد'), findsOneWidget);
+    expect(find.text('الإسناد'), findsNothing);
     expect(find.text('المصدر'), findsNothing);
   });
 
@@ -91,16 +92,18 @@ void main() {
     expect(find.textContaining('50'), findsWidgets);
   });
 
-  testWidgets('the two queues are options here rather than a row of their own', (tester) async {
+  testWidgets('the two queues left the sheet for the tab row', (tester) async {
     // Arrange
     await tester.pumpWidget(host());
 
     // Act
     await openTheSheet(tester);
 
-    // Assert — «غير مُسنَدة» is a queue a supervisor works from, not an absence.
-    expect(find.text('المسندة إليّ'), findsOneWidget);
-    expect(find.text('غير مُسنَدة'), findsOneWidget);
+    // Assert — «مَن يلاحق ماذا» is asked too often to sit behind a button, two taps and an
+    // «تطبيق». It is above the list now, and a filter with two homes is a filter whose two homes
+    // disagree.
+    expect(find.text('المسندة إليّ'), findsNothing);
+    expect(find.text('غير مُسنَدة'), findsNothing);
   });
 
   testWidgets('nothing is applied until «تطبيق» is pressed', (tester) async {
@@ -118,23 +121,27 @@ void main() {
     expect(applied, isNull);
   });
 
-  testWidgets('«تطبيق» answers with all three at once', (tester) async {
-    // Arrange
+  testWidgets('«تطبيق» answers with what it was asked, and nothing it was not', (tester) async {
+    // Arrange — opened on a source the page had already set.
     ShortageFilterSelection? applied;
-    await tester.pumpWidget(host(onApplied: (picked) => applied = picked));
+    await tester.pumpWidget(
+      host(
+        selection: const ShortageFilterSelection(source: 'order'),
+        onApplied: (picked) => applied = picked,
+      ),
+    );
     await openTheSheet(tester);
 
     // Act
     await tester.tap(find.text('جاري البحث'));
     await tester.pump();
-    await tester.tap(find.text('غير مُسنَدة'));
-    await tester.pump();
     await tester.tap(find.text('تطبيق'));
     await tester.pumpAndSettle();
 
-    // Assert — one answer, so the list is narrowed in one request rather than two.
+    // Assert — one answer, so the list is narrowed in one request rather than two; and the
+    // source it never drew comes back untouched rather than cleared.
     expect(applied?.status, ShortageStatus.searching);
-    expect(applied?.assignedTo, 'none');
+    expect(applied?.source, 'order');
   });
 
   testWidgets('«مسح الفلاتر» appears only once there is something to clear', (tester) async {
@@ -154,11 +161,12 @@ void main() {
   testWidgets('a narrowed list says so before the sheet is opened', (tester) async {
     // Arrange - Act
     await tester.pumpWidget(
-      host(selection: const ShortageFilterSelection(assignedTo: 'me')),
+      host(selection: const ShortageFilterSelection(status: ShortageStatus.searching)),
     );
 
     // Assert — the button is filled, which is what answers «is this list narrowed?» at a glance.
-    expect(const ShortageFilterSelection(assignedTo: 'me').isNarrowed, isTrue);
+    expect(const ShortageFilterSelection(status: ShortageStatus.searching).isNarrowed, isTrue);
+    // The tab row is on screen, so the assignment is never a *hidden* narrowing to warn about.
     expect(const ShortageFilterSelection().isNarrowed, isFalse);
   });
 }

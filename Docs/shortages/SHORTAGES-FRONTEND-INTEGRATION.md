@@ -531,9 +531,17 @@ is never offered — it is written by arithmetic when the remainder reaches zero
 decides whether the pencil appears at all, and each supply row's own `is_reversible` decides
 whether it is offered an undo. All three are the server's answers, read rather than re-derived.
 
-**The two queues are chips on the list, not screens.** «المسندة إليّ» and «غير مُسنَدة» sit under
-the status board and travel as `assigned_to=me` and `assigned_to=none` — two words rather than
-ids, because neither is one.
+**The two queues are tabs above the list, not screens.** «مسندة» and «غير مسندة» sit directly
+over the rows, beside «الكل», and travel as `assigned_to=me` and `assigned_to=none` — two words
+rather than ids, because neither is one. «مسندة» is the **reader's own**: the server knows «إليّ»
+only from the bearer token.
+
+They were chips inside the filter sheet first, and came out of it on the owner's word: «مَن يلاحق
+ماذا» is what a supervisor opens this screen to flip between, and a question asked that often is
+worth one tap rather than two and an «تطبيق». Tabs rather than a third chip row — the rows above
+are filters, and this is which slice of the section you are standing in. `ShortageFilterSelection`
+no longer carries `assignedTo` at all: a filter with two homes is a filter whose two homes
+disagree.
 
 **The board is asked without the status.** `ShortagesCubit` refreshes it beside page one only,
 and a failed board leaves the last numbers standing rather than blanking the row: the list

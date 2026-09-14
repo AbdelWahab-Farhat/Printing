@@ -137,6 +137,19 @@ class ShortagesCubit extends PagedCubit<Shortage> {
     await load(search: currentSearch);
   }
 
+  /// The tab row above the list: everybody's, the reader's own, or the unassigned queue.
+  ///
+  /// **Its own method rather than [applyFilters], for the same reason [showSource] has one.** It
+  /// is one tap answering one question, and routing it through the sheet's four-field answer
+  /// would make the tabs re-send a status and a source nobody touched.
+  Future<void> showAssignment(String? next) async {
+    if (assignedTo == next) return;
+
+    assignedTo = next;
+
+    await load(search: currentSearch);
+  }
+
   /// The filter sheet's answer, applied in one request rather than one per field.
   Future<void> applyFilters({
     required ShortageStatus? status,

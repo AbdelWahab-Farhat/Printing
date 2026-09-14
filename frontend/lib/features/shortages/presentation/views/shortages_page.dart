@@ -4,6 +4,7 @@ import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/filter_option_chip.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/core/widgets/search_field.dart';
@@ -20,14 +21,21 @@ import 'package:go_router/go_router.dart';
 
 /// النواقص — what the shop is short of, and the chase to get it.
 ///
-/// Two blocks down one column: the band — a search box and the filter button — and the rows.
+/// Down one column: the band — a search box and the filter button — المصدر, the assignment tabs,
+/// and the rows.
 ///
-/// **The chips are gone, and that was a correction.** This opened with a scrolling status row
-/// *and* a second row for the two queues: a hundred points of every screen spent saying «الكل»,
-/// «مكتمل» off the edge of a row nothing suggested continued, and two rows disagreeing about
-/// which of them was «the» filter. Everything they did is in the sheet now — status, assignment
-/// and source, in one answer applied in one request — and the counts went in with the statuses,
-/// which is the one thing the row was good for.
+/// **The status chips are gone, and that was a correction.** This opened with a scrolling status
+/// row *and* a second row for the two queues: a hundred points of every screen spent saying
+/// «الكل», «مكتمل» off the edge of a row nothing suggested continued, and two rows disagreeing
+/// about which of them was «the» filter. The status went into the sheet, with the counts — the
+/// one thing the row was good for.
+///
+/// **What came back out is الإسناد, as tabs.** «مَن يلاحق ماذا» turned out to be the question a
+/// supervisor opens this screen to flip between — the unassigned queue is a pile of work and the
+/// reader's own is their day — and a question asked that often is worth a tap rather than two and
+/// an «تطبيق». Tabs and not a third chip row, because it is not a filter among filters: it is
+/// which slice of the section you are standing in, and the app draws that distinction this way
+/// already.
 ///
 /// **Newest first, and completed rows are not buried.** Within a month of shipping «مكتمل» will
 /// be most of the table, and a list that hid it would make the historical record reachable only
@@ -114,13 +122,14 @@ class _ShortagesView extends StatelessWidget {
                     builder: (context, counts, _) => ShortageFilterButton(
                       selection: ShortageFilterSelection(
                         status: cubit.status,
-                        assignedTo: cubit.assignedTo,
                         source: cubit.source,
                       ),
                       counts: counts,
                       onApplied: (picked) => cubit.applyFilters(
                         status: picked.status,
-                        assignedTo: picked.assignedTo,
+                        // Not the sheet's to answer any more — the tabs below own it, and
+                        // sending anything else here would undo whichever one is open.
+                        assignedTo: cubit.assignedTo,
                         productId: cubit.productId,
                         source: picked.source,
                       ),
@@ -154,6 +163,16 @@ class _ShortagesView extends StatelessWidget {
               ),
             ),
           ),
+          // **الإسناد, on the page and not in the sheet.** «مَن يلاحق ماذا» is what a supervisor
+          // opens this screen to flip between — the unassigned queue is a pile of work, and the
+          // reader's own is their day — and a question asked that often does not belong behind a
+          // button, two taps and an «تطبيق» away.
+          //
+          // Tabs rather than a second row of chips: the row above is a filter and these are which
+          // slice of the section you are standing in, and the app already draws that distinction
+          // this way — see the deal screen. It also keeps the correction this list was built on:
+          // two chip rows that disagreed about which of them was «the» filter.
+          const _AssignmentTabs(),
           Expanded(
             child: BlocBuilder<ShortagesCubit, ShortagesState>(
               builder: (context, state) => PagedListView<Shortage>(
@@ -179,6 +198,45 @@ class _ShortagesView extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// الكل · مسندة · غير مسندة — the assignment axis, above the rows it narrows.
+///
+/// **No `TabBarView` under it.** There is one list and three questions about it, so the tabs set
+/// the filter and the list below re-reads; three page views would be three copies of the same
+/// screen holding three positions in three scrolls of the same table.
+///
+/// «مسندة» is the reader's own work, which the server knows only from the bearer token — hence
+/// the word `me` rather than an id. «غير مسندة» is `none`: a queue somebody works from, not the
+/// absence of an answer.
+class _AssignmentTabs extends StatelessWidget {
+  const _AssignmentTabs();
+
+  static const _axis = [('الكل', null), ('مسندة', 'me'), ('غير مسندة', 'none')];
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<ShortagesCubit>();
+    final scheme = context.colorScheme;
+
+    return DefaultTabController(
+      length: _axis.length,
+      initialIndex: _axis.indexWhere((tab) => tab.$2 == cubit.assignedTo).clamp(0, _axis.length - 1),
+      child: TabBar(
+        // Three short words fit the screen; a bar that scrolls hides its last tab from anybody
+        // who never drags it.
+        isScrollable: false,
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: scheme.outlineVariant.withValues(alpha: 0.5),
+        labelColor: scheme.primary,
+        unselectedLabelColor: scheme.onSurfaceVariant,
+        labelStyle: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
+        unselectedLabelStyle: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        onTap: (index) => cubit.showAssignment(_axis[index].$2),
+        tabs: [for (final (label, _) in _axis) Tab(height: 44.h, text: label)],
       ),
     );
   }
