@@ -95,6 +95,50 @@ abstract class Order with _$Order {
     /// because no card shows it and a page of twenty would be a query per row.
     @JsonKey(name: 'ready_message_sent_by') OrderActor? readyMessageSentBy,
 
+    // ── العربون ──────────────────────────────────────────────────────────────────────────
+    //
+    // **The arrangement, the claim, and the confirmation — three different facts.** What was
+    // agreed is not money that has moved ([paidAmount] is where a real deposit shows up); the
+    // claim is somebody saying it arrived so the work can start; and the confirmation is a
+    // second person ticking that it actually did. Nothing in the app derives any of them.
+
+    /// What عربون was asked of the customer, and how it was to be paid. All three null on an
+    /// order nobody asked a deposit of, which is most of them.
+    @JsonKey(name: 'deposit_expected_amount') String? depositExpectedAmount,
+    @JsonKey(name: 'deposit_expected_method') String? depositExpectedMethod,
+    @JsonKey(name: 'deposit_expected_method_label') String? depositExpectedMethodLabel,
+
+    /// When the order was *said* to have been paid. Cleared if the claim is walked back.
+    @JsonKey(name: 'deposit_paid_at') DateTime? depositPaidAt,
+
+    /// An employee's tick that the money really landed — **a statement, not arithmetic.** It
+    /// gates nothing: an order at false prints, ships and settles exactly like one at true, and
+    /// no rule here may start reading it. See ORDER-DEPOSIT.md.
+    @JsonKey(name: 'is_deposit_received') @Default(false) bool isDepositReceived,
+
+    @JsonKey(name: 'deposit_confirmed_at') DateTime? depositConfirmedAt,
+
+    /// Whether **this** reader may tick it — and the only thing the switch is ever gated on.
+    ///
+    /// The server folds two facts into it: the `orders.deposit.confirm` grant, and the rule that
+    /// whoever moved the order to «عربون مدفوع» may not confirm it themselves. The second is not
+    /// a question this app can answer — on a list row it never learns who made the claim — so
+    /// deriving it here would be a second, wrong opinion.
+    ///
+    /// **Defaults to false, not true.** A build talking to an API that predates this greys the
+    /// switch, which is the safe way round.
+    @JsonKey(name: 'can_confirm_deposit') @Default(false) bool canConfirmDeposit,
+
+    /// A deposit declared paid that nobody has confirmed — the accountant's queue.
+    @JsonKey(name: 'awaits_deposit_confirmation')
+    @Default(false)
+    bool awaitsDepositConfirmation,
+
+    /// Who said it was paid, and who confirmed it. **Null on a list row** — the server sends
+    /// the names with the full order only, exactly as it does for [readyMessageSentBy].
+    @JsonKey(name: 'deposit_claimed_by') OrderActor? depositClaimedBy,
+    @JsonKey(name: 'deposit_confirmed_by') OrderActor? depositConfirmedBy,
+
     /// Whether the customer left part of this order behind.
     ///
     /// Derived on the server from the lines, which the list already loads, so it costs nothing
@@ -457,6 +501,14 @@ abstract class Order with _$Order {
   /// place in the app that turned money into floating point.
   bool get isOutstanding =>
       paymentStatus == PaymentStatus.unpaid || paymentStatus == PaymentStatus.partiallyPaid;
+
+  /// Whether the ledger holds nothing at all against this order.
+  ///
+  /// Parsed rather than compared to `'0.00'`: the server pads money to two places today, and a
+  /// string comparison is one migration away from reading `'0.000'` as a payment. A figure it
+  /// cannot read counts as *paid*, because the sentence this feeds — «أُكِّد استلام العربون ولم
+  /// تُسجَّل دفعة عليه» — is an accusation, and the safer mistake is not making it.
+  bool get hasNoRecordedPayment => (double.tryParse(paidAmount) ?? 1) == 0;
 
   /// A discount worth showing a line for. `'0.00'` is not one.
   bool get hasDiscount => discount != '0.00';

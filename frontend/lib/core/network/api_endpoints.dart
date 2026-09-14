@@ -360,6 +360,15 @@ abstract final class OrderEndpoints {
   /// of a stray tap, and it costs the same grant, `orders.ready_message`.
   static String readyMessage(int orderId) => '/orders/$orderId/ready-message';
 
+  /// «هل وصل العربون فعلاً؟» — an employee confirming the deposit landed, and taking that back.
+  ///
+  /// A PATCH like [readyMessage] above, and the same shape of fact: a field on the order is
+  /// corrected and nothing is written to its timeline. The body is `{"received": true|false}`,
+  /// and the grant is `orders.deposit.confirm` — **but the grant is not the whole rule.** The
+  /// server also refuses whoever moved the order to «عربون مدفوع», so that the claim and its
+  /// confirmation are two people; `Order.canConfirmDeposit` carries the answer to both.
+  static String depositReceipt(int orderId) => '/orders/$orderId/deposit-receipt';
+
   static String designs(int orderId) => '/orders/$orderId/designs';
 
   static String reviewDesign(int orderId, int designId) =>

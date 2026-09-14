@@ -1,7 +1,12 @@
 # العربون — connecting the Flutter app
 
-> **Status: the backend is built, tested and merged; the app has not been touched.** Everything
-> below is work still to do on the Flutter side.
+> **Status: done.** The backend was built, tested and merged; the app has now been wired to it,
+> on this same branch. The three contract tests in §0 are green, the card in §6 is built and the
+> whole checklist in §9 is ticked. What follows is the record of what was built and why — read
+> §6 and §10 if you are picking this up.
+>
+> One thing changed outside the plan, and it is recorded in §10: the two new statuses pushed the
+> filter sheet past the height ceiling it is allowed, which cost a test its old claim.
 >
 > The feature adds two order statuses — **«انتظار العربون»** and **«عربون مدفوع»** — an agreed
 > deposit figure recorded when the order is parked, and a boolean an employee ticks afterwards to
@@ -300,12 +305,48 @@ a backend change first. Out of scope here.
 
 ## 9. Checklist
 
-- [ ] `OrderStatus`: two cases, exact Arabic, declared after `shortage` — §2
-- [ ] `tone` and the chip's icon switch — §2
-- [ ] `AppPermission`: three cases — §3
-- [ ] `Order`: ten keys + `build_runner` — §4
-- [ ] Confirm the status screen draws both moves with no change — §5
-- [ ] `OrderEndpoints.depositReceipt`, repository method, use case, cubit method — §6
-- [ ] The deposit card, gated on `canConfirmDeposit`, with the reason under a greyed switch — §6
-- [ ] Widget tests — §8
-- [ ] `flutter analyze` clean, `flutter test` green (the three contract tests included)
+- [x] `OrderStatus`: two cases, exact Arabic, declared after `shortage` — §2
+- [x] `tone` and the chip's icon switch — §2 (an hourglass and banknotes, both new in `AppIcons`)
+- [x] `AppPermission`: three cases — §3
+- [x] `Order`: ten keys + `build_runner` — §4
+- [x] Confirm the status screen draws both moves with no change — §5
+- [x] `OrderEndpoints.depositReceipt`, repository method, use case, cubit method — §6
+- [x] The deposit card, gated on `canConfirmDeposit`, with the reason under a greyed switch — §6
+- [x] Widget tests — §8 (`order_deposit_card_test.dart`, ten cases)
+- [x] `flutter analyze` clean, `flutter test` green (the three contract tests included)
+
+---
+
+## 10. What the build actually taught
+
+**The card is drawn under the header, not beside the money.** «هل وصل العربون؟» is the question
+that follows «ما حالتها؟», and the reader is already at the top of the screen when they ask it.
+It is drawn on `deposit_expected_amount != null` as §6 says — never on the status — and an order
+nobody asked a deposit of gets no card at all, which is most of them.
+
+**`Order.hasNoRecordedPayment` parses, it does not compare.** The contradiction line needed «is
+`paid_amount` zero», and `paidAmount != '0.00'` is one migration away from reading `'0.000'` as a
+payment. A figure it cannot parse counts as *paid*, deliberately: the sentence it feeds is an
+accusation, and the safer mistake is not making it.
+
+**`claimedByMe` decides a sentence, never the switch.** The page computes it with
+`Session.isSelf(depositClaimedBy.id)` and hands it to the card, which uses it only to choose
+between «يؤكّد استلامَ العربون موظفٌ غير مَن نقل الطلبية» and «بانتظار التأكيد» under a locked
+switch. What locks the switch is `canConfirmDeposit` and nothing else, exactly as §6 demands.
+
+**Adding a required dependency to `OrderDetailCubit` touches ten test files.** Every one of them
+builds the cubit by hand. Mechanical, but worth knowing before starting: `ConfirmDepositReceipt`
+had to be threaded through all of them.
+
+**And the filter sheet outgrew its ceiling.** Seventeen status chips no longer fit inside the 80%
+of the screen `_FilterSheet` may take, so the sheet now opens at that ceiling and scrolls.
+`order_filter_sheet_test`'s old claim — «as tall as its content, not a fraction of the phone» —
+was proved by putting the sheet on a very tall screen and watching it come back *under* the
+fraction; it had already been grown twice for the same reason. It cannot be grown again: every
+dimension in the sheet is a ScreenUtil dimension, so the content is the same *fraction* of any
+phone, and at 3200, 3600 and 4000 it comes back pinned at exactly 80%. The widget is unchanged
+and still measures its content; the test now asserts what remains observable — it never exceeds
+the ceiling, and the overflow scrolls rather than clips. **Raising the ceiling to 90% and
+trimming the status list were both considered and rejected**: the first takes nine tenths of the
+phone for a filter, and the second changes what the filter means, on a screen that is not this
+feature's.

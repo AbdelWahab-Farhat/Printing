@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart' show Either;
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
+import 'package:dayaa/features/orders/usecases/confirm_deposit_receipt.dart';
 import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
@@ -39,6 +40,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
     required DeleteOrder deleteOrder,
     required RestoreOrder restoreOrder,
     required ConfirmReadyMessage confirmReadyMessage,
+    required ConfirmDepositReceipt confirmDepositReceipt,
   }) : _orderId = orderId,
        _getOrder = getOrder,
        _addDesign = addDesign,
@@ -47,6 +49,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
        _deleteOrder = deleteOrder,
        _restoreOrder = restoreOrder,
        _confirmReadyMessage = confirmReadyMessage,
+       _confirmDepositReceipt = confirmDepositReceipt,
        super(const OrderDetailState.loading());
 
   final int _orderId;
@@ -72,6 +75,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// employee told the customer their order is ready — something that happened on somebody's own
   /// phone, which is why nothing derives it and why it lives here rather than on the move screen.
   final ConfirmReadyMessage _confirmReadyMessage;
+  final ConfirmDepositReceipt _confirmDepositReceipt;
 
   Future<void> load() async {
     // Keeps whatever is on screen: this is also the pull-to-refresh handler, and blanking the
@@ -198,6 +202,18 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// shape. Nothing is re-read afterwards, for the reason [reinstate] gives.
   Future<Failure?> confirmReadyMessage({required bool sent}) =>
       _write(() => _confirmReadyMessage(_orderId, sent: sent));
+
+  /// Records that the عربون actually arrived — or takes that back.
+  ///
+  /// The same shape as [confirmReadyMessage] above, and for the same reasons: the order that
+  /// comes back carries the stamp and the name, a refusal leaves the switch where it was, and
+  /// nothing is re-read afterwards.
+  ///
+  /// **Whether it may be called at all is the order's answer, not this cubit's.** The server
+  /// folds the grant and the «somebody else must confirm it» rule into `canConfirmDeposit`, so
+  /// the screen greys the switch from the order it is already holding.
+  Future<Failure?> confirmDepositReceipt({required bool received}) =>
+      _write(() => _confirmDepositReceipt(_orderId, received: received));
 
   /// Reads the order again for the one thing this app cannot work out for itself: the server's
   /// preview of what «حذف» — or «استعادة» — is about to do.
