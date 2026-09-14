@@ -179,6 +179,13 @@ class _Report extends StatelessWidget {
 
         _CostOfGoodsSold(cost: summary.costOfGoodsSold),
 
+        // Above the break, because it belongs to the arithmetic above it — it is a part of the
+        // cost, named. Absent entirely against a server from before the feature.
+        if (summary.losses case final losses?) ...[
+          SizedBox(height: 20.h),
+          _Losses(losses: losses),
+        ],
+
         // The break in the page. Everything above is one arithmetic; what follows is not part
         // of it, and the gap plus the rule are what say so before a word is read.
         SizedBox(height: 32.h),
@@ -457,6 +464,7 @@ class _CashCollected extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final writeOffs = summary.writeOffs;
 
     return Container(
       width: double.infinity,
@@ -507,6 +515,92 @@ class _CashCollected extends StatelessWidget {
             'لا يُطرح من التكلفة ولا يدخل في الربح أعلاه، والمبالغ المستردة لا تُخصم منه.',
             style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
+          // **على الرفّ نفسه، لا في «الخسائر».** الشطب يُسقط ديناً على عميل: لا بضاعة صُنعت ولا
+          // تلفت، وهذا الكشف يعترف بالإيراد يوم التسليم ولا يحمل جانب مصاريف أصلاً — فلا موضع
+          // في الحساب أعلاه يُعلَّق عليه ديْنٌ مشكوك فيه. الخادم يرسله بجانب النقد لهذا السبب،
+          // ويقوله في تعليقه؛ وهنا يُقرأ حيث يُقرأ النقد: تسويةً، لا طرحاً.
+          //
+          // بحجم `titleMedium` لا `titleLarge` فوقه: هو الرقم الأصغر شأناً في البطاقة، ورقمان
+          // بالحجم نفسه يتنازعان أيّهما عنوانها.
+          if (writeOffs case final writtenOff?) ...[
+            SizedBox(height: 16.h),
+            Row(
+              children: [
+                Icon(AppIcons.writeOff, size: 18.sp, color: scheme.onSurfaceVariant),
+                SizedBox(width: 8.w),
+                Text(
+                  'المبالغ المشطوبة',
+                  style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+                const Spacer(),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(
+                      groupedDecimal(writtenOff),
+                      textDirection: TextDirection.ltr,
+                      style: context.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 6.w),
+                Text(
+                  'د.ل',
+                  style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'ما قرّرت المطبعة أنها لن تُحصّله — فرقٌ أُقفل على طلبيةٍ عادت ناقصة. '
+              'لا يُطرح من الربح أعلاه، والشطب الذي أُلغي لا يُحتسب.',
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// ما صُنع ولم يُبَع: التلف، وما تركه العميل على الطاولة.
+///
+/// **يُذكر ولا يُطرح.** الرقمان داخل «الربح الإجمالي» أصلاً — خرجت المواد من الرف واحتُسبت
+/// تكلفتها — فبطاقةٌ تبدو طرحاً تحكي الحكاية مرتين، ومن يطرح ٥٢٠ من ٧٬٥٠٠ يخطئ بخمسمئةٍ
+/// وعشرين بالضبط. السطر تحت العنوان يقولها قبل أن تُقرأ الأرقام، لا بعدها.
+///
+/// **والخسارتان مفصولتان.** التلف خطؤنا في الطباعة، وما لم يستلمه العميل بضاعةٌ صُنعت كما
+/// طُلبت تماماً ولا يشتريها غيره — إصلاحان مختلفان، ورقمٌ واحد يجمعهما يخفي أيّهما ساء.
+///
+/// **والصفر يُرسم.** بطاقةٌ تختفي في الشهر الجيّد لا تُعلّم أحداً أين يجد الرقم في الشهر السيّئ.
+class _Losses extends StatelessWidget {
+  const _Losses({required this.losses});
+
+  final PnlLosses losses;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return _Section(
+      title: 'الخسائر',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'محتسبة ضمن الربح أعلاه',
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          SizedBox(height: 12.h),
+          _MoneyRow(label: 'خسارة تلف', value: losses.scrap),
+          SizedBox(height: 10.h),
+          _MoneyRow(label: 'خسارة تسليم جزئي', value: losses.partialDelivery),
+          SizedBox(height: 10.h),
+          _MoneyRow(label: 'الإجمالي', value: losses.total),
         ],
       ),
     );

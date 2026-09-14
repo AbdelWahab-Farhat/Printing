@@ -172,7 +172,19 @@ enum AppPermission {
     'orders.status.dispatch',
     'تسليم الطلبية للتوصيل أو للاستلام من المكتب',
   ),
+  moveOrderToAwaitingDeposit(
+    'orders.status.awaiting_deposit',
+    'تحويل الطلبية إلى انتظار العربون',
+  ),
+  moveOrderToDepositPaid('orders.status.deposit_paid', 'تحويل الطلبية إلى عربون مدفوع'),
   markOrdersDelivered('orders.status.delivered', 'تأكيد استلام العميل للطلبية'),
+
+  /// Recording that the customer took only part of the order — which shrinks the invoice.
+  ///
+  /// **The app never checks this.** The server withholds the *fields* from anybody lacking it,
+  /// so a screen that renders what it is handed is correct either way. It is here because the
+  /// roles screen lists every permission by name.
+  recordPartialDelivery('orders.partial_delivery', 'تسجيل تسليم جزئي — يُنقص الفاتورة'),
   settleOrders('orders.status.settled', 'تسوية مبلغ الطلبية'),
   recordCourierReturn(
     'orders.status.returned_courier',
@@ -208,6 +220,16 @@ enum AppPermission {
   //
   // Viewing is separate from `orders.view`, so the person printing the bags sees the order and
   // not what the customer has paid.
+  /// Saying that the عربون actually arrived.
+  ///
+  /// In «مدفوعات الطلبيات» rather than «حالات الطلبيات», exactly as PHP files it: it is a check
+  /// on the books, not a move on the map.
+  ///
+  /// **Nothing gates on this case.** The server folds the grant *and* the rule that whoever
+  /// claimed the deposit may not confirm it into `can_confirm_deposit` on the order, and the
+  /// switch reads that — the second half is not a question this app can answer. See
+  /// [Order.canConfirmDeposit].
+  confirmDepositReceipt('orders.deposit.confirm', 'تأكيد استلام العربون'),
   viewOrderPayments('orders.payments.view', 'عرض دفعات الطلبية'),
   recordOrderPayments('orders.payments.record', 'تسجيل دفعة على الطلبية'),
   reverseOrderPayments('orders.payments.reverse', 'إلغاء دفعة أو ردّ مبلغ'),

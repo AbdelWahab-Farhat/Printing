@@ -57,6 +57,33 @@ void main() {
       }
     });
 
+    /// **«انتظار العربون» ليست «نواقص»، ولا تُرسم بلونها.**
+    ///
+    /// رُسمت بالأحمر أول الأمر — عائلة «نواقص» — بحجّة أنّ كليهما يقول «لا يمكن البدء بعد».
+    /// ورُفضت على الشاشة: «نواقص» عطلٌ عندنا يستدعي عملاً، أمّا طلبيةٌ تنتظر عربونها فهي تسير
+    /// كما اتُّفق عليه بالضبط — والأحمر في قائمةٍ تُقرأ سطراً سطراً يجعل كل واحدةٍ منها تبدو
+    /// مشكلة. هذا الاختبار يمنع عودته.
+    test('a deposit is never drawn in the colour of a problem', () {
+      // Act - Assert
+      for (final status in [OrderStatus.awaitingDeposit, OrderStatus.depositPaid]) {
+        expect(status.tone, isNot(OrderStatusTone.attention), reason: status.name);
+        expect(status.tone, isNot(OrderStatusTone.returned), reason: status.name);
+        expect(status.tone, isNot(OrderStatusTone.cancelled), reason: status.name);
+      }
+    });
+
+    test('the two of them are told apart by shape, since they share a colour', () {
+      // Arrange — هما معاً في هدوء «جديدة»، فالأيقونة هي الفارق الوحيد.
+
+      // Act - Assert — وهي القاعدة نفسها التي يقوم عليها `iconFor`: اللون يقول النوع،
+      // والأيقونة تقول الحالة بعينها.
+      expect(OrderStatus.awaitingDeposit.tone, OrderStatus.depositPaid.tone);
+      expect(
+        OrderStatusChip.iconFor(OrderStatus.awaitingDeposit),
+        isNot(OrderStatusChip.iconFor(OrderStatus.depositPaid)),
+      );
+    });
+
     test('two tones that look different still look different washed', () {
       // Arrange — الغسل يخفّف اللون ولا يمحوه؛ ولو قرّب النغمات من بعضها لصار زينة بلا معنى.
       // النغمات التي تتقاسم أصلاً حاويةً واحدة — «قيد العمل» و«في الطريق» مثلاً — تبقى واحدة.

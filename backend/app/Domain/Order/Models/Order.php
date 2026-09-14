@@ -12,6 +12,7 @@ use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Order\Actions\AllocateOrderIdentifier;
@@ -26,6 +27,7 @@ use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\PaymentStatus;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
 use App\Domain\Order\Support\Money;
@@ -134,6 +136,17 @@ class Order extends Model implements HasAuditTrail
             // of the others so `paid_amount` never stops meaning cash and `written_off_amount`
             // never stops meaning a loss. See OrderPaymentType::CarrierSettled.
             'carrier_settled_amount' => 'decimal:2',
+            // The عربون: an expectation, a claim, and a confirmation — three facts deliberately
+            // kept apart. **`deposit_expected_amount` is not money that has moved**, and nothing
+            // sums it: the real deposit is an ordinary entry in `payments`, counted there like
+            // every other. See ORDER-DEPOSIT-PLAN.md §٣٫٢.
+            'deposit_expected_amount' => 'decimal:2',
+            'deposit_expected_method' => PaymentMethod::class,
+            'deposit_paid_at' => 'datetime',
+            // Written by nothing but `ConfirmDepositReceipt`, read by nothing that gates: an
+            // order whose deposit nobody has confirmed moves through the shop like any other.
+            'is_deposit_received' => 'boolean',
+            'deposit_confirmed_at' => 'datetime',
             // The idempotence flag behind both money entries a delivery webhook writes. On the
             // order rather than the parcel so it survives the parcel being deleted, re-created or
             // re-dispatched under a new code — see its migration.
@@ -259,6 +272,92 @@ class Order extends Model implements HasAuditTrail
     public function readyMessageApplies(): bool
     {
         return $this->ready_at !== null;
+    }
+
+    /**
+     * Who moved this order into «عربون مدفوع» — the person who made the claim.
+     *
+     * Half of the four-eyes rule: the other half may not be the same user. Null on an order no
+     * deposit was ever claimed on, and null again on one whose employee has since been deleted —
+     * at which point nobody is barred, because there is nobody left to bar.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function depositClaimer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'deposit_claimed_by');
+    }
+
+    /**
+     * Who checked the account and confirmed the عربون is really there.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function depositConfirmer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'deposit_confirmed_by');
+    }
+
+    /**
+     * The ledger entry the move into «عربون مدفوع» created, if it created one.
+     *
+     * Null when the clerk moved the order without taking money — the ordinary case — and null
+     * when the deposit was recorded from the payments screen instead. **Only what this move
+     * wrote is this move's to reverse**; see `ChangeOrderStatus`.
+     *
+     * @return BelongsTo<OrderPayment, $this>
+     */
+    public function depositPayment(): BelongsTo
+    {
+        return $this->belongsTo(OrderPayment::class, 'deposit_payment_id');
+    }
+
+    /** Whether a عربون was ever asked for on this order. */
+    public function asksForADeposit(): bool
+    {
+        return $this->deposit_expected_amount !== null;
+    }
+
+    /**
+     * A عربون declared paid that nobody has confirmed yet — the accountant's queue.
+     *
+     * **Not a problem, and not a block.** It is the ordinary state of an order between the
+     * counter saying the customer paid and somebody else checking the account, and the order
+     * goes on being printed and delivered throughout. It is published so the app can draw the
+     * tick, and indexed so the queue is one query.
+     */
+    public function awaitsDepositConfirmation(): bool
+    {
+        return $this->asksForADeposit()
+            && $this->deposit_paid_at !== null
+            && ! $this->is_deposit_received;
+    }
+
+    /**
+     * Whether [$user] may tick «تأكيد استلام العربون» on this order.
+     *
+     * **Two answers in one, and both belong here**: the grant, and the rule that the person who
+     * claimed the deposit is not the person who confirms it. Published through `OrderResource` so
+     * the app greys the box with a reason rather than letting somebody tap it and be refused —
+     * the enforcement itself is in `ConfirmDepositReceipt`, which is where a console command and
+     * a future import meet it too.
+     *
+     * Clearing a confirmation is deliberately *not* asked about here: it is open to anybody
+     * holding the grant, because un-ticking makes the record stricter rather than looser and
+     * stranding a mistake serves nobody.
+     */
+    public function depositIsConfirmableBy(?User $user): bool
+    {
+        if ($user === null || ! $user->can(PermissionName::ConfirmDepositReceipt->value)) {
+            return false;
+        }
+
+        if (! $this->asksForADeposit()) {
+            return false;
+        }
+
+        return $this->deposit_claimed_by === null
+            || (int) $this->deposit_claimed_by !== (int) $user->getKey();
     }
 
     public function items(): HasMany

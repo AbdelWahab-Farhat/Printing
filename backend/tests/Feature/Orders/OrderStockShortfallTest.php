@@ -258,9 +258,13 @@ class OrderStockShortfallTest extends TestCase
         $hint = collect($field['fields'] ?? [])
             ->firstWhere('key', "shortage_{$item->getKey()}")['hint'] ?? '';
 
-        $this->assertStringContainsString('270.000', $hint, 'the balance is printed');
+        // «270» و«300», not «270.000» و«300.000»: the hint says the figure, and the scale
+        // belongs to the column it was read out of. That is DecimalText's rule, which arrived
+        // with the partial-delivery work and which this hint now follows like every other.
+        $this->assertStringContainsString('270', $hint, 'the balance is printed');
+        $this->assertStringNotContainsString('270.000', $hint, 'without the column padding');
         $this->assertStringContainsString('في كل المخازن', $hint, 'and labelled as a sum across sites');
-        $this->assertStringContainsString('من أصل 300.000', $hint, 'beside what was ordered');
+        $this->assertStringContainsString('من أصل 300', $hint, 'beside what was ordered');
     }
 
     public function test_a_size_with_no_shelf_says_nothing_about_stock(): void

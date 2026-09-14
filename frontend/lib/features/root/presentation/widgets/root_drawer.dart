@@ -182,9 +182,10 @@ class _RootDrawerState extends State<RootDrawer> {
     // لذاته لا صنفٌ من الشاشات، ومن يفتحه إنما يفتحه للبحث عن طلبيةٍ ضائعة — فإخفاؤه خلف عنوانٍ
     // عن الموظفين يجعل الشاشة التي تُفتح في لحظة ارتباك أبعدَ ما تكون عن اليد.
     //
-    // **قبل «الأدوات» لا بعدها**، لأن ما فوق «الأدوات» خريطةُ النظام وهي وحدها تصنّف سجلّاً —
-    // والأرشيف سجلّ. وهو كذلك يترك البابَ مفتوحاً لأرشيف العملاء والمنتجات لاحقاً، صفّاً يُضاف
-    // هنا بلا إعادة ترتيب أيّ عنوانٍ آخر.
+    // **آخر العناوين**، منذ خرجت «الأدوات» من هذا الدرج إلى جانب الجرس — انظر
+    // [ToolsMenuButton]. والدرج كلّه اليوم خريطةُ النظام: كل عنوانٍ فيه يصنّف سجلّاً، والأرشيف
+    // سجلّ. وهو كذلك يترك البابَ مفتوحاً لأرشيف العملاء والمنتجات لاحقاً، صفّاً يُضاف هنا بلا
+    // إعادة ترتيب أيّ عنوانٍ آخر.
     //
     // وبصلاحيته وحده: من يقرأ الأرشيف ليس بالضرورة من يحذف منه أو يستعيد إليه.
     _Section(
@@ -196,27 +197,6 @@ class _RootDrawerState extends State<RootDrawer> {
           label: 'أرشيف الطلبيات',
           route: Routes.archivedOrders,
           permission: AppPermission.viewOrderArchive,
-        ),
-      ],
-    ),
-    // **الوحيد الذي لا يصنّف سجلّاً.** كل عنوان فوقه يفتح على شاشات تُقرأ منها بيانات — منتجات،
-    // مشتريات، موظفون — وهذا يفتح على أدواتٍ لا تقرأ من الخادم ولا تكتب فيه: يدخلها الموظف
-    // ليخرج بشيء في يده ثم يعود إلى الطلبية التي كان يجهّزها. وهو نفس تقسيم الموقع تحت «الأدوات».
-    //
-    // **آخر العناوين لا أوّلها**، رغم أنها الأكثر استعمالاً: العناوين الأربعة فوقها هي خريطة
-    // النظام، وإقحامُ الأدوات في أوّلها يزحزح كل صفٍّ تعوّدت عليه يدُ من يستعمله يومياً.
-    //
-    // **وبلا صلاحية على أي صفّ**: لا بيانات خلف هذه الشاشات، فحجبُ مولّد رمز QR عن موظف هو
-    // منعُه من أداةِ حاسبة.
-    _Section(
-      title: 'الأدوات',
-      icon: _SectionIcon.tools,
-      items: [
-        _Link(icon: _LinkIcon.qrCode, label: 'إنشاء QR', route: Routes.qrTool),
-        _Link(
-          icon: _LinkIcon.bagPreview,
-          label: 'معاينة التصميم',
-          route: Routes.bagPreview,
         ),
       ],
     ),
@@ -410,8 +390,7 @@ enum _SectionIcon {
   purchaseOrders,
   investorDeals,
   employees,
-  archive,
-  tools;
+  archive;
 
   IconData get data => switch (this) {
     _SectionIcon.products => AppIcons.products,
@@ -422,7 +401,6 @@ enum _SectionIcon {
     // panel where two icons would say the same thing twice, and picking a *different* one to
     // avoid the repetition would be inventing a distinction that is not there.
     _SectionIcon.archive => AppIcons.archive,
-    _SectionIcon.tools => AppIcons.tools,
   };
 }
 
@@ -440,9 +418,7 @@ enum _LinkIcon {
   salesStatistics,
   employees,
   roles,
-  orderArchive,
-  qrCode,
-  bagPreview;
+  orderArchive;
 
   IconData get data => switch (this) {
     _LinkIcon.products => AppIcons.products,
@@ -458,8 +434,6 @@ enum _LinkIcon {
     _LinkIcon.employees => AppIcons.employees,
     _LinkIcon.roles => AppIcons.roles,
     _LinkIcon.orderArchive => AppIcons.archive,
-    _LinkIcon.qrCode => AppIcons.qrCode,
-    _LinkIcon.bagPreview => AppIcons.bagPreview,
   };
 }
 

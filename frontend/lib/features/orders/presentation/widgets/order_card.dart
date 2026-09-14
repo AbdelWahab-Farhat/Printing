@@ -9,6 +9,7 @@ import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.d
 import 'package:dayaa/features/customers/presentation/widgets/design_viewer.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
+import 'package:dayaa/features/orders/presentation/widgets/partial_delivery_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -88,6 +89,17 @@ class OrderCard extends StatelessWidget {
                     children: [
                       if (order.isUrgent) ...[
                         const _UrgentBadge(),
+                        SizedBox(width: 8.w),
+                      ],
+                      // **وواقعةٌ ثالثة على السطر نفسه، رمادية.** «استلام جزئي» ليست حالةً ولا
+                      // إنذاراً: الطلبية التي أخذ العميل بعضها وسُوّي حسابها انتهت كما يجب،
+                      // والأحمر هنا يجعل من نصف القائمة مشكلة. وتغيب حين يغيب المفتاح — لا
+                      // تُحمَّل بنود كل حمولة، و«لم يُسأل» ليست «لا».
+                      //
+                      // وهي وحدها ما يُضغط داخل البطاقة دون أن يفتح الطلبية: الضغطة عليها
+                      // تفتح ورقة «قبل وبعد» — انظر [PartialDeliveryBadge].
+                      if (order.isPartiallyDelivered ?? false) ...[
+                        PartialDeliveryBadge(order: order),
                         SizedBox(width: 8.w),
                       ],
                       Expanded(

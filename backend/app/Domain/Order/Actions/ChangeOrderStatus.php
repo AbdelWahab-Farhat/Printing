@@ -8,6 +8,7 @@ use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\ShortageRevision;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderProfitFinalised;
@@ -23,6 +24,7 @@ use App\Domain\Order\Exceptions\ShortageNeedsAQuantity;
 use App\Domain\Order\Exceptions\TransitionNotAllowed;
 use App\Domain\Order\Exceptions\TransitionRequiresReason;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
 use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Support\Facades\DB;
@@ -73,6 +75,10 @@ final class ChangeOrderStatus
         // at the counter gets the same lock, the same ceiling and the same row as money taken on
         // the payments screen, because it *is* the same event.
         private readonly RecordOrderPayment $recordPayment,
+        private readonly ReverseOrderPayment $reversePayment,
+        // Turns «what did the customer actually take» into the remainder, the shrunken invoice
+        // and the shelf movement or the write-off that follows — see its own docblock.
+        private readonly RecordPartialDelivery $recordPartialDelivery,
     ) {}
 
     /**
@@ -121,12 +127,31 @@ final class ChangeOrderStatus
             // Docs/orders/ORDER-DELETE-AND-ARCHIVE.md and {@see OrderIsDeletedForStatusChange}.
             $this->guardTheOrderIsNotDeleted($order);
 
-            // **Money first, because the guard below reads what this writes.** «تم الاستلام» and
+            // **What the customer actually took, before the money that pays for it.** «تم
+            // الاستلام» can carry a per-line count of what was handed over — see
+            // {@see RecordPartialDelivery} — and recording it shrinks the invoice. The payment
+            // below is bounded by what is still owed, so the two are in this order or an
+            // accountant handing over three hundred of five hundred bags could pay against the
+            // five hundred and leave the order overpaid by the difference.
+            //
+            // **Deliberately before the status is written**, unlike the stock work further down.
+            // Nothing here reads the status; everything here is read by the guards and the
+            // ledger entry between this line and that one.
+            $restockedOnDelivery = $this->recordPartialDeliveryForOrder($order, $target, $fields, $actor);
+
+            // **Money next, because the guard below reads what this writes.** «تم الاستلام» and
             // «تم التسوية» each carry a box for what was just handed over, and an accountant who
             // types the remainder into it is settling the order *with* that payment — so it has
             // to land before the settlement rule looks at the balance. Everything is one
             // transaction, so a move that is then refused takes its entry back with it.
-            $this->recordPaymentForOrder($order, $target, $fields, $actor);
+            $recorded = $this->recordPaymentForOrder($order, $target, $fields, $actor);
+
+            // **Walking back out of «عربون مدفوع» takes back what the move itself wrote.** The
+            // claim is being withdrawn — the money did not arrive after all — so the entry that
+            // move created is reversed, in this same transaction. Deliberately only that entry:
+            // a deposit somebody recorded on the payments screen is not this move's to undo, and
+            // whoever decides it was never received reverses it where it was made.
+            $this->reverseDepositClaim($order, $from, $target, $reason, $actor);
 
             // **The last step on the line is the money, and it may not be skipped.** «تم التسوية»
             // is the statement that what the order was sent out to collect came back; an order
@@ -196,6 +221,52 @@ final class ChangeOrderStatus
                 $attributes['shipping_company_id'] = $carrier->getKey();
                 $attributes['shipping_company'] = $carrier->name;
                 $attributes['courier_phone'] = $fields['courier_phone'] ?? null;
+            }
+
+            // **The arrangement, not a payment.** «انتظار العربون» records what the shop asked
+            // for and how it expects it; nothing is written to the ledger, and no total moves.
+            // Re-entering after a walk back overwrites both, which is right — the figure on the
+            // order is whatever was last agreed.
+            if ($target === OrderStatus::AwaitingDeposit) {
+                $asked = $fields[TransitionFields::DEPOSIT_AMOUNT] ?? null;
+
+                if ($asked !== null && $asked !== '') {
+                    $attributes['deposit_expected_amount'] = Money::normalize($asked);
+                }
+
+                $method = $fields[TransitionFields::DEPOSIT_METHOD] ?? null;
+
+                if ($method !== null && $method !== '') {
+                    $attributes['deposit_expected_method'] = PaymentMethod::from((string) $method);
+                }
+            }
+
+            // **Who claimed it.** The name is stamped beside the stamp because the whole of the
+            // four-eyes rule reads it: `ConfirmDepositReceipt` refuses this user, so an order
+            // whose claim carries nobody's name — a console move, an import — bars nobody.
+            // `deposit_paid_at` is written by the timestamp column above, like every milestone.
+            if ($target === OrderStatus::DepositPaid) {
+                $attributes['deposit_claimed_by'] = $actor?->getKey();
+
+                // What this move put in the ledger, if it put anything there — null on the
+                // ordinary move where the clerk records nothing, and the only entry a walk back
+                // will reverse.
+                $attributes['deposit_payment_id'] = $recorded?->getKey();
+            }
+
+            // **A withdrawn claim leaves nothing behind claiming.** The three columns the move
+            // wrote are cleared together, so an order sent back to wait for its عربون is not
+            // sitting in the accountant's «مُعلَن ولم يُؤكَّد» queue — it is waiting on money, and
+            // that is what its status says.
+            //
+            // `is_deposit_received` is deliberately **not** cleared: it is one employee's
+            // statement that they saw the money, and only an employee takes it back. An order
+            // that carries both is a contradiction worth showing rather than tidying away — see
+            // ORDER-DEPOSIT-PLAN.md §٣٫٥.
+            if ($from === OrderStatus::DepositPaid && $target === OrderStatus::AwaitingDeposit) {
+                $attributes['deposit_paid_at'] = null;
+                $attributes['deposit_claimed_by'] = null;
+                $attributes['deposit_payment_id'] = null;
             }
 
             // Only when it differs from the invoice — see {@see TransitionFields}. An empty
@@ -277,7 +348,7 @@ final class ChangeOrderStatus
             // `fulfillment_stock_movement_id` already names the draw that will stand — the
             // figure a purchase is booked against must not be one a correction is about to
             // replace. Announced, not acted on; see {@see OrderStockDrawn}.
-            if ($deductStock || $restateStock) {
+            if ($deductStock || $restateStock || $restockedOnDelivery) {
                 OrderStockDrawn::dispatch((int) $order->getKey());
             }
 
@@ -346,23 +417,31 @@ final class ChangeOrderStatus
      * and answering that with «المبلغ يجب أن يكون أكبر من صفر» is a form arguing with a person
      * who has already said what they meant.
      *
+     * **Returns what it wrote, or null**, because one caller needs to know: a move into «عربون
+     * مدفوع» stamps the entry it created onto the order, so a later walk back knows which row is
+     * its own to reverse and which was recorded elsewhere by somebody else.
+     *
      * @param  array<string, mixed>  $fields
      *
      * @throws PaymentRequiresAnActor
      */
-    private function recordPaymentForOrder(Order $order, OrderStatus $target, array $fields, ?User $actor): void
-    {
+    private function recordPaymentForOrder(
+        Order $order,
+        OrderStatus $target,
+        array $fields,
+        ?User $actor,
+    ): ?OrderPayment {
         $amount = $fields[TransitionFields::PAYMENT_AMOUNT] ?? null;
 
         if ($amount === null || $amount === '' || bccomp(Money::normalize($amount), '0', Money::SCALE) <= 0) {
-            return;
+            return null;
         }
 
         if ($actor === null) {
             throw PaymentRequiresAnActor::make();
         }
 
-        ($this->recordPayment)($order, OrderPaymentData::fromArray([
+        $payment = ($this->recordPayment)($order, OrderPaymentData::fromArray([
             'amount' => $amount,
             'method' => $fields[TransitionFields::PAYMENT_METHOD] ?? null,
             // The move's own note is the transition's, not the entry's: it explains why the
@@ -381,6 +460,109 @@ final class ChangeOrderStatus
         // lines down reads exactly that. Refreshing here rather than there keeps the reason
         // beside the write that caused it.
         $order->refresh();
+
+        return $payment;
+    }
+
+    /**
+     * Takes back the entry a «عربون مدفوع» move wrote, when that move is walked back.
+     *
+     * **Only the entry the move itself created.** `deposit_payment_id` is null unless this
+     * feature put a row there, so a deposit typed into the payments screen — before the move or
+     * days after it — is untouched: the status change did not write it, and a status change that
+     * deleted somebody else's ledger entry would be the same lie in the other direction.
+     *
+     * **Already-reversed is not an error here.** An accountant may have reversed the entry from
+     * the payments screen an hour before the clerk walked the status back, and refusing the move
+     * for it would leave the order stranded in a status everyone agrees is wrong.
+     *
+     * `is_deposit_received` is not touched — see the walk-back block in the transaction.
+     */
+    private function reverseDepositClaim(
+        Order $order,
+        OrderStatus $from,
+        OrderStatus $target,
+        ?string $reason,
+        ?User $actor,
+    ): void {
+        if ($from !== OrderStatus::DepositPaid || $target !== OrderStatus::AwaitingDeposit) {
+            return;
+        }
+
+        $payment = $order->depositPayment()->first();
+
+        if ($payment === null || $payment->isReversed()) {
+            return;
+        }
+
+        ($this->reversePayment)(
+            $order,
+            $payment,
+            $reason ?? 'أُعيدت الطلبية إلى «انتظار العربون»',
+            $actor,
+        );
+
+        // Same reason as the refresh after recording one: the reversal recalculated against its
+        // own locked copy, and everything below reads this instance's totals.
+        $order->refresh();
+    }
+
+    /**
+     * Records what the customer left behind, on the one move that can know.
+     *
+     * **Only «تم الاستلام».** That is the moment the goods and the customer are in the same
+     * place; every other status is a statement about work, not about a handover.
+     *
+     * **An actor is required, and its absence is a refusal rather than a silent skip.** The loss
+     * entry names who recorded it and the stock return names who moved it — the same reason
+     * {@see deductStockForOrder()} refuses. A console command moving an order carries no fields,
+     * so it never reaches this.
+     *
+     * `$order->refresh()` afterwards for the reason the payment below refreshes: the action
+     * rewrote `items_total` and `grand_total` through its own query, and the instance in hand
+     * would otherwise still be holding the figures the customer did not agree to.
+     *
+     * **The return value is a debt.** A سادة line that goes back on the shelf is credited to the
+     * cost layers it came off — which, for material bought off an investor's deal, are *his* — so
+     * whoever was paid سعر السادة for those bags at «جاهزة» must be un-paid for the ones that
+     * came back, or he holds the money and the goods at once. `OrderStockDrawn` above is what
+     * tells Investment to recompute; it is announced by this method's caller rather than by the
+     * action, exactly as the deduction's and the restatement's are, so there is one place that
+     * decides when that recomputation happens.
+     *
+     * @param  array<string, mixed>  $fields
+     * @return bool whether anything went back on a shelf
+     *
+     * @throws FulfillmentRequiresAnActor
+     */
+    private function recordPartialDeliveryForOrder(Order $order, OrderStatus $target, array $fields, ?User $actor): bool
+    {
+        if ($target !== OrderStatus::Delivered) {
+            return false;
+        }
+
+        // Cheap and total: the action itself skips every line whose box came back holding the
+        // figure it was given, but building the collection to discover that on an ordinary
+        // delivery is work nobody asked for.
+        $answered = array_filter(
+            $fields,
+            fn (string $key): bool => str_starts_with($key, 'delivered_'),
+            ARRAY_FILTER_USE_KEY,
+        );
+
+        if ($answered === []) {
+            return false;
+        }
+
+        if ($actor === null) {
+            throw FulfillmentRequiresAnActor::make();
+        }
+
+        $restocked = ($this->recordPartialDelivery)($order->loadMissing('items'), $fields, (int) $actor->getKey());
+
+        $order->refresh();
+
+        return $restocked;
     }
 
     /**

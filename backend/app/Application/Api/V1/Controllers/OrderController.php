@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
+use App\Application\Api\V1\Requests\Order\ConfirmDepositReceiptRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmReadyMessageRequest;
 use App\Application\Api\V1\Requests\Order\RecordScrapLossRequest;
 use App\Application\Api\V1\Requests\Order\ReinstateOrderRequest;
@@ -494,6 +495,42 @@ class OrderController extends Controller
             $updated->ready_message_sent_at === null
                 ? 'أُلغي تأكيد إرسال رسالة الجاهزية'
                 : 'تم تأكيد إرسال رسالة الجاهزية للزبون',
+        );
+    }
+
+    /**
+     * Confirm the deposit was received
+     *
+     * «هل وصل العربون فعلاً؟» — and it is a different question from the order's status. Moving an
+     * order to «عربون مدفوع» is the counter saying the customer paid, made on their word so the
+     * job can start; this is a second employee saying they looked at the account and the money is
+     * there, made whenever they get to it — an hour later, or after the bags have shipped.
+     *
+     * **The person who made the claim may not confirm it.** The domain refuses them with 422, and
+     * `can_confirm_deposit` on the order says so in advance so the box is greyed rather than
+     * tapped. At least two users therefore need this grant.
+     *
+     * `received: false` takes an earlier confirmation back, for the stray tap — **allowed to
+     * anyone holding the grant, the claimer included**, because withdrawing a statement is not
+     * making one. Both movements stay in the order's history.
+     *
+     * **Nothing is gated by the answer.** An order whose deposit is unconfirmed prints, ships and
+     * is delivered exactly like one whose deposit was confirmed; what the flag feeds is the
+     * accountant's own queue.
+     */
+    public function confirmDepositReceipt(ConfirmDepositReceiptRequest $request, Order $order): JsonResponse
+    {
+        $updated = $this->orders->confirmDepositReceipt(
+            $order,
+            (bool) $request->validated('received'),
+            $this->actor($request),
+        );
+
+        return $this->success(
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
+            $updated->is_deposit_received
+                ? 'تم تأكيد استلام العربون'
+                : 'أُلغي تأكيد استلام العربون',
         );
     }
 

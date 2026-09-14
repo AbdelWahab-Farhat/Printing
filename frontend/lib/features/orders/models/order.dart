@@ -95,6 +95,58 @@ abstract class Order with _$Order {
     /// because no card shows it and a page of twenty would be a query per row.
     @JsonKey(name: 'ready_message_sent_by') OrderActor? readyMessageSentBy,
 
+    // ── العربون ──────────────────────────────────────────────────────────────────────────
+    //
+    // **The arrangement, the claim, and the confirmation — three different facts.** What was
+    // agreed is not money that has moved ([paidAmount] is where a real deposit shows up); the
+    // claim is somebody saying it arrived so the work can start; and the confirmation is a
+    // second person ticking that it actually did. Nothing in the app derives any of them.
+
+    /// What عربون was asked of the customer, and how it was to be paid. All three null on an
+    /// order nobody asked a deposit of, which is most of them.
+    @JsonKey(name: 'deposit_expected_amount') String? depositExpectedAmount,
+    @JsonKey(name: 'deposit_expected_method') String? depositExpectedMethod,
+    @JsonKey(name: 'deposit_expected_method_label') String? depositExpectedMethodLabel,
+
+    /// When the order was *said* to have been paid. Cleared if the claim is walked back.
+    @JsonKey(name: 'deposit_paid_at') DateTime? depositPaidAt,
+
+    /// An employee's tick that the money really landed — **a statement, not arithmetic.** It
+    /// gates nothing: an order at false prints, ships and settles exactly like one at true, and
+    /// no rule here may start reading it. See ORDER-DEPOSIT.md.
+    @JsonKey(name: 'is_deposit_received') @Default(false) bool isDepositReceived,
+
+    @JsonKey(name: 'deposit_confirmed_at') DateTime? depositConfirmedAt,
+
+    /// Whether **this** reader may tick it — and the only thing the switch is ever gated on.
+    ///
+    /// The server folds two facts into it: the `orders.deposit.confirm` grant, and the rule that
+    /// whoever moved the order to «عربون مدفوع» may not confirm it themselves. The second is not
+    /// a question this app can answer — on a list row it never learns who made the claim — so
+    /// deriving it here would be a second, wrong opinion.
+    ///
+    /// **Defaults to false, not true.** A build talking to an API that predates this greys the
+    /// switch, which is the safe way round.
+    @JsonKey(name: 'can_confirm_deposit') @Default(false) bool canConfirmDeposit,
+
+    /// A deposit declared paid that nobody has confirmed — the accountant's queue.
+    @JsonKey(name: 'awaits_deposit_confirmation')
+    @Default(false)
+    bool awaitsDepositConfirmation,
+
+    /// Who said it was paid, and who confirmed it. **Null on a list row** — the server sends
+    /// the names with the full order only, exactly as it does for [readyMessageSentBy].
+    @JsonKey(name: 'deposit_claimed_by') OrderActor? depositClaimedBy,
+    @JsonKey(name: 'deposit_confirmed_by') OrderActor? depositConfirmedBy,
+
+    /// Whether the customer left part of this order behind.
+    ///
+    /// Derived on the server from the lines, which the list already loads, so it costs nothing
+    /// and arrives on **both** the list and the detail payloads. Nullable rather than defaulted
+    /// false: it is absent from any payload that did not load the lines, and «لم يُسأل» is not
+    /// «لا».
+    @JsonKey(name: 'is_partially_delivered') bool? isPartiallyDelivered,
+
     /// The moves this order may make, **already narrowed to what the signed-in user may do.**
     /// The screen draws exactly these buttons and no others, which is what stops it offering an
     /// action the server would refuse.
@@ -450,6 +502,14 @@ abstract class Order with _$Order {
   bool get isOutstanding =>
       paymentStatus == PaymentStatus.unpaid || paymentStatus == PaymentStatus.partiallyPaid;
 
+  /// Whether the ledger holds nothing at all against this order.
+  ///
+  /// Parsed rather than compared to `'0.00'`: the server pads money to two places today, and a
+  /// string comparison is one migration away from reading `'0.000'` as a payment. A figure it
+  /// cannot read counts as *paid*, because the sentence this feeds — «أُكِّد استلام العربون ولم
+  /// تُسجَّل دفعة عليه» — is an accusation, and the safer mistake is not making it.
+  bool get hasNoRecordedPayment => (double.tryParse(paidAmount) ?? 1) == 0;
+
   /// A discount worth showing a line for. `'0.00'` is not one.
   bool get hasDiscount => discount != '0.00';
 
@@ -645,11 +705,45 @@ abstract class OrderItem with _$OrderItem {
     /// — which is not the same as nothing being missing.
     @JsonKey(name: 'shortage_quantity') String? shortageQuantity,
 
-    /// What the line is actually charged for: [quantity] less [shortageQuantity].
+    /// What the customer left on the counter, in this line's own unit.
+    ///
+    /// Null on every line of every order delivered whole, which is nearly all of them —
+    /// «nothing recorded» rather than «nothing left», the distinction [shortageQuantity]
+    /// above already makes.
+    @JsonKey(name: 'undelivered_quantity') String? undeliveredQuantity,
+
+    /// What became of it: `restocked` or `written_off`. Read off the line rather than worked
+    /// out from the product's heading — re-filing a product must not rewrite a delivery
+    /// recorded last March.
+    @JsonKey(name: 'undelivered_disposition') String? undeliveredDisposition,
+
+    /// The same thing in Arabic, ready to print — «أُعيد إلى المخزن» or «خسارة». Sent beside
+    /// the value for the reason [pricingUnitLabel] is: the app branches on one and shows the
+    /// other, and never owns the dictionary.
+    @JsonKey(name: 'undelivered_disposition_label') String? undeliveredDispositionLabel,
+
+    /// كم من المتروك وصل الرفّ فعلاً — **بوحدة المخزن**، لا بوحدة البيع التي عُدَّ بها
+    /// [undeliveredQuantity] فوقه.
+    ///
+    /// الرقمان مختلفان كلّما اختلفت الوحدتان: «١٠٠ قطعة» تركها الزبون قد تكون «٦٫٨ كجم» على
+    /// الميزان، ولا سبيل إلى اشتقاق أحدهما من الآخر — لذلك يُسأل عنه أمين المخزن ويُحفظ. اقرأه
+    /// مع [stockUnitLabel].
+    ///
+    /// خالٍ حيث لم يرجع شيء، والمطبوع منه: تلك أكياسٌ تحمل تصميم الزبون، وصفرٌ هنا ادّعاءٌ بأن
+    /// أحداً فتح الرفّ.
+    @JsonKey(name: 'restocked_quantity') String? restockedQuantity,
+
+    /// What the goods left behind cost us — **null unless they were a loss**. Bags back on the
+    /// shelf cost the shop nothing, so a restocked line has no figure here at all.
+    @JsonKey(name: 'delivery_loss') String? deliveryLoss,
+
+    /// What the line is actually charged for: [quantity] less [shortageQuantity], less
+    /// [undeliveredQuantity].
     ///
     /// Sent by the server rather than subtracted here, because which quantity an invoice is
-    /// built on is a rule and rules live in one place. Null only from a server too old to send
-    /// it — see [pricedQuantity].
+    /// built on is a rule and rules live in one place — and the rule now has **two**
+    /// subtrahends where it used to have one, so anything re-deriving it locally is wrong.
+    /// Null only from a server too old to send it — see [pricedQuantity].
     @JsonKey(name: 'billable_quantity') String? billableQuantity,
 
     /// How much of the warehouse's own unit this line takes off the shelf.
@@ -733,6 +827,16 @@ abstract class OrderItem with _$OrderItem {
     final missing = double.tryParse(shortageQuantity ?? '') ?? 0;
 
     return missing > 0;
+  }
+
+  /// Whether the customer left any of this line behind.
+  ///
+  /// Parsed rather than compared to null, for the reason [hasShortage] is: a recorded zero is
+  /// «took it all», not «left nothing».
+  bool get wasPartlyLeftBehind {
+    final left = double.tryParse(undeliveredQuantity ?? '') ?? 0;
+
+    return left > 0;
   }
 
   /// The number the line is priced on, which is what an invoice is read for.

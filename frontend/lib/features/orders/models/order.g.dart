@@ -29,6 +29,28 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
       : OrderActor.fromJson(
           json['ready_message_sent_by'] as Map<String, dynamic>,
         ),
+  depositExpectedAmount: json['deposit_expected_amount'] as String?,
+  depositExpectedMethod: json['deposit_expected_method'] as String?,
+  depositExpectedMethodLabel: json['deposit_expected_method_label'] as String?,
+  depositPaidAt: json['deposit_paid_at'] == null
+      ? null
+      : DateTime.parse(json['deposit_paid_at'] as String),
+  isDepositReceived: json['is_deposit_received'] as bool? ?? false,
+  depositConfirmedAt: json['deposit_confirmed_at'] == null
+      ? null
+      : DateTime.parse(json['deposit_confirmed_at'] as String),
+  canConfirmDeposit: json['can_confirm_deposit'] as bool? ?? false,
+  awaitsDepositConfirmation:
+      json['awaits_deposit_confirmation'] as bool? ?? false,
+  depositClaimedBy: json['deposit_claimed_by'] == null
+      ? null
+      : OrderActor.fromJson(json['deposit_claimed_by'] as Map<String, dynamic>),
+  depositConfirmedBy: json['deposit_confirmed_by'] == null
+      ? null
+      : OrderActor.fromJson(
+          json['deposit_confirmed_by'] as Map<String, dynamic>,
+        ),
+  isPartiallyDelivered: json['is_partially_delivered'] as bool?,
   availableTransitions:
       (json['available_transitions'] as List<dynamic>?)
           ?.map((e) => OrderTransition.fromJson(e as Map<String, dynamic>))
@@ -156,6 +178,17 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'is_ready_message_sent': instance.isReadyMessageSent,
   'ready_message_sent_at': instance.readyMessageSentAt?.toIso8601String(),
   'ready_message_sent_by': instance.readyMessageSentBy?.toJson(),
+  'deposit_expected_amount': instance.depositExpectedAmount,
+  'deposit_expected_method': instance.depositExpectedMethod,
+  'deposit_expected_method_label': instance.depositExpectedMethodLabel,
+  'deposit_paid_at': instance.depositPaidAt?.toIso8601String(),
+  'is_deposit_received': instance.isDepositReceived,
+  'deposit_confirmed_at': instance.depositConfirmedAt?.toIso8601String(),
+  'can_confirm_deposit': instance.canConfirmDeposit,
+  'awaits_deposit_confirmation': instance.awaitsDepositConfirmation,
+  'deposit_claimed_by': instance.depositClaimedBy?.toJson(),
+  'deposit_confirmed_by': instance.depositConfirmedBy?.toJson(),
+  'is_partially_delivered': instance.isPartiallyDelivered,
   'available_transitions': instance.availableTransitions
       .map((e) => e.toJson())
       .toList(),
@@ -229,6 +262,8 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
 const _$OrderStatusEnumMap = {
   OrderStatus.taken: 'new',
   OrderStatus.shortage: 'shortage',
+  OrderStatus.awaitingDeposit: 'awaiting_deposit',
+  OrderStatus.depositPaid: 'deposit_paid',
   OrderStatus.designing: 'designing',
   OrderStatus.readyToPrint: 'ready_to_print',
   OrderStatus.printing: 'printing',
@@ -344,6 +379,11 @@ _OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => _OrderItem(
   pricingUnitLabel: json['pricing_unit_label'] as String,
   quantity: json['quantity'] as String,
   shortageQuantity: json['shortage_quantity'] as String?,
+  undeliveredQuantity: json['undelivered_quantity'] as String?,
+  undeliveredDisposition: json['undelivered_disposition'] as String?,
+  undeliveredDispositionLabel: json['undelivered_disposition_label'] as String?,
+  restockedQuantity: json['restocked_quantity'] as String?,
+  deliveryLoss: json['delivery_loss'] as String?,
   billableQuantity: json['billable_quantity'] as String?,
   warehouseQuantity: json['warehouse_quantity'] as String?,
   unitPrice: json['unit_price'] as String,
@@ -373,6 +413,11 @@ Map<String, dynamic> _$OrderItemToJson(_OrderItem instance) =>
       'pricing_unit_label': instance.pricingUnitLabel,
       'quantity': instance.quantity,
       'shortage_quantity': instance.shortageQuantity,
+      'undelivered_quantity': instance.undeliveredQuantity,
+      'undelivered_disposition': instance.undeliveredDisposition,
+      'undelivered_disposition_label': instance.undeliveredDispositionLabel,
+      'restocked_quantity': instance.restockedQuantity,
+      'delivery_loss': instance.deliveryLoss,
       'billable_quantity': instance.billableQuantity,
       'warehouse_quantity': instance.warehouseQuantity,
       'unit_price': instance.unitPrice,

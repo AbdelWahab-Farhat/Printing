@@ -117,6 +117,8 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [ORDER-ADDITIONAL-COST-FRONTEND-INTEGRATION.md](orders/ORDER-ADDITIONAL-COST-FRONTEND-INTEGRATION.md) | The same charge, read and set in the app. |
 | [READY-DEDUCTION-PER-LINE.md](orders/READY-DEDUCTION-PER-LINE.md) | الكمية المخصومة — تُسأل عند «جاهزة» لا عند الإنشاء. |
 | [ORDER-READY-MESSAGE.md](orders/ORDER-READY-MESSAGE.md) | «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — علامةٌ وصلاحية وطابور. **مُنفَّذ**، وأسئلة §٧ مفتوحة. |
+| [PARTIAL-DELIVERY-DESIGN.md](orders/PARTIAL-DELIVERY-DESIGN.md) | التسليم الجزئي — الباقي يعود للمخزن إن كان سادة، ويُسجَّل خسارة إن كان مطبوعاً. **مُنفَّذ في الخادم**؛ الفرع `feat/partial-delivery`، وكل قرارات §٣ محسومة. |
+| [PARTIAL-DELIVERY-FRONTEND-INTEGRATION.md](orders/PARTIAL-DELIVERY-FRONTEND-INTEGRATION.md) | التسليم الجزئي في التطبيق — صلاحية ومفاتيح عقدٍ حمراء الآن، ثم العرض. **لم يبدأ.** |
 
 ## [outsourced-products/](outsourced-products/)
 

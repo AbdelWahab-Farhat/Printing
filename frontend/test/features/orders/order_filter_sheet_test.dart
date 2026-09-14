@@ -132,35 +132,44 @@ void main() {
     expect(find.text('9'), findsOneWidget);
   });
 
-  testWidgets('the sheet is as tall as its content, not a fraction of the phone', (tester) async {
-    // Arrange — a tall screen, so that the fixed-fraction layout this replaced and the
-    // content-sized one that took its place cannot land on the same number by accident.
+  testWidgets('the sheet stops at the ceiling it may take, and scrolls the rest', (tester) async {
+    // Arrange — **this test used to ask a question the screen can no longer answer**, and the
+    // history is worth keeping because the replacement is weaker on purpose.
     //
-    // **Taller than it was**, and the reason is the point of the test rather than a concession
-    // to it: «جاهزة للطباعة» made fifteen chips out of fourteen, and at 1400 the content no
-    // longer fitted inside the 80% the sheet may take. It was returning that 80% exactly — a
-    // fraction of the phone, which is the very thing this test exists to catch — so the number
-    // had stopped being able to tell the two layouts apart. The screen grows; the assertion
-    // does not move. It grew once more when «الاستعجال» added a section beneath the payment
-    // states — and stopped growing there, because «الترتيب» left this sheet for a button.
+    // The bug it was written for was a sheet that asked for 90% of whatever it was given: a
+    // fixed fraction of the phone, whether it had two chips in it or twenty. The guard was to
+    // put it on a very tall screen and watch it come back *under* the fraction, which only a
+    // content-measuring layout does. That worked while the content fitted, and the screen was
+    // grown twice — 1400, then 2800 — as «جاهزة للطباعة» and «الاستعجال» were added.
     //
-    // **Growing it is not a way of dodging the assertion**, and the arithmetic says why: the
-    // sheet's own content does not scale one-for-one with the screen — the text does not grow
-    // as fast as the spacing around it — so a taller phone genuinely leaves the sheet more
-    // room than the 80% it may take. At 2400 the sheet is pinned at that ceiling and the test
-    // could tell nothing; at 2800 it comes back under it, which is the answer being asked for.
-    useAPhone(tester, height: 2800);
+    // It cannot be grown a third time. «انتظار العربون» و«عربون مدفوع» take the status chips to
+    // seventeen, and every dimension here is a ScreenUtil dimension: the text, the padding and
+    // the gaps all scale with the screen, so the content is the *same fraction* of any phone.
+    // Once that fraction passes 0.8 it passes it everywhere, and at 3200, 3600 and 4000 the
+    // sheet comes back pinned at exactly 80%. There is no height left that can tell the two
+    // layouts apart.
+    //
+    // So this asserts what is still observable and still the thing that would break: the sheet
+    // never exceeds its ceiling, and what does not fit is reachable by scrolling rather than
+    // clipped. The old layout would fail the first half at 90%. `Column` is still `mainAxisSize:
+    // min` and the scroller still `Flexible` — the widget measures its content as it always
+    // did; it simply has more content than the ceiling now.
+    useAPhone(tester, height: 932);
     await tester.pumpWidget(host());
 
     // Act
     await openTheSheet(tester);
     final height = tester.getSize(find.byKey(OrderFilterButton.sheetKey)).height;
 
-    // Assert — it stops short of the 80% it is allowed, which is the observable meaning of
-    // "measures its own content". The layout this replaced asked for 90% of whatever it was
-    // given and would have come back with 2160 — and this is the *inflated* test font, so a real
-    // phone has more room left over than this number suggests.
-    expect(height, lessThan(2800 * 0.8));
+    // Assert — at the ceiling and not past it, with the overflow scrollable rather than lost.
+    expect(height, lessThanOrEqualTo(932 * 0.8));
+    expect(
+      find.descendant(
+        of: find.byKey(OrderFilterButton.sheetKey),
+        matching: find.byType(Scrollable),
+      ),
+      findsWidgets,
+    );
   });
 
   testWidgets('the options share lines — chips, not a column of full-width rows', (tester) async {

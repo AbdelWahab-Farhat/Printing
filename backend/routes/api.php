@@ -391,6 +391,16 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('orders/{order}/ready-message', [OrderController::class, 'confirmReadyMessage'])
             ->middleware('can:orders.ready_message')->name('orders.ready-message');
 
+        // «هل وصل العربون فعلاً؟» — a second person's check on what the counter claimed when it
+        // moved the order to «عربون مدفوع». Its own grant, and the domain refuses it to whoever
+        // made the claim, so the two halves are necessarily two people.
+        //
+        // A route of its own rather than a field on `PATCH /orders/{order}`: anything that could
+        // ride along with an ordinary edit would hand the accountant's signature to everybody who
+        // may correct a phone number.
+        Route::patch('orders/{order}/deposit-receipt', [OrderController::class, 'confirmDepositReceipt'])
+            ->middleware('can:orders.deposit.confirm')->name('orders.deposit-receipt');
+
         // Designs are chosen from the customer's library, never uploaded here. scoped() makes
         // {design} resolve *within* {order}, so another order's design id is a 404 by
         // construction rather than by a check somebody has to remember.

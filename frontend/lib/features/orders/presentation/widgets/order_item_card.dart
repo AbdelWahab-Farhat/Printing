@@ -265,6 +265,25 @@ class _Figures extends StatelessWidget {
             ),
           ),
         ],
+        // Under the shortage, because both answer «why is this line charging less than it
+        // ordered?» and they can both be true at once: an order short fifty, whose customer then
+        // took only two hundred of the two hundred and fifty that existed.
+        //
+        // Deliberately *not* in the error colour the shortage above wears. A shortage is our
+        // failure; this is the customer's choice, recorded — the same weight, a calmer colour.
+        // And the word for what became of the goods is the server's, never one worked out here
+        // from the product's heading.
+        if (item.wasPartlyLeftBehind) ...[
+          SizedBox(height: 4.h),
+          Text(
+            'غير مُستلَم: ${item.undeliveredQuantity!.grouped} ${item.pricingUnitLabel}'
+            '${item.undeliveredDispositionLabel == null ? '' : ' — ${item.undeliveredDispositionLabel}'}',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
         // Under the price it is being charged at, quietly — see [OrderLineCosts] for why an
         // uncosted line draws nothing here rather than «لم يُحتسب بعد».
         if (showCosts || showOutsourcingCosts) ...[

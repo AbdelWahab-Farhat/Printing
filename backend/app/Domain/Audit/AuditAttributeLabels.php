@@ -286,6 +286,19 @@ final class AuditAttributeLabels
             'cancellation_reason' => 'سبب الإلغاء',
             'created_by' => 'أنشأها',
             'paid_amount' => 'المدفوع',
+            // ── العربون ──────────────────────────────────────────────────────────────────
+            // **«المتوقَّع» في الاسم لا زينةٌ فيه.** هذا ما اتُّفق عليه لا مالٌ تحرّك، وسطرٌ في
+            // السجل يقرأ «العربون ٢٥٠» بجوار «المدفوع» كان سيُفهم قبضاً. انظر ORDER-DEPOSIT.md §٢.
+            'deposit_expected_amount' => 'قيمة العربون المتوقَّعة',
+            'deposit_expected_method' => 'وسيلة دفع العربون المتوقَّعة',
+            // متى **قيل** إنه دُفع، ومَن قاله. الاسمان مقصودان: الادّعاء غير التأكيد تحته.
+            'deposit_paid_at' => 'تاريخ إعلان دفع العربون',
+            'deposit_claimed_by' => 'مَن أعلن دفع العربون',
+            'deposit_payment_id' => 'قيد العربون في السجل',
+            // والتأكيد: شهادة موظفٍ ثانٍ أنّ المال في الحساب فعلاً — ولا يضعها إلا إنسان.
+            'is_deposit_received' => 'تأكيد استلام العربون',
+            'deposit_confirmed_at' => 'تاريخ تأكيد استلام العربون',
+            'deposit_confirmed_by' => 'مَن أكّد استلام العربون',
             'written_off_amount' => 'المشطوب',
             'carrier_settled_amount' => 'المسدَّد لدى الناقل',
             'carrier_collection_recorded_at' => 'تاريخ تسجيل تحصيل الناقل',
@@ -319,6 +332,10 @@ final class AuditAttributeLabels
             'unit_price' => 'سعر الوحدة',
             'line_total' => 'إجمالي البند',
             'shortage_quantity' => 'الكمية الناقصة',
+            'undelivered_quantity' => 'الكمية غير المستلمة',
+            'undelivered_disposition' => 'مصير الكمية غير المستلمة',
+            // In the shelf's unit, not the line's — it is what actually went back on the shelf.
+            'restocked_quantity' => 'الكمية المعادة إلى المخزن',
             'warehouse_quantity' => 'الكمية من المخزن',
             // What a vendor charged us for this line, recognised when the job came back — see
             // OUTSOURCED-PRODUCTS.md §6. The rate behind it is `unit_cost`, which the shared

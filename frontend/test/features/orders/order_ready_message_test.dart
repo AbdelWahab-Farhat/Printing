@@ -12,6 +12,7 @@ import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit
 import 'package:dayaa/features/orders/presentation/views/order_detail_page.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
+import 'package:dayaa/features/orders/usecases/confirm_deposit_receipt.dart';
 import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
@@ -116,6 +117,7 @@ void main() {
           deleteOrder: DeleteOrder(repository),
           restoreOrder: RestoreOrder(repository),
           confirmReadyMessage: ConfirmReadyMessage(repository),
+          confirmDepositReceipt: ConfirmDepositReceipt(repository),
         ),
       );
   }

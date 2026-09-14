@@ -221,54 +221,19 @@ void main() {
     expect(find.text('الإعدادات'), findsOneWidget);
   });
 
-  testWidgets('الأدوات survives an account that holds no grant at all', (tester) async {
-    // Arrange — a reader granted nothing: every heading whose rows all need something is gone.
-    await arrange([]);
-
-    // Act
-    await open(tester);
-
-    // Assert — the tools are not a register to be shown or withheld; withholding a QR generator
-    // from a member of staff is withholding a calculator.
-    expect(find.text('الأدوات'), findsOneWidget);
-    expect(find.text('الإدارة والصلاحيات'), findsNothing);
-
-    // And it really is open to them: the heading holds a row, not an empty promise.
-    await tester.tap(find.text('الأدوات'));
-    await tester.pumpAndSettle();
-    expect(find.text('إنشاء QR'), findsOneWidget);
-  });
-
-  testWidgets('الأدوات opens onto its rows like every other heading', (tester) async {
-    // Arrange
+  testWidgets('الأدوات are not in this panel at all any more', (tester) async {
+    // Arrange — every grant there is, so nothing is missing for want of a permission.
     await arrange(allGrants);
-    await open(tester);
-
-    // Assert — folded, the tool is not a row yet.
-    expect(find.text('إنشاء QR'), findsNothing);
 
     // Act
-    await tester.tap(find.text('الأدوات'));
-    await tester.pumpAndSettle();
-
-    // Assert — one tap to the heading, a second to the tool. No page in between.
-    expect(find.text('إنشاء QR'), findsOneWidget);
-    expect(find.text('معاينة التصميم'), findsOneWidget);
-  });
-
-  testWidgets('إنشاء QR pushes the tool itself', (tester) async {
-    // Arrange
-    await arrange(allGrants);
     await open(tester);
-    await tester.tap(find.text('الأدوات'));
-    await tester.pumpAndSettle();
 
-    // Act
-    await tester.tap(find.text('إنشاء QR'));
-    await tester.pumpAndSettle();
-
-    // Assert — the drawer closed behind it, and the row pushed its screen.
+    // Assert — neither the heading nor the rows it used to hold: they are an app bar button
+    // beside the bell now, see [ToolsMenuButton]. An account granted nothing still reaches
+    // them, which is what that widget's own test pins down.
+    expect(find.text('الأدوات'), findsNothing);
     expect(find.text('إنشاء QR'), findsNothing);
+    expect(find.text('معاينة التصميم'), findsNothing);
   });
 
   testWidgets('the screen being read opens its heading and marks its row', (tester) async {
@@ -324,11 +289,10 @@ void main() {
     expect(find.text('أرشيف الطلبيات'), findsOneWidget);
   });
 
-  testWidgets('الأرشيف sits before الأدوات، which stays the last heading', (tester) async {
-    // Arrange — the ordering is the half of the decision that is easy to lose. Everything above
-    // الأدوات is the map of the system, and الأرشيف is a register like the rest of it; الأدوات
-    // is the one heading that classifies no record, so it stays at the foot where the hand that
-    // uses it daily already expects it.
+  testWidgets('الأرشيف is the last heading, after الإدارة والصلاحيات', (tester) async {
+    // Arrange — the ordering is the half of the decision that is easy to lose. The panel is the
+    // map of the system and every heading in it classifies a record; الأرشيف is a register like
+    // the rest, and it comes last now that الأدوات have left the panel for the app bar.
     await arrange(allGrants);
 
     // Act
@@ -338,7 +302,7 @@ void main() {
     double top(String heading) => tester.getTopLeft(find.text(heading)).dy;
 
     expect(top('الأرشيف'), greaterThan(top('الإدارة والصلاحيات')));
-    expect(top('الأدوات'), greaterThan(top('الأرشيف')));
+    expect(find.text('الإعدادات'), findsOneWidget);
   });
 
   testWidgets('a reader without orders.archive.view is shown no الأرشيف at all', (tester) async {

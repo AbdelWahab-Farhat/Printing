@@ -197,6 +197,18 @@ abstract interface class OrderRepository {
   /// nobody should meet, because `Order.readyMessageApplies` says so in advance.
   Future<Either<Failure, Order>> confirmReadyMessage(int orderId, {required bool sent});
 
+  /// Records that the عربون actually arrived — or takes that back.
+  ///
+  /// **A second person's tick over somebody else's claim.** Moving an order to «عربون مدفوع»
+  /// says the customer paid; this says the shop has seen it. The order comes back rather than a
+  /// bare success, for the reason [confirmReadyMessage] does: it carries who was stamped on it
+  /// and when, and the screen cannot invent either.
+  ///
+  /// Two refusals, both in the server's own Arabic and both unreachable from a correct screen —
+  /// `Order.canConfirmDeposit` and `Order.depositExpectedAmount` answer them in advance: the
+  /// claimer may not confirm their own claim, and an order with no عربون has nothing to confirm.
+  Future<Either<Failure, Order>> confirmDepositReceipt(int orderId, {required bool received});
+
   /// Writes off bags spoiled while this line was being produced.
   ///
   /// **The cost is not sent, it comes back.** [quantity] is what the storekeeper counted; the

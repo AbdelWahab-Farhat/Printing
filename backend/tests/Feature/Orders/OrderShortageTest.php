@@ -284,7 +284,7 @@ class OrderShortageTest extends TestCase
         $field = collect($handover['fields'])->firstWhere('key', "received_{$item->id}");
 
         $this->assertNotNull($field);
-        $this->assertSame('100.000', $field['value']);
+        $this->assertSame('100', $field['value']);
         $this->assertEquals(100, $field['max']);
     }
 

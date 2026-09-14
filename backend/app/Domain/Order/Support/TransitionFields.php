@@ -9,11 +9,15 @@ use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\InventoryService;
+use App\Domain\Order\Actions\DeductOrderStock;
+use App\Domain\Order\Actions\RecordPartialDelivery;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
+use App\Domain\Order\Enums\UndeliveredDisposition;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
+use App\Support\DecimalText;
 
 /**
  * What a particular order owes for a particular move.
@@ -35,6 +39,19 @@ final class TransitionFields
     public const PAYMENT_METHOD = 'payment_method';
 
     public const PAYMENT_RECEIPT = 'payment_receipt';
+
+    /**
+     * What «انتظار العربون» asks for: the figure, and the way it is expected to arrive.
+     *
+     * **Keyed apart from the three above because they describe a different kind of thing.**
+     * Those record money that has just changed hands and go to `RecordOrderPayment`; these
+     * record money the shop is *waiting for*, and go nowhere near the ledger. One shared key
+     * would put an expectation into the payment log, which is the one thing this design refuses
+     * — see Docs/orders/ORDER-DEPOSIT-PLAN.md §٣٫٢.
+     */
+    public const DEPOSIT_AMOUNT = 'deposit_amount';
+
+    public const DEPOSIT_METHOD = 'deposit_method';
 
     /**
      * [$actor] is who is making the move, and it decides one thing only: whether the money box
@@ -202,8 +219,8 @@ final class TransitionFields
                     // already given the goods up.
                     required: true,
                     hint: $deductsHere
-                        ? "المباع {$item->quantity} {$item->pricing_unit->label()} — والمخزن يُنقص بال{$item->stockUnit()->label()}"
-                        : "خرج من المخزن {$item->warehouse_quantity} {$item->stockUnit()->label()} — صحّحه إن اختلف المستهلك فعلاً",
+                        ? 'المباع '.DecimalText::trim((string) $item->quantity)." {$item->pricing_unit->label()} — والمخزن يُنقص بال{$item->stockUnit()->label()}"
+                        : 'خرج من المخزن '.DecimalText::trim((string) $item->warehouse_quantity)." {$item->stockUnit()->label()} — صحّحه إن اختلف المستهلك فعلاً",
                     // An answer, not a placeholder: a line weighed at «جاهزة للطباعة» opens here
                     // holding that figure, so an unchanged run is confirmed by leaving it be.
                     value: $item->warehouse_quantity !== null ? (string) $item->warehouse_quantity : null,
@@ -253,10 +270,26 @@ final class TransitionFields
                     key: "received_{$item->getKey()}",
                     label: "الواصل من نواقص {$item->variant_label} ({$item->pricing_unit->label()})",
                     max: (float) $item->shortage_quantity,
-                    hint: "الناقص {$item->shortage_quantity} — ما يبقى منه يُخصم من الفاتورة",
+                    hint: 'الناقص '.DecimalText::trim((string) $item->shortage_quantity).' — ما يبقى منه يُخصم من الفاتورة',
                     value: (string) $item->shortage_quantity,
                 );
             }
+        }
+
+        // **«كم أخذ العميل فعلاً؟»** — asked at the one moment the answer exists, and of the one
+        // person who has it. A customer who takes three hundred of five hundred is an ordinary
+        // thing at a counter, and until this existed the order was marked delivered in full and
+        // the difference was argued about afterwards with nothing written down.
+        //
+        // **The boxes are withheld, never the move** — see
+        // {@see PermissionName::RecordPartialDelivery}. Somebody without that grant sees
+        // «تم الاستلام» exactly as they did before and hands the whole order over, which is the
+        // same shape {@see money()} below uses to keep a driver away from the till without
+        // keeping them away from the parcel. Null — a console command, an importer — is nobody,
+        // and gets no boxes.
+        if ($target === OrderStatus::Delivered
+            && $actor?->can(PermissionName::RecordPartialDelivery->value)) {
+            array_push($fields, ...self::partialDelivery($order));
         }
 
         // What was just handed over, and how.
@@ -273,6 +306,8 @@ final class TransitionFields
         // ٤٥٠» at once and nothing could say which was true. What it was for — «أيّ الطلبيات رجع
         // مالها ناقصاً» — the ledger now answers exactly, and the column stays in the database
         // for the orders written before this.
+        array_push($fields, ...self::deposit($order, $target));
+
         array_push($fields, ...self::money($order, $target, $actor));
 
         // **A note travels with every move, and only a cancellation is made to justify itself.**
@@ -293,6 +328,66 @@ final class TransitionFields
         );
 
         return $fields;
+    }
+
+    /**
+     * What «انتظار العربون» asks: how much, and how it is expected to arrive.
+     *
+     * **Neither field touches the ledger, and that is the whole distinction.** The pair below
+     * records money that has just been handed over; this pair records money the shop is waiting
+     * for — an arrangement, not a payment. Writing it into `order_payments` would put an entry
+     * nobody made into a log built to be believed (PAYMENTS-DESIGN §١٠), and every total that
+     * reads «المدفوع» would start counting promises.
+     *
+     * **No permission gate, unlike {@see money()}.** Naming the عربون *is* the move — an order
+     * parked in «انتظار العربون» with no figure on it says only «موقوفة»، and the next person to
+     * open it has no way to learn what was agreed. So whoever may make the move answers both,
+     * and the amount is required rather than optional.
+     *
+     * **The ceiling is the invoice**, not the remainder: a عربون is part of the order's own
+     * price, and asking for more than the whole of it is a typo every time. There is deliberately
+     * no floor beyond «أكبر من صفر» — what fraction the shop asks for is the shop's business.
+     *
+     * Re-entered after a walk back from «عربون مدفوع», the boxes open holding what was agreed
+     * last time: the commonest reason to be back here is that the money did not arrive, not that
+     * the arrangement changed.
+     *
+     * @return list<TransitionField>
+     */
+    private static function deposit(Order $order, OrderStatus $target): array
+    {
+        if ($target !== OrderStatus::AwaitingDeposit) {
+            return [];
+        }
+
+        $agreed = $order->deposit_expected_amount !== null
+            ? Money::normalize($order->deposit_expected_amount)
+            : null;
+
+        return [
+            TransitionField::number(
+                key: self::DEPOSIT_AMOUNT,
+                label: 'قيمة العربون',
+                required: true,
+                // Above zero: an order waiting on a عربون of nothing is an order waiting on
+                // nothing, and the move that says so is the wrong one to have made.
+                min: 0.01,
+                max: (float) (string) $order->grand_total,
+                hint: "قيمة تقديرية — إجمالي الطلبية {$order->grand_total}",
+                value: $agreed,
+            ),
+            TransitionField::paymentMethod(
+                key: self::DEPOSIT_METHOD,
+                label: 'وسيلة دفع العربون',
+                // All four, and no receipt beside them: nothing has been paid yet, so there is
+                // no slip to attach. The proof is asked for when the money actually arrives —
+                // see {@see money()}, where «حوالة» obliges «الواصل».
+                methods: PaymentMethod::cases(),
+                requiredWith: self::DEPOSIT_AMOUNT,
+                hint: 'الطريقة المتوقَّعة — وتُفتح عليها خانة «طريقة الدفع» يوم يُقبض العربون',
+                value: ($order->deposit_expected_method ?? PaymentMethod::Cash)->value,
+            ),
+        ];
     }
 
     /**
@@ -317,7 +412,9 @@ final class TransitionFields
      */
     private static function money(Order $order, OrderStatus $target, ?User $actor): array
     {
-        if ($target !== OrderStatus::Delivered && $target !== OrderStatus::Settled) {
+        if ($target !== OrderStatus::Delivered
+            && $target !== OrderStatus::Settled
+            && $target !== OrderStatus::DepositPaid) {
             return [];
         }
 
@@ -337,10 +434,25 @@ final class TransitionFields
         // — the customer may pay all of it, some of it, or none — so nothing is suggested.
         $settling = $target === OrderStatus::Settled;
 
+        // **«عربون مدفوع» opens holding the figure that was agreed**, capped like everything else
+        // at what is actually owed — an invoice edited downward since can leave the estimate
+        // above the debt, and the ledger would refuse the difference. Still not *required*: the
+        // move says the customer paid, and the entry may already have been made on the payments
+        // screen, or be made there tomorrow when the transfer lands.
+        $expected = null;
+
+        if ($target === OrderStatus::DepositPaid && $order->asksForADeposit()) {
+            $asked = Money::normalize($order->deposit_expected_amount);
+
+            // bccomp, not min() over floats: these are money, and a comparison that goes through
+            // binary floating point is exactly what `decimal` columns exist to avoid.
+            $expected = bccomp($asked, $remaining, Money::SCALE) > 0 ? $remaining : $asked;
+        }
+
         return [
             TransitionField::number(
                 key: self::PAYMENT_AMOUNT,
-                label: 'المبلغ المقبوض',
+                label: $target === OrderStatus::DepositPaid ? 'العربون المقبوض' : 'المبلغ المقبوض',
                 // Never required, at either end. An order paid in full when it was taken is
                 // handed over with the box left alone, and one settled after the money was
                 // recorded from the payments screen needs nothing here either.
@@ -351,8 +463,18 @@ final class TransitionFields
                 // The figure and nothing else. «اتركه فارغاً إن لم يُقبض شيء» said out loud what
                 // «(اختياري)» beside the label already says, under a box whose only other line
                 // is the one number the person needs.
-                hint: "المتبقي {$remaining}",
-                value: $settling ? $remaining : null,
+                //
+                // **And every figure in it is trimmed.** «المتبقي 250» is the sentence; «المتبقي
+                // 250.000» is the scale of the column it was read out of, which is nobody's
+                // business standing at a counter — see {@see DecimalText}.
+                hint: $expected !== null
+                    ? 'العربون المتفق عليه '.DecimalText::trim($expected)
+                        .' — والمتبقي على الطلبية '.DecimalText::trim($remaining)
+                    : 'المتبقي '.DecimalText::trim($remaining),
+                // The agreed عربون on the way into «عربون مدفوع», the whole debt on the way into
+                // «مُسوّاة», and nothing at all on any other move. `TransitionField::number()`
+                // trims what it is handed, so this passes the column's own string.
+                value: $settling ? $remaining : $expected,
             ),
             TransitionField::paymentMethod(
                 key: self::PAYMENT_METHOD,
@@ -362,8 +484,13 @@ final class TransitionFields
                 // entry lacking it.
                 requiredWith: self::PAYMENT_AMOUNT,
                 // Cash, because a counter takes cash. An answer, not a placeholder: agreeing
-                // costs no taps and disagreeing costs one.
-                value: PaymentMethod::Cash->value,
+                // costs no taps and disagreeing costs one. **On «عربون مدفوع» the answer the
+                // order already carries wins** — the shop wrote down how it expected the عربون
+                // to arrive when it asked for it, and re-asking the same question with a
+                // different default invites two records of one arrangement.
+                value: ($order->deposit_expected_method !== null && $target === OrderStatus::DepositPaid
+                    ? $order->deposit_expected_method
+                    : PaymentMethod::Cash)->value,
             ),
             // **One field, two jobs.** Obligatory for «حوالة», whose only proof is a document
             // the customer sends — see {@see PaymentMethod::requiresReceipt()} — and offered for
@@ -450,13 +577,112 @@ final class TransitionFields
      */
     private static function shortageHint(OrderItem $item, ?string $onHand): string
     {
-        $hint = "من أصل {$item->quantity}";
+        // **وكل رقمٍ فيه مشذَّب**، وهي قاعدة `DecimalText` القادمة مع التسليم الجزئي: «من أصل
+        // 300» جملة، و«من أصل 300.000» مقياسُ العمود الذي قُرئ منه الرقم، ولا شأن لواقفٍ عند
+        // الطاولة به. خيّر الدمجُ بين هذه الدالّة وبين تلميحٍ مشذَّبٍ أبسط، فأُخذ من كلٍّ ما
+        // يقوله: بناؤها هي، وتشذيبه هو.
+        $hint = 'من أصل '.DecimalText::trim((string) $item->quantity);
 
         if ($onHand !== null) {
-            $hint .= " — المتوفر في كل المخازن {$onHand} {$item->stockUnit()->label()}";
+            $hint .= ' — المتوفر في كل المخازن '.DecimalText::trim($onHand)
+                .' '.$item->stockUnit()->label();
         }
 
         return $hint.' — يُخصم من الفاتورة';
+    }
+
+    /**
+     * The per-line boxes that turn «تم الاستلام» into a record of what was actually handed over.
+     *
+     * **It asks what was *taken*, not what was left.** The person at the counter is holding the
+     * goods they just handed across and counting those; asking for the remainder would make them
+     * subtract, which is arithmetic done by the wrong party at the worst moment.
+     * {@see RecordPartialDelivery} turns the answer into the remainder on the way in.
+     *
+     * **Pre-filled with the whole billable quantity**, so the common case — they took all of it —
+     * is one tap and an untouched form behaves exactly as this move did before the boxes existed.
+     * Capped at the same figure: a customer cannot take more than the order is charging for, and
+     * being told so at the field beats being told so after the move is attempted.
+     *
+     * **A second box only where nobody could work the answer out.** A سادة line goes back on
+     * the shelf, and a line sold by the piece and stocked by the kilo has no per-piece weight to
+     * convert with — {@see DeductOrderStock} refuses to invent one —
+     * so the storekeeper is asked, in the shelf's unit, holding the pro-rata as a figure to
+     * correct on the scale. Every other line is silent: where the units agree the conversion is
+     * exact, and a printed or وسيط line puts nothing back at all.
+     *
+     * **And each line says what will become of its leftover**, in its hint, built from the same
+     * {@see UndeliveredDisposition::forItem()} the action disposes by — so the sentence on the
+     * screen cannot drift from what the button does. That is the rule {@see deductionPreview()}
+     * already keeps with `DeductOrderStock`.
+     *
+     * @return list<TransitionField>
+     */
+    private static function partialDelivery(Order $order): array
+    {
+        // `product.productCategory.parent` because the disposition walks it, and
+        // `variant.stockItem` because the shelf's unit is read off it. Eagerly, because strict
+        // mode turns a forgotten load into an exception rather than a query per line.
+        $order->loadMissing(['items.product.productCategory.parent', 'items.variant.stockItem']);
+
+        $fields = [];
+
+        foreach ($order->items as $item) {
+            $billable = $item->billableQuantity();
+
+            // A line already charging nothing — wholly short, or wholly left behind on an earlier
+            // pass — has nothing to hand over and nothing to ask about.
+            if (bccomp($billable, '0', 3) <= 0) {
+                continue;
+            }
+
+            $disposition = UndeliveredDisposition::forItem($item);
+
+            $fields[] = TransitionField::number(
+                key: self::deliveredQuantityKey($item),
+                label: "المُستلَم من {$item->variant_label} ({$item->pricing_unit->label()})",
+                // Never required: the pre-filled value *is* the answer for almost every order,
+                // and a form insisting on a number somebody has to retype to agree with is a
+                // form that teaches people to stop reading it.
+                required: false,
+                max: (float) $billable,
+                hint: sprintf(
+                    'من أصل %s — وما لا يأخذه يُخصم من الفاتورة و%s',
+                    DecimalText::trim($billable),
+                    $disposition->returnsToStock() ? 'يعود إلى المخزن' : 'يُسجّل خسارة',
+                ),
+                value: $billable,
+            );
+
+            if (! $disposition->returnsToStock() || ! $item->isStockedInAnotherUnit()) {
+                continue;
+            }
+
+            $fields[] = TransitionField::number(
+                key: self::returnedQuantityKey($item),
+                label: "المُعاد إلى المخزن من {$item->variant_label} ({$item->stockUnit()->label()})",
+                // Optional, and the reason is that it is meaningless on its own: a value here
+                // with a full delivery beside it describes goods nobody left behind. The action
+                // ignores it unless the line has a remainder.
+                required: false,
+                max: (float) $item->producedQuantity(),
+                hint: 'خرج من المخزن '.DecimalText::trim($item->producedQuantity())." {$item->stockUnit()->label()} — صحّح المُعاد إن وزنته",
+            );
+        }
+
+        return $fields;
+    }
+
+    /** What the «what did they take» box for one line is called in the payload. */
+    public static function deliveredQuantityKey(OrderItem $item): string
+    {
+        return "delivered_{$item->getKey()}";
+    }
+
+    /** What the «what went back on the shelf» box for one line is called in the payload. */
+    public static function returnedQuantityKey(OrderItem $item): string
+    {
+        return "returned_{$item->getKey()}";
     }
 
     /** What the per-line box for one line is called in the payload. */
@@ -496,7 +722,7 @@ final class TransitionFields
                 $item->variant_label,
                 $item->isStockedInAnotherUnit() && $item->warehouse_quantity === null
                     ? "بال{$item->stockUnit()->label()}، حسب ما تُدخله أدناه"
-                    : "{$item->producedQuantity()} {$item->stockUnit()->label()}",
+                    : DecimalText::trim($item->producedQuantity())." {$item->stockUnit()->label()}",
             ))
             ->all();
 

@@ -1,0 +1,495 @@
+# Partial delivery — التسليم الجزئي
+
+> **Status: built.** Branch `feat/partial-delivery`, 15 tests passing. The app side is
+> [PARTIAL-DELIVERY-FRONTEND-INTEGRATION.md](PARTIAL-DELIVERY-FRONTEND-INTEGRATION.md) and has
+> not started — two of its contract tests are red until it does.
+> Written in English by request; the shipped code and UI strings stay Arabic like the rest.
+> Answers the BACKLOG item **«تعديل البنود عند الاستلام»**, whose open question was explicitly
+> accounting rather than technical.
+>
+> **Every decision in §3 is settled** — all eight were answered on 14 September 2026. The
+> options are kept beside each answer rather than deleted: a decision is only readable next to
+> the ones it beat. Decision 5 was answered, reopened, and answered differently; Decision 7 went
+> against the recommendation and was right to.
+
+---
+
+## 1. The problem
+
+A customer comes to the counter (or the courier arrives) and takes **part** of the order. 500
+bags were made; they take 300 and leave 200.
+
+Today the system has no word for that. `Delivered` is a single, near-final event that hands over
+"the order". The two facts the shop needs recorded — **what did the customer actually take**, and
+**what happened to the rest** — have nowhere to live.
+
+The rest of the goods can only go two ways, and which one is not a judgement call:
+
+| The line's production mode | What the leftover physically is | Where it goes |
+|---|---|---|
+| `none` — سادة, plain goods off a shelf | Ordinary saleable stock | **Back to the warehouse** |
+| `in_house` — printed here | Bags carrying this customer's artwork | **A loss.** Nobody else can buy them |
+| `outsourced` — وسيط, a vendor made it | Same: made to this order | **A loss** |
+
+That is the rule the owner stated, and it is already expressible: `ProductionMode` is on the
+product's category, and `OrderItem::isPrinted()` already asks that question per line for سعر
+السادة. Nothing new has to be invented to know which branch a line takes.
+
+**Per line, not per order.** `ResolveOrderFlow` puts a whole order on the printed road for one
+printed line among five plain ones — right for the road, wrong for the goods. A mixed order must
+restock its plain lines and write off its printed ones in the same breath. So the branch is read
+from `OrderItem::isPrinted()` (already per line), never from `orders.production_flow`.
+
+---
+
+## 2. What already exists, and is not being rebuilt
+
+This is most of the design. The feature is largely an assembly of parts that are already
+load-bearing.
+
+| Existing thing | What it already does for us |
+|---|---|
+| `OrderItem::billableQuantity()` | `quantity − shortage_quantity`, floored at 0. The **one place** a quantity becomes money. One more subtrahend and the whole invoice follows. |
+| `OrderItem::deriveLineTotal()` | Never re-quotes `unit_price` for the smaller quantity. Exactly the rule we want: delivering less must not raise the per-bag price. |
+| `RestateOrderStockDeduction` | Reverse-the-whole-movement-then-redraw-the-corrected-quantity. This **is** partial stock return, already written, already handling FIFO layers, investor re-posting and the singular `fulfillment_stock_movement_id`. |
+| `TransitionFields` | Server-described per-line number fields, already used by نواقص and by the ready deduction. The app renders them with **no Dart release**. |
+| `ProductionCostEntry` + `ManufacturingCostType` | A per-line, reversible, audited cost ledger with a free-text `cost_type varchar(20)` — no DB constraint to migrate. `ScrapLoss` is the precedent for a *named, non-additive* loss row. |
+| `RefundOrderPayment` / `PaymentStatus::Overpaid` | A customer who paid 500 and takes 300 is already a solved case. No new work. |
+| `ReverseOrderStockDeduction` | Reverses **every** active production-cost entry on a line, so a new cost type is cancelled and deleted correctly for free. |
+| `OrderProfitFinalised` ordering | Dispatched last in `ChangeOrderStatus`, after totals and COGS. The investor split will see the corrected figures without being touched. |
+
+---
+
+## 3. The decisions — settled, with the options they beat
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | Billed for what they left? | **No** — the invoice follows what was taken, printed lines included |
+| 2 | Loss added to COGS? | **No** — reported beside `write_offs`, never subtracted |
+| 3 | Loss valued at? | **Cost** of the goods |
+| 4 | Where recorded, given the item lock? | **A new derived column**, written by its own action |
+| 5 | Permission? | **New `orders.partial_delivery`**, granted day one to the roles that already deliver |
+| 6 | Restocked quantity when units differ? | **Ask**, pre-filled with the pro-rata |
+| 7 | Flag in the orders list? | **Yes, a chip**, like «نواقص» *(against the recommendation)* |
+| 8 | Fix the `ScrapLoss` P&L gap here? | **Yes** — both losses in one section |
+
+
+### Decision 1 — Is the customer billed for what they left?
+
+| | Option | Consequence |
+|---|---|---|
+| **A** ✅ **chosen** | **No. The invoice follows what was handed over.** | Revenue falls. For a printed line, COGS stays whole, so the shop eats the full cost — which is precisely "a loss in the P&L". |
+| B | Yes for printed lines (it was made to their artwork, their problem), no for plain ones. | Then there is **no loss to report** on printed lines — the question the owner asked would have no answer. Also splits the rule across two branches for no gain. |
+| C | Ask per line at the counter. | Maximum flexibility, maximum arguing at the till, and an invoice nobody can reconstruct later. |
+
+**Settled: A**, as recommended. It is what makes the requested P&L loss exist at all, and it
+is the rule the codebase already committed to for نواقص — «النقص ذنبنا لا ذنب العميل». If the shop later
+wants to charge for abandoned printed goods, that is a *charge* on the order
+(`additional_cost` already exists with a reason code), not a redefinition of the invoice.
+
+### Decision 2 — Does the loss add to COGS, or is it only named?
+
+The P&L computes gross profit as `revenue − COGS`, where COGS is the cached
+`order_items.material_cost_actual / labor_cost / overhead_cost` frozen at «جاهزة».
+
+Worked example — 300 printed bags at 1.55, cost 300.00, customer takes 200:
+
+| | Before | After partial delivery |
+|---|---|---|
+| Revenue | 465.00 | **310.00** |
+| COGS | 300.00 | **300.00** (we made 300 bags; that is a fact) |
+| Gross profit | 165.00 | **10.00** |
+
+The 155.00 lost is *already* in the statement, by construction — revenue fell while cost did not.
+
+| | Option | Consequence |
+|---|---|---|
+| **A** ✅ **chosen** | The `delivery_loss` entry is a **named, non-additive memo** — a new reported line on the P&L beside `write_offs`, not a new subtrahend. | Correct arithmetic. Follows `ScrapLoss`, which is deliberately excluded from `labor_cost`/`overhead_cost` for this exact reason. |
+| B | Add it to COGS. | **Double-counts.** The 100 undelivered bags' cost would be charged twice: once inside the frozen `material_cost`, once as the loss row. Gross profit goes wrong. |
+
+**Settled: A**, as recommended. And a note that follows from it: **`ScrapLoss` is invisible on
+the P&L today** for the same structural reason — so a new section called «الخسائر» carrying only
+partial delivery would name one kind of loss and stay silent about the other. **That is Decision
+8, and it was taken: scrap joins the same section.** See §4.7.
+
+### Decision 3 — What is the loss *valued* at?
+
+| | Option | Reads as |
+|---|---|---|
+| **A** ✅ **chosen** | Its share of the line's COGS: `cogs × undelivered ÷ quantity` | «قيمة البضاعة التي صنعناها ولم تُبَع» — what the goods cost us. |
+| B | Its foregone revenue: `unit_price × undelivered` | The margin we didn't earn. Already visible as the revenue drop; reporting it again as a "loss" double-tells the same story. |
+
+**Settled: A**, as recommended — cost, not price. A loss line on a cost statement is a cost.
+
+### Decision 4 — Where is it recorded, given the item lock?
+
+`Order::itemsAreEditable()` is false from «جاهزة» onward, and must stay so.
+
+| | Option | |
+|---|---|---|
+| **A** ✅ **chosen** | **A new derived column, written by its own action** — exactly how `warehouse_quantity` is written onto locked lines at «جاهزة», and how `shortage_quantity` moves money without `quantity` ever being touched. | The lock is not in the way; it guards `UpdateOrder`, not every write. |
+| B | Open the lock at delivery and edit `quantity`. | Destroys the record of what the customer ordered — the very question a partial delivery is the answer to. Also makes the invoice unreconstructable. |
+| C | Leave the lines alone, post a credit note in the payment ledger. | The other half of the BACKLOG question. Rejected: it hides the *quantity* fact in a money row, and the goods still have to be restocked or written off, which needs a per-line quantity anyway. |
+
+**Settled: A**, as recommended. It is the pattern this codebase already uses twice, and it keeps the whole
+thing reversible by construction: clear `undelivered_quantity` and the invoice returns to what it
+was, because nothing was ever subtracted in place.
+
+### Decision 5 — Who is allowed to do it?
+
+Recording a partial delivery **moves money** (it shrinks the invoice). `orders.status.delivered`
+is held by anyone who can hand a parcel over, including a driver.
+
+| | Option | |
+|---|---|---|
+| **A** ✅ **chosen** | **A new `orders.partial_delivery`**, withholding the **fields** and not the move — the precedent `TransitionFields::money()` sets for the payment box. **Granted on day one to every role that already holds `orders.status.delivered`.** | Same people do the same work from the first day, through a switch that can be thrown on its own. |
+| B | `orders.status.delivered` is enough — whoever may hand the parcel over may record what was handed over. | Nothing to define, seed or tick. And no way to take the power back except by taking delivery back with it. |
+| C | A new permission granted to **nobody** at first, decided later from the roles screen. | Zero day-one exposure, and a feature nobody can find. |
+| D | Reuse `orders.payments.record`. | Widens the *money* permission instead, under a name that answers no question a person would ask of it. |
+
+**Settled: A**, and this one was reopened before it was settled. The first answer was B, on the
+grounds that the person holding the parcel is the only one who *knows* what was taken — which is
+true, and turned out to be an argument about **who to grant it to**, not about whether to have a
+permission at all.
+
+**What decided it: reusing a permission widens it silently.** `RoleSeeder` calls itself «a
+starting point, not a policy» and seeds only `admin` and `staff`; the roles that actually exist
+were built from the roles screen. So folding this into `orders.status.delivered` hands
+invoice-editing power to everyone already holding it — without a box being ticked, and without the
+business being asked. A new permission defaults to nobody, which is the safe direction, and the
+day-one grant to the delivery roles makes the *observed* behaviour identical to B:
+
+|  | B — reuse | A — new permission, granted day one |
+|---|---|---|
+| Who can record a partial delivery on day one | Drivers and clerks | **The same drivers and clerks** |
+| Was anyone asked before they got the power | No | Yes — it is a grant |
+| If one driver abuses it | Revoke `orders.status.delivered`: they can no longer mark **anything** delivered | Untick one box; they keep delivering |
+| If the business never ticks anything | n/a | n/a — the grant ships with the feature (that is why C lost) |
+
+**Three existing things still carry the residual risk**, and they are why granting it broadly is
+reasonable rather than merely convenient:
+
+- **`order_item` is audited.** Every movement of `undelivered_quantity` writes a row saying who
+  and when, readable from the order's own history screen.
+- **Nothing is destroyed.** `quantity` never moves; the figure is derived, so an invoice wrongly
+  shrunk is put back by clearing one field — no reversing entry, no correction of a correction.
+- **The money box is separately guarded.** `orders.payments.record` is untouched, so a driver who
+  records a partial delivery still cannot take the payment against it.
+
+**Withholds the fields, never the move.** A user without the grant sees «تم الاستلام» exactly as
+today and delivers in full — the same shape `TransitionFields::money()` already uses to keep a
+driver away from the till without keeping them away from the parcel.
+
+### Decision 6 — The restocked quantity, when the units differ
+
+A line sold by the piece and stocked by the kilo has no meaningful per-piece weight —
+`DeductOrderStock` says so at length and refuses to multiply one out.
+
+**Settled: ask.** The delivered quantity is asked in the **pricing** unit (the number the
+clerk has). For a restocked line whose `isStockedInAnotherUnit()` is true, a **second** box asks
+the returned amount in the **stock** unit, pre-filled with the pro-rata as a *suggestion* the
+storekeeper can correct on the scale. Where the units agree, nothing extra is asked and the
+return is exact arithmetic.
+
+### Decision 7 — Is a partially delivered order flagged in the orders list?
+
+| | Option | |
+|---|---|---|
+| **A** ✅ **chosen** | **A chip in the list**, beside «نواقص» and the payment chips. | Spotted while scrolling. Cheaper than it looks — see below. |
+| B | *(was recommended)* Detail screen only. | Less noise in a list that already carries status, urgency and payment chips. |
+| C | Chip plus a dedicated filter. | The most reviewable; a new query, API parameter and app control on top of the chip. |
+
+**Settled: A**, and the recommendation against it was wrong on the facts. B was recommended on
+the assumption the chip would cost a query per row — it does not. `OrderListQuery` **already
+eager-loads `items`** for the line count and the product cards, so the flag is a derived boolean
+over a collection already in memory:
+
+```php
+// OrderResource — no new column, no new query, no N+1
+'is_partially_delivered' => $this->items->contains(
+    fn (OrderItem $item) => $item->undelivered_quantity !== null
+        && bccomp((string) $item->undelivered_quantity, '0', 3) > 0,
+),
+```
+
+Derived rather than cached, for the reason `Order::grossProfit()` gives about itself: both inputs
+are already loaded, and a third column to keep in step could only ever disagree with them.
+
+**No filter, for now.** C was not chosen and should not be smuggled in: a filter is a query, an
+API parameter and a control on the list screen, and the P&L losses section (§4.7) already answers
+«كم يكلّفنا هذا؟» — which is the question a filter would mostly be used to ask.
+
+---
+
+## 4. The mechanism
+
+### 4.1 Two new columns
+
+```
+order_items.undelivered_quantity      decimal(12,3) nullable
+order_items.undelivered_disposition   string(12)    nullable   // UndeliveredDisposition
+```
+
+`undelivered_quantity` is in the line's own **pricing** unit. Null means «took it all» — «nothing
+recorded» is not «nothing left», the same distinction `shortage_quantity` already makes.
+
+**The disposition is a column, and an earlier draft of this document was wrong to say it need not
+be.** That draft argued it was `isPrinted()`, asked at the moment of delivery and recorded
+implicitly by which of the two things happened — a stock movement or a loss entry. Two problems,
+and the second is the serious one:
+
+- **`isPrinted()` reads the category as it stands *now*.** File the product under a different
+  heading next year and a delivery from last March silently changes its story from «عادت إلى
+  المخزن» to «خسارة». That is the retroactive rewrite `product_name` and `variant_label` are
+  copied onto the line to prevent — «renaming a product must not rewrite an invoice issued last
+  year», and re-filing one must not rewrite a delivery either.
+- **It costs a query per line to read back.** `isPrinted()` needs
+  `product.productCategory.parent` loaded; the resource that has to say which happened would
+  either eager-load a chain nothing else on that screen wants, or throw under strict mode.
+
+```php
+enum UndeliveredDisposition: string
+{
+    case Restocked = 'restocked';      // عادت إلى المخزن
+    case WrittenOff = 'written_off';   // خسارة
+
+    public function label(): string { /* … */ }
+}
+```
+
+`label()` is not decoration: `AuditValueLabels` auto-translates any enum-cast column whose enum
+can name itself, so the order's history prints Arabic without a second dictionary — the same
+reason `OrderFlow` and `ProductionMode` carry one.
+
+Both columns are written together by one action and cleared together. A line with a quantity and
+no disposition is not a state the domain can reach.
+
+**The loss *amount* is not a third column.** It is `cogs × undelivered ÷ quantity` — derived on
+the model as `OrderItem::deliveryLoss()`, returning null unless the disposition is `WrittenOff`,
+exactly as `unitMaterialCost()` already derives a figure from columns beside it. The authoritative
+record of the loss is still the `ProductionCostEntry` (§4.4); this is the cheap read for a screen.
+
+### 4.2 One line changed in the money rule
+
+```php
+// OrderItem::billableQuantity()
+quantity − shortage_quantity − undelivered_quantity     // floored at 0
+```
+
+Everything downstream follows with no further edits: `deriveLineTotal()`, `RecalculateOrderTotals`,
+`grand_total`, `remainingAmount()`, `PaymentStatus`, the invoice message, and the investor split
+(which reads `grand_total − total_cogs`).
+
+### 4.3 Plain lines — restock
+
+Reuse the `RestateOrderStockDeduction` mechanism: reverse the line's whole fulfillment movement,
+re-draw the delivered quantity fresh. The leftover lands back on its **original cost layers**,
+`material_cost` comes out right for the smaller draw, and `fulfillment_stock_movement_id` stays
+singular so delete/restore/cancel keep working untouched.
+
+The class is currently hard-wired to "lines stocked in another unit, at «جاهزة»". Extract the
+reverse-and-redraw into a shared collaborator and give it a second caller rather than copying it —
+one FIFO-unwinding path in the codebase, as today.
+
+`OrderStockDrawn` is announced when any line restocked, so the investor's purchase is unwound and
+re-posted for the smaller draw. He is un-paid for the bags that came back.
+
+**This was the one thing the plan got wrong, and it was a money bug.** The sentence above used to
+read «fires as it already does for a restatement … Correct, and free». It is neither. The event is
+dispatched by `ChangeOrderStatus` on exactly two conditions — a first deduction and a restatement
+at «جاهزة» — and a partial delivery is neither of them, so nothing would have told Investment
+anything. The investor would have kept the سعر السادة paid for all 300 bags while 100 of them sat
+back on his own cost layers, and the next order would have bought the same kilo from him again.
+
+`PostDealStockPurchases` needed no change: it is keyed on `order_items.id` precisely so a redrawn
+line is recognised as the same source and re-posted, and it already hunts down lines that drop out
+of the draw entirely. It simply had to be told. So `RecordPartialDelivery` reports whether anything
+went back on a shelf and `ChangeOrderStatus` announces — by the caller rather than the action,
+exactly as the deduction's and the restatement's are.
+
+**A write-off announces nothing**, and that is the other half of the rule: printed bags were
+genuinely consumed, no line's draw changes, and whoever sold us that material keeps what he was
+rightly paid. Both directions have a test.
+
+### 4.4 Printed and outsourced lines — write off
+
+One `ProductionCostEntry` per affected line:
+
+```
+cost_type  = ManufacturingCostType::DeliveryLoss   // new case, 'delivery_loss'
+quantity   = undelivered_quantity
+rate       = null                                   // like ScrapLoss — not rate-driven
+amount     = cogs × undelivered ÷ quantity
+notes      = «تسليم جزئي — لم يستلمه العميل»
+```
+
+**Not summed into `labor_cost`/`overhead_cost`** — Decision 2. `isRateDriven()` returns false for
+it, and `RecalculateOrderItemManufacturingCost` ignores it exactly as it ignores `ScrapLoss` today.
+
+Nothing moves in the warehouse. The goods left the shelf at «جاهزة» and are gone.
+
+### 4.4b What was learned building it
+
+Two things the plan did not anticipate, recorded here rather than only in commit messages because
+both are the kind of thing a later reader would otherwise re-introduce:
+
+- **`isPrinted()` is not the question.** The first draft mapped the disposition through it. It
+  asks «does *our* press run on this line?» — the fork سعر السادة turns on — and answers **false**
+  for وسيط, whose goods a vendor prints and which were never on a shelf of ours. Mapping through
+  it would have credited a vendor's printed bags back to a shelf that cannot hold them. The
+  disposition asks the other question, «can anybody else buy these?», to which only سادة says yes,
+  so `OrderItem::productionMode()` was extracted and it reads that.
+- **The investor had to be told.** See §4.3.
+
+### 4.5 The form
+
+Added to `TransitionFields::for()` on the move into `Delivered`, gated on
+`orders.partial_delivery` — and gating the **fields**, not the move (Decision 5). Somebody without
+the grant sees «تم الاستلام» exactly as today.
+
+- Per line, key **`delivered_{item_id}`**: «المُستلَم من {size} ({unit})» — a `number`,
+  `max = billableQuantity()`, pre-filled with the full billable quantity. The common case (took
+  everything) is one tap. Named like `shortage_{id}` and `received_{id}`, which the same class
+  already emits.
+- Per restocked line whose units differ, key **`returned_{item_id}`**: «المُعاد إلى المخزن
+  ({stock unit})», pre-filled with the pro-rata.
+- A server-built hint per line naming what will happen to the remainder — «يعود إلى المخزن» or
+  «يُسجَّل خسارة» — built the same way `deductionPreview()` is, so it cannot drift from the action.
+
+`Delivered` is reachable from «استلام مكتب», «جاري التوصيل» and «مرتجع من المكتب». One target,
+so all three roads get it with no extra branching.
+
+### 4.6 Ordering inside `ChangeOrderStatus`
+
+The write must land **before** `OrderProfitFinalised` (so the investor split sees the corrected
+profit) and **after** the status attributes are saved. Concretely, a new block beside the existing
+`restateStock` branch, then `RecalculateOrderTotals` and `RecalculateOrderCogs`.
+
+**One known wrinkle, named rather than hidden.** `recordPaymentForOrder()` runs *early*, and the
+payment box's `max` was built from `remainingAmount()` before the clerk typed anything. A clerk
+who takes payment in the same move can therefore pay against the **pre-partial** remainder and
+leave the order `overpaid`. That is already a solved state (`RefundOrderPayment`), but the
+mitigation is worth building: move the partial-delivery write **above** the payment so the ledger
+sees the corrected total, and say so in the money field's hint.
+
+### 4.7 The P&L
+
+A new reported section, beside `write_offs` and on the same reconciliation shelf — **reported,
+never subtracted** (Decision 2):
+
+```
+'losses' => [
+    'partial_delivery' => …,   // sum of active delivery_loss entries in the window
+    'scrap'            => …,   // the existing gap, closed here — Decision 8
+    'total'            => …,
+],
+```
+
+Summed over active (non-reversed, non-reversing) entries on orders recognised in the window, which
+is the query `RecalculateOrderItemManufacturingCost::activeEntriesFor()` already writes.
+
+**`scrap` joins it in the same change** (Decision 8). `RecordScrapLoss` has been writing
+`ScrapLoss` entries since manufacturing costs landed, and `ProfitAndLossSummaryQuery` has never
+read them: the report sums the cached item columns, and `RecalculateOrderItemManufacturingCost`
+deliberately folds `ScrapLoss` into neither `labor_cost` nor `overhead_cost`. So spoiled bags are
+recorded, auditable, chargeable to an investor — and invisible on the one statement that asks
+what the month cost. Shipping `partial_delivery` alone under a heading called «الخسائر» would have
+made that silence worse by looking like an answer.
+
+Both rows read the same table with the same active-entry rule and differ only in `cost_type`, so
+this is one query with a `CASE`, not two.
+
+---
+
+## 5. What this does **not** do
+
+- **No return policy after delivery.** «تم الاستلام» stays final. A customer coming back tomorrow
+  is the separate deferred BACKLOG item, and still needs a credit-note design.
+- **No line added or removed at the counter.** Only quantities taken are recorded. A customer
+  wanting a *different* product is a new order.
+- **No re-quoting.** 300 ordered at the 300-tier price, 200 taken — still the 300-tier price.
+- **No change to `quantity`, `material_cost` on written-off lines, or `total_cogs` semantics.**
+
+---
+
+## 6. Slices
+
+**Backend only.** The app side is a document of its own —
+[PARTIAL-DELIVERY-FRONTEND-INTEGRATION.md](PARTIAL-DELIVERY-FRONTEND-INTEGRATION.md) — written
+against the contract §4 defines, and started after this ships. The repo's own naming rule: a
+document planning the app side of an already-built API ends in `-FRONTEND-INTEGRATION.md`.
+
+Each slice is shippable and testable on its own; 1–3 are the whole feature for a shop that only
+sells سادة, and 4 adds the printing shop.
+
+**All nine are built.** Kept as written rather than ticked off and deleted, because the order
+they are in is the order they should be re-read in.
+
+| # | Slice | Where |
+|---|---|---|
+| 1 | `undelivered_quantity` + `undelivered_disposition` columns, `UndeliveredDisposition` enum, `billableQuantity()`, `deliveryLoss()` | backend |
+| 2 | `RecordPartialDelivery` action — writes both columns, re-derives `line_total`, calls `RecalculateOrderTotals` | backend |
+| 3 | Restock path: extract the reverse-and-redraw collaborator out of `RestateOrderStockDeduction`, second caller, `OrderStockDrawn` | backend |
+| 4 | Write-off path: `ManufacturingCostType::DeliveryLoss` + the per-line entry + `isRateDriven()` | backend |
+| 5 | `orders.partial_delivery` in `PermissionName` (group «حالات الطلبيات») + `RoleSeeder` grant | backend |
+| 6 | `TransitionFields` on `Delivered` + `ChangeOrderStatus` wiring and ordering | backend |
+| 7 | P&L `losses` section — partial delivery **and** the existing scrap gap | backend |
+| 8 | `is_partially_delivered` on `OrderResource`, `undelivered_*` + `delivery_loss` on `OrderItemResource` | backend |
+| 9 | `openapi.json` regen — the app side is written against it | backend |
+
+**Slice 5 ships the grant with the permission**, which is the whole of why option C lost: a
+permission nobody holds is a feature nobody finds. It goes to every role already holding
+`orders.status.delivered` — read from the role, not hard-coded to a role name, since the real
+roles were built from the roles screen rather than seeded.
+
+**The status-change form itself needs no Dart at all** — the app renders server-described `number`
+fields already, so the whole of §4.5 arrives in the app the day slice 6 ships, with no release.
+What the app side does need is display work, and that is what the companion document covers.
+
+### Tests to write
+
+- `billableQuantity()` with shortage and undelivered together, and the floor at zero.
+- A mixed order: one سادة line restocked, one printed line written off, in one move.
+- The restock lands on the **original** cost layers (assert `material_cost`, not an average).
+- Cancel, then delete, then restore an order that was partially delivered — the movement pointer
+  and the loss entries survive the round trip.
+- Investor split on a partially delivered order: slice falls, purchase for returned goods unwound.
+- **The permission gates the fields and not the move**: somebody holding `orders.status.delivered`
+  without `orders.partial_delivery` is offered «تم الاستلام», sees no per-line boxes, and has the
+  keys rejected by `ChangeOrderStatusRequest` if they post them anyway — which the request's
+  «هذه الحقول غير مطلوبة» rule already does for free, and the test is what proves it.
+- Somebody holding both records a partial delivery and the write stands.
+- The audit trail: moving `undelivered_quantity` writes an `order_item` entry naming who and when.
+- P&L: revenue falls, COGS does not, the loss lines report and do not subtract.
+- P&L: an order carrying **both** a scrap loss and a partial-delivery loss reports them on their
+  own rows and in `total`, and gross profit is untouched by either.
+- `is_partially_delivered` is false for a fully delivered order and for one whose
+  `undelivered_quantity` is zero rather than null — and the list renders it **without a query per
+  row** (assert the query count, which is the whole reason the chip was affordable).
+
+### Rough size
+
+Slice 3 is the one with real risk — it is the only one touching FIFO — and should be built and
+tested before slice 6 wires anything to a screen, so that a half-finished restock is never
+reachable. Slices 1, 5, 8 and 9 are small. Slice 7 is a single query with a `CASE`.
+
+---
+
+## 7. Nothing is open
+
+All eight decisions in §3 are answered. What is left is building it, in the order §6 gives.
+
+**The two that went against the recommendation are worth re-reading before anyone changes them
+back**, because both were argued and both have a reason that outlives this document:
+
+- **The permission (5)** was answered as «reuse `orders.status.delivered`», reopened, and settled
+  the other way once the deciding fact surfaced: reusing a grant widens it for everyone who
+  already holds it, silently, and welds the new power to the old one. The day-one grant makes the
+  behaviour identical to reuse while keeping the two switches apart. **Do not "simplify" this
+  back into `orders.status.delivered» later** — that is the change that was examined and rejected.
+- **A chip in the list (7)** was recommended against on a cost that turned out not to exist:
+  `OrderListQuery` already eager-loads `items`, so the flag is free.
+
+**One thing deliberately still deferred:** the return policy *after* delivery — a customer coming
+back tomorrow. «تم الاستلام» stays final, and that remains its own BACKLOG item needing a
+credit-note design. Partial delivery is about the moment of handover and nothing after it.
