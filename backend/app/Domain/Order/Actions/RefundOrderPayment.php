@@ -13,6 +13,7 @@ use App\Domain\Order\Exceptions\RefundExceedsPaid;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
+use App\Support\Media\StoreReceipt;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -36,7 +37,7 @@ final class RefundOrderPayment
 {
     public function __construct(
         private readonly RecalculateOrderPayments $recalculate,
-        private readonly StorePaymentReceipt $storeReceipt,
+        private readonly StoreReceipt $storeReceipt,
     ) {}
 
     public function __invoke(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
@@ -88,7 +89,7 @@ final class RefundOrderPayment
         $refund->recorded_by = $actor?->getKey();
 
         if ($data->receipt !== null) {
-            $refund->forceFill(($this->storeReceipt)($order, $data->receipt));
+            $refund->forceFill(($this->storeReceipt)("payment-receipts/{$order->getKey()}", $data->receipt));
         }
 
         $refund->save();

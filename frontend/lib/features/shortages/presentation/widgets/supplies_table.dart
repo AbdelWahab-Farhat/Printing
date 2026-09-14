@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/receipt_viewer.dart';
 import 'package:dayaa/features/shortages/models/shortage.dart';
 import 'package:dayaa/features/shortages/models/shortage_supply.dart';
 import 'package:flutter/material.dart';
@@ -155,6 +159,41 @@ class _SupplyRow extends StatelessWidget {
               Text(
                 supply.warehouse!.name,
                 style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ],
+            // **الواصل, and pressing it shows the paper itself** — an image full screen in the
+            // app, a PDF handed to the phone. On most rows this is a fact to skim past; for
+            // whoever is checking what a sack actually cost it is the proof, so the fact opens
+            // it. Which glyph it wears is the server's `receipt_is_image` answer.
+            if (supply.hasReceipt) ...[
+              Text(' · ', style: context.textTheme.bodySmall),
+              InkWell(
+                onTap: () => unawaited(
+                  showReceipt(
+                    context,
+                    Receipt(
+                      cacheKey: 'supply-receipt-${supply.id}',
+                      url: supply.receiptUrl,
+                      isImage: supply.receiptIsImage,
+                      filename: supply.receiptFilename,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      supply.receiptIsImage ? AppIcons.photos : AppIcons.pdf,
+                      size: 14.sp,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'الواصل',
+                      style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
               ),
             ],
             const Spacer(),

@@ -10,8 +10,8 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/shortages/models/shortage.dart';
 import 'package:dayaa/features/shortages/presentation/viewmodel/shortage_detail_cubit.dart';
+import 'package:dayaa/features/shortages/presentation/views/record_supply_page.dart';
 import 'package:dayaa/features/shortages/presentation/widgets/assign_shortage_sheet.dart';
-import 'package:dayaa/features/shortages/presentation/widgets/record_supply_sheet.dart';
 import 'package:dayaa/features/shortages/presentation/widgets/shortage_status_pill.dart';
 import 'package:dayaa/features/shortages/presentation/widgets/supplies_table.dart';
 import 'package:flutter/material.dart';
@@ -77,7 +77,10 @@ class _ShortageDetailViewState extends State<_ShortageDetailView> {
   Future<void> _recordSupply(Shortage shortage) async {
     final cubit = context.read<ShortageDetailCubit>();
 
-    final entry = await RecordSupplySheet.open(context, shortage: shortage);
+    // A page, not a sheet: six fields, a picker and an attachment do not fit in a drawer with a
+    // keyboard over it — see [RecordSupplyPage].
+    final entry = await context.push<SupplyEntry>(Routes.shortageSupply, extra: shortage);
+
     if (entry == null || !mounted) return;
 
     await _run(
@@ -86,9 +89,9 @@ class _ShortageDetailViewState extends State<_ShortageDetailView> {
         amount: entry.amount,
         method: entry.method,
         warehouseId: entry.warehouseId,
-        reference: entry.reference,
         occurredOn: entry.occurredOn,
         notes: entry.notes,
+        receipt: entry.receipt,
       ),
     );
   }

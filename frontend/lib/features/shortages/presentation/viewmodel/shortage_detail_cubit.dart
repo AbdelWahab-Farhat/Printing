@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/features/shortages/models/shortage.dart';
 import 'package:dayaa/features/shortages/usecases/shortage_usecases.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -79,9 +80,9 @@ class ShortageDetailCubit extends Cubit<ShortageDetailState> {
     String? amount,
     String? method,
     int? warehouseId,
-    String? reference,
     String? occurredOn,
     String? notes,
+    PickedFile? receipt,
   }) {
     return _write(
       () => _recordSupply(
@@ -90,9 +91,9 @@ class ShortageDetailCubit extends Cubit<ShortageDetailState> {
         amount: amount,
         method: method,
         warehouseId: warehouseId,
-        reference: reference,
         occurredOn: occurredOn,
         notes: notes,
+        receipt: receipt,
       ),
     );
   }

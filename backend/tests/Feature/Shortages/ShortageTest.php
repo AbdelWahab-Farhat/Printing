@@ -12,7 +12,10 @@ use App\Domain\Shortage\Enums\ShortageSource;
 use App\Domain\Shortage\Enums\ShortageStatus;
 use App\Domain\Shortage\Enums\SupplyKind;
 use App\Domain\Shortage\Models\Shortage;
+use App\Domain\Shortage\Models\ShortageSupply;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -294,6 +297,62 @@ class ShortageTest extends TestCase
         $this->assertSame('0.000', $shortage->remainingQuantity());
         $this->assertSame('760.00', (string) $shortage->total_paid);
         $this->assertSame(ShortageStatus::Completed, $shortage->status);
+    }
+
+    public function test_a_supply_keeps_the_paper_it_was_bought_with(): void
+    {
+        // Arrange — الواصل on a شراء is optional, and this is the entry that has one.
+        Storage::fake('local');
+        $headers = $this->clerk();
+        $shortage = Shortage::factory()->create(['required_quantity' => '30.000']);
+
+        // Act
+        $response = $this->post(
+            "/api/v1/shortages/{$shortage->getKey()}/supplies",
+            [
+                'quantity' => '20',
+                'amount' => '500',
+                'method' => PaymentMethod::BankTransfer->value,
+                'receipt' => UploadedFile::fake()->create('waseel.pdf', 120, 'application/pdf'),
+            ],
+            $headers + ['Accept' => 'application/json'],
+        );
+
+        // Assert — the same three keys a payment's receipt publishes, because it is the same
+        // question asked about the same kind of paper.
+        $response->assertCreated()
+            ->assertJsonPath('data.has_receipt', true)
+            ->assertJsonPath('data.receipt_is_image', false)
+            ->assertJsonPath('data.receipt_filename', 'waseel.pdf');
+
+        $supply = ShortageSupply::query()->firstOrFail();
+        Storage::disk('local')->assertExists((string) $supply->receipt_path);
+        $this->assertStringEndsWith('.pdf', (string) $supply->receipt_path);
+        // Generated, never the client's: nobody chooses a path, and two shops sending
+        // «waseel.pdf» must not collide.
+        $this->assertStringNotContainsString('waseel', (string) $supply->receipt_path);
+    }
+
+    public function test_a_supply_without_paper_is_recorded_all_the_same(): void
+    {
+        // Arrange — سَكّ اشتُري من المحل المجاور بلا ورقة، وهو الحال الغالب.
+        Storage::fake('local');
+        $headers = $this->clerk();
+        $shortage = Shortage::factory()->create(['required_quantity' => '30.000']);
+
+        // Act
+        $response = $this->postJson("/api/v1/shortages/{$shortage->getKey()}/supplies", [
+            'quantity' => '20',
+            'amount' => '500',
+            'method' => PaymentMethod::BankTransfer->value,
+        ], $headers);
+
+        // Assert — **not** the order's rule: a transfer to a customer is proved by the paper they
+        // send us, while refusing this entry for want of a document would push the purchase back
+        // onto paper, which is what the feature exists to end.
+        $response->assertCreated()
+            ->assertJsonPath('data.has_receipt', false)
+            ->assertJsonPath('data.receipt_url', null);
     }
 
     public function test_a_supply_larger_than_what_is_left_is_refused(): void

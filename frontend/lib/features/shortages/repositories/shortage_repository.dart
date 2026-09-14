@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/shortages/models/shortage.dart';
 import 'package:dayaa/features/shortages/models/shortage_counts.dart';
@@ -95,15 +96,18 @@ abstract class ShortageRepository {
   /// The ceiling on [quantity] is checked again on the server under a lock, so the «أكبر من
   /// المتبقي» refusal can still arrive even from a screen that capped the box: two clerks can
   /// record the last ten kilos at once.
+  /// [receipt] is الواصل, and it is **optional on every method** — the one place this parts
+  /// from a customer's payment. A sack bought from the shop next door often comes with no paper
+  /// at all, and refusing the entry for want of one would push the purchase back onto paper.
   Future<Either<Failure, ShortageSupply>> recordSupply(
     int shortageId, {
     required String quantity,
     String? amount,
     String? method,
     int? warehouseId,
-    String? reference,
     String? occurredOn,
     String? notes,
+    PickedFile? receipt,
   });
 
   /// Undoing one.

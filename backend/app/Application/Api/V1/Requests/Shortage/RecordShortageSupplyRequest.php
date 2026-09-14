@@ -62,6 +62,26 @@ class RecordShortageSupplyRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:2000'],
 
             /*
+             * **الواصل — optional on every method, and that is deliberate.**
+             *
+             * `order_payments` demands one for a حوالة, because a transfer to a customer is
+             * proved by the paper they send us. Here the paper is whatever the shop next door
+             * wrote, and often there is none at all: refusing the entry for want of a document
+             * would push the purchase back onto paper, which is the thing this feature exists to
+             * end. What arrives is kept; what does not is not asked for.
+             *
+             * The accepted shapes are `media.payment_receipts`' — the same list the app is told,
+             * so a file it pre-checked is never refused for a rule it could not see.
+             */
+            'receipt' => [
+                'nullable',
+                'file',
+                'mimetypes:'.implode(',', (array) config('media.payment_receipts.mimetypes')),
+                'mimes:'.implode(',', (array) config('media.payment_receipts.mimes')),
+                'max:'.config('media.payment_receipts.max_kilobytes'),
+            ],
+
+            /*
              * Where the goods landed.
              *
              * **Only checked for existence here.** Whether this shortage needs a warehouse at all
@@ -90,6 +110,10 @@ class RecordShortageSupplyRequest extends FormRequest
             'method.in' => 'طريقة الدفع غير معروفة',
             'occurred_on.before_or_equal' => 'لا يمكن تسجيل عملية بتاريخ مستقبلي',
             'warehouse_id.exists' => 'المخزن غير موجود',
+            'receipt.file' => 'الواصل يجب أن يكون ملفاً',
+            'receipt.mimetypes' => 'الواصل يجب أن يكون ملف PDF أو صورة',
+            'receipt.mimes' => 'الواصل يجب أن يكون بصيغة PDF أو JPG أو PNG أو WEBP',
+            'receipt.max' => 'حجم الواصل أكبر من المسموح',
         ];
     }
 
@@ -106,6 +130,7 @@ class RecordShortageSupplyRequest extends FormRequest
             'occurred_on' => 'تاريخ التوفير',
             'notes' => 'ملاحظات',
             'warehouse_id' => 'المخزن',
+            'receipt' => 'الواصل',
         ];
     }
 }

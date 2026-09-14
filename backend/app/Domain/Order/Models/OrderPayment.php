@@ -6,7 +6,7 @@ namespace App\Domain\Order\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Identity\Models\User;
-use App\Domain\Order\Actions\StorePaymentReceipt;
+use App\Support\Media\StoreReceipt;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\PaymentMethod;
 use Database\Factories\OrderPaymentFactory;
@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\Storage;
  * Only the fields a human genuinely supplies are fillable. The type is decided by which action
  * ran, `recorded_by` is stamped from the signed-in user, `reverses_payment_id` is set by the
  * reversal itself, and the five `receipt_*` columns are written by
- * {@see StorePaymentReceipt} from the file it actually stored — so no payload can invent an
+ * {@see StoreReceipt} from the file it actually stored — so no payload can invent an
  * entry type, attribute a collection to a colleague, point a correction at somebody else's row,
  * or claim a receipt exists at a path of its choosing. See RULES.md §9.4.
  */
@@ -72,7 +72,7 @@ class OrderPayment extends Model
      * Whether the receipt is a picture the app can draw itself, as opposed to a PDF it hands
      * to the phone.
      *
-     * Answered from the *stored* path, whose extension {@see StorePaymentReceipt} derived from
+     * Answered from the *stored* path, whose extension {@see StoreReceipt} derived from
      * the sniffed bytes — so a JPEG that arrived calling itself `waseel.pdf` still answers
      * true. Published on the resource so the app keeps no copy of the format list.
      */

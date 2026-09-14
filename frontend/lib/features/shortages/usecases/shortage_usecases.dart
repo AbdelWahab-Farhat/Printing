@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/shortages/models/shortage.dart';
 import 'package:dayaa/features/shortages/models/shortage_counts.dart';
@@ -163,9 +164,9 @@ class RecordShortageSupply {
     String? amount,
     String? method,
     int? warehouseId,
-    String? reference,
     String? occurredOn,
     String? notes,
+    PickedFile? receipt,
   }) {
     return _repository.recordSupply(
       shortageId,
@@ -173,9 +174,9 @@ class RecordShortageSupply {
       amount: amount,
       method: method,
       warehouseId: warehouseId,
-      reference: reference,
       occurredOn: occurredOn,
       notes: notes,
+      receipt: receipt,
     );
   }
 }

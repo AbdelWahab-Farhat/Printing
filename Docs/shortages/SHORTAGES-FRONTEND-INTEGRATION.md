@@ -196,6 +196,10 @@ hundred ledger rows.
   "quantity": "20.000",
   "amount": "500.00", "method": "cash", "method_label": "كاش",
   "reference": null,
+
+  // الواصل — optional on every method here, unlike a payment's. §٦٫٣.
+  "has_receipt": true, "receipt_is_image": false,
+  "receipt_url": "https://…", "receipt_filename": "waseel.pdf",
   "occurred_on": "2026-09-11",
   "notes": null,
 
@@ -454,10 +458,29 @@ server sorts it, reversals included and struck through.
 vanished from the very screen meant to explain the numbers would make a shortage reading «١٠ كجم»
 after two entries of twenty look like a mistake rather than a recorded one.
 
-### ٦٫٣ The record-supply sheet
+### ٦٫٣ The record-supply page
 
 The one screen where the money rules bite. Three required boxes — الكمية, القيمة, طريقة الدفع —
-plus optional رقم العملية, التاريخ (defaults to today on the server if omitted) and ملاحظات.
+plus an optional الواصل and ملاحظات. التاريخ is not asked for: the server defaults it to today.
+
+**A page, not a sheet** — corrected after it shipped. Six fields, a warehouse picker, an
+attachment and a keyboard do not fit in a drawer on a phone, and every other form in this app is
+a page. It answers with a `SupplyEntry` through `Routes.shortageSupply`.
+
+**رقم العملية is gone.** Nothing downstream ever asked about it, and a box on a counter form that
+answers no question is a box somebody fills in wrongly in a hurry. The column and the API field
+both remain — an importer may still carry one — and the app simply stops sending it.
+
+**الواصل (`receipt`, multipart) is optional on every method**, which is the one place this parts
+from a customer's payment: that one demands a receipt for a حوالة, because a transfer to a
+customer is proved by the paper they send us. A sack bought from the shop next door often comes
+with nothing, and refusing the entry for want of a document would push the purchase back onto
+paper — which is what this feature exists to end. The supply resource publishes `has_receipt`,
+`receipt_is_image`, `receipt_url` and `receipt_filename`, exactly as a payment does, and the
+ledger row draws a «الواصل» chip that opens it.
+
+**القيمة is required in the app too.** `amount` has always been mandatory on the server while the
+box was optional here, so an empty one bought a 422 after the button.
 
 * **Payment method is a picker, never free text.** The four values are `cash` · `bank_transfer` ·
   `bank_card` · `libyana`, the same vocabulary a customer's payment uses; `method_label` is what

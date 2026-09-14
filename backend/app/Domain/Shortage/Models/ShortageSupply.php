@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Application\Api\V1\Requests\Shortage\RecordShortageSupplyRequest;
+use App\Support\Media\StoreReceipt;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -53,6 +56,52 @@ class ShortageSupply extends Model
             'occurred_on' => 'date',
             'receipt_size_bytes' => 'integer',
         ];
+    }
+
+    /**
+     * Whether the paper this purchase was made with is on file.
+     *
+     * **Often false, and that is not a gap.** A sack bought from the shop next door frequently
+     * comes with nothing; the entry is worth having either way — see
+     * {@see RecordShortageSupplyRequest}.
+     */
+    public function hasReceipt(): bool
+    {
+        return $this->receipt_path !== null;
+    }
+
+    /**
+     * Whether it is a picture the app can draw itself, as opposed to a PDF it hands to the phone.
+     *
+     * Read from the *stored* path, whose extension {@see StoreReceipt} derived from the sniffed
+     * bytes — so a JPEG that arrived calling itself `waseel.pdf` still answers true.
+     */
+    public function receiptIsImage(): bool
+    {
+        if (! $this->hasReceipt()) {
+            return false;
+        }
+
+        $extension = strtolower(pathinfo((string) $this->receipt_path, PATHINFO_EXTENSION));
+
+        return in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true);
+    }
+
+    /**
+     * A link to it, built on demand from the disk it actually lives on — never stored, exactly
+     * as `OrderPayment::receiptUrl()` explains.
+     */
+    public function receiptUrl(): ?string
+    {
+        if (! $this->hasReceipt()) {
+            return null;
+        }
+
+        $disk = Storage::disk($this->receipt_disk);
+
+        return $disk->providesTemporaryUrls()
+            ? $disk->temporaryUrl($this->receipt_path, now()->addMinutes(config('media.temporary_url_minutes')))
+            : $disk->url($this->receipt_path);
     }
 
     /** Whether this row undoes another one. */

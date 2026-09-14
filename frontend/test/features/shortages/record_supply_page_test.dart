@@ -1,18 +1,21 @@
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/shortages/models/shortage.dart';
-import 'package:dayaa/features/shortages/presentation/widgets/record_supply_sheet.dart';
+import 'package:dayaa/features/shortages/presentation/views/record_supply_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// «تسجيل توفير» — the one screen where the stock rules bite.
+/// «تسجيل توفير» — a page, and the one screen where the stock rules bite.
 ///
 /// **A supply is the goods arriving, not a note beside them.** It writes a purchase arrival onto
 /// a shelf, which is what lets the order draw its full quantity at «جاهزة». So the warehouse is
 /// required where there is a shelf and refused where there is not — and the flag that decides is
 /// `is_stockable`, read off the payload and never inferred from the variant id, which would put a
 /// shelf picker in front of a roll of tape.
+///
+/// **A page rather than a sheet**: six fields, a picker, an attachment and a keyboard do not fit
+/// in a drawer on a phone, and every other form in this app is a page.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -45,7 +48,7 @@ void main() {
       ],
       home: Directionality(
         textDirection: TextDirection.rtl,
-        child: Scaffold(body: RecordSupplySheet(shortage: subject)),
+        child: RecordSupplyPage(shortage: subject),
       ),
     ),
   );
@@ -54,8 +57,9 @@ void main() {
     // Arrange
     await tester.pumpWidget(host(shortage()));
 
-    // Act - Assert
+    // Act - Assert — the very control the order's transition screen draws for this question.
     expect(find.text('المخزن'), findsOneWidget);
+    expect(find.text('اختيار المخزن'), findsOneWidget);
   });
 
   testWidgets('a shortage with no shelf is not asked at all', (tester) async {
@@ -64,6 +68,41 @@ void main() {
 
     // Act - Assert — sending a warehouse for one of these is a 422 in its own right.
     expect(find.text('المخزن'), findsNothing);
+    expect(find.text('اختيار المخزن'), findsNothing);
+  });
+
+  testWidgets('الواصل is offered, and never demanded', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(shortage()));
+
+    // Act - Assert — the one place this parts from a customer's payment: a sack bought from the
+    // shop next door often comes with no paper, and refusing the entry for want of one would
+    // push the purchase back onto paper.
+    expect(find.text('الواصل (اختياري)'), findsOneWidget);
+    expect(find.text('اختيار الواصل'), findsOneWidget);
+  });
+
+  testWidgets('«رقم العملية» is gone — nobody read it', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(shortage()));
+
+    // Act - Assert — a box on a counter form that nothing downstream asks about is a box
+    // somebody fills in wrongly in a hurry.
+    expect(find.text('رقم العملية'), findsNothing);
+  });
+
+  testWidgets('the value is required, because the endpoint requires it', (tester) async {
+    // Arrange — it was optional here and mandatory there, so an empty box bought a 422 after
+    // the button.
+    await tester.pumpWidget(host(shortage()));
+    await tester.enterText(find.byType(AppTextField).first, '5');
+
+    // Act
+    await tester.tap(find.text('تسجيل'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('أدخل القيمة المدفوعة'), findsOneWidget);
   });
 
   testWidgets('the warehouse is required, not merely offered', (tester) async {

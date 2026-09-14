@@ -74,6 +74,7 @@ import 'package:dayaa/features/shipping_companies/presentation/views/shipping_co
 import 'package:dayaa/features/shipping_companies/presentation/views/shipping_company_form_page.dart';
 import 'package:dayaa/features/shortages/models/shortage.dart';
 import 'package:dayaa/features/shortages/models/shortages_filter.dart';
+import 'package:dayaa/features/shortages/presentation/views/record_supply_page.dart';
 import 'package:dayaa/features/shortages/presentation/views/shortage_detail_page.dart';
 import 'package:dayaa/features/shortages/presentation/views/shortage_form_page.dart';
 import 'package:dayaa/features/shortages/presentation/views/shortages_page.dart';
@@ -235,6 +236,11 @@ abstract final class Routes {
   /// literal word «form» is not read as an id — the same trap `/purchase-orders/form` sits
   /// beside.
   static const String shortageForm = '/shortages/form';
+
+  /// «تسجيل توفير» — a page rather than a sheet, and it answers with a [SupplyEntry]. The نقص it
+  /// is about travels as `extra`: the screen prints its name, its remainder and its unit, and
+  /// there is nothing to show without one.
+  static const String shortageSupply = '/shortages/supply';
 
   /// The نواقص behind one question — one order's, reached from that order. Takes a
   /// [ShortagesFilter] as `extra`, so the Arabic title travels with the question, exactly as
@@ -785,6 +791,17 @@ abstract final class AppRouter {
         // when it is opened to write a new one down.
         builder: (context, state) =>
             ShortageFormPage(shortage: state.payload is Shortage ? state.payload! as Shortage : null),
+      ),
+      // Declared before `:id` like the form, so «supply» is never read as an id.
+      GoRoute(
+        path: Routes.shortageSupply,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.recordShortageSupplies) ? null : Routes.shortages,
+        // A deep link carries no نقص, and the screen is about one. Rather than an error page it
+        // sends the reader to the list, where they can open the one they meant.
+        builder: (context, state) => state.payload is Shortage
+            ? RecordSupplyPage(shortage: state.payload! as Shortage)
+            : const ShortagesPage(),
       ),
       GoRoute(
         path: Routes.shortages,

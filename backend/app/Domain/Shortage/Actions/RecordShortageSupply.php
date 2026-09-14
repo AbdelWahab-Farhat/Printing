@@ -20,6 +20,7 @@ use App\Domain\Shortage\Exceptions\SupplyNeedsAWarehouse;
 use App\Domain\Shortage\Exceptions\SupplyRequiresAnActor;
 use App\Domain\Shortage\Models\Shortage;
 use App\Domain\Shortage\Models\ShortageSupply;
+use App\Support\Media\StoreReceipt;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -80,6 +81,7 @@ final class RecordShortageSupply
         private readonly OrderService $orders,
         // And the same arrangement with Inventory: one public door, nothing of its internals.
         private readonly InventoryService $inventory,
+        private readonly StoreReceipt $storeReceipt,
     ) {}
 
     /**
@@ -133,7 +135,21 @@ final class RecordShortageSupply
                 'warehouse_id' => $movement?->to_warehouse_id,
                 'stock_movement_id' => $movement?->getKey(),
                 'recorded_by_user_id' => $actor?->getKey(),
-            ])->save();
+            ]);
+
+            // **forceFill for these five too, and for the reason the payment gives.** A payload
+            // that could set `receipt_path` could claim a receipt exists at a path of its
+            // choosing; what is written here is what the disk actually accepted. Inside the
+            // transaction, so an entry refused for exceeding the remainder leaves an object
+            // behind with no row — storage, and nothing else. The reverse would be a row whose
+            // proof cannot be produced.
+            if ($data->receipt !== null) {
+                $supply->forceFill(
+                    ($this->storeReceipt)("supply-receipts/{$locked->getKey()}", $data->receipt),
+                );
+            }
+
+            $supply->save();
 
             // **Before the totals are restated.** A shortage that had been abandoned is being
             // chased again the moment something is bought against it, and «مكتمل» — if this entry

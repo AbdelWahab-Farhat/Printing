@@ -56,6 +56,13 @@ class ShortageSupplyResource extends JsonResource
 
             'notes' => $this->notes,
 
+            // **الواصل, published exactly as a payment's is** — the app keeps no copy of the
+            // format list, and a null url is «لا ورقة» rather than «لم يُسأل».
+            'has_receipt' => $this->hasReceipt(),
+            'receipt_is_image' => $this->receiptIsImage(),
+            'receipt_url' => $this->receiptUrl(),
+            'receipt_filename' => $this->receipt_original_filename,
+
             // **The two flags the app draws its ledger from**, so no copy of the rules lives in
             // Dart — the `OrderPaymentResource` arrangement. `is_reversed` strikes the row
             // through; `is_reversible` is what puts a cancel action on it, and the server has

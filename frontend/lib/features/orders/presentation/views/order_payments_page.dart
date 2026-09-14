@@ -10,10 +10,10 @@ import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/core/widgets/receipt_viewer.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
-import 'package:dayaa/features/orders/presentation/widgets/receipt_viewer.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_payment_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/write_off_dialog.dart';
 import 'package:flutter/material.dart';
@@ -545,7 +545,17 @@ class _ReceiptChip extends StatelessWidget {
     final scheme = context.colorScheme;
 
     return InkWell(
-      onTap: () => unawaited(showReceipt(context, payment)),
+      onTap: () => unawaited(
+        showReceipt(
+          context,
+          Receipt(
+            cacheKey: 'payment-receipt-${payment.id}',
+            url: payment.receiptUrl,
+            isImage: payment.receiptIsImage,
+            filename: payment.receiptFilename,
+          ),
+        ),
+      ),
       borderRadius: BorderRadius.circular(999.r),
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),

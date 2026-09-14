@@ -15,6 +15,7 @@ use App\Domain\Order\Exceptions\ReceiptRequiredForMethod;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
+use App\Support\Media\StoreReceipt;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -36,7 +37,7 @@ final class RecordOrderPayment
 {
     public function __construct(
         private readonly RecalculateOrderPayments $recalculate,
-        private readonly StorePaymentReceipt $storeReceipt,
+        private readonly StoreReceipt $storeReceipt,
     ) {}
 
     public function __invoke(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
@@ -116,7 +117,7 @@ final class RecordOrderPayment
             // forceFill, because the five receipt columns are not fillable: a payload that could
             // set `receipt_path` could claim a receipt exists at a path of its choosing. What is
             // written here is what the disk actually accepted.
-            $payment->forceFill(($this->storeReceipt)($order, $data->receipt));
+            $payment->forceFill(($this->storeReceipt)("payment-receipts/{$order->getKey()}", $data->receipt));
         }
 
         $payment->save();

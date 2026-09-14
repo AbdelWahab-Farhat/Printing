@@ -7,6 +7,7 @@ namespace App\Domain\Shortage\DTOs;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Shortage\Enums\SupplyKind;
 use App\Domain\Shortage\Support\Money;
+use Illuminate\Http\UploadedFile;
 
 /**
  * One go at closing a shortage, as the employee filled it in.
@@ -38,6 +39,13 @@ final readonly class ShortageSupplyData
 
         public ?string $reference = null,
         public ?string $notes = null,
+
+        /**
+         * The paper the goods were bought with — a PDF, or the photograph that actually arrives.
+         *
+         * **Never required**, unlike a customer's payment: see the request's own note.
+         */
+        public ?UploadedFile $receipt = null,
     ) {}
 
     /**
@@ -62,6 +70,9 @@ final readonly class ShortageSupplyData
                 : null,
             notes: isset($validated['notes']) && trim((string) $validated['notes']) !== ''
                 ? trim((string) $validated['notes'])
+                : null,
+            receipt: ($validated['receipt'] ?? null) instanceof UploadedFile
+                ? $validated['receipt']
                 : null,
         );
     }

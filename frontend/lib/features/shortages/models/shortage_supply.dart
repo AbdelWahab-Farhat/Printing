@@ -86,6 +86,17 @@ abstract class ShortageSupply with _$ShortageSupply {
     /// never off [kind].
     @JsonKey(name: 'is_reversible') @Default(false) bool isReversible,
 
+    /// **الواصل — the paper this purchase was made with, when there was one.**
+    ///
+    /// Optional on every method here, unlike a customer's payment: a sack bought from the shop
+    /// next door often comes with nothing, and the entry is worth having either way. The four
+    /// keys are the server's own answers — whether it is a picture is decided from the bytes it
+    /// stored, so no format list lives in this app.
+    @JsonKey(name: 'has_receipt') @Default(false) bool hasReceipt,
+    @JsonKey(name: 'receipt_is_image') @Default(false) bool receiptIsImage,
+    @JsonKey(name: 'receipt_url') String? receiptUrl,
+    @JsonKey(name: 'receipt_filename') String? receiptFilename,
+
     @JsonKey(name: 'reverses_supply_id') int? reversesSupplyId,
     @JsonKey(name: 'recorded_by_user_id') int? recordedByUserId,
     ShortageSupplyPersonRef? recorder,

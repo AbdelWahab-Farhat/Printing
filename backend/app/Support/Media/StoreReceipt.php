@@ -2,15 +2,23 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\Order\Actions;
+namespace App\Support\Media;
 
 use App\Domain\Customer\Actions\UploadCustomerDesign;
-use App\Domain\Order\Models\Order;
+use App\Domain\Order\Actions\RecordOrderPayment;
+use App\Domain\Shortage\Actions\RecordShortageSupply;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
 /**
- * Writes a payment's receipt (الواصل) to the media disk and describes what it wrote.
+ * Writes a receipt (الواصل) to the media disk and describes what it wrote.
+ *
+ * **Two callers, one habit.** A customer's payment proves itself with the paper they send us
+ * ({@see RecordOrderPayment}); a sack bought to close a نقص proves itself with whatever the shop
+ * next door wrote ({@see RecordShortageSupply}). Different rules about whether the paper is
+ * *required* — the first demands it for a transfer, the second never does — but the same five
+ * columns, the same private disk and the same refusal to let a client choose a path. The
+ * directory is the caller's to name, which is the only thing that differs between them.
  *
  * Built on the same media layer as {@see UploadCustomerDesign}, with the same three habits and
  * for the same reasons:
@@ -33,7 +41,7 @@ use Illuminate\Support\Str;
  * reverse, a row pointing at a file that was never written, would be an entry whose proof cannot
  * be produced.
  */
-final class StorePaymentReceipt
+final class StoreReceipt
 {
     /**
      * @return array{
@@ -44,7 +52,7 @@ final class StorePaymentReceipt
      *     receipt_checksum: string,
      * }
      */
-    public function __invoke(Order $order, UploadedFile $file): array
+    public function __invoke(string $directory, UploadedFile $file): array
     {
         $checksum = hash_file('sha256', $file->getRealPath());
 
@@ -57,7 +65,7 @@ final class StorePaymentReceipt
         $extension = $file->guessExtension() ?? 'bin';
 
         $path = $file->storeAs(
-            "payment-receipts/{$order->getKey()}",
+            $directory,
             Str::uuid()->toString().'.'.$extension,
             ['disk' => $disk],
         );

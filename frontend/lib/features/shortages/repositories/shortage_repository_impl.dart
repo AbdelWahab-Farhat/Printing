@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
@@ -189,27 +190,36 @@ class ShortageRepositoryImpl implements ShortageRepository {
     String? amount,
     String? method,
     int? warehouseId,
-    String? reference,
     String? occurredOn,
     String? notes,
-  }) {
+    PickedFile? receipt,
+  }) async {
+    final body = <String, dynamic>{
+      'quantity': quantity,
+      'amount': ?amount,
+      'method': ?method,
+      // Omitted on a shortage with no shelf — sending one there is a 422 in its own right,
+      // because it tells the server goods are moving when they are not.
+      'warehouse_id': ?warehouseId,
+      // The server defaults it to today when it is absent, so an untouched date box sends
+      // nothing rather than this phone's idea of the day.
+      'occurred_on': ?occurredOn,
+      'notes': ?notes,
+    };
+
+    // **JSON when there is no paper, multipart when there is** — the arrangement the order's
+    // payments already use. `fromFile` streams from disk rather than holding the file in
+    // memory, and the name travels so the server can record what it was called; the extension
+    // it stores under is read off the bytes either way.
+    final data = receipt == null
+        ? body
+        : FormData.fromMap(<String, dynamic>{
+            ...body,
+            'receipt': await MultipartFile.fromFile(receipt.path, filename: receipt.name),
+          });
+
     return safeRequest<ShortageSupply>(
-      () => _dio.post(
-        ShortageEndpoints.supplies(shortageId),
-        data: <String, dynamic>{
-          'quantity': quantity,
-          'amount': ?amount,
-          'method': ?method,
-          // Omitted on a shortage with no shelf — sending one there is a 422 in its own right,
-          // because it tells the server goods are moving when they are not.
-          'warehouse_id': ?warehouseId,
-          'reference': ?reference,
-          // The server defaults it to today when it is absent, so an untouched date box sends
-          // nothing rather than this phone's idea of the day.
-          'occurred_on': ?occurredOn,
-          'notes': ?notes,
-        },
-      ),
+      () => _dio.post(ShortageEndpoints.supplies(shortageId), data: data),
       parse: (data) => ShortageSupply.fromJson(data as Map<String, dynamic>),
     );
   }
