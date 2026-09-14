@@ -34,6 +34,8 @@ void main() {
   Shortage shortage({
     String statusLabel = 'جاري البحث',
     List<ShortageTransition> moves = const [],
+    ShortageOrderRef? order,
+    ShortagePerson? assignee,
   }) => Shortage(
     id: 41,
     code: 'N41',
@@ -49,9 +51,15 @@ void main() {
     status: ShortageStatus.searching,
     statusLabel: statusLabel,
     availableTransitions: moves,
+    order: order,
+    orderId: order?.id,
+    assignee: assignee,
   );
 
-  Future<void> sign(List<Shortage> readings) async {
+  Future<void> sign(
+    List<Shortage> readings, {
+    List<String> permissions = const ['shortages.view', 'shortages.manage'],
+  }) async {
     await Injector.reset();
 
     repository = _MockShortageRepository();
@@ -67,11 +75,11 @@ void main() {
     sl
       ..registerSingleton<Session>(
         Session()..adopt(
-          const AuthUser(
+          AuthUser(
             id: 1,
             name: 'عبدالوهاب',
             phone: '0911234567',
-            permissions: ['shortages.view', 'shortages.manage'],
+            permissions: permissions,
           ),
         ),
       )
@@ -106,6 +114,11 @@ void main() {
         GoRoute(
           path: '/shortage',
           builder: (context, state) => const ShortageDetailPage(shortageId: 41),
+        ),
+        GoRoute(
+          path: '/orders/:id',
+          builder: (context, state) =>
+              Scaffold(body: Center(child: Text('طلبية ${state.pathParameters['id']}'))),
         ),
       ],
     );
@@ -199,5 +212,59 @@ void main() {
 
     // Assert — القائمة خلفها تعرض هذا الصفّ نفسه، فترقيعه بما لديها عمَلٌ بلا سبب.
     expect(handedBack, isNull);
+  });
+
+  testWidgets('the order it came from sits above the figures, and taps through', (tester) async {
+    // Arrange
+    await sign([
+      shortage(order: const ShortageOrderRef(id: 1274, code: '1274')),
+    ]);
+
+    // Act
+    await open(tester);
+
+    // Assert — النقص وُلد من الطلبية، فهي سياق كل رقم تحتها: تُقرأ قبلها لا بعدها.
+    expect(
+      tester.getCenter(find.text('الطلبية #1274')).dy,
+      lessThan(tester.getCenter(find.text('إجمالي المطلوب')).dy),
+    );
+
+    // Act — وهي باب، لا سطر يُقرأ.
+    await tester.tap(find.text('الطلبية #1274'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('طلبية 1274'), findsOneWidget);
+  });
+
+  testWidgets('the assignee is a chip, and it says it can be tapped', (tester) async {
+    // Arrange
+    await sign(
+      [shortage()],
+      permissions: const ['shortages.view', 'shortages.manage', 'shortages.assign'],
+    );
+
+    // Act
+    await open(tester);
+
+    // Assert — «غير مُسنَد» بنصٍّ أبيض بين ثلاث وقائع لا يقول لأحدٍ إنّه يُضغط، وهو السؤال الذي
+    // وصل: «كيف أعيّن مسؤولاً؟». فيُرسم شريحةً مثل الحالة فوقه.
+    expect(find.byKey(const ValueKey('assign-shortage')), findsOneWidget);
+    expect(find.text('غير مُسنَد'), findsOneWidget);
+  });
+
+  testWidgets('a reader who may not assign is told who has it, and nothing more', (tester) async {
+    // Arrange — `shortages.assign` منفصلة عن `shortages.manage` عمداً: توجيه الشغل غير عمله.
+    await sign(
+      [shortage(assignee: const ShortagePerson(id: 9, name: 'أبو القاسم'))],
+      permissions: const ['shortages.view', 'shortages.manage'],
+    );
+
+    // Act
+    await open(tester);
+
+    // Assert — الواقعة تبقى، والزرّ وحده يغيب.
+    expect(find.text('أبو القاسم'), findsOneWidget);
+    expect(find.byKey(const ValueKey('assign-shortage')), findsNothing);
   });
 }

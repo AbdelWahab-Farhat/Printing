@@ -148,6 +148,24 @@ class _ShortageDetailViewState extends State<_ShortageDetailView> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
                 children: [
+                  // **The order it was born from, before anything else on the screen.** A نقص
+                  // mirrored from a line of an order is not a thing the shop wants — it is the
+                  // reason one order has stopped — so it is the context every figure below is
+                  // read in, and it is a door: one tap to «لماذا لم تتحرّك هذه الطلبية؟».
+                  //
+                  // Absent on a shortage the shop wrote down for itself, which owes nobody an
+                  // order and would draw an empty chip explaining nothing.
+                  if (loaded.orderId case final orderId?) ...[
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: _TappableChip(
+                        icon: AppIcons.orders,
+                        label: 'الطلبية #${loaded.orderCode}',
+                        onTap: () => context.push(Routes.order(orderId)),
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                  ],
                   _Numbers(shortage: loaded),
                   SizedBox(height: 16.h),
                   _Facts(
@@ -217,6 +235,68 @@ class _Numbers extends StatelessWidget {
   }
 }
 
+/// How loud a [_TappableChip] is.
+enum _ChipTone {
+  /// A door worth seeing: the order, and a shortage somebody already has.
+  named,
+
+  /// A blank worth filling, and no louder than that — «غير مُسنَد» is a queue, not a problem.
+  quiet,
+}
+
+/// A pill that opens something.
+///
+/// **It borrows [ShortageStatusPill]'s shape on purpose.** The status is the one thing on this
+/// screen a reader has already learnt to read as «a small box that means something», so a control
+/// wearing the same shape reads as tappable without a sentence explaining that it is. The pencil
+/// is what separates the two: the status pill states, this one invites.
+class _TappableChip extends StatelessWidget {
+  const _TappableChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.tone = _ChipTone.named,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final _ChipTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final (background, foreground) = switch (tone) {
+      _ChipTone.named => (scheme.primaryContainer, scheme.onPrimaryContainer),
+      _ChipTone.quiet => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
+    };
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10.r),
+      child: Container(
+        padding: EdgeInsetsDirectional.only(start: 10.w, end: 8.w, top: 5.h, bottom: 5.h),
+        decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(10.r)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16.sp, color: foreground),
+            SizedBox(width: 6.w),
+            Text(
+              label,
+              style: context.textTheme.labelMedium?.copyWith(
+                color: foreground,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _Line extends StatelessWidget {
   const _Line({required this.label, required this.value, this.tone});
 
@@ -279,34 +359,34 @@ class _Facts extends StatelessWidget {
             ],
           ),
           SizedBox(height: 12.h),
+          // The way through to the order is not here but at the top of the screen — it is the
+          // context this card's facts are read in, not one of them.
           _Line(label: 'المصدر', value: shortage.sourceLabel),
-          // **A way through to the order, and it is the reason the code is on screen at all.**
-          // Somebody reading a shortage is one tap from «لماذا لم تتحرّك هذه الطلبية؟».
-          if (shortage.orderId case final orderId?) ...[
-            SizedBox(height: 8.h),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton.icon(
-                onPressed: () => context.push(Routes.order(orderId)),
-                icon: Icon(AppIcons.orders, size: 18.sp),
-                label: Text('الطلبية #${shortage.orderCode}'),
-              ),
-            ),
-          ],
-          SizedBox(height: 8.h),
+          SizedBox(height: 10.h),
           // **Its own grant, `shortages.assign`.** Routing work and doing it are different jobs:
           // a supervisor hands a shortage to somebody without being trusted to spend money on
           // it. A reader without the grant still sees who has it — the row simply does not tap.
           if (onAssign case final assign?)
-            InkWell(
-              onTap: assign,
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 4.h),
-                child: _Line(
-                  label: 'المسؤول',
-                  value: shortage.assignee?.name ?? 'غير مُسنَد',
+            Row(
+              children: [
+                Text(
+                  'المسؤول',
+                  style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                 ),
-              ),
+                const Spacer(),
+                // **A chip, because the row is a control.** It used to be plain text with an
+                // InkWell behind it, indistinguishable from the three facts around it — and the
+                // question that came back from the floor was «كيف أعيّن مسؤولاً؟». It wears the
+                // shape of the status pill directly above it, which is the one thing on this
+                // card a reader already knows opens something.
+                _TappableChip(
+                  key: const ValueKey('assign-shortage'),
+                  icon: AppIcons.edit,
+                  label: shortage.assignee?.name ?? 'غير مُسنَد',
+                  tone: shortage.assignee == null ? _ChipTone.quiet : _ChipTone.named,
+                  onTap: assign,
+                ),
+              ],
             )
           else
             _Line(label: 'المسؤول', value: shortage.assignee?.name ?? 'غير مُسنَد'),
