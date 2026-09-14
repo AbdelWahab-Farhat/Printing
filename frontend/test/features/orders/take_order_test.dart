@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
@@ -74,6 +75,9 @@ void main() {
     String? recipientPhone,
     String? notes,
     List<int> designIds = const [],
+    String? additionalCost,
+    AdditionalCostReason? additionalCostReason,
+    String? additionalCostNote,
     List<DraftOrderLine> lines = const [
       DraftOrderLine(productId: 7, productVariantId: 12, quantity: '300'),
     ],
@@ -89,6 +93,9 @@ void main() {
       recipientPhone: recipientPhone,
       notes: notes,
       designIds: designIds,
+      additionalCost: additionalCost,
+      additionalCostReason: additionalCostReason,
+      additionalCostNote: additionalCostNote,
       lines: lines,
     );
   }
@@ -165,6 +172,90 @@ void main() {
 
       // Assert
       expect(sent().designFee, '40');
+    });
+
+    test('a charge agreed at the counter goes out with the order', () async {
+      // Arrange — «تغليف خاص» asked for while the order is being written. It used to be
+      // reachable only through «تعديل الطلبية», so the clerk took the order and then edited it
+      // to say what had already been agreed in front of them.
+
+      // Act
+      await submit(
+        additionalCost: '25',
+        additionalCostReason: AdditionalCostReason.specialPackaging,
+        additionalCostNote: 'علبة كرتون مزدوجة',
+      );
+
+      // Assert — the three move together: an amount, why, and the words beside it.
+      final order = sent();
+      expect(order.additionalCost, '25');
+      expect(order.additionalCostReason, AdditionalCostReason.specialPackaging);
+      expect(order.additionalCostNote, 'علبة كرتون مزدوجة');
+    });
+
+    test('a charge in Arabic-Indic digits reaches the API in ASCII', () async {
+      // Arrange — `٢٥٫٥` is what the counter's keyboard produces, and `additional_cost` is
+      // `numeric` on the server.
+
+      // Act
+      await submit(
+        additionalCost: '٢٥٫٥',
+        additionalCostReason: AdditionalCostReason.transport,
+      );
+
+      // Assert
+      expect(sent().additionalCost, '25.5');
+    });
+
+    test('an untouched charge box is absent, not a zero', () async {
+      // Arrange — `orders.additional_cost` is enforced on the *value*, exactly as the discount
+      // is: a clerk without the grant may take an order, and their request must carry no charge
+      // at all. **And absent is the honest word here** — unlike on an edit, where a cleared box
+      // means «ألغِ التكلفة» and has to be sent as a zero.
+
+      // Act
+      await submit(additionalCost: '   ');
+
+      // Assert
+      final order = sent();
+      expect(order.additionalCost, isNull);
+      expect(order.additionalCostReason, isNull);
+      expect(order.additionalCostNote, isNull);
+    });
+
+    test('a category without money behind it is not sent', () async {
+      // Arrange — the chips can be tapped before the box is filled. A reason on its own is a
+      // category for money nobody is charging, which the server refuses with a sentence about
+      // a field the clerk did fill in.
+
+      // Act
+      await submit(
+        additionalCost: '0',
+        additionalCostReason: AdditionalCostReason.other,
+        additionalCostNote: 'أجرة عامل تحميل',
+      );
+
+      // Assert
+      final order = sent();
+      expect(order.additionalCost, isNull);
+      expect(order.additionalCostReason, isNull);
+      expect(order.additionalCostNote, isNull);
+    });
+
+    test('a blank note beside a real charge is no note', () async {
+      // Arrange — the same rule every other text box on this form follows.
+
+      // Act
+      await submit(
+        additionalCost: '25',
+        additionalCostReason: AdditionalCostReason.transport,
+        additionalCostNote: '   ',
+      );
+
+      // Assert
+      final order = sent();
+      expect(order.additionalCost, '25');
+      expect(order.additionalCostNote, isNull);
     });
 
     test('an untouched discount box is absent, not a zero', () async {

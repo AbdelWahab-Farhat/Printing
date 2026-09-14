@@ -518,26 +518,16 @@ abstract class Order with _$Order {
 
   /// What the charge was for, as one line — «تغليف خاص — علبة كرتون مزدوجة».
   ///
-  /// **Assembled here rather than at each of the three places that show it.** The order screen,
-  /// the PDF and the WhatsApp message all print this charge; each one deciding for itself how a
-  /// category and a note go together is how «تغليف خاص» ends up on the invoice and «علبة كرتون
-  /// مزدوجة» in the message for the same order.
-  ///
-  /// **Under «أخرى» the note stands alone**, because the word names no category to anybody
-  /// reading it — and the server guarantees the note is there, since that is the one reason it
-  /// refuses without one.
-  String? get additionalCostCaption {
-    if (!hasAdditionalCost) return null;
-
-    final note = additionalCostNote?.trim();
-    final hasNote = note != null && note.isNotEmpty;
-    final label = additionalCostReasonLabel;
-
-    if (additionalCostReason?.needsNote ?? false) return hasNote ? note : label;
-    if (label == null) return hasNote ? note : null;
-
-    return hasNote ? '$label — $note' : label;
-  }
+  /// **The server's own Arabic for the category**, exactly as `status_label` is, joined to the
+  /// note by [AdditionalCostReason.caption] — the one place that rule lives, shared with the
+  /// form that says the same sentence before an order exists.
+  String? get additionalCostCaption => hasAdditionalCost
+      ? AdditionalCostReason.caption(
+          label: additionalCostReasonLabel,
+          needsNote: additionalCostReason?.needsNote ?? false,
+          note: additionalCostNote,
+        )
+      : null;
 
   /// The weight as one line — «12.5 كجم» — or null on an order with none to state.
   ///

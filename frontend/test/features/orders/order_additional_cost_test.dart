@@ -141,13 +141,20 @@ void main() {
     // Arrange
     await tester.pumpWidget(
       host(
-        OrderAdditionalCost(
-          order: order(
-            cost: '10.00',
-            reason: AdditionalCostReason.specialPackaging,
-            label: 'تغليف خاص',
-            note: 'علبة كرتون مزدوجة',
-          ),
+        Builder(
+          builder: (_) {
+            final subject = order(
+              cost: '10.00',
+              reason: AdditionalCostReason.specialPackaging,
+              label: 'تغليف خاص',
+              note: 'علبة كرتون مزدوجة',
+            );
+
+            return OrderAdditionalCost(
+              caption: subject.additionalCostCaption,
+              amount: subject.additionalCost,
+            );
+          },
         ),
       ),
     );

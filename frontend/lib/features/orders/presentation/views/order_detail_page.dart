@@ -23,7 +23,6 @@ import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/edit_shortages_sheet.dart';
-import 'package:dayaa/features/orders/presentation/widgets/order_cost_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_customer_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_deposit_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
@@ -1042,15 +1041,13 @@ class _Body extends StatelessWidget {
               // column it belongs to — one charge, answered twice. What that section carried and
               // the account did not is *what for*, and that sentence now sits under the line
               // itself; «تعديل الطلبية» is still where it is argued with.
-              _Section(title: 'الحساب', child: OrderTotals(order: order)),
-              // **Under «الحساب», never inside it.** What the customer pays is the question this
-              // screen is opened to answer; what the job cost us is the quieter one asked
-              // afterwards, by fewer people — see the grant at the call site — and mixing the two
-              // columns would put a figure nobody reads out to a customer in the middle of the
-              // ones they do.
+              // **والتكلفة والربح داخلها، لا في بطاقةٍ تحتها.** «مجمل الربح = الإجمالي −
+              // تكلفة الإنتاج»، وكان الرقمان يقعان في لوحتين بينهما عنوانٌ وحافّتان فتُقرأ
+              // الطرحة كجدولين. البطاقة تحملها الآن بعلامتيها، وتنتهي عند «الإجمالي» لمن لا
+              // يملك `orders.view_cost` — فالفصل الذي كان فصل *جمهور* بقي، والفصل الذي كان
+              // فصل *معنى* ذهب.
+              _Section(title: 'الحساب', child: OrderTotals(order: order, showCosts: showCosts)),
               if (showCosts) ...[
-                SizedBox(height: 16.h),
-                _Section(title: 'التكلفة والربح', child: OrderCostSection(order: order)),
                 // **Under the cost column, never inside it.** A `plain_sale` row is money this
                 // order *paid* an investor for its material — it is inside «تكلفة الإنتاج»
                 // above, not a share of «مجمل الربح» — while an `order_profit` row genuinely is

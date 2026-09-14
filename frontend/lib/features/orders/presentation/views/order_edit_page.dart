@@ -112,7 +112,10 @@ class _OrderEditViewState extends State<_OrderEditView> {
     final order = cubit.state.order;
     if (order == null) return;
 
-    final draft = await showAdditionalCostSheet(context: context, order: order);
+    final draft = await showAdditionalCostSheet(
+      context: context,
+      initial: AdditionalCostDraft.of(order),
+    );
     if (draft == null || !mounted) return;
 
     final result = await sl<UpdateOrderInvoice>()(
@@ -382,7 +385,10 @@ class _Form extends StatelessWidget {
                         // What is being argued with, in the words the order screen and the
                         // invoice use for it — see [OrderAdditionalCost].
                         if (order.hasAdditionalCost) ...[
-                          OrderAdditionalCost(order: order),
+                          OrderAdditionalCost(
+                            caption: order.additionalCostCaption,
+                            amount: order.additionalCost,
+                          ),
                           SizedBox(height: 14.h),
                         ],
                         AppButton.tonal(

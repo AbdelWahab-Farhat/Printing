@@ -1,4 +1,5 @@
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/usecases/take_order.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -46,6 +47,9 @@ class TakeOrderCubit extends Cubit<TakeOrderState> {
     String? recipientPhone,
     String? notes,
     List<int> designIds = const [],
+    String? additionalCost,
+    AdditionalCostReason? additionalCostReason,
+    String? additionalCostNote,
     int? vendorId,
     bool? isUrgent,
   }) async {
@@ -72,6 +76,9 @@ class TakeOrderCubit extends Cubit<TakeOrderState> {
       recipientPhone: recipientPhone,
       notes: notes,
       designIds: designIds,
+      additionalCost: additionalCost,
+      additionalCostReason: additionalCostReason,
+      additionalCostNote: additionalCostNote,
       vendorId: vendorId,
       isUrgent: isUrgent,
     );

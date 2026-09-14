@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/repositories/order_repository_impl.dart';
 import 'package:dio/dio.dart';
@@ -127,6 +128,11 @@ void main() {
     expect(sent.containsKey('discount'), isFalse);
     expect(sent.containsKey('design_fee'), isFalse);
     expect(sent.containsKey('design_ids'), isFalse);
+    // And the charge with them: on the way in, no key at all is «لا تكلفة إضافية». It is the
+    // one field where this differs from an edit, where a cleared box has to be sent as a zero.
+    expect(sent.containsKey('additional_cost'), isFalse);
+    expect(sent.containsKey('additional_cost_reason'), isFalse);
+    expect(sent.containsKey('additional_cost_note'), isFalse);
     // And urgency with them: an ordinary order says nothing about a switch nobody moved. On
     // the way in the server reads that as «ليست مستعجلة»; on an edit the same silence means
     // «اتركها كما هي», which is exactly why it is a missing key and not a `false`.
@@ -192,6 +198,30 @@ void main() {
     expect(sent['discount'], '25.50');
     expect(sent['design_fee'], '40.00');
     expect((sent['items'] as List).first, containsPair('quantity', '300.5'));
+  });
+
+  test('a charge travels as an amount, a code and the words beside it', () async {
+    // Arrange — «تغليف خاص» agreed at the counter while the order is being written. The reason
+    // must go down as the code the server declares, not as the Arabic on the chip: a body
+    // carrying «تغليف خاص» is a 422 on a field the clerk did fill in.
+    const charged = NewOrder(
+      customerId: 3,
+      cityId: 1,
+      designSource: 'none',
+      additionalCost: '25.00',
+      additionalCostReason: AdditionalCostReason.specialPackaging,
+      additionalCostNote: 'علبة كرتون مزدوجة',
+      items: [NewOrderItem(productId: 7, productVariantId: 12, quantity: '300', sortOrder: 0)],
+    );
+
+    // Act
+    await repository.create(charged);
+
+    // Assert — and the amount as a decimal string, like every other figure on this body.
+    final sent = jsonDecode(adapter.body!) as Map<String, dynamic>;
+    expect(sent['additional_cost'], '25.00');
+    expect(sent['additional_cost_reason'], 'special_packaging');
+    expect(sent['additional_cost_note'], 'علبة كرتون مزدوجة');
   });
 
   test('a price named by a clerk rides on the line it belongs to', () async {

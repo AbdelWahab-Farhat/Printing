@@ -1,6 +1,6 @@
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
-import 'package:dayaa/features/orders/presentation/widgets/order_cost_section.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_totals.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -65,18 +65,26 @@ void main() {
 
   testWidgets('an order the press has not finished says so in words', (tester) async {
     // Arrange — both figures null, which is every order before «جاهزة».
-    await tester.pumpWidget(host(OrderCostSection(order: orderWith())));
+    await tester.pumpWidget(host(OrderTotals(order: orderWith(), showCosts: true)));
 
     // Act - Assert — and it names the step it is waiting for. Stock leaves the shelf at «جاهزة»
     // now, not on the way into «قيد الطباعة», so copy that still says the old one sends whoever
     // reads it looking for a figure that will not be there yet.
     expect(find.textContaining('لم تُحتسب التكلفة بعد'), findsOneWidget);
     expect(find.textContaining('جاهزة'), findsOneWidget);
+
+    // …and the column itself stays drawn, signs and all: a subtraction one of whose sides is
+    // still unknown is a subtraction the reader can still see the shape of.
+    expect(find.text('تكلفة الإنتاج'), findsOneWidget);
+    expect(find.text('مجمل الربح'), findsOneWidget);
+    expect(find.text('لم يُحتسب بعد'), findsNWidgets(2));
+    expect(find.text('−'), findsOneWidget);
+    expect(find.text('='), findsOneWidget);
   });
 
   testWidgets('a cost nobody has worked out is never drawn as zero', (tester) async {
     // Arrange
-    await tester.pumpWidget(host(OrderCostSection(order: orderWith())));
+    await tester.pumpWidget(host(OrderTotals(order: orderWith(), showCosts: true)));
 
     // Act - Assert — «٠٫٠٠» here would say the job cost us nothing, which is a different claim
     // from «nobody has costed it yet» and the only one of the two that is false.
@@ -89,7 +97,7 @@ void main() {
   ) async {
     // Arrange
     await tester.pumpWidget(
-      host(OrderCostSection(order: orderWith(totalCogs: '120.00', grossProfit: '230.00'))),
+      host(OrderTotals(order: orderWith(totalCogs: '120.00', grossProfit: '230.00'), showCosts: true)),
     );
 
     // Act - Assert
@@ -107,7 +115,7 @@ void main() {
     // rounded on the server against unrounded cost produces. The widget must show what it was
     // handed, not what it could work out.
     await tester.pumpWidget(
-      host(OrderCostSection(order: orderWith(totalCogs: '120.00', grossProfit: '229.99'))),
+      host(OrderTotals(order: orderWith(totalCogs: '120.00', grossProfit: '229.99'), showCosts: true)),
     );
 
     // Act - Assert
@@ -118,7 +126,7 @@ void main() {
   testWidgets('a job that lost money says so, minus sign and all', (tester) async {
     // Arrange
     await tester.pumpWidget(
-      host(OrderCostSection(order: orderWith(totalCogs: '395.00', grossProfit: '-45.00'))),
+      host(OrderTotals(order: orderWith(totalCogs: '395.00', grossProfit: '-45.00'), showCosts: true)),
     );
 
     // Act
@@ -133,7 +141,7 @@ void main() {
   testWidgets('a job in profit is not painted in alarm colours', (tester) async {
     // Arrange — every order in green makes the colour mean nothing by the third screen.
     await tester.pumpWidget(
-      host(OrderCostSection(order: orderWith(totalCogs: '120.00', grossProfit: '230.00'))),
+      host(OrderTotals(order: orderWith(totalCogs: '120.00', grossProfit: '230.00'), showCosts: true)),
     );
 
     // Act
@@ -144,10 +152,30 @@ void main() {
     expect(profit.style?.color, isNot(scheme.error));
   });
 
+  testWidgets('without the grant the card ends at the total, with no gap left for it', (
+    tester,
+  ) async {
+    // Arrange — the same order, read by somebody without `orders.view_cost`. This is the
+    // separation the two cards used to be: a figure nobody reads out to a customer, in the
+    // middle of the ones they do.
+    await tester.pumpWidget(
+      host(OrderTotals(order: orderWith(totalCogs: '120.00', grossProfit: '230.00'))),
+    );
+
+    // Act - Assert — absent entirely, not greyed and not «—»: a row announcing a withheld
+    // number is worse than no row.
+    expect(find.text('الإجمالي'), findsOneWidget);
+    expect(find.text('تكلفة الإنتاج'), findsNothing);
+    expect(find.text('مجمل الربح'), findsNothing);
+    expect(find.text('120'), findsNothing);
+    expect(find.text('230'), findsNothing);
+    expect(find.text('−'), findsNothing);
+  });
+
   testWidgets('a cost with no margin beside it still refuses to invent one', (tester) async {
     // Arrange — the server derives the profit from the cost, so the pair travels together; this
     // is the defensive half, and the answer is words rather than a subtraction done here.
-    await tester.pumpWidget(host(OrderCostSection(order: orderWith(totalCogs: '120.00'))));
+    await tester.pumpWidget(host(OrderTotals(order: orderWith(totalCogs: '120.00'), showCosts: true)));
 
     // Act - Assert
     expect(find.text('120'), findsOneWidget);

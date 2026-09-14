@@ -1,3 +1,4 @@
+import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'new_order.freezed.dart';
@@ -12,8 +13,9 @@ part 'new_order.g.dart';
 ///
 /// **No total is on it.** `items_total`, `delivery_price` and `grand_total` are derived by the
 /// server — from the lines and from the destination city — and a client that could post them
-/// could post any number it liked. The two money fields here are the two a *person* decides:
-/// the design fee and the discount, and each is guarded on the server.
+/// could post any number it liked. The money fields here are the ones a *person* decides: the
+/// design fee, the discount and the charge going the other way, and each is guarded on the
+/// server.
 ///
 /// **The customer is set once and never changes.** `customer_id` is read on create and ignored
 /// on update, because an order does not move between customers — which is exactly why this form
@@ -56,6 +58,28 @@ abstract class NewOrder with _$NewOrder {
     /// Guarded by `orders.discount` on the server. The field is hidden in the app for staff
     /// without the grant; that is the suggestion, and the refusal is the rule.
     @JsonKey(includeIfNull: false) String? discount,
+
+    /// What the customer is being charged on top of the products — «تغليف خاص»، «نقل». Guarded
+    /// by `orders.additional_cost` on the server, its own grant rather than the discount's:
+    /// the two are money moving in opposite directions.
+    ///
+    /// **Omitted when nobody typed one**, the same rule the discount follows and for the same
+    /// reason — the grant is enforced on the value being above zero, so a charge of nothing has
+    /// to be no key at all. Absent here means «لا تكلفة إضافية», which is what a new order says
+    /// when it is not charging; on an *edit* the same silence means «اتركها كما هي», which is
+    /// why [UpdateOrderInvoice] sends a cleared box as `'0.00'` and this does not.
+    @JsonKey(name: 'additional_cost', includeIfNull: false) String? additionalCost,
+
+    /// Which of the five categories the charge goes under. **Required by the server the moment
+    /// there is an amount**, because this is the axis the money is read along afterwards —
+    /// «كم حصّلنا مقابل التغليف هذا الربع؟». Travels as the code, never as the Arabic on the
+    /// chip.
+    @JsonKey(name: 'additional_cost_reason', includeIfNull: false)
+    AdditionalCostReason? additionalCostReason,
+
+    /// What was actually done, in the clerk's words — and required under «أخرى», the one
+    /// category that carries no information on its own.
+    @JsonKey(name: 'additional_cost_note', includeIfNull: false) String? additionalCostNote,
 
     /// Who will make it. **Required by the server for an order whose lines are all وسيط**, and
     /// refused as a 422 on `vendor_id` when missing — the road is read off the lines, so the app

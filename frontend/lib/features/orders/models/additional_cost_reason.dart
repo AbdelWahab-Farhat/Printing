@@ -60,4 +60,30 @@ enum AdditionalCostReason {
 
   /// Whether this category is meaningless without words beside it.
   bool get needsNote => this == other;
+
+  /// A category and the words beside it, as one line — «تغليف خاص — علبة كرتون مزدوجة».
+  ///
+  /// **Assembled here rather than at each of the places that show it.** The order screen, the
+  /// PDF, the WhatsApp message and both order forms print this charge; each one deciding for
+  /// itself how a category and a note go together is how «تغليف خاص» ends up on the invoice and
+  /// «علبة كرتون مزدوجة» in the message for the same order.
+  ///
+  /// [label] is the Arabic for the category — the server's `additional_cost_reason_label` on an
+  /// order that exists, and [AdditionalCostReason.label] on a form where nothing has been saved
+  /// yet. **Under «أخرى» the note stands alone**, because the word names no category to anybody
+  /// reading it — and the server guarantees the note is there, since that is the one reason it
+  /// refuses without one.
+  static String? caption({
+    required String? label,
+    required bool needsNote,
+    required String? note,
+  }) {
+    final words = note?.trim();
+    final hasNote = words != null && words.isNotEmpty;
+
+    if (needsNote) return hasNote ? words : label;
+    if (label == null) return hasNote ? words : null;
+
+    return hasNote ? '$label — $words' : label;
+  }
 }

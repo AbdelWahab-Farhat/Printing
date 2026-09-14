@@ -20,6 +20,12 @@ _NewOrder _$NewOrderFromJson(Map<String, dynamic> json) => _NewOrder(
       ?.map((e) => (e as num).toInt())
       .toList(),
   discount: json['discount'] as String?,
+  additionalCost: json['additional_cost'] as String?,
+  additionalCostReason: $enumDecodeNullable(
+    _$AdditionalCostReasonEnumMap,
+    json['additional_cost_reason'],
+  ),
+  additionalCostNote: json['additional_cost_note'] as String?,
   vendorId: (json['vendor_id'] as num?)?.toInt(),
   recipientName: json['recipient_name'] as String?,
   recipientPhone: json['recipient_phone'] as String?,
@@ -38,12 +44,25 @@ Map<String, dynamic> _$NewOrderToJson(_NewOrder instance) => <String, dynamic>{
   'design_fee': ?instance.designFee,
   'design_ids': ?instance.designIds,
   'discount': ?instance.discount,
+  'additional_cost': ?instance.additionalCost,
+  'additional_cost_reason':
+      ?_$AdditionalCostReasonEnumMap[instance.additionalCostReason],
+  'additional_cost_note': ?instance.additionalCostNote,
   'vendor_id': ?instance.vendorId,
   'recipient_name': ?instance.recipientName,
   'recipient_phone': ?instance.recipientPhone,
   'address_details': ?instance.addressDetails,
   'notes': ?instance.notes,
   'is_urgent': ?instance.isUrgent,
+};
+
+const _$AdditionalCostReasonEnumMap = {
+  AdditionalCostReason.specialPackaging: 'special_packaging',
+  AdditionalCostReason.extraService: 'extra_service',
+  AdditionalCostReason.modification: 'modification',
+  AdditionalCostReason.transport: 'transport',
+  AdditionalCostReason.other: 'other',
+  AdditionalCostReason.unknown: 'unknown',
 };
 
 _NewOrderItem _$NewOrderItemFromJson(Map<String, dynamic> json) =>

@@ -67,7 +67,10 @@ void main() {
               body: Center(
                 child: ElevatedButton(
                   onPressed: () async {
-                    draft = await showAdditionalCostSheet(context: context, order: subject);
+                    draft = await showAdditionalCostSheet(
+                      context: context,
+                      initial: AdditionalCostDraft.of(subject),
+                    );
                   },
                   child: const Text('افتح'),
                 ),

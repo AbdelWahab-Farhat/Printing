@@ -15,26 +15,73 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 ///
 /// The sheet answers and the caller sends — the same split every other form on the order screen
 /// follows. What to do about a refusal belongs to the screen that has somewhere to show it.
+///
+/// **It is also what the sheet opens on**, which is what lets one sheet serve both screens: on
+/// «تعديل الطلبية» the draft is read off an order that exists, and on «طلبية جديدة» it is the
+/// answer to the last time the sheet was opened — because there is no order to read yet.
 @immutable
 class AdditionalCostDraft {
   const AdditionalCostDraft({required this.amount, this.reason, this.note});
 
-  /// As typed, Arabic-Indic digits and all: normalising is [UpdateOrderInvoice]'s job, in one
-  /// place, for every numeric field on this feature.
+  /// What an order already carries, so correcting «١٠» to «١٥» is one keystroke — and a charge
+  /// of nothing opens on an empty box rather than on a `0.00` to be cleared first.
+  ///
+  /// **Never [AdditionalCostReason.unknown]:** a category this build does not know cannot be
+  /// re-picked from five chips that do not include it, and re-sending it would be this app
+  /// claiming a code it cannot name.
+  factory AdditionalCostDraft.of(Order order) => AdditionalCostDraft(
+    amount: order.hasAdditionalCost ? trimDecimals(order.additionalCost) : '',
+    reason: switch (order.additionalCostReason) {
+      final reason? when reason != AdditionalCostReason.unknown => reason,
+      _ => null,
+    },
+    note: order.additionalCostNote,
+  );
+
+  /// As typed, Arabic-Indic digits and all: normalising is [UpdateOrderInvoice]'s job — and
+  /// [TakeOrder]'s — in one place, for every numeric field on this feature.
   final String amount;
 
   final AdditionalCostReason? reason;
   final String? note;
+
+  /// The amount in ASCII digits — `'٢٥٫٥'` as typed becomes `'25.5'`.
+  ///
+  /// **For drawing it, not for sending it.** The shop reads Latin digits on a phone held at
+  /// arm's length, which is why nothing in this app renders Arabic-Indic ones — see `digits.dart`.
+  /// What goes down the wire is still normalised in one place on the way out, by [TakeOrder] or
+  /// [UpdateOrderInvoice], from [amount] as it was typed.
+  String get normalisedAmount =>
+      Validators.toWesternDigits(amount.trim()).replaceAll(',', '.');
+
+  /// Whether there is money here at all. The sheet's own rule — a category without an amount is
+  /// not a charge — read back by the screens that draw what was answered.
+  bool get isCharging => (double.tryParse(normalisedAmount) ?? 0) > 0;
+
+  /// The charge as one line, in the words the invoice will use for it — «نقل — للفرع».
+  ///
+  /// Null when nothing is being charged. The category's Arabic is the enum's here and the
+  /// server's on an order that exists; the rule joining it to the note is the same one, so the
+  /// form and the invoice say the sentence the same way. See [AdditionalCostReason.caption].
+  String? get caption => isCharging
+      ? AdditionalCostReason.caption(
+          label: reason?.label,
+          needsNote: reason?.needsNote ?? false,
+          note: note,
+        )
+      : null;
 }
 
 /// Charging the customer for something no line on the order describes — «تغليف خاص»، «نقل».
 ///
-/// **A sheet on «تعديل الطلبية» rather than fields in its form.** Changing the invoice is what
-/// that screen is for, so the way in is there with the lines and the discount — the order screen
-/// prints the charge and names it, and keeps one door onto editing rather than two. A sheet
-/// rather than three more boxes on the form, because the charge is agreed in one moment — a box
-/// asked for at the counter, a run to a second address — and it is answered and sent in that
-/// moment, not held until «حفظ التعديلات».
+/// **A sheet rather than three more boxes on a form**, because the charge is agreed in one
+/// moment — a box asked for at the counter, a run to a second address — and it is answered in
+/// that moment. **The same sheet on both screens**, so the five categories and the two rules
+/// are one vocabulary rather than two copies of one that drift.
+///
+/// What differs is the sending, and it belongs to the caller: «تعديل الطلبية» sends the answer
+/// on its own the moment the sheet closes, because the order exists; «طلبية جديدة» holds it
+/// until «إنشاء الطلبية», because there is nothing yet to send it against.
 ///
 /// **The five chips are the whole vocabulary, and they are not this app's.** They mirror
 /// `AdditionalCostReason.php` because the figure is read along that axis afterwards — «كم حصّلنا
@@ -49,7 +96,10 @@ class AdditionalCostDraft {
 /// Returns null when dismissed — backing out of a form is an ordinary ending.
 Future<AdditionalCostDraft?> showAdditionalCostSheet({
   required BuildContext context,
-  required Order order,
+
+  /// What the sheet opens on — the order's charge, or the last answer given on a form whose
+  /// order does not exist yet. Null opens it empty.
+  AdditionalCostDraft? initial,
 }) {
   return showModalBottomSheet<AdditionalCostDraft>(
     context: context,
@@ -58,14 +108,14 @@ Future<AdditionalCostDraft?> showAdditionalCostSheet({
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
     ),
-    builder: (_) => _AdditionalCostSheet(order: order),
+    builder: (_) => _AdditionalCostSheet(initial: initial),
   );
 }
 
 class _AdditionalCostSheet extends StatefulWidget {
-  const _AdditionalCostSheet({required this.order});
+  const _AdditionalCostSheet({this.initial});
 
-  final Order order;
+  final AdditionalCostDraft? initial;
 
   @override
   State<_AdditionalCostSheet> createState() => _AdditionalCostSheetState();
@@ -74,23 +124,17 @@ class _AdditionalCostSheet extends StatefulWidget {
 class _AdditionalCostSheetState extends State<_AdditionalCostSheet> {
   final _formKey = GlobalKey<FormState>();
 
+  /// Opened on what was already agreed — see [AdditionalCostDraft.of] for where an order's own
+  /// charge is turned into one of these.
   late final TextEditingController _amount = TextEditingController(
-    // Opened on what the order already carries, so correcting «١٠» to «١٥» is one keystroke —
-    // and a charge of nothing opens empty rather than on a `0.00` to be cleared first.
-    text: widget.order.hasAdditionalCost ? trimDecimals(widget.order.additionalCost) : '',
+    text: widget.initial?.amount ?? '',
   );
 
   late final TextEditingController _note = TextEditingController(
-    text: widget.order.additionalCostNote ?? '',
+    text: widget.initial?.note ?? '',
   );
 
-  /// Never [AdditionalCostReason.unknown]: a category this build does not know cannot be
-  /// re-picked from five chips that do not include it, and re-sending it would be this app
-  /// claiming a code it cannot name.
-  late AdditionalCostReason? _reason = switch (widget.order.additionalCostReason) {
-    final reason? when reason != AdditionalCostReason.unknown => reason,
-    _ => null,
-  };
+  late AdditionalCostReason? _reason = widget.initial?.reason;
 
   @override
   void dispose() {

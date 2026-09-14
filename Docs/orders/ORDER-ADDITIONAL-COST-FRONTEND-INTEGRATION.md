@@ -10,8 +10,11 @@
 > of changing the invoice is on «تعديل الطلبية», and two doors onto one figure is one too many.
 > The order screen still prints the charge in «الحساب» and says what it was for underneath.
 >
-> **What §4 still owes is «طلبية جديدة»**: a charge cannot be part of taking the order, so it is
-> added afterwards through the edit screen. The checklist at the end says exactly what is ticked.
+> **«طلبية جديدة» closed that gap on 2026-09-14**, at the owner's word: the charge is agreed at
+> the counter *while* the order is being written, and sending the order and then editing it to
+> say so was two requests for one decision. The form now carries a «التكلفة الإضافية» section of
+> its own — **the same sheet «تعديل الطلبية» opens**, not a second set of controls; see §4 for
+> why that reversed what this file first proposed.
 >
 > The backend is built and green (see
 > [ORDER-ADDITIONAL-COST-BACKEND-CHANGES.md](ORDER-ADDITIONAL-COST-BACKEND-CHANGES.md)).
@@ -187,17 +190,29 @@ was only about the address.
 ## 4. The two forms
 
 **`new_order_page.dart`** — a «التكلفة الإضافية» section after «الخصم», behind
-`sl<Session>().can(AppPermission.addOrderAdditionalCost)` (a new case on `AppPermission`;
-`permission_contract_test.dart` will fail until it is added, which is the point of it).
+`sl<Session>().can(AppPermission.addOrderAdditionalCost)`.
 
-Three controls: the amount, a `Wrap` of five `ChoiceChip`s, and the note. **Chips, not a
-`SegmentedButton`** — unlike «مصدر التصميم» above it, five Arabic labels do not fit one row at
-430 wide, and a segment squeezed to three characters names nothing. Tapping the selected chip
-again clears it, so a reason picked by mistake on an order that is not being charged can be
-removed. The note's label switches to «السبب» (from «السبب (اختياري)») under «أخرى».
+**It opens the same sheet the edit screen opens, and that reverses what this file first
+proposed** (three controls inline on the form). The reason it was written that way was that
+there is nothing to send a charge against until the order exists; the reason that mattered is
+that the five categories and the two rules about them would then have existed twice, and two
+copies of one vocabulary drift — a chip renamed on one form and not the other is how «تعديل»
+and «خدمة إضافية» end up meaning the same thing in the column a report groups by.
 
-A clerk without the grant sends **no key at all**, exactly as with the discount: the hidden field
-is the suggestion, the 403 is the rule.
+So `showAdditionalCostSheet` takes an `AdditionalCostDraft?` to open on instead of an `Order`:
+«تعديل الطلبية» hands it `AdditionalCostDraft.of(order)`, and «طلبية جديدة» hands it its own
+last answer. **What differs is the sending, and it belongs to the caller** — the edit screen
+posts the moment the sheet closes, because the order exists; the new-order form holds the answer
+in `_additionalCost` until «إنشاء الطلبية», so a charge never outlives an abandoned order.
+
+The section is shaped like the edit screen's: the charge named above — `OrderAdditionalCost`,
+now taking a caption and an amount rather than an order, so both forms and the invoice say the
+sentence the one way — and a full-width button whose word turns from «إضافة» to «تعديل». An
+empty box in the sheet forgets the charge here rather than sending a zero, which is the
+difference between a create and an edit stated once more.
+
+A clerk without the grant sends **no key at all**, exactly as with the discount: the hidden
+section is the suggestion, the 403 is the rule.
 
 **`order_edit_page.dart`** — the same three controls in an `_AdditionalCostField` shaped like the
 existing `_DiscountField`, shown under `mayAddCost && mayEditItems`. The second condition is the
@@ -245,8 +260,9 @@ the server's numbers and already include the charge.
   arrangement as `order_status_contract_test.dart`, and it matters more here: a chip posting
   `packaging` where the server says `special_packaging` is a 422 about a field the clerk did fill
   in.
-- `take_order_cubit_test` / `new_order_page_test` — the section is hidden without the grant and
-  no key is sent; a reason with no amount sends neither.
+- `take_order_test` / `take_order_wire_test` / `new_order_page_test` — the section is hidden
+  without the grant and no key is sent; a reason with no amount sends neither; and what the sheet
+  answered stays on the form until the order is.
 - `order_invoice_cubit_test` — the running estimate, and `isValid` false for an amount with no
   reason and for «أخرى» with no words.
 - A file for `additionalCostCaption`'s four cases (label only, label + note, «أخرى» + note, none).
@@ -291,14 +307,30 @@ are the two guards that will tell you when this work is complete.
 - [x] `additional_cost_wire_test.dart` — what the `PUT` body actually carries, in both directions
 - [x] `additional_cost_sheet_test.dart` — the two rules, and what the sheet answers
 
-**Still owed — the two forms:**
+**Set (done — while the order is being taken):**
 
-- [ ] `NewOrder` — three fields, so a charge can be part of taking the order
-- [ ] `TakeOrder` — the same amount-carries-the-reason rule on the way in
-- [ ] `TakeOrderCubit` + `TakeOrderState` — three field errors, `_renderedKey`
-- [ ] `NewOrderPage` — the section, behind the grant
+- [x] `NewOrder` — three fields, `includeIfNull: false`; the reason travels as its code, which
+      `take_order_wire_test` pins
+- [x] `TakeOrder` — the same amount-carries-the-reason rule on the way in, and «٢٥» normalised
+      to `25`. **Absent, never `'0.00'`**: on a create, silence means «لا تكلفة إضافية», where
+      on an edit the same silence means «اتركها كما هي»
+- [x] `TakeOrderCubit` — the three parameters, passed straight through
+- [x] `NewOrderPage` — the section after «الخصم», behind the grant, opening the shared sheet
+- [x] `AdditionalCostDraft` — `of(Order)`, `isCharging`, `caption`, `normalisedAmount`; the sheet
+      now opens on a draft rather than on an order, which is what lets both forms use it
+- [x] `AdditionalCostReason.caption` — the rule joining a category to its note, in one place
+      instead of two; `Order.additionalCostCaption` now delegates to it
 - [x] `OrderEditPage` — the sheet, reached from a section of its own; the send is the screen's,
       like adding a design, and does not wait for «حفظ التعديلات»
+
+**Deliberately not done:**
+
+- [ ] `TakeOrderState` — three field errors and `_renderedKey` entries. **Not needed, and a
+      `_renderedKey` entry would make things worse.** The sheet enforces both server rules
+      before it will close, so `additional_cost_reason.required` can only arrive on a request
+      this form cannot make; left off the rendered list it reaches the clerk as a snackbar in
+      the server's own Arabic, where added to it it would be painted under a field that is not
+      on screen.
 - [ ] `OrderInvoiceCubit` + state — only if the charge ever moves *into* «حفظ التعديلات»: it
       would need setters, a place in `estimatedTotal` and `additionalCostIsValid`
 

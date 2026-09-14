@@ -15,11 +15,13 @@ import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.d
 import 'package:dayaa/features/orders/models/vendor_requirement.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/additional_cost_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_additional_cost.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_line_row.dart';
-import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_urgent_switch.dart';
+import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
 import 'package:dayaa/features/orders/presentation/widgets/product_picker_sheet.dart';
 import 'package:dayaa/features/orders/usecases/take_order.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
@@ -130,6 +132,21 @@ class _NewOrderViewState extends State<_NewOrderView> {
   /// is a rule.
   bool get _mayDiscount => sl<Session>().can(AppPermission.discountOrders);
 
+  /// The charge going the other way, behind a grant of its own.
+  ///
+  /// **`orders.additional_cost`, not `orders.discount`.** The two are money moving in opposite
+  /// directions and the server guards them separately — a clerk who may charge for «تغليف خاص»
+  /// is not thereby allowed to take money off an invoice.
+  bool get _mayCharge => sl<Session>().can(AppPermission.addOrderAdditionalCost);
+
+  /// What the customer is being charged beyond the products, as the sheet last answered.
+  ///
+  /// **Held here rather than sent**, which is the one thing that differs from «تعديل الطلبية»:
+  /// there is no order yet for a charge to be written against, so it waits for «إنشاء الطلبية»
+  /// with the rest of the form. Null until the sheet is opened, and again when it is answered
+  /// with an empty box.
+  AdditionalCostDraft? _additionalCost;
+
   /// Whether the customer asked for this one to jump the queue.
   ///
   /// Not behind a permission of its own: the person taking the order is the one being told it
@@ -216,6 +233,28 @@ class _NewOrderViewState extends State<_NewOrderView> {
     context.read<TakeOrderCubit>().clearFailure();
   }
 
+  /// Charges the customer for something no line on the order describes — «تغليف خاص»، «نقل».
+  ///
+  /// **The same sheet «تعديل الطلبية» opens**, so the five categories and the two rules about
+  /// them are one vocabulary rather than two copies of one. It reopens on its own last answer,
+  /// because there is no order here to read the charge back off.
+  ///
+  /// **Nothing is sent.** The edit screen posts the moment its sheet closes, since the order
+  /// exists; here the answer is held and goes down with the order itself — one request, and no
+  /// charge left behind if the order is abandoned.
+  Future<void> _editAdditionalCost() async {
+    final draft = await showAdditionalCostSheet(
+      context: context,
+      initial: _additionalCost,
+    );
+
+    if (draft == null || !mounted) return;
+
+    // An empty box is how a charge is taken back off, exactly as it is on the edit screen —
+    // and here that means forgetting it rather than sending a zero.
+    setState(() => _additionalCost = draft.isCharging ? draft : null);
+  }
+
   Future<void> _pickCity() async {
     final city = await showCityPicker(context: context, selectedId: _city?.id);
     if (city == null || !mounted) return;
@@ -276,6 +315,11 @@ class _NewOrderViewState extends State<_NewOrderView> {
       // Not merely hidden: a clerk without the grant sends no discount at all, so the server
       // has nothing to refuse.
       discount: _mayDiscount ? _discount.text : null,
+      // The same rule again, on the grant of its own. The three travel together or not at all —
+      // the use case drops the category and the note with the money.
+      additionalCost: _mayCharge ? _additionalCost?.amount : null,
+      additionalCostReason: _mayCharge ? _additionalCost?.reason : null,
+      additionalCostNote: _mayCharge ? _additionalCost?.note : null,
       // Only while the row is on screen — the same rule the discount follows.
       vendorId: _vendorRequirement.isOffered ? _vendor?.id : null,
       recipientPhone: _recipientPhone.text,
@@ -423,6 +467,43 @@ class _NewOrderViewState extends State<_NewOrderView> {
                     inputFormatters: [FilteringTextInputFormatter.deny(RegExp('[-+ ]'))],
                     errorText: submission.discountError,
                     onChanged: (_) => context.read<TakeOrderCubit>().clearFailure(),
+                  ),
+                ),
+              ],
+
+              // **Beside the discount, because they are the same kind of decision** — money a
+              // person adds to the invoice or takes off it, both behind a grant, neither
+              // computed from anything. It is not in «إجمالي البنود (تقديري)» at the foot of
+              // the form and must not read as though it were: that figure is the lines, and the
+              // total this lands in is the server's.
+              if (_mayCharge) ...[
+                SizedBox(height: 14.h),
+                _Section(
+                  title: 'التكلفة الإضافية',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // What is being charged, in the words the invoice will use for it — see
+                      // [OrderAdditionalCost].
+                      if (_additionalCost?.caption case final caption?) ...[
+                        OrderAdditionalCost(
+                          caption: caption,
+                          // Latin digits, like every other figure in the app — the sheet hands
+                          // back exactly what was typed, «٢٥» and all.
+                          amount: _additionalCost!.normalisedAmount,
+                        ),
+                        SizedBox(height: 14.h),
+                      ],
+                      AppButton.tonal(
+                        // The word changes with the form, because the two are different acts:
+                        // one adds a charge, the other argues with one already agreed.
+                        label: _additionalCost == null
+                            ? 'إضافة تكلفة إضافية'
+                            : 'تعديل التكلفة الإضافية',
+                        icon: _additionalCost == null ? AppIcons.add : AppIcons.edit,
+                        onPressed: _editAdditionalCost,
+                      ),
+                    ],
                   ),
                 ),
               ],

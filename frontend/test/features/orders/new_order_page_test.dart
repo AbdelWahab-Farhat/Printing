@@ -145,6 +145,107 @@ void main() {
     expect(find.text('قيمة الخصم'), findsOneWidget);
   });
 
+  group('the charge agreed at the counter', () {
+    /// Scrolls the section into the tree. A `ListView` does not build what is off screen, and
+    /// this one sits under the discount on a phone.
+    Future<void> reveal(WidgetTester tester, Finder target) => tester.dragUntilVisible(
+      target,
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+
+    /// The amount box **inside the sheet**. The form behind it has text fields of its own and
+    /// they come first in the tree, so an unscoped finder types into the phone number.
+    final amountBox = find
+        .descendant(of: find.byType(BottomSheet), matching: find.byType(TextFormField))
+        .first;
+
+    testWidgets('is not offered to somebody without the grant', (tester) async {
+      // Arrange — `orders.additional_cost` is its own grant, not the discount's: the two are
+      // money moving in opposite directions.
+      session.adopt(userWith(['orders.manage', 'orders.discount']));
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert — a courtesy; `CreateOrder` refuses the charge either way.
+      expect(find.text('التكلفة الإضافية'), findsNothing);
+    });
+
+    testWidgets('is offered to somebody who holds it, before the order exists', (tester) async {
+      // Arrange — it used to be reachable only from «تعديل الطلبية», so a charge agreed while
+      // the order was being written had to be added by editing the order straight afterwards.
+      session.adopt(userWith(['orders.manage', 'orders.additional_cost']));
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      await reveal(tester, find.text('إضافة تكلفة إضافية'));
+
+      // Assert
+      expect(find.text('التكلفة الإضافية'), findsOneWidget);
+      expect(find.text('إضافة تكلفة إضافية'), findsOneWidget);
+    });
+
+    testWidgets('what the sheet answered is shown on the form, not sent', (tester) async {
+      // Arrange — the same sheet «تعديل الطلبية» opens, so the five categories and the two
+      // rules are one vocabulary rather than two. What differs is the sending: there is no
+      // order yet, so the charge waits for «إنشاء الطلبية» like every other field here.
+      session.adopt(userWith(['orders.manage', 'orders.additional_cost']));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      await reveal(tester, find.text('إضافة تكلفة إضافية'));
+
+      // Act
+      await tester.tap(find.text('إضافة تكلفة إضافية'));
+      await tester.pumpAndSettle();
+      await tester.enterText(amountBox, '٢٥');
+      await tester.tap(find.text('نقل'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('حفظ'));
+      await tester.pumpAndSettle();
+
+      // Assert — the charge is on the form, named the way the invoice will name it, and the
+      // button now argues with one instead of adding one.
+      await reveal(tester, find.text('تعديل التكلفة الإضافية'));
+      expect(find.text('نقل'), findsOneWidget);
+      expect(find.text('+ 25'), findsOneWidget);
+      expect(find.text('إضافة تكلفة إضافية'), findsNothing);
+      // Nothing was posted: the order does not exist yet.
+      verifyNever(() => orders.create(any()));
+    });
+
+    testWidgets('a charge cleared in the sheet leaves the form', (tester) async {
+      // Arrange — «أفرغ الحقل لإلغائها», before the order was ever taken.
+      session.adopt(userWith(['orders.manage', 'orders.additional_cost']));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      await reveal(tester, find.text('إضافة تكلفة إضافية'));
+      await tester.tap(find.text('إضافة تكلفة إضافية'));
+      await tester.pumpAndSettle();
+      await tester.enterText(amountBox, '25');
+      await tester.tap(find.text('نقل'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('حفظ'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await reveal(tester, find.text('تعديل التكلفة الإضافية'));
+      await tester.tap(find.text('تعديل التكلفة الإضافية'));
+      await tester.pumpAndSettle();
+      await tester.enterText(amountBox, '');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('حفظ'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      await reveal(tester, find.text('إضافة تكلفة إضافية'));
+      expect(find.text('إضافة تكلفة إضافية'), findsOneWidget);
+      expect(find.text('+ 25'), findsNothing);
+    });
+  });
+
   testWidgets('the design fee appears only when the design is ours', (tester) async {
     // Arrange — the fee is the one thing `design_source` changes about the money, and the
     // server only counts it for `in_house`.

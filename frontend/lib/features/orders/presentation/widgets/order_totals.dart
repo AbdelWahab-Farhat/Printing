@@ -20,10 +20,25 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// printed, because a clerk quoting an order has to say what the trip costs — and printed
 /// *below* the rule, because a figure standing above a total is a figure the reader adds into
 /// it.
+///
+/// **والتكلفة والربح في العمود نفسه، لا في بطاقةٍ ثانية.** كانا لوحةً مستقلّة عنوانها «التكلفة
+/// والربح»، فوقع الرقمان اللذان تُطرح أحدهما من الآخر في مكانين بينهما عنوانٌ جديد وحافّتان —
+/// و«مجمل الربح = الإجمالي − تكلفة الإنتاج» هي الرابطة الوحيدة بينهما، ولم يكن على الشاشة ما
+/// يقولها. الفصل كان فصل **جمهور** لا فصل معنى: التكلفة خلف `orders.view_cost`. فبقي الفصل
+/// حيث ينفع — [showCosts] يقطع البطاقة عند «الإجمالي» لمن لا يملك الإذن — وذهب حيث لم ينفع.
+///
+/// **والعلامتان `−` و`=` مكتوبتان.** الخطّ الفاصل يقول «انتهى شيء» ولا يقول ماذا فُعل؛ والسؤال
+/// الذي تجيبه هذه البطاقة هو «الرقم ده من وين جا».
 class OrderTotals extends StatelessWidget {
-  const OrderTotals({required this.order, super.key});
+  const OrderTotals({required this.order, this.showCosts = false, super.key});
 
   final Order order;
+
+  /// Whether the two cost lines are drawn at all — `orders.view_cost`.
+  ///
+  /// **غيابٌ تام، لا تعطيل ولا «—».** من لا يملك الإذن يرى الحساب كما كان: بطاقةٌ تنتهي عند
+  /// «الإجمالي». وسطرٌ رمادي مكانه إعلانٌ عن رقمٍ محجوب، وهو أسوأ من لا سطر.
+  final bool showCosts;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +70,37 @@ class OrderTotals extends StatelessWidget {
           child: Divider(height: 1, color: scheme.outlineVariant),
         ),
         _Line(label: 'الإجمالي', value: order.grandTotal.grouped, isTotal: true),
+        if (showCosts) ...[
+          SizedBox(height: 10.h),
+          _Line(
+            sign: '−',
+            label: 'تكلفة الإنتاج',
+            // **«لم يُحتسب بعد» وليس «٠».** لا تُكلَّف طلبيةٌ قبل «جاهزة» وخروج البضاعة من رفّ،
+            // والصفر في تلك الفجوة يقول «هذه الطلبية لم تكلّفنا شيئاً» — وهي جملةٌ أخرى، وكاذبة.
+            value: order.totalCogs?.grouped,
+            // ومتى يظهر الرقم، مرّةً واحدة تحت أوّل سطرٍ ينقصه — لا تحت السطرين. كانت البطاقة
+            // القديمة تستبدل عمودها كلّه بهذه الجملة؛ والعمود هنا يبقى مرسوماً بعلامتيه، فتبقى
+            // الطرحة مقروءةً وإن كان أحد طرفيها لم يُحسب بعد.
+            note: order.totalCogs == null
+                ? 'لم تُحتسب التكلفة بعد — تُحتسب عند وصول الطلبية إلى «جاهزة»'
+                : null,
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.h),
+            // أعرض من الخطّ فوق «الإجمالي»: حسبتان في عمودٍ واحد، والثانية هي التي تنتهي هنا.
+            child: Divider(height: 1, thickness: 1.6, color: scheme.outlineVariant),
+          ),
+          _Line(
+            sign: '=',
+            label: 'مجمل الربح',
+            value: order.grossProfit?.grouped,
+            // الشيء الوحيد الذي يُقرأ من هذا السطر بلمحة: هل كسبت الطلبية أم خسرت. ملوَّنٌ حين
+            // يكون الجواب «لا» وحدها — كلُّ طلبيةٍ رابحةٍ بالأخضر تجعل اللون بلا معنى عند
+            // الثالثة.
+            tone: _isLoss(order.grossProfit) ? scheme.error : null,
+            isTotal: true,
+          ),
+        ],
         Padding(
           padding: EdgeInsets.only(top: 8.h, bottom: 6.h),
           child: _Line(
@@ -71,19 +117,35 @@ class OrderTotals extends StatelessWidget {
       ],
     );
   }
+
+  /// Whether the margin came out negative.
+  ///
+  /// `num.tryParse` for a comparison and for nothing else — what gets drawn is the string the
+  /// server sent, `'-45.00'` and all. A parse on the way to the screen is how `'465.00'` becomes
+  /// `465.00000000000006`.
+  bool _isLoss(String? profit) => (num.tryParse(profit ?? '') ?? 0) < 0;
 }
 
 class _Line extends StatelessWidget {
   const _Line({
     required this.label,
     required this.value,
+    this.sign,
     this.note,
     this.tone,
     this.isTotal = false,
   });
 
   final String label;
-  final String value;
+
+  /// The figure, or **null for one nobody has worked out yet** — drawn in words, never as zero.
+  final String? value;
+
+  /// `−` or `=`, drawn in its own column so the two line up under each other.
+  ///
+  /// Null on every line of the invoice itself: those are read down a column that has a rule
+  /// under it, and a `+` on each would be four signs saying what one total already says.
+  final String? sign;
 
   /// What this line was for, when the label alone does not say it — «نقل — سيارة أجرة».
   ///
@@ -105,6 +167,18 @@ class _Line extends StatelessWidget {
       padding: EdgeInsets.only(bottom: 6.h),
       child: Row(
         children: [
+          // عمودٌ ثابت العرض حتى لو لم تكن فيه علامة: `−` و`=` تقعان تحت بعضهما تماماً، والسطور
+          // التي لا علامة لها تبدأ من حيث تبدأ الكلمات لا من حيث تبدأ العلامة.
+          if (sign != null)
+            SizedBox(
+              width: 18.w,
+              child: Text(
+                sign!,
+                // رقمٌ لاتيني وسط سطرٍ عربي: العلامة تُكتب كما كُتبت لا كما يقلبها الاتجاه.
+                textDirection: TextDirection.ltr,
+                style: style?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ),
           // Expanded rather than a `Spacer` beside a bare label: the note is a clerk's own
           // sentence, so the label side has to be the part that gives way, and the number stays
           // where the column expects it however long the sentence runs.
@@ -138,10 +212,13 @@ class _Line extends StatelessWidget {
           Text(
             // Grouped by the caller: «الخصم» carries a leading sign, and the separator is added
             // to the number rather than to the sentence around it.
-            value,
-            // A Latin run inside an RTL row, so the separator stays where it was written.
-            textDirection: TextDirection.ltr,
-            style: style?.copyWith(color: tone ?? (isTotal ? scheme.primary : null)),
+            value ?? 'لم يُحتسب بعد',
+            // A Latin run inside an RTL row, so the separator stays where it was written — and
+            // the absence is a sentence, which reads right-to-left like the label beside it.
+            textDirection: value == null ? null : TextDirection.ltr,
+            style: value == null
+                ? context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)
+                : style?.copyWith(color: tone ?? (isTotal ? scheme.primary : null)),
           ),
         ],
       ),

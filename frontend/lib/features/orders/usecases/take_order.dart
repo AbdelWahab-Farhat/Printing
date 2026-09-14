@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
@@ -13,12 +14,17 @@ import 'package:dayaa/features/orders/repositories/order_repository.dart';
 /// design fee and a discount, so converting them at the widgets would be one chance per field
 /// to forget. They are converted here, once, in a file a test reaches without a widget tree.
 ///
-/// **And two rules about money that must not live in a widget:**
+/// **And three rules about money that must not live in a widget:**
 ///
 /// * A design fee counts only when we drew the artwork. The field is hidden for the other two
 ///   sources, but a clerk who typed one and then changed the source would still be sending it.
 /// * A discount nobody typed is *absent*, never `'0'`. `orders.discount` is enforced on the
 ///   value being above zero, so an empty box has to produce no key at all.
+/// * And the charge going the other way follows the same rule, for the same reason —
+///   `orders.additional_cost` is its own grant, enforced on its own value. **Its category and
+///   its note go with the money**: the chips can be tapped before the box is filled, and a
+///   reason on its own is a category for money nobody is charging, which the server refuses
+///   with a sentence about a field the clerk did fill in.
 ///
 /// **And the same rule again for the files:** artwork picked under «تصميم العميل» and then
 /// abandoned by switching to «بدون تصميم» is dropped here rather than sent. The picker is
@@ -47,6 +53,12 @@ class TakeOrder {
     String? notes,
     List<int> designIds = const [],
 
+    /// What the customer is charged beyond the products — as typed, Arabic-Indic digits and
+    /// all. Blank or zero means no charge, and takes its category and its note with it.
+    String? additionalCost,
+    AdditionalCostReason? additionalCostReason,
+    String? additionalCostNote,
+
     /// Who will make it — the vendor the picker answered with, or null when the form did not
     /// offer one. Carried, never judged: whether the server *requires* it is a fact about the
     /// lines, mirrored by `vendorRequirementFor` on the form and enforced in the domain.
@@ -57,6 +69,12 @@ class TakeOrder {
   }) {
     final fee = _number(designFee);
     final artwork = designSource == noDesign ? const <int>[] : designIds;
+
+    // **Absent rather than `'0'`, and the three move together.** A new order that is not
+    // charging says nothing about the charge at all — unlike an edit, where a cleared box means
+    // «ألغِ التكلفة» and has to be spelled out. See [UpdateOrderInvoice] for that half.
+    final charge = _number(additionalCost);
+    final isCharging = (double.tryParse(charge ?? '') ?? 0) > 0;
 
     return _repository.create(
       NewOrder(
@@ -72,6 +90,9 @@ class TakeOrder {
         // list would be the app claiming it does.
         designIds: artwork.isEmpty ? null : artwork,
         discount: _number(discount),
+        additionalCost: isCharging ? charge : null,
+        additionalCostReason: isCharging ? additionalCostReason : null,
+        additionalCostNote: isCharging ? _text(additionalCostNote) : null,
         vendorId: vendorId,
         isUrgent: isUrgent,
         recipientPhone: _text(recipientPhone),
