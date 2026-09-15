@@ -58,6 +58,12 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [CUSTOMER-ORDERS-SECTION.md](customers/CUSTOMER-ORDERS-SECTION.md) | طلبيات العميل على شاشة العميل. |
 | [CUSTOMERS-ACTIVITY-FILTER.md](customers/CUSTOMERS-ACTIVITY-FILTER.md) | تصفية شاشة العملاء حسب الطلبيات — «بمن نتّصل؟». |
 
+## [design-tickets/](design-tickets/)
+
+| Document | |
+|---|---|
+| [DESIGN-TICKETS-DESIGN.md](design-tickets/DESIGN-TICKETS-DESIGN.md) | تذاكر التصميم — من طلب الموظف إلى اعتماد التصميم في حساب الزبون. **مقترح** ينتظر أجوبة §١٢؛ الفرع `feat/design-tickets`. |
+
 ## [employees/](employees/)
 
 | Document | |
