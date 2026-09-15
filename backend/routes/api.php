@@ -9,6 +9,8 @@ use App\Application\Api\V1\Controllers\CompanySettingController;
 use App\Application\Api\V1\Controllers\CustomerCommentController;
 use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\CustomerDesignController;
+use App\Application\Api\V1\Controllers\DesignTicketCommentController;
+use App\Application\Api\V1\Controllers\DesignTicketController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
 use App\Application\Api\V1\Controllers\InvestorController;
@@ -833,6 +835,92 @@ Route::prefix('v1')->group(function (): void {
         Route::get('stock-arrivals/{stock_arrival}', [StockArrivalController::class, 'show'])
             ->middleware('can:inventory.view')->name('stock-arrivals.show');
 
+        // ── design tickets ──────────────────────────────────────────────────────────────
+        // «تذاكر التصميم» — an employee asks for artwork, a designer takes it, versions go back
+        // and forth, and an approval files the winner on the customer's account.
+        //
+        // **Seven grants, and the splits are deliberate** — see PermissionName. `view` is narrow
+        // on its own: without `view_all` a reader sees only the tickets they raised, the ones
+        // addressed to them, the ones they took, and the unclaimed pool. `assign` is separate
+        // from `manage` because routing work is a different job from asking for it, the same
+        // argument `shortages.assign` makes. `accept` and `submit` are the designer's two verbs.
+        //
+        // **`review` is never granted to the designer role — and that is only half the rule.**
+        // An administrator holds every permission through `Gate::before`, so the domain refuses
+        // a reviewer who is the uploader. See `DesignerCannotReviewOwnWork`.
+        //
+        // **No status route, and no destroy route.** Every status is written by the action that
+        // earns it, and a ticket that should not have been raised is cancelled with a reason so
+        // the record of the request survives.
+
+        // **`summary` is declared before `{ticket}`**, or the router reads the word «summary»
+        // as an id — the trap already documented at `shortages/summary`.
+        Route::get('design-tickets/summary', [DesignTicketController::class, 'statusCounts'])
+            ->middleware('can:design_tickets.view')->name('design-tickets.summary');
+
+        Route::get('design-tickets', [DesignTicketController::class, 'index'])
+            ->middleware('can:design_tickets.view')->name('design-tickets.index');
+
+        Route::post('design-tickets', [DesignTicketController::class, 'store'])
+            ->middleware('can:design_tickets.manage')->name('design-tickets.store');
+
+        Route::get('design-tickets/{ticket}', [DesignTicketController::class, 'show'])
+            ->middleware('can:design_tickets.view')->name('design-tickets.show');
+
+        Route::put('design-tickets/{ticket}', [DesignTicketController::class, 'update'])
+            ->middleware('can:design_tickets.manage')->name('design-tickets.update');
+
+        Route::patch('design-tickets/{ticket}/designer', [DesignTicketController::class, 'assign'])
+            ->middleware('can:design_tickets.assign')->name('design-tickets.designer');
+
+        // «قبول الطلب». A POST to a noun rather than a PATCH on the ticket: what is created is
+        // the acceptance — a fact with a person and a time — and exactly one may ever exist.
+        Route::post('design-tickets/{ticket}/acceptance', [DesignTicketController::class, 'accept'])
+            ->middleware('can:design_tickets.accept')->name('design-tickets.acceptance');
+
+        // Behind `manage` rather than `review`: calling a request off is the asking side's
+        // decision, and it is not a verdict on anybody's work.
+        Route::post('design-tickets/{ticket}/cancellation', [DesignTicketController::class, 'cancel'])
+            ->middleware('can:design_tickets.manage')->name('design-tickets.cancellation');
+
+        // The employee's reference files. `scopeBindings()` on the delete, so another ticket's
+        // file id is a 404 by construction — the shape `orders.designs` and `customers.designs`
+        // already use.
+        Route::post('design-tickets/{ticket}/attachments', [DesignTicketController::class, 'storeAttachment'])
+            ->middleware('can:design_tickets.manage')->name('design-tickets.attachments.store');
+
+        Route::delete(
+            'design-tickets/{ticket}/attachments/{attachment}',
+            [DesignTicketController::class, 'destroyAttachment'],
+        )->middleware('can:design_tickets.manage')
+            ->scopeBindings()
+            ->name('design-tickets.attachments.destroy');
+
+        // The designer's work. The same endpoint sends the first version and every revision — a
+        // revision is a row, not a new ticket.
+        Route::post('design-tickets/{ticket}/versions', [DesignTicketController::class, 'submitVersion'])
+            ->middleware('can:design_tickets.submit')->name('design-tickets.versions.store');
+
+        // The verdict. `scopeBindings()` again: a version belonging to another ticket is a 404.
+        Route::post(
+            'design-tickets/{ticket}/versions/{version}/review',
+            [DesignTicketController::class, 'reviewVersion'],
+        )->middleware('can:design_tickets.review')
+            ->scopeBindings()
+            ->name('design-tickets.versions.review');
+
+        // «الرد داخل التذكرة». The whole set sits behind `design_tickets.view`, writes included,
+        // and that is the same decision a customer's notes carry: a note is a working tool, not a
+        // privilege, and anyone who may read the ticket may leave the next person a sentence on
+        // it. Who may change *this* note is a per-row question answered in the controller.
+        //
+        // No `show`: the list carries every field, and a note is only ever met in a list.
+        Route::apiResource('design-tickets.comments', DesignTicketCommentController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->parameters(['design-tickets' => 'ticket'])
+            ->middleware('can:design_tickets.view')
+            ->scoped();
+
         // ── shortages ───────────────────────────────────────────────────────────────────
         // What the shop is short of, written by hand or generated from an order line entering
         // «نواقص». Its own section rather than a corner of the order screen: a shortage outlives
@@ -947,6 +1035,13 @@ Route::prefix('v1')->group(function (): void {
             Route::get('shortages/{shortage}/logs', [ShortageController::class, 'logs'])
                 ->middleware(ArchivedOrderShortagesNeedTheArchiveGrant::class)
                 ->name('shortages.logs');
+
+            // A ticket's whole story: who raised it, who accepted, every message, every file,
+            // every version and every change request. The controller narrows it a second time —
+            // `logs.view` alone must not read a colleague's ticket, which is the same back door
+            // the archive guard closes two routes up.
+            Route::get('design-tickets/{ticket}/logs', [DesignTicketController::class, 'logs'])
+                ->name('design-tickets.logs');
 
             // The warehouse and the alert thresholds set on its shelves. Not the movements —
             // those are a ledger rather than a change log, and `/stock-movements?warehouse_id=`

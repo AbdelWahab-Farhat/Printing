@@ -6,6 +6,8 @@ namespace App\Domain\Notification\Enums;
 
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Notification\Contracts\NotificationDefinition;
+use App\Domain\Notification\Definitions\DesignTicketAssignedToYou;
+use App\Domain\Notification\Definitions\DesignTicketReachedStatus;
 use App\Domain\Notification\Definitions\ManualAnnouncement;
 use App\Domain\Notification\Definitions\OrderReachedShortage;
 use App\Domain\Notification\Definitions\OrderReachedStatus;
@@ -45,6 +47,23 @@ enum NotificationType: string
      */
     case ShortageAssigned = 'shortage.assigned';
 
+    /**
+     * There is artwork to draw — addressed to one designer, or to all of them.
+     *
+     * The one type whose audience changes shape with its payload: a named designer, or everybody
+     * who could take a pool ticket. See {@see DesignTicketAssignedToYou}.
+     */
+    case DesignTicketAssigned = 'design_ticket.assigned';
+
+    /**
+     * A design ticket moved and the other side has not heard.
+     *
+     * Not five types, one per move: they share an audience of one, a route and a sentence, and
+     * the status itself rides in the payload — the same judgement {@see OrderReachedStatus}
+     * makes for fifteen order statuses.
+     */
+    case DesignTicketStatus = 'design_ticket.status';
+
     /** Somebody wrote a message and sent it to staff. The only one a human composes. */
     case Announcement = 'announcement.manual';
 
@@ -63,6 +82,8 @@ enum NotificationType: string
             self::OrderShortage => OrderReachedShortage::class,
             self::OrderStatusChanged => OrderReachedStatus::class,
             self::ShortageAssigned => ShortageAssignedToYou::class,
+            self::DesignTicketAssigned => DesignTicketAssignedToYou::class,
+            self::DesignTicketStatus => DesignTicketReachedStatus::class,
             self::Announcement => ManualAnnouncement::class,
         };
     }
@@ -83,6 +104,11 @@ enum NotificationType: string
             // alarm — and the app falls back to a plain bell on a key it does not know, so a
             // build compiled last month degrades gracefully rather than drawing the wrong thing.
             self::ShortageAssigned => 'task',
+            // Work arriving, like a shortage landing in somebody's queue — not an alarm. And the
+            // app falls back to a plain bell on a key it does not know, so a build compiled last
+            // month degrades gracefully rather than drawing the wrong thing.
+            self::DesignTicketAssigned => 'task',
+            self::DesignTicketStatus => 'design',
             self::Announcement => 'announcement',
         };
     }
@@ -96,6 +122,8 @@ enum NotificationType: string
             self::OrderShortage => 'نواقص طلبية',
             self::OrderStatusChanged => 'حالة طلبية',
             self::ShortageAssigned => 'نقص مُسنَد',
+            self::DesignTicketAssigned => 'طلب تصميم',
+            self::DesignTicketStatus => 'حالة طلب تصميم',
             self::Announcement => 'إشعار عام',
         };
     }

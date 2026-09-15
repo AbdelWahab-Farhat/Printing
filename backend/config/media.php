@@ -102,6 +102,48 @@ return [
         'mimetypes' => ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Design ticket file constraints
+    |--------------------------------------------------------------------------
+    |
+    | The files that travel on a design ticket: what the employee sent as a brief, and each
+    | version the designer uploaded.
+    |
+    | **The same disk as customer designs, on purpose.** These are work-in-progress files
+    | for a named customer, and an approved one is promoted into `customer_designs` by
+    | pointing at the object where it already lies rather than moving it. Sharing the disk
+    | is what makes that promotion a row insert instead of a file operation that can fail
+    | halfway. Private for the same reason designs are: a leaked path is a competitor
+    | holding somebody's artwork.
+    |
+    | The size limit and the accepted types match designs exactly. A designer uploads the
+    | same kind of file the customer's library will hold, and two different numbers would
+    | mean a version that could be reviewed and then refused at the moment of approval.
+    |
+    | `svg` is absent and must stay absent, exactly as it is for designs and receipts: an
+    | SVG is an HTML document, and one served from our own origin is stored XSS.
+    |
+    */
+
+    'design_tickets' => [
+        'disk' => env('MEDIA_DESIGNS_DISK', 'local'),
+        'max_kilobytes' => (int) env('MEDIA_DESIGN_MAX_KILOBYTES', 25600),
+        'mimes' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+        'mimetypes' => ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
+
+        /*
+        | How many files one ticket may carry, briefs and versions together.
+        |
+        | A cap for the reason customer designs have one: they travel inside every
+        | `GET /design-tickets/{id}`, so an unbounded ticket makes its own detail response
+        | heavier for everybody who opens it. Generous, because a ticket that hit its limit
+        | mid-revision would strand work — the number exists to stop a runaway loop, not to
+        | ration a conversation.
+        */
+        'max_files_per_ticket' => (int) env('MEDIA_DESIGN_TICKET_MAX_FILES', 60),
+    ],
+
     'product_images' => [
         'max_kilobytes' => (int) env('MEDIA_MAX_KILOBYTES', 5120),
         'mimes' => ['jpeg', 'jpg', 'png', 'webp'],

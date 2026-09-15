@@ -71,6 +71,27 @@ class RoleSeeder extends Seeder
         // «محاسب» is left deliberately empty — it is the worked example of a role waiting for
         // the business to decide what it may do.
 
+        /*
+         * «مصمم» is the one role seeded with a shape rather than left empty, and the reason is
+         * mechanical rather than a judgement about trust: a design ticket is addressed to
+         * somebody, so a system with the permissions but no role holding them has a feature that
+         * does nothing on the day it ships.
+         *
+         * **Three grants, and the omissions are the design.** No `customers.view` — a ticket
+         * carries the customer's name as a snapshot precisely so reading one never opens that
+         * customer's orders and money. No `orders.view` for the same reason. No
+         * `design_tickets.view_all`, so a designer sees the tickets they raised or were given and
+         * the unclaimed pool, and not a colleague's queue. And **no `design_tickets.review`**:
+         * whoever draws the artwork does not sign it off. That last one is only half enforced
+         * here — the domain refuses a reviewer who is the uploader, because an administrator
+         * holds every permission by rule and no seeder can reach them.
+         */
+        Role::findByName(RoleName::Designer->value, 'web')->syncPermissions([
+            PermissionName::ViewDesignTickets->value,
+            PermissionName::AcceptDesignTickets->value,
+            PermissionName::SubmitDesignTickets->value,
+        ]);
+
         // Spatie caches roles and permissions; without this, anything created here would be
         // invisible to checks made later in the same process.
         app(PermissionRegistrar::class)->forgetCachedPermissions();
