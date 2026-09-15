@@ -18,6 +18,7 @@ use App\Domain\Order\Actions\ReinstateCancelledOrder;
 use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\ReviewOrderDesign;
 use App\Domain\Order\Actions\SetOrderShortages;
+use App\Domain\Order\DTOs\LineShortage;
 use App\Domain\Order\Actions\UpdateManufacturingCostRate;
 use App\Domain\Order\Actions\UpdateOrder;
 use App\Domain\Order\Actions\WriteOffOrderBalance;
@@ -186,7 +187,9 @@ class OrderService
     /**
      * Correct what is missing from an order, and the invoice with it.
      *
-     * @param  array<int|string, mixed>  $shortages  line id → what is missing from it.
+     * @param  array<int|string, LineShortage>  $shortages  line id → what is missing from it, in
+     *                                                      both the unit it was billed in and the
+     *                                                      unit the shelf counts — see the DTO.
      * @param  ShortageRevision  $reason  defaults to a correction, which is what the order screen
      *                                    is: the two status paths name their own — see the enum.
      */
@@ -451,6 +454,10 @@ class OrderService
         }
 
         return $order->items()
+            // The shelf is two relations out and `stockUnit()` asks for it on every line;
+            // `shouldBeStrict()` turns a forgotten eager load into a loud N+1 rather than a slow
+            // one.
+            ->with('variant.stockItem')
             ->orderBy('id')
             ->get()
             ->map(fn (OrderItem $item): OrderLineShortage => new OrderLineShortage(
@@ -462,10 +469,10 @@ class OrderService
                 // The two halves of the snapshot joined the way every screen prints them, so the
                 // shortage's own name needs no knowledge of how an order line is spelled.
                 name: trim($item->product_name.' — '.$item->variant_label),
-                unit: $item->pricing_unit->value,
-                shortageQuantity: $item->shortage_quantity === null
-                    ? null
-                    : (string) $item->shortage_quantity,
+                // **The shelf's unit and the shelf's number**, because that is what the chase
+                // is denominated in — see the DTO. The invoice's pair stays on the line.
+                unit: $item->stockUnit()->value,
+                shortageQuantity: $item->shortageStockQuantity(),
             ))
             ->all();
     }

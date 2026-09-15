@@ -2,7 +2,9 @@
 // uses). Hidden rather than prefixed, so the model keeps the name the domain calls it.
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 
 /// Recording what is missing from an order — which is recording what it costs.
@@ -23,14 +25,25 @@ class SetOrderShortages {
   final OrderRepository _repository;
 
   /// [shortages] is line id → what is missing from it, for **every line the caller showed**.
+  ///
+  /// A line carries two figures where the warehouse counts it differently from the way it was
+  /// sold — see [LineShortageEntry]. The weight is dropped wherever the first box was cleared,
+  /// because a measurement beside no shortage is a measurement of nothing and the server refuses
+  /// the pairing.
   Future<Either<Failure, Order>> call(
     int orderId, {
-    required Map<int, String?> shortages,
+    required Map<int, LineShortageEntry> shortages,
   }) {
     return _repository.setShortages(
       orderId,
       shortages: {
-        for (final entry in shortages.entries) entry.key: _typed(entry.value),
+        for (final entry in shortages.entries)
+          entry.key: LineShortageEntry(
+            quantity: _typed(entry.value.quantity),
+            warehouseQuantity: _typed(entry.value.quantity) == null
+                ? null
+                : _typed(entry.value.warehouseQuantity),
+          ),
       },
     );
   }

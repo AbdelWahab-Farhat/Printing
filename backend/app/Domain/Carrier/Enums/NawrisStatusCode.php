@@ -29,11 +29,18 @@ use App\Domain\Order\Enums\OrderStatus;
 enum NawrisStatusCode: int
 {
     /**
-     * «في الشركة» — sitting in their warehouse.
+     * «في الشركة» — the parcel is with the carrier, in their warehouse.
      *
-     * **Not the road, so not «جاري التوصيل».** This was the first map's worst forward move: it
-     * stamped `dispatched_at` and told the screen a courier was carrying a parcel still on their
-     * shelf. Only code 4 puts an order out for delivery.
+     * **Their warehouse or their motorbike, it has left ours.** «جاري التوصيل» is a fact about
+     * *our* side of the handover: the goods are gone and nobody here can hand them to anybody
+     * else. Which of their three forward codes arrived — `3` here, `4` «مع المندوب», `16` «في
+     * الطريق إلى الفرع» — is a detail about their operation, and it is kept on the parcel in
+     * `remote_status_code` and `remote_status_text` rather than being flattened away.
+     *
+     * **An earlier map held this at «جاهزة»** on the reading that a warehouse is not the road.
+     * It waited for a courier scan that some routes never send, so parcels that had genuinely
+     * gone sat on the board as though they were still on our shelf. See §3 of
+     * NAWRIS-INTEGRATION.md, where this code is listed as «almost always already there».
      */
     case AtTheirCompany = 3;
 
@@ -98,11 +105,16 @@ enum NawrisStatusCode: int
     public function target(): ?OrderStatus
     {
         return match ($this) {
-            // Their warehouse says nothing about our order beyond "they have it", and their
-            // settlement says nothing about ours.
-             self::TheirSettlement => null,
+            // Their settlement is a statement about their books, not ours — see the case.
+            self::TheirSettlement => null,
 
-            self::WithTheCourier,self::AtTheirCompany,self::OnTheWayToBranch => OrderStatus::OutForDelivery,
+            // **Three of their codes, one fact about us.** «في الشركة», «مع المندوب» and «في
+            // الطريق إلى الفرع» differ only in where the parcel has got to on their side; from
+            // ours it has left the shop and is no longer available to hand over. Holding code 3
+            // back at «جاهزة» made «جاري التوصيل» wait on a courier scan that some routes never
+            // send, so parcels that had genuinely gone read as if they were still on our shelf.
+            // Their exact wording is kept on the parcel regardless — see `remote_status_text`.
+            self::WithTheCourier, self::AtTheirCompany, self::OnTheWayToBranch => OrderStatus::OutForDelivery,
             self::ReturnWithCompany, self::ReturnAtBranch => OrderStatus::ReturnedCarrier,
             self::ComingBack => OrderStatus::ReturnedCourier,
             self::ReturnReceived => OrderStatus::ReturnedOffice,

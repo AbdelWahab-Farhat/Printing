@@ -99,8 +99,8 @@ class ShortageDetailCubit extends Cubit<ShortageDetailState> {
 
   /// Undoes one, taking the goods back off the shelf — which Inventory may refuse in its own
   /// words if the layer has been drawn on or repriced since.
-  Future<Failure?> reverseSupply(int supplyId, {String? notes}) =>
-      _write(() => _reverseSupply(_id, supplyId, notes: notes));
+  Future<Failure?> reverseSupply(int supplyId, {required String reason}) =>
+      _write(() => _reverseSupply(_id, supplyId, reason: reason));
 
   /// Runs a write, then re-reads.
   ///

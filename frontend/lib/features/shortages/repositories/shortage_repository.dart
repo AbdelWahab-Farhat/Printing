@@ -111,9 +111,13 @@ abstract class ShortageRepository {
   /// **It takes the goods back off the shelf**, so Inventory can refuse it for reasons that have
   /// nothing to do with shortages — the layer was already drawn on by an order, or repriced by
   /// hand. Those arrive as 422s in Inventory's own words; show them as sent.
+  ///
+  /// [reason] is **required by the server**, and is the sentence somebody reads six months later
+  /// beside a struck-through purchase. It is typed as non-nullable so a caller cannot forget it
+  /// and discover the 422 at runtime — which is exactly what used to happen.
   Future<Either<Failure, ShortageSupply>> reverseSupply(
     int shortageId,
     int supplyId, {
-    String? notes,
+    required String reason,
   });
 }

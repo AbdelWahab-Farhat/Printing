@@ -218,12 +218,15 @@ class ShortageRepositoryImpl implements ShortageRepository {
   Future<Either<Failure, ShortageSupply>> reverseSupply(
     int shortageId,
     int supplyId, {
-    String? notes,
+    required String reason,
   }) {
     return safeRequest<ShortageSupply>(
       () => _dio.post(
         ShortageEndpoints.supplyReversal(shortageId, supplyId),
-        data: <String, dynamic>{'notes': ?notes},
+        // **`reason`, which is the key the endpoint validates.** This sent `notes` until now, and
+        // because the value was also never collected the body went out as `{}` — so every
+        // reversal came back 422 «سبب العكس مطلوب» and the button looked broken.
+        data: <String, dynamic>{'reason': reason},
       ),
       parse: (data) => ShortageSupply.fromJson(data as Map<String, dynamic>),
     );

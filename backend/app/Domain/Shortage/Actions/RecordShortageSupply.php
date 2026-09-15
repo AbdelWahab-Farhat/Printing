@@ -8,7 +8,9 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Models\StockMovement;
+use App\Domain\Order\DTOs\LineShortage;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\OrderService;
 use App\Domain\Shortage\DTOs\ShortageSupplyData;
 use App\Domain\Shortage\Enums\ShortageStatus;
@@ -51,6 +53,12 @@ use Illuminate\Support\Facades\DB;
  * **A shortage with nothing behind it on a shelf skips step one**, and only that step: a roll of
  * tape nobody stocks is still a purchase worth recording. See
  * {@see App\Domain\Shortage\Models\Shortage::isStockable()}.
+ *
+ * **Step one needs no conversion, and that is by construction.** A shortage is denominated in the
+ * unit its shelf is counted in — `shortages.unit` is copied from `OrderItem::stockUnit()`, not
+ * from `pricing_unit` — so the quantity on this row is already the number the warehouse receives
+ * and the number `unit_cost` is per. The invoice's share of it is a separate figure living on the
+ * order line, apportioned in step four.
  *
  * **Step three is why this action reaches into Orders at all.** `order_items.shortage_quantity`
  * is subtracted from what the customer is billed, so goods bought to cover a shortage are goods
@@ -124,6 +132,10 @@ final class RecordShortageSupply
                 // Stamped, not fillable: a payload that could set `kind` could write a purchase
                 // carrying no money and slip past the CHECK that demands it.
                 'kind' => SupplyKind::Purchased,
+                // **Already in the shelf's unit**, because that is what a shortage is
+                // denominated in — see `OrderLineShortage`. One number reaches the warehouse, the
+                // ledger and the cost layer alike; the invoice's share of it is apportioned on
+                // the order line and never stored here.
                 'quantity' => $data->quantity,
                 'amount' => $data->amount,
                 'method' => $data->method,
@@ -199,6 +211,10 @@ final class RecordShortageSupply
             // a size has no shelf behind it. A boolean here could not say which product.
             stockItemId: (int) $this->inventory->stockItemFor($shortage->productVariant)->getKey(),
             warehouseId: $data->warehouseId,
+            // **The shortage's own unit is the shelf's unit**, so this posts as it stands. That
+            // is the whole reason `shortages.unit` is copied from `OrderItem::stockUnit()` rather
+            // than from `pricing_unit`: a supply recorded in the unit the customer was billed in
+            // would add a tally of bags to a balance of kilograms.
             quantity: $data->quantity,
             unitCost: bcdiv($data->amount, $data->quantity, 6),
             employeeId: (int) $actor->getKey(),
@@ -207,6 +223,27 @@ final class RecordShortageSupply
             orderId: $shortage->order_id === null ? null : (int) $shortage->order_id,
             notes: 'توفير نقص '.$shortage->code,
         ));
+    }
+
+    /**
+     * The other lines of the order, written back exactly as they already are.
+     *
+     * **The set is replaced wholesale**, so every line has to be named or it is cleared — see
+     * {@see SetOrderShortages}. Rebuilding each untouched line from its own columns is what makes
+     * «اشتريت لبندٍ واحد» leave the other four alone.
+     */
+    private function asItStands(OrderItem $item): LineShortage
+    {
+        if ($item->shortage_quantity === null) {
+            return LineShortage::none();
+        }
+
+        return new LineShortage(
+            quantity: (string) $item->shortage_quantity,
+            warehouseQuantity: $item->shortage_warehouse_quantity === null
+                ? null
+                : (string) $item->shortage_warehouse_quantity,
+        );
     }
 
     /**
@@ -258,13 +295,14 @@ final class RecordShortageSupply
         $shortages = [];
 
         foreach ($order->items()->get() as $item) {
-            $short = (string) ($item->shortage_quantity ?? '0');
-
-            if ((int) $item->getKey() === $shortage->order_item_id) {
-                $short = bcsub($short, $quantity, 3);
-            }
-
-            $shortages[(int) $item->getKey()] = bccomp($short, '0', 3) > 0 ? $short : null;
+            // **The arrival is in the shelf's unit, so the line is credited by apportionment.**
+            // `$quantity` is what the warehouse received; what comes off the invoice is its share
+            // of the pair the shortage was declared with, which is the only bridge between the
+            // two units that exists — see {@see OrderItem::creditForStockArrival()}. Exact on a
+            // full arrival, which is the ordinary case.
+            $shortages[(int) $item->getKey()] = (int) $item->getKey() === $shortage->order_item_id
+                ? LineShortage::afterStockArrival($item, $quantity)
+                : $this->asItStands($item);
         }
 
         $this->orders->setShortages($order, $shortages, $actor);

@@ -85,6 +85,7 @@ class OrderItem extends Model
             'line_total' => 'decimal:2',
             // Null means "same unit as the warehouse" — see the class docblock.
             'warehouse_quantity' => 'decimal:3',
+            'shortage_warehouse_quantity' => 'decimal:3',
             // When the press bought this line's plain material off the shelf — see the migration
             // that added it, and {@see isPrinted()} for who is entitled to sell it.
             'stock_purchased_at' => 'datetime',
@@ -370,6 +371,72 @@ class OrderItem extends Model
         return $this->warehouse_quantity === null
             ? (string) $this->quantity
             : (string) $this->warehouse_quantity;
+    }
+
+    /**
+     * What is missing from this line in the **shelf's** unit — what «النواقص» actually chases.
+     *
+     * **`shortage_quantity` is the invoice's number and this is the warehouse's**, and the two
+     * are different facts about one gap. The customer is short thirty bags and is billed for
+     * thirty fewer; the shop must buy the twelve and a half kilograms those bags are made of, put
+     * them on a shelf counted in kilograms, and open a cost layer priced per kilogram. See the
+     * migration that added the column.
+     *
+     * Falls back to `shortage_quantity` where the units agree — the null convention
+     * {@see producedQuantity()} already uses — so every line stocked in the unit it was sold in
+     * needs nothing typed and reads exactly as it always did.
+     *
+     * Null when nothing is missing, which is the whole point of both columns being nullable:
+     * «nobody has counted» and «nothing is short» are different answers.
+     */
+    public function shortageStockQuantity(): ?string
+    {
+        if ($this->shortage_quantity === null) {
+            return null;
+        }
+
+        return $this->shortage_warehouse_quantity === null
+            ? (string) $this->shortage_quantity
+            : (string) $this->shortage_warehouse_quantity;
+    }
+
+    /**
+     * How much of the invoice's shortage a given arrival off the shelf pays off.
+     *
+     * **The apportionment, and the one place it is done.** A supply is recorded in the shelf's
+     * unit because that is what was bought and weighed; the line has to be credited in the unit
+     * it was sold in, and no catalogue factor converts between them. What does exist is the pair
+     * the person declaring the shortage stated about *this line* — «ناقص ٣٠ قطعة، وهي ١٢٫٥ كجم» —
+     * and the ratio between those two is held constant as the gap is filled.
+     *
+     * **It is exact on a full arrival, which is the ordinary case**: everything supplied means
+     * `arrived == outstanding`, the fraction is one, and the whole shortage comes off the
+     * invoice with no rounding to argue about. Only a partial is apportioned, and the ratio
+     * survives it — crediting half the kilograms leaves half the pieces *and* half the
+     * kilograms, so the next arrival apportions against the same rate.
+     *
+     * The same pro-rata {@see undeliveredStockQuantity()} makes in the other direction, and for
+     * the same reason.
+     *
+     * Zero when there is nothing outstanding to credit, so a caller can subtract it blind.
+     */
+    public function creditForStockArrival(string $arrived): string
+    {
+        $outstandingStock = $this->shortageStockQuantity();
+        $outstandingBilled = (string) ($this->shortage_quantity ?? '0');
+
+        if ($outstandingStock === null || bccomp($outstandingStock, '0', 3) <= 0) {
+            return '0.000';
+        }
+
+        // More arrived than was outstanding — a ceiling the callers already enforce, guarded here
+        // because crediting more than the line is short would hand the customer goods they were
+        // never billed for.
+        if (bccomp($arrived, $outstandingStock, 3) >= 0) {
+            return $outstandingBilled;
+        }
+
+        return bcdiv(bcmul($outstandingBilled, $arrived, 8), $outstandingStock, 3);
     }
 
     /**

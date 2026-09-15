@@ -104,11 +104,23 @@ void main() {
 
     test('the undo is a POST to the row, not a DELETE', () async {
       // Act
-      await repository.reverseSupply(41, 77);
+      await repository.reverseSupply(41, 77, reason: 'سُجّلت مرتين');
 
       // Assert — it writes a new ledger entry rather than removing one; the history is the point.
       expect(captured.path, '/shortages/41/supplies/77/reversal');
       expect(captured.method, 'POST');
+    });
+
+    test('the undo sends «reason», which is the key the endpoint validates', () async {
+      // Arrange - Act — this sent `notes` and, because nothing ever collected a value, the body
+      // went out as `{}`. Every reversal came back 422 «سبب العكس مطلوب» and the row's action
+      // looked broken. The same shape the unit picker above was caught in.
+      await repository.reverseSupply(41, 77, reason: 'سُجّلت مرتين');
+
+      // Assert
+      final body = captured.data! as Map<String, dynamic>;
+      expect(body['reason'], 'سُجّلت مرتين');
+      expect(body.containsKey('notes'), isFalse);
     });
   });
 

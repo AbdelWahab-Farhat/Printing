@@ -408,17 +408,29 @@ class NawrisStatusMappingTest extends TestCase
         $this->assertSame(OrderStatus::OutForDelivery, $order->fresh()->status);
     }
 
-    public function test_code_three_at_their_company_moves_nothing(): void
+    public function test_code_three_at_their_company_puts_the_order_on_the_road(): void
     {
-        // Arrange — «في الشركة» is their warehouse, not the road. Only a courier holding the
-        // parcel makes it «جاري التوصيل», and that is code 4.
+        // Arrange — «في الشركة» is the parcel in the carrier's hands, and the order is no longer
+        // ours to hand over: from our side it has left, whether it is sitting in their warehouse
+        // or already on a motorbike. That is why code 3 joins 4 «مع المندوب» and 16 «في الطريق
+        // إلى الفرع» on `OrderStatus::OutForDelivery` — the three of them are one fact about us,
+        // told at three levels of detail about them.
+        //
+        // The earlier reading held code 3 back at «جاهزة» on the grounds that their warehouse is
+        // not the road. It made «جاري التوصيل» wait for a courier scan that on some routes never
+        // comes, leaving parcels that had genuinely gone reading as though they were still on our
+        // shelf.
         [$order, $parcel] = $this->outForDelivery(OrderStatus::Ready);
 
         // Act
         $this->send($this->body(['to_status_code' => 3, 'to_status_text' => 'في الشركة', 'order_price' => null]));
 
         // Assert
-        $this->assertSame(OrderStatus::Ready, $order->fresh()->status);
+        $this->assertSame(OrderStatus::OutForDelivery, $order->fresh()->status);
+
+        // **And their own words are kept whatever we mapped them to.** The parcel records the
+        // code and the label they sent, so «أين هي بالضبط؟» is answerable at their granularity
+        // even though our status has collapsed three of their codes into one.
         $this->assertSame(3, $parcel->fresh()->remote_status_code);
         $this->assertSame('في الشركة', $parcel->fresh()->remote_status_text);
     }

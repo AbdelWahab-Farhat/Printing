@@ -332,6 +332,11 @@ final class AuditAttributeLabels
             'unit_price' => 'سعر الوحدة',
             'line_total' => 'إجمالي البند',
             'shortage_quantity' => 'الكمية الناقصة',
+            // **The same gap in the unit the warehouse counts**, and the one «النواقص» chases:
+            // the column above is what comes off the invoice, this is what gets bought and
+            // shelved. Empty wherever the two units agree. The distinction `warehouse_quantity`
+            // below already draws, worded to match.
+            'shortage_warehouse_quantity' => 'الكمية الناقصة من المخزن',
             'undelivered_quantity' => 'الكمية غير المستلمة',
             'undelivered_disposition' => 'مصير الكمية غير المستلمة',
             // In the shelf's unit, not the line's — it is what actually went back on the shelf.
