@@ -6,16 +6,29 @@ namespace App\Domain\Catalog\Actions;
 
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductImage;
+use App\Support\Media\StoreUploadedFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 /**
  * Stores an uploaded photo and records it against the product.
+ *
+ * The file itself goes through {@see StoreUploadedFile}, which owns the generated name, the
+ * sniffed type and the measurements. What is left here is the only thing that is about a
+ * *product*: which photo is the primary one.
+ *
+ * **`mime_type` is now the sniffed type rather than `getClientMimeType()`.** This action used to
+ * store the client's own claim, which was defensible only because the `image` validation rule
+ * had already proved the content really was an image — so the claim was checked but never
+ * recorded. It is now recorded as what it is, which is strictly more accurate and matches what
+ * every other file in the system stores.
  */
 final class UploadProductImage
 {
-    public function __construct(private readonly SetPrimaryProductImage $setPrimary) {}
+    public function __construct(
+        private readonly SetPrimaryProductImage $setPrimary,
+        private readonly StoreUploadedFile $storeFile,
+    ) {}
 
     public function __invoke(
         Product $product,
@@ -23,33 +36,25 @@ final class UploadProductImage
         ?string $altText = null,
         bool $makePrimary = false,
     ): ProductImage {
-        $disk = (string) config('media.disk');
-
-        // A generated name, not the uploaded one: two customers uploading "logo.png" must not
-        // collide, and an attacker must not get to choose a path.
-        $path = $file->storeAs(
+        $stored = ($this->storeFile)(
+            $file,
+            (string) config('media.disk'),
             "products/{$product->getKey()}",
-            Str::uuid()->toString().'.'.$file->extension(),
-            ['disk' => $disk],
         );
-
-        // getimagesize returns false rather than throwing when a file is not a readable image,
-        // so dimensions stay null instead of failing an otherwise valid upload.
-        [$width, $height] = $this->dimensionsOf($file);
 
         // The first photo of a product becomes its primary one — a catalogue entry with images
         // but no thumbnail would just be a gap in the grid.
         $shouldBePrimary = $makePrimary || ! $product->images()->exists();
 
-        return DB::transaction(function () use ($product, $disk, $path, $file, $altText, $width, $height, $shouldBePrimary): ProductImage {
+        return DB::transaction(function () use ($product, $stored, $altText, $shouldBePrimary): ProductImage {
             $image = $product->images()->create([
-                'disk' => $disk,
-                'path' => $path,
-                'original_filename' => $file->getClientOriginalName(),
-                'mime_type' => $file->getClientMimeType(),
-                'size_bytes' => $file->getSize(),
-                'width_px' => $width,
-                'height_px' => $height,
+                'disk' => $stored->disk,
+                'path' => $stored->path,
+                'original_filename' => $stored->originalFilename,
+                'mime_type' => $stored->mimeType,
+                'size_bytes' => $stored->sizeBytes,
+                'width_px' => $stored->widthPx,
+                'height_px' => $stored->heightPx,
                 'alt_text' => $altText,
                 'is_primary' => false,
                 'sort_order' => (int) $product->images()->max('sort_order') + 1,
@@ -61,15 +66,5 @@ final class UploadProductImage
 
             return $image->refresh();
         });
-    }
-
-    /**
-     * @return array{0: int|null, 1: int|null}
-     */
-    private function dimensionsOf(UploadedFile $file): array
-    {
-        $size = @getimagesize($file->getRealPath());
-
-        return $size === false ? [null, null] : [$size[0], $size[1]];
     }
 }

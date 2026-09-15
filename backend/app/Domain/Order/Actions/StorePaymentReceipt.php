@@ -6,27 +6,21 @@ namespace App\Domain\Order\Actions;
 
 use App\Domain\Customer\Actions\UploadCustomerDesign;
 use App\Domain\Order\Models\Order;
+use App\Support\Media\StoreUploadedFile;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Str;
 
 /**
  * Writes a payment's receipt (الواصل) to the media disk and describes what it wrote.
  *
- * Built on the same media layer as {@see UploadCustomerDesign}, with the same three habits and
- * for the same reasons:
+ * The file goes through {@see StoreUploadedFile} — the generated name, the sniffed extension and
+ * the checksum all live there now. What is left here is the shape of the columns a payment row
+ * expects, and one decision:
  *
- * 1. **The disk and the path are returned, never a URL.** Moving to S3 stays a config change
- *    with no migration and no rewritten rows.
- * 2. **A generated filename.** Two customers sending `receipt.pdf` must not collide, and nobody
- *    gets to choose a path — a client-supplied name is a directory-traversal attempt waiting to
- *    be tried. Only the extension survives, and it is read off the sniffed bytes.
- * 3. **A sha256 of the bytes**, taken while the temporary copy is still readable. Unlike a
- *    design's, it is not a uniqueness key — one transfer legitimately covers two entries — but
- *    it answers "is this the same paper we were sent last time?" without opening either.
- *
- * **Not idempotent, deliberately**, which is the one place it parts from the design uploader.
- * A design is a thing the customer owns once; a receipt is evidence attached to a particular
- * entry, and two entries backed by the same transfer each need their own row pointing at it.
+ * **Not idempotent, deliberately**, which is the one place this parts from
+ * {@see UploadCustomerDesign}. A design is a thing the customer owns once; a receipt is evidence
+ * attached to a particular entry, and two entries backed by the same bank transfer each need
+ * their own row pointing at it. The checksum is still recorded — it answers "is this the same
+ * paper we were sent last time?" without opening either — it is simply not a uniqueness key.
  *
  * The file is written inside the caller's transaction, so a payment refused for exceeding what
  * is outstanding leaves an object behind with no row. That costs storage and nothing else — the
@@ -35,6 +29,8 @@ use Illuminate\Support\Str;
  */
 final class StorePaymentReceipt
 {
+    public function __construct(private readonly StoreUploadedFile $storeFile) {}
+
     /**
      * @return array{
      *     receipt_disk: string,
@@ -46,28 +42,18 @@ final class StorePaymentReceipt
      */
     public function __invoke(Order $order, UploadedFile $file): array
     {
-        $checksum = hash_file('sha256', $file->getRealPath());
-
-        $disk = (string) config('media.payment_receipts.disk');
-
-        // The extension the *bytes* answer to, never the one the client's filename claims —
-        // a JPEG called `waseel.pdf` is stored as the JPEG it is. Validation has already
-        // limited the answers to pdf and the image formats, so the fallback is unreachable
-        // in practice and exists so a null could never write an extensionless path.
-        $extension = $file->guessExtension() ?? 'bin';
-
-        $path = $file->storeAs(
+        $stored = ($this->storeFile)(
+            $file,
+            (string) config('media.payment_receipts.disk'),
             "payment-receipts/{$order->getKey()}",
-            Str::uuid()->toString().'.'.$extension,
-            ['disk' => $disk],
         );
 
         return [
-            'receipt_disk' => $disk,
-            'receipt_path' => (string) $path,
-            'receipt_original_filename' => (string) $file->getClientOriginalName(),
-            'receipt_size_bytes' => (int) $file->getSize(),
-            'receipt_checksum' => (string) $checksum,
+            'receipt_disk' => $stored->disk,
+            'receipt_path' => $stored->path,
+            'receipt_original_filename' => $stored->originalFilename,
+            'receipt_size_bytes' => $stored->sizeBytes,
+            'receipt_checksum' => $stored->checksum,
         ];
     }
 }

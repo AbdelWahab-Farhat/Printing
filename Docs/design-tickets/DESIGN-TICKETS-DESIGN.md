@@ -1,7 +1,7 @@
 # Design Tickets — from an employee's request to an approved design on the customer's account
 
-> **Status: a proposal, waiting on the answers in [§12](#12-questions-that-need-an-answer).**
-> Branch `feat/design-tickets`. No code yet — this document is the decision that comes before it.
+> **Status: decided — see [§12](#12-the-questions-and-how-they-were-answered) — and being built.**
+> Branch `feat/design-tickets`. Phase progress is tracked in [§13](#13-the-implementation-plan).
 
 The goal as it was given: **an organised system for design requests inside دعاية.** An employee
 sends the request to a designer from inside the system, follows the revisions and the review
@@ -492,18 +492,22 @@ The real boundary is `can:` on the Laravel route, exactly as `app_router.dart` s
 
 ---
 
-## 12. Questions that need an answer
+## 12. The questions, and how they were answered
 
-| # | Question | Recommendation |
+**Answered by the business on 2026-09-15.** Q1, Q3, Q4 and Q5 were decided explicitly; Q2 and
+Q6–Q8 were left to the recommendation as written, which is therefore the decision. Nothing below
+is open — this section is now the record of what was chosen, not a request.
+
+| # | Question | Decision |
 |---|---|---|
-| **Q1** | **Can a ticket be cancelled?** The brief does not mention it, and tickets are always opened by mistake | **Yes** — `Cancelled` + `POST /{ticket}/cancellation` behind `design_tickets.manage`, with a mandatory reason. Without it a mistaken ticket sits in a designer's queue forever, and the only alternative is a delete that erases the history |
-| **Q2** | **One file table or two?** | **One**, with `kind` + a `CHECK` (§4). The screen reads both from one place, and the split buys a distinction one column already buys |
-| **Q3** | **Extract `StoreUploadedFile` now?** | **Yes** (§5) — a debt already recorded in BACKLOG, and this is the fourth time. Declining is acceptable and gets recorded; the feature does not depend on it |
-| **Q4** | **Seed a "مصمم" role?** | **Yes** (§6.3) — a role is what was asked for, and `Accountant` is the precedent. The administrator can reshape it from the screen at any time |
-| **Q5** | **On approval, is the design attached to the order automatically?** | **No — via a checkbox.** `AddOrderDesign` refuses while an order's designs are locked by its status, and an automatic step that fails half the time is worse than a button that is pressed |
-| **Q6** | **Does the designer get to see the customer's design library** to match a style? | **Deferred to BACKLOG.** The brief does not ask for it, and it opens "which customers?" — and with it `customers.view` through the back door |
-| **Q7** | **A due date or a priority on the ticket?** (`due_at` / `is_urgent`) | **Deferred.** `orders.is_urgent` is a ready precedent the day it is asked for, and a column no screen reads is a column that lies |
-| **Q8** | **One designer per ticket?** | **Yes** — a single `accepted_by_user_id`. Several designers on one ticket destroys "the identity of whoever took it is never lost" |
+| **Q1** | **Can a ticket be cancelled?** The brief does not mention it, and tickets are always opened by mistake | ✅ **Decided: yes.** — `Cancelled` + `POST /{ticket}/cancellation` behind `design_tickets.manage`, with a mandatory reason. Without it a mistaken ticket sits in a designer's queue forever, and the only alternative is a delete that erases the history |
+| **Q2** | **One file table or two?** | ✅ **Decided: one** (left to the recommendation)., with `kind` + a `CHECK` (§4). The screen reads both from one place, and the split buys a distinction one column already buys |
+| **Q3** | **Extract `StoreUploadedFile` now?** | ✅ **Decided: yes.** (§5) — a debt already recorded in BACKLOG, and this is the fourth time. Declining is acceptable and gets recorded; the feature does not depend on it |
+| **Q4** | **Seed a "مصمم" role?** | ✅ **Decided: yes.** (§6.3) — a role is what was asked for, and `Accountant` is the precedent. The administrator can reshape it from the screen at any time |
+| **Q5** | **On approval, is the design attached to the order automatically?** | ✅ **Decided: no — via a checkbox.** `AddOrderDesign` refuses while an order's designs are locked by its status, and an automatic step that fails half the time is worse than a button that is pressed |
+| **Q6** | **Does the designer get to see the customer's design library** to match a style? | ✅ **Deferred to BACKLOG** (left to the recommendation). The brief does not ask for it, and it opens "which customers?" — and with it `customers.view` through the back door |
+| **Q7** | **A due date or a priority on the ticket?** (`due_at` / `is_urgent`) | ✅ **Deferred** (left to the recommendation). `orders.is_urgent` is a ready precedent the day it is asked for, and a column no screen reads is a column that lies |
+| **Q8** | **One designer per ticket?** | ✅ **Decided: yes** (left to the recommendation). — a single `accepted_by_user_id`. Several designers on one ticket destroys "the identity of whoever took it is never lost" |
 
 ---
 
@@ -514,7 +518,7 @@ Every phase is **mergeable on its own**: Pint clean, `scramble:analyze` clean, t
 
 | # | Phase | Contents |
 |---|---|---|
-| **0** | Decisions | The answers in §12 — **before any code** |
+| **0** | Decisions | ✅ **Done** — the answers in §12 |
 | **1** | Media | `StoreUploadedFile` + `StoredFile` + `HasStoredFile`, and the three existing actions converted onto them. **Success criterion: their tests stay exactly as they are and stay green** |
 | **2** | Permissions | Seven cases in `PermissionName` + `RoleName::Designer` + `RoleSeeder` + a grant migration |
 | **3** | Schema | Two new migrations + the three-column migration on `customer_designs`. `migrate --pretend` before running |
