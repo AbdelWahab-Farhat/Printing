@@ -39,6 +39,7 @@ final class CreateShortage
         $shortage->forceFill([
             'source' => ShortageSource::Manual,
             'name' => $data->name,
+            'type' => $data->type,
             'unit' => $data->unit,
             'required_quantity' => $data->requiredQuantity,
             // Written rather than left to the column defaults: an unsaved model does not read

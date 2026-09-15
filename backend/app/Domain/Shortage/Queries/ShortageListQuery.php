@@ -30,7 +30,12 @@ final class ShortageListQuery
     public function __invoke(ShortageFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return $this->applyFilters(Shortage::query(), $filters)
-            ->with(['order', 'customer', 'product', 'productVariant', 'assignee'])
+            // `orderItem.variant.stockItem` because the resource asks every row what unit its
+            // shelf counts in and whether it is still waiting for a weight — two relations out.
+            ->with([
+                'order', 'customer', 'product', 'productVariant',
+                'orderItem.variant.stockItem', 'assignee',
+            ])
             ->orderByDesc('id')
             ->paginate($perPage);
     }

@@ -89,6 +89,7 @@ class CreateShortage {
     int? productId,
     int? productVariantId,
     String? unit,
+    String? type,
     int? assignedToUserId,
     String? description,
   }) {
@@ -98,6 +99,7 @@ class CreateShortage {
       productId: productId,
       productVariantId: productVariantId,
       unit: unit,
+      type: type,
       assignedToUserId: assignedToUserId,
       description: description,
     );
@@ -115,6 +117,7 @@ class UpdateShortage {
     int shortageId, {
     required String name,
     required String quantity,
+    String? type,
     int? assignedToUserId,
     String? description,
   }) {
@@ -122,6 +125,7 @@ class UpdateShortage {
       shortageId,
       name: name,
       quantity: quantity,
+      type: type,
       assignedToUserId: assignedToUserId,
       description: description,
     );
@@ -178,6 +182,17 @@ class RecordShortageSupply {
       notes: notes,
     );
   }
+}
+
+/// Saying how much the warehouse is short — the weight nobody could know when the shortage was
+/// declared, and the thing every supply is blocked on until it is stated.
+class SetShortageWarehouseQuantity {
+  const SetShortageWarehouseQuantity(this._repository);
+
+  final ShortageRepository _repository;
+
+  Future<Either<Failure, Shortage>> call(int shortageId, {required String quantity}) =>
+      _repository.setWarehouseQuantity(shortageId, quantity: quantity);
 }
 
 /// Undoing one, which takes the goods back off the shelf.

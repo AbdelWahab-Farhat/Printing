@@ -18,6 +18,7 @@ use App\Domain\Shortage\Actions\RecalculateShortageTotals;
 use App\Domain\Shortage\Actions\SyncShortagesFromOrder;
 use App\Domain\Shortage\Enums\ShortageSource;
 use App\Domain\Shortage\Enums\ShortageStatus;
+use App\Domain\Shortage\Enums\ShortageType;
 use Database\Factories\ShortageFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -47,7 +48,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * authority and this row is derived from it.
  */
 #[UseFactory(ShortageFactory::class)]
-#[Fillable(['name', 'unit', 'required_quantity', 'description', 'product_id', 'product_variant_id'])]
+#[Fillable(['name', 'type', 'unit', 'required_quantity', 'description', 'product_id', 'product_variant_id'])]
 class Shortage extends Model implements HasAuditTrail
 {
     /** @use HasFactory<ShortageFactory> */
@@ -81,6 +82,9 @@ class Shortage extends Model implements HasAuditTrail
             'source' => ShortageSource::class,
             'status' => ShortageStatus::class,
             'unit' => PricingUnit::class,
+            // Fillable unlike `source` beside it, because a person chooses this one — but never
+            // `ShortageType::Order`, which the form refuses and the table's CHECK refuses again.
+            'type' => ShortageType::class,
             // Strings all the way, three places, like every quantity it is compared against: a
             // shortage is measured off the same scale the order line was.
             'required_quantity' => 'decimal:3',
@@ -152,6 +156,41 @@ class Shortage extends Model implements HasAuditTrail
     public function isStockable(): bool
     {
         return $this->product_variant_id !== null;
+    }
+
+    /**
+     * The unit the shelf behind this shortage counts its pile in.
+     *
+     * **Not {@see $unit} while the weight is unknown, and the same thing once it is known.** An
+     * order-born shortage on a size the warehouse weighs is counted in the unit the customer was
+     * billed in until somebody states the weight — the bags are missing, so nothing can be put on
+     * a scale — and converts the moment they do. This is what it *will* become, which is what a
+     * screen needs to label the box that asks.
+     *
+     * Read through the line rather than through `productVariant`, because the line is where the
+     * pair lives and `OrderItem::stockUnit()` already answers this with its own fallbacks.
+     * Falls back to this row's own unit when there is no line: a manual shortage has one unit and
+     * has never had another.
+     */
+    public function stockUnit(): PricingUnit
+    {
+        return $this->orderItem?->stockUnit() ?? $this->unit;
+    }
+
+    /**
+     * Whether this shortage is still waiting for somebody to say how much is owed.
+     *
+     * **The one question the screen asks to decide whether to offer the box** — and the same
+     * condition {@see App\Domain\Shortage\Actions\RecordShortageSupply} refuses an arrival on.
+     * True only on an order-born row whose size the warehouse counts differently and whose weight
+     * nobody has stated yet; false on everything else, including every manual shortage.
+     *
+     * Published rather than derived in the app: it depends on the stock item behind the size, two
+     * relations past the line, and no payload a client holds can see it.
+     */
+    public function weightIsUnknown(): bool
+    {
+        return $this->orderItem?->shortageWeightIsUnknown() ?? false;
     }
 
     /**

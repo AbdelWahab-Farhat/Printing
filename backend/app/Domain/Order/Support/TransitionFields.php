@@ -269,8 +269,12 @@ final class TransitionFields
                 $fields[] = TransitionField::number(
                     key: "shortage_warehouse_{$item->getKey()}",
                     label: "الناقص من {$item->variant_label} في المخزن ({$item->stockUnit()->label()})",
+                    // **Offered, never demanded.** The bags are missing, so there is nothing to
+                    // weigh and nobody can honestly fill this in at the counter. Whoever first
+                    // knows enters it later; until they do no purchase may be recorded against
+                    // the shortage — `ShortageWeightIsUnknown` is where the insistence lives.
                     hint: "يُباع بـ{$item->pricing_unit->label()} ويُخزَّن بـ{$item->stockUnit()->label()}"
-                        .' — هذه هي الكمية التي ستُشترى وتدخل المخزن',
+                        .' — اتركه فارغاً إن لم يُعرف الوزن بعد، ويُحدَّد قبل تسجيل الشراء',
                 );
             }
         }
@@ -288,11 +292,25 @@ final class TransitionFields
         // record of what it was short of.
         if ($order->status === OrderStatus::Shortage && ! $target->isFinal()) {
             foreach ($order->items as $item) {
-                $short = $item->shortageStockQuantity();
+                /*
+                 * **A line nobody has weighed has no figure in the shelf's unit**, and there is
+                 * no way to produce one: the bags were missing, so nothing could be put on a
+                 * scale. Such a line is still counted in the unit it was sold in and is asked
+                 * about that way — see {@see OrderItem::shortageWeightIsUnknown()}. Reading the
+                 * shelf's figure blind would leave no box at all on exactly the lines that have a
+                 * shortage to clear.
+                 */
+                $weightIsUnknown = $item->shortageWeightIsUnknown();
 
-                if ($short === null || bccomp($short, '0', 3) <= 0) {
+                $short = $weightIsUnknown
+                    ? (string) ($item->shortage_quantity ?? '0')
+                    : ($item->shortageStockQuantity() ?? '0');
+
+                if (bccomp($short, '0', 3) <= 0) {
                     continue;
                 }
+
+                $unit = $weightIsUnknown ? $item->pricing_unit : $item->stockUnit();
 
                 /*
                  * **Asked in the shelf's unit, because what arrived is an arrival.** The person
@@ -304,7 +322,7 @@ final class TransitionFields
                  */
                 $fields[] = TransitionField::number(
                     key: "received_{$item->getKey()}",
-                    label: "الواصل من نواقص {$item->variant_label} ({$item->stockUnit()->label()})",
+                    label: "الواصل من نواقص {$item->variant_label} ({$unit->label()})",
                     max: (float) $short,
                     hint: 'الناقص '.DecimalText::trim($short).' — ما يبقى منه يُخصم من الفاتورة',
                     value: $short,

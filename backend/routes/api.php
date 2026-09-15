@@ -881,6 +881,21 @@ Route::prefix('v1')->group(function (): void {
 
         // No destroy route for a supply, and no update: the ledger is append-only and a mistake
         // is corrected by a reversal that names it — `order_payments` is the precedent.
+        /*
+         * «حدِّد الكمية من المخزن» — the weight nobody could know when the shortage was declared.
+         *
+         * **`shortages.manage` rather than an order grant**, though it writes to an order line:
+         * what it sets is `shortage_warehouse_quantity`, which the invoice never reads. The
+         * customer's figure is carried through untouched, so this is the chaser's job and not the
+         * order clerk's — and it is on this screen because the person who first knows the weight
+         * is the one about to record a purchase here.
+         *
+         * Archived orders are out of scope for the same reason every other shortage write is.
+         */
+        Route::patch('shortages/{shortage}/warehouse-quantity', [ShortageController::class, 'setWarehouseQuantity'])
+            ->middleware(['can:shortages.manage', ArchivedOrderShortagesNeedTheArchiveGrant::class])
+            ->name('shortages.warehouse-quantity');
+
         Route::post('shortages/{shortage}/supplies', [ShortageController::class, 'recordSupply'])
             ->middleware(['can:shortages.supplies.record', ArchivedOrderShortagesNeedTheArchiveGrant::class])
             ->name('shortages.supplies.store');

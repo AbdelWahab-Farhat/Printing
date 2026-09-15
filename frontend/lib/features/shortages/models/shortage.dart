@@ -60,6 +60,66 @@ enum ShortageSource {
   final String wire;
 }
 
+/// What kind of thing is short — «ورق طباعة» as against «كيس شحن ٢٥*٣٥».
+///
+/// **A second axis beside [ShortageSource], and the two answer different questions.** `source`
+/// says who wrote the row down; this says what the shop is out of. A shortage of paper somebody
+/// typed by hand is both «يدوي» and «ورق طباعة».
+///
+/// **[order] is never offered on the manual form.** The server stamps it on every row mirrored
+/// from an order line and refuses it on the create endpoint, with a CHECK on the table saying so
+/// a third time — so a picker that offered it would be building a 422. [selectableByHand] is what
+/// the form draws.
+///
+/// **[label] exists for one screen only — the form.** Everywhere a saved shortage is *rendered*,
+/// the server's `type_label` is what prints, exactly as it does for the status and the source. A
+/// picker has to name the choices before anything has been saved to read a label off, which is
+/// the same exception `PricingUnit` is written for and is documented on the unit dropdown beside
+/// this one.
+enum ShortageType {
+  @JsonValue('order')
+  order('order'),
+
+  @JsonValue('printing_paper')
+  printingPaper('printing_paper'),
+
+  @JsonValue('ink')
+  ink('ink'),
+
+  @JsonValue('maintenance')
+  maintenance('maintenance'),
+
+  @JsonValue('other')
+  other('other'),
+
+  unknown('');
+
+  const ShortageType(this.wire);
+
+  final String wire;
+
+  /// The form's own words. See the note on the enum for why these are not read off the server.
+  String get label => switch (this) {
+    ShortageType.order => 'نقص طلبية',
+    ShortageType.printingPaper => 'ورق طباعة',
+    ShortageType.ink => 'حبر',
+    ShortageType.maintenance => 'صيانة وقطع غيار',
+    ShortageType.other => 'أخرى',
+    ShortageType.unknown => 'غير معروف',
+  };
+
+  /// What a person may put on a shortage they are writing themselves.
+  ///
+  /// [unknown] is excluded too — it is the fallback for a value this build has never heard of,
+  /// which is a thing to render, never a thing to send.
+  static List<ShortageType> get selectableByHand => const [
+    printingPaper,
+    ink,
+    maintenance,
+    other,
+  ];
+}
+
 /// One move this shortage may make, as the server offers it.
 ///
 /// **The whole of what draws the status buttons.** A screen that drew every status it knows would
@@ -161,6 +221,13 @@ abstract class Shortage with _$Shortage {
     @JsonKey(unknownEnumValue: ShortageSource.unknown) required ShortageSource source,
     @JsonKey(name: 'source_label') required String sourceLabel,
 
+    /// What kind of thing is short — see [ShortageType]. Defaulted rather than required so a
+    /// payload from a server too old to send it renders as «أخرى» instead of failing to parse.
+    @JsonKey(unknownEnumValue: ShortageType.unknown)
+    @Default(ShortageType.other)
+    ShortageType type,
+    @JsonKey(name: 'type_label') String? typeLabel,
+
     /// «كيس شحن — 25*35», or whatever somebody typed on a manual one.
     required String name,
 
@@ -194,6 +261,21 @@ abstract class Shortage with _$Shortage {
     /// picker in front of a roll of tape — and sending a warehouse for one is a 422 in its own
     /// right, because the caller would be telling the server goods are moving when they are not.
     @JsonKey(name: 'is_stockable') @Default(false) bool isStockable,
+
+    /// What this row will be counted in once somebody states the weight.
+    ///
+    /// The same as [unitLabel] on every ordinary shortage. It differs only while an order-born
+    /// row is still waiting: the bags are missing, so the row is counted in the unit it was sold
+    /// in and this is what it will convert to — which is what labels the box that asks.
+    @JsonKey(name: 'stock_unit') String? stockUnit,
+    @JsonKey(name: 'stock_unit_label') String? stockUnitLabel,
+
+    /// Whether this shortage is still waiting for somebody to say how much is owed.
+    ///
+    /// **Read, never inferred.** It depends on the stock item behind the size, two relations past
+    /// the order line, and no payload the app holds can see it. While true, every supply is
+    /// refused — so this is also why the record button will turn somebody away.
+    @JsonKey(name: 'weight_is_unknown') @Default(false) bool weightIsUnknown,
 
     @JsonKey(name: 'order_id') int? orderId,
     @JsonKey(name: 'order_item_id') int? orderItemId,

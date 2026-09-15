@@ -61,6 +61,16 @@ final readonly class LineShortage
      */
     public static function afterStockArrival(OrderItem $item, string $arrived): self
     {
+        // **A line nobody has weighed is still counted in the unit it was sold in**, so what
+        // arrived was counted that way too — see {@see OrderItem::shortageWeightIsUnknown()}.
+        // There is nothing to apportion: the arrival and the requirement are already the same
+        // unit, and the weight column stays null because it is still unknown.
+        if ($item->shortageWeightIsUnknown()) {
+            $left = bcsub((string) $item->shortage_quantity, $arrived, 3);
+
+            return bccomp($left, '0', 3) > 0 ? new self(quantity: $left) : self::none();
+        }
+
         $outstandingStock = $item->shortageStockQuantity();
 
         if ($outstandingStock === null || bccomp($arrived, $outstandingStock, 3) >= 0) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Shortage\DTOs;
 
 use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Shortage\Enums\ShortageType;
 
 /**
  * A shortage as a person typed it.
@@ -22,6 +23,16 @@ final readonly class ShortageData
 {
     public function __construct(
         public string $name,
+
+        /**
+         * What kind of thing is short — «ورق طباعة» rather than «كيس شحن».
+         *
+         * Never {@see ShortageType::Order}: that value belongs to the sync, and this DTO only
+         * ever describes something a person typed. The form refuses it and the table's own CHECK
+         * refuses it again.
+         */
+        public ShortageType $type,
+
         public PricingUnit $unit,
         public string $requiredQuantity,
 
@@ -48,6 +59,12 @@ final readonly class ShortageData
     {
         return new self(
             name: trim((string) $validated['name']),
+            // Defaulted rather than required, for the reason `productId` below is optional: what
+            // gets written down by hand is often what no list anticipated, and «أخرى» is a
+            // truthful answer where the nearest wrong category would not be.
+            type: isset($validated['type']) && $validated['type'] !== ''
+                ? ShortageType::from((string) $validated['type'])
+                : ShortageType::Other,
             unit: PricingUnit::from((string) $validated['unit']),
             // A quantity, not money: three places, and a string from here on.
             requiredQuantity: bcadd((string) $validated['required_quantity'], '0', 3),

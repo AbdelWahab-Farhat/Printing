@@ -10,6 +10,7 @@ use App\Domain\Order\Enums\ShortageRevision;
 use App\Domain\Order\OrderService;
 use App\Domain\Shortage\Enums\ShortageSource;
 use App\Domain\Shortage\Enums\ShortageStatus;
+use App\Domain\Shortage\Enums\ShortageType;
 use App\Domain\Shortage\Enums\SupplyKind;
 use App\Domain\Shortage\Models\Shortage;
 use Illuminate\Support\Facades\DB;
@@ -138,6 +139,36 @@ final class SyncShortagesFromOrder
             return;
         }
 
+        /*
+         * **A row changing its unit is being re-denominated, not filled.**
+         *
+         * A shortage on a size the warehouse weighs is declared in the unit it was sold in —
+         * «ناقص ٣٠ قطعة» — because the bags are missing and nothing can be put on a scale. The
+         * moment somebody states the weight, the line starts reporting «١٢٫٥ كجم» and the
+         * requirement has to follow it.
+         *
+         * Read through the arithmetic below, that drop from thirty to twelve and a half is
+         * indistinguishable from goods turning up: it would write «وصلت ١٧٫٥» against a shortage
+         * nobody has supplied anything to. So the unit is compared first, and a row whose
+         * denomination has changed is simply restated.
+         *
+         * **Safe because nothing can have been supplied yet.** `RecordShortageSupply` refuses
+         * every arrival while the weight is unknown — `ShortageWeightIsUnknown` — so a row
+         * reaching this branch has an empty ledger, and there is no history for the restatement
+         * to contradict.
+         */
+        if ($shortage->unit->value !== $line->unit) {
+            $shortage->forceFill([
+                'name' => $line->name,
+                'unit' => PricingUnit::from($line->unit),
+                'required_quantity' => $missing,
+            ])->save();
+
+            ($this->recalculate)($shortage->refresh());
+
+            return;
+        }
+
         // **What arrived through the order screen, if anything did.** The requirement has not
         // moved, the line's missing quantity fell, and no purchase was recorded here — so the gap
         // between the two is goods that turned up by the other road. See SupplyKind.
@@ -217,6 +248,11 @@ final class SyncShortagesFromOrder
             'product_variant_id' => $line->productVariantId,
             // Snapshotted, like everything a person reads on an old record — see the model.
             'name' => $line->name,
+            // **Stamped, never chosen.** `source` and `type` are two halves of one fact for a row
+            // born of an order, and the table's `type_matches_source` CHECK refuses them apart —
+            // so a person can no more type «نقص طلبية» onto a roll of tape than this can write
+            // anything else here.
+            'type' => ShortageType::Order,
             'unit' => PricingUnit::from($line->unit),
             'required_quantity' => $missing,
             // Explicit for the reason CreateShortage gives: an unsaved model does not read the

@@ -91,13 +91,25 @@ class _EditShortagesSheetState extends State<_EditShortagesSheet> {
       for (final entry in _missing.entries)
         entry.key: LineShortageEntry(
           quantity: entry.value.text,
-          // Omitted on a cleared line as well as on a same-unit one: a weight beside no shortage
-          // is a measurement of nothing, and the server's CHECK refuses the pairing outright.
+          // **Null for anything but a weight somebody actually typed.**
+          //
+          // Omitted on a cleared line and on a same-unit one — a weight beside no shortage is a
+          // measurement of nothing, and the server's CHECK refuses the pairing outright. Omitted
+          // too when the box was simply left empty, which is the ordinary case: the missing bags
+          // cannot be weighed, so «not stated yet» is the honest answer and null is how it
+          // travels. An empty string here would reach the server as a value.
           warehouseQuantity: entry.value.text.trim().isEmpty
               ? null
-              : _weighed[entry.key]?.text,
+              : _blankToNull(_weighed[entry.key]?.text),
         ),
     });
+  }
+
+  /// Blank is «لم يُحدَّد بعد», and that is a different thing from a number.
+  static String? _blankToNull(String? value) {
+    final trimmed = value?.trim();
+
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
   @override
@@ -264,10 +276,17 @@ class _LineField extends StatelessWidget {
             inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]'))],
             helperText:
                 'يُباع بـ${item.pricingUnitLabel} ويُخزَّن بـ${item.stockUnitLabel ?? ''}'
-                ' — هذه الكمية هي التي ستُشترى',
+                ' — اتركه فارغاً إن لم يُعرف الوزن بعد، ويُحدَّد قبل تسجيل الشراء',
             validator: (value) {
               final text = value?.trim() ?? '';
-              if (text.isEmpty) return 'أدخل الكمية الناقصة من المخزن';
+
+              // **Empty is a legitimate answer, and usually the honest one.** The bags are
+              // missing, so at the moment somebody declares the shortage there is nothing to put
+              // on a scale and no factor that converts the count. Demanding a figure here would
+              // ask for a measurement of goods that do not exist. What the gap blocks is
+              // recording a *purchase* against the shortage — the server refuses that until the
+              // weight is known — not declaring the shortage in the first place.
+              if (text.isEmpty) return null;
 
               final weight = double.tryParse(text);
               if (weight == null) return 'أدخل رقماً';

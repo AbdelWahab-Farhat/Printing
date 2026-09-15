@@ -45,6 +45,7 @@ void main() {
     String? code,
     ProductImage? image,
     String? warehouseShortage,
+    bool weighed = false,
   }) => OrderItem(
     id: 11,
     productId: 7,
@@ -59,6 +60,9 @@ void main() {
     shortageWarehouseQuantity: warehouseShortage,
     // The shelf's unit, which only matters on the lines that carry a second figure.
     stockUnitLabel: 'قطعة',
+    // Sold by the kilo off a piece-counted pile. `weighed` alone is the two-unit case with the
+    // weight still unknown; pass `warehouseShortage` too for one somebody has since stated.
+    isStockedInAnotherUnit: weighed || warehouseShortage != null,
     billableQuantity: billable,
     unitPrice: '32.000',
     lineTotal: shortage == null ? '3200.00' : '2400.00',
@@ -230,7 +234,21 @@ void main() {
     // Assert — the invoice's figure and the warehouse's, one under the other: the first is what
     // the customer stops paying for, the second is what somebody has to go and buy.
     expect(find.text('ناقص: 25 من 100 كجم — غير محتسب'), findsOneWidget);
-    expect(find.text('من المخزن: 6 قطعة — هذا ما يُشترى'), findsOneWidget);
+    expect(find.text('ناقص من المخزن: 6 قطعة — هذا ما يُشترى'), findsOneWidget);
+  });
+
+  testWidgets('a line whose weight nobody knows yet says so', (tester) async {
+    // Arrange — sold by the kilo off a piece-counted pile, and nobody has stated the weight: the
+    // ordinary state of a fresh shortage, since the missing goods cannot be put on a scale.
+    final item = line(shortage: '25.000', billable: '75.000', weighed: true);
+    await tester.pumpWidget(host(OrderItemCard(item: item, showCosts: false)));
+
+    // Act
+    await tester.pump();
+
+    // Assert — named rather than left blank: this gap is what stops a purchase being recorded,
+    // and a buyer refused elsewhere with nothing said here would have nowhere to look.
+    expect(find.text('الوزن من المخزن غير محدد — حدِّده قبل تسجيل الشراء'), findsOneWidget);
   });
 
   testWidgets('a line stocked in its own unit says it once', (tester) async {

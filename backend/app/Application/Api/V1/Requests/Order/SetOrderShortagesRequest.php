@@ -25,9 +25,11 @@ use Illuminate\Support\Collection;
  * against, and inventing one would mean the قطعة→كجم conversion this system deliberately refuses
  * to make. It is bounded only by being a positive number.
  *
- * **The second is required exactly where the shelf disagrees with the invoice**, which is a fact
- * about the stock item behind the size rather than about the payload — so it is asked of the line,
- * through `OrderItem::isStockedInAnotherUnit()`, and never of the client.
+ * **The second is never required here.** A shortage is declared before the goods that would
+ * answer it exist, so nobody can weigh them; the field is offered where the shelf disagrees with
+ * the invoice and left open when it cannot be filled. What the gap blocks is recording an
+ * *arrival* against it — `ShortageWeightIsUnknown` — not declaring the shortage in the first
+ * place.
  *
  * The permission is on the route — unlike a status change, this endpoint costs the same grant
  * whatever it is asked to do.
@@ -75,13 +77,22 @@ class SetOrderShortagesRequest extends FormRequest
             };
 
             /*
-             * **The weight is demanded where the two units part, and refused where they do not.**
+             * **The weight is refused where the units agree, and merely invited where they part.**
              *
-             * Demanded, because a gap of thirty bags off a shelf weighed in kilograms is a gap of
-             * some weight nobody can compute — and defaulting it to the count is what put a
-             * tally of bags into a balance of kilograms. Refused in the other direction for the
-             * reason a warehouse on an unstockable shortage is: the caller believes a conversion
-             * is happening that is not.
+             * **Not demanded, and that is the whole point.** The bags are missing — that is what
+             * «ناقص» means — so at the moment somebody declares one there is nothing on a scale
+             * to read and no factor in the catalogue to derive a weight from. Insisting here
+             * would make the form ask for a measurement of goods that do not exist, and the only
+             * answer anybody could give is a guess entered under protest.
+             *
+             * It is left open instead, and whoever first knows fills it in: someone estimating
+             * later, or the buyer standing at the supplier. Until then the shortage is counted in
+             * the unit it was sold in and no arrival may be recorded against it — see
+             * `OrderItem::shortageWeightIsUnknown()` and `ShortageWeightIsUnknown`, which is
+             * where the insistence actually belongs.
+             *
+             * Refused in the other direction for the reason a warehouse on an unstockable
+             * shortage is: the caller believes a conversion is happening that is not.
              */
             $rules[$key][] = function (string $attribute, mixed $value, Closure $fail) use ($item): void {
                 $weighed = is_array($value) ? ($value['warehouse_quantity'] ?? null) : null;
@@ -91,23 +102,14 @@ class SetOrderShortagesRequest extends FormRequest
                     return;
                 }
 
-                if ($item->isStockedInAnotherUnit()) {
-                    if ($weighed === null || $weighed === '') {
-                        $fail(
-                            "«{$item->variant_label}» يُحسب في المخزن بـ«{$item->stockUnit()->label()}»"
-                            ." ويُباع بـ«{$item->pricing_unit->label()}» — أدخل الكمية الناقصة من المخزن"
-                        );
-                    }
-
+                if ($item->isStockedInAnotherUnit() || $weighed === null || $weighed === '') {
                     return;
                 }
 
-                if ($weighed !== null && $weighed !== '') {
-                    $fail(
-                        "«{$item->variant_label}» يُحسب في المخزن بـ«{$item->pricing_unit->label()}» نفسها"
-                        .' — لا تُدخل كمية مخزن مختلفة'
-                    );
-                }
+                $fail(
+                    "«{$item->variant_label}» يُحسب في المخزن بـ«{$item->pricing_unit->label()}» نفسها"
+                    .' — لا تُدخل كمية مخزن مختلفة'
+                );
             };
         }
 

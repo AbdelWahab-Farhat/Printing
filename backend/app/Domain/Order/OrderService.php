@@ -469,10 +469,22 @@ class OrderService
                 // The two halves of the snapshot joined the way every screen prints them, so the
                 // shortage's own name needs no knowledge of how an order line is spelled.
                 name: trim($item->product_name.' — '.$item->variant_label),
-                // **The shelf's unit and the shelf's number**, because that is what the chase
-                // is denominated in — see the DTO. The invoice's pair stays on the line.
-                unit: $item->stockUnit()->value,
-                shortageQuantity: $item->shortageStockQuantity(),
+                // **The shelf's unit and the shelf's number, once anybody knows them.** The
+                // chase is denominated in what will be bought and shelved — see the DTO.
+                //
+                // **Until then it is counted in the unit it was sold in**, because that is the
+                // only figure that exists: the bags are missing, so there is no weight to read
+                // off a scale and none to derive. Labelling thirty bags «٣٠ كجم» to keep the
+                // column consistent would be a wrong number rather than an imprecise one. The
+                // row converts the moment somebody states the weight — see
+                // {@see OrderItem::shortageWeightIsUnknown()}, and `RecordShortageSupply`, which
+                // refuses an arrival while it is still open.
+                unit: $item->shortageWeightIsUnknown()
+                    ? $item->pricing_unit->value
+                    : $item->stockUnit()->value,
+                shortageQuantity: $item->shortageWeightIsUnknown()
+                    ? (string) $item->shortage_quantity
+                    : $item->shortageStockQuantity(),
             ))
             ->all();
     }

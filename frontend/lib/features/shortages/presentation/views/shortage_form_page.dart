@@ -61,6 +61,17 @@ class _ShortageFormViewState extends State<_ShortageFormView> {
   /// off, which is exactly this one.
   late PricingUnit _unit = PricingUnit.fromWire(widget.shortage?.unit);
 
+  /// What kind of thing is short — «ورق طباعة» rather than «كيس شحن».
+  ///
+  /// **Opens on «أخرى», which is the server's default too.** What gets written down by hand is
+  /// often what no list anticipated, and a form that forced a category would have somebody pick
+  /// the nearest wrong one to get past the field.
+  ///
+  /// «نقص طلبية» is never among the choices: the server stamps that on rows it mirrors from an
+  /// order line and refuses it here, so offering it would be building a 422. A shortage already
+  /// carrying it cannot reach this form at all — an order-born row is not editable.
+  late ShortageType _type = widget.shortage?.type ?? ShortageType.other;
+
   /// The catalogue row behind it, when there is one.
   ///
   /// **A shortage names a product *or* is free text, and both are ordinary.** «كيس شحن — 25*35»
@@ -121,6 +132,7 @@ class _ShortageFormViewState extends State<_ShortageFormView> {
       name: _name.text.trim(),
       quantity: Validators.toWesternDigits(_quantity.text.trim()),
       unit: _unit.wire,
+      type: _type.wire,
       productId: _picked?.product.id,
       productVariantId: _picked?.variant.id,
       assignedToUserId: _assignedToUserId,
@@ -216,6 +228,18 @@ class _ShortageFormViewState extends State<_ShortageFormView> {
                   ),
                   SizedBox(height: 12.h),
                 ],
+                // **Always asked, unlike the unit above it.** A product tells you what unit it
+                // is counted in; nothing in the catalogue says whether this sack is stationery or
+                // a spare part, so there is nobody to read the answer off but the person writing
+                // it down.
+                AppDropdown<ShortageType>(
+                  value: _type,
+                  items: ShortageType.selectableByHand,
+                  labelOf: (type) => type.label,
+                  label: 'نوع النقص',
+                  onChanged: (type) => setState(() => _type = type ?? _type),
+                ),
+                SizedBox(height: 12.h),
                 _PickerRow(
                   label: 'الموظف المسؤول',
                   value: _assigneeName ?? 'غير مُسنَد',

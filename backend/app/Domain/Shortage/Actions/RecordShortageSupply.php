@@ -17,6 +17,7 @@ use App\Domain\Shortage\Enums\ShortageStatus;
 use App\Domain\Shortage\Enums\SupplyKind;
 use App\Domain\Shortage\Exceptions\ShortageIsClosed;
 use App\Domain\Shortage\Exceptions\ShortageIsNotStockable;
+use App\Domain\Shortage\Exceptions\ShortageWeightIsUnknown;
 use App\Domain\Shortage\Exceptions\SupplyExceedsRemaining;
 use App\Domain\Shortage\Exceptions\SupplyNeedsAWarehouse;
 use App\Domain\Shortage\Exceptions\SupplyRequiresAnActor;
@@ -114,6 +115,13 @@ final class RecordShortageSupply
                 throw ShortageIsClosed::make();
             }
 
+            // **Before the ceiling is even read, because the ceiling is in the wrong unit.** A
+            // shortage whose weight nobody has stated is still counted in the unit the customer
+            // was billed in — the bags were missing, so there was nothing to weigh — and what is
+            // about to be recorded was bought by the kilo. Subtracting one from the other is not
+            // arithmetic anybody can do. See the exception, and `OrderItem::shortageWeightIsUnknown()`.
+            $this->guardTheUnit($locked);
+
             $remaining = $locked->remainingQuantity();
 
             if (bccomp($data->quantity, $remaining, 3) > 0) {
@@ -162,6 +170,43 @@ final class RecordShortageSupply
 
             return $supply;
         });
+    }
+
+    /**
+     * Refuses anything at all until the shortage is counted in the unit it will be bought in.
+     *
+     * **An order-born shortage on a size the warehouse weighs starts in the invoice's unit**, and
+     * that is not a defect: «ناقص ٣٠ قطعة» is the only fact that exists when the bags are missing,
+     * since goods that do not exist cannot be put on a scale and no catalogue factor converts the
+     * count. `OrderService::shortageLinesFor()` sends `pricing_unit` while that is so.
+     *
+     * A purchase, though, is made and received in the shelf's unit. Recording one against a
+     * requirement still expressed in pieces would subtract kilograms from a count of bags — and
+     * the result would go on to credit the customer's invoice through step four. So this is the
+     * one gate, and it is the first statement inside the lock rather than a check on the form: the
+     * weight can be filled in by another screen between a page load and a submit.
+     *
+     * Manual shortages and same-unit sizes pass straight through; they have only ever had one
+     * unit, and `shortageWeightIsUnknown()` is false for both.
+     *
+     * @throws ShortageWeightIsUnknown
+     */
+    private function guardTheUnit(Shortage $shortage): void
+    {
+        if ($shortage->order_item_id === null) {
+            return;
+        }
+
+        $item = OrderItem::query()->whereKey($shortage->order_item_id)->first();
+
+        if ($item === null || ! $item->shortageWeightIsUnknown()) {
+            return;
+        }
+
+        throw ShortageWeightIsUnknown::make(
+            $item->stockUnit()->label(),
+            $item->pricing_unit->label(),
+        );
     }
 
     /**

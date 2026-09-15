@@ -216,8 +216,10 @@ void main() {
     expect(saved![11]!.warehouseQuantity, '12.5');
   });
 
-  testWidgets('the weight is required once it is asked for', (tester) async {
-    // Arrange
+  testWidgets('the weight may be left blank, because nobody can weigh missing bags', (tester) async {
+    // Arrange — the bags are missing, so there is nothing to put on a scale and no factor that
+    // converts the count. Demanding a figure would ask for a measurement of goods that do not
+    // exist.
     await openTheSheet(tester, [line(weighed: true)]);
 
     // Act — the invoice's figure alone.
@@ -226,10 +228,10 @@ void main() {
     await tester.tap(find.text('حفظ'));
     await tester.pumpAndSettle();
 
-    // Assert — refused here rather than defaulting to the count, which is what used to put a
-    // tally of bags into a balance of kilograms.
-    expect(find.text('أدخل الكمية الناقصة من المخزن'), findsOneWidget);
-    expect(saved, isNull);
+    // Assert — the shortage is declared, and the weight travels as nothing. What the gap blocks
+    // is recording a purchase against it, which the server refuses until somebody knows.
+    expect(saved![11]!.quantity, '30');
+    expect(saved![11]!.warehouseQuantity, isNull);
   });
 
   testWidgets('clearing the line hides the weight rather than demanding one', (tester) async {

@@ -31,6 +31,7 @@ class SaveShortageCubit extends Cubit<SaveShortageState> {
     int? productId,
     int? productVariantId,
     String? unit,
+    String? type,
     int? assignedToUserId,
     String? description,
   }) async {
@@ -48,6 +49,7 @@ class SaveShortageCubit extends Cubit<SaveShortageState> {
             productId: productId,
             productVariantId: productVariantId,
             unit: unit,
+            type: type,
             assignedToUserId: assignedToUserId,
             description: description,
           )
@@ -55,6 +57,7 @@ class SaveShortageCubit extends Cubit<SaveShortageState> {
             id,
             name: name,
             quantity: quantity,
+            type: type,
             assignedToUserId: assignedToUserId,
             description: description,
           );

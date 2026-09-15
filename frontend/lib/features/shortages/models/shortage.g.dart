@@ -87,6 +87,14 @@ _Shortage _$ShortageFromJson(Map<String, dynamic> json) => _Shortage(
     unknownValue: ShortageSource.unknown,
   ),
   sourceLabel: json['source_label'] as String,
+  type:
+      $enumDecodeNullable(
+        _$ShortageTypeEnumMap,
+        json['type'],
+        unknownValue: ShortageType.unknown,
+      ) ??
+      ShortageType.other,
+  typeLabel: json['type_label'] as String?,
   name: json['name'] as String,
   unit: json['unit'] as String?,
   unitLabel: json['unit_label'] as String?,
@@ -108,6 +116,9 @@ _Shortage _$ShortageFromJson(Map<String, dynamic> json) => _Shortage(
       const <ShortageTransition>[],
   isEditable: json['is_editable'] as bool? ?? false,
   isStockable: json['is_stockable'] as bool? ?? false,
+  stockUnit: json['stock_unit'] as String?,
+  stockUnitLabel: json['stock_unit_label'] as String?,
+  weightIsUnknown: json['weight_is_unknown'] as bool? ?? false,
   orderId: (json['order_id'] as num?)?.toInt(),
   orderItemId: (json['order_item_id'] as num?)?.toInt(),
   order: json['order'] == null
@@ -152,6 +163,8 @@ Map<String, dynamic> _$ShortageToJson(_Shortage instance) => <String, dynamic>{
   'code': instance.code,
   'source': _$ShortageSourceEnumMap[instance.source]!,
   'source_label': instance.sourceLabel,
+  'type': _$ShortageTypeEnumMap[instance.type]!,
+  'type_label': instance.typeLabel,
   'name': instance.name,
   'unit': instance.unit,
   'unit_label': instance.unitLabel,
@@ -167,6 +180,9 @@ Map<String, dynamic> _$ShortageToJson(_Shortage instance) => <String, dynamic>{
       .toList(),
   'is_editable': instance.isEditable,
   'is_stockable': instance.isStockable,
+  'stock_unit': instance.stockUnit,
+  'stock_unit_label': instance.stockUnitLabel,
+  'weight_is_unknown': instance.weightIsUnknown,
   'order_id': instance.orderId,
   'order_item_id': instance.orderItemId,
   'order': instance.order?.toJson(),
@@ -190,6 +206,15 @@ const _$ShortageSourceEnumMap = {
   ShortageSource.manual: 'manual',
   ShortageSource.order: 'order',
   ShortageSource.unknown: 'unknown',
+};
+
+const _$ShortageTypeEnumMap = {
+  ShortageType.order: 'order',
+  ShortageType.printingPaper: 'printing_paper',
+  ShortageType.ink: 'ink',
+  ShortageType.maintenance: 'maintenance',
+  ShortageType.other: 'other',
+  ShortageType.unknown: 'unknown',
 };
 
 const _$ShortageStatusEnumMap = {

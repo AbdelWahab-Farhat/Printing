@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Shortage\Queries;
 
 use App\Domain\Shortage\Enums\ShortageSource;
+use App\Domain\Shortage\Enums\ShortageType;
 use App\Domain\Shortage\Enums\ShortageStatus;
 
 /**
@@ -33,6 +34,9 @@ final readonly class ShortageFilters
         public bool $unassignedOnly = false,
         public ?int $productId = null,
         public ?ShortageSource $source = null,
+
+        /** «أرِني كل نواقص الورق» — the query the column was added for. */
+        public ?ShortageType $type = null,
         public ?int $orderId = null,
         public ?int $customerId = null,
         /** Matches the shortage's own name, its code, or the order's code. */
@@ -60,6 +64,11 @@ final readonly class ShortageFilters
             source: isset($query['source'])
                 ? ShortageSource::tryFrom((string) $query['source'])
                 : null,
+            // `tryFrom`, like `source` above: an unknown value in a query string is a filter
+            // nobody asked for, not a 500.
+            type: isset($query['type'])
+                ? ShortageType::tryFrom((string) $query['type'])
+                : null,
             orderId: self::intOrNull($query['order_id'] ?? null),
             customerId: self::intOrNull($query['customer_id'] ?? null),
             search: self::search($query),
@@ -84,6 +93,9 @@ final readonly class ShortageFilters
             unassignedOnly: $this->unassignedOnly,
             productId: $this->productId,
             source: $this->source,
+            // Carried, per the warning above: a field forgotten here makes the chip row count a
+            // different set of rows from the list beside it.
+            type: $this->type,
             orderId: $this->orderId,
             customerId: $this->customerId,
             search: $this->search,

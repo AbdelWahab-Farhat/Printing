@@ -283,6 +283,21 @@ class _Figures extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
+          ]
+          // **Said out loud rather than left blank.** Nobody can weigh bags that are missing, so
+          // this gap is the ordinary state of a fresh shortage rather than an oversight — but it
+          // is also what stops a purchase being recorded against it, and a buyer refused on the
+          // «النواقص» screen with nothing said here would have nowhere to look. Naming it makes
+          // the next step obvious.
+          else if (item.needsAWarehouseShortage) ...[
+            SizedBox(height: 2.h),
+            Text(
+              'الوزن من المخزن غير محدد — حدِّده قبل تسجيل الشراء',
+              style: context.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ],
         // Under the shortage, because both answer «why is this line charging less than it

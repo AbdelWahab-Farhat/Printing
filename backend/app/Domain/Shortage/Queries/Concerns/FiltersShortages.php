@@ -61,6 +61,10 @@ trait FiltersShortages
             $query->where('product_id', $filters->productId);
         }
 
+        if ($filters->type !== null) {
+            $query->where('type', $filters->type->value);
+        }
+
         if ($filters->source !== null) {
             $query->where('source', $filters->source->value);
         }

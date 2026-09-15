@@ -14,6 +14,7 @@ import 'package:dayaa/features/shortages/presentation/viewmodel/shortage_detail_
 import 'package:dayaa/features/shortages/presentation/widgets/assign_shortage_sheet.dart';
 import 'package:dayaa/features/shortages/presentation/widgets/record_supply_sheet.dart';
 import 'package:dayaa/features/shortages/presentation/widgets/reverse_supply_dialog.dart';
+import 'package:dayaa/features/shortages/presentation/widgets/set_warehouse_quantity_dialog.dart';
 import 'package:dayaa/features/shortages/presentation/widgets/shortage_status_pill.dart';
 import 'package:dayaa/features/shortages/presentation/widgets/supplies_table.dart';
 import 'package:flutter/material.dart';
@@ -88,6 +89,19 @@ class _ShortageDetailViewState extends State<_ShortageDetailView> {
     if (reason == null || !mounted) return;
 
     await _run(() => cubit.reverseSupply(supply.id, reason: reason));
+  }
+
+  /// States the weight, then lets the screen re-read itself.
+  ///
+  /// The row converts from the unit it was sold in to the unit it will be bought in — «٣٠ قطعة»
+  /// becomes «١٢٫٥ كجم» — and the record button stops turning people away.
+  Future<void> _setWarehouseQuantity(Shortage shortage) async {
+    final cubit = context.read<ShortageDetailCubit>();
+
+    final quantity = await showSetWarehouseQuantityDialog(context: context, shortage: shortage);
+    if (quantity == null || !mounted) return;
+
+    await _run(() => cubit.setWarehouseQuantity(quantity));
   }
 
   Future<void> _recordSupply(Shortage shortage) async {
@@ -172,6 +186,19 @@ class _ShortageDetailViewState extends State<_ShortageDetailView> {
                         ? () => _assign(loaded)
                         : null,
                   ),
+                  // **Before the status actions and the ledger**, because while this is open the
+                  // ledger cannot be added to at all: every supply is refused until the weight is
+                  // stated. A banner further down would be read after the refusal rather than
+                  // instead of it.
+                  if (loaded.weightIsUnknown) ...[
+                    SizedBox(height: 16.h),
+                    _WeightNeeded(
+                      shortage: loaded,
+                      onSet: session.can(AppPermission.manageShortages) && !state.isWorking
+                          ? () => _setWarehouseQuantity(loaded)
+                          : null,
+                    ),
+                  ],
                   SizedBox(height: 16.h),
                   if (session.can(AppPermission.manageShortages))
                     _StatusActions(shortage: loaded, isWorking: state.isWorking),
@@ -296,6 +323,10 @@ class _Facts extends StatelessWidget {
           ),
           SizedBox(height: 12.h),
           _Line(label: 'المصدر', value: shortage.sourceLabel),
+          // Beside the source, not instead of it: that line says who wrote the row down, this
+          // says what the shop is out of. The server's label, so the Arabic lives in one place —
+          // the form's own copy is for naming choices before anything is saved.
+          if (shortage.typeLabel case final type?) _Line(label: 'النوع', value: type),
           // **A way through to the order, and it is the reason the code is on screen at all.**
           // Somebody reading a shortage is one tap from «لماذا لم تتحرّك هذه الطلبية؟».
           if (shortage.orderId case final orderId?) ...[
@@ -405,6 +436,65 @@ class _Failure extends StatelessWidget {
             FilledButton(onPressed: onRetry, child: const Text('إعادة المحاولة')),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// «الوزن غير محدد» — said before the ledger, because the ledger is closed until it is answered.
+///
+/// A shortage on a size the warehouse counts differently is declared in the unit it was sold in:
+/// the bags are missing, so nobody could weigh them. Until somebody states the weight, no supply
+/// may be recorded against it — so this is not a nag, it is the reason the record button will
+/// refuse.
+class _WeightNeeded extends StatelessWidget {
+  const _WeightNeeded({required this.shortage, required this.onSet});
+
+  final Shortage shortage;
+
+  /// Null for a reader without `shortages.manage`, and while a write is in flight. They still see
+  /// why the ledger is closed; they just cannot be the one to open it.
+  final VoidCallback? onSet;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'الكمية من المخزن غير محددة',
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: scheme.onErrorContainer,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            'يُباع بـ${shortage.unitLabel ?? ''} ويُخزَّن بـ${shortage.stockUnitLabel ?? ''}'
+            ' — حدِّد الكمية التي ستُشترى قبل تسجيل أي توفير.',
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onErrorContainer),
+          ),
+          if (onSet != null) ...[
+            SizedBox(height: 8.h),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: FilledButton.icon(
+                onPressed: onSet,
+                icon: Icon(AppIcons.warehouse, size: 18.sp),
+                label: const Text('حدِّد الكمية من المخزن'),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

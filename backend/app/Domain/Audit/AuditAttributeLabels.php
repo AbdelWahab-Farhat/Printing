@@ -558,6 +558,10 @@ final class AuditAttributeLabels
         ],
         'shortage' => [
             'source' => 'مصدر النقص',
+            // **Beside `source`, not instead of it.** That column says who wrote the row down;
+            // this says what the shop is out of. A history screen reading «يدوي ← من طلبية» and
+            // one reading «حبر ← ورق طباعة» are different corrections.
+            'type' => 'نوع النقص',
             'order_item_id' => 'بند الطلبية',
             'customer_id' => 'العميل',
             'product_id' => 'المنتج',

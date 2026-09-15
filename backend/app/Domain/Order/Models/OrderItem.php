@@ -395,9 +395,42 @@ class OrderItem extends Model
             return null;
         }
 
-        return $this->shortage_warehouse_quantity === null
-            ? (string) $this->shortage_quantity
-            : (string) $this->shortage_warehouse_quantity;
+        // **Unknown, not «the same number».** On a line the warehouse counts differently there is
+        // no conversion to fall back on, and falling back to the piece count is exactly the lie
+        // this method exists to avoid: it would render «٣٠ كجم» for thirty bags. See
+        // {@see shortageWeightIsUnknown()} for why the gap is normal rather than an error.
+        if ($this->isStockedInAnotherUnit()) {
+            return $this->shortage_warehouse_quantity === null
+                ? null
+                : (string) $this->shortage_warehouse_quantity;
+        }
+
+        return (string) $this->shortage_quantity;
+    }
+
+    /**
+     * Whether this line is short of something nobody has yet said the weight of.
+     *
+     * **The ordinary state of a fresh shortage, not a mistake.** The bags are missing — that is
+     * what «ناقص» means — so there is nothing on a scale to read, and the weight of goods that do
+     * not exist cannot be measured or derived. `DeductOrderStock` refuses to multiply a factor
+     * out for the same reason, and `warehouse_quantity` two columns away is asked of the foreman
+     * who shelves the run rather than of the clerk who takes the order.
+     *
+     * So the gap is left open and filled by whoever first knows: someone estimating on the
+     * shortage screen, or the buyer standing at the supplier with goods they can actually weigh.
+     * Until then the shortage is counted in the unit it was sold in — see
+     * `OrderService::shortageLinesFor()` — and **no arrival may be recorded against it**, because
+     * a quantity in kilograms cannot be subtracted from a requirement in pieces.
+     *
+     * False on every line whose shelf counts the way it was sold, where one number has always
+     * answered both questions.
+     */
+    public function shortageWeightIsUnknown(): bool
+    {
+        return $this->shortage_quantity !== null
+            && $this->isStockedInAnotherUnit()
+            && $this->shortage_warehouse_quantity === null;
     }
 
     /**

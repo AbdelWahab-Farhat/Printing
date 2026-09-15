@@ -96,6 +96,28 @@ class ShortageTwoUnitTest extends TestCase
         return [$order, $item, $shelf];
     }
 
+    /**
+     * The ordinary arrangement: sold by the piece off a shelf counted by the piece.
+     *
+     * Nothing here is ever unknown, which is what the gating tests measure themselves against.
+     */
+    private function shortOrderCountedAlike(): Shortage
+    {
+        $order = Order::factory()->status(OrderStatus::Shortage)->create();
+        $item = OrderItem::factory()->for($order)->create(['quantity' => '300.000']);
+
+        app(OrderService::class)->setShortages(
+            $order->refresh(),
+            [$item->getKey() => '30'],
+            null,
+            ShortageRevision::Declared,
+        );
+
+        app(SyncShortagesFromOrder::class)((int) $order->getKey(), ShortageRevision::Declared);
+
+        return Shortage::query()->where('order_item_id', $item->getKey())->firstOrFail();
+    }
+
     /** «ناقص ٣٠ قطعة، وهي ١٢٫٥ كجم» — the pair, declared and mirrored. */
     private function declare(Order $order, OrderItem $item): Shortage
     {
@@ -278,26 +300,151 @@ class ShortageTwoUnitTest extends TestCase
 
     // ── the order screen ───────────────────────────────────────────────────────────────
 
-    public function test_a_weight_is_demanded_where_the_units_differ_and_refused_where_they_do_not(): void
+    public function test_a_shortage_may_be_declared_without_a_weight_nobody_could_know(): void
     {
-        // Arrange
+        // Arrange — the bags are missing, so there is nothing to put on a scale and no factor in
+        // the catalogue to derive a weight from. Demanding one here would ask for a measurement
+        // of goods that do not exist.
         $user = User::factory()->create();
         $user->givePermissionTo(PermissionName::MoveOrderToShortage->value);
-        $orderHeaders = ['Authorization' => 'Bearer '.$user->createToken('t')->plainTextToken];
+        $headers = ['Authorization' => 'Bearer '.$user->createToken('t')->plainTextToken];
 
         [$order, $item] = $this->soldByThePieceStockedByTheKilo();
 
-        // Act — the invoice's figure alone, on a line the warehouse counts differently.
-        $refused = $this->patchJson("/api/v1/orders/{$order->getKey()}/shortages", [
+        // Act — the invoice's figure alone.
+        $response = $this->patchJson("/api/v1/orders/{$order->getKey()}/shortages", [
             'shortages' => [$item->getKey() => ['quantity' => '30']],
-        ], $orderHeaders);
+        ], $headers);
 
-        // Assert — named on the box the clerk has to fill, because defaulting it to the count is
-        // exactly what put bags into a balance of kilograms.
-        $refused->assertStatus(422)
-            ->assertJsonValidationErrors("shortages.{$item->getKey()}");
+        // Assert
+        $response->assertOk();
 
-        $this->assertNull($item->refresh()->shortage_quantity);
+        $item->refresh();
+
+        $this->assertSame('30.000', (string) $item->shortage_quantity);
+        $this->assertNull($item->shortage_warehouse_quantity);
+        $this->assertTrue($item->shortageWeightIsUnknown());
+    }
+
+    public function test_an_unweighed_shortage_is_counted_in_the_unit_it_was_sold_in(): void
+    {
+        // Arrange
+        $headers = $this->clerk();
+        [$order, $item] = $this->soldByThePieceStockedByTheKilo();
+
+        app(OrderService::class)->setShortages(
+            $order->refresh(),
+            [$item->getKey() => new LineShortage('30')],
+            null,
+            ShortageRevision::Declared,
+        );
+        app(SyncShortagesFromOrder::class)((int) $order->getKey(), ShortageRevision::Declared);
+
+        $shortage = Shortage::query()->where('order_item_id', $item->getKey())->firstOrFail();
+
+        // Act
+        $response = $this->getJson("/api/v1/shortages/{$shortage->getKey()}", $headers);
+
+        // Assert — «٣٠ قطعة», not «٣٠ كجم». Wearing the shelf's label to keep the column
+        // consistent would be a wrong number rather than an imprecise one.
+        $response->assertOk()
+            ->assertJsonPath('data.unit', PricingUnit::Piece->value)
+            ->assertJsonPath('data.unit_label', 'قطعة')
+            ->assertJsonPath('data.required_quantity', '30.000');
+    }
+
+    public function test_nothing_may_be_recorded_as_arriving_until_the_weight_is_stated(): void
+    {
+        // Arrange — a shortage counted in قطعة, and a purchase made in كجم.
+        $headers = $this->clerk();
+        [$order, $item] = $this->soldByThePieceStockedByTheKilo();
+
+        app(OrderService::class)->setShortages(
+            $order->refresh(),
+            [$item->getKey() => new LineShortage('30')],
+            null,
+            ShortageRevision::Declared,
+        );
+        app(SyncShortagesFromOrder::class)((int) $order->getKey(), ShortageRevision::Declared);
+
+        $shortage = Shortage::query()->where('order_item_id', $item->getKey())->firstOrFail();
+        $warehouse = Warehouse::factory()->create();
+
+        // Act
+        $response = $this->postJson("/api/v1/shortages/{$shortage->getKey()}/supplies", [
+            'quantity' => '12.5',
+            'amount' => '760',
+            'method' => PaymentMethod::Cash->value,
+            'warehouse_id' => $warehouse->getKey(),
+        ], $headers);
+
+        // Assert — subtracting kilograms from a count of bags is not arithmetic anybody can do,
+        // and the result would go on to credit the customer's invoice. Refused before the money
+        // row, so nothing at all is written.
+        $response->assertStatus(422)->assertJsonValidationErrors('quantity');
+
         $this->assertSame(0, StockMovement::query()->count());
+        $this->assertSame(0, $shortage->supplies()->count());
+        $this->assertSame('0.00', (string) $shortage->refresh()->total_paid);
+    }
+
+    public function test_stating_the_weight_converts_the_shortage_and_opens_the_gate(): void
+    {
+        // Arrange
+        $headers = $this->clerk();
+        [$order, $item] = $this->soldByThePieceStockedByTheKilo();
+
+        app(OrderService::class)->setShortages(
+            $order->refresh(),
+            [$item->getKey() => new LineShortage('30')],
+            null,
+            ShortageRevision::Declared,
+        );
+        app(SyncShortagesFromOrder::class)((int) $order->getKey(), ShortageRevision::Declared);
+
+        $shortage = Shortage::query()->where('order_item_id', $item->getKey())->firstOrFail();
+        $warehouse = Warehouse::factory()->create();
+
+        // Act — somebody now knows the weight, and says so.
+        app(OrderService::class)->setShortages(
+            $order->refresh(),
+            [$item->getKey() => new LineShortage('30', '12.5')],
+        );
+        app(SyncShortagesFromOrder::class)((int) $order->getKey());
+
+        // Assert — the chase converts to the unit it will be bought in.
+        $this->getJson("/api/v1/shortages/{$shortage->getKey()}", $headers)
+            ->assertOk()
+            ->assertJsonPath('data.unit', PricingUnit::Kilogram->value)
+            ->assertJsonPath('data.required_quantity', '12.500');
+
+        // And the purchase the gate refused a moment ago now goes through.
+        $this->postJson("/api/v1/shortages/{$shortage->getKey()}/supplies", [
+            'quantity' => '12.5',
+            'amount' => '760',
+            'method' => PaymentMethod::Cash->value,
+            'warehouse_id' => $warehouse->getKey(),
+        ], $headers)->assertCreated();
+
+        $this->assertSame('300.000', $item->refresh()->billableQuantity());
+    }
+
+    public function test_a_same_unit_shortage_is_never_held_up_by_any_of_this(): void
+    {
+        // Arrange — one unit, so nothing is unknown and nothing is gated.
+        $headers = $this->clerk();
+        $shortage = $this->shortOrderCountedAlike();
+        $warehouse = Warehouse::factory()->create();
+
+        // Act
+        $response = $this->postJson("/api/v1/shortages/{$shortage->getKey()}/supplies", [
+            'quantity' => '30',
+            'amount' => '760',
+            'method' => PaymentMethod::Cash->value,
+            'warehouse_id' => $warehouse->getKey(),
+        ], $headers);
+
+        // Assert
+        $response->assertCreated();
     }
 }

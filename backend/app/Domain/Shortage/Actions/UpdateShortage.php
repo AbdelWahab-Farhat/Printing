@@ -62,6 +62,7 @@ final class UpdateShortage
 
             $locked->forceFill([
                 'name' => $data->name,
+                'type' => $data->type,
                 'unit' => $data->unit,
                 'required_quantity' => $data->requiredQuantity,
                 'product_id' => $data->productId,
