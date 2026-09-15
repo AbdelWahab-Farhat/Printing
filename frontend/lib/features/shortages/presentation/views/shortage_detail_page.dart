@@ -9,9 +9,11 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/shortages/models/shortage.dart';
+import 'package:dayaa/features/shortages/models/shortage_supply.dart';
 import 'package:dayaa/features/shortages/presentation/viewmodel/shortage_detail_cubit.dart';
 import 'package:dayaa/features/shortages/presentation/widgets/assign_shortage_sheet.dart';
 import 'package:dayaa/features/shortages/presentation/widgets/record_supply_sheet.dart';
+import 'package:dayaa/features/shortages/presentation/widgets/reverse_supply_dialog.dart';
 import 'package:dayaa/features/shortages/presentation/widgets/shortage_status_pill.dart';
 import 'package:dayaa/features/shortages/presentation/widgets/supplies_table.dart';
 import 'package:flutter/material.dart';
@@ -72,6 +74,20 @@ class _ShortageDetailViewState extends State<_ShortageDetailView> {
     if (choice == null || !mounted) return;
 
     await _run(() => cubit.assign(choice.userId));
+  }
+
+  /// Undoes a supply — **after asking why**.
+  ///
+  /// The reason is not optional decoration: the endpoint refuses a reversal without one. This
+  /// used to call straight through with nothing, so every attempt came back 422 «سبب العكس
+  /// مطلوب» and the row's action looked broken.
+  Future<void> _reverseSupply(ShortageSupply supply) async {
+    final cubit = context.read<ShortageDetailCubit>();
+
+    final reason = await showReverseSupplyDialog(context: context, supply: supply);
+    if (reason == null || !mounted) return;
+
+    await _run(() => cubit.reverseSupply(supply.id, reason: reason));
   }
 
   Future<void> _recordSupply(Shortage shortage) async {
@@ -163,7 +179,7 @@ class _ShortageDetailViewState extends State<_ShortageDetailView> {
                   SuppliesTable(
                     shortage: loaded,
                     onReverse: session.can(AppPermission.reverseShortageSupplies)
-                        ? (supply) => _run(() => cubit.reverseSupply(supply.id))
+                        ? (supply) => _reverseSupply(supply)
                         : null,
                   ),
                 ],

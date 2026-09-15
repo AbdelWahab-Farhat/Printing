@@ -189,6 +189,6 @@ class ReverseShortageSupply {
   Future<Either<Failure, ShortageSupply>> call(
     int shortageId,
     int supplyId, {
-    String? notes,
-  }) => _repository.reverseSupply(shortageId, supplyId, notes: notes);
+    required String reason,
+  }) => _repository.reverseSupply(shortageId, supplyId, reason: reason);
 }

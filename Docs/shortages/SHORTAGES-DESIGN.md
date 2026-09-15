@@ -232,6 +232,41 @@ required_quantity  =  order_item.shortage_quantity  +  Σ supplied_quantity
 ولا تتحرّك بضاعة — وهو مصروفٌ بلا موضعٍ حتى يوجد الأستاذ، ويُقال ذلك صراحةً بدل أن يُتظاهر بأنه
 مخزون. انظر `Shortage::isStockable()`.
 
+**٧٫٦ النقص يُطارَد بوحدة المخزن ويُحاسَب بوحدة البيع.** — *تصحيحٌ أثناء التنفيذ، ٢٠٢٦-٠٩-١٥.*
+
+النصّ الأول نسخ `unit` عن `order_items.pricing_unit`، ورحّل §٧٫٥ كميةَ التوفير إلى الرفّ كما هي.
+والخطأ لم يظهر لأن الوحدتين تتّفقان في أغلب الأصناف — لكن صنفاً يُباع بالقطعة ويُخزَّن بالكيلو كان
+يُضيف عدَّ أكياسٍ إلى رصيد كيلوغرامات، ويشتقّ `unit_cost` للكيلو من قسمةٍ على عدد الأكياس، فترث كل
+سحبةِ FIFO بعده ذلك — ومنها التي تحمل المال إلى `cost_of_goods_sold.material`.
+
+**والفجوة الواحدة حقيقتان لا واحدة:**
+
+| الرقم | وحدته | من يقرؤه |
+| --- | --- | --- |
+| `order_items.shortage_quantity` | وحدة البيع | الفاتورة: يُطرح في `billableQuantity()` ويُضرب في `unit_price` |
+| `order_items.shortage_warehouse_quantity` | وحدة الرفّ | «النواقص»: يُشترى، ويدخل المخزن، وتُسعَّر به الطبقة |
+
+ولا يُشتقّ أحدهما من الآخر: لا معامل قطعة→كجم في الكتالوج ولا ينبغي أن يكون — أكياسٌ تُوزن معاً
+ليس لها وزنٌ للكيس، لهذا يرفض `DeductOrderStock` ضربَ معامل، ولهذا تُقرأ
+`order_items.warehouse_quantity` من ميزان. **فالزوج يُذكر مرةً واحدة، عند إعلان النقص**، في
+صندوقين على شاشة الطلبية — والثاني لا يظهر إلا حيث اختلفت الوحدتان
+(`OrderItem::isStockedInAnotherUnit()`).
+
+**وقسم «النواقص» صار بوحدة الرفّ بالكامل:** `shortages.unit` منسوخةٌ عن `OrderItem::stockUnit()`،
+و`required_quantity` هي `shortageStockQuantity()`، و`shortage_supplies.quantity` كذلك — فالمشتري
+يرى ما سيشتريه بالوحدة التي يشتري بها، ويُرحّل `RecordShortageSupply` الكمية إلى الرفّ كما هي بلا
+تحويل. لا عمود جديد على `shortage_supplies`؛ الوحدة صحيحةٌ من المنبع.
+
+**وما يُخصم من الفاتورة يُقسَّم تناسباً.** يصل ٦٫٢٥ كجم من ١٢٫٥، فتُخصم نصف القطع —
+`OrderItem::creditForStockArrival()`، وهي القسمة التناسبية نفسها التي يصنعها
+`undeliveredStockQuantity()` في الاتجاه المعاكس. **وهي مضبوطةٌ تماماً عند الوصول الكامل**، وهو
+الحال المعتاد؛ ولا تنحرف عبر التوفيرات الجزئية لأن الرقمين ينقصان معاً بالنسبة نفسها، فتبقى
+النسبة ثابتة وينتهي آخر توفيرٍ على صفرٍ في الاثنين.
+
+**والفراغ يعني «العدد نفسه»** لا «لا شيء» — عُرف `order_items.warehouse_quantity` ذاته — فتبقى كل
+الصفوف المكتوبة قبل هذا العمود صحيحةً على حالها، ويبقى الرقم الواحد كافياً لكل صنفٍ يُخزَّن بوحدة
+بيعه.
+
 ---
 
 ## ٨. الجداول
@@ -245,7 +280,7 @@ required_quantity  =  order_item.shortage_quantity  +  Σ supplied_quantity
 | `order_id` · `order_item_id` · `customer_id` | FK nullable | |
 | `product_id` · `product_variant_id` | FK nullable | فارغةٌ في اليدوي الحرّ — §٢٫١ |
 | `name` | string | **منسوخ**، وإلزامي دائماً — لسبب `order_items.product_name` نفسه |
-| `unit` | `PricingUnit` | قطعة \| كجم |
+| `unit` | `PricingUnit` | قطعة \| كجم — **وحدة الرفّ**، منسوخةٌ عن `OrderItem::stockUnit()` لا عن `pricing_unit`. §٧٫٦ |
 | `required_quantity` | decimal(12,3) | |
 | `supplied_quantity` | decimal(12,3) افتراضي ٠ | كاتبه الوحيد `RecalculateShortageTotals` |
 | `total_paid` | decimal(14,2) افتراضي ٠ | نفسه |

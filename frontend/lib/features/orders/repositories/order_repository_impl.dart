@@ -7,6 +7,7 @@ import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
+import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
@@ -374,7 +375,7 @@ class OrderRepositoryImpl implements OrderRepository {
   @override
   Future<Either<Failure, Order>> setShortages(
     int orderId, {
-    required Map<int, String?> shortages,
+    required Map<int, LineShortageEntry> shortages,
   }) {
     return safeRequest<Order>(
       () => _dio.patch(
@@ -382,9 +383,21 @@ class OrderRepositoryImpl implements OrderRepository {
         // Keys as strings, because that is what a JSON object has — and the nulls are sent
         // rather than stripped: an empty box is the gesture for «وصلت الكمية», and a payload
         // that dropped it would be able to record a shortage and never to clear one.
+        //
+        // **A cleared line travels as a bare null and a same-unit line as a bare number**, which
+        // is the shape this endpoint has always taken; only a line with two figures sends the
+        // object. The server accepts both, so nothing about the ordinary case changed shape.
         data: <String, dynamic>{
           'shortages': {
-            for (final entry in shortages.entries) '${entry.key}': entry.value,
+            for (final entry in shortages.entries)
+              '${entry.key}': switch (entry.value) {
+                LineShortageEntry(isNothing: true) => null,
+                LineShortageEntry(warehouseQuantity: null, :final quantity) => quantity,
+                LineShortageEntry(:final quantity, :final warehouseQuantity) => <String, dynamic>{
+                  'quantity': quantity,
+                  'warehouse_quantity': warehouseQuantity,
+                },
+              },
           },
         },
       ),

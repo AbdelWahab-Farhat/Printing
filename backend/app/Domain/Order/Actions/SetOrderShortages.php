@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Actions;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\DTOs\LineShortage;
 use App\Domain\Order\Enums\ShortageRevision;
 use App\Domain\Order\Events\OrderShortagesRecorded;
 use App\Domain\Order\Exceptions\OrderItemsAreLocked;
@@ -15,7 +16,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * Writes what is missing from an order, and re-prices it.
  *
- * **The only place `shortage_quantity` is ever written**, which is the whole point of the class:
+ * **The only place `shortage_quantity` — or the warehouse figure beside it — is ever written**,
+ * which is the whole point of the class:
  * the number moves money now — see {@see OrderItem::billableQuantity()} — so a second path that
  * set it without re-deriving the totals would leave an invoice quietly disagreeing with its own
  * lines. Three callers, one rule: entering «نواقص», leaving it, and correcting it afterwards
@@ -41,8 +43,10 @@ final class SetOrderShortages
     public function __construct(private readonly RecalculateOrderTotals $recalculate) {}
 
     /**
-     * @param  array<int|string, mixed>  $shortages  line id → what is missing from it; null or
-     *                                               empty for nothing missing.
+     * @param  array<int|string, LineShortage|string|int|float|null>  $shortages  line id → what
+     *              is missing from it. A {@see LineShortage} states both units; a bare number is
+     *              the shorthand for a line whose shelf counts the way the invoice does, which is
+     *              most of them. Absent or null is nothing missing.
      * @param  User|null  $actor  who moved it, so whoever did is not told that they did. Null
      *                            when nobody did: a console command, a seeder, the sync itself.
      * @param  ShortageRevision  $reason  why the set is being rewritten — see the enum for why a
@@ -64,10 +68,21 @@ final class SetOrderShortages
 
         $updated = DB::transaction(function () use ($order, $shortages): Order {
             foreach ($order->items()->get() as $item) {
-                $missing = $shortages[$item->getKey()] ?? null;
-                $missing = $missing === null || $missing === '' ? null : (string) $missing;
+                $missing = self::normalise($shortages[$item->getKey()] ?? null);
 
-                $item->forceFill(['shortage_quantity' => $missing]);
+                // **Both columns or neither**, which is what the
+                // `shortage_warehouse_quantity_needs_a_shortage` CHECK insists on: a weight left
+                // standing beside a cleared shortage would leave «النواقص» chasing goods the
+                // customer has already been billed for.
+                $item->forceFill($missing->isNothing() ? [
+                    'shortage_quantity' => null,
+                    'shortage_warehouse_quantity' => null,
+                ] : [
+                    'shortage_quantity' => $missing->quantity,
+                    // Null where the shelf counts in the unit the line was sold in — see the DTO.
+                    'shortage_warehouse_quantity' => $missing->warehouseQuantity,
+                ]);
+
                 $item->forceFill(['line_total' => $item->deriveLineTotal()])->save();
             }
 
@@ -85,5 +100,31 @@ final class SetOrderShortages
         );
 
         return $updated;
+    }
+
+    /**
+     * Accepts either shape a caller may hold.
+     *
+     * **A bare number is not a legacy wart, it is the honest form for most lines.** A size sold
+     * and stocked in the same unit has one gap, not two, and `LineShortage` says so by leaving
+     * `warehouseQuantity` null — so a scalar and the pair it expands to are the same statement.
+     * Demanding the object everywhere would make every console command, seeder and same-unit
+     * caller build a DTO to express «ناقص ثلاثون».
+     *
+     * Where the two units *do* differ, a bare number is still accepted here and means «the gap is
+     * that many of the shelf's unit too». That is a real possibility the domain cannot rule out,
+     * and it is not this action's job to refuse it: the place that knows a human is guessing is
+     * the form, and `SetOrderShortagesRequest` demands the second figure there — named in prose
+     * rather than imported, because Domain does not point at Application.
+     */
+    private static function normalise(mixed $value): LineShortage
+    {
+        if ($value instanceof LineShortage) {
+            return $value;
+        }
+
+        return $value === null || $value === ''
+            ? LineShortage::none()
+            : new LineShortage(quantity: (string) $value);
     }
 }

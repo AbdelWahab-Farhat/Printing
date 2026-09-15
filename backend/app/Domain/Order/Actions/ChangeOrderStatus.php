@@ -6,6 +6,7 @@ namespace App\Domain\Order\Actions;
 
 use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\DTOs\LineShortage;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
@@ -668,7 +669,24 @@ final class ChangeOrderStatus
         $shortages = [];
 
         foreach ($order->items as $item) {
-            $shortages[(int) $item->getKey()] = $fields["shortage_{$item->getKey()}"] ?? null;
+            $missing = $fields["shortage_{$item->getKey()}"] ?? null;
+
+            if ($missing === null || $missing === '') {
+                $shortages[(int) $item->getKey()] = LineShortage::none();
+
+                continue;
+            }
+
+            // **The second box, asked only of a line the warehouse counts differently.** «٣٠
+            // قطعة» off a shelf weighed in kilograms is a gap of some weight nobody can work out
+            // from the thirty, so it is stated rather than converted — see {@see TransitionFields},
+            // which only offers the box where it is needed, and {@see LineShortage}.
+            $weighed = $fields["shortage_warehouse_{$item->getKey()}"] ?? null;
+
+            $shortages[(int) $item->getKey()] = new LineShortage(
+                quantity: (string) $missing,
+                warehouseQuantity: $weighed === null || $weighed === '' ? null : (string) $weighed,
+            );
         }
 
         return $shortages;
@@ -690,12 +708,15 @@ final class ChangeOrderStatus
         $shortages = [];
 
         foreach ($order->items as $item) {
-            $short = (string) ($item->shortage_quantity ?? '0');
+            // **Asked in the shelf's unit, because it is an arrival.** What the person holding
+            // the delivery note has is what the warehouse received; the invoice's share of it is
+            // apportioned from the pair the shortage was declared with, never typed a second
+            // time. See {@see OrderItem::creditForStockArrival()}.
+            $short = $item->shortageStockQuantity() ?? '0';
             $received = $fields["received_{$item->getKey()}"] ?? $short;
             $received = $received === null || $received === '' ? $short : (string) $received;
 
-            $left = bcsub($short, $received, 3);
-            $shortages[(int) $item->getKey()] = bccomp($left, '0', 3) > 0 ? $left : null;
+            $shortages[(int) $item->getKey()] = LineShortage::afterStockArrival($item, $received);
         }
 
         return $shortages;
