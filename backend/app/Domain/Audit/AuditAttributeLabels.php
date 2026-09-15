@@ -111,6 +111,11 @@ final class AuditAttributeLabels
             'customer_id' => 'العميل',
             'kind' => 'نوع التصميم',
             'label' => 'اسم التصميم',
+            // Set by an approval and by nothing else. Null on a design an employee uploaded by
+            // hand, which is what those rows are.
+            'design_ticket_id' => 'تذكرة التصميم',
+            'designer_user_id' => 'المصمم',
+            'approved_at' => 'تاريخ الاعتماد',
         ],
         'comment' => [
             'commentable_type' => 'نوع السجل',
@@ -567,6 +572,40 @@ final class AuditAttributeLabels
             'assigned_to_user_id' => 'الموظف المسؤول',
             'created_by_user_id' => 'سجّله',
             'description' => 'الوصف',
+        ],
+        'design_ticket' => [
+            'customer_id' => 'العميل',
+            // The snapshot, not a join — «متجر إكس» as it was when the request was written. A
+            // customer renamed since then does not rewrite this row's history, and it is also
+            // what lets a designer read the ticket without a grant on customers.
+            'customer_name' => 'اسم العميل',
+            'order_id' => 'الطلبية',
+            'title' => 'عنوان الطلب',
+            'description' => 'وصف الطلب',
+            'instructions' => 'الملاحظات والتعليمات',
+            'requested_by_user_id' => 'طلبها',
+            // **Two columns and two different facts**, which is why they are named apart here as
+            // well: whom the ticket was addressed to, and who actually took it. A reassignment
+            // moves the first and must never look as though it moved the second.
+            'assigned_designer_id' => 'المصمم المطلوب',
+            'accepted_by_user_id' => 'المصمم المستلِم',
+            'accepted_at' => 'وقت قبول الطلب',
+            'approved_by_user_id' => 'اعتمد التصميم',
+            'completed_at' => 'وقت إغلاق التذكرة',
+            'approved_customer_design_id' => 'التصميم المعتمد في حساب الزبون',
+            'cancellation_reason' => 'سبب الإلغاء',
+        ],
+        'design_ticket_file' => [
+            'design_ticket_id' => 'التذكرة',
+            'kind' => 'نوع الملف',
+            'file_kind' => 'صيغة الملف',
+            'version' => 'رقم النسخة',
+            // The words that make a revision round a conversation rather than a count.
+            'review_note' => 'المطلوب تعديله',
+            'reviewed_at' => 'وقت المراجعة',
+            'reviewed_by' => 'راجعها',
+            'uploaded_by_user_id' => 'رفعها',
+            'note' => 'ملاحظة المصمم',
         ],
         'shortage_supply' => [
             'shortage_id' => 'النقص',

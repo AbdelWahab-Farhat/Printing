@@ -62,7 +62,8 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 
 | Document | |
 |---|---|
-| [DESIGN-TICKETS-DESIGN.md](design-tickets/DESIGN-TICKETS-DESIGN.md) | Design tickets — from an employee's request to an approved design on the customer's account. **Proposed**, waiting on the answers in §12; branch `feat/design-tickets`. |
+| [DESIGN-TICKETS-DESIGN.md](design-tickets/DESIGN-TICKETS-DESIGN.md) | تذاكر التصميم — من طلب الموظف إلى اعتماد التصميم في حساب الزبون. المواصفة والقرارات. **مُنفَّذ.** |
+| [DESIGN-TICKETS-FRONTEND-INTEGRATION.md](design-tickets/DESIGN-TICKETS-FRONTEND-INTEGRATION.md) | نفس الميزة في تطبيق Flutter — الشاشات والقرارات وما لم يُبنَ بعد. |
 
 ## [employees/](employees/)
 

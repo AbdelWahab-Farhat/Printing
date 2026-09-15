@@ -1,7 +1,8 @@
 # Design Tickets — from an employee's request to an approved design on the customer's account
 
-> **Status: decided — see [§12](#12-the-questions-and-how-they-were-answered) — and being built.**
-> Branch `feat/design-tickets`. Phase progress is tracked in [§13](#13-the-implementation-plan).
+> **Status: built.** Branch `feat/design-tickets`. Every phase in [§13](#13-the-implementation-plan)
+> is done; the app side has its own document,
+> [DESIGN-TICKETS-FRONTEND-INTEGRATION.md](DESIGN-TICKETS-FRONTEND-INTEGRATION.md).
 
 The goal as it was given: **an organised system for design requests inside دعاية.** An employee
 sends the request to a designer from inside the system, follows the revisions and the review
@@ -519,15 +520,31 @@ Every phase is **mergeable on its own**: Pint clean, `scramble:analyze` clean, t
 | # | Phase | Contents |
 |---|---|---|
 | **0** | Decisions | ✅ **Done** — the answers in §12 |
-| **1** | Media | `StoreUploadedFile` + `StoredFile` + `HasStoredFile`, and the three existing actions converted onto them. **Success criterion: their tests stay exactly as they are and stay green** |
-| **2** | Permissions | Seven cases in `PermissionName` + `RoleName::Designer` + `RoleSeeder` + a grant migration |
-| **3** | Schema | Two new migrations + the three-column migration on `customer_designs`. `migrate --pretend` before running |
-| **4** | Domain | `DesignTicketStatus` · `DesignTicketFileKind` · the models · `CreateDesignTicket` · `AcceptDesignTicket` · `AssignDesignTicket` · `SubmitDesignVersion` · `ReviewDesignVersion` · `PromoteApprovedDesign` · `ApproveDesignTicket` · the exceptions · `DesignTicketListQuery` · `DesignTicketService` |
-| **5** | API | The controller · FormRequests (`rules()` written out in full) · the resources with `can_*` · the routes · `DesignTicketCommentController` · `/logs` · `AuditSubject` |
-| **6** | Notifications | Two types + two classes in `Definitions/` + two listeners |
-| **7** | Tests | **Written alongside each phase, not after them** — §14 |
-| **8** | The app | Move the two widgets to `core/widgets/` · the new feature · `AppPermission` · the router · `Injector` · the Cubit tests |
-| **9** | Documentation | This document → "Implemented" · `DESIGN-TICKETS-FRONTEND-INTEGRATION.md` · `Docs/README.md` · `Docs/BACKLOG.md` (Q6, Q7 and deletion) · `composer spec` |
+| **1** | Media ✅ | `StoreUploadedFile` + `StoredFile` + `HasStoredFile`, and the three existing actions converted onto them. **Success criterion: their tests stay exactly as they are and stay green** |
+| **2** | Permissions ✅ | Seven cases in `PermissionName` + `RoleName::Designer` + `RoleSeeder` + a grant migration |
+| **3** | Schema ✅ | Two new migrations + the three-column migration on `customer_designs`. `migrate --pretend` before running |
+| **4** | Domain ✅ | `DesignTicketStatus` · `DesignTicketFileKind` · the models · `CreateDesignTicket` · `AcceptDesignTicket` · `AssignDesignTicket` · `SubmitDesignVersion` · `ReviewDesignVersion` · `PromoteApprovedDesign` · `ApproveDesignTicket` · the exceptions · `DesignTicketListQuery` · `DesignTicketService` |
+| **5** | API ✅ | The controller · FormRequests (`rules()` written out in full) · the resources with `can_*` · the routes · `DesignTicketCommentController` · `/logs` · `AuditSubject` |
+| **6** | Notifications ✅ | Two types + two classes in `Definitions/` + two listeners |
+| **7** | Tests ✅ | **Written alongside each phase, not after them** — §14 |
+| **8** | The app ✅ | Move the two widgets to `core/widgets/` · the new feature · `AppPermission` · the router · `Injector` · the Cubit tests |
+| **9** | Documentation ✅ | This document → "Implemented" · `DESIGN-TICKETS-FRONTEND-INTEGRATION.md` · `Docs/README.md` · `Docs/BACKLOG.md` (Q6, Q7 and deletion) · `composer spec` |
+
+### Where the build departed from this plan
+
+Two, both recorded rather than quietly absorbed:
+
+1. **`DesignThumbnail` was not moved to `core/widgets/`.** §11 planned to generalise it so one
+   widget drew a customer design and a ticket file alike. It takes a `CustomerDesign`, and
+   changing it would have meant touching a widget two shipped features already draw with — for a
+   third caller. A sibling `DesignTicketFileThumbnail` was written instead, with the same caching
+   rule and the same fallback. The generalisation is the right move at the *fourth* caller, and it
+   is recorded in the frontend document.
+
+2. **Four endpoints are wired through the app and not yet on a screen** — assigning, editing a
+   ticket's words, removing an attachment, and the in-ticket conversation. The API answers all of
+   them and the repository calls them; what is missing is a sheet and a section. Listed by name in
+   the frontend document §6.
 
 ---
 

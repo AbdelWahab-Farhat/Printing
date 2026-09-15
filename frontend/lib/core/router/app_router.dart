@@ -26,6 +26,10 @@ import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/presentation/views/add_customer_page.dart';
 import 'package:dayaa/features/customers/presentation/views/customer_designs_page.dart';
 import 'package:dayaa/features/customers/presentation/views/customer_detail_page.dart';
+import 'package:dayaa/features/design_tickets/models/design_tickets_filter.dart';
+import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_detail_page.dart';
+import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_form_page.dart';
+import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_page.dart';
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
 import 'package:dayaa/features/investor_portal/presentation/views/investor_portal_page.dart';
 import 'package:dayaa/features/investors/presentation/views/deal_detail_page.dart';
@@ -229,6 +233,20 @@ abstract final class Routes {
   static String vendor(int vendorId) => '/vendors/$vendorId';
 
   // ── النواقص ───────────────────────────────────────────────────────────────
+  /// تذاكر التصميم — the design queue.
+  static const String designTickets = '/design-tickets';
+
+  /// Raising one. Declared **before** `/design-tickets/:id`, so the literal word «form» is not
+  /// read as an id — the trap `/shortages/form` sits beside.
+  static const String designTicketForm = '/design-tickets/form';
+
+  /// The list opened on a question somebody else settled — one customer's tickets, say.
+  static const String designTicketsFiltered = '/design-tickets/filter';
+
+  static const String designTicketDetailPath = '/design-tickets/:id';
+
+  static String designTicket(int id) => '/design-tickets/$id';
+
   static const String shortages = '/shortages';
 
   /// Writing one down by hand, or correcting one. Declared **before** `/shortages/:id`, so the
@@ -775,6 +793,48 @@ abstract final class AppRouter {
             sl<Session>().can(AppPermission.viewVendors) ? null : Routes.home,
         builder: (context, state) => const VendorsPage(),
       ),
+      // تذاكر التصميم. The form is declared **before** the list and before `:id`, for the same
+      // reason the shortage form is: «form» must not be read as an id.
+      GoRoute(
+        path: Routes.designTicketForm,
+        redirect: (context, state) => sl<Session>().can(AppPermission.manageDesignTickets)
+            ? null
+            : Routes.designTickets,
+        // The customer arrives as `extra`; there is no customer picker on the form, because a
+        // ticket is always raised from a customer's own screen.
+        builder: (context, state) {
+          final customer = state.payload;
+
+          return customer is Customer
+              ? DesignTicketFormPage(customer: customer)
+              : const _UnknownDesignTicket();
+        },
+      ),
+      GoRoute(
+        path: Routes.designTickets,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewDesignTickets) ? null : Routes.home,
+        builder: (context, state) => const DesignTicketsPage(),
+      ),
+      GoRoute(
+        path: Routes.designTicketsFiltered,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewDesignTickets) ? null : Routes.home,
+        // A deep link carries no `extra`. Rather than an error screen, it answers the widest
+        // honest version of the question it was given.
+        builder: (context, state) =>
+            DesignTicketsPage(filter: state.payload as DesignTicketsFilter?),
+      ),
+      GoRoute(
+        path: Routes.designTicketDetailPath,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewDesignTickets) ? null : Routes.home,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          return id == null ? const _UnknownDesignTicket() : DesignTicketDetailPage(ticketId: id);
+        },
+      ),
       // النواقص. The form is declared **before** the list and before `:id`, so the literal word
       // «form» is not read as an id.
       GoRoute(
@@ -1302,6 +1362,20 @@ abstract final class AppRouter {
         return Routes.investorPortal;
       }
 
+      // **A designer lands on their queue rather than on a home screen of empty boxes.**
+      //
+      // Narrowed by «may accept design tickets and cannot read orders» rather than by a role
+      // name, exactly as the investor above is: an administrator who also designs still gets the
+      // board they came for, and a business that reshapes the «مصمم» role keeps this working.
+      //
+      // A courtesy, never a boundary: the boundary is `can:design_tickets.*` on the Laravel
+      // routes and the narrowing in the query behind them.
+      if (session.can(AppPermission.acceptDesignTickets) &&
+          !session.can(AppPermission.viewOrders) &&
+          at == Routes.home) {
+        return Routes.designTickets;
+      }
+
       return null;
     },
     errorBuilder: (context, state) => Scaffold(
@@ -1349,6 +1423,20 @@ class _UnknownRole extends StatelessWidget {
 
 /// A `/cities/<something that is not a number>/regions` link.
 /// A `/purchase-orders/<something that is not a number>` link.
+/// A `/design-tickets/<something that is not a number>` link, or the form reached without a
+/// customer — which a cold deep link always is.
+class _UnknownDesignTicket extends StatelessWidget {
+  const _UnknownDesignTicket();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('تذكرة تصميم')),
+      body: const Center(child: Text('تعذّر فتح هذه التذكرة')),
+    );
+  }
+}
+
 /// A `/shortages/<something that is not a number>` link.
 class _UnknownShortage extends StatelessWidget {
   const _UnknownShortage();

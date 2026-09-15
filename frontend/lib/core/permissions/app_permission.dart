@@ -299,6 +299,24 @@ enum AppPermission {
   recordShortageSupplies('shortages.supplies.record', 'تسجيل عملية توفير'),
   reverseShortageSupplies('shortages.supplies.reverse', 'عكس عملية توفير'),
 
+  // تذاكر التصميم. Seven, and the splits mirror the server's exactly — see `PermissionName`.
+  //
+  // **`viewDesignTickets` is narrow on its own**: holding it shows a reader the tickets they
+  // raised, the ones addressed to them, the ones they took, and the unclaimed pool.
+  // `viewAllDesignTickets` is the supervisor's grant, and a colleague's ticket is a 404 without
+  // it rather than a 403.
+  //
+  // **`reviewDesignTickets` is not what draws the review buttons.** Read `DesignTicket.canReview`
+  // instead: the server refuses a reviewer who uploaded the version, even an administrator, and
+  // that rule cannot be expressed as a permission.
+  viewDesignTickets('design_tickets.view', 'عرض تذاكر التصميم الخاصة به'),
+  viewAllDesignTickets('design_tickets.view_all', 'عرض كل تذاكر التصميم'),
+  manageDesignTickets('design_tickets.manage', 'إنشاء وتعديل طلبات التصميم'),
+  assignDesignTickets('design_tickets.assign', 'إسناد تذاكر التصميم إلى المصممين'),
+  acceptDesignTickets('design_tickets.accept', 'قبول طلب التصميم'),
+  submitDesignTickets('design_tickets.submit', 'رفع تصميم داخل التذكرة'),
+  reviewDesignTickets('design_tickets.review', 'الموافقة على التصميم أو طلب تعديل'),
+
   // The company's editable defaults. Its own pair rather than riding on an existing one:
   // everybody's screens read them and almost nobody should change them.
   viewCompanySettings('settings.view', 'عرض إعدادات الشركة'),

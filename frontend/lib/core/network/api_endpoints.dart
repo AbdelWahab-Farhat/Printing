@@ -257,6 +257,58 @@ abstract final class ShortageEndpoints {
   static String logs(int shortageId) => '/shortages/$shortageId/logs';
 }
 
+abstract final class DesignTicketEndpoints {
+  static const String index = '/design-tickets';
+
+  /// How many sit in each status — what the chip row above the list draws its numbers from.
+  ///
+  /// Declared on the server *before* `/design-tickets/{id}`, or the word «summary» would be read
+  /// as an id. It takes the same filters as the list and **ignores `status`**: a chip row exists
+  /// to say what *else* there is.
+  static const String summary = '/design-tickets/summary';
+
+  static String show(int ticketId) => '/design-tickets/$ticketId';
+
+  /// Routing a ticket to a designer. `PATCH`, and its own grant `design_tickets.assign`:
+  /// directing work and doing it are different jobs.
+  ///
+  /// **There is deliberately no `status` endpoint beside this one.** Every status is written by
+  /// the action that earns it — the acceptance, the version, the verdict, the cancellation — so
+  /// this app never sends a status anywhere.
+  static String designer(int ticketId) => '/design-tickets/$ticketId/designer';
+
+  /// «قبول الطلب». A POST to a noun rather than a PATCH on the ticket: what is created is the
+  /// acceptance — a fact with a person and a time — and exactly one may ever exist. A second
+  /// caller gets a 422 naming whoever holds it.
+  static String acceptance(int ticketId) => '/design-tickets/$ticketId/acceptance';
+
+  /// Calling the request off, with the reason the server requires.
+  static String cancellation(int ticketId) => '/design-tickets/$ticketId/cancellation';
+
+  /// The employee's reference files — `multipart/form-data`.
+  static String attachments(int ticketId) => '/design-tickets/$ticketId/attachments';
+
+  static String attachment(int ticketId, int attachmentId) =>
+      '/design-tickets/$ticketId/attachments/$attachmentId';
+
+  /// The designer's work. **The same path sends the first version and every revision** — a
+  /// revision is a row, not a new ticket — and the version number is the server's to allocate.
+  static String versions(int ticketId) => '/design-tickets/$ticketId/versions';
+
+  /// The verdict. Refused to whoever uploaded the version, even an administrator.
+  static String review(int ticketId, int versionId) =>
+      '/design-tickets/$ticketId/versions/$versionId/review';
+
+  /// «الرد داخل التذكرة» — the same comment shape every other commentable record uses.
+  static String comments(int ticketId) => '/design-tickets/$ticketId/comments';
+
+  static String comment(int ticketId, int commentId) =>
+      '/design-tickets/$ticketId/comments/$commentId';
+
+  /// The history, identical in shape to every other `logs` endpoint and read by the same screen.
+  static String logs(int ticketId) => '/design-tickets/$ticketId/logs';
+}
+
 abstract final class PurchaseOrderEndpoints {
   static const String index = '/purchase-orders';
 
