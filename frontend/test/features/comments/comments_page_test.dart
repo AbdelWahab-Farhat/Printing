@@ -136,6 +136,26 @@ void main() {
     expect(find.text('حذف'), findsOneWidget);
   });
 
+  testWidgets('opening the edit dialog and closing it throws nothing', (tester) async {
+    // Arrange — the plain sequence a person actually performs: tap «تعديل», the dialog opens with
+    // its field autofocused, then back out. No scrolling, no keyboard gymnastics.
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('تعديل').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('تعديل الملاحظة'), findsOneWidget);
+
+    await tester.tap(find.text('إلغاء'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('تعديل الملاحظة'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('an empty screen says what notes are for', (tester) async {
     // Arrange — an empty page that only reports emptiness leaves somebody wondering whether it
     // is broken.
@@ -150,7 +170,12 @@ void main() {
     expect(find.textContaining('موعد التسليم الذي يفضّله'), findsOneWidget);
   });
 
-  testWidgets('writing a note puts it at the top and empties the box', (tester) async {
+  // The list is drawn reversed — oldest at the top, newest at the bottom, the way a chat reads —
+  // so a new note goes to the front of the *data* and renders at the bottom of the *screen*.
+  // Named for what the reader sees rather than for the index it lands at.
+  testWidgets('writing a note puts it at the end of the thread and empties the box', (
+    tester,
+  ) async {
     // Arrange
     const added = Comment(
       id: 5,
@@ -221,6 +246,31 @@ void main() {
     // Assert — the supplier's note is on screen, and the customer's list was never asked for.
     expect(find.text('لا يسلّم قبل الظهر'), findsOneWidget);
     expect(find.text('مصنع الصفا'), findsOneWidget);
+    verifyNever(() => repository.comments(subject));
+  });
+
+  testWidgets('and a design ticket, where the notes are the point of the record', (tester) async {
+    // Arrange — the third subject, and the one whose conversation is not an aside: «الرد داخل
+    // التذكرة» is most of what makes a ticket a ticket rather than a form.
+    const ticket = CommentSubject.designTicket(7);
+    const fromTheDesigner = Comment(
+      id: 11,
+      commentableType: 'design_ticket',
+      commentableId: 7,
+      body: 'وصلني، أبدأ اليوم',
+      author: CommentAuthor(id: 5, name: 'سالم'),
+    );
+
+    when(() => repository.comments(ticket))
+        .thenAnswer((_) async => const Right([fromTheDesigner]));
+
+    // Act
+    await tester.pumpWidget(host(about: ticket, ownerName: 'تصميم كيس شحن — أسود'));
+    await tester.pumpAndSettle();
+
+    // Assert — one screen, three kinds of record, and neither of the other two was asked for.
+    expect(find.text('وصلني، أبدأ اليوم'), findsOneWidget);
+    expect(find.text('تصميم كيس شحن — أسود'), findsOneWidget);
     verifyNever(() => repository.comments(subject));
   });
 }

@@ -28,6 +28,7 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
     required GetDesignTicket getTicket,
     required AcceptDesignTicket acceptTicket,
     required AssignDesignTicket assignTicket,
+    required UpdateDesignTicket updateTicket,
     required CancelDesignTicket cancelTicket,
     required AttachDesignTicketFile attachFile,
     required RemoveDesignTicketAttachment removeAttachment,
@@ -37,6 +38,7 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
        _getTicket = getTicket,
        _accept = acceptTicket,
        _assign = assignTicket,
+       _update = updateTicket,
        _cancel = cancelTicket,
        _attach = attachFile,
        _removeAttachment = removeAttachment,
@@ -48,6 +50,7 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
   final GetDesignTicket _getTicket;
   final AcceptDesignTicket _accept;
   final AssignDesignTicket _assign;
+  final UpdateDesignTicket _update;
   final CancelDesignTicket _cancel;
   final AttachDesignTicketFile _attach;
   final RemoveDesignTicketAttachment _removeAttachment;
@@ -77,6 +80,20 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
   /// Returned rather than swallowed so the screen can say «أخذها فلان» — which is the whole
   /// second half of «لا تضيع هوية المصمم الذي استلم الطلب».
   Future<Failure?> accept() => _write(() => _accept(_id));
+
+  /// Corrects the words of an open request.
+  ///
+  /// **The customer is not among them and neither is the designer.** The first because files and
+  /// a conversation hang off a ticket by the time anybody notices the wrong one was picked; the
+  /// second because routing work is its own grant. A closed ticket refuses this outright — an
+  /// approval is a signature on the words that were there at the time.
+  Future<Failure?> update({
+    required String title,
+    required String description,
+    String? instructions,
+  }) => _write(
+    () => _update(_id, title: title, description: description, instructions: instructions),
+  );
 
   /// Hands it to a designer, or returns it to the shared pool — a null [designerId] is the pool,
   /// which is a queue rather than an absence.

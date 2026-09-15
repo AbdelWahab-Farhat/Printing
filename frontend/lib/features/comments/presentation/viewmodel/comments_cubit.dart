@@ -65,9 +65,11 @@ class CommentsCubit extends Cubit<CommentsState> {
 
   /// Leaves a note. Null when it landed; the failure when it did not.
   ///
-  /// The order the server sends is newest-first, so a new note goes to the front — that is the
-  /// same list the next `load()` will produce, which is what stops the screen re-ordering
-  /// itself under the reader a second later.
+  /// **A new note goes to the front of the list, and that is the bottom of the screen.** The
+  /// server sends newest-first and this keeps that order, so the list here is the same one the
+  /// next `load()` will produce — which is what stops the screen re-ordering itself under the
+  /// reader a second later. The screen draws it reversed, so «front of the list» renders as «last
+  /// thing said», exactly where a chat puts it.
   Future<Failure?> add(String body) async {
     final current = state;
     if (current is! CommentsLoaded) return null;

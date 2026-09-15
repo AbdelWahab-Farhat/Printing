@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
@@ -87,6 +88,25 @@ class _CommentsView extends StatelessWidget {
                   child: comments.isEmpty
                       ? const _EmptyView()
                       : ListView.separated(
+                          /*
+                           * **Oldest at the top, newest at the bottom — read as a conversation.**
+                           *
+                           * `reverse: true` rather than reversing the list, and it buys two
+                           * things at once. The data stays exactly as the server sends it
+                           * (newest first), so `add()` still puts a new note at index 0 and it
+                           * still lands where the eye is — now the bottom. And a reversed list
+                           * opens already scrolled to index 0, so the screen arrives showing the
+                           * last thing said instead of making somebody scroll a year of notes to
+                           * find it.
+                           *
+                           * Reversing the *data* instead would have done neither: the list would
+                           * open at the oldest note, and every new one would arrive off-screen.
+                           *
+                           * The trade is that pull-to-refresh now lives at the top edge, which in
+                           * a reversed list is the oldest end — which is where «load older» would
+                           * go if this ever paginates, so it is the right edge for it anyway.
+                           */
+                          reverse: true,
                           // `always`, so pull-to-refresh works on a short list too.
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 16.h),
@@ -231,92 +251,151 @@ class _CommentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final text = context.textTheme;
     final canChange = comment.canEdit || comment.canDelete;
+
+    // **Who wrote it, asked of the session rather than inferred from `canEdit`.** That flag is
+    // true for a moderator too, so drawing a moderator's view of somebody else's note as their
+    // own would put the wrong name and the wrong side on it.
+    final isMine = sl<Session>().isSelf(comment.author.id);
 
     return Opacity(
       // Greyed while its own request is out, so the row says it is working without the list
       // moving under anybody.
       opacity: isBusy ? 0.5 : 1,
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(14.w),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 14.r,
-                  backgroundColor: scheme.primaryContainer,
-                  child: Text(
-                    comment.author.displayName.characters.firstOrNull ?? '؟',
-                    style: context.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: scheme.onPrimaryContainer,
-                    ),
+      child: Align(
+        /*
+         * **Mine at the end, theirs at the start — and never «left» or «right».**
+         *
+         * This app is Arabic and runs right-to-left, where a chat mirrors: outgoing sits on the
+         * left and incoming on the right, the opposite of an English one. Writing
+         * `Alignment.centerRight` would have hard-coded the English answer and put both sides of
+         * the conversation on the wrong edge. `AlignmentDirectional` resolves against the
+         * ambient direction, so this reads correctly in either without a branch.
+         */
+        alignment: isMine
+            ? AlignmentDirectional.centerEnd
+            : AlignmentDirectional.centerStart,
+        child: ConstrainedBox(
+          // **The whole of what was asked for.** A note used to fill the screen edge to edge,
+          // so a three-word reply looked like a paragraph and nothing said who was talking
+          // without reading. Capped at ~78%, a bubble is as wide as what is in it, and the gap
+          // on the other side is what makes the two sides legible at a glance.
+          constraints: BoxConstraints(maxWidth: 0.78.sw),
+          child: Column(
+            crossAxisAlignment: isMine
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.fromLTRB(12.w, 9.h, 12.w, 7.h),
+                decoration: BoxDecoration(
+                  color: isMine ? scheme.primaryContainer : scheme.surfaceContainerHighest,
+                  borderRadius: BorderRadiusDirectional.only(
+                    topStart: Radius.circular(16.r),
+                    topEnd: Radius.circular(16.r),
+                    // The squared corner is the tail: it points at the edge the speaker is on,
+                    // which is what makes a run of messages from one person read as one run.
+                    bottomStart: Radius.circular(isMine ? 16.r : 4.r),
+                    bottomEnd: Radius.circular(isMine ? 4.r : 16.r),
                   ),
                 ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    comment.author.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // **Only on somebody else's.** You know who you are, and repeating your own
+                    // name above every line you wrote is the noise a chat layout exists to drop.
+                    if (!isMine) ...[
+                      Text(
+                        comment.author.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: text.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: scheme.primary,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                    ],
+                    Text(
+                      comment.body,
+                      style: text.bodyMedium?.copyWith(
+                        color: isMine ? scheme.onPrimaryContainer : scheme.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    // The time and «عُدّلت» on one line under the text, the way every chat app
+                    // puts them — small, quiet, and never pushing the sentence around.
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (comment.wasEdited) ...[
+                          Text(
+                            'عُدّلت',
+                            style: text.labelSmall?.copyWith(
+                              color: (isMine ? scheme.onPrimaryContainer : scheme.onSurfaceVariant)
+                                  .withValues(alpha: 0.7),
+                            ),
+                          ),
+                          SizedBox(width: 6.w),
+                        ],
+                        if (comment.createdAt case final at?)
+                          Text(
+                            // The year dropped when it is this one: a column of notes from this
+                            // month repeating «2026» twenty times says nothing twenty times.
+                            at.shortDayLabel,
+                            style: text.labelSmall?.copyWith(
+                              color: (isMine ? scheme.onPrimaryContainer : scheme.onSurfaceVariant)
+                                  .withValues(alpha: 0.7),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Absent, not disabled, for a note this reader may not touch. There is nothing they
+              // can do to it, and a greyed-out bin invites a tap that only ever produces a
+              // refusal.
+              //
+              // **Text buttons rather than icons in the bubble**: the bubble is sized to its
+              // sentence, and hanging controls inside it would make a two-word reply as wide as
+              // its own toolbar.
+              if (canChange && !isBusy)
+                Padding(
+                  padding: EdgeInsets.only(top: 2.h),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (comment.canEdit)
+                        TextButton(
+                          onPressed: () => unawaited(_edit(context)),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w),
+                            minimumSize: Size(0, 28.h),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text('تعديل', style: text.labelSmall),
+                        ),
+                      if (comment.canDelete)
+                        TextButton(
+                          onPressed: () => unawaited(_remove(context)),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w),
+                            minimumSize: Size(0, 28.h),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'حذف',
+                            style: text.labelSmall?.copyWith(color: scheme.error),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                if (comment.createdAt case final at?)
-                  Text(
-                    // The year dropped when it is this one: a column of notes from this
-                    // month repeating «2026» twenty times says nothing twenty times.
-                    at.shortDayLabel,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-            SizedBox(height: 10.h),
-            Text(comment.body, style: context.textTheme.bodyMedium),
-
-            // Said plainly rather than hidden: a sentence that quietly became a different
-            // sentence is worse than no note at all.
-            if (comment.wasEdited) ...[
-              SizedBox(height: 6.h),
-              Text(
-                'عُدّلت',
-                style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
-              ),
             ],
-
-            // Absent, not disabled, for a colleague's note. There is nothing this reader can do
-            // to it, and a greyed-out bin invites a tap that only ever produces a refusal.
-            if (canChange && !isBusy) ...[
-              SizedBox(height: 6.h),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (comment.canEdit)
-                    TextButton.icon(
-                      onPressed: () => unawaited(_edit(context)),
-                      icon: Icon(AppIcons.edit, size: 16.sp),
-                      label: const Text('تعديل'),
-                    ),
-                  if (comment.canDelete)
-                    TextButton.icon(
-                      onPressed: () => unawaited(_remove(context)),
-                      icon: Icon(AppIcons.delete, size: 16.sp, color: scheme.error),
-                      label: Text('حذف', style: TextStyle(color: scheme.error)),
-                    ),
-                ],
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -328,14 +407,52 @@ class _CommentCard extends StatelessWidget {
 /// Inline editing would need the list to hold a controller per row and to know which row is
 /// open; a dialog is one field with the sentence already in it, and it closes.
 Future<String?> _promptForBody(BuildContext context, {required String initial}) {
-  final controller = TextEditingController(text: initial);
-
   return showDialog<String>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
+    builder: (dialogContext) => _EditBodyDialog(initial: initial),
+  );
+}
+
+/// The dialog's content, as a `StatefulWidget` **so that it owns its controller**.
+///
+/// **This is the fix for a real crash, not a style preference.** The controller used to live in
+/// [_promptForBody] and be disposed with `.whenComplete(controller.dispose)`. That future
+/// completes the instant `Navigator.pop` is called — while the dialog is still animating out and
+/// its `EditableText` is still rebuilding against the controller it was handed. The next frame
+/// touched a disposed `ChangeNotifier`:
+///
+///     A TextEditingController was used after being disposed.
+///
+/// and the tree unwound from there into a second, louder assertion about an inherited element
+/// unmounting with live dependents — which is what actually reached the screen, and which is why
+/// the message named a part of Flutter that had nothing to do with the mistake.
+///
+/// A `State` disposes after its element is unmounted, which is after the route is gone. So the
+/// controller outlives every frame that can still read it, by construction rather than by timing.
+class _EditBodyDialog extends StatefulWidget {
+  const _EditBodyDialog({required this.initial});
+
+  final String initial;
+
+  @override
+  State<_EditBodyDialog> createState() => _EditBodyDialogState();
+}
+
+class _EditBodyDialogState extends State<_EditBodyDialog> {
+  late final TextEditingController _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
       title: const Text('تعديل الملاحظة'),
       content: AppTextField(
-        controller: controller,
+        controller: _controller,
         maxLines: 5,
         maxLength: 2000,
         autofocus: true,
@@ -344,16 +461,16 @@ Future<String?> _promptForBody(BuildContext context, {required String initial}) 
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
+          onPressed: () => Navigator.of(context).pop(),
           child: const Text('إلغاء'),
         ),
         TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+          onPressed: () => Navigator.of(context).pop(_controller.text),
           child: const Text('حفظ'),
         ),
       ],
-    ),
-  ).whenComplete(controller.dispose);
+    );
+  }
 }
 
 class _EmptyView extends StatelessWidget {

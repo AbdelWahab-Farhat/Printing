@@ -601,5 +601,156 @@ Recorded in [BACKLOG.md](../BACKLOG.md) by name and with its reason, never forgo
 
 ---
 
+## 16. The flow, end to end — a worked example
+
+One ticket, from the counter to the customer's account. Every call below is real; the companion
+documents are [DESIGN-TICKETS-BACKEND.md](DESIGN-TICKETS-BACKEND.md) for the server and
+[DESIGN-TICKETS-FRONTEND-INTEGRATION.md](DESIGN-TICKETS-FRONTEND-INTEGRATION.md) for the app.
+
+### Step 1 — سارة raises it
+
+She is on متجر إكس's screen and taps «طلب تصميم», so the customer is read rather than chosen.
+
+```http
+POST /api/v1/design-tickets
+{
+  "customer_id": 57,
+  "title": "تصميم كيس شحن — أسود",
+  "description": "ضع الشعار في المنتصف وأضف رقم الهاتف أسفله.",
+  "instructions": "الخط عريض، والخلفية شفافة.",
+  "assigned_designer_id": null
+}
+```
+
+→ `DT-0042`, status **«جديد»**, in the shared pool.
+
+She did not name a designer — she does not know who is free. That null is the instruction, not a
+gap. Then the logo she was given:
+
+```http
+POST /api/v1/design-tickets/42/attachments
+file: logo.png
+note: الشعار الأصلي
+```
+
+Uploaded *after* the ticket exists, so a failed upload can never lose the request.
+
+### Step 2 — أحمد claims it
+
+His queue screen is `?designer=none`. He opens `DT-0042` and taps «قبول الطلب»:
+
+```http
+POST /api/v1/design-tickets/42/acceptance
+```
+
+→ status **«قيد التصميم»**, `accepted_by_user_id = 9`, `accepted_at` stamped.
+
+If خالد tapped at the same moment, exactly one of them wins — the conditional update in PostgreSQL
+decides — and the loser reads «تم قبول هذه التذكرة من أحمد». **This step is the answer to «حتى لا
+يقوم مصممان بنفس العمل».**
+
+### Step 3 — he uploads
+
+```http
+POST /api/v1/design-tickets/42/versions
+file: v1.png
+note: جربت الشعار بحجمين
+```
+
+→ status **«بانتظار المراجعة»**, `version: 1`, `status: proposed`.
+
+### Step 4 — سارة sends it back
+
+```http
+POST /api/v1/design-tickets/42/versions/1/review
+{
+  "verdict": "changes_requested",
+  "note": "كبّر الشعار شوية وخلي الرقم أوضح"
+}
+```
+
+→ status **«تعديل مطلوب»**. Version 1 keeps its verdict and its note, permanently.
+
+**No new ticket.** The words she wrote are attached to the version they judge, which is what makes
+the next round actionable — and what «دون إنشاء تذكرة جديدة» means in practice.
+
+### Step 5 — round two
+
+```http
+POST /api/v1/design-tickets/42/versions
+file: v2.png
+```
+
+→ **«بانتظار المراجعة»**, `version: 2`. No second acceptance was needed: a revision loop that cost
+an extra tap each round would be a loop nobody uses.
+
+### Step 6 — approval closes it
+
+```http
+POST /api/v1/design-tickets/42/versions/2/review
+{ "verdict": "approved" }
+```
+
+→ status **«مكتمل»**, `completed_at` stamped, and the file promoted onto متجر إكس's account as a
+`CustomerDesign` labelled from the ticket title. `approved_customer_design_id` points at it.
+
+**أحمد could not have made this call**, even as an administrator. He uploaded version 2, and the
+domain refuses a reviewer who is the uploader — see §6.2. That is the brief's closing note
+(«لا أنصح أن يقوم المصمم نفسه باعتماد التصميم النهائي») expressed as a rule rather than as advice.
+
+### The detour — أحمد goes home sick
+
+At any open point, a supervisor can hand the ticket back:
+
+```http
+PATCH /api/v1/design-tickets/42/designer
+{ "assigned_designer_id": null }
+```
+
+→ the claim is released: `accepted_at` and `accepted_by_user_id` cleared, status back to
+**«جديد»**, versions kept. It reappears in `?designer=none` and any designer may accept it.
+
+See §17 — this did not work in the first build.
+
+### What the history holds
+
+`GET /design-tickets/42/logs` returns the whole thing — the ticket, its files and its comments as
+one trail, with causers, times and Arabic attribute labels. Nothing above needed a transitions
+table to be answerable.
+
+---
+
+## 17. Correction: returning a ticket to the pool
+
+**This section records a decision that was wrong in the original plan**, found in use and fixed.
+
+§7 said reassignment leaves `accepted_by_user_id` alone because it is "a record of what happened".
+`AssignDesignTicket` therefore cleared only `assigned_designer_id` when a ticket was returned to the
+pool. But the pool is defined by **two** columns — `assigned_designer_id IS NULL AND accepted_at IS
+NULL` — so a released ticket satisfied neither "assigned to someone" nor "in the pool".
+
+Because the same predicate governs visibility (§6.1), a released ticket became **invisible to every
+designer except the one it had just been taken from**, while «قيد التصميم» still counted it as work
+in hand. A lost ticket: precisely the failure this feature exists to prevent.
+
+**The fix.** Returning an accepted ticket to the pool now releases the whole claim — `accepted_at`,
+`accepted_by_user_id`, and the status back to «جديد». Versions already uploaded stay, because the
+next designer needs them in order not to start the job twice. Reassigning to *another* designer is
+unchanged: naming somebody is not taking the job off the person doing it.
+
+**Why the original reasoning failed.** The record is real, but it belongs to the audit trail, which
+already holds the acceptance and the release with their causers and times. These columns describe
+where the ticket stands *now*. Keeping a stale claim in them to preserve history duplicated the log
+and broke the queue — the general lesson being that **state columns and history are different jobs,
+and making one do the other breaks the one that has readers.**
+
+This also makes `AssignDesignTicket` the single exception to §7's rule that «جديد» is unreachable.
+The rule protects against a count that "goes up for reasons nobody did"; a release is caused by a
+named person and recorded, so it is the exception that proves it. «جديد» stays out of
+`allowedNext()` because that map is published as `available_transitions`, and it must never be a
+move the app can offer.
+
+---
+
 *A living document. When a rule here proves wrong, change it and record why — deliberate decisions
 over cargo-culted ones.*

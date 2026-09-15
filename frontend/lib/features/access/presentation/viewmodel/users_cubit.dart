@@ -18,6 +18,16 @@ class UsersCubit extends PagedCubit<AuthUser> {
 
   final GetUsers _getUsers;
 
+  /// Narrows the list to the staff who may do one particular thing — «من يقبل تذاكر التصميم؟».
+  ///
+  /// Null on the staff screen, which lists everybody. Set by a picker that is asking a narrower
+  /// question, and it rides on every page including the ones `loadMore` asks for — a filter
+  /// applied to the first page only would widen the list as somebody scrolled.
+  ///
+  /// A permission rather than a role name, so the picker cannot drift from what the code checks
+  /// for when the business renames or splits a role.
+  String? permission;
+
   @override
   Object identityOf(AuthUser item) => item.id;
 
@@ -26,7 +36,7 @@ class UsersCubit extends PagedCubit<AuthUser> {
     String? search,
     required int page,
   }) {
-    return _getUsers(search: search, page: page);
+    return _getUsers(search: search, permission: permission, page: page);
   }
 }
 

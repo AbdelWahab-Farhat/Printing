@@ -17,8 +17,15 @@ import 'package:dayaa/features/auth/models/auth_user.dart';
 /// repository cannot keep.
 abstract interface class AccessRepository {
   /// Staff, searchable by name, email or phone.
+  /// [permission] narrows to the staff who may do one particular thing — «من يستطيع قبول تذكرة
+  /// تصميم؟». A permission rather than a role name, so a picker cannot drift from what the code
+  /// checks for when the business renames or splits a role.
+  ///
+  /// **Administrators are not in that answer** unless they hold it for real: their access comes
+  /// from a rule rather than a granted row.
   Future<Either<Failure, Paginated<AuthUser>>> users({
     String? search,
+    String? permission,
     int page = 1,
     int perPage = 20,
   });

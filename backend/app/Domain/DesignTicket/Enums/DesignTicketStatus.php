@@ -81,10 +81,17 @@ enum DesignTicketStatus: string
      * Read by the actions to refuse a move, and published on the resource so the app can grey a
      * button rather than discover the refusal by making a request.
      *
-     * **{@see New} is unreachable from everywhere**, which is the same rule `ChangeShortageStatus`
+     * **{@see New} appears in no arm of this map**, which is the same rule `ChangeShortageStatus`
      * spells out: "لم تبدأ متابعته بعد" stops being true the moment somebody starts, and a status
      * that could be un-started would make «جديد: ١٢» on the board a number that goes up for
      * reasons nobody did.
+     *
+     * **`AssignDesignTicket` is the single exception, and it is deliberately not listed here.**
+     * Returning an accepted ticket to the shared pool unaccepts it and sends it back to «جديد» —
+     * the count goes up, but for a reason a named person is recorded as having caused, which is
+     * exactly what the rule above is protecting. It stays out of the map because this map is
+     * published as `available_transitions`, and «جديد» must never be a move the app can offer: a
+     * release is the consequence of unassigning, not a status somebody picks.
      *
      * @return list<self>
      */

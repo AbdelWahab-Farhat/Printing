@@ -2,7 +2,8 @@
 
 > **Status: built.** Branch `feat/design-tickets`. `flutter analyze lib` clean, the cubit tests
 > green. The API it talks to is specified in
-> [DESIGN-TICKETS-DESIGN.md](DESIGN-TICKETS-DESIGN.md) §8 and published at `/docs/api`.
+> [DESIGN-TICKETS-BACKEND.md](DESIGN-TICKETS-BACKEND.md), planned in
+> [DESIGN-TICKETS-DESIGN.md](DESIGN-TICKETS-DESIGN.md), and published at `/docs/api`.
 
 What the Flutter app does with تذاكر التصميم, and the handful of decisions in it that are not
 obvious from the code.
@@ -21,11 +22,17 @@ usecases/     design_ticket_usecases.dart — thirteen verbs, one class each
 presentation/ viewmodel/ design_tickets_cubit · design_ticket_detail_cubit (+ state)
               views/     design_tickets_page · design_ticket_detail_page · design_ticket_form_page
               widgets/   design_ticket_card · design_ticket_status_pill · design_version_tile
-                         · review_version_sheet
+                         · review_version_sheet · assign_designer_sheet · edit_ticket_sheet
 ```
 
 Registered in one `_registerDesignTickets()` in [Injector](../../frontend/lib/core/di/injector.dart),
-and reached through four routes.
+and reached through five routes — `/design-tickets`, `/form`, `/filter`, `/:id`, and `/:id/comments`
+nested under the detail.
+
+**Two doors into the form**, because the first build had none. The list's FAB opens a customer
+picker first (the form cannot exist without a customer); a customer's own screen has a «طلب تصميم»
+action that passes the `Customer` as `extra` and skips the picker. The drawer carries
+«تذاكر التصميم».
 
 ---
 
@@ -155,20 +162,90 @@ the same `file_kind` vocabulary, so the two stay readable side by side.
 
 ---
 
-## 6. What the app does not do yet
+## 6. The four gaps that were closed
 
-Each of these is a screen rather than a missing rule — the API answers all of them today.
+The first build shipped screens with no way in, and a detail screen whose wired-up calls nothing
+reached. All four are now built.
 
-- **Assigning from the app.** `PATCH /design-tickets/{id}/designer` is wired through the
-  repository and the cubit, and no sheet calls it yet. `assign_shortage_sheet.dart` is the shape
-  to copy.
-- **Editing a ticket's words.** `PUT /design-tickets/{id}` is wired and unused; the form opens for
-  creation only.
-- **Removing an attachment.** Wired and unused — the strip draws, and nothing deletes.
-- **The in-ticket conversation.** `/design-tickets/{id}/comments` is the same shape a customer's
-  notes use, and the comments widget is not yet mounted on this screen.
+### 6.1 Assigning — `assign_designer_sheet.dart`
+
+A searchable sheet over the staff, on the `assign_shortage_sheet` shape. Two things in it are
+decisions rather than details:
+
+**«الطابور المشترك» is an option at the top, not the absence of one.** The server reads null as an
+instruction, so the sheet offers it rather than making somebody cancel out. That is why it answers
+a `DesignerChoice` rather than a bare `AuthUser?` — null is already taken by
+`showModalBottomSheet` returning null on dismissal, and «أرجِعها إلى الطابور» is a decision while
+swiping the sheet away is not.
+
+**The list is narrowed with `?permission=design_tickets.accept`**, not by role name. A filter on
+«مصمم» would list the wrong people the day the business renames or splits that role, and would do
+so silently.
+
+### 6.2 Editing — `edit_ticket_sheet.dart`
+
+Title, brief, instructions. A sheet rather than the form screen, because the ticket is open behind
+it and pushing a page to change one line loses the thing being corrected from view.
+
+**The customer is not editable, deliberately.** Files and a conversation hang off a ticket by the
+time anybody notices the wrong one was picked, so a mis-addressed ticket is cancelled and raised
+again — which leaves an honest record. The designer is its own sheet behind its own grant, because
+routing work is a different job from describing it.
+
+### 6.3 Removing an attachment
+
+A long press on the thumbnail, not a badge on every tile: removing a reference file is rare, and an
+X on each thumbnail would put a destructive tap next to the one people actually make, which is
+opening it. The affordance is **absent** rather than disabled when `can_manage` is false.
+
+### 6.4 The in-ticket conversation
+
+`CommentSubject.designTicket(id)` joins the shared comments feature — the same four calls a
+customer's notes use, at `/design-tickets/{id}/comments`, reached from a «المحادثة» action in the
+app bar and a nested `comments` route.
+
+**Behind `design_tickets.view` like the ticket itself**, writes included: a note is part of doing
+the work, not a privilege over it. Who may change *this* note is a per-row question the server
+answers with `can_edit` / `can_delete` on each comment — author, or somebody holding
+`comments.moderate`. Administrators pass through `Gate::before`, so they can moderate without a
+granted row.
+
+### Still not built
+
 - **Opening a version full-screen.** Tapping a version under review opens the verdict sheet;
   tapping any other one does nothing. `DesignViewer` is the widget to reach for.
+
+---
+
+## 7. Two changes outside this feature
+
+Both were needed here and both affect screens that already shipped — worth knowing before blaming
+this branch for a change elsewhere.
+
+### 7.1 The comments screen is now a chat
+
+`comments_page.dart` draws bubbles — yours at the end, theirs at the start, capped at 78% width,
+with the author's name only on incoming ones — and orders **oldest-first** with `reverse: true`.
+
+`AlignmentDirectional` and `BorderRadiusDirectional` throughout, never `left`/`right`: this app is
+RTL, where a chat mirrors, and hard-coding the English answer would put both sides of the
+conversation on the wrong edge.
+
+> ⚠️ **This also changed the customer and supplier note screens**, which share the widget — and
+> those were documented as newest-first. If that ordering mattered, the change needs scoping to
+> design tickets rather than reverting wholesale.
+
+**A pre-existing crash was fixed while in here**: `_promptForBody` disposed its
+`TextEditingController` in `.whenComplete()`, while the dialog was still animating out, producing
+`'_dependents.isEmpty': is not true`. An `_EditBodyDialog` StatefulWidget now owns and disposes its
+own controller. The bug predates this branch — verified by stashing.
+
+### 7.2 `GET /users` takes a `permission` filter
+
+Threaded through `access_repository` → `_impl` → `get_users` → `users_cubit` so the designer picker
+can ask «من يستطيع قبول تذكرة تصميم؟». Unrecognised values are ignored rather than refused — a typo
+that emptied the list would read as «لا يوجد موظفون», which is false and undiagnosable from the
+screen.
 
 ---
 

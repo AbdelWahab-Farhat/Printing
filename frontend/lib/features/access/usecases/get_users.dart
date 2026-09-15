@@ -12,9 +12,15 @@ class GetUsers {
 
   Future<Either<Failure, Paginated<AuthUser>>> call({
     String? search,
+    String? permission,
     int page = 1,
     int perPage = 20,
   }) {
-    return _repository.users(search: search, page: page, perPage: perPage);
+    return _repository.users(
+      search: search,
+      permission: permission,
+      page: page,
+      perPage: perPage,
+    );
   }
 }

@@ -22,6 +22,7 @@ class CommentRepositoryImpl implements CommentRepository {
   static String _base(CommentSubject subject) => switch (subject.kind) {
     CommentSubjectKind.customer => CustomerEndpoints.comments(subject.id),
     CommentSubjectKind.vendor => VendorEndpoints.comments(subject.id),
+    CommentSubjectKind.designTicket => DesignTicketEndpoints.comments(subject.id),
   };
 
   static String _one(CommentSubject subject, int commentId) => '${_base(subject)}/$commentId';

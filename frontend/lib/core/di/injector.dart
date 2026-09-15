@@ -1155,6 +1155,7 @@ abstract final class Injector {
           getTicket: sl<GetDesignTicket>(),
           acceptTicket: sl<AcceptDesignTicket>(),
           assignTicket: sl<AssignDesignTicket>(),
+          updateTicket: sl<UpdateDesignTicket>(),
           cancelTicket: sl<CancelDesignTicket>(),
           attachFile: sl<AttachDesignTicketFile>(),
           removeAttachment: sl<RemoveDesignTicketAttachment>(),

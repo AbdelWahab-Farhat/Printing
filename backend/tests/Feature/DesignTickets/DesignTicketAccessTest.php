@@ -203,6 +203,59 @@ class DesignTicketAccessTest extends DesignTicketTestCase
         $this->assertSame(0, DesignTicket::query()->count());
     }
 
+    public function test_the_staff_list_narrows_to_whoever_may_accept_a_ticket(): void
+    {
+        // Arrange — what the app's «إسناد إلى مصمم» picker asks for. Three accounts: a designer,
+        // an employee who raises tickets, and somebody with neither grant.
+        [$designer] = $this->designer();
+        [$employee] = $this->employee();
+        $this->actor();
+
+        // **`users.view` on top of `design_tickets.assign`**, because the picker reads the staff
+        // list. The same coupling `assign_shortage_sheet` already has: routing work to a person
+        // means naming one, and naming one means reading the list of them.
+        [, $headers] = $this->actor(
+            PermissionName::ViewDesignTickets,
+            PermissionName::AssignDesignTickets,
+            PermissionName::ViewUsers,
+        );
+
+        // Act
+        $designers = $this->getJson(
+            '/api/v1/users?permission='.PermissionName::AcceptDesignTickets->value,
+            $headers,
+        );
+        $everybody = $this->getJson('/api/v1/users', $headers);
+
+        // Assert — **by permission, not by role name**: a filter on «مصمم» would list the wrong
+        // people the day the business renames or splits that role, and would do it silently.
+        $designers->assertOk();
+
+        $ids = collect($designers->json('data'))->pluck('id');
+        $this->assertTrue($ids->contains($designer->id));
+        $this->assertFalse($ids->contains($employee->id));
+
+        // The unfiltered list still answers with everybody, so the filter narrows rather than
+        // replacing what that endpoint is for.
+        $everybody->assertOk();
+        $this->assertGreaterThan($ids->count(), count($everybody->json('data')));
+    }
+
+    public function test_an_unknown_permission_is_ignored_rather_than_emptying_the_list(): void
+    {
+        // Arrange
+        $this->designer();
+        [, $headers] = $this->actor(PermissionName::ViewUsers);
+
+        // Act
+        $response = $this->getJson('/api/v1/users?permission=not_a_real_permission', $headers);
+
+        // Assert — a typo that emptied the picker would read as «لا يوجد مصممون», a sentence that
+        // is false and that nobody could diagnose from the screen.
+        $response->assertOk();
+        $this->assertNotEmpty($response->json('data'));
+    }
+
     public function test_the_validation_refuses_a_ticket_with_no_customer_and_no_brief(): void
     {
         // Arrange

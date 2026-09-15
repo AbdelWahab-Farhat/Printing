@@ -6,12 +6,15 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
+import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
 import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_ticket_detail_cubit.dart';
+import 'package:dayaa/features/design_tickets/presentation/widgets/assign_designer_sheet.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_status_pill.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_version_tile.dart';
+import 'package:dayaa/features/design_tickets/presentation/widgets/edit_ticket_sheet.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/review_version_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -72,11 +75,25 @@ class _DesignTicketDetailView extends StatelessWidget {
     await _run(context, cubit.accept, 'تم قبول الطلب');
   }
 
+  /// Uploading, whichever of the two things is being uploaded.
+  ///
+  /// **The source is asked for first**, through the same sheet the customer's design library
+  /// uses. This used to go straight to the document browser, and that made the commonest case
+  /// impossible: artwork arrives over WhatsApp far more often than by email, and on iOS a photo
+  /// from WhatsApp lands in the photo library — a place the Files app cannot see at all. A
+  /// designer with the bag on their camera roll simply found nothing to pick.
   Future<void> _upload(BuildContext context, {required bool asVersion}) async {
     final cubit = context.read<DesignTicketDetailCubit>();
-    final picker = sl<AttachmentPicker>();
 
-    final picked = await picker.pick(AttachmentSource.documents);
+    final source = await showAttachmentSheet(
+      context: context,
+      title: asVersion ? 'رفع التصميم' : 'إضافة مرفق',
+    );
+
+    // Dismissing the sheet is a decision to do nothing, not a failure.
+    if (source == null || !context.mounted) return;
+
+    final picked = await sl<AttachmentPicker>().pick(source);
 
     // Backing out of the picker is the expected ending of that call, not a failure — nothing is
     // reported about it.
@@ -107,6 +124,61 @@ class _DesignTicketDetailView extends StatelessWidget {
           ? 'تم اعتماد التصميم وحفظه في حساب الزبون'
           : 'تم إرسال طلب التعديل',
     );
+  }
+
+  Future<void> _assign(BuildContext context, DesignTicket ticket) async {
+    final cubit = context.read<DesignTicketDetailCubit>();
+
+    final choice = await showAssignDesignerSheet(
+      context: context,
+      currentDesignerId: ticket.designer?.id,
+    );
+
+    if (choice == null || !context.mounted) return;
+
+    await _run(
+      context,
+      () => cubit.assign(choice.userId),
+      choice.userId == null ? 'تم إرجاع التذكرة إلى الطابور المشترك' : 'تم إسناد التذكرة',
+    );
+  }
+
+  Future<void> _edit(BuildContext context, DesignTicket ticket) async {
+    final cubit = context.read<DesignTicketDetailCubit>();
+
+    final edit = await showEditTicketSheet(context: context, ticket: ticket);
+
+    if (edit == null || !context.mounted) return;
+
+    await _run(
+      context,
+      () => cubit.update(
+        title: edit.title,
+        description: edit.description,
+        instructions: edit.instructions,
+      ),
+      'تم تحديث الطلب',
+    );
+  }
+
+  /// Removing one of the employee's reference files.
+  ///
+  /// **Destructive-styled, though the file itself survives.** What is lost is the designer's
+  /// access to a picture they may be working from, and that is worth a deliberate tap — the
+  /// object staying on disk is a property of the storage layer, not something the person
+  /// removing it is thinking about.
+  Future<void> _removeAttachment(BuildContext context, DesignTicketFile file) async {
+    final cubit = context.read<DesignTicketDetailCubit>();
+
+    final confirmed = await showDestructiveDialog(
+      context: context,
+      title: 'حذف المرفق',
+      description: 'سيختفي من التذكرة. لن يراه المصمم بعد الآن.',
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    await _run(context, () => cubit.removeAttachment(file.id), 'تم حذف المرفق');
   }
 
   Future<void> _cancel(BuildContext context) async {
@@ -184,6 +256,22 @@ class _DesignTicketDetailView extends StatelessWidget {
           appBar: AppBar(
             title: Text(ticket.code),
             actions: [
+              // «الرد داخل التذكرة» — behind the same grant as reading it, because writing a note
+              // is part of doing the work rather than a privilege over it.
+              IconButton(
+                tooltip: 'المحادثة',
+                onPressed: () => context.push(
+                  Routes.designTicketComments(ticket.id),
+                  extra: ticket.title,
+                ),
+                icon: Icon(AppIcons.comments),
+              ),
+              if (ticket.canManage)
+                IconButton(
+                  tooltip: 'تعديل الطلب',
+                  onPressed: state.isWorking ? null : () => _edit(context, ticket),
+                  icon: Icon(AppIcons.edit),
+                ),
               if (ticket.canManage)
                 IconButton(
                   tooltip: 'إلغاء التذكرة',
@@ -207,7 +295,14 @@ class _DesignTicketDetailView extends StatelessWidget {
                 _Brief(ticket: ticket),
                 if (ticket.attachments.isNotEmpty) ...[
                   SizedBox(height: 16.h),
-                  _Attachments(files: ticket.attachments),
+                  _Attachments(
+                    files: ticket.attachments,
+                    // Null hides the delete affordance rather than drawing one that refuses:
+                    // `canManage` is already false on a closed ticket and for a designer.
+                    onRemove: ticket.canManage
+                        ? (file) => _removeAttachment(context, file)
+                        : null,
+                  ),
                 ],
                 SizedBox(height: 16.h),
                 _Versions(
@@ -218,6 +313,7 @@ class _DesignTicketDetailView extends StatelessWidget {
                 _Actions(
                   ticket: ticket,
                   isWorking: state.isWorking,
+                  onAssign: () => _assign(context, ticket),
                   onAccept: () => _accept(context),
                   onSubmit: () => _upload(context, asVersion: true),
                   onAttach: () => _upload(context, asVersion: false),
@@ -362,9 +458,12 @@ class _Brief extends StatelessWidget {
 }
 
 class _Attachments extends StatelessWidget {
-  const _Attachments({required this.files});
+  const _Attachments({required this.files, this.onRemove});
 
   final List<DesignTicketFile> files;
+
+  /// Null when this reader may not remove one — see the call site.
+  final void Function(DesignTicketFile file)? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -381,8 +480,17 @@ class _Attachments extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             itemCount: files.length,
             separatorBuilder: (_, _) => SizedBox(width: 8.w),
-            itemBuilder: (context, index) =>
-                DesignTicketFileThumbnail(file: files[index], size: 72),
+            itemBuilder: (context, index) {
+              final file = files[index];
+
+              return GestureDetector(
+                // A long press rather than a badge on every tile: removing a reference file is
+                // rare, and an X on each thumbnail would put a destructive tap next to the one
+                // people actually make, which is opening it.
+                onLongPress: onRemove == null ? null : () => onRemove!(file),
+                child: DesignTicketFileThumbnail(file: file, size: 72),
+              );
+            },
           ),
         ),
       ],
@@ -432,6 +540,7 @@ class _Actions extends StatelessWidget {
   const _Actions({
     required this.ticket,
     required this.isWorking,
+    required this.onAssign,
     required this.onAccept,
     required this.onSubmit,
     required this.onAttach,
@@ -440,6 +549,7 @@ class _Actions extends StatelessWidget {
 
   final DesignTicket ticket;
   final bool isWorking;
+  final VoidCallback onAssign;
   final VoidCallback onAccept;
   final VoidCallback onSubmit;
   final VoidCallback onAttach;
@@ -468,6 +578,14 @@ class _Actions extends StatelessWidget {
         if (ticket.canReview) ...[
           SizedBox(height: 10.h),
           AppButton(label: 'مراجعة التصميم', isLoading: isWorking, onPressed: onReview),
+        ],
+        if (ticket.canAssign) ...[
+          SizedBox(height: 10.h),
+          AppButton.tonal(
+            label: ticket.isInSharedPool ? 'إسناد إلى مصمم' : 'تغيير المصمم',
+            isLoading: isWorking,
+            onPressed: onAssign,
+          ),
         ],
         if (ticket.canManage) ...[
           SizedBox(height: 10.h),

@@ -247,6 +247,13 @@ abstract final class Routes {
 
   static String designTicket(int id) => '/design-tickets/$id';
 
+  /// «الرد داخل التذكرة». A child of the ticket, because that is what it is: the conversation
+  /// about *this* request. The title travels as `extra` so the bar can name the ticket without a
+  /// second request.
+  static const String designTicketCommentsPath = 'comments';
+
+  static String designTicketComments(int id) => '/design-tickets/$id/comments';
+
   static const String shortages = '/shortages';
 
   /// Writing one down by hand, or correcting one. Declared **before** `/shortages/:id`, so the
@@ -834,6 +841,24 @@ abstract final class AppRouter {
 
           return id == null ? const _UnknownDesignTicket() : DesignTicketDetailPage(ticketId: id);
         },
+        routes: [
+          // The conversation. Behind `design_tickets.view` like the ticket itself — writing a
+          // note is part of doing the work, not a privilege over it — and the server narrows it
+          // to readers who may see this particular ticket, so a colleague's thread is a 404.
+          GoRoute(
+            path: Routes.designTicketCommentsPath,
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+              return id == null
+                  ? const _UnknownDesignTicket()
+                  : CommentsPage(
+                      subject: CommentSubject.designTicket(id),
+                      ownerName: state.payload is String ? state.payload! as String : null,
+                    );
+            },
+          ),
+        ],
       ),
       // النواقص. The form is declared **before** the list and before `:id`, so the literal word
       // «form» is not read as an id.

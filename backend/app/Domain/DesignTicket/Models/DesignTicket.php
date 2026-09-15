@@ -102,9 +102,13 @@ class DesignTicket extends Model implements HasAuditTrail
      * Whether this reader is the designer who may work on this ticket.
      *
      * **Before acceptance the pool is open to whoever it was addressed to**, which is everybody
-     * when it was addressed to nobody. After acceptance it is the one person who took it, and a
-     * reassignment does not change that — the work is theirs until somebody unaccepts it, which
-     * nothing does.
+     * when it was addressed to nobody. After acceptance it is the one person who took it, and
+     * addressing the ticket to a second designer does not change that — naming somebody is not
+     * taking the job off the person doing it.
+     *
+     * **Returning it to the shared pool does**, and it is the only thing that does: `AssignDesignTicket`
+     * clears the claim along with the address, so the ticket is unaccepted and open to whoever
+     * picks it up next. That is what makes a designer who goes home sick recoverable.
      *
      * Lives on the model rather than in the controller because the same question is asked twice:
      * once to refuse a request, once to tell the app whether to draw the button. Two copies of an

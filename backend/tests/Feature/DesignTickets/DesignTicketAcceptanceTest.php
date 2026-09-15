@@ -194,4 +194,95 @@ class DesignTicketAcceptanceTest extends DesignTicketTestCase
         $response->assertStatus(422)->assertJsonValidationErrors('assigned_designer_id');
         $this->assertSame($designerUser->id, (int) $ticket->refresh()->assigned_designer_id);
     }
+
+    /**
+     * «أرجِعها إلى الطابور المشترك» after somebody has already taken it — the designer who went
+     * home sick.
+     *
+     * **Asserted from the next designer's side rather than from the columns**, because the failure
+     * this pins was invisible in the row: clearing `assigned_designer_id` alone left `accepted_at`
+     * set, and the pool is defined by both. The ticket then belonged to nobody, appeared in no
+     * queue, and could be seen only by the designer it had just been taken from. Reading it back
+     * through the list is the only way to catch that, since every column involved looked plausible.
+     */
+    public function test_returning_an_accepted_ticket_to_the_pool_releases_it_to_the_other_designers(): void
+    {
+        // Arrange — one designer takes the job, then stops being available.
+        [, $employee] = $this->employee();
+        [$first, $firstHeaders] = $this->designer();
+        [, $secondHeaders] = $this->designer();
+        $customer = $this->customer();
+
+        $ticket = DesignTicket::query()->find(
+            $this->postJson(
+                '/api/v1/design-tickets',
+                $this->payload($customer, ['assigned_designer_id' => $first->id]),
+                $employee,
+            )->json('data.id'),
+        );
+
+        $this->postJson("/api/v1/design-tickets/{$ticket->id}/acceptance", [], $firstHeaders)
+            ->assertOk();
+
+        // Act — the supervisor hands it back to the pool.
+        $released = $this->patchJson(
+            "/api/v1/design-tickets/{$ticket->id}/designer",
+            ['assigned_designer_id' => null],
+            $employee,
+        );
+
+        // Assert — it is genuinely unclaimed again, not merely unaddressed.
+        $released->assertOk();
+
+        $ticket->refresh();
+        $this->assertNull($ticket->assigned_designer_id);
+        $this->assertNull($ticket->accepted_by_user_id);
+        $this->assertNull($ticket->accepted_at);
+        $this->assertSame(DesignTicketStatus::New, $ticket->status);
+
+        // The pool a designer actually scrolls. This is the assertion that used to fail.
+        $this->getJson('/api/v1/design-tickets?designer=none', $secondHeaders)
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $ticket->id);
+
+        // And somebody else can now pick it up — «لا يضيع الطلب» is the whole point.
+        $this->postJson("/api/v1/design-tickets/{$ticket->id}/acceptance", [], $secondHeaders)
+            ->assertOk();
+    }
+
+    /**
+     * The same move on a ticket nobody had taken yet leaves the status alone.
+     *
+     * A ticket that was merely *addressed* to a designer is still «جديد», so a release has no
+     * claim to undo — and rewriting the status to the value it already held would put a move in
+     * the history that nobody made.
+     */
+    public function test_returning_an_unaccepted_ticket_to_the_pool_changes_only_the_address(): void
+    {
+        // Arrange
+        [, $employee] = $this->employee();
+        [$designerUser] = $this->designer();
+        $customer = $this->customer();
+
+        $ticket = DesignTicket::query()->find(
+            $this->postJson(
+                '/api/v1/design-tickets',
+                $this->payload($customer, ['assigned_designer_id' => $designerUser->id]),
+                $employee,
+            )->json('data.id'),
+        );
+
+        // Act
+        $this->patchJson(
+            "/api/v1/design-tickets/{$ticket->id}/designer",
+            ['assigned_designer_id' => null],
+            $employee,
+        )->assertOk();
+
+        // Assert
+        $ticket->refresh();
+        $this->assertNull($ticket->assigned_designer_id);
+        $this->assertNull($ticket->accepted_at);
+        $this->assertSame(DesignTicketStatus::New, $ticket->status);
+    }
 }
