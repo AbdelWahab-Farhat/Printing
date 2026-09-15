@@ -1,0 +1,25 @@
+# Code generation settings.
+#
+# `explicit_to_json` makes a generated `toJson` call `toJson()` on nested models instead of
+# dropping the objects into the map as they are. Without it, a payload that nests — a customer
+# carrying shops, a product carrying variants carrying price tiers — returns
+#
+#     {'shops': [Instance of '_NewCustomerShop']}
+#
+# from a method whose name promises JSON.
+#
+# **It is not a crash, and the difference matters.** `jsonEncode`'s default `toEncodable` calls
+# `.toJson()` on anything it does not recognise, so Dio serialises that map correctly and the
+# request goes out intact — verified, not assumed. What it breaks is every reader that does not
+# encode: a test asserting on `body['shops'].first['name']` fails on a cast, and code merging the
+# map into a larger structure carries objects where it believes it has data. The day a nested
+# type has no `toJson` of its own — an enum, a plain class — the same shape becomes a real
+# `JsonUnsupportedObjectError` at the moment of sending.
+#
+# It applies to every generated model, and `fromJson` is unaffected.
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          explicit_to_json: true

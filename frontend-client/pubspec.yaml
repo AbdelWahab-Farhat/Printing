@@ -1,0 +1,96 @@
+name: dayaa_client
+description: "دعاية Dayaa — تطبيق العميل: طلبياته وتصاميمه وحسابه."
+publish_to: "none"
+
+# major.minor.patch+build — the build number is what the stores order releases by.
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+
+# Every dependency is a decision. Nothing is added here "in case we need it" — a package that
+# is not imported anywhere gets removed, because each one is code we ship, review and upgrade.
+#
+# This list is the staff app's, minus everything no code here imports yet: Firebase and push,
+# flutter_map, the PDF and QR stack, the launcher-icon and splash generators. Each of those
+# comes back the day a feature needs it, with the note explaining why — copy the note too.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # ── state ────────────────────────────────────────────────────────────────────
+  flutter_bloc: ^9.1.0 # Cubit — the ViewModel layer
+  get_it: ^8.0.3 # service locator
+
+  # ── network ──────────────────────────────────────────────────────────────────
+  dio: ^5.8.0+1
+  # Debug builds only, whatever the flavour — see DioClient.logsTraffic. Bodies carry the
+  # bearer token and real customer records, so a shipped build must never attach it.
+  pretty_dio_logger: ^1.4.0
+
+  # ── navigation ───────────────────────────────────────────────────────────────
+  go_router: ^15.1.1
+
+  # ── models ───────────────────────────────────────────────────────────────────
+  freezed_annotation: ^3.1.0 # unions + immutable data
+  json_annotation: ^4.12.0 # json_serializable warns on anything older
+  dartz: ^0.10.1 # Either<Failure, T>
+
+  # ── storage ──────────────────────────────────────────────────────────────────
+  # The token lives in the Keychain / Android Keystore, not in SharedPreferences:
+  # a bearer token is a credential, and prefs are plain-text XML on a rooted device.
+  flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.5.3 # non-secret preferences only
+
+  # ── ui ───────────────────────────────────────────────────────────────────────
+  flutter_screenutil: ^5.9.3
+  google_fonts: ^7.0.0 # the generated theme's util.dart needs it
+  cached_network_image: ^3.4.1
+  # One floating button that opens into the two or three things a screen can do. Chosen over a
+  # row of buttons or an overflow menu because the actions here are reversible and frequent, and
+  # an overflow menu hides them behind a glyph nobody presses.
+  flutter_speed_dial: ^7.0.0
+
+  # ── getting a file off the phone ─────────────────────────────────────────────
+  # Two pickers, not one, and that is not duplication. `file_picker` opens the system's document
+  # browser — Files on iOS, the storage picker on Android — which is where a PDF sent by email
+  # lands. `image_picker` opens the photo library and the camera, which is where a design sent
+  # over WhatsApp lands, and on iOS the Files app cannot see that library at all. Offering only
+  # the first would make the commonest case — «أرسله لي على واتساب» — impossible.
+  #
+  # Both are what the sheet in core/widgets/attachment_sheet.dart puts behind its three rows.
+  # `image_picker` is flutter.dev's own; `file_picker` is MIT.
+  file_picker: ^11.0.3
+  image_picker: ^1.2.3
+  # Hands a file to whatever the phone already opens PDFs with.
+  #
+  # Deliberately not a PDF renderer: every one of them ships a native engine, and this app needs
+  # to *show a file*, not to annotate one. The link is the signed URL the API mints per request,
+  # so it expires — which is the point.
+  url_launcher: ^6.3.2
+
+  # ── misc ─────────────────────────────────────────────────────────────────────
+  flutter_dotenv: ^5.2.1
+  intl: ^0.20.2
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.15
+  freezed: ^3.2.5
+  json_serializable: ^6.9.5
+  flutter_lints: ^6.0.0
+  bloc_test: ^10.0.0
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    # One per Flavor, and both have to be listed: a flavour whose env file is not bundled
+    # throws at launch rather than failing the build.
+    - .env
+    - .env.dev
