@@ -6,6 +6,7 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/widgets/filter_option_chip.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/core/widgets/search_field.dart';
+import 'package:dayaa/features/customers/presentation/widgets/customer_picker_sheet.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_counts.dart';
 import 'package:dayaa/features/design_tickets/models/design_tickets_filter.dart';
@@ -61,10 +62,24 @@ class _DesignTicketsView extends StatelessWidget {
     await cubit.refresh();
   }
 
+  /// Raising one from the section's own door.
+  ///
+  /// **The customer is asked for first.** A ticket is always *for* somebody, and the form has no
+  /// picker of its own — it is built to be opened from a customer's screen, where the customer is
+  /// read rather than chosen and the wrong one is unnameable. Reached from here there is no such
+  /// screen, so the picker stands in for it.
   Future<void> _add(BuildContext context) async {
     final cubit = context.read<DesignTicketsCubit>();
 
-    final saved = await context.push<DesignTicket>(Routes.designTicketForm);
+    final customer = await showCustomerPicker(context: context);
+
+    // Backing out of the picker is the expected ending of that call, not a failure.
+    if (customer == null || !context.mounted) return;
+
+    final saved = await context.push<DesignTicket>(
+      Routes.designTicketForm,
+      extra: customer,
+    );
 
     if (saved != null) await cubit.refresh();
   }

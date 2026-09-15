@@ -212,6 +212,22 @@ class _Actions extends StatelessWidget {
             onTap: (context) =>
                 context.push(Routes.newCustomerOrder(customer.id), extra: customer),
           ),
+        // **Beside «طلبية جديدة», and for the same reason it is here rather than on a list.** A
+        // design request is always *for* somebody, and naming the customer by which screen you
+        // are on is what makes the wrong one unnameable — the argument NEW-ORDER-DESIGN.md §١
+        // makes for orders, applied to the other thing raised against a customer.
+        //
+        // Absent for a deactivated customer, like the order button above: this is somebody the
+        // shop has stopped selling to.
+        if (customer.isActive)
+          AppAction(
+            label: 'طلب تصميم',
+            icon: AppIcons.designs,
+            tone: AppActionTone.primary,
+            permission: AppPermission.manageDesignTickets,
+            onTap: (context) =>
+                context.push(Routes.designTicketForm, extra: customer),
+          ),
         AppAction(
           label: 'تعديل العميل',
           icon: AppIcons.edit,
