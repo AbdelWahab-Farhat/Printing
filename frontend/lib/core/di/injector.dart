@@ -1109,6 +1109,9 @@ abstract final class Injector {
       ..registerLazySingleton<ReverseShortageSupply>(
         () => ReverseShortageSupply(sl<ShortageRepository>()),
       )
+      ..registerLazySingleton<SetShortageWarehouseQuantity>(
+        () => SetShortageWarehouseQuantity(sl<ShortageRepository>()),
+      )
       ..registerFactory<ShortagesCubit>(
         () => ShortagesCubit(
           getShortages: sl<GetShortages>(),
@@ -1123,6 +1126,7 @@ abstract final class Injector {
           assignShortage: sl<AssignShortage>(),
           recordSupply: sl<RecordShortageSupply>(),
           reverseSupply: sl<ReverseShortageSupply>(),
+          setWarehouseQuantity: sl<SetShortageWarehouseQuantity>(),
         ),
       )
       ..registerFactory<SaveShortageCubit>(

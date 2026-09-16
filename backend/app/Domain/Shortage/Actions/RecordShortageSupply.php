@@ -8,13 +8,16 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Models\StockMovement;
+use App\Domain\Order\DTOs\LineShortage;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\OrderService;
 use App\Domain\Shortage\DTOs\ShortageSupplyData;
 use App\Domain\Shortage\Enums\ShortageStatus;
 use App\Domain\Shortage\Enums\SupplyKind;
 use App\Domain\Shortage\Exceptions\ShortageIsClosed;
 use App\Domain\Shortage\Exceptions\ShortageIsNotStockable;
+use App\Domain\Shortage\Exceptions\ShortageWeightIsUnknown;
 use App\Domain\Shortage\Exceptions\SupplyExceedsRemaining;
 use App\Domain\Shortage\Exceptions\SupplyNeedsAWarehouse;
 use App\Domain\Shortage\Exceptions\SupplyRequiresAnActor;
@@ -52,6 +55,12 @@ use Illuminate\Support\Facades\DB;
  * **A shortage with nothing behind it on a shelf skips step one**, and only that step: a roll of
  * tape nobody stocks is still a purchase worth recording. See
  * {@see App\Domain\Shortage\Models\Shortage::isStockable()}.
+ *
+ * **Step one needs no conversion, and that is by construction.** A shortage is denominated in the
+ * unit its shelf is counted in — `shortages.unit` is copied from `OrderItem::stockUnit()`, not
+ * from `pricing_unit` — so the quantity on this row is already the number the warehouse receives
+ * and the number `unit_cost` is per. The invoice's share of it is a separate figure living on the
+ * order line, apportioned in step four.
  *
  * **Step three is why this action reaches into Orders at all.** `order_items.shortage_quantity`
  * is subtracted from what the customer is billed, so goods bought to cover a shortage are goods
@@ -108,6 +117,13 @@ final class RecordShortageSupply
                 throw ShortageIsClosed::make();
             }
 
+            // **Before the ceiling is even read, because the ceiling is in the wrong unit.** A
+            // shortage whose weight nobody has stated is still counted in the unit the customer
+            // was billed in — the bags were missing, so there was nothing to weigh — and what is
+            // about to be recorded was bought by the kilo. Subtracting one from the other is not
+            // arithmetic anybody can do. See the exception, and `OrderItem::shortageWeightIsUnknown()`.
+            $this->guardTheUnit($locked);
+
             $remaining = $locked->remainingQuantity();
 
             if (bccomp($data->quantity, $remaining, 3) > 0) {
@@ -126,6 +142,10 @@ final class RecordShortageSupply
                 // Stamped, not fillable: a payload that could set `kind` could write a purchase
                 // carrying no money and slip past the CHECK that demands it.
                 'kind' => SupplyKind::Purchased,
+                // **Already in the shelf's unit**, because that is what a shortage is
+                // denominated in — see `OrderLineShortage`. One number reaches the warehouse, the
+                // ledger and the cost layer alike; the invoice's share of it is apportioned on
+                // the order line and never stored here.
                 'quantity' => $data->quantity,
                 'amount' => $data->amount,
                 'method' => $data->method,
@@ -166,6 +186,43 @@ final class RecordShortageSupply
 
             return $supply;
         });
+    }
+
+    /**
+     * Refuses anything at all until the shortage is counted in the unit it will be bought in.
+     *
+     * **An order-born shortage on a size the warehouse weighs starts in the invoice's unit**, and
+     * that is not a defect: «ناقص ٣٠ قطعة» is the only fact that exists when the bags are missing,
+     * since goods that do not exist cannot be put on a scale and no catalogue factor converts the
+     * count. `OrderService::shortageLinesFor()` sends `pricing_unit` while that is so.
+     *
+     * A purchase, though, is made and received in the shelf's unit. Recording one against a
+     * requirement still expressed in pieces would subtract kilograms from a count of bags — and
+     * the result would go on to credit the customer's invoice through step four. So this is the
+     * one gate, and it is the first statement inside the lock rather than a check on the form: the
+     * weight can be filled in by another screen between a page load and a submit.
+     *
+     * Manual shortages and same-unit sizes pass straight through; they have only ever had one
+     * unit, and `shortageWeightIsUnknown()` is false for both.
+     *
+     * @throws ShortageWeightIsUnknown
+     */
+    private function guardTheUnit(Shortage $shortage): void
+    {
+        if ($shortage->order_item_id === null) {
+            return;
+        }
+
+        $item = OrderItem::query()->whereKey($shortage->order_item_id)->first();
+
+        if ($item === null || ! $item->shortageWeightIsUnknown()) {
+            return;
+        }
+
+        throw ShortageWeightIsUnknown::make(
+            $item->stockUnit()->label(),
+            $item->pricing_unit->label(),
+        );
     }
 
     /**
@@ -215,6 +272,10 @@ final class RecordShortageSupply
             // a size has no shelf behind it. A boolean here could not say which product.
             stockItemId: (int) $this->inventory->stockItemFor($shortage->productVariant)->getKey(),
             warehouseId: $data->warehouseId,
+            // **The shortage's own unit is the shelf's unit**, so this posts as it stands. That
+            // is the whole reason `shortages.unit` is copied from `OrderItem::stockUnit()` rather
+            // than from `pricing_unit`: a supply recorded in the unit the customer was billed in
+            // would add a tally of bags to a balance of kilograms.
             quantity: $data->quantity,
             unitCost: bcdiv($data->amount, $data->quantity, 6),
             employeeId: (int) $actor->getKey(),
@@ -223,6 +284,27 @@ final class RecordShortageSupply
             orderId: $shortage->order_id === null ? null : (int) $shortage->order_id,
             notes: 'توفير نقص '.$shortage->code,
         ));
+    }
+
+    /**
+     * The other lines of the order, written back exactly as they already are.
+     *
+     * **The set is replaced wholesale**, so every line has to be named or it is cleared — see
+     * {@see SetOrderShortages}. Rebuilding each untouched line from its own columns is what makes
+     * «اشتريت لبندٍ واحد» leave the other four alone.
+     */
+    private function asItStands(OrderItem $item): LineShortage
+    {
+        if ($item->shortage_quantity === null) {
+            return LineShortage::none();
+        }
+
+        return new LineShortage(
+            quantity: (string) $item->shortage_quantity,
+            warehouseQuantity: $item->shortage_warehouse_quantity === null
+                ? null
+                : (string) $item->shortage_warehouse_quantity,
+        );
     }
 
     /**
@@ -274,13 +356,14 @@ final class RecordShortageSupply
         $shortages = [];
 
         foreach ($order->items()->get() as $item) {
-            $short = (string) ($item->shortage_quantity ?? '0');
-
-            if ((int) $item->getKey() === $shortage->order_item_id) {
-                $short = bcsub($short, $quantity, 3);
-            }
-
-            $shortages[(int) $item->getKey()] = bccomp($short, '0', 3) > 0 ? $short : null;
+            // **The arrival is in the shelf's unit, so the line is credited by apportionment.**
+            // `$quantity` is what the warehouse received; what comes off the invoice is its share
+            // of the pair the shortage was declared with, which is the only bridge between the
+            // two units that exists — see {@see OrderItem::creditForStockArrival()}. Exact on a
+            // full arrival, which is the ordinary case.
+            $shortages[(int) $item->getKey()] = (int) $item->getKey() === $shortage->order_item_id
+                ? LineShortage::afterStockArrival($item, $quantity)
+                : $this->asItStands($item);
         }
 
         $this->orders->setShortages($order, $shortages, $actor);

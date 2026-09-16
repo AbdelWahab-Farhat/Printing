@@ -104,11 +104,23 @@ void main() {
 
     test('the undo is a POST to the row, not a DELETE', () async {
       // Act
-      await repository.reverseSupply(41, 77);
+      await repository.reverseSupply(41, 77, reason: 'سُجّلت مرتين');
 
       // Assert — it writes a new ledger entry rather than removing one; the history is the point.
       expect(captured.path, '/shortages/41/supplies/77/reversal');
       expect(captured.method, 'POST');
+    });
+
+    test('the undo sends «reason», which is the key the endpoint validates', () async {
+      // Arrange - Act — this sent `notes` and, because nothing ever collected a value, the body
+      // went out as `{}`. Every reversal came back 422 «سبب العكس مطلوب» and the row's action
+      // looked broken. The same shape the unit picker above was caught in.
+      await repository.reverseSupply(41, 77, reason: 'سُجّلت مرتين');
+
+      // Assert
+      final body = captured.data! as Map<String, dynamic>;
+      expect(body['reason'], 'سُجّلت مرتين');
+      expect(body.containsKey('notes'), isFalse);
     });
   });
 
@@ -126,6 +138,31 @@ void main() {
       expect(body['unit'], 'piece');
     });
 
+    test('sends the type when one was chosen', () async {
+      // Act
+      await repository.create(
+        name: 'ورق A4',
+        quantity: '3000',
+        unit: 'piece',
+        type: 'printing_paper',
+      );
+
+      // Assert — the second axis beside `source`: that says who wrote the row down, this says
+      // what the shop is out of.
+      final body = captured.data! as Map<String, dynamic>;
+      expect(body['type'], 'printing_paper');
+    });
+
+    test('omits the type rather than guessing the default', () async {
+      // Act
+      await repository.create(name: 'شريط لاصق عريض', quantity: '200', unit: 'piece');
+
+      // Assert — the server defaults it to «أخرى». A client that sent that itself would make one
+      // default two decisions in two places, and they would drift.
+      final body = captured.data! as Map<String, dynamic>;
+      expect(body.containsKey('type'), isFalse);
+    });
+
     test('omits the catalogue ids a free-text shortage does not have', () async {
       // Act
       await repository.create(name: 'شريط لاصق عريض', quantity: '200', unit: 'piece');
@@ -135,6 +172,19 @@ void main() {
       final body = captured.data! as Map<String, dynamic>;
       expect(body.containsKey('product_id'), isFalse);
       expect(body.containsKey('product_variant_id'), isFalse);
+    });
+  });
+
+  group('stating the weight', () {
+    test('a PATCH to the shortage, carrying the quantity alone', () async {
+      // Act — the weight nobody could know when the shortage was declared, stated from the
+      // shortage's own screen rather than by a detour through the order.
+      await repository.setWarehouseQuantity(41, quantity: '12.5');
+
+      // Assert
+      expect(captured.path, '/shortages/41/warehouse-quantity');
+      expect(captured.method, 'PATCH');
+      expect((captured.data! as Map<String, dynamic>)['quantity'], '12.5');
     });
   });
 

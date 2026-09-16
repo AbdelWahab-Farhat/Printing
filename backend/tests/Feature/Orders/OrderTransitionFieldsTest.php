@@ -1240,10 +1240,27 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert — «كم ناقص» is meaningless for an order; it is a question about a size. Each
         // line asks in its own unit, and the app draws them without knowing what a line is.
-        $this->assertSame(["shortage_{$pieces->id}", "shortage_{$kilos->id}", 'reason'], $keys);
+        //
+        // **And «سادة» is asked twice**, because it is sold by the kilo off a shelf counted by
+        // the piece — the factory's default. The first box is the invoice's, the second is what
+        // «النواقص» will chase and the warehouse will receive; neither is computable from the
+        // other. «30*30» is asked once: its shelf counts the way it was sold.
+        $this->assertSame([
+            "shortage_{$pieces->id}",
+            "shortage_{$kilos->id}",
+            "shortage_warehouse_{$kilos->id}",
+            'reason',
+        ], $keys);
         $this->assertStringContainsString('30*30', $shortage['fields'][0]['label']);
         $this->assertStringContainsString('قطعة', $shortage['fields'][0]['label']);
         $this->assertStringContainsString('كجم', $shortage['fields'][1]['label']);
+
+        // The shelf's unit on the second box, and no ceiling on it: there is no ordered figure in
+        // that unit to measure a weight against, and deriving one would be the very conversion
+        // the box exists because nobody can make.
+        $this->assertStringContainsString('المخزن', $shortage['fields'][2]['label']);
+        $this->assertStringContainsString('قطعة', $shortage['fields'][2]['label']);
+        $this->assertNull($shortage['fields'][2]['max'] ?? null);
     }
 
     public function test_a_line_cannot_be_shorter_than_it_was_ordered(): void

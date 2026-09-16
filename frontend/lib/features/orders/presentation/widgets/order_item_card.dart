@@ -264,6 +264,41 @@ class _Figures extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+
+          // **The same gap in the unit the warehouse counts**, directly under the invoice's
+          // figure, because the two are read together: the line above says what the customer
+          // stops paying for, and this says what has to be bought to close it. On the sizes
+          // where the two units agree the server sends nothing here and the row does not appear
+          // — one gap, one line, exactly as before.
+          //
+          // Muted rather than the error colour above it: the red line is the money the order is
+          // losing, and repeating that weight for a restatement of the same fact would read as a
+          // second problem. The same choice «غير مُستلَم» below makes.
+          if (item.shortageWarehouseQuantity case final weighed?) ...[
+            SizedBox(height: 2.h),
+            Text(
+              'ناقص من المخزن: ${weighed.grouped} ${item.stockUnitLabel ?? ''} — هذا ما يُشترى',
+              style: context.textTheme.bodySmall?.copyWith(
+                color: scheme.error,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ]
+          // **Said out loud rather than left blank.** Nobody can weigh bags that are missing, so
+          // this gap is the ordinary state of a fresh shortage rather than an oversight — but it
+          // is also what stops a purchase being recorded against it, and a buyer refused on the
+          // «النواقص» screen with nothing said here would have nowhere to look. Naming it makes
+          // the next step obvious.
+          else if (item.needsAWarehouseShortage) ...[
+            SizedBox(height: 2.h),
+            Text(
+              'الوزن من المخزن غير محدد — حدِّده قبل تسجيل الشراء',
+              style: context.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ],
         // Under the shortage, because both answer «why is this line charging less than it
         // ordered?» and they can both be true at once: an order short fifty, whose customer then

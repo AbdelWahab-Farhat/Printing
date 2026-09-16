@@ -7,6 +7,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Shortage\Enums\ShortageSource;
 use App\Domain\Shortage\Enums\ShortageStatus;
+use App\Domain\Shortage\Enums\ShortageType;
 use App\Domain\Shortage\Models\Shortage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -33,6 +34,10 @@ class ShortageFactory extends Factory
     {
         return [
             'source' => ShortageSource::Manual,
+            // Paired with `source` on purpose: `shortages_type_matches_source` refuses «نقص
+            // طلبية» on anything but an order-born row, so a factory that set one without the
+            // other would fail at the database rather than in a readable assertion.
+            'type' => ShortageType::Other,
             'name' => 'كيس شحن ٢٥*٣٥',
             'unit' => PricingUnit::Kilogram,
             'required_quantity' => '30.000',
@@ -57,6 +62,7 @@ class ShortageFactory extends Factory
 
             return [
                 'source' => ShortageSource::FromOrder,
+                'type' => ShortageType::Order,
                 'order_id' => $order->getKey(),
                 'order_item_id' => $item->getKey(),
                 'customer_id' => $order->customer_id,

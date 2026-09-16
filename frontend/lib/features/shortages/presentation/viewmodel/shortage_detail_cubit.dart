@@ -29,12 +29,14 @@ class ShortageDetailCubit extends Cubit<ShortageDetailState> {
     required AssignShortage assignShortage,
     required RecordShortageSupply recordSupply,
     required ReverseShortageSupply reverseSupply,
+    required SetShortageWarehouseQuantity setWarehouseQuantity,
   }) : _id = shortageId,
        _getShortage = getShortage,
        _changeStatus = changeStatus,
        _assign = assignShortage,
        _recordSupply = recordSupply,
        _reverseSupply = reverseSupply,
+       _setWarehouseQuantity = setWarehouseQuantity,
        super(const ShortageDetailState.loading());
 
   final int _id;
@@ -43,6 +45,7 @@ class ShortageDetailCubit extends Cubit<ShortageDetailState> {
   final AssignShortage _assign;
   final RecordShortageSupply _recordSupply;
   final ReverseShortageSupply _reverseSupply;
+  final SetShortageWarehouseQuantity _setWarehouseQuantity;
 
   Future<void> load() async {
     // What it already has is kept while the next read is in flight, so a pull-to-refresh does not
@@ -98,10 +101,18 @@ class ShortageDetailCubit extends Cubit<ShortageDetailState> {
     );
   }
 
+  /// States how much the warehouse is short, in the unit it will be bought in.
+  ///
+  /// **What every supply is blocked on until it is done.** The weight could not be asked for when
+  /// the shortage was declared — the bags were missing, so there was nothing to weigh — and the
+  /// person who first knows it is usually whoever is on this screen about to record a purchase.
+  Future<Failure?> setWarehouseQuantity(String quantity) =>
+      _write(() => _setWarehouseQuantity(_id, quantity: quantity));
+
   /// Undoes one, taking the goods back off the shelf — which Inventory may refuse in its own
   /// words if the layer has been drawn on or repriced since.
-  Future<Failure?> reverseSupply(int supplyId, {String? notes}) =>
-      _write(() => _reverseSupply(_id, supplyId, notes: notes));
+  Future<Failure?> reverseSupply(int supplyId, {required String reason}) =>
+      _write(() => _reverseSupply(_id, supplyId, reason: reason));
 
   /// Runs a write, then re-reads.
   ///

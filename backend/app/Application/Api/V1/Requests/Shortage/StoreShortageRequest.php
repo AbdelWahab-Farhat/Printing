@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Requests\Shortage;
 
 use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Shortage\Enums\ShortageType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -35,6 +36,24 @@ class StoreShortageRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+
+            /*
+             * What kind of thing is short. **Optional, and «نقص طلبية» is not on offer.**
+             *
+             * Optional because the honest default exists: `ShortageType::Other` — what gets
+             * written down by hand is often what no list anticipated, and forcing the nearest
+             * wrong category puts an invention in the column that reports «على ماذا ننفق؟». The
+             * same reasoning `product_id` below is optional for.
+             *
+             * `Order` is filtered out rather than named, so a case added to the enum later is
+             * offered here without anybody remembering a second place — and the table's
+             * `type_matches_source` CHECK says the same thing a third time. RULES §8.
+             */
+            'type' => ['nullable', Rule::in(array_map(
+                fn (ShortageType $type): string => $type->value,
+                ShortageType::selectableByHand(),
+            ))],
+
             'unit' => ['required', Rule::enum(PricingUnit::class)],
             // Three places, and the `gt:0` is the readable half of a rule the database also
             // holds as a CHECK — RULES §8.
@@ -62,6 +81,7 @@ class StoreShortageRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'type.in' => 'نوع النقص غير معروف — «نقص طلبية» يُسجَّل من الطلبية نفسها',
             'name.required' => 'اسم النقص مطلوب',
             'unit.required' => 'الوحدة مطلوبة',
             'unit.in' => 'الوحدة غير معروفة',
@@ -81,6 +101,7 @@ class StoreShortageRequest extends FormRequest
     {
         return [
             'name' => 'اسم النقص',
+            'type' => 'نوع النقص',
             'unit' => 'الوحدة',
             'required_quantity' => 'الكمية الناقصة',
             'product_id' => 'المنتج',

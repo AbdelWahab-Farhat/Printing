@@ -454,11 +454,8 @@ class OrderController extends Controller
 
     public function setShortages(SetOrderShortagesRequest $request, Order $order): JsonResponse
     {
-        $updated = $this->orders->setShortages(
-            $order,
-            (array) $request->validated('shortages', []),
-            $request->user(),
-        );
+        // Flattened by the request, which is where the scalar-or-pair shape was permitted.
+        $updated = $this->orders->setShortages($order, $request->shortages(), $request->user());
 
         return $this->success(
             new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),

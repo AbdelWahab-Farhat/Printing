@@ -48,6 +48,24 @@ class OrderItemResource extends JsonResource
                 ? null
                 : (string) $this->shortage_quantity,
 
+            /*
+             * **The same gap in the unit the warehouse counts, and what «النواقص» actually
+             * chases.**
+             *
+             * `shortage_quantity` above is the invoice's number — it comes off
+             * `billableQuantity()` and is priced per `pricing_unit`. This is what will be bought,
+             * what the shelf will receive, and what the cost layer is priced per. Null where the
+             * two units agree, which is most lines and is the convention `warehouse_quantity`
+             * below already uses.
+             *
+             * Published beside `is_stocked_in_another_unit` so the order screen knows to ask for
+             * two numbers rather than re-deriving a fact that lives on the stock item, two
+             * relations away and invisible to any client.
+             */
+            'shortage_warehouse_quantity' => $this->shortage_warehouse_quantity === null
+                ? null
+                : (string) $this->shortage_warehouse_quantity,
+
             // What the customer left on the counter, in the same unit, and what became of it.
             // Null on every line of every order delivered whole, which is nearly all of them —
             // «nothing recorded» rather than «nothing left», the distinction `shortage_quantity`
@@ -149,6 +167,15 @@ class OrderItemResource extends JsonResource
             'stock_unit_label' => $this->when(
                 $this->relationLoaded('variant') && ($this->variant?->relationLoaded('stockItem') ?? false),
                 fn () => $this->stockUnit()->label(),
+            ),
+
+            // **Whether this line needs its shortage stated twice.** Guarded the same way and for
+            // the same reason as the label above it: absent rather than false where the shelf was
+            // not loaded, so a screen cannot read «the units agree» out of a payload that simply
+            // never asked.
+            'is_stocked_in_another_unit' => $this->when(
+                $this->relationLoaded('variant') && ($this->variant?->relationLoaded('stockItem') ?? false),
+                fn (): bool => $this->isStockedInAnotherUnit(),
             ),
         ];
     }

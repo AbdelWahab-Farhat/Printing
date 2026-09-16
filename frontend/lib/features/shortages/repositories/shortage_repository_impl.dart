@@ -117,6 +117,7 @@ class ShortageRepositoryImpl implements ShortageRepository {
     int? productId,
     int? productVariantId,
     String? unit,
+    String? type,
     int? assignedToUserId,
     String? description,
   }) {
@@ -129,6 +130,9 @@ class ShortageRepositoryImpl implements ShortageRepository {
           'product_id': ?productId,
           'product_variant_id': ?productVariantId,
           'unit': ?unit,
+          // Omitted rather than sent as «أخرى»: the server defaults it, and a client that
+          // guessed would make the default two decisions in two places.
+          'type': ?type,
           'assigned_to_user_id': ?assignedToUserId,
           'description': ?description,
         },
@@ -142,6 +146,7 @@ class ShortageRepositoryImpl implements ShortageRepository {
     int shortageId, {
     required String name,
     required String quantity,
+    String? type,
     int? assignedToUserId,
     String? description,
   }) {
@@ -151,6 +156,7 @@ class ShortageRepositoryImpl implements ShortageRepository {
         data: <String, dynamic>{
           'name': name,
           'required_quantity': quantity,
+          'type': ?type,
           'assigned_to_user_id': ?assignedToUserId,
           'description': ?description,
         },
@@ -225,15 +231,32 @@ class ShortageRepositoryImpl implements ShortageRepository {
   }
 
   @override
+  Future<Either<Failure, Shortage>> setWarehouseQuantity(
+    int shortageId, {
+    required String quantity,
+  }) {
+    return safeRequest<Shortage>(
+      () => _dio.patch(
+        ShortageEndpoints.warehouseQuantity(shortageId),
+        data: <String, dynamic>{'quantity': quantity},
+      ),
+      parse: (data) => Shortage.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, ShortageSupply>> reverseSupply(
     int shortageId,
     int supplyId, {
-    String? notes,
+    required String reason,
   }) {
     return safeRequest<ShortageSupply>(
       () => _dio.post(
         ShortageEndpoints.supplyReversal(shortageId, supplyId),
-        data: <String, dynamic>{'notes': ?notes},
+        // **`reason`, which is the key the endpoint validates.** This sent `notes` until now, and
+        // because the value was also never collected the body went out as `{}` — so every
+        // reversal came back 422 «سبب العكس مطلوب» and the button looked broken.
+        data: <String, dynamic>{'reason': reason},
       ),
       parse: (data) => ShortageSupply.fromJson(data as Map<String, dynamic>),
     );

@@ -1,3 +1,4 @@
+import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/edit_shortages_sheet.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,8 @@ void main() {
     String label = '25*35',
     String quantity = '300.000',
     String? shortage,
+    bool weighed = false,
+    String? warehouseShortage,
   }) => OrderItem(
     id: id,
     productId: 1,
@@ -28,12 +31,17 @@ void main() {
     pricingUnitLabel: 'قطعة',
     quantity: quantity,
     shortageQuantity: shortage,
+    // The shelf's opinion. `weighed` is the case where it disagrees with the invoice — sold by
+    // the piece off a pile counted by the kilo — which is the only case asked for two numbers.
+    stockUnitLabel: weighed ? 'كجم' : 'قطعة',
+    isStockedInAnotherUnit: weighed,
+    shortageWarehouseQuantity: warehouseShortage,
     billableQuantity: shortage == null ? quantity : null,
     unitPrice: '1.550',
     lineTotal: '465.00',
   );
 
-  Map<int, String?>? saved;
+  Map<int, LineShortageEntry>? saved;
 
   Widget host(List<OrderItem> items) => ScreenUtilInit(
     designSize: const Size(430, 932),
@@ -116,7 +124,7 @@ void main() {
 
     // Assert — the key travels holding nothing, which is what clears the shortage. Dropping it
     // would leave the old number standing and the invoice short with it.
-    expect(saved, {11: ''});
+    expect(saved!.map((id, v) => MapEntry(id, v.quantity)), {11: ''});
     expect(find.text('يُحاسَب على 300 قطعة × 1.55'), findsNothing);
   });
 
@@ -134,7 +142,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert — the whole set, because the server replaces the whole set.
-    expect(saved, {11: '', 12: '20'});
+    expect(saved!.map((id, v) => MapEntry(id, v.quantity)), {11: '', 12: '20'});
   });
 
   testWidgets('more missing than was ordered is refused before it is sent', (tester) async {
@@ -164,5 +172,80 @@ void main() {
     // Assert — nothing arrived, nothing is charged, and the sheet says so rather than treating
     // it as the mistake the line above is.
     expect(find.text('يُحاسَب على 0 قطعة × 1.55'), findsOneWidget);
+  });
+
+  // ── the second unit ───────────────────────────────────────────────────────────────────
+
+  testWidgets('a size stocked in its own unit is asked once', (tester) async {
+    // Arrange — sold and stocked by the piece, which is most sizes.
+    await openTheSheet(tester, [line()]);
+
+    // Act - Assert — a second box would ask somebody to weigh what needs no weighing, and the
+    // server refuses a figure there.
+    expect(find.textContaining('الناقص من المخزن'), findsNothing);
+  });
+
+  testWidgets('a size the warehouse weighs is asked for both figures', (tester) async {
+    // Arrange — «٣٠ قطعة» off a pile counted in kilograms.
+    await openTheSheet(tester, [line(weighed: true)]);
+
+    // Act
+    await tester.enterText(find.byType(TextFormField).first, '30');
+    await tester.pumpAndSettle();
+
+    // Assert — both units named, because the whole difficulty is that they differ and nothing
+    // converts one into the other.
+    expect(find.text('الناقص من المخزن (كجم)'), findsOneWidget);
+    expect(find.textContaining('يُباع بـقطعة ويُخزَّن بـكجم'), findsOneWidget);
+  });
+
+  testWidgets('the weight travels beside the count', (tester) async {
+    // Arrange
+    await openTheSheet(tester, [line(weighed: true)]);
+
+    // Act
+    await tester.enterText(find.byType(TextFormField).at(0), '30');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(1), '12.5');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حفظ'));
+    await tester.pumpAndSettle();
+
+    // Assert — one is what comes off the invoice, the other is what will be bought.
+    expect(saved![11]!.quantity, '30');
+    expect(saved![11]!.warehouseQuantity, '12.5');
+  });
+
+  testWidgets('the weight may be left blank, because nobody can weigh missing bags', (tester) async {
+    // Arrange — the bags are missing, so there is nothing to put on a scale and no factor that
+    // converts the count. Demanding a figure would ask for a measurement of goods that do not
+    // exist.
+    await openTheSheet(tester, [line(weighed: true)]);
+
+    // Act — the invoice's figure alone.
+    await tester.enterText(find.byType(TextFormField).first, '30');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حفظ'));
+    await tester.pumpAndSettle();
+
+    // Assert — the shortage is declared, and the weight travels as nothing. What the gap blocks
+    // is recording a purchase against it, which the server refuses until somebody knows.
+    expect(saved![11]!.quantity, '30');
+    expect(saved![11]!.warehouseQuantity, isNull);
+  });
+
+  testWidgets('clearing the line hides the weight rather than demanding one', (tester) async {
+    // Arrange — a two-unit line that is short today.
+    await openTheSheet(tester, [line(weighed: true, shortage: '30.000', warehouseShortage: '12.500')]);
+    expect(find.text('الناقص من المخزن (كجم)'), findsOneWidget);
+
+    // Act — «وصلت الكمية».
+    await tester.enterText(find.byType(TextFormField).first, '');
+    await tester.pumpAndSettle();
+
+    // Assert — a measurement beside no shortage is a measurement of nothing, and the server
+    // refuses the pairing. Shouting for a number on a line just cleared would be the sheet
+    // arguing with what it was told.
+    expect(find.text('الناقص من المخزن (كجم)'), findsNothing);
   });
 }

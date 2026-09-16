@@ -3,6 +3,7 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,13 +20,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// subtracted from the invoice — so each row says what that line will be charged before anybody
 /// presses save. Finding out afterwards, on a total, is finding out from the wrong number.
 ///
-/// Returns line id → what is missing, or null when it was dismissed. Sending it is the caller's
-/// job: this is a form, and a form's answer is what the person entered.
-Future<Map<int, String?>?> showEditShortagesSheet({
+/// **A line the warehouse counts differently is asked twice.** «ناقص ٣٠ قطعة» off a pile weighed
+/// in kilograms is also a gap of some weight, and nothing converts the one into the other — bags
+/// weighed together have no per-bag weight. The first box is what comes off the invoice; the
+/// second is what «النواقص» will chase, buy and shelve. Where the units agree, one box answers
+/// both and the second never appears.
+///
+/// Returns line id → what is missing, in both units, or null when it was dismissed. Sending it is
+/// the caller's job: this is a form, and a form's answer is what the person entered.
+Future<Map<int, LineShortageEntry>?> showEditShortagesSheet({
   required BuildContext context,
   required List<OrderItem> items,
 }) {
-  return showModalBottomSheet<Map<int, String?>>(
+  return showModalBottomSheet<Map<int, LineShortageEntry>>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -55,9 +62,23 @@ class _EditShortagesSheetState extends State<_EditShortagesSheet> {
       ),
   };
 
+  /// The second box, opened only on the lines that get one — see [showEditShortagesSheet].
+  late final Map<int, TextEditingController> _weighed = {
+    for (final item in widget.items)
+      if (item.needsAWarehouseShortage)
+        item.id: TextEditingController(
+          text: item.shortageWarehouseQuantity == null
+              ? ''
+              : trimDecimals(item.shortageWarehouseQuantity!),
+        ),
+  };
+
   @override
   void dispose() {
     for (final controller in _missing.values) {
+      controller.dispose();
+    }
+    for (final controller in _weighed.values) {
       controller.dispose();
     }
     super.dispose();
@@ -67,8 +88,28 @@ class _EditShortagesSheetState extends State<_EditShortagesSheet> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     Navigator.of(context).pop({
-      for (final entry in _missing.entries) entry.key: entry.value.text,
+      for (final entry in _missing.entries)
+        entry.key: LineShortageEntry(
+          quantity: entry.value.text,
+          // **Null for anything but a weight somebody actually typed.**
+          //
+          // Omitted on a cleared line and on a same-unit one — a weight beside no shortage is a
+          // measurement of nothing, and the server's CHECK refuses the pairing outright. Omitted
+          // too when the box was simply left empty, which is the ordinary case: the missing bags
+          // cannot be weighed, so «not stated yet» is the honest answer and null is how it
+          // travels. An empty string here would reach the server as a value.
+          warehouseQuantity: entry.value.text.trim().isEmpty
+              ? null
+              : _blankToNull(_weighed[entry.key]?.text),
+        ),
     });
+  }
+
+  /// Blank is «لم يُحدَّد بعد», and that is a different thing from a number.
+  static String? _blankToNull(String? value) {
+    final trimmed = value?.trim();
+
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
   @override
@@ -113,6 +154,7 @@ class _EditShortagesSheetState extends State<_EditShortagesSheet> {
                   _LineField(
                     item: item,
                     controller: _missing[item.id]!,
+                    warehouseController: _weighed[item.id],
                     onChanged: (_) => setState(() {}),
                   ),
                   SizedBox(height: 16.h),
@@ -133,11 +175,16 @@ class _LineField extends StatelessWidget {
   const _LineField({
     required this.item,
     required this.controller,
+    required this.warehouseController,
     required this.onChanged,
   });
 
   final OrderItem item;
   final TextEditingController controller;
+
+  /// Null on the lines the warehouse counts the way the invoice does, which is most of them.
+  final TextEditingController? warehouseController;
+
   final ValueChanged<String> onChanged;
 
   /// What the line will be charged for, given what is in the box right now.
@@ -154,6 +201,13 @@ class _LineField extends StatelessWidget {
 
     return (ordered - missing).toStringAsFixed(3);
   }
+
+  /// Whether this line is being taken back to «لا ينقص منها شيء».
+  ///
+  /// The gesture is emptying the first box, and it has to hide the second: the server refuses a
+  /// weight with no shortage behind it, and a validator shouting for a number on a line the user
+  /// has just cleared would be the sheet arguing with the thing it was told.
+  bool get _isCleared => controller.text.trim().isEmpty;
 
   String? _validate(String? value) {
     final text = value?.trim() ?? '';
@@ -204,6 +258,45 @@ class _LineField extends StatelessWidget {
               color: scheme.primary,
               fontWeight: FontWeight.w700,
             ),
+          ),
+        ],
+
+        // **The second unit, on the lines that have one.** The box above is the invoice's — it is
+        // what the customer stops paying for. This is what will actually be bought and put on the
+        // shelf, and no factor in the catalogue turns one into the other, so it is stated rather
+        // than converted. Hidden entirely once the line is no longer short: a weight beside no
+        // shortage is a measurement of nothing.
+        if (warehouseController case final weighed? when !_isCleared) ...[
+          SizedBox(height: 10.h),
+          AppTextField(
+            controller: weighed,
+            label: 'الناقص من المخزن (${item.stockUnitLabel ?? ''})',
+            prefixIcon: AppIcons.error,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]'))],
+            helperText:
+                'يُباع بـ${item.pricingUnitLabel} ويُخزَّن بـ${item.stockUnitLabel ?? ''}'
+                ' — اتركه فارغاً إن لم يُعرف الوزن بعد، ويُحدَّد قبل تسجيل الشراء',
+            validator: (value) {
+              final text = value?.trim() ?? '';
+
+              // **Empty is a legitimate answer, and usually the honest one.** The bags are
+              // missing, so at the moment somebody declares the shortage there is nothing to put
+              // on a scale and no factor that converts the count. Demanding a figure here would
+              // ask for a measurement of goods that do not exist. What the gap blocks is
+              // recording a *purchase* against the shortage — the server refuses that until the
+              // weight is known — not declaring the shortage in the first place.
+              if (text.isEmpty) return null;
+
+              final weight = double.tryParse(text);
+              if (weight == null) return 'أدخل رقماً';
+              if (weight <= 0) return 'الكمية يجب أن تكون أكبر من صفر';
+
+              // No ceiling, deliberately: the ordered figure is in the *other* unit, and
+              // measuring a weight against it would be the conversion this box exists because
+              // nobody can make.
+              return null;
+            },
           ),
         ],
       ],

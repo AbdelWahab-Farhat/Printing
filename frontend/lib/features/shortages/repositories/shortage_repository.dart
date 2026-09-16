@@ -60,6 +60,10 @@ abstract class ShortageRepository {
     int? productId,
     int? productVariantId,
     String? unit,
+    /// What kind of thing is short. Omitted means «أخرى» — the server's own default, so a form
+    /// that never asked still writes a truthful row. Never [ShortageType.order]: the server
+    /// reserves that for rows it mirrors from an order line.
+    String? type,
     int? assignedToUserId,
     String? description,
   });
@@ -73,6 +77,7 @@ abstract class ShortageRepository {
     int shortageId, {
     required String name,
     required String quantity,
+    String? type,
     int? assignedToUserId,
     String? description,
   });
@@ -110,14 +115,28 @@ abstract class ShortageRepository {
     PickedFile? receipt,
   });
 
+  /// Saying how much the warehouse is short, in the unit it will be bought in.
+  ///
+  /// **Only while `weight_is_unknown`.** The conversion is safe precisely because nothing can have
+  /// been supplied yet; once a purchase exists the figure is corrected from the order screen, and
+  /// the server refuses it here.
+  Future<Either<Failure, Shortage>> setWarehouseQuantity(
+    int shortageId, {
+    required String quantity,
+  });
+
   /// Undoing one.
   ///
   /// **It takes the goods back off the shelf**, so Inventory can refuse it for reasons that have
   /// nothing to do with shortages — the layer was already drawn on by an order, or repriced by
   /// hand. Those arrive as 422s in Inventory's own words; show them as sent.
+  ///
+  /// [reason] is **required by the server**, and is the sentence somebody reads six months later
+  /// beside a struck-through purchase. It is typed as non-nullable so a caller cannot forget it
+  /// and discover the 422 at runtime — which is exactly what used to happen.
   Future<Either<Failure, ShortageSupply>> reverseSupply(
     int shortageId,
     int supplyId, {
-    String? notes,
+    required String reason,
   });
 }

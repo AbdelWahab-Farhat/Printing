@@ -91,6 +91,7 @@ void main() {
           assignShortage: AssignShortage(repository),
           recordSupply: RecordShortageSupply(repository),
           reverseSupply: ReverseShortageSupply(repository),
+          setWarehouseQuantity: SetShortageWarehouseQuantity(repository),
         ),
       );
   }

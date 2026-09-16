@@ -10,6 +10,7 @@ use App\Domain\Shortage\Actions\AssignShortage;
 use App\Domain\Shortage\Actions\ChangeShortageStatus;
 use App\Domain\Shortage\Actions\CreateShortage;
 use App\Domain\Shortage\Actions\RecordShortageSupply;
+use App\Domain\Shortage\Actions\SetShortageWarehouseQuantity;
 use App\Domain\Shortage\Actions\ReverseShortageSupply;
 use App\Domain\Shortage\Actions\UpdateShortage;
 use App\Domain\Shortage\DTOs\ShortageData;
@@ -40,6 +41,7 @@ class ShortageService
         private readonly UpdateShortage $updateShortage,
         private readonly ChangeShortageStatus $changeStatus,
         private readonly AssignShortage $assignShortage,
+        private readonly SetShortageWarehouseQuantity $setWarehouseQuantity,
         private readonly RecordShortageSupply $recordSupply,
         private readonly ReverseShortageSupply $reverseSupply,
         private readonly ShortageListQuery $listQuery,
@@ -88,6 +90,20 @@ class ShortageService
     public function assign(Shortage $shortage, ?User $assignee, ?User $actor = null): Shortage
     {
         return ($this->assignShortage)($shortage, $assignee, $actor);
+    }
+
+    /**
+     * States how much the warehouse is short, in the unit it will be bought in.
+     *
+     * **The figure lands on the order line, not on this row** — see
+     * {@see SetShortageWarehouseQuantity} for why, and why the door exists here at all.
+     */
+    public function setWarehouseQuantity(
+        Shortage $shortage,
+        string $quantity,
+        ?User $actor = null,
+    ): Shortage {
+        return ($this->setWarehouseQuantity)($shortage, $quantity, $actor);
     }
 
     public function recordSupply(
@@ -139,6 +155,10 @@ class ShortageService
             'customer',
             'product',
             'productVariant',
+            // The line and the shelf behind it: `stockUnit()` and `weightIsUnknown()` read
+            // through both on every row, and `shouldBeStrict()` turns a forgotten nesting into a
+            // loud N+1 rather than a slow one.
+            'orderItem.variant.stockItem',
             'assignee',
             'creator',
             'supplies.recorder',

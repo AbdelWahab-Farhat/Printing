@@ -9,6 +9,7 @@ use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Shortage\AssignShortageRequest;
 use App\Application\Api\V1\Requests\Shortage\ChangeShortageStatusRequest;
 use App\Application\Api\V1\Requests\Shortage\RecordShortageSupplyRequest;
+use App\Application\Api\V1\Requests\Shortage\SetShortageWarehouseQuantityRequest;
 use App\Application\Api\V1\Requests\Shortage\ReverseShortageSupplyRequest;
 use App\Application\Api\V1\Requests\Shortage\StoreShortageRequest;
 use App\Application\Api\V1\Requests\Shortage\UpdateShortageRequest;
@@ -233,6 +234,33 @@ class ShortageController extends Controller
      * entry was wrong, not that sacks were returned. An order whose goods really did not arrive
      * is corrected on the order screen.
      */
+    /**
+     * «حدِّد الكمية من المخزن» — what the warehouse is short, in the unit it will be bought in.
+     *
+     * The bags are missing when a shortage is declared, so nobody can weigh them; the figure is
+     * stated later by whoever first knows, and that is usually the person standing on this screen
+     * about to record a purchase. Until it is stated, no arrival may be recorded against the row.
+     *
+     * **It is written onto the order line, not onto the shortage** — the sync recomputes this
+     * row's requirement from the line on every pass, so anything written here would be overwritten
+     * by the next one. See {@see SetShortageWarehouseQuantity}.
+     */
+    public function setWarehouseQuantity(
+        SetShortageWarehouseQuantityRequest $request,
+        Shortage $shortage,
+    ): JsonResponse {
+        $updated = $this->shortages->setWarehouseQuantity(
+            $shortage,
+            (string) $request->validated('quantity'),
+            $request->user(),
+        );
+
+        return $this->success(
+            new ShortageResource($this->shortages->loadForDisplay($updated)),
+            'تم تحديد الكمية الناقصة من المخزن',
+        );
+    }
+
     public function reverseSupply(
         ReverseShortageSupplyRequest $request,
         Shortage $shortage,
@@ -271,8 +299,11 @@ class ShortageController extends Controller
      */
     private function filtersFrom(Request $request): ShortageFilters
     {
+        // **An allowlist, so a key added to `ShortageFilters` and forgotten here is silently
+        // ignored** — which is exactly how `type` shipped filtering nothing on its first run.
         $query = $request->only([
-            'status', 'assigned_to', 'product_id', 'source', 'order_id', 'customer_id', 'search',
+            'status', 'assigned_to', 'product_id', 'source', 'type', 'order_id', 'customer_id',
+            'search',
         ]);
 
         if (($query['assigned_to'] ?? null) === 'me') {

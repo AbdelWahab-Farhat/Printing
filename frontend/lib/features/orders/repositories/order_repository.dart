@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
+import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
@@ -183,7 +184,7 @@ abstract interface class OrderRepository {
   /// is cleared too, so callers send every line they showed.
   Future<Either<Failure, Order>> setShortages(
     int orderId, {
-    required Map<int, String?> shortages,
+    required Map<int, LineShortageEntry> shortages,
   });
 
   /// Records that the customer was told their order is ready — or takes that back.

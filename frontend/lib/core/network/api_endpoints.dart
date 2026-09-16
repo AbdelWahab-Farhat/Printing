@@ -244,6 +244,14 @@ abstract final class ShortageEndpoints {
   /// different jobs.
   static String assignee(int shortageId) => '/shortages/$shortageId/assignee';
 
+  /// Saying how much the warehouse is short, in the unit it will be bought in.
+  ///
+  /// Asked here rather than only on the order screen because the person who first knows the
+  /// weight is the buyer standing on the shortage — and until it is known, `supplies` refuses
+  /// every arrival: kilograms cannot be subtracted from a count of bags.
+  static String warehouseQuantity(int shortageId) =>
+      '/shortages/$shortageId/warehouse-quantity';
+
   /// Recording what was bought. **This posts goods onto a shelf**, not a note beside them — see
   /// the record-supply sheet for why the warehouse is required on a stockable shortage.
   static String supplies(int shortageId) => '/shortages/$shortageId/supplies';

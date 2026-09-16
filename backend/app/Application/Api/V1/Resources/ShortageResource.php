@@ -36,9 +36,31 @@ class ShortageResource extends JsonResource
             'source' => $this->source->value,
             'source_label' => $this->source->label(),
 
+            // **What kind of thing is short, beside who wrote the row down.** Two axes, two
+            // columns — see `ShortageType`. The value *and* the label because the screen prints
+            // one and filters on the other, exactly as `source` above does.
+            'type' => $this->type->value,
+            'type_label' => $this->type->label(),
+
             'name' => $this->name,
             'unit' => $this->unit->value,
             'unit_label' => $this->unit->label(),
+
+            /*
+             * **What this row will be counted in once somebody states the weight.**
+             *
+             * The same as `unit` above on every ordinary shortage. It differs only while an
+             * order-born row is still waiting for a weight: the bags are missing, so the row is
+             * counted in the unit it was sold in and `stock_unit` is what it will convert to.
+             * That is what labels the box which asks.
+             *
+             * Published rather than derived, for the reason `is_stockable` is: it depends on the
+             * stock item behind the size, two relations past the line, and no payload a client
+             * holds can see it.
+             */
+            'stock_unit' => $this->stockUnit()->value,
+            'stock_unit_label' => $this->stockUnit()->label(),
+            'weight_is_unknown' => $this->weightIsUnknown(),
 
             // The three numbers §٧ asks for, and the fourth derived from them.
             'required_quantity' => (string) $this->required_quantity,

@@ -717,6 +717,17 @@ abstract class OrderItem with _$OrderItem {
     /// — which is not the same as nothing being missing.
     @JsonKey(name: 'shortage_quantity') String? shortageQuantity,
 
+    /// The same gap in the unit the **warehouse** counts — what «النواقص» chases and buys.
+    ///
+    /// [shortageQuantity] above is the invoice's number: it comes off [billableQuantity] and is
+    /// priced per [pricingUnitLabel]. This is what will be purchased, what the shelf will
+    /// receive, and what the cost layer is priced per. Neither can be computed from the other —
+    /// bags weighed together have no per-bag weight — so on a line where they differ both are
+    /// stated by whoever declares the shortage.
+    ///
+    /// Null where the two units agree, which is most lines, and means «the same number».
+    @JsonKey(name: 'shortage_warehouse_quantity') String? shortageWarehouseQuantity,
+
     /// What the customer left on the counter, in this line's own unit.
     ///
     /// Null on every line of every order delivered whole, which is nearly all of them —
@@ -812,6 +823,16 @@ abstract class OrderItem with _$OrderItem {
     /// in which case there is no per-unit figure to label either.
     @JsonKey(name: 'stock_unit_label') String? stockUnitLabel,
 
+    /// Whether this line's shortage has to be stated twice — once for the invoice and once for
+    /// the shelf.
+    ///
+    /// **Read, never inferred.** It depends on the stock item behind the size, two relations out
+    /// and invisible to any payload the app holds; comparing [pricingUnitLabel] to
+    /// [stockUnitLabel] would answer wrongly on a list payload that carries neither. Absent
+    /// rather than false where the shelf was not loaded, so «the units agree» is never read out
+    /// of a payload that simply never asked.
+    @JsonKey(name: 'is_stocked_in_another_unit') bool? isStockedInAnotherUnit,
+
     /// The copy of the size's «سعر التكلفة» taken the day this order was made — what makes a
     /// later change to the catalogue leave this order alone. Null on every line we make
     /// ourselves, and **absent** for anybody without `products.view_cost`, so the screen gates
@@ -835,6 +856,12 @@ abstract class OrderItem with _$OrderItem {
   /// A recorded zero is not a shortage. The server clears one to null, but a zero typed into the
   /// sheet is on screen before the round trip is — and a red «ناقص ٠» is a warning about nothing,
   /// which teaches people to stop reading warnings.
+  /// Whether the shortage form must ask this line for a second figure.
+  ///
+  /// False on a null — a payload that did not carry the shelf cannot be read as «they differ»,
+  /// and asking for a weight nobody can supply is worse than asking for one number.
+  bool get needsAWarehouseShortage => isStockedInAnotherUnit ?? false;
+
   bool get hasShortage {
     final missing = double.tryParse(shortageQuantity ?? '') ?? 0;
 

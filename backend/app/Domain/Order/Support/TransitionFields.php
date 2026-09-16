@@ -246,6 +246,36 @@ final class TransitionFields
                     max: (float) $item->quantity,
                     hint: self::shortageHint($item, $onHand[(int) $item->getKey()] ?? null),
                 );
+
+                /*
+                 * **A second box, on the sizes the warehouse counts differently.**
+                 *
+                 * The box above is the invoice's: it comes off `billableQuantity()` and is
+                 * priced per `pricing_unit`. «النواقص» chases the other one — whoever goes out to
+                 * cover this buys what the shelf is counted in, and the arrival opens a cost
+                 * layer priced per that unit. Neither number can be computed from the other:
+                 * bags weighed together have no per-bag weight, which is why `DeductOrderStock`
+                 * refuses to multiply a factor out and why `warehouse_quantity` is read off a
+                 * scale two fields down this same form.
+                 *
+                 * **No `max`, deliberately.** The invoice's ceiling is what was ordered; there is
+                 * no ordered figure in the shelf's unit to measure this against, and deriving one
+                 * would be the very conversion this box exists because nobody can make.
+                 */
+                if (! $item->isStockedInAnotherUnit()) {
+                    continue;
+                }
+
+                $fields[] = TransitionField::number(
+                    key: "shortage_warehouse_{$item->getKey()}",
+                    label: "الناقص من {$item->variant_label} في المخزن ({$item->stockUnit()->label()})",
+                    // **Offered, never demanded.** The bags are missing, so there is nothing to
+                    // weigh and nobody can honestly fill this in at the counter. Whoever first
+                    // knows enters it later; until they do no purchase may be recorded against
+                    // the shortage — `ShortageWeightIsUnknown` is where the insistence lives.
+                    hint: "يُباع بـ{$item->pricing_unit->label()} ويُخزَّن بـ{$item->stockUnit()->label()}"
+                        .' — اتركه فارغاً إن لم يُعرف الوزن بعد، ويُحدَّد قبل تسجيل الشراء',
+                );
             }
         }
 
@@ -262,16 +292,40 @@ final class TransitionFields
         // record of what it was short of.
         if ($order->status === OrderStatus::Shortage && ! $target->isFinal()) {
             foreach ($order->items as $item) {
-                if ($item->shortage_quantity === null || bccomp((string) $item->shortage_quantity, '0', 3) <= 0) {
+                /*
+                 * **A line nobody has weighed has no figure in the shelf's unit**, and there is
+                 * no way to produce one: the bags were missing, so nothing could be put on a
+                 * scale. Such a line is still counted in the unit it was sold in and is asked
+                 * about that way — see {@see OrderItem::shortageWeightIsUnknown()}. Reading the
+                 * shelf's figure blind would leave no box at all on exactly the lines that have a
+                 * shortage to clear.
+                 */
+                $weightIsUnknown = $item->shortageWeightIsUnknown();
+
+                $short = $weightIsUnknown
+                    ? (string) ($item->shortage_quantity ?? '0')
+                    : ($item->shortageStockQuantity() ?? '0');
+
+                if (bccomp($short, '0', 3) <= 0) {
                     continue;
                 }
 
+                $unit = $weightIsUnknown ? $item->pricing_unit : $item->stockUnit();
+
+                /*
+                 * **Asked in the shelf's unit, because what arrived is an arrival.** The person
+                 * holding the delivery note counted what the warehouse received; asking them for
+                 * the invoice's figure would ask them to convert. What comes off the invoice is
+                 * apportioned from the pair the shortage was declared with — see
+                 * `OrderItem::creditForStockArrival()` — so the second number is never typed
+                 * twice and the two can never drift apart.
+                 */
                 $fields[] = TransitionField::number(
                     key: "received_{$item->getKey()}",
-                    label: "الواصل من نواقص {$item->variant_label} ({$item->pricing_unit->label()})",
-                    max: (float) $item->shortage_quantity,
-                    hint: 'الناقص '.DecimalText::trim((string) $item->shortage_quantity).' — ما يبقى منه يُخصم من الفاتورة',
-                    value: (string) $item->shortage_quantity,
+                    label: "الواصل من نواقص {$item->variant_label} ({$unit->label()})",
+                    max: (float) $short,
+                    hint: 'الناقص '.DecimalText::trim($short).' — ما يبقى منه يُخصم من الفاتورة',
+                    value: $short,
                 );
             }
         }
