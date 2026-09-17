@@ -21,13 +21,26 @@ final class ApiEnvelope
 
     public const DEFAULT_ERROR_MESSAGE = 'حدث خطأ ما';
 
-    public static function ok(mixed $data = null, string $message = self::DEFAULT_SUCCESS_MESSAGE, int $code = 200): JsonResponse
+    /**
+     * [$meta] is for facts about the whole answer rather than about anything inside `data` — a
+     * page's numbers, or whether a conversation is still taking messages. Left empty it is
+     * absent from the body entirely, so nothing is promised a key that is never filled.
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    public static function ok(mixed $data = null, string $message = self::DEFAULT_SUCCESS_MESSAGE, int $code = 200, array $meta = []): JsonResponse
     {
-        return response()->json([
+        $body = [
             'status' => true,
             'message' => $message,
             'data' => $data,
-        ], $code);
+        ];
+
+        if ($meta !== []) {
+            $body['meta'] = $meta;
+        }
+
+        return response()->json($body, $code);
     }
 
     /**

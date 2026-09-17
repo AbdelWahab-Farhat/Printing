@@ -40,6 +40,21 @@ trait ResponseTrait
     }
 
     /**
+     * A success whose answer needs a fact that is not about any one row.
+     *
+     * The comments list is the first: whether the conversation is still open belongs to the
+     * thread, and an empty closed one has no row to hang it on. Same `meta` key the paginated
+     * envelope uses — see {@see successWithPagination()} — because a client unwrapping `data`
+     * and glancing at `meta` should not have to learn a second shape.
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    protected function successWithMeta(mixed $data, array $meta, string $message = ApiEnvelope::DEFAULT_SUCCESS_MESSAGE): JsonResponse
+    {
+        return ApiEnvelope::ok($data, $message, meta: $meta);
+    }
+
+    /**
      * A paginated collection: items land in `data`, page info in a sibling `meta`.
      *
      * [$extraMeta] is for facts about the *whole* filtered set rather than about this page —

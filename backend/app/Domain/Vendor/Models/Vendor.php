@@ -7,6 +7,7 @@ namespace App\Domain\Vendor\Models;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Comment\Concerns\HasComments;
+use App\Domain\Comment\Contracts\Commentable;
 use App\Domain\Comment\Models\Comment;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Inventory\Models\Warehouse;
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 #[UseFactory(VendorFactory::class)]
 #[Fillable(['name', 'contact_person', 'phone', 'email', 'address', 'is_active'])]
-class Vendor extends Model implements HasAuditTrail
+class Vendor extends Model implements Commentable, HasAuditTrail
 {
     /** @use HasFactory<VendorFactory> */
     use Auditable, HasComments, HasFactory, SoftDeletes;

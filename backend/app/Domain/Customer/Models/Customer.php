@@ -7,6 +7,7 @@ namespace App\Domain\Customer\Models;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Comment\Concerns\HasComments;
+use App\Domain\Comment\Contracts\Commentable;
 use App\Domain\Comment\Models\Comment;
 use App\Domain\Customer\Actions\AllocateCustomerIdentifier;
 use Database\Factories\CustomerFactory;
@@ -30,7 +31,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 #[UseFactory(CustomerFactory::class)]
 #[Fillable(['name', 'phone', 'is_active'])]
-class Customer extends Model implements HasAuditTrail
+class Customer extends Model implements Commentable, HasAuditTrail
 {
     /** @use HasFactory<CustomerFactory> */
     use Auditable, HasComments, HasFactory, SoftDeletes;

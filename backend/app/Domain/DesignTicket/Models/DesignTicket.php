@@ -8,6 +8,7 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Concerns\CascadesSoftDeletes;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Comment\Concerns\HasComments;
+use App\Domain\Comment\Contracts\Commentable;
 use App\Domain\Comment\Models\Comment;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
@@ -49,7 +50,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 #[UseFactory(DesignTicketFactory::class)]
 #[Fillable(['order_id', 'title', 'description', 'instructions'])]
-class DesignTicket extends Model implements HasAuditTrail
+class DesignTicket extends Model implements Commentable, HasAuditTrail
 {
     /** @use HasFactory<DesignTicketFactory> */
     use Auditable, CascadesSoftDeletes, HasComments, HasFactory, SoftDeletes;
@@ -90,6 +91,35 @@ class DesignTicket extends Model implements HasAuditTrail
     public function isOpen(): bool
     {
         return $this->status->isOpen();
+    }
+
+    /**
+     * Whether anything may still be said on it — {@see Commentable}.
+     *
+     * **The third half of a sentence this codebase already wrote.** `DesignTicketStatus::isClosed()`
+     * says of «مكتمل» and «ملغى» that "nothing more will be drawn, reviewed or said", and the
+     * first two were enforced from the start while the third was not. A ticket that has been
+     * signed off is the record of what was agreed, and a record somebody can still add to — or
+     * quietly rewrite — is not a record.
+     *
+     * It is the ticket's *state* that closes it, never a permission: a moderator is refused too.
+     */
+    public function acceptsComments(): bool
+    {
+        return $this->isOpen();
+    }
+
+    /**
+     * Which of the two endings it reached, because they mean different things to whoever is
+     * holding the phone — the same distinction {@see DesignTicketIsClosed} makes.
+     */
+    public function commentsClosedNote(): ?string
+    {
+        return match ($this->status) {
+            DesignTicketStatus::Completed => 'اعتُمد التصميم وأُغلقت المحادثة',
+            DesignTicketStatus::Cancelled => 'أُلغيت التذكرة وأُغلقت المحادثة',
+            default => null,
+        };
     }
 
     /** Whether somebody has taken it. The fact, not the intention — see the column's comment. */
