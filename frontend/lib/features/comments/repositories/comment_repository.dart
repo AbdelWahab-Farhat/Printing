@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/comments/models/comment.dart';
 import 'package:dayaa/features/comments/models/comment_subject.dart';
+import 'package:dayaa/features/comments/models/comment_thread.dart';
 
 /// What the app can do about the notes staff leave on a record.
 ///
@@ -12,11 +13,15 @@ import 'package:dayaa/features/comments/models/comment_subject.dart';
 /// **Every call takes a [CommentSubject] rather than an id.** The API nests notes under their
 /// owner, so an id alone would not say which door to knock on.
 abstract interface class CommentRepository {
-  /// Every note on this record, newest first.
+  /// Every note on this record, newest first, **and whether the conversation is still open**.
   ///
   /// A plain list, not a page. Notes accumulate at the speed of conversation, and a load-more
   /// spinner under a list that is already complete is a lie about there being more.
-  Future<Either<Failure, List<Comment>>> comments(CommentSubject subject);
+  ///
+  /// The thread's own state comes back with it because an empty closed conversation — a ticket
+  /// signed off before anybody wrote a word — has no row to carry it, and the box is drawn
+  /// anyway. See [CommentThread].
+  Future<Either<Failure, CommentThread>> comments(CommentSubject subject);
 
   /// Leaves a note, and answers with the one the server stored.
   ///

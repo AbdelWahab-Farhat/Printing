@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/comments/models/comment.dart';
 import 'package:dayaa/features/comments/models/comment_subject.dart';
+import 'package:dayaa/features/comments/models/comment_thread.dart';
 import 'package:dayaa/features/comments/presentation/viewmodel/comments_cubit.dart';
 import 'package:dayaa/features/comments/repositories/comment_repository.dart';
 import 'package:dayaa/features/comments/usecases/add_comment.dart';
@@ -67,7 +68,8 @@ void main() {
 
   test('the notes arrive in the order the server sent them', () async {
     // Arrange — newest first is the server's decision; the app does not re-sort it.
-    when(() => repository.comments(subject)).thenAnswer((_) async => const Right([theirs, mine]));
+    when(() => repository.comments(subject))
+        .thenAnswer((_) async => const Right(CommentThread(comments: [theirs, mine])));
 
     // Act
     await cubit.load();
@@ -89,11 +91,46 @@ void main() {
     expect(cubit.state, isA<CommentsFailure>());
   });
 
+  test('a closed conversation arrives with the reason it closed', () async {
+    // Arrange — «بعد الاعتماد لا يوجد مزيد». The server decides this, and an empty thread on a
+    // signed-off ticket has no row to carry it, so it travels beside the rows.
+    when(() => repository.comments(subject)).thenAnswer(
+      (_) async => const Right(
+        CommentThread(
+          comments: [mine],
+          canComment: false,
+          closedNote: 'اعتُمد التصميم وأُغلقت المحادثة',
+        ),
+      ),
+    );
+
+    // Act
+    await cubit.load();
+
+    // Assert
+    expect(cubit.state.canComment, isFalse);
+    expect(cubit.state.closedNote, 'اعتُمد التصميم وأُغلقت المحادثة');
+  });
+
+  test('an open conversation is the default, and says nothing about closing', () async {
+    // Arrange
+    when(() => repository.comments(subject))
+        .thenAnswer((_) async => const Right(CommentThread(comments: [mine])));
+
+    // Act
+    await cubit.load();
+
+    // Assert
+    expect(cubit.state.canComment, isTrue);
+    expect(cubit.state.closedNote, isNull);
+  });
+
   // ───────────────────────────── adding one ─────────────────────────────
 
   test('a new note lands at the top of the list without a reload', () async {
     // Arrange
-    when(() => repository.comments(subject)).thenAnswer((_) async => const Right([mine]));
+    when(() => repository.comments(subject))
+        .thenAnswer((_) async => const Right(CommentThread(comments: [mine])));
     await cubit.load();
 
     const added = Comment(
@@ -121,7 +158,8 @@ void main() {
 
   test('a refused note is handed back and the list is untouched', () async {
     // Arrange
-    when(() => repository.comments(subject)).thenAnswer((_) async => const Right([mine]));
+    when(() => repository.comments(subject))
+        .thenAnswer((_) async => const Right(CommentThread(comments: [mine])));
     await cubit.load();
 
     when(() => repository.add(subject, body: any(named: 'body')))
@@ -138,7 +176,8 @@ void main() {
 
   test('an empty note is never sent', () async {
     // Arrange
-    when(() => repository.comments(subject)).thenAnswer((_) async => const Right([mine]));
+    when(() => repository.comments(subject))
+        .thenAnswer((_) async => const Right(CommentThread(comments: [mine])));
     await cubit.load();
 
     // Act
@@ -153,7 +192,8 @@ void main() {
 
   test('an edited note replaces itself where it sits', () async {
     // Arrange
-    when(() => repository.comments(subject)).thenAnswer((_) async => const Right([theirs, mine]));
+    when(() => repository.comments(subject))
+        .thenAnswer((_) async => const Right(CommentThread(comments: [theirs, mine])));
     await cubit.load();
 
     const edited = Comment(
@@ -179,11 +219,13 @@ void main() {
 
   test('the row being saved is marked, and unmarked when it answers', () async {
     // Arrange
-    when(() => repository.comments(subject)).thenAnswer((_) async => const Right([mine]));
+    when(() => repository.comments(subject))
+        .thenAnswer((_) async => const Right(CommentThread(comments: [mine])));
     await cubit.load();
 
     final gate = Completer<Either<Failure, Comment>>();
-    when(() => repository.edit(subject, 1, body: any(named: 'body'))).thenAnswer((_) => gate.future);
+    when(() => repository.edit(subject, 1, body: any(named: 'body')))
+        .thenAnswer((_) => gate.future);
 
     // Act
     final pending = cubit.edit(1, 'نص جديد');
@@ -203,10 +245,12 @@ void main() {
 
   test('a removed note leaves the list', () async {
     // Arrange
-    when(() => repository.comments(subject)).thenAnswer((_) async => const Right([theirs, mine]));
+    when(() => repository.comments(subject))
+        .thenAnswer((_) async => const Right(CommentThread(comments: [theirs, mine])));
     await cubit.load();
 
-    when(() => repository.remove(subject, 2)).thenAnswer((_) async => const Right('تم حذف الملاحظة'));
+    when(() => repository.remove(subject, 2))
+        .thenAnswer((_) async => const Right('تم حذف الملاحظة'));
 
     // Act
     final failure = await cubit.remove(2);
@@ -218,7 +262,8 @@ void main() {
 
   test('a refused removal keeps the note exactly where it was', () async {
     // Arrange
-    when(() => repository.comments(subject)).thenAnswer((_) async => const Right([theirs, mine]));
+    when(() => repository.comments(subject))
+        .thenAnswer((_) async => const Right(CommentThread(comments: [theirs, mine])));
     await cubit.load();
 
     when(() => repository.remove(subject, 2)).thenAnswer(

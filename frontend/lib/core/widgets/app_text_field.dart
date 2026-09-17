@@ -43,6 +43,7 @@ class AppTextField extends StatefulWidget {
     this.readOnly = false,
     this.maxLength,
     this.maxLines = 1,
+    this.minLines,
     this.onChanged,
     this.onSubmitted,
     this.onTap,
@@ -80,6 +81,7 @@ class AppTextField extends StatefulWidget {
        readOnly = false,
        maxLength = null,
        maxLines = 1,
+       minLines = null,
        onTap = null;
 
   final TextEditingController? controller;
@@ -109,6 +111,13 @@ class AppTextField extends StatefulWidget {
   final bool readOnly;
   final int? maxLength;
   final int? maxLines;
+
+  /// How short the box is allowed to be, when [maxLines] lets it grow.
+  ///
+  /// Left null, a multi-line field is drawn [maxLines] tall from the start — a box reserving
+  /// four empty lines for a sentence nobody has typed yet. Given `1`, it starts at one line and
+  /// grows a line at a time, which is what a message box does.
+  final int? minLines;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final VoidCallback? onTap;
@@ -208,6 +217,7 @@ class _AppTextFieldState extends State<AppTextField> {
       textAlignVertical: TextAlignVertical.center,
       maxLength: widget.maxLength,
       maxLines: widget.maxLines,
+      minLines: widget.minLines,
       autofillHints: widget.autofillHints,
       cursorColor: scheme.primary,
       cursorRadius: const Radius.circular(2),

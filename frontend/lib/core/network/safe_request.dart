@@ -61,6 +61,26 @@ Future<Either<Failure, T>> safeForeignRequest<T>(
   });
 }
 
+/// For an answer whose `meta` matters but which is **not a page**.
+///
+/// [safeRequest] hands over `data` alone, which is right for almost everything: `meta` is
+/// normally the page numbers, and a list that does not paginate has none. The exception is a fact
+/// about the whole answer that no row can carry — whether a conversation is still taking
+/// messages, on a list that may be empty. Both halves go to [parse], and `meta` arrives empty
+/// rather than null when the server sent none, so a caller reads keys without asking twice.
+Future<Either<Failure, T>> safeMetaRequest<T>(
+  Future<Response<dynamic>> Function() send, {
+  required T Function(dynamic data, Map<String, dynamic> meta) parse,
+}) async {
+  return _guard(() async {
+    final response = await send();
+    final envelope = _envelopeOf(response);
+    final meta = envelope['meta'];
+
+    return parse(envelope['data'], meta is Map<String, dynamic> ? meta : const {});
+  });
+}
+
 /// The paginated twin: `data` is the list, `meta` sits beside it.
 Future<Either<Failure, Paginated<T>>> safePaginatedRequest<T>(
   Future<Response<dynamic>> Function() send, {

@@ -209,6 +209,15 @@ abstract final class AppIcons {
   static IconData get comments =>
       _pick(Icons.forum_outlined, CupertinoIcons.chat_bubble_2);
 
+  /// Sends what was just typed into the notes thread.
+  ///
+  /// A paper plane, which is the one glyph every messaging app on these phones puts at the end
+  /// of its box — so the round button needs no label. **Not [resend]**, which happens to draw
+  /// the same plane on Android: that one is a parcel going out a second time, and two ideas
+  /// sharing a name here is how one of them quietly changes when the other is restyled.
+  static IconData get send =>
+      _pick(Icons.send_rounded, CupertinoIcons.paperplane_fill);
+
   // ── choosing a file ────────────────────────────────────────────────────────
   // The three rows of the attachment sheet. Distinct glyphs on purpose: they sit side by side
   // and the icon is what is read, not the label under it.
@@ -538,6 +547,13 @@ abstract final class AppIcons {
 
   static IconData get empty =>
       _pick(Icons.inbox_rounded, CupertinoIcons.tray);
+
+  /// محادثةٌ انتهت — «بعد الاعتماد لا يوجد مزيد».
+  ///
+  /// قفلٌ، لا [archive] ولا [delete]: لا شيء نُقل إلى مكانٍ آخر، ولا شيء مُحي. الكلام كلّه في
+  /// موضعه يُقرأ، والذي انتهى هو الكتابة وحدها — وهذا بالضبط ما يقوله القفل.
+  static IconData get threadClosed =>
+      _pick(Icons.lock_outline_rounded, CupertinoIcons.lock_fill);
 
   // ── الأرشيف ────────────────────────────────────────────────────────────────
 

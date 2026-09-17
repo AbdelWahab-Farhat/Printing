@@ -4,6 +4,7 @@ import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/features/comments/models/comment.dart';
 import 'package:dayaa/features/comments/models/comment_subject.dart';
+import 'package:dayaa/features/comments/models/comment_thread.dart';
 import 'package:dayaa/features/comments/repositories/comment_repository.dart';
 import 'package:dio/dio.dart';
 
@@ -28,16 +29,13 @@ class CommentRepositoryImpl implements CommentRepository {
   static String _one(CommentSubject subject, int commentId) => '${_base(subject)}/$commentId';
 
   @override
-  Future<Either<Failure, List<Comment>>> comments(CommentSubject subject) {
-    return safeRequest<List<Comment>>(
+  Future<Either<Failure, CommentThread>> comments(CommentSubject subject) {
+    // `safeMetaRequest`, not `safePaginatedRequest`: `data` is the bare list and `meta` holds
+    // one fact about the thread rather than a page's numbers — the paginated parser would report
+    // a malformed response for a reply that is exactly what the API promised.
+    return safeMetaRequest<CommentThread>(
       () => _dio.get(_base(subject)),
-      // `safeRequest`, not `safePaginatedRequest`: `data` is the bare list with no `meta`
-      // beside it, and the paginated parser would report a malformed response for a reply that
-      // is exactly what the API promised.
-      parse: (data) => (data! as List)
-          .whereType<Map<String, dynamic>>()
-          .map(Comment.fromJson)
-          .toList(growable: false),
+      parse: CommentThread.fromEnvelope,
     );
   }
 

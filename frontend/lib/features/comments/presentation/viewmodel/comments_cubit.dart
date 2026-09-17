@@ -51,14 +51,25 @@ class CommentsCubit extends Cubit<CommentsState> {
     if (isClosed) return;
 
     emit(
-      result.fold(CommentsState.failure, (comments) {
+      result.fold(CommentsState.failure, (thread) {
         final current = state;
 
         return current is CommentsLoaded
             // `busy` is deliberately kept: a refresh that lands while a row is saving must not
             // un-grey it — the request it is waiting on is still out there.
-            ? current.copyWith(comments: comments)
-            : CommentsState.loaded(comments: comments);
+            //
+            // The thread's own state is taken fresh every time, because a refresh is exactly how
+            // this screen learns that the ticket it is showing was approved a minute ago.
+            ? current.copyWith(
+                comments: thread.comments,
+                canComment: thread.canComment,
+                closedNote: thread.closedNote,
+              )
+            : CommentsState.loaded(
+                comments: thread.comments,
+                canComment: thread.canComment,
+                closedNote: thread.closedNote,
+              );
       }),
     );
   }

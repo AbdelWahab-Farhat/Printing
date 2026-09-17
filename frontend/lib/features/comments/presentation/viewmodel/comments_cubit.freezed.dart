@@ -122,11 +122,11 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( List<Comment> comments,  Set<int> busy,  bool isAdding)?  loaded,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( List<Comment> comments,  bool canComment,  String? closedNote,  Set<int> busy,  bool isAdding)?  loaded,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CommentsLoading() when loading != null:
 return loading();case CommentsLoaded() when loaded != null:
-return loaded(_that.comments,_that.busy,_that.isAdding);case CommentsFailure() when failure != null:
+return loaded(_that.comments,_that.canComment,_that.closedNote,_that.busy,_that.isAdding);case CommentsFailure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
 
@@ -145,11 +145,11 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( List<Comment> comments,  Set<int> busy,  bool isAdding)  loaded,required TResult Function( Failure failure)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( List<Comment> comments,  bool canComment,  String? closedNote,  Set<int> busy,  bool isAdding)  loaded,required TResult Function( Failure failure)  failure,}) {final _that = this;
 switch (_that) {
 case CommentsLoading():
 return loading();case CommentsLoaded():
-return loaded(_that.comments,_that.busy,_that.isAdding);case CommentsFailure():
+return loaded(_that.comments,_that.canComment,_that.closedNote,_that.busy,_that.isAdding);case CommentsFailure():
 return failure(_that.failure);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -164,11 +164,11 @@ return failure(_that.failure);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( List<Comment> comments,  Set<int> busy,  bool isAdding)?  loaded,TResult? Function( Failure failure)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( List<Comment> comments,  bool canComment,  String? closedNote,  Set<int> busy,  bool isAdding)?  loaded,TResult? Function( Failure failure)?  failure,}) {final _that = this;
 switch (_that) {
 case CommentsLoading() when loading != null:
 return loading();case CommentsLoaded() when loaded != null:
-return loaded(_that.comments,_that.busy,_that.isAdding);case CommentsFailure() when failure != null:
+return loaded(_that.comments,_that.canComment,_that.closedNote,_that.busy,_that.isAdding);case CommentsFailure() when failure != null:
 return failure(_that.failure);case _:
   return null;
 
@@ -213,7 +213,7 @@ String toString() {
 
 
 class CommentsLoaded implements CommentsState {
-  const CommentsLoaded({required final  List<Comment> comments, final  Set<int> busy = const <int>{}, this.isAdding = false}): _comments = comments,_busy = busy;
+  const CommentsLoaded({required final  List<Comment> comments, this.canComment = true, this.closedNote, final  Set<int> busy = const <int>{}, this.isAdding = false}): _comments = comments,_busy = busy;
   
 
  final  List<Comment> _comments;
@@ -223,6 +223,14 @@ class CommentsLoaded implements CommentsState {
   return EqualUnmodifiableListView(_comments);
 }
 
+/// Whether anything more may be said here — the server's answer, carried on the list.
+///
+/// **A fact about the thread, not about any note.** A design ticket's conversation ends with
+/// the ticket, and the screen that has to know it is the box: an empty closed thread has no
+/// row to read it off. True for a customer and a supplier, always.
+@JsonKey() final  bool canComment;
+/// Why it closed, in the record's own words. Null while it is open.
+ final  String? closedNote;
 /// Ids of notes being rewritten or removed right now. A set rather than a single id
 /// because two rows can be worked on at once and each has to show its own state.
  final  Set<int> _busy;
@@ -248,16 +256,16 @@ $CommentsLoadedCopyWith<CommentsLoaded> get copyWith => _$CommentsLoadedCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentsLoaded&&const DeepCollectionEquality().equals(other._comments, _comments)&&const DeepCollectionEquality().equals(other._busy, _busy)&&(identical(other.isAdding, isAdding) || other.isAdding == isAdding));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentsLoaded&&const DeepCollectionEquality().equals(other._comments, _comments)&&(identical(other.canComment, canComment) || other.canComment == canComment)&&(identical(other.closedNote, closedNote) || other.closedNote == closedNote)&&const DeepCollectionEquality().equals(other._busy, _busy)&&(identical(other.isAdding, isAdding) || other.isAdding == isAdding));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_comments),const DeepCollectionEquality().hash(_busy),isAdding);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_comments),canComment,closedNote,const DeepCollectionEquality().hash(_busy),isAdding);
 
 @override
 String toString() {
-  return 'CommentsState.loaded(comments: $comments, busy: $busy, isAdding: $isAdding)';
+  return 'CommentsState.loaded(comments: $comments, canComment: $canComment, closedNote: $closedNote, busy: $busy, isAdding: $isAdding)';
 }
 
 
@@ -268,7 +276,7 @@ abstract mixin class $CommentsLoadedCopyWith<$Res> implements $CommentsStateCopy
   factory $CommentsLoadedCopyWith(CommentsLoaded value, $Res Function(CommentsLoaded) _then) = _$CommentsLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<Comment> comments, Set<int> busy, bool isAdding
+ List<Comment> comments, bool canComment, String? closedNote, Set<int> busy, bool isAdding
 });
 
 
@@ -285,10 +293,12 @@ class _$CommentsLoadedCopyWithImpl<$Res>
 
 /// Create a copy of CommentsState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? comments = null,Object? busy = null,Object? isAdding = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? comments = null,Object? canComment = null,Object? closedNote = freezed,Object? busy = null,Object? isAdding = null,}) {
   return _then(CommentsLoaded(
 comments: null == comments ? _self._comments : comments // ignore: cast_nullable_to_non_nullable
-as List<Comment>,busy: null == busy ? _self._busy : busy // ignore: cast_nullable_to_non_nullable
+as List<Comment>,canComment: null == canComment ? _self.canComment : canComment // ignore: cast_nullable_to_non_nullable
+as bool,closedNote: freezed == closedNote ? _self.closedNote : closedNote // ignore: cast_nullable_to_non_nullable
+as String?,busy: null == busy ? _self._busy : busy // ignore: cast_nullable_to_non_nullable
 as Set<int>,isAdding: null == isAdding ? _self.isAdding : isAdding // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
