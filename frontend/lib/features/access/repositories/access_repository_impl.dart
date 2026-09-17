@@ -20,6 +20,7 @@ class AccessRepositoryImpl implements AccessRepository {
   @override
   Future<Either<Failure, Paginated<AuthUser>>> users({
     String? search,
+    String? permission,
     int page = 1,
     int perPage = 20,
   }) {
@@ -32,6 +33,7 @@ class AccessRepositoryImpl implements AccessRepository {
           // Omitted rather than sent as null: a null in a query string arrives as the literal
           // "null" and the API would filter on it.
           if (search != null && search.isNotEmpty) 'search': search,
+          if (permission != null && permission.isNotEmpty) 'permission': permission,
         },
       ),
       parseItem: AuthUser.fromJson,

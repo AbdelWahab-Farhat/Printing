@@ -58,6 +58,14 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [CUSTOMER-ORDERS-SECTION.md](customers/CUSTOMER-ORDERS-SECTION.md) | طلبيات العميل على شاشة العميل. |
 | [CUSTOMERS-ACTIVITY-FILTER.md](customers/CUSTOMERS-ACTIVITY-FILTER.md) | تصفية شاشة العملاء حسب الطلبيات — «بمن نتّصل؟». |
 
+## [design-tickets/](design-tickets/)
+
+| Document | |
+|---|---|
+| [DESIGN-TICKETS-DESIGN.md](design-tickets/DESIGN-TICKETS-DESIGN.md) | تذاكر التصميم — من طلب الموظف إلى اعتماد التصميم في حساب الزبون. الخطة الكاملة والقرارات، مع مسار كامل بالأمثلة (§16) وتصحيح إرجاع التذكرة إلى الطابور (§17). **مُنفَّذ.** |
+| [DESIGN-TICKETS-BACKEND.md](design-tickets/DESIGN-TICKETS-BACKEND.md) | الخادم — الجداول والحالات والصلاحيات والمسارات السبعة عشر والرفض والأمثلة. |
+| [DESIGN-TICKETS-FRONTEND-INTEGRATION.md](design-tickets/DESIGN-TICKETS-FRONTEND-INTEGRATION.md) | نفس الميزة في تطبيق Flutter — الشاشات والقرارات وما لم يُبنَ بعد. |
+
 ## [employees/](employees/)
 
 | Document | |

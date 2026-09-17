@@ -6,15 +6,14 @@ namespace App\Domain\Customer\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Customer\Enums\DesignKind;
+use App\Support\Media\HasStoredFile;
 use Database\Factories\CustomerDesignFactory;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * A customer's artwork — what gets printed on their bags.
@@ -41,7 +40,7 @@ use Illuminate\Support\Facades\Storage;
 class CustomerDesign extends Model
 {
     /** @use HasFactory<CustomerDesignFactory> */
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, HasStoredFile, SoftDeletes;
 
     /**
      * @return array<string, mixed>
@@ -62,28 +61,6 @@ class CustomerDesign extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
-    }
-
-    public function storage(): Filesystem
-    {
-        return Storage::disk($this->disk);
-    }
-
-    /**
-     * Built on demand from the disk this file actually lives on.
-     *
-     * A design sits on a **private** disk, unlike a product photo: a product image is the
-     * business's own marketing, while this is the customer's property and one leaked path is a
-     * competitor holding their print file. So in production this returns a signed link that
-     * expires; the capability is asked of the disk rather than assumed.
-     */
-    public function url(): string
-    {
-        $disk = $this->storage();
-
-        return $disk->providesTemporaryUrls()
-            ? $disk->temporaryUrl($this->path, now()->addMinutes(config('media.temporary_url_minutes')))
-            : $disk->url($this->path);
     }
 
     /** A name to show when the uploader did not give one. */

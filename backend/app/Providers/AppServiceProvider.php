@@ -8,6 +8,8 @@ use App\Domain\Carrier\Actions\ResolveNawrisDestination;
 use App\Domain\Carrier\Support\NawrisClient;
 use App\Domain\Customer\Queries\CustomerOrderActivity;
 use App\Domain\Delivery\DeliveryService;
+use App\Domain\DesignTicket\Events\DesignTicketAssigned;
+use App\Domain\DesignTicket\Events\DesignTicketProgressed;
 use App\Domain\Identity\Models\User;
 use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
 use App\Domain\Investor\Listeners\PostPurchasesWhenStockLeaves;
@@ -15,17 +17,19 @@ use App\Domain\Investor\Listeners\PostPurchaseWhenScrapIsDrawn;
 use App\Domain\Investor\Listeners\PostPurchaseWhenStockIsRedrawn;
 use App\Domain\Investor\Listeners\UnwindEarningsWhenOrderIsDeleted;
 use App\Domain\Notification\Channels\PushChannel;
+use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
+use App\Domain\Notification\Listeners\NotifyWhenDesignTicketProgresses;
 use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
 use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
+use App\Domain\Notification\Listeners\NotifyWhenShortageIsAssigned;
 use App\Domain\Notification\Support\FcmClient;
 use App\Domain\Notification\Support\GoogleServiceAccountToken;
-use App\Domain\Notification\Listeners\NotifyWhenShortageIsAssigned;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderProfitUnwound;
 use App\Domain\Order\Events\OrderScrapDrawn;
-use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderShortagesRecorded;
+use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Events\OrderStockRedrawn;
 use App\Domain\Order\Queries\OrderCustomerActivity;
@@ -192,6 +196,13 @@ class AppServiceProvider extends ServiceProvider
         // An audience of one, unlike every other notification here — the work now belongs to a
         // named person. See ShortageAssignedToYou.
         Event::listen(ShortageAssigned::class, NotifyWhenShortageIsAssigned::class);
+
+        // Design tickets, and both of theirs. The first is work arriving — addressed to one
+        // designer, or to every holder of `design_tickets.accept` when it is left in the shared
+        // pool. The second tells whichever side of the conversation is now being waited on, and
+        // which side that is depends on the status; see DesignTicketReachedStatus.
+        Event::listen(DesignTicketAssigned::class, NotifyWhenDesignTicketIsAssigned::class);
+        Event::listen(DesignTicketProgressed::class, NotifyWhenDesignTicketProgresses::class);
 
         // Turns three silent classes of bug into loud exceptions everywhere except
         // production: lazy-loaded relations (N+1), reading an attribute that was never

@@ -27,7 +27,13 @@ enum AuditSubject {
   /// A standing manufacturing cost. Its history is the one that answers «منذ متى ونحن نحسب
   /// العمالة بهذا الرقم؟», which no order can answer on its own: an order keeps the amount it was
   /// charged, never the rate that produced it.
-  manufacturingCostRate('manufacturing-cost-rates', 'معدل تكلفة التصنيع');
+  manufacturingCostRate('manufacturing-cost-rates', 'معدل تكلفة التصنيع'),
+
+  /// A design request. **Its files and its conversation share this history**: the server
+  /// returns the ticket's own changes together with its versions' and its comments', because
+  /// «من رفع النسخة الثالثة؟» and «متى طلب التعديل؟» are the questions it exists to answer and
+  /// neither lives on the ticket row.
+  designTicket('design-tickets', 'تذكرة التصميم');
 
   const AuditSubject(this.path, this.noun);
 

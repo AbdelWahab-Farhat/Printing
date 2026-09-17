@@ -115,6 +115,20 @@ class _RootDrawerState extends State<RootDrawer> {
           route: Routes.shortages,
           permission: AppPermission.viewShortages,
         ),
+        // **تذاكر التصميم beside النواقص, for the same reason that one sits here.** Both are work
+        // that stands outside an order and belongs to a person rather than to a status — one is
+        // something to go and buy, the other something to go and draw.
+        //
+        // Gated on `design_tickets.view`, which is narrow by itself: a holder sees the tickets
+        // they raised, the ones addressed to them, and the unclaimed pool. So this row is safe to
+        // show to a designer and to the employee who raises them, and the screen behind it shows
+        // each of them a different list.
+        _Link(
+          icon: _LinkIcon.designTickets,
+          label: 'تذاكر التصميم',
+          route: Routes.designTickets,
+          permission: AppPermission.viewDesignTickets,
+        ),
         // Gated: unlike the map of cities below, this list is not needed to fill any form in —
         // a carrier is chosen from the dispatch screen's own picker.
         _Link(
@@ -420,6 +434,7 @@ enum _LinkIcon {
   businessField,
   purchaseOrders,
   shortages,
+  designTickets,
   warehouse,
   city,
   manufacturingCostRates,
@@ -436,6 +451,7 @@ enum _LinkIcon {
     _LinkIcon.businessField => AppIcons.businessField,
     _LinkIcon.purchaseOrders => AppIcons.purchaseOrders,
     _LinkIcon.shortages => AppIcons.error,
+    _LinkIcon.designTickets => AppIcons.designs,
     _LinkIcon.warehouse => AppIcons.warehouse,
     _LinkIcon.city => AppIcons.city,
     _LinkIcon.manufacturingCostRates => AppIcons.manufacturingCostRates,

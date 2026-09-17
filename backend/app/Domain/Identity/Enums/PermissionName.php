@@ -282,6 +282,38 @@ enum PermissionName: string
     case RecordShortageSupplies = 'shortages.supplies.record';
     case ReverseShortageSupplies = 'shortages.supplies.reverse';
 
+    // تذاكر التصميم. The employee asks, a designer takes it, versions go back and forth, and an
+    // approval puts the winning file on the customer's account. Seven grants, and the splits are
+    // the ones `shortages.*` and `orders.payments.*` already argue for: separate where the job
+    // differs or the level of trust does, not wherever separation is possible.
+    //
+    // **`view` is narrow on its own.** Holding it shows a reader the tickets they raised, the
+    // ones assigned to them, and the unclaimed pool — nothing else. `view_all` is the supervisor's
+    // grant, and it is separate because "see the work I am part of" and "see everybody's work"
+    // are different powers over colleagues rather than different amounts of the same one.
+    //
+    // **`accept` and `submit` are the designer's two verbs**, and they are the only grants that
+    // role needs. Notably it does **not** get `customers.view`: a ticket carries the customer's
+    // name as a snapshot precisely so that reading it never opens the customer's file, their
+    // orders and their money. See DESIGN-TICKETS-DESIGN.md §6.1.
+    //
+    // **`review` is withheld from the designer role, and that is only half the rule.** An
+    // administrator holds everything through `Gate::before`, so a permission alone could never
+    // stop one person uploading a version and approving it. The domain refuses a reviewer who is
+    // the uploader — the same control `orders.deposit.confirm` already applies to the person who
+    // claimed the payment. Separating execution from approval has to be a domain rule, because a
+    // roles screen can be changed with one click.
+    //
+    // What is deliberately *not* here is a grant for «مكتمل»: no permission reaches it, because
+    // it is written by an approval rather than chosen. See DesignTicketStatus.
+    case ViewDesignTickets = 'design_tickets.view';
+    case ViewAllDesignTickets = 'design_tickets.view_all';
+    case ManageDesignTickets = 'design_tickets.manage';
+    case AssignDesignTickets = 'design_tickets.assign';
+    case AcceptDesignTickets = 'design_tickets.accept';
+    case SubmitDesignTickets = 'design_tickets.submit';
+    case ReviewDesignTickets = 'design_tickets.review';
+
     // The company's editable defaults. Its own pair rather than riding on an existing one:
     // everybody's screens read them and almost nobody should change them.
     case ViewCompanySettings = 'settings.view';
@@ -397,6 +429,13 @@ enum PermissionName: string
             self::AssignShortages => 'إسناد النواقص إلى الموظفين',
             self::RecordShortageSupplies => 'تسجيل عملية توفير',
             self::ReverseShortageSupplies => 'عكس عملية توفير',
+            self::ViewDesignTickets => 'عرض تذاكر التصميم الخاصة به',
+            self::ViewAllDesignTickets => 'عرض كل تذاكر التصميم',
+            self::ManageDesignTickets => 'إنشاء وتعديل طلبات التصميم',
+            self::AssignDesignTickets => 'إسناد تذاكر التصميم إلى المصممين',
+            self::AcceptDesignTickets => 'قبول طلب التصميم',
+            self::SubmitDesignTickets => 'رفع تصميم داخل التذكرة',
+            self::ReviewDesignTickets => 'الموافقة على التصميم أو طلب تعديل',
             self::ViewCompanySettings => 'عرض إعدادات الشركة',
             self::ManageCompanySettings => 'تعديل إعدادات الشركة',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
@@ -466,6 +505,9 @@ enum PermissionName: string
             self::RecordDealExpenses, self::ViewInvestorPortal => 'المستثمرون',
             self::ViewShortages, self::ManageShortages, self::AssignShortages,
             self::RecordShortageSupplies, self::ReverseShortageSupplies => 'النواقص',
+            self::ViewDesignTickets, self::ViewAllDesignTickets, self::ManageDesignTickets,
+            self::AssignDesignTickets, self::AcceptDesignTickets, self::SubmitDesignTickets,
+            self::ReviewDesignTickets => 'تذاكر التصميم',
             self::ViewCompanySettings, self::ManageCompanySettings => 'إعدادات الشركة',
             self::ViewActivityLogs => 'سجل النشاطات',
             self::ViewProfitAndLossReport,

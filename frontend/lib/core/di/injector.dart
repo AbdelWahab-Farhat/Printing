@@ -85,6 +85,11 @@ import 'package:dayaa/features/customers/usecases/save_design_to_device.dart';
 import 'package:dayaa/features/customers/usecases/set_customer_activation.dart';
 import 'package:dayaa/features/customers/usecases/update_customer.dart';
 import 'package:dayaa/features/customers/usecases/upload_customer_design.dart';
+import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_ticket_detail_cubit.dart';
+import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_tickets_cubit.dart';
+import 'package:dayaa/features/design_tickets/repositories/design_ticket_repository.dart';
+import 'package:dayaa/features/design_tickets/repositories/design_ticket_repository_impl.dart';
+import 'package:dayaa/features/design_tickets/usecases/design_ticket_usecases.dart';
 import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/repositories/home_repository.dart';
 import 'package:dayaa/features/home/repositories/home_repository_impl.dart';
@@ -95,10 +100,10 @@ import 'package:dayaa/features/investor_portal/repositories/investor_portal_repo
 import 'package:dayaa/features/investor_portal/usecases/get_investor_portfolio.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deal_detail_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deal_orders_cubit.dart';
-import 'package:dayaa/features/investors/presentation/viewmodel/order_investor_shares_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deals_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investors_cubit.dart';
+import 'package:dayaa/features/investors/presentation/viewmodel/order_investor_shares_cubit.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository_impl.dart';
 import 'package:dayaa/features/investors/usecases/investor_usecases.dart';
@@ -362,6 +367,7 @@ abstract final class Injector {
     _registerManufacturingCostRates();
     _registerShippingCompanies();
     _registerShortages();
+    _registerDesignTickets();
     _registerCustomers();
     _registerSettings();
     _registerOrders();
@@ -1091,6 +1097,74 @@ abstract final class Injector {
   /// النواقص — the repository and its use cases as lazy singletons, the three Cubits as
   /// factories: two of them carry a question or an id, and a screen opened twice must not share
   /// the first one's state.
+  /// تذاكر التصميم.
+  ///
+  /// The detail cubit is a **factory taking the ticket id**, not a lazy singleton: it is a screen
+  /// cubit, and `close()` on the first ticket somebody opened would leave every ticket after it
+  /// emitting into a dead stream — the classic mistake RULES §4 names.
+  static void _registerDesignTickets() {
+    sl
+      ..registerLazySingleton<DesignTicketRepository>(
+        () => DesignTicketRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetDesignTickets>(
+        () => GetDesignTickets(sl<DesignTicketRepository>()),
+      )
+      ..registerLazySingleton<GetDesignTicketCounts>(
+        () => GetDesignTicketCounts(sl<DesignTicketRepository>()),
+      )
+      ..registerLazySingleton<GetDesignTicket>(
+        () => GetDesignTicket(sl<DesignTicketRepository>()),
+      )
+      ..registerLazySingleton<CreateDesignTicket>(
+        () => CreateDesignTicket(sl<DesignTicketRepository>()),
+      )
+      ..registerLazySingleton<UpdateDesignTicket>(
+        () => UpdateDesignTicket(sl<DesignTicketRepository>()),
+      )
+      ..registerLazySingleton<AssignDesignTicket>(
+        () => AssignDesignTicket(sl<DesignTicketRepository>()),
+      )
+      ..registerLazySingleton<AcceptDesignTicket>(
+        () => AcceptDesignTicket(sl<DesignTicketRepository>()),
+      )
+      ..registerLazySingleton<CancelDesignTicket>(
+        () => CancelDesignTicket(sl<DesignTicketRepository>()),
+      )
+      ..registerLazySingleton<AttachDesignTicketFile>(
+        () => AttachDesignTicketFile(sl<DesignTicketRepository>()),
+      )
+      ..registerLazySingleton<RemoveDesignTicketAttachment>(
+        () => RemoveDesignTicketAttachment(sl<DesignTicketRepository>()),
+      )
+      ..registerLazySingleton<SubmitDesignVersion>(
+        () => SubmitDesignVersion(sl<DesignTicketRepository>()),
+      )
+      ..registerLazySingleton<ReviewDesignVersion>(
+        () => ReviewDesignVersion(sl<DesignTicketRepository>()),
+      )
+      ..registerFactory<DesignTicketsCubit>(
+        () => DesignTicketsCubit(
+          getTickets: sl<GetDesignTickets>(),
+          getCounts: sl<GetDesignTicketCounts>(),
+        ),
+      )
+      ..registerFactoryParam<DesignTicketDetailCubit, int, void>(
+        (ticketId, _) => DesignTicketDetailCubit(
+          ticketId: ticketId,
+          getTicket: sl<GetDesignTicket>(),
+          acceptTicket: sl<AcceptDesignTicket>(),
+          assignTicket: sl<AssignDesignTicket>(),
+          updateTicket: sl<UpdateDesignTicket>(),
+          cancelTicket: sl<CancelDesignTicket>(),
+          attachFile: sl<AttachDesignTicketFile>(),
+          removeAttachment: sl<RemoveDesignTicketAttachment>(),
+          submitVersion: sl<SubmitDesignVersion>(),
+          reviewVersion: sl<ReviewDesignVersion>(),
+        ),
+      );
+  }
+
   static void _registerShortages() {
     sl
       ..registerLazySingleton<ShortageRepository>(() => ShortageRepositoryImpl(sl<Dio>()))

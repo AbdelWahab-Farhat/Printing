@@ -19,6 +19,8 @@ use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
 use App\Domain\Delivery\Models\ShippingCompany;
+use App\Domain\DesignTicket\Models\DesignTicket;
+use App\Domain\DesignTicket\Models\DesignTicketFile;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Models\StockBatch;
@@ -146,6 +148,12 @@ enum AuditSubject: string
     case Shortage = 'shortage';
     case ShortageSupply = 'shortage_supply';
 
+    // Design tickets. **Both halves, and the file is the one that matters**: «من رفع النسخة
+    // الثالثة؟» and «متى طلب التعديل؟» are the questions the ticket's history exists to answer,
+    // and neither of them lives on the ticket row.
+    case DesignTicket = 'design_ticket';
+    case DesignTicketFile = 'design_ticket_file';
+
     // Company-wide settings
     case CompanySetting = 'company_setting';
 
@@ -211,6 +219,8 @@ enum AuditSubject: string
             self::InvestorDealExpense => InvestorDealExpense::class,
             self::InvestorWalletEntry => InvestorWalletEntry::class,
             self::Shortage => Shortage::class,
+            self::DesignTicket => DesignTicket::class,
+            self::DesignTicketFile => DesignTicketFile::class,
             self::ShortageSupply => ShortageSupply::class,
             self::CompanySetting => CompanySetting::class,
             self::Notification => Notification::class,
@@ -269,6 +279,8 @@ enum AuditSubject: string
             self::InvestorDealExpense => 'مصروف صفقة',
             self::InvestorWalletEntry => 'حركة محفظة مستثمر',
             self::Shortage => 'نقص',
+            self::DesignTicket => 'تذكرة تصميم',
+            self::DesignTicketFile => 'ملف تذكرة تصميم',
             self::ShortageSupply => 'عملية توفير',
             self::CompanySetting => 'إعدادات الشركة',
             self::Notification => 'إشعار عام',

@@ -15,6 +15,8 @@ class CommentSubject {
 
   const CommentSubject.vendor(this.id) : kind = CommentSubjectKind.vendor;
 
+  const CommentSubject.designTicket(this.id) : kind = CommentSubjectKind.designTicket;
+
   final CommentSubjectKind kind;
   final int id;
 
@@ -28,12 +30,18 @@ class CommentSubject {
 
 /// The records that accept notes today.
 ///
-/// Two, deliberately: the customer and the supplier. An order or a purchase order is a case here
-/// and a route on the server — and neither is added before a screen wants it, which is the same
-/// rule that kept this feature customer-only until a supplier needed it. See GENERAL-COMMENTS.md.
+/// Three: the customer, the supplier, and a design ticket. An order or a purchase order is a case
+/// here and a route on the server — and neither is added before a screen wants it, which is the
+/// same rule that kept this feature customer-only until a supplier needed it. See
+/// GENERAL-COMMENTS.md.
 enum CommentSubjectKind {
   customer('customer'),
-  vendor('vendor');
+  vendor('vendor'),
+
+  /// **The one whose notes are the point of the record rather than an aside.** A customer's notes
+  /// are things worth remembering about them; a ticket's notes are the conversation the ticket
+  /// exists to hold — «الشعار في المرفقات», «وصلني، أبدأ اليوم». Same four calls, same rules.
+  designTicket('design_ticket');
 
   const CommentSubjectKind(this.wire);
 

@@ -16,6 +16,7 @@ use App\Application\Api\V1\Resources\UserResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
 use App\Domain\Identity\AccessService;
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -48,6 +49,11 @@ class UserController extends Controller
     /**
      * List users
      */
+    /**
+     * Narrow with `search`, and with `permission` — the staff who may do one particular thing,
+     * through whichever role grants it. See the query itself for why it is a permission rather
+     * than a role name, and why administrators are not in the answer.
+     */
     public function index(Request $request): JsonResponse
     {
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
@@ -63,6 +69,30 @@ class UserController extends Controller
                         ->orWhere('phone', 'like', $term);
                 });
             })
+            /*
+             * «من يستطيع أن يفعل كذا؟» — the staff who hold one permission, through any role.
+             *
+             * **By permission rather than by role name, and that is the whole point.** A picker
+             * that filtered on «مصمم» would list the wrong people the day the business renames
+             * that role, splits it in two, or grants the same work to a second one — and it would
+             * do so silently. A permission is what the code actually checks for, so a filter on
+             * one cannot drift from the thing it is describing.
+             *
+             * Unrecognised names are **ignored rather than refused**: this narrows a picker, and
+             * a typo that emptied the list would read as «لا يوجد موظفون» — a sentence that is
+             * false and that nobody could diagnose from the screen.
+             *
+             * **Administrators do not appear** unless they hold the permission for real. The
+             * `admin` role is seeded with nothing and passes every check through `Gate::before`,
+             * which is a rule rather than a row and so is invisible to this scope. That is the
+             * honest answer for a picker: an administrator who genuinely does this job holds the
+             * role that says so, and one who does not should not be offered the work.
+             */
+            ->when(
+                $request->filled('permission')
+                    && PermissionName::tryFrom((string) $request->string('permission')) !== null,
+                fn ($query) => $query->permission((string) $request->string('permission')),
+            )
             ->orderBy('id')
             ->paginate($perPage);
 
