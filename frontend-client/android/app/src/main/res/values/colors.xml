@@ -11,4 +11,14 @@
 -->
 <resources>
     <color name="brand_surface">#0F2138</color>
+
+    <!--
+      Written by `dart run flutter_launcher_icons` from `adaptive_icon_background` in
+      pubspec.yaml, and rewritten every time it runs. Change it there, not here.
+
+      It is the logo artwork's own navy, half a shade off `brand_surface` above — the icon is
+      cut against one and the window painted with the other, and neither is ever drawn touching
+      the other.
+    -->
+    <color name="ic_launcher_background">#16243c</color>
 </resources>

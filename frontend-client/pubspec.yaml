@@ -105,6 +105,42 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   bloc_test: ^10.0.0
   mocktail: ^1.0.4
+  flutter_launcher_icons: ^0.14.4
+
+# The launcher icon, generated from the one logo.
+#
+# `flutter_native_splash` is **not** here yet, unlike the staff app, where the two configs sit
+# together. That generator draws `logo.png` on a solid colour at startup, and this app has no
+# splash screen of its own for it to hand over to — a native splash with nothing behind it is a
+# second, different first frame. See BACKLOG.md.
+#
+# After changing the logo:
+#   python tool/make_branding_assets.py
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  # The composed artwork, edge to edge. 1024 because that is the size iOS requires — see the
+  # note in the script about the master being 512.
+  image_path: assets/branding/icon_1024.png
+
+  android: true
+  # The mark alone. The navy it was drawn on becomes the layer below, so a launcher masking this
+  # to a circle cuts navy rather than the artwork's corners. The script explains the cut.
+  adaptive_icon_foreground: assets/branding/adaptive_foreground.png
+  # The artwork's own background, not `theme.dart`'s `surface` (`#0F2138`). Half a shade apart,
+  # and the seam shows on a large icon.
+  adaptive_icon_background: "#16243c"
+  # The app's real floor: `flutter.minSdkVersion` in Flutter 3.44 is 24, not 21. This is what
+  # decides whether the generator writes the old mipmap icons beside the adaptive ones — without
+  # it, Android 7 (API 24‑25, below 26) shows an empty icon, because `mipmap-anydpi-v26` is
+  # invisible to anything under 26.
+  min_sdk_android: 24
+
+  ios: true
+  # iOS refuses an icon with transparency — it renders as black. This artwork is opaque, so the
+  # flag changes nothing today; it is here so the day a logo arrives with an alpha channel does
+  # not cost a release.
+  remove_alpha_ios: true
+  background_color_ios: "#16243c"
 
 flutter:
   uses-material-design: true
