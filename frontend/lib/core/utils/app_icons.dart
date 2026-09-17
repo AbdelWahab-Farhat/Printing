@@ -146,6 +146,12 @@ abstract final class AppIcons {
       _pick(Icons.receipt_long_rounded, CupertinoIcons.doc_checkmark);
 
   /// A returned parcel going out a second time.
+  /// A paper plane: sending a message somebody just typed.
+  ///
+  /// Distinct from [resend], which is an order going out again — the same word in English and
+  /// two different things in the shop.
+  static IconData get send => _pick(Icons.send_rounded, CupertinoIcons.paperplane_fill);
+
   static IconData get resend =>
       _pick(Icons.send_rounded, CupertinoIcons.paperplane);
 

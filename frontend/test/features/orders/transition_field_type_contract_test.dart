@@ -82,4 +82,5 @@ const Set<String> _wireValues = {
   'payment_method',
   'file',
   'warehouse',
+  'vendor',
 };

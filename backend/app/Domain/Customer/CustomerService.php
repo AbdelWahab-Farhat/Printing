@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Customer;
 
 use App\Domain\Customer\Actions\CreateBusinessField;
+use App\Domain\Customer\Actions\CountCustomerBadges;
 use App\Domain\Customer\Actions\CreateCustomer;
 use App\Domain\Customer\Actions\DeleteBusinessField;
 use App\Domain\Customer\Actions\UpdateBusinessField;
@@ -39,7 +40,22 @@ class CustomerService
         private readonly UpdateBusinessField $updateBusinessField,
         private readonly DeleteBusinessField $deleteBusinessField,
         private readonly BusinessFieldListQuery $businessFieldListQuery,
+        private readonly CountCustomerBadges $countBadges,
     ) {}
+
+    /**
+     * What is waiting for one customer, as a number per badge.
+     *
+     * Through this door rather than the action directly, like everything else a controller
+     * reaches: the client API asks Customer, and Customer asks Support. A controller calling
+     * `SupportService` for a badge would be the app's screens deciding which contexts exist.
+     *
+     * @return array<string, int>
+     */
+    public function badgesFor(int $customerId): array
+    {
+        return ($this->countBadges)($customerId);
+    }
 
     /**
      * @return LengthAwarePaginator<int, Customer>

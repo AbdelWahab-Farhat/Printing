@@ -311,7 +311,25 @@ enum AppPermission {
   // so the business can hand it to a floor manager with one tick on the roles screen and no
   // deploy — which is exactly why the app must gate the compose screen on `can` and never on
   // `isAdmin`. The two agree today only because no role holds this yet.
-  broadcastNotifications('notifications.broadcast', 'إرسال إشعار عام لكل الموظفين');
+  broadcastNotifications('notifications.broadcast', 'إرسال إشعار عام لكل الموظفين'),
+
+  // The hoardings the customer app shows on its home screen. **One permission, not a pair**:
+  // there is nothing to guard in reading them — the customer app fetches the live ones with no
+  // token at all — so the only job is putting one up and taking it down.
+  //
+  // Added late: the backend grew this when billboards were built for the customer app and the
+  // Dart catalogue was never told, which `permission_contract_test` had been failing on ever
+  // since.
+  manageBillboards('billboards.manage', 'إدارة اللوحات الإعلانية'),
+
+  // The support desk — what customers are asking from their own app.
+  //
+  // **A view/manage pair rather than one permission**, and the split is the business's: reading
+  // the queue is something a whole shift may need («هل يسأل أحد عن الطلبية ١٢٢٠؟»), while
+  // answering, assigning and closing is a job. `SupportTicketController` guards them separately
+  // and the roles screen composes them however the shop likes.
+  viewSupportTickets('support.view', 'عرض تذاكر الدعم'),
+  manageSupportTickets('support.manage', 'الرد على تذاكر الدعم وإسنادها وإغلاقها');
 
   const AppPermission(this.wire, this.label);
 

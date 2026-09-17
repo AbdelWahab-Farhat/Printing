@@ -31,7 +31,7 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
                 productName: item.productName,
                 variantLabel: item.variantLabel,
                 pricingUnitLabel: item.pricingUnitLabel,
-                unitPrice: item.unitPrice,
+                unitPrice: item.unitPriceOrZero,
                 quantity: item.quantity,
               ),
           ],

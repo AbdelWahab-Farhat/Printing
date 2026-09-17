@@ -28,7 +28,18 @@ class CustomerFactory extends Factory
             // random 8-digit tail would collide eventually and fail an unrelated test.
             'phone' => '09'.str_pad((string) (++self::$phoneSequence), 8, '0', STR_PAD_LEFT),
             'is_active' => true,
+            // Null by default, because that is what nearly every real row holds: a customer only
+            // gets a password by registering in the app, and the hundreds imported from the
+            // customer book never will. A factory that defaulted to a usable password would let
+            // a login test pass without anyone ever having registered.
+            'password' => null,
         ];
+    }
+
+    /** A customer who has installed the app and can sign in. */
+    public function registered(string $password = 'password123'): static
+    {
+        return $this->state(fn () => ['password' => $password]);
     }
 
     public function inactive(): static

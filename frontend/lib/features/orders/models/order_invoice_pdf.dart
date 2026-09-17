@@ -334,8 +334,8 @@ class OrderInvoicePdf {
                     ? null
                     : 'ناقص: ${item.shortageQuantity!.grouped} ${item.pricingUnitLabel}',
               ),
-              _cell(item.unitPrice.grouped, align: pw.TextAlign.center),
-              _cell(item.lineTotal.grouped, align: pw.TextAlign.center, bold: true),
+              _cell(item.isPriced ? item.unitPrice!.grouped : awaitingQuoteLabel, align: pw.TextAlign.center),
+              _cell(item.isPriced ? item.lineTotal!.grouped : '—', align: pw.TextAlign.center, bold: true),
             ]),
           ),
       ],

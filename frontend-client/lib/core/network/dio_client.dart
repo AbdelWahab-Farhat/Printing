@@ -44,7 +44,13 @@ abstract final class DioClient {
         connectTimeout: AppConfig.connectTimeout,
         receiveTimeout: AppConfig.receiveTimeout,
         sendTimeout: AppConfig.sendTimeout,
-        headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+        // **`Accept` only — never a default `Content-Type`.** Dio's own
+        // `ImplyContentTypeInterceptor` sets `application/json` for a Map body and
+        // `multipart/form-data` with the right boundary for a `FormData` one. A hard-coded
+        // default wins over it, so every upload in the app was being handed to the JSON
+        // encoder, which threw before the request ever left the phone — a `DioException` of
+        // type `unknown` carrying no message, on a body the server never saw.
+        headers: {'Accept': 'application/json'},
         // 4xx must reach the interceptors and `safeRequest` as a DioException carrying the
         // body — that body is where the API's Arabic message and field errors are.
         validateStatus: (status) => status != null && status >= 200 && status < 300,

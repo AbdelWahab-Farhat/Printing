@@ -120,6 +120,10 @@ class OrderStatusChip extends StatelessWidget {
   /// نوع هذه» ثم يترك القارئ يقرأ الكلمة ليعرف أيّها. اللون يقول النوع؛ والأيقونة تقول الحالة
   /// بعينها، وإلا فلا داعي لها.
   static IconData iconFor(OrderStatus status) => switch (status) {
+    // **An envelope, not «جديدة»'s glyph.** The two share a colour — both are the start of an
+    // order with nothing wrong — so the shape is what has to tell them apart: this one arrived
+    // and is waiting to be opened, and nobody has read it yet.
+    OrderStatus.requested => AppIcons.comments,
     OrderStatus.taken => AppIcons.statusNew,
     // **The warehouse's glyph, not the press's.** The goods have been found, counted and
     // weighed, and the shelf has dropped; drawing it with a printer would put the order at a
@@ -152,6 +156,10 @@ class OrderStatusChip extends StatelessWidget {
     OrderStatus.resend => AppIcons.resend,
     // Struck out, not paused: nothing is coming back to life here.
     OrderStatus.cancelled => AppIcons.ordersCancelled,
+    // **A different shape from «إلغاء تام», although they share a colour.** The tone says what
+    // kind of ending it is; the icon says which ending — that is the rule this map runs on, and
+    // a refusal at the door is not a write-off.
+    OrderStatus.requestRejected => AppIcons.close,
     // Nothing is claimed about a status this build has never heard of. The label arrived with
     // it and says what it is.
     OrderStatus.unknown => AppIcons.unknownStatus,

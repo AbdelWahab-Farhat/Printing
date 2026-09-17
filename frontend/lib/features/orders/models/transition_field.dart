@@ -63,6 +63,19 @@ enum TransitionFieldType {
   @JsonValue('file')
   file,
 
+  /// The outside vendor who will make a وسيط order.
+  ///
+  /// **Asked at acceptance, not at intake, and only for one road.** An order the customer app
+  /// sent cannot name a vendor — the customer does not know we outsource anything, and it is
+  /// not their choice — so `CreateOrder` lets a *request* be incomplete in exactly that one way
+  /// and `ChangeOrderStatus` refuses «بانتظار المراجعة» → «جديدة» until somebody names one. See
+  /// OUTSOURCED-PRODUCTS.md.
+  ///
+  /// No options arrive with it: like the carrier and the warehouse, this app manages the vendor
+  /// list, so the picker fetches it and only the id travels back.
+  @JsonValue('vendor')
+  vendor,
+
   /// A kind this build has no widget for. Rendered as a note rather than silently skipped: a
   /// field the server thinks is required and the screen never shows is a form that cannot be
   /// submitted with nothing on screen to explain why.

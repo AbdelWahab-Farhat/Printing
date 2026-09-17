@@ -2,6 +2,7 @@
 
 use App\Application\Api\V1\Controllers\ActivityLogController;
 use App\Application\Api\V1\Controllers\AuthController;
+use App\Application\Api\V1\Controllers\BillboardController;
 use App\Application\Api\V1\Controllers\BusinessFieldController;
 use App\Application\Api\V1\Controllers\CarrierController;
 use App\Application\Api\V1\Controllers\CityController;
@@ -35,6 +36,7 @@ use App\Application\Api\V1\Controllers\StockBatchController;
 use App\Application\Api\V1\Controllers\StockItemController;
 use App\Application\Api\V1\Controllers\StockItemGroupController;
 use App\Application\Api\V1\Controllers\StockMovementController;
+use App\Application\Api\V1\Controllers\SupportTicketController;
 use App\Application\Api\V1\Controllers\UserController;
 use App\Application\Api\V1\Controllers\VendorCommentController;
 use App\Application\Api\V1\Controllers\VendorController;
@@ -190,6 +192,39 @@ Route::prefix('v1')->group(function (): void {
             ->only(['index', 'store', 'update', 'destroy'])
             ->middleware('can:customers.view')
             ->scoped();
+
+        // ── لوحة الإعلانات ──────────────────────────────────────────────────────────────
+        // The banners on the customer app's home screen. **One permission rather than the usual
+        // view/manage pair**: nobody reads this list except to change it — the app has its own
+        // unguarded endpoint, and staff have no screen that merely displays posters.
+        //
+        // A destroy route exists, unlike customers and products, for the reason cities have one:
+        // nothing points at a poster, so a wrong one comes down rather than being lived with.
+        Route::apiResource('billboards', BillboardController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->middleware('can:billboards.manage');
+
+        // ── تذاكر الدعم ─────────────────────────────────────────────────────────────────
+        // What customers are asking, and the answers. **A view/manage pair**, unlike the
+        // billboard above: reading the queue is something a whole shift may need, while
+        // answering and closing is a job.
+        //
+        // No `store` — a ticket is a customer starting a conversation, and the shop opening one
+        // on their behalf would be a thread they never asked for.
+        Route::get('support/tickets', [SupportTicketController::class, 'index'])
+            ->middleware('can:support.view')->name('support.tickets.index');
+
+        Route::get('support/tickets/{ticket}', [SupportTicketController::class, 'show'])
+            ->whereNumber('ticket')->middleware('can:support.view')->name('support.tickets.show');
+
+        Route::post('support/tickets/{ticket}/messages', [SupportTicketController::class, 'reply'])
+            ->whereNumber('ticket')->middleware('can:support.manage')->name('support.tickets.messages.store');
+
+        Route::patch('support/tickets/{ticket}/assignment', [SupportTicketController::class, 'assign'])
+            ->whereNumber('ticket')->middleware('can:support.manage')->name('support.tickets.assignment');
+
+        Route::post('support/tickets/{ticket}/close', [SupportTicketController::class, 'close'])
+            ->whereNumber('ticket')->middleware('can:support.manage')->name('support.tickets.close');
 
         // ── مجالات العمل ────────────────────────────────────────────────────────────────
         // What a customer's shop sells. Reading is granted to every role — the customer form

@@ -21,6 +21,14 @@
 /// the RTL layout around it can land the separator on the wrong side.
 library;
 
+/// What the app says where a price is not known yet.
+///
+/// **One phrase, in one place.** A line on a request for a product priced «حسب الطلب» carries no
+/// figure until the reviewer quotes it, and several screens have to say so — the item card, the
+/// edit screen, the invoice. Separate literals would drift, and the one that drifted would be
+/// the one nobody reads.
+const String awaitingQuoteLabel = 'غير مسعّر';
+
 extension GroupedDigits on int {
   /// `9651` → `9,651`.
   String get grouped => _groupWhole(toString());

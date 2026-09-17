@@ -30,13 +30,30 @@ final readonly class OrderItemData
         public ?string $unitPrice = null,
         public ?string $notes = null,
         public int $sortOrder = 0,
+
+        /**
+         * Whether a missing price on a quote-on-request product is allowed to stand.
+         *
+         * **True only for a request from the customer app**, where it is the normal case: the
+         * app is never told a price for such a product, so it cannot send one, and the shop
+         * quotes the line on the move that accepts the request.
+         *
+         * False everywhere else, which keeps the old rule intact for staff: a clerk writing an
+         * order at the counter *is* the person naming the price, and an empty box there is a
+         * mistake rather than a line awaiting a quote. Defaulting to false is what makes that
+         * true of every existing caller without touching one of them.
+         */
+        public bool $allowsQuoteLater = false,
     ) {}
 
     /**
      * @param  array<string, mixed>  $validated
      */
-    public static function fromArray(array $validated, int $index = 0): self
-    {
+    public static function fromArray(
+        array $validated,
+        int $index = 0,
+        bool $allowsQuoteLater = false,
+    ): self {
         $price = $validated['unit_price'] ?? null;
 
         return new self(
@@ -48,6 +65,7 @@ final readonly class OrderItemData
                 ? (string) $validated['notes']
                 : null,
             sortOrder: (int) ($validated['sort_order'] ?? $index),
+            allowsQuoteLater: $allowsQuoteLater,
         );
     }
 }

@@ -54,6 +54,18 @@ final class TransitionFields
     public const DEPOSIT_METHOD = 'deposit_method';
 
     /**
+     * Who is making an outsourced order, asked at the moment a customer's request is accepted.
+     *
+     * **The one field this list offers on a move *into* «جديدة»**, and it exists because of an
+     * asymmetry the customer app creates: `CreateOrder` and `UpdateOrder` both skip the
+     * outsourcing rule while an order is «بانتظار المراجعة», since a customer cannot name a
+     * vendor and it is not their choice. The rule binds when the request becomes an order — and
+     * without this field, satisfying it would mean a second call to `PATCH /orders/{order}`
+     * before the accept button could be pressed at all.
+     */
+    public const VENDOR_ID = 'vendor_id';
+
+    /**
      * [$actor] is who is making the move, and it decides one thing only: whether the money box
      * is offered. A driver may hand a parcel over without being trusted with the till, so the
      * field is withheld rather than the move. Null — a console command, an importer — is treated
@@ -109,6 +121,63 @@ final class TransitionFields
                 required: false,
                 hint: 'تُرفع إلى مكتبة العميل ثم تُربط بالطلبية',
             );
+        }
+
+        // **Accepting a customer's request for something a vendor makes.**
+        //
+        // Offered only on this one move, and only when the order actually needs it: the request
+        // came from the app with no vendor — the customer neither knows nor chooses who makes
+        // their bags — and `ChangeOrderStatus` refuses «بانتظار المراجعة» → «جديدة» until one is
+        // named. Asking here means the reviewer answers it in the same tap that accepts, rather
+        // than being refused and sent to the edit screen first.
+        //
+        // The road is already known: `ResolveOrderFlow` runs at intake for a request as well as
+        // for «جديدة», precisely so this question can be asked before anybody is refused.
+        if ($target === OrderStatus::New
+            && $order->status === OrderStatus::Requested
+            && $order->production_flow->needsAVendor()
+            && $order->vendor_id === null) {
+            $fields[] = TransitionField::vendor(
+                key: self::VENDOR_ID,
+                label: 'الوسيط',
+                // Required, because this is the whole reason the field is here: the move is
+                // refused without it, and offering it optionally would put the refusal back on
+                // the other side of a button somebody already pressed.
+                required: true,
+                hint: 'من يصنع هذه الطلبية. يُسجَّل عليها ويبقى اسمه فيها',
+            );
+        }
+
+        // **What the shop is charging for something the catalogue does not price.**
+        //
+        // Offered on the same move as the vendor above, and for a twin of the same reason: the
+        // customer could not answer it. A product priced «حسب الطلب» is never sent a price by
+        // the client API, so a request for one arrives with the line unpriced — see
+        // {@see \App\Domain\Order\Actions\AddOrderItem}. Asking here means the reviewer quotes
+        // it in the same tap that accepts, and `ChangeOrderStatus` refuses the move until every
+        // line has a number.
+        //
+        // One box per unpriced line rather than one for the order: each line is a different
+        // product at a different size, and a single figure could not say which.
+        if ($target === OrderStatus::New && $order->status === OrderStatus::Requested) {
+            foreach ($order->items as $item) {
+                if ($item->isPriced()) {
+                    continue;
+                }
+
+                $fields[] = TransitionField::number(
+                    key: self::unitPriceKey($item),
+                    label: "سعر الوحدة — {$item->product_name} ({$item->variant_label})",
+                    // Required, like the vendor and for the same reason: the move is refused
+                    // without it, and an optional box would put the refusal on the far side of
+                    // a button somebody already pressed.
+                    required: true,
+                    // **No `max`, and `min` is left to validation.** What the shop charges for a
+                    // made-to-order job is a commercial decision, and a ceiling invented here
+                    // would be a number nobody agreed refusing a sale somebody did.
+                    hint: 'الكمية '.DecimalText::trim((string) $item->quantity).' — يُحتسب المجموع بعد الاعتماد',
+                );
+            }
         }
 
         // Who is carrying it, and the man holding it.
@@ -702,6 +771,12 @@ final class TransitionFields
     public static function stockQuantityKey(OrderItem $item): string
     {
         return "warehouse_quantity_{$item->getKey()}";
+    }
+
+    /** What the «what are we charging for this» box for one line is called in the payload. */
+    public static function unitPriceKey(OrderItem $item): string
+    {
+        return "unit_price_{$item->getKey()}";
     }
 
     /**

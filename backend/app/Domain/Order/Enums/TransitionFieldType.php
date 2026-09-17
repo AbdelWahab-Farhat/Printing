@@ -45,6 +45,22 @@ enum TransitionFieldType: string
     case ShippingCompany = 'shipping_company';
 
     /**
+     * Who is making this order for us — «الوسيط».
+     *
+     * **Offered on exactly one move: accepting a customer's request for an outsourced product.**
+     * The customer app cannot name a vendor — the customer does not know we outsource anything,
+     * and it is not their choice — so a request from it is allowed to arrive without one. The
+     * rule binds when the request becomes an order, and this is the field that satisfies it in
+     * the same call.
+     *
+     * **The options do not travel with it**, for the reason {@see ShippingCompany}'s do not: the
+     * app already has the vendor list, it manages it, and inlining twenty rows onto every
+     * pending request would be the same list fifteen times on one screen. What travels is
+     * `vendors.id`.
+     */
+    case Vendor = 'vendor';
+
+    /**
      * How money that changed hands during the move was handed over.
      *
      * **The one type whose choices do travel with it.** The carrier and the warehouse lists are

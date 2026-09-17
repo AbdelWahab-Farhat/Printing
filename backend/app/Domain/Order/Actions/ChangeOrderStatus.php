@@ -17,6 +17,8 @@ use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\OrderIsDeletedForStatusChange;
+use App\Domain\Order\Exceptions\OrderLinesNeedAPrice;
+use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
 use App\Domain\Order\Exceptions\PaymentRequiresAnActor;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
 use App\Domain\Order\Exceptions\ShortageMustBeResolved;
@@ -27,6 +29,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
 use App\Domain\Order\Support\TransitionFields;
+use App\Domain\Vendor\VendorService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -79,6 +82,10 @@ final class ChangeOrderStatus
         // Turns «what did the customer actually take» into the remainder, the shrunken invoice
         // and the shelf movement or the write-off that follows — see its own docblock.
         private readonly RecordPartialDelivery $recordPartialDelivery,
+        // Re-derives the order's totals once the accept dialog's prices land on the lines. The
+        // only place an order's total is decided, so a quoted request reaches the same figure a
+        // clerk-typed one would.
+        private readonly RecalculateOrderTotals $recalculateTotals,
     ) {}
 
     /**
@@ -122,10 +129,91 @@ final class ChangeOrderStatus
             throw TransitionRequiresReason::make($target);
         }
 
-        return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields): Order {
+        // **Accepting a customer's request is where the vendor rule binds.**
+        //
+        // `CreateOrder` and `UpdateOrder` both skip that rule while an order is «بانتظار
+        // المراجعة»: the customer app cannot name a vendor — the customer does not know we
+        // outsource anything, and it is not their choice — so a request is allowed to be
+        // incomplete in exactly this one way. An *order* is not. «جديدة» means verified and
+        // ready to be worked on, and an outsourced order arriving there with nobody named is one
+        // the shop cannot chase.
+        //
+        // So the refusal lands on the button that turns a request into an order, and it lands
+        // before the transaction opens — nothing has been written yet, and the reviewer is told
+        // what is missing rather than shown a half-accepted request.
+        //
+        // The order's road is already known by this point: `ResolveOrderFlow` runs at intake for
+        // «بانتظار المراجعة» as well as «جديدة», precisely so the review screen can say «هذه
+        // تحتاج وسيطاً» instead of the reviewer discovering it here.
+        // **The field the move carries counts as an answer.** `TransitionFields` offers
+        // `vendor_id` on exactly this move, so the accept dialog asks the question and sends it
+        // back here — the reviewer answers in the same tap rather than being refused and sent to
+        // the edit screen first. It is written a few lines below, inside the transaction; this
+        // only has to know that an answer arrived.
+        $acceptingARequest = $from === OrderStatus::Requested && $target === OrderStatus::New;
+        $namedVendor = $acceptingARequest
+            ? self::vendorIdIn($fields)
+            : null;
+
+        if ($acceptingARequest
+            && $order->production_flow->needsAVendor()
+            && $order->vendor_id === null
+            && $namedVendor === null) {
+            throw OutsourcedOrderNeedsAVendor::make();
+        }
+
+        // **Nothing leaves «بانتظار المراجعة» carrying a line nobody has priced.**
+        //
+        // This is the guard the whole nullable-price arrangement rests on. A request from the
+        // app for something the catalogue prices «حسب الطلب» is written with `unit_price` null,
+        // and while that is true the order's stored totals understate it — see
+        // {@see RecalculateOrderTotals}, which says so out loud. That is only safe because an
+        // unpriced line cannot reach a status anything bills from, and this is what makes it
+        // true. Delete it and an accepted order can invoice less than the goods are worth, with
+        // no column able to say it was wrong.
+        //
+        // The prices the accept dialog collected are applied a few lines below, inside the
+        // transaction; this only has to know that an answer arrived for every line.
+        $unpricedAfterFields = $acceptingARequest
+            ? self::linesLeftUnpriced($order, $fields)
+            : [];
+
+        if ($unpricedAfterFields !== []) {
+            throw OrderLinesNeedAPrice::make($unpricedAfterFields);
+        }
+
+        return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields, $namedVendor, $acceptingARequest): Order {
             // **Before anything else, because an archived order must not move.** See §٤ of
             // Docs/orders/ORDER-DELETE-AND-ARCHIVE.md and {@see OrderIsDeletedForStatusChange}.
             $this->guardTheOrderIsNotDeleted($order);
+
+            // **The vendor the accept dialog named, written before anything reads the order
+            // again.** Inside the transaction, so a move that fails further down does not leave
+            // a request carrying a vendor nobody agreed to. The name is snapshotted beside the
+            // id for the reason the city and the branch are: renaming a workshop must not
+            // rewrite who made an order last year — see OUTSOURCED-PRODUCTS.md §5.
+            if ($namedVendor !== null) {
+                $vendor = app(VendorService::class)->find($namedVendor);
+
+                $order->forceFill([
+                    'vendor_id' => $vendor->getKey(),
+                    'vendor_name' => (string) $vendor->name,
+                ])->save();
+            }
+
+            // **The prices the accept dialog named, written before anything totals the order.**
+            //
+            // `unit_price` and `line_total` are not fillable — a request that could post them
+            // could name its own price — so they are force-filled here exactly as
+            // {@see AddOrderItem} does, and the total is *derived* rather than multiplied out
+            // again, so the one rule about which quantity an invoice is built on keeps its
+            // single home.
+            //
+            // Inside the transaction: a move refused further down must not leave a request
+            // wearing prices nobody agreed to.
+            if ($acceptingARequest) {
+                $this->applyQuotedPrices($order, $fields);
+            }
 
             // **What the customer actually took, before the money that pays for it.** «تم
             // الاستلام» can carry a per-line count of what was handed over — see
@@ -210,6 +298,23 @@ final class ChangeOrderStatus
 
             if ($target === OrderStatus::Cancelled) {
                 $attributes['cancellation_reason'] = $reason;
+            }
+
+            // **A refusal's reason is its own column, and it leaves for the customer's phone.**
+            // `cancellation_reason` answers "why did we write this off" for the accountant;
+            // this answers "why would you not take my order" for the person who placed it. One
+            // column holding both would put the first sentence on the second screen.
+            if ($target === OrderStatus::RequestRejected) {
+                $attributes['rejection_reason'] = $reason;
+            }
+
+            // **Going back to the queue clears the refusal.** An order returned to «بانتظار
+            // المراجعة» is waiting to be looked at again, and a stale sentence saying why it
+            // was once refused would still be on it — and would still be on the customer's
+            // screen — while it sat there awaiting a fresh answer.
+            if ($target === OrderStatus::Requested) {
+                $attributes['rejection_reason'] = null;
+                $attributes['request_rejected_at'] = null;
             }
 
             // Who took it. The name is snapshotted beside the key for the same reason the
@@ -857,5 +962,79 @@ final class ChangeOrderStatus
         }
 
         ($this->reverseStockDeduction)($order->loadMissing('items'), (int) $actor->getKey());
+    }
+
+    /**
+     * The vendor id the move carried, if it carried one.
+     *
+     * A helper rather than an inline cast because the payload is untyped: `fields` arrives from
+     * a request, and «سلسلة فارغة» is a thing an app sends when a picker was opened and closed.
+     * Treating that as «nobody» is what keeps the guard above honest.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    /**
+     * The lines that would still have no price after the fields on this move are applied.
+     *
+     * @param  array<string, mixed>  $fields
+     * @return list<string> what to name in the refusal, one per line
+     */
+    private static function linesLeftUnpriced(Order $order, array $fields): array
+    {
+        $missing = [];
+
+        foreach ($order->items as $item) {
+            if ($item->isPriced()) {
+                continue;
+            }
+
+            $quoted = $fields[TransitionFields::unitPriceKey($item)] ?? null;
+
+            if ($quoted === null || $quoted === '') {
+                $missing[] = trim("{$item->product_name} {$item->variant_label}");
+            }
+        }
+
+        return $missing;
+    }
+
+    /**
+     * Writes the quoted price onto every line that was waiting for one.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    private function applyQuotedPrices(Order $order, array $fields): void
+    {
+        foreach ($order->items as $item) {
+            if ($item->isPriced()) {
+                continue;
+            }
+
+            $quoted = $fields[TransitionFields::unitPriceKey($item)] ?? null;
+
+            if ($quoted === null || $quoted === '') {
+                continue;
+            }
+
+            $item->forceFill(['unit_price' => (string) $quoted]);
+            $item->forceFill(['line_total' => $item->deriveLineTotal()])->save();
+        }
+
+        // The relation is stale now — the items in memory were priced through the loop above
+        // and the totals are about to be read from the database.
+        $order->load('items');
+
+        ($this->recalculateTotals)($order);
+    }
+
+    private static function vendorIdIn(array $fields): ?int
+    {
+        $value = $fields[TransitionFields::VENDOR_ID] ?? null;
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) $value;
     }
 }

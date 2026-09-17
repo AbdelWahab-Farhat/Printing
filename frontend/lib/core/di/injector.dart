@@ -95,10 +95,10 @@ import 'package:dayaa/features/investor_portal/repositories/investor_portal_repo
 import 'package:dayaa/features/investor_portal/usecases/get_investor_portfolio.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deal_detail_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deal_orders_cubit.dart';
-import 'package:dayaa/features/investors/presentation/viewmodel/order_investor_shares_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deals_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investors_cubit.dart';
+import 'package:dayaa/features/investors/presentation/viewmodel/order_investor_shares_cubit.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository_impl.dart';
 import 'package:dayaa/features/investors/usecases/investor_usecases.dart';
@@ -228,6 +228,11 @@ import 'package:dayaa/features/stock_items/usecases/get_stock_items.dart';
 import 'package:dayaa/features/stock_items/usecases/save_stock_item.dart';
 import 'package:dayaa/features/stock_items/usecases/set_stock_item_unit.dart';
 import 'package:dayaa/features/stock_items/usecases/set_stock_item_variants.dart';
+import 'package:dayaa/features/support/presentation/viewmodel/support_tickets_cubit.dart';
+import 'package:dayaa/features/support/presentation/viewmodel/ticket_thread_cubit.dart';
+import 'package:dayaa/features/support/repositories/support_repository.dart';
+import 'package:dayaa/features/support/repositories/support_repository_impl.dart';
+import 'package:dayaa/features/support/usecases/support_usecases.dart';
 import 'package:dayaa/features/tools/presentation/viewmodel/bag_preview_cubit.dart';
 import 'package:dayaa/features/tools/presentation/viewmodel/qr_tool_cubit.dart';
 import 'package:dayaa/features/tools/usecases/generate_qr_code.dart';
@@ -362,6 +367,7 @@ abstract final class Injector {
     _registerManufacturingCostRates();
     _registerShippingCompanies();
     _registerShortages();
+    _registerSupport();
     _registerCustomers();
     _registerSettings();
     _registerOrders();
@@ -1091,6 +1097,33 @@ abstract final class Injector {
   /// النواقص — the repository and its use cases as lazy singletons, the three Cubits as
   /// factories: two of them carry a question or an id, and a screen opened twice must not share
   /// the first one's state.
+  /// تذاكر الدعم — the desk.
+  ///
+  /// **A `registerFactoryParam` for the thread**, for the reason the order screen's is: a
+  /// `TicketThreadCubit` is built *for* one ticket and needs that id at construction. A
+  /// nullable field set afterwards is a Cubit that can exist not knowing what it is showing.
+  static void _registerSupport() {
+    sl
+      ..registerLazySingleton<SupportRepository>(() => SupportRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<BrowseTickets>(() => BrowseTickets(sl<SupportRepository>()))
+      ..registerLazySingleton<GetTicket>(() => GetTicket(sl<SupportRepository>()))
+      ..registerLazySingleton<ReplyToTicket>(() => ReplyToTicket(sl<SupportRepository>()))
+      ..registerLazySingleton<AssignTicket>(() => AssignTicket(sl<SupportRepository>()))
+      ..registerLazySingleton<CloseTicket>(() => CloseTicket(sl<SupportRepository>()))
+      ..registerFactory<SupportTicketsCubit>(
+        () => SupportTicketsCubit(browse: sl<BrowseTickets>()),
+      )
+      ..registerFactoryParam<TicketThreadCubit, int, void>(
+        (ticketId, _) => TicketThreadCubit(
+          ticketId: ticketId,
+          get: sl<GetTicket>(),
+          reply: sl<ReplyToTicket>(),
+          assign: sl<AssignTicket>(),
+          close: sl<CloseTicket>(),
+        ),
+      );
+  }
+
   static void _registerShortages() {
     sl
       ..registerLazySingleton<ShortageRepository>(() => ShortageRepositoryImpl(sl<Dio>()))

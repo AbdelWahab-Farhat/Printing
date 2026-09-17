@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The one place Android needs to know the app's colour.
+
+  The window is painted by the OS before Flutter has drawn a frame, so `ColorScheme` cannot
+  reach it — this has to be stated again here. It is the design's `#0F2138`, and it matters:
+  the default is white, which means a white flash on every cold start of an app that is navy.
+
+  Kept in step with `MaterialTheme.darkScheme.surface` by hand. There is no generator between
+  the two, and this is the only duplicate of that value in the project.
+-->
+<resources>
+    <color name="brand_surface">#0F2138</color>
+</resources>

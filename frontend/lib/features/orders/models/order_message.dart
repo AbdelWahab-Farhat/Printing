@@ -116,7 +116,11 @@ class OrderMessage {
         // Padding zeros are the database's, not the shop's: an order of «100.000 قطعة» is an
         // order of a hundred bags.
         ..add('- الكمية: ${groupedDecimal(item.quantity)} ${item.pricingUnitLabel}')
-        ..add('- القيمة: ${_amount(item.lineTotal)}');
+        ..add(
+          item.isPriced
+              ? '- القيمة: ${_amount(item.lineTotalOrZero)}'
+              : '- القيمة: $awaitingQuoteLabel',
+        );
 
       // Said on the line it is missing from, because that is the only place the number means
       // anything: «ناقص ٤٠» of *which* size.

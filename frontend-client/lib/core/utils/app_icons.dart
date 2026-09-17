@@ -135,6 +135,13 @@ abstract final class AppIcons {
   static IconData get activate =>
       _pick(Icons.check_circle_outline_rounded, CupertinoIcons.check_mark_circled);
 
+  /// A bare tick, with no circle of its own.
+  ///
+  /// Distinct from [activate] and [ordersReceived], which both carry their own ring: this one
+  /// goes *inside* something already drawn — the filled dot on the order timeline that says the
+  /// step was reached.
+  static IconData get check => _pick(Icons.check_rounded, CupertinoIcons.check_mark);
+
   /// Moves an order along its route. Two arrows passing, because a status change is a *move*
   /// from one place to another — not [refresh], which fetches the same thing again.
   static IconData get statusChange =>

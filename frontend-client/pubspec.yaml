@@ -70,6 +70,26 @@ dependencies:
   # to *show a file*, not to annotate one. The link is the signed URL the API mints per request,
   # so it expires — which is the point.
   url_launcher: ^6.3.2
+  # Handing a generated file to the system's own share sheet, where «حفظ الصورة» and «حفظ في
+  # الملفات» are rows the OS provides. Deliberately not a gallery-writing package (gal,
+  # image_gallery_saver): those need the photo-library permission on both platforms, and a
+  # customer who only wanted to send their QR code to the printer should not meet a permission
+  # prompt to do it.
+  share_plus: ^12.0.2
+  # Where that temporary file goes. Declared because our own code names it, which is what
+  # `depend_on_referenced_packages` is for.
+  path_provider: ^2.1.6
+
+  # ── الأدوات: رمز QR ──────────────────────────────────────────────────────────
+  # The encoder alone: pure Dart, BSD-3, from kevmoo, and what every QR package on pub is built
+  # on.
+  #
+  # **Not `qr_flutter`.** It is a ready-made widget carrying its own colours and corners, and
+  # RULES §7 does not allow a colour written into a screen — and this tool needs a transparent
+  # background and an ink the customer picks, so the ready-made widget would have to be wrapped
+  # rather than used. Its last release was 2021. What we need from it is thirty lines of
+  # `CustomPainter` that we own and test.
+  qr: ^3.0.2
 
   # ── misc ─────────────────────────────────────────────────────────────────────
   flutter_dotenv: ^5.2.1
@@ -94,3 +114,7 @@ flutter:
     # throws at launch rather than failing the build.
     - .env
     - .env.dev
+    # The five bags «معاينة على الكيس» draws on. ~130 KB the whole set, and they never change —
+    # bundled rather than fetched so the tool works on a phone with no signal, which is where a
+    # customer standing in a shop deciding on a size usually is.
+    - assets/mockups/

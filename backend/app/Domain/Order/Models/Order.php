@@ -183,6 +183,7 @@ class Order extends Model implements HasAuditTrail
             'settled_at' => 'datetime',
             'returned_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'request_rejected_at' => 'datetime',
         ];
     }
 
@@ -713,6 +714,25 @@ class Order extends Model implements HasAuditTrail
             [OrderStatus::New, OrderStatus::ReadyToPrint, OrderStatus::Designing],
             true,
         );
+    }
+
+    /**
+     * Whether any line is still waiting to be quoted.
+     *
+     * **The one question every money reader must ask of an order in «بانتظار المراجعة».** A
+     * product priced «حسب الطلب» reaches this API from the customer app with no price — the app
+     * is never told one and must not invent one — so the line is written null and the shop names
+     * the figure on the move that accepts the request.
+     *
+     * While that is true the order's `items_total` and `grand_total` are understatements, and
+     * the resources send null instead of them rather than show a customer a total that is not
+     * the price. {@see \App\Domain\Order\Actions\RecalculateOrderTotals} explains why the stored
+     * columns are allowed to be wrong, and {@see \App\Domain\Order\Actions\ChangeOrderStatus}
+     * is what keeps the wrongness confined to a status nothing bills from.
+     */
+    public function hasUnpricedLines(): bool
+    {
+        return $this->items->contains(fn (OrderItem $item) => ! $item->isPriced());
     }
 
     /**

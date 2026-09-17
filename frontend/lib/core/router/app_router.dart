@@ -82,6 +82,8 @@ import 'package:dayaa/features/splash/presentation/views/splash_page.dart';
 import 'package:dayaa/features/stock_item_groups/presentation/views/stock_item_groups_page.dart';
 import 'package:dayaa/features/stock_items/presentation/views/stock_item_form_page.dart';
 import 'package:dayaa/features/stock_items/presentation/views/stock_items_page.dart';
+import 'package:dayaa/features/support/presentation/views/support_tickets_page.dart';
+import 'package:dayaa/features/support/presentation/views/ticket_thread_page.dart';
 import 'package:dayaa/features/tools/presentation/views/bag_preview_page.dart';
 import 'package:dayaa/features/tools/presentation/views/qr_tool_page.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
@@ -330,6 +332,13 @@ abstract final class Routes {
   /// صندوق الإشعارات. Outside the shell and reached from the bell in the app bar, which is in
   /// *two* shells — the staff one and the investor portal — so this route is the single
   /// destination both of them push.
+  /// تذاكر الدعم — the queue of what customers are asking from their own app.
+  static const String supportTickets = '/support/tickets';
+
+  /// One thread. **A child of the queue**, so the back button lands on the list rather than on
+  /// whatever screen happened to link here.
+  static String supportTicket(int id) => '/support/tickets/$id';
+
   static const String notifications = '/notifications';
 
   /// Composing an announcement. Nested under the list on purpose: it is reached from there and
@@ -1116,6 +1125,20 @@ abstract final class AppRouter {
         builder: (context, state) => BagPreviewPage(
           initialDesign: state.payload as PickedFile?,
         ),
+      ),
+      GoRoute(
+        path: Routes.supportTickets,
+        builder: (context, state) => const SupportTicketsPage(),
+        routes: [
+          // `:id` under the queue, so popping the thread returns to the list it came from — and
+          // returns the ticket with it, which is what saves the list a refetch.
+          GoRoute(
+            path: ':id',
+            builder: (context, state) => TicketThreadPage(
+              ticketId: int.parse(state.pathParameters['id']!),
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: Routes.notifications,

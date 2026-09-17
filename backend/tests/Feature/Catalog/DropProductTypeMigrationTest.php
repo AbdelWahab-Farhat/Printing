@@ -35,17 +35,25 @@ class DropProductTypeMigrationTest extends TestCase
      * schema this test is *about* is what keeps it from breaking on work that has nothing to do
      * with it.
      *
-     * **The bound is only a guard against a rollback that can never arrive**, so it is deliberately
-     * generous rather than tight. It was 20, and the twentieth migration after the drop turned that
-     * into a failure in this test on work that had nothing to do with «النوع» — which is the very
-     * breakage the search above exists to prevent, reintroduced by the counter meant to bound it. A
-     * loop that ends the moment it finds the column costs nothing for the extra headroom.
+     * **And the step counter is gone, because the counter was the bug.** It was 20 once; the
+     * twentieth migration after the drop failed this test on work unrelated to «النوع», so it
+     * was raised to 80 — and the eightieth did it again, on the customer app's support tables.
+     * A number tied to how many migrations exist has to be raised every time that grows, which
+     * is a maintenance task nobody will remember and a red build for whoever happens to add the
+     * one that tips it.
+     *
+     * The honest bound is the schema itself: each pass rolls back exactly one migration, so the
+     * loop cannot run longer than there are migrations to undo. Running out without finding the
+     * column means the migration this test is about is gone — a real failure, and said so.
      */
-    private function rollBackToTheSchemaThatStillHadTheColumn(int $mostSteps = 80): void
+    private function rollBackToTheSchemaThatStillHadTheColumn(): void
     {
-        for ($step = 0; $step < $mostSteps; $step++) {
-            if (Schema::hasColumn('products', 'category')) {
-                return;
+        while (! Schema::hasColumn('products', 'category')) {
+            if (DB::table('migrations')->count() === 0) {
+                self::fail(
+                    'Rolled the whole schema back without ever finding «النوع» on products — '
+                    .'the migration this test exists to exercise is no longer there.'
+                );
             }
 
             Artisan::call('migrate:rollback', ['--step' => 1]);

@@ -4,13 +4,14 @@ use App\Application\Api\V1\Middleware\DeshapeArabicInput;
 use App\Support\ApiEnvelope;
 use App\Support\Exceptions\ProvidesApiFailure;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -23,6 +24,19 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        /*
+         * The customer app's routes, loaded with the same `api` prefix and middleware group as
+         * routes/api.php — so `/api/v1/client/...` behaves exactly like every other endpoint
+         * here: the same envelope, the same exception rendering, the same Arabic de-shaping.
+         *
+         * A file of its own because those routes answer to a different guard (`auth:customer`)
+         * rather than to `can:`. See routes/api_client.php for the rest of that reasoning.
+         */
+        then: function (): void {
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(__DIR__.'/../routes/api_client.php');
+        },
     )
     /*
      * **The first scheduled work in this application** — so `schedule:run` needs a cron entry on

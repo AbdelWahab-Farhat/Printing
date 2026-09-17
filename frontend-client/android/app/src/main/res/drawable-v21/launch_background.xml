@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
+<!--
+  What the window shows between the tap on the icon and Flutter's first frame.
 
-    <!-- You can insert your own image assets here -->
+  A flat brand colour rather than the default white: the app is dark, and a white flash before
+  it is the first thing a customer sees. The logo goes in the commented-out bitmap below the
+  day `assets/images/logo.png` arrives.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/brand_surface" />
+
     <!-- <item>
         <bitmap
             android:gravity="center"

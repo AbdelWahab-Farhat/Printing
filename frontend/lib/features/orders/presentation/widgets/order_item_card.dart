@@ -238,14 +238,17 @@ class _Figures extends StatelessWidget {
                 // arithmetic comes out right on screen: «٢٠٠ قطعة × ١٫٥٥٠» beside «٣١٠٫٠٠».
                 // Printing the ordered 300 against a total built on 200 would make every short
                 // line look like a pricing error.
+                //
+                // A line the shop has not quoted yet keeps its quantity and says so where the
+                // «× السعر» half would be: the order is real and the reviewer needs to see it.
                 '${item.pricedQuantity.grouped} ${item.pricingUnitLabel} '
-                '× ${item.unitPrice.grouped}',
+                '${item.isPriced ? "× ${item.unitPriceOrZero.grouped}" : awaitingQuoteLabel}',
                 style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
               ),
             ),
             SizedBox(width: 8.w),
             Text(
-              item.lineTotal.grouped,
+              item.isPriced ? item.lineTotalOrZero.grouped : '—',
               textDirection: TextDirection.ltr,
               style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
