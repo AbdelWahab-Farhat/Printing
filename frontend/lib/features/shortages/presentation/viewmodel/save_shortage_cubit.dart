@@ -57,6 +57,11 @@ class SaveShortageCubit extends Cubit<SaveShortageState> {
             id,
             name: name,
             quantity: quantity,
+            // Sent on the correction too: the endpoint rewrites the row from the payload, so a
+            // product left out of it is a product taken off the shortage.
+            productId: productId,
+            productVariantId: productVariantId,
+            unit: unit,
             type: type,
             assignedToUserId: assignedToUserId,
             description: description,

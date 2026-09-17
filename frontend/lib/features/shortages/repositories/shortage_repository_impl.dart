@@ -146,6 +146,9 @@ class ShortageRepositoryImpl implements ShortageRepository {
     int shortageId, {
     required String name,
     required String quantity,
+    int? productId,
+    int? productVariantId,
+    String? unit,
     String? type,
     int? assignedToUserId,
     String? description,
@@ -156,6 +159,12 @@ class ShortageRepositoryImpl implements ShortageRepository {
         data: <String, dynamic>{
           'name': name,
           'required_quantity': quantity,
+          // The same four the create sends, and for the same reason: the endpoint rewrites the
+          // row rather than patching it. Omitting the unit is «الوحدة مطلوبة»; omitting the
+          // product is an instruction to drop the catalogue link.
+          'product_id': ?productId,
+          'product_variant_id': ?productVariantId,
+          'unit': ?unit,
           'type': ?type,
           'assigned_to_user_id': ?assignedToUserId,
           'description': ?description,

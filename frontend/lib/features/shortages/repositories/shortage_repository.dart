@@ -73,10 +73,18 @@ abstract class ShortageRepository {
   /// Refused on a shortage born of an order — «نقصٌ مصدره طلبية — تُعدَّل كميته من شاشة الطلبية لا
   /// من هنا» — which `Shortage.isEditable` says in advance, and refused again when the new
   /// requirement would fall below what has already been supplied.
+  ///
+  /// **It takes the whole row, not the fields somebody changed.** The server rewrites the
+  /// shortage from the payload — so a missing `unit` is «الوحدة مطلوبة» and a missing
+  /// `product_id` is not "leave it alone" but "it has no product", which silently unhooks the
+  /// shortage from the catalogue and takes `is_stockable` with it.
   Future<Either<Failure, Shortage>> update(
     int shortageId, {
     required String name,
     required String quantity,
+    int? productId,
+    int? productVariantId,
+    String? unit,
     String? type,
     int? assignedToUserId,
     String? description,

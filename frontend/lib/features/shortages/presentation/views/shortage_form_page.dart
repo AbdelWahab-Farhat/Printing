@@ -14,6 +14,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+/// What kind of thing is short — the first question the form asks, and the one that decides
+/// which of the others are worth asking.
+///
+/// **The two halves want genuinely different forms.** A catalogue row arrives carrying its own
+/// name and its own unit, so neither is a question and «نوع النقص» is not one either — the
+/// product *is* the category. A consumable has no catalogue row to read anything off, so its
+/// category is asked and stands in for the name.
+///
+/// Before this fork the form asked everything of everybody: a product picker that could be left
+/// on «بدون منتج», a free-text name beside it repeating what the picker had just filled in, and
+/// a category dropdown that meant nothing once a product was chosen.
+enum _ShortageKind {
+  /// «كيس شحن — 25*35» — something the shop sells, short on the shelf.
+  product('منتج'),
+
+  /// «حبر», «ورق طباعة», «شريط لاصق عريض» — what keeps the press running rather than what it
+  /// prints.
+  supplies('مستلزمات');
+
+  const _ShortageKind(this.label);
+
+  final String label;
+}
+
 /// Writing a shortage down by hand, and correcting one.
 ///
 /// **A shortage born of an order never opens this screen.** Its quantity belongs to the order —
@@ -45,6 +69,8 @@ class _ShortageFormView extends StatefulWidget {
 
 class _ShortageFormViewState extends State<_ShortageFormView> {
   final _formKey = GlobalKey<FormState>();
+
+  /// Asked of «أخرى» alone — see [_composedName].
   late final TextEditingController _name = TextEditingController(text: widget.shortage?.name);
   late final TextEditingController _quantity = TextEditingController(
     // The figure as the column holds it, trimmed of its padding: a box opening on «30.000» is a
@@ -55,13 +81,28 @@ class _ShortageFormViewState extends State<_ShortageFormView> {
     text: widget.shortage?.description,
   );
 
-  /// **The server requires it on a create** — «الوحدة مطلوبة» — and the form used to send no
-  /// unit at all, so every hand-written shortage was refused. `PricingUnit` is the app's own
-  /// enum for the one screen that has to name the units before there is anything to read them
-  /// off, which is exactly this one.
+  /// Which form this is.
+  ///
+  /// **Read off the row when correcting one**, so a shortage that names a product opens on the
+  /// product side and one that does not opens on the other — nobody is asked to say again what
+  /// the row already says. A new one opens on «منتج», which is what the shop is short of most
+  /// of the time.
+  late _ShortageKind _kind = switch (widget.shortage) {
+    null => _ShortageKind.product,
+    Shortage(:final productId) => productId == null
+        ? _ShortageKind.supplies
+        : _ShortageKind.product,
+  };
+
+  /// **The server requires it on a create** — «الوحدة مطلوبة». Under «منتج» it is the catalogue's
+  /// answer and is never asked; under «مستلزمات» there is nothing to read it off, and paper is
+  /// bought by the kilo where a blade is bought by the piece.
+  ///
+  /// `PricingUnit` is the app's own enum for the one screen that has to name the units before
+  /// there is anything to read them off, which is exactly this one.
   late PricingUnit _unit = PricingUnit.fromWire(widget.shortage?.unit);
 
-  /// What kind of thing is short — «ورق طباعة» rather than «كيس شحن».
+  /// What kind of consumable is short — «ورق طباعة» rather than «حبر».
   ///
   /// **Opens on «أخرى», which is the server's default too.** What gets written down by hand is
   /// often what no list anticipated, and a form that forced a category would have somebody pick
@@ -70,23 +111,56 @@ class _ShortageFormViewState extends State<_ShortageFormView> {
   /// «نقص طلبية» is never among the choices: the server stamps that on rows it mirrors from an
   /// order line and refuses it here, so offering it would be building a 422. A shortage already
   /// carrying it cannot reach this form at all — an order-born row is not editable.
-  late ShortageType _type = widget.shortage?.type ?? ShortageType.other;
+  late ShortageType _type = switch (widget.shortage?.type) {
+    final type? when ShortageType.selectableByHand.contains(type) => type,
+    _ => ShortageType.other,
+  };
 
-  /// The catalogue row behind it, when there is one.
+  /// The catalogue row behind it, held as the three fields the endpoint takes rather than as a
+  /// [PickedProduct]: a shortage being corrected carries its product as two ids and a pair of
+  /// names, and no amount of that reconstitutes the full `Product` the picker hands back.
+  late int? _productId = widget.shortage?.productId;
+  late int? _productVariantId = widget.shortage?.productVariantId;
+  late String? _productLabel = _seededProductLabel();
+
+  /// «اختر المنتج», painted under the picker when «منتج» was promised and nothing chosen. The
+  /// row is an `InputDecorator` rather than a `FormField`, so the refusal is held here instead
+  /// of coming back out of `_formKey.currentState.validate()`.
+  String? _productError;
+
+  /// What to write on the picker when the form opens on an existing shortage.
   ///
-  /// **A shortage names a product *or* is free text, and both are ordinary.** «كيس شحن — 25*35»
-  /// has a shelf, so a supply against it can be put on one; «شريط لاصق عريض» has none, and the
-  /// server answers `is_stockable` accordingly. Picking one fills the name and the unit from the
-  /// catalogue rather than leaving somebody to retype what the picker just showed them.
-  ///
-  /// Only ever set while *creating*: the ids are not part of an edit — the server takes the name
-  /// and the quantity there.
-  PickedProduct? _picked;
+  /// The nested product and variant are `whenLoaded` on the server, so on a payload that carries
+  /// only the ids the shortage's own name is the honest fallback — it was built from exactly
+  /// those two rows when it was written.
+  String? _seededProductLabel() {
+    final shortage = widget.shortage;
+
+    if (shortage == null || shortage.productId == null) return null;
+
+    return switch ((shortage.product, shortage.variant)) {
+      (final product?, final variant?) => '${product.name} — ${variant.label}',
+      _ => shortage.name,
+    };
+  }
 
   /// Who is chasing it. Optional, and «غير مُسنَد» is an ordinary answer — it is the queue a
   /// supervisor works from.
   late int? _assignedToUserId = widget.shortage?.assignedToUserId;
   late String? _assigneeName = widget.shortage?.assignee?.name;
+
+  /// What the row will be called, which nobody types except in the one case where nothing else
+  /// can say it.
+  ///
+  /// **The name is a consequence of the two questions above it, not a third question.** A
+  /// product names itself; a category names itself — «حبر» is the whole of what that row is
+  /// called, and a box asking for it again invites «حبر» typed a second time, differently.
+  /// «أخرى» names nothing, so there the box stands.
+  String get _composedName => switch (_kind) {
+    _ShortageKind.product => _productLabel ?? '',
+    _ShortageKind.supplies when _type == ShortageType.other => _name.text.trim(),
+    _ShortageKind.supplies => _type.label,
+  };
 
   @override
   void dispose() {
@@ -101,11 +175,12 @@ class _ShortageFormViewState extends State<_ShortageFormView> {
     if (picked == null || !mounted) return;
 
     setState(() {
-      _picked = picked;
-      // The catalogue's own words and its own unit, so the two boxes agree with the row above
-      // them. Both stay editable: «كيس شحن — 25*35» is a starting point, not a lock.
-      _name.text = '${picked.product.name} — ${picked.variant.label}';
+      _productId = picked.product.id;
+      _productVariantId = picked.variant.id;
+      _productLabel = '${picked.product.name} — ${picked.variant.label}';
+      // The catalogue's own unit, so the figure below is counted the way the product is sold.
       _unit = PricingUnit.fromWire(picked.product.pricingUnit);
+      _productError = null;
     });
   }
 
@@ -125,16 +200,32 @@ class _ShortageFormViewState extends State<_ShortageFormView> {
   }
 
   void _submit() {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final isValid = _formKey.currentState?.validate() ?? false;
+    // Not a `validator`, because the control it belongs to is not a `FormField` — see
+    // [_productError]. Evaluated whether or not the rest of the form passed, so somebody who
+    // left two things out is told about both at once.
+    final needsProduct = _kind == _ShortageKind.product && _productId == null;
+
+    setState(() => _productError = needsProduct ? 'اختر المنتج' : null);
+
+    if (!isValid || needsProduct) return;
+
+    final isProduct = _kind == _ShortageKind.product;
 
     context.read<SaveShortageCubit>().submit(
       id: widget.shortage?.id,
-      name: _name.text.trim(),
+      name: _composedName,
       quantity: Validators.toWesternDigits(_quantity.text.trim()),
       unit: _unit.wire,
-      type: _type.wire,
-      productId: _picked?.product.id,
-      productVariantId: _picked?.variant.id,
+      // **Omitted when it is «أخرى», sent otherwise, and the two sides of the fork need no
+      // separate rule.** Under «مستلزمات» «أخرى» is what somebody chose and the server's own
+      // default, so leaving it out says the same thing in one place rather than two. Under
+      // «منتج» nothing on screen asks the category at all — but `_type` still holds whatever
+      // the row was filed under, so a shortage already marked «ورق طباعة» keeps that through a
+      // correction instead of falling back the first time its quantity is fixed.
+      type: _type == ShortageType.other ? null : _type.wire,
+      productId: isProduct ? _productId : null,
+      productVariantId: isProduct ? _productVariantId : null,
       assignedToUserId: _assignedToUserId,
       description: _description.text.trim().isEmpty ? null : _description.text.trim(),
     );
@@ -143,6 +234,7 @@ class _ShortageFormViewState extends State<_ShortageFormView> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.shortage != null;
+    final isProduct = _kind == _ShortageKind.product;
 
     return BlocConsumer<SaveShortageCubit, SaveShortageState>(
       listener: (context, state) {
@@ -164,38 +256,59 @@ class _ShortageFormViewState extends State<_ShortageFormView> {
             child: ListView(
               padding: EdgeInsets.all(16.w),
               children: [
-                // **The catalogue first, and only on a create.** Picking a product is what makes
-                // the shortage stockable — the goods have a shelf to land on when somebody buys
-                // them — and it fills the two boxes under it rather than asking for what the
-                // picker has just shown.
-                if (!isEdit) ...[
-                  _PickerRow(
-                    label: 'المنتج',
-                    value: _picked == null
-                        ? 'بدون منتج — نقص يدوي'
-                        : '${_picked!.product.name} — ${_picked!.variant.label}',
-                    // The unit, where it is a consequence rather than a question: «بالقطعة»
-                    // under the row that decided it.
-                    hint: _picked == null ? null : _unit.label,
-                    onTap: _pickProduct,
-                    onClear: _picked == null
-                        ? null
-                        : () => setState(() {
-                            _picked = null;
-                            // The name it filled in stays — somebody may have gone on to edit
-                            // it — but the unit becomes a question again, so it opens on the
-                            // catalogue's answer rather than on nothing.
-                          }),
-                  ),
-                  SizedBox(height: 12.h),
-                ],
-                AppTextField(
-                  controller: _name,
-                  label: 'ما النقص؟',
-                  errorText: state.nameError,
-                  validator: (value) => (value ?? '').trim().isEmpty ? 'اكتب اسم النقص' : null,
+                // **The fork, and it is first because everything under it depends on the
+                // answer.** Two segments rather than a dropdown: there are exactly two, and the
+                // choice is read before the form is, not opened to be read.
+                SegmentedButton<_ShortageKind>(
+                  segments: [
+                    for (final kind in _ShortageKind.values)
+                      ButtonSegment<_ShortageKind>(value: kind, label: Text(kind.label)),
+                  ],
+                  selected: {_kind},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (choice) => setState(() {
+                    _kind = choice.first;
+                    // The complaint belonged to the side that is no longer on screen.
+                    _productError = null;
+                  }),
                 ),
                 SizedBox(height: 12.h),
+                if (isProduct) ...[
+                  _PickerRow(
+                    label: 'المنتج',
+                    value: _productLabel ?? 'اختيار المنتج',
+                    // The unit, where it is a consequence rather than a question: «بالقطعة»
+                    // under the row that decided it.
+                    hint: _productLabel == null ? null : _unit.label,
+                    // Three refusals, one slot. The name and the unit are both the product's
+                    // doing on this side of the fork, so the server's complaint about either
+                    // belongs under the row that answered it.
+                    errorText: _productError ?? state.nameError ?? state.unitError,
+                    onTap: _pickProduct,
+                  ),
+                  SizedBox(height: 12.h),
+                ] else ...[
+                  AppDropdown<ShortageType>(
+                    value: _type,
+                    items: ShortageType.selectableByHand,
+                    labelOf: (type) => type.label,
+                    label: 'نوع النقص',
+                    // It names the row, so a refusal about the name lands here.
+                    errorText: state.nameError,
+                    onChanged: (type) => setState(() => _type = type ?? _type),
+                  ),
+                  SizedBox(height: 12.h),
+                  // **The one box «أخرى» cannot do without.** Every other category is the whole
+                  // of what the row is called; «أخرى» says only that no list had it.
+                  if (_type == ShortageType.other) ...[
+                    AppTextField(
+                      controller: _name,
+                      label: 'ما النقص؟',
+                      validator: (value) => (value ?? '').trim().isEmpty ? 'اكتب اسم النقص' : null,
+                    ),
+                    SizedBox(height: 12.h),
+                  ],
+                ],
                 AppTextField(
                   controller: _quantity,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -216,8 +329,8 @@ class _ShortageFormViewState extends State<_ShortageFormView> {
                 // follows, where the line's unit is copied onto it — so putting the question on
                 // screen would be asking somebody to retype what the catalogue already says, and
                 // giving them the chance to disagree with it. It is printed beside the product
-                // instead. Free text has no catalogue to read, so there the picker stands.
-                if (_picked == null) ...[
+                // instead.
+                if (!isProduct) ...[
                   AppDropdown<PricingUnit>(
                     value: _unit,
                     items: PricingUnit.choices,
@@ -228,18 +341,6 @@ class _ShortageFormViewState extends State<_ShortageFormView> {
                   ),
                   SizedBox(height: 12.h),
                 ],
-                // **Always asked, unlike the unit above it.** A product tells you what unit it
-                // is counted in; nothing in the catalogue says whether this sack is stationery or
-                // a spare part, so there is nobody to read the answer off but the person writing
-                // it down.
-                AppDropdown<ShortageType>(
-                  value: _type,
-                  items: ShortageType.selectableByHand,
-                  labelOf: (type) => type.label,
-                  label: 'نوع النقص',
-                  onChanged: (type) => setState(() => _type = type ?? _type),
-                ),
-                SizedBox(height: 12.h),
                 _PickerRow(
                   label: 'الموظف المسؤول',
                   value: _assigneeName ?? 'غير مُسنَد',
@@ -278,6 +379,7 @@ class _PickerRow extends StatelessWidget {
     required this.value,
     required this.onTap,
     this.hint,
+    this.errorText,
     this.onClear,
   });
 
@@ -286,12 +388,16 @@ class _PickerRow extends StatelessWidget {
 
   /// A consequence of the choice, drawn under it — the unit a picked product brings with it.
   final String? hint;
+
+  /// A refusal about the answer this row holds — the form's own, or the server's.
+  final String? errorText;
   final VoidCallback onTap;
   final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final borderColour = errorText == null ? scheme.outlineVariant : scheme.error;
 
     return InkWell(
       onTap: onTap,
@@ -304,17 +410,18 @@ class _PickerRow extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           helperText: hint,
+          errorText: errorText,
           filled: true,
           fillColor: scheme.surfaceContainerLow,
           isDense: true,
           contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 18.h),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14.r),
-            borderSide: BorderSide(color: scheme.outlineVariant),
+            borderSide: BorderSide(color: borderColour),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14.r),
-            borderSide: BorderSide(color: scheme.outlineVariant),
+            borderSide: BorderSide(color: borderColour),
           ),
           suffixIcon: onClear == null
               ? const Icon(Icons.expand_more_rounded)
