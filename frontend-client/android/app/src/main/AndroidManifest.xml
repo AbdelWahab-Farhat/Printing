@@ -1,4 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+        Every screen in this app reads from the API, so without this a release build is an app
+        that cannot do anything at all.
+
+        Flutter's template puts INTERNET only in the debug and profile manifests, which is why
+        this is so easy to miss: `flutter run` merges those in and works perfectly, and the
+        first build that fails is the signed one handed to somebody. It failed exactly that way
+        here — a release APK that reported "no internet connection" on every screen, on a phone
+        with working internet.
+
+        The staff app carries this same comment and still lost the line in the port to this app,
+        so the rule now has a test: `test/android/manifest_test.dart`.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="dayaa_client"
         android:name="${applicationName}"
