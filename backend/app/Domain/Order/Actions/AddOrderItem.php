@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Actions;
 
 use App\Domain\Catalog\CatalogService;
+use App\Domain\Catalog\Exceptions\QuantityBelowMinimum;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Order\DTOs\OrderItemData;
@@ -33,6 +34,7 @@ final class AddOrderItem
 
     /**
      * @throws ManualPriceRequired
+     * @throws QuantityBelowMinimum
      */
     public function __invoke(Order $order, OrderItemData $data): OrderItem
     {
@@ -41,6 +43,21 @@ final class AddOrderItem
         /** @var ProductVariant $variant */
         $variant = $product->variants->firstWhere('id', $data->productVariantId)
             ?? $product->variants()->with('priceTiers')->findOrFail($data->productVariantId);
+
+        // **Before the pricing branch, so it binds to every product and not just the priced
+        // ones.** {@see QuoteProductPrice} has always refused a quantity under the minimum, but
+        // only a product with listed prices is ever quoted — so «حسب الطلب» products, the whole
+        // reinforced-bag and card half of the catalogue, carried a `min_order_quantity` that was
+        // required when the product was created and then never once read. The rule is the
+        // catalogue's, not the price list's.
+        if (! $product->meetsMinimumOrder($data->quantity)) {
+            throw QuantityBelowMinimum::make(
+                $data->quantity,
+                (string) $product->min_order_quantity,
+                $product->pricing_unit,
+                $product->name,
+            );
+        }
 
         $unitPrice = $product->hasListedPrices()
             ? $this->catalog->quote($product, $variant, $data->quantity)->unitPrice

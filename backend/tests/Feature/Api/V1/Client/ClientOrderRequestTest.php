@@ -393,6 +393,158 @@ class ClientOrderRequestTest extends TestCase
         $this->assertDatabaseCount('orders', 0);
     }
 
+    /**
+     * **The one that was refused, and the reason this block exists.**
+     *
+     * `designsAreEditable()` listed «جديدة» and not «بانتظار المراجعة», so every order sent from
+     * the app with a file attached was thrown out by `AddOrderDesign` before anybody could read
+     * it — the one thing the designs library is for. The test above this one passed throughout,
+     * because it asserts a *refusal*: a foreign design was refused for the wrong reason and the
+     * assertion could not tell the difference.
+     */
+    public function test_a_request_may_carry_the_customers_own_design(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $mine = CustomerDesign::factory()->create(['customer_id' => $me->id]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->postJson(
+            '/api/v1/client/orders',
+            $this->payload($this->product(), ['design_ids' => [$mine->id]]),
+        );
+
+        // Assert — the order stands, in the status a request is born in, with the file on it.
+        $response->assertCreated();
+        $order = Order::query()->sole();
+        $this->assertSame(OrderStatus::Requested, $order->status);
+        $this->assertDatabaseHas('order_designs', [
+            'order_id' => $order->id,
+            'customer_design_id' => $mine->id,
+        ]);
+    }
+
+    // ───────────────── what a quantity may be ─────────────────
+
+    /**
+     * **A «حسب الطلب» product never reached the check.** `AddOrderItem` only quotes a product
+     * with listed prices, and the minimum was enforced inside the quote — so the whole
+     * hand-priced half of the catalogue carried a `min_order_quantity` that was required when
+     * the product was created and then never read.
+     */
+    public function test_a_quote_on_request_product_still_has_a_minimum(): void
+    {
+        // Arrange — the factory's quote-only minimum is 200.
+        $me = $this->customer();
+        $product = Product::factory()->quoteOnRequest()->create();
+        ProductVariant::factory()->create(['product_id' => $product->id]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->postJson(
+            '/api/v1/client/orders',
+            $this->payload($product, ['items' => [$this->line($product->refresh(), 5)]]),
+        );
+
+        // Assert
+        $response->assertStatus(422);
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    /**
+     * «قطعة» is countable, and {@see PricingUnit::requiresWholeQuantities()} has said so since
+     * the quote endpoint was written. Only the endpoint that *places* the order never asked.
+     */
+    public function test_a_product_priced_by_the_piece_refuses_half_of_one(): void
+    {
+        // Arrange — the default factory product is priced by the piece, and its minimum is 100.
+        // The quantity clears that on purpose: a number that broke two rules at once would pass
+        // this test on the minimum alone and prove nothing about the fraction.
+        $me = $this->customer();
+        $product = $this->product();
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->postJson(
+            '/api/v1/client/orders',
+            $this->payload($product, ['items' => [$this->line($product, 100.5)]]),
+        );
+
+        // Assert — named against the line, because a basket has more than one.
+        $response->assertStatus(422)->assertJsonValidationErrors('items.0.quantity');
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    /** Sold by weight, so half of one is exactly what a customer means. */
+    public function test_a_product_priced_by_weight_accepts_a_fraction(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $product = Product::factory()->perKilogram()->create();
+        $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+        ProductPriceTier::factory()->create([
+            'product_variant_id' => $variant->id,
+            'min_quantity' => 1,
+            'unit_price' => '0.500',
+        ]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->postJson(
+            '/api/v1/client/orders',
+            $this->payload($product, ['items' => [$this->line($product->refresh(), 7.5)]]),
+        );
+
+        // Assert
+        $response->assertCreated();
+    }
+
+    /**
+     * **`numeric` is `is_numeric()`, and `is_numeric('1e5')` is true.** The string travelled
+     * unchanged into `bccomp()` in `Product::meetsMinimumOrder()`, where bcmath throws rather
+     * than compares — a 500 where the customer should have been told what was wrong with the
+     * number they typed.
+     */
+    public function test_a_quantity_in_scientific_notation_is_refused_rather_than_fatal(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $product = $this->product();
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->postJson(
+            '/api/v1/client/orders',
+            $this->payload($product, ['items' => [array_merge(
+                $this->line($product),
+                ['quantity' => '1e5'],
+            )]]),
+        );
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('items.0.quantity');
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    /**
+     * A product is deactivated rather than deleted so finished orders keep pointing at a row
+     * that still exists — which is exactly why `withoutTrashed()` alone was not enough here. The
+     * catalogue stopped listing it; the order endpoint went on accepting it by id.
+     */
+    public function test_a_deactivated_product_cannot_be_ordered(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $product = $this->product();
+        $product->update(['is_active' => false]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->postJson(
+            '/api/v1/client/orders',
+            $this->payload($product),
+        );
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('items.0.product_id');
+        $this->assertDatabaseCount('orders', 0);
+    }
+
     public function test_placing_an_order_needs_a_customer_token(): void
     {
         // Act

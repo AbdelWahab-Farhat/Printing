@@ -79,11 +79,15 @@ class _DesignsView extends StatelessWidget {
   Future<void> _addQrCode(BuildContext context) async {
     final cubit = context.read<DesignsCubit>();
 
-    final file = await pickQrCodeFile(context);
+    final qr = await pickQrCodeFile(context);
 
-    if (file == null) return;
+    if (qr == null) return;
 
-    await cubit.add(file: file, label: 'رمز QR');
+    // **The name comes back with the file.** It used to be written here, the same literal the
+    // tool wrote on its own other path — so a code saved from the drawer and one saved from
+    // this screen were both «رمز QR», and naming either one meant renaming it afterwards. The
+    // tool now asks, and what it asked for travels; this screen only has to not drop it.
+    await cubit.add(file: qr.file, label: qr.label);
   }
 
   Future<void> _rename(BuildContext context, CustomerDesign design) async {

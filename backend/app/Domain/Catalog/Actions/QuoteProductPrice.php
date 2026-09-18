@@ -51,6 +51,7 @@ final class QuoteProductPrice
                 $quantity,
                 (string) $product->min_order_quantity,
                 $product->pricing_unit,
+                $product->name,
             );
         }
 

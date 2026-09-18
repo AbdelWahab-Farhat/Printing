@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:dayaa_client/core/di/injector.dart';
-import 'package:dayaa_client/core/files/picked_file.dart';
 import 'package:dayaa_client/features/tools/models/qr_code_painter.dart';
 import 'package:dayaa_client/features/tools/models/qr_ink.dart';
 import 'package:dayaa_client/features/tools/presentation/viewmodel/qr_tool_cubit.dart';
@@ -74,8 +73,15 @@ void main() {
         as QrCodePainter?;
   }
 
+  /// الحقل المعنون بـ [label].
+  ///
+  /// **بعنوانه لا بترتيبه**: الشاشة صار فيها حقلان منذ صار للرمز اسم، و`byType` وحده كان يطابقهما
+  /// معاً فيقع `enterText` على اثنين. الترتيب كان سيعمل اليوم ويكذب في أول إعادة ترتيب.
+  Finder fieldLabelled(String label) =>
+      find.ancestor(of: find.text(label), matching: find.byType(TextFormField));
+
   Future<void> generate(WidgetTester tester, String data) async {
-    await tester.enterText(find.byType(TextFormField), data);
+    await tester.enterText(fieldLabelled('الرابط أو النص'), data);
     await tester.tap(find.text('إنشاء الرمز'));
     await tester.pump();
   }
@@ -160,7 +166,7 @@ void main() {
     await generate(tester, 'https://daaya.ly');
 
     // Act — يُكتب محتوى آخر ولا يُضغط شيء.
-    await tester.enterText(find.byType(TextFormField), '0910000000');
+    await tester.enterText(fieldLabelled('الرابط أو النص'), '0910000000');
     await tester.pumpAndSettle();
 
     // Assert — رمزٌ يتبدّل تحت الإصبع مع كل حرف هو رمزٌ لا يعرف الموظف أيَّ نسخةٍ منه حمَّل.
@@ -169,7 +175,7 @@ void main() {
 
   group('حين تُفتح لتُعيد ملفاً', () {
     /// آخر ما سلّمته الشاشة لمن فتحها. يُملأ حين تُغلق، لا حين تُفتح.
-    PickedFile? handed;
+    QrCodeFile? handed;
 
     setUp(() => handed = null);
 
@@ -190,10 +196,10 @@ void main() {
               builder: (context) => Scaffold(
                 body: TextButton(
                   onPressed: () async {
-                    final file = await Navigator.of(context).push<PickedFile>(
+                    final qr = await Navigator.of(context).push<QrCodeFile>(
                       MaterialPageRoute(builder: (_) => const QrToolPage.picking()),
                     );
-                    handed = file;
+                    handed = qr;
                   },
                   child: const Text('افتح'),
                 ),
@@ -332,6 +338,56 @@ void main() {
 
     // Assert
     expect(paintedCode(tester)!.color, QrInk.black);
+  });
+
+  group('اسم التصميم', () {
+    // **ما بعد الضغط على زرّ الحفظ لا يُختبر هنا، للسبب المكتوب أعلاه**: ترميز PNG يجري على خيط
+    // التصيير ولا تُنهيه ساعةُ `pumpAndSettle` المزيّفة. فما يُختبر هو ما تقرّره هذه الشاشة
+    // وحدها — أن الحقل موجود، وأن القاعدة التي تحوّل ما فيه إلى اسمٍ قاعدةٌ واحدة تُقرأ مباشرة.
+
+    testWidgets('الحقل معروضٌ قبل إنشاء أي رمز', (tester) async {
+      // Arrange & Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert — يُكتب الاسم مع المحتوى، لا بعد الحفظ.
+      expect(fieldLabelled('اسم التصميم (اختياري)'), findsOneWidget);
+    });
+
+    testWidgets('الحقل لا يمنع إنشاء الرمز وهو فارغ', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act — بلا اسم.
+      await generate(tester, 'https://daaya.ly');
+
+      // Assert — اختياريٌّ يعني اختيارياً: لا `validator` عليه يوقف الزرّ.
+      expect(paintedCode(tester)?.art.data, 'https://daaya.ly');
+    });
+
+    test('ما كُتب هو الاسم', () {
+      // Arrange
+      final controller = TextEditingController(text: '  رمز صفحتنا  ');
+
+      // Act & Assert — والمسافات تُقصّ، فاسمٌ طرفه فراغ اسمٌ لم يقصده أحد.
+      expect(qrDesignLabelFrom(controller), 'رمز صفحتنا');
+
+      controller.dispose();
+    });
+
+    test('الفراغ يعود إلى «رمز QR»', () {
+      // Arrange — الحقل لم يُلمس، أو لُمس ثم مُسح.
+      final untouched = TextEditingController();
+      final wiped = TextEditingController(text: '   ');
+
+      // Act & Assert — وهو الاسم الذي كان يُكتب دائماً قبل وجود الحقل، فلا شيء ينكسر لمن تجاهله.
+      expect(qrDesignLabelFrom(untouched), kDefaultQrDesignLabel);
+      expect(qrDesignLabelFrom(wiped), kDefaultQrDesignLabel);
+
+      untouched.dispose();
+      wiped.dispose();
+    });
   });
 }
 

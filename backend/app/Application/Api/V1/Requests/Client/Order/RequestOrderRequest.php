@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Client\Order;
 
+use App\Domain\Catalog\Models\Product;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * A customer placing an order from the app.
@@ -60,9 +62,22 @@ class RequestOrderRequest extends FormRequest
             // The same cap staff have. A hundred distinct lines from a phone is a mistake, and
             // the ceiling costs an honest order nothing.
             'items' => ['required', 'array', 'min:1', 'max:100'],
-            'items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->withoutTrashed()],
+            // **Live products only**, which `withoutTrashed()` alone does not say: a product is
+            // deactivated rather than deleted so past orders keep pointing at a row that still
+            // exists, and without `is_active` the catalogue could stop listing something while
+            // the order endpoint went on accepting it by id.
+            'items.*.product_id' => [
+                'required',
+                'integer',
+                Rule::exists('products', 'id')->where('is_active', true)->withoutTrashed(),
+            ],
             'items.*.product_variant_id' => ['required', 'integer', Rule::exists('product_variants', 'id')->withoutTrashed()],
-            'items.*.quantity' => ['required', 'numeric', 'min:0.001', 'max:999999999'],
+
+            // **`decimal:0,3` and not `numeric` alone.** `numeric` is `is_numeric()`, which
+            // accepts `1e5` — and that string reaches `bccomp()` in
+            // {@see Product::meetsMinimumOrder()} unchanged, where bcmath throws rather than
+            // compares. Three places is what the column stores; more was being silently rounded.
+            'items.*.quantity' => ['required', 'numeric', 'decimal:0,3', 'min:0.001', 'max:999999999'],
 
             // Chosen from the customer's own library, never uploaded here — the rule the staff
             // endpoint follows and the reason the designs feature exists at all.
@@ -73,6 +88,60 @@ class RequestOrderRequest extends FormRequest
             // `notes`, which is staff-written — see `prepareForValidation()`.
             'customer_note' => ['nullable', 'string', 'max:1000'],
         ];
+    }
+
+    /**
+     * The one rule that needs the catalogue in hand rather than the request alone.
+     *
+     * **Half a shipping bag is not a thing.** `QuoteProductRequest` has said so since the quote
+     * endpoint was written, `PricingUnit::requiresWholeQuantities()` says so in its own docblock,
+     * and `SalesStatisticsQuery` leans on it. Only the endpoint that actually *places* the order
+     * never asked, so a basket priced by the piece could be sent with 2.5 in it.
+     *
+     * Reported against `items.N.quantity` rather than a bare `quantity`, because a basket has
+     * several lines and a customer cannot act on a message that does not say which one.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $items = $this->input('items');
+
+            if (! is_array($items)) {
+                return;
+            }
+
+            // One query for the whole basket, not one per line.
+            $products = Product::query()
+                ->whereIn('id', array_filter(array_column($items, 'product_id')))
+                ->get()
+                ->keyBy('id');
+
+            foreach ($items as $index => $item) {
+                if (! is_array($item)) {
+                    continue;
+                }
+
+                $quantity = $item['quantity'] ?? null;
+                $product = $products->get((int) ($item['product_id'] ?? 0));
+
+                // A missing product or an unusable quantity is already somebody else's error;
+                // adding a second one about the same field would only bury the first.
+                if ($product === null || ! is_numeric($quantity)) {
+                    continue;
+                }
+
+                if (! $product->pricing_unit->requiresWholeQuantities()) {
+                    continue;
+                }
+
+                if (floor((float) $quantity) !== (float) $quantity) {
+                    $validator->errors()->add(
+                        "items.{$index}.quantity",
+                        'الكمية يجب أن تكون رقماً صحيحاً للمنتجات المُسعَّرة بالقطعة',
+                    );
+                }
+            }
+        });
     }
 
     /**
@@ -88,7 +157,10 @@ class RequestOrderRequest extends FormRequest
             'items.min' => 'أضف منتجاً واحداً على الأقل',
             'items.*.product_id.required' => 'المنتج مطلوب',
             'items.*.product_variant_id.required' => 'المقاس مطلوب',
+            'items.*.product_id.exists' => 'المنتج غير متاح للطلب',
             'items.*.quantity.required' => 'الكمية مطلوبة',
+            'items.*.quantity.numeric' => 'الكمية يجب أن تكون رقماً',
+            'items.*.quantity.decimal' => 'الكمية يجب أن تكون رقماً بثلاث خانات عشرية على الأكثر',
             'items.*.quantity.min' => 'الكمية يجب أن تكون أكبر من صفر',
             'design_ids.*.exists' => 'التصميم غير موجود',
         ];

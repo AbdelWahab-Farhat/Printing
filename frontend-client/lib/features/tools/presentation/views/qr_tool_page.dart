@@ -55,9 +55,35 @@ class QrToolPage extends StatelessWidget {
   }
 }
 
+/// الاسم الافتراضي حين لا يكتب أحدٌ اسماً.
+///
+/// **مكتوبٌ مرة واحدة** لأن الطريقين إلى المكتبة — الرفع من «الأدوات» والتسليم إلى «تصاميمي» —
+/// كانا يحملان هذا النص حرفياً كلٌّ في موضعه، وهو بالضبط الشكل الذي يتبدّل في أحدهما وحده.
+const String kDefaultQrDesignLabel = 'رمز QR';
+
+/// اسمُ ما كُتب في الحقل، أو [kDefaultQrDesignLabel] إن تُرك فارغاً.
+String qrDesignLabelFrom(TextEditingController controller) {
+  final typed = controller.text.trim();
+
+  return typed.isEmpty ? kDefaultQrDesignLabel : typed;
+}
+
 /// يفتح الأداة لالتقاط رمزٍ ملفاً، ويعيد ما أُنشئ — أو `null` إن خرج الموظف بلا رمز.
-Future<PickedFile?> pickQrCodeFile(BuildContext context) =>
-    context.push<PickedFile>(Routes.qrToolPick);
+/// **والاسم يسافر معه.** الأداة لا ترفع في هذا الطريق — الرفع طابور «تصاميمي» — فلو بقي الاسم
+/// هنا لضاع عند الباب، وعاد المستخدم يسمّي رمزه بعد حفظه وهو ما جاء هذا الحقل ليُنهيه.
+Future<QrCodeFile?> pickQrCodeFile(BuildContext context) =>
+    context.push<QrCodeFile>(Routes.qrToolPick);
+
+/// رمزٌ خرج من الأداة: ملفُّه، والاسم الذي اختاره صاحبه له.
+@immutable
+class QrCodeFile {
+  const QrCodeFile({required this.file, required this.label});
+
+  final PickedFile file;
+
+  /// ما سيُسمّى به في المكتبة. لا يكون فارغاً أبداً — انظر [qrDesignLabelFrom].
+  final String label;
+}
 
 class _QrToolView extends StatefulWidget {
   const _QrToolView({required this.isPicking});
@@ -72,6 +98,13 @@ class _QrToolViewState extends State<_QrToolView> {
   final _formKey = GlobalKey<FormState>();
   final _controller = TextEditingController();
 
+  /// اسم التصميم في المكتبة.
+  ///
+  /// **يُقرأ ساعةَ الحفظ لا ساعةَ الإنشاء**، ولذلك يسافر متحكّماً لا نصّاً: المعاينة تُبنى داخل
+  /// `BlocBuilder` الذي لا يُعاد بناؤه إلا حين تتبدّل الحالة، ونصٌّ يُمرَّر نسخةً كان سيتجمّد
+  /// على ما كُتب لحظةَ الضغط على «إنشاء الرمز» — فمن سمّى رمزه بعدها حفظ اسماً غير الذي يقرأ.
+  final _name = TextEditingController();
+
   /// الحبر والشفافية — حالة بصرية بحتة داخل هذه الشاشة، انظر [QrToolCubit] للسبب.
   Color _ink = QrInk.black;
   bool _transparentBackground = true;
@@ -79,6 +112,7 @@ class _QrToolViewState extends State<_QrToolView> {
   @override
   void dispose() {
     _controller.dispose();
+    _name.dispose();
     super.dispose();
   }
 
@@ -121,7 +155,20 @@ class _QrToolViewState extends State<_QrToolView> {
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _generate(),
               ),
-              SizedBox(height: 20.h),
+              SizedBox(height: 12.h),
+              // **اختياريٌّ، وبلا `validator`.** الحقل لا يقف في طريق «إنشاء الرمز»: من فتح
+              // الأداة ليحمّل رمزاً ولا يحفظه لا يسمّي شيئاً. وحين يُترك فارغاً يعود «رمز QR»،
+              // وهو الاسم الذي كان يُكتب دائماً قبل أن يوجد هذا الحقل.
+              //
+              // و٢٥٥ هي ما يقبله `label` على الخادم — حدٌّ يُقال هنا بدل أن يُقال في رحلةٍ
+              // ذهاباً وإياباً.
+              AppTextField(
+                controller: _name,
+                label: 'اسم التصميم (اختياري)',
+                hint: 'مثال: رمز صفحتنا على فيسبوك',
+                maxLength: 255,
+              ),
+              SizedBox(height: 8.h),
               QrInkPicker(
                 selected: _ink,
                 onSelected: (ink) => setState(() => _ink = ink),
@@ -148,6 +195,7 @@ class _QrToolViewState extends State<_QrToolView> {
                     ink: _ink,
                     transparentBackground: _transparentBackground,
                     isPicking: widget.isPicking,
+                    name: _name,
                   ),
                 },
               ),
@@ -222,11 +270,15 @@ class _Preview extends StatelessWidget {
     required this.ink,
     required this.transparentBackground,
     required this.isPicking,
+    required this.name,
   });
 
   final QrCodeArt art;
   final Color ink;
   final bool transparentBackground;
+
+  /// ما سيُسمّى به التصميم في المكتبة — متحكّمٌ لا نصّ، انظر [_QrToolViewState].
+  final TextEditingController name;
 
   /// الشاشة فُتحت لتُعيد ملفاً، فالإجراء الأول «إضافة إلى التصاميم» و«تحميل الصورة» مساندٌ له.
   final bool isPicking;
@@ -259,6 +311,7 @@ class _Preview extends StatelessWidget {
             art: art,
             ink: ink,
             transparentBackground: transparentBackground,
+            name: name,
           ),
           SizedBox(height: 12.h),
           AppButton.tonal(
@@ -283,6 +336,7 @@ class _Preview extends StatelessWidget {
                   art: art,
                   ink: ink,
                   transparentBackground: transparentBackground,
+                  name: name,
                 ),
               ),
               SizedBox(width: 12.w),
@@ -320,11 +374,13 @@ class _SaveToDesignsButton extends StatefulWidget {
     required this.art,
     required this.ink,
     required this.transparentBackground,
+    required this.name,
   });
 
   final QrCodeArt art;
   final Color ink;
   final bool transparentBackground;
+  final TextEditingController name;
 
   @override
   State<_SaveToDesignsButton> createState() => _SaveToDesignsButtonState();
@@ -373,7 +429,11 @@ class _SaveToDesignsButtonState extends State<_SaveToDesignsButton> {
       return;
     }
 
-    final result = await sl<UploadDesign>()(file: file, label: 'رمز QR');
+    // يُقرأ الآن لا حين بُني هذا الزر: الاسم قد يُكتب بعد ظهور الرمز.
+    final result = await sl<UploadDesign>()(
+      file: file,
+      label: qrDesignLabelFrom(widget.name),
+    );
 
     if (!mounted) return;
 
@@ -447,11 +507,13 @@ class _AddToDesignsButton extends StatefulWidget {
     required this.art,
     required this.ink,
     required this.transparentBackground,
+    required this.name,
   });
 
   final QrCodeArt art;
   final Color ink;
   final bool transparentBackground;
+  final TextEditingController name;
 
   @override
   State<_AddToDesignsButton> createState() => _AddToDesignsButtonState();
@@ -482,10 +544,13 @@ class _AddToDesignsButtonState extends State<_AddToDesignsButton> {
         // مخمَّن كان سيجعلها ترفض ما يقبله الخادم أو العكس.
         if (context.mounted) {
           Navigator.of(context).pop(
-            PickedFile(
-              path: path,
-              name: SaveQrCodeImage.fileName,
-              sizeBytes: await file.length(),
+            QrCodeFile(
+              file: PickedFile(
+                path: path,
+                name: SaveQrCodeImage.fileName,
+                sizeBytes: await file.length(),
+              ),
+              label: qrDesignLabelFrom(widget.name),
             ),
           );
         }
