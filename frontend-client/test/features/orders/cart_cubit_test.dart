@@ -17,6 +17,7 @@ void main() {
     int variantId = 1,
     String quantity = '1000',
     String group = 'shared',
+    String? imageUrl,
   }) => OrderDraftLine(
     line: NewOrderLine(
       productId: productId,
@@ -24,8 +25,46 @@ void main() {
       quantity: quantity,
     ),
     title: 'منتج $productId',
+    imageUrl: imageUrl,
     orderGroup: group,
   );
+
+  group('الصورة تسافر مع السطر', () {
+    // السلة ترسم بطاقةً فيها صورة المنتج، والصورة لا تُطلب من الكتالوج مرة أخرى — تُحمل من
+    // شاشة المنتج كما يُحمل الاسم. سطرٌ يفقدها في الطريق يرسم مربّعاً رمادياً بلا سبب ظاهر.
+
+    test('السطر يحتفظ بصورته داخل السلة', () {
+      // Arrange - Act
+      final cart = CartCubit()..add(line(imageUrl: 'https://example.test/bag.png'));
+
+      // Assert
+      expect(cart.state.lines.single.imageUrl, 'https://example.test/bag.png');
+    });
+
+    test('زيارةٌ ثانية للمنتج تُبدّل الكمية ولا تمحو الصورة', () {
+      // Arrange — نفس المنتج ونفس المقاس، بكميةٍ أخرى: `add` يستبدل السطر كاملاً.
+      final cart = CartCubit()..add(line(imageUrl: 'https://example.test/bag.png'));
+
+      // Act
+      cart.add(line(quantity: '2000', imageUrl: 'https://example.test/bag.png'));
+
+      // Assert
+      expect(cart.state.lines.single.line.quantity, '2000');
+      expect(cart.state.lines.single.imageUrl, 'https://example.test/bag.png');
+    });
+
+    test('copyWith لا يُسقط الصورة حين لا تُذكر', () {
+      // Arrange
+      final original = line(imageUrl: 'https://example.test/bag.png');
+
+      // Act
+      final renamed = original.copyWith(title: 'اسم آخر');
+
+      // Assert
+      expect(renamed.imageUrl, 'https://example.test/bag.png');
+      expect(renamed.title, 'اسم آخر');
+    });
+  });
 
   test('a new basket is empty and belongs to no group', () {
     // Arrange - Act

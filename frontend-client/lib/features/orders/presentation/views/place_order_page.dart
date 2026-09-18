@@ -3,8 +3,11 @@ import 'package:dayaa_client/core/router/app_router.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/widgets/app_button.dart';
+import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/core/widgets/app_text_field.dart';
+import 'package:dayaa_client/core/widgets/product_thumbnail.dart';
 import 'package:dayaa_client/features/delivery/models/city.dart';
+import 'package:dayaa_client/features/orders/models/order_draft.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/place_order_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -171,20 +174,13 @@ class _Form extends StatelessWidget {
                   style: context.textTheme.bodyMedium?.copyWith(color: scheme.error),
                 )
               else
-                for (var index = 0; index < state.lines.length; index++)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    title: Text(state.lines[index].title),
-                    subtitle: state.lines[index].subtitle == null
-                        ? null
-                        : Text(state.lines[index].subtitle!),
-                    trailing: IconButton(
-                      icon: Icon(AppIcons.delete, size: 20.sp),
-                      tooltip: 'احذف',
-                      onPressed: () => cubit.removeLineAt(index),
-                    ),
+                for (var index = 0; index < state.lines.length; index++) ...[
+                  if (index > 0) SizedBox(height: 10.h),
+                  _CartLine(
+                    line: state.lines[index],
+                    onRemove: () => cubit.removeLineAt(index),
                   ),
+                ],
 
               SizedBox(height: 20.h),
               const _SectionTitle('الوجهة'),
@@ -365,4 +361,75 @@ class _SectionTitle extends StatelessWidget {
     title,
     style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
   );
+}
+
+/// One product in the basket, as something a customer can actually check.
+///
+/// **It used to be a `dense` `ListTile` with no padding**, which is the shape of a settings row:
+/// two lines of grey text of the same weight, flush against the page, with nothing to say where
+/// one product ended and the next began. The basket is the last screen before an order is sent
+/// and these rows are the whole of what is being sent — the picture, the size and the quantity
+/// are what somebody re-reads before they commit, so each one is drawn as a thing rather than as
+/// a line of a list.
+///
+/// **The quantity is pulled out of the subtitle** and given the shop's own colour. It is the one
+/// number on this screen the customer chose themselves, and the one a mistake hides in.
+class _CartLine extends StatelessWidget {
+  const _CartLine({required this.line, required this.onRemove});
+
+  final OrderDraftLine line;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return AppCard(
+      padding: EdgeInsets.all(10.w),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12.r),
+            child: SizedBox(
+              width: 56.w,
+              height: 56.w,
+              child: ProductThumbnail(image: line.imageUrl),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  line.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                if (line.subtitle case final subtitle?) ...[
+                  SizedBox(height: 4.h),
+                  Text(
+                    subtitle,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // **The delete stays quiet.** It is the only control on the row and a full-strength
+          // icon beside two lines of text reads as the thing to press, on a screen whose one
+          // action is «أرسل الطلبية».
+          IconButton(
+            icon: Icon(AppIcons.delete, size: 20.sp, color: scheme.onSurfaceVariant),
+            tooltip: 'احذف',
+            onPressed: onRemove,
+          ),
+        ],
+      ),
+    );
+  }
 }

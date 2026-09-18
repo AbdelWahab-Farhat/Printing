@@ -46,6 +46,30 @@ extension ProductDetailStateX on ProductDetailState {
     _ => null,
   };
 
+  /// Whether what is in the quantity field is something the basket may hold.
+  ///
+  /// **The keyboard is not where this is guaranteed.** `QuantityInputFormatter` refuses a lone
+  /// «.» as it is typed, and that is the right place for it — a rule that can be enforced at the
+  /// keystroke should be. But a formatter only ever sees one keystroke: it cannot tell a number
+  /// that is finished from one that is half-written, and it is not the only road into this state.
+  /// So the question is asked again where the line is actually made.
+  ///
+  /// `double.tryParse` draws exactly the wanted line. «.» is null — it is not a number, and the
+  /// server says so too (`is_numeric('.')` is false) after a round trip nobody needed. «100.» is
+  /// 100, so a trailing point is left alone: it is the only road to «100.5», and the server reads
+  /// it as 100 as well.
+  ///
+  /// The product's own minimum is **not** checked here. That is the catalogue's rule, the server
+  /// owns it, and it answers with the figure and the unit — a copy of it in this app would be the
+  /// one that disagrees with the shop.
+  bool get hasOrderableQuantity => switch (this) {
+    ProductDetailLoaded(:final quantity) => switch (double.tryParse(quantity)) {
+      final value? => value > 0,
+      _ => false,
+    },
+    _ => false,
+  };
+
   /// Whether to draw a total at all, or «اطلب عرض سعر» in its place.
   bool get showsPrice => switch (this) {
     ProductDetailLoaded(:final product) => product.hasListedPrices,

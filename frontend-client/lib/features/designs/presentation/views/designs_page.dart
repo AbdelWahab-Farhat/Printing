@@ -134,25 +134,21 @@ class _DesignsView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('تصاميمي'),
-        // **No floating button, because the design draws none.** Adding lives in two places
-        // instead, both of them in the design: the filled square in the bar, and the dashed
-        // tile at the end of the grid where the eye lands after the last design.
+        // **No floating button, because the design draws none — and no square in the bar
+        // either.** Adding lives where the eye already is: the dashed tile after the last
+        // design, and the button on the empty screen. A filled square up here made two buttons
+        // for one job, a step apart, and the one in the bar was the one nobody reached for —
+        // it sits at the top of a grid the customer is scrolling down.
+        //
+        // «أنشئ رمز QR» stays, because it is not the same job. That one *makes* a design out of
+        // nothing; the tile puts a file you already have into the library.
         actions: [
           IconButton(
             icon: Icon(AppIcons.qrCode),
             tooltip: 'أنشئ رمز QR',
             onPressed: () => _addQrCode(context),
           ),
-          BlocBuilder<DesignsCubit, DesignsState>(
-            builder: (context, state) => Padding(
-              padding: EdgeInsetsDirectional.only(end: 8.w),
-              child: IconButton.filled(
-                icon: Icon(AppIcons.add),
-                tooltip: 'أضف تصميماً',
-                onPressed: state.isBusy ? null : () => _add(context),
-              ),
-            ),
-          ),
+          SizedBox(width: 4.w),
         ],
       ),
       body: SafeArea(

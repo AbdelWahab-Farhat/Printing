@@ -14,6 +14,7 @@ class OrderDraftLine {
     required this.line,
     required this.title,
     this.subtitle,
+    this.imageUrl,
     this.orderGroup = 'shared',
   });
 
@@ -26,6 +27,11 @@ class OrderDraftLine {
   /// «٣٠×٤٠ · الكمية ١٠٠٠».
   final String? subtitle;
 
+  /// The product's photograph, carried for the same reason [title] is: the basket draws a line
+  /// somebody has to be able to check, and a column of identical text rows is one nobody reads.
+  /// Null for a product with no photo, which the square draws as a glyph.
+  final String? imageUrl;
+
   /// Which basket this line belongs to — carried from the product so the cart can compare
   /// without asking the catalogue again. An opaque token; see `Product.orderGroup`.
   final String orderGroup;
@@ -34,11 +40,13 @@ class OrderDraftLine {
     NewOrderLine? line,
     String? title,
     String? subtitle,
+    String? imageUrl,
     String? orderGroup,
   }) => OrderDraftLine(
     line: line ?? this.line,
     title: title ?? this.title,
     subtitle: subtitle ?? this.subtitle,
+    imageUrl: imageUrl ?? this.imageUrl,
     orderGroup: orderGroup ?? this.orderGroup,
   );
 }

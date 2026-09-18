@@ -230,6 +230,43 @@ void main() {
     );
   });
 
+  group('hasOrderableQuantity', () {
+    /// The state as the screen holds it, with [quantity] in the field.
+    ProductDetailState withQuantity(String quantity) =>
+        ProductDetailState.loaded(product: bag, selectedVariantId: 11, quantity: quantity);
+
+    test('a lone dot is not a quantity', () {
+      // The one this exists for: it used to reach the basket and be refused at the till, because
+      // `is_numeric('.')` is false on the server too.
+      expect(withQuantity('.').hasOrderableQuantity, isFalse);
+    });
+
+    test('a trailing dot is left alone — it is the road to 100.5', () {
+      // And harmless where a lone dot is not: the server reads «100.» as 100.
+      expect(withQuantity('100.').hasOrderableQuantity, isTrue);
+    });
+
+    test('nothing, and nonsense, are refused', () {
+      expect(withQuantity('').hasOrderableQuantity, isFalse);
+      expect(withQuantity('1.2.3').hasOrderableQuantity, isFalse);
+    });
+
+    test('zero is not an order', () {
+      expect(withQuantity('0').hasOrderableQuantity, isFalse);
+      expect(withQuantity('0.0').hasOrderableQuantity, isFalse);
+    });
+
+    test('ordinary quantities pass, whole and fractional', () {
+      expect(withQuantity('1000').hasOrderableQuantity, isTrue);
+      expect(withQuantity('7.5').hasOrderableQuantity, isTrue);
+    });
+
+    test('a screen with no product answers no', () {
+      // `loading` has no quantity to read; the getter must not assume it is on `loaded`.
+      expect(const ProductDetailState.loading().hasOrderableQuantity, isFalse);
+    });
+  });
+
   test('selectedVariant resolves the chosen size from the product', () {
     const state = ProductDetailState.loaded(product: bag, selectedVariantId: 11);
 

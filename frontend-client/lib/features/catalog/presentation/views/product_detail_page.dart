@@ -4,6 +4,7 @@ import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/bidi.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/utils/fixed_point.dart';
+import 'package:dayaa_client/core/utils/number_input_formatters.dart';
 import 'package:dayaa_client/core/widgets/app_button.dart';
 import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/core/widgets/app_text_field.dart';
@@ -14,7 +15,6 @@ import 'package:dayaa_client/features/orders/models/order_draft.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/views/cart_button.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -68,6 +68,15 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
     final variantId = state.selectedVariantId;
     if (variantId == null) return;
 
+    // A line whose quantity is not a number is not a line — see
+    // [ProductDetailStateX.hasOrderableQuantity] for why this is asked here and not left to the
+    // keyboard alone.
+    if (!state.hasOrderableQuantity) {
+      context.showError('أدخل كمية صحيحة');
+
+      return;
+    }
+
     // The name and the size travel with the ids, so the basket can draw something the customer
     // can actually check — «مقاس رقم ١٢» is a basket nobody can read before sending. See
     // `OrderDraftLine`.
@@ -81,6 +90,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           quantity: state.quantity,
         ),
         title: state.product.name,
+        imageUrl: state.product.primaryImageUrl,
         subtitle: [
           if (variant != null) variant.label,
           'الكمية ${state.quantity.asQuantity}',
@@ -248,7 +258,13 @@ class _Loaded extends StatelessWidget {
             inputFormatters: [
               // A quantity is a number. Letters are a typo, and refusing them at the keyboard
               // is kinder than a validator complaining after the fact.
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              //
+              // **Two formatters where there was one filter**, because the filter was wrong in
+              // both directions at once: it let `1.2.3` through a character at a time, and it
+              // swallowed ١٢٣ from an Arabic keyboard without saying why. See
+              // `number_input_formatters.dart` for each.
+              const WesternDigitsInputFormatter(),
+              QuantityInputFormatter(wholeOnly: product.isPricedByThePiece),
             ],
             onChanged: cubit.setQuantity,
           ),

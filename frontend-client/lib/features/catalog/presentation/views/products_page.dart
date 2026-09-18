@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/pagination/paged_state.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
@@ -7,6 +6,7 @@ import 'package:dayaa_client/core/utils/bidi.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/utils/fixed_point.dart';
 import 'package:dayaa_client/core/widgets/filter_option_chip.dart';
+import 'package:dayaa_client/core/widgets/product_thumbnail.dart';
 import 'package:dayaa_client/core/widgets/search_field.dart';
 import 'package:dayaa_client/features/catalog/models/product.dart';
 import 'package:dayaa_client/features/catalog/presentation/viewmodel/products_cubit.dart';
@@ -43,8 +43,14 @@ class _ProductsView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('المنتجات'),
-        actions: const [CartButton()],
       ),
+      // **The basket floats here rather than sitting in the bar.** This screen is a branch of the
+      // shell, so the navigation bar is drawn under it and a floating button has somewhere to
+      // stand; and a basket that fills while the customer scrolls the catalogue is worth more
+      // where the thumb is than in a corner that has scrolled away. The product screen keeps
+      // [CartButton] in its bar — see [CartFab] for why the two differ.
+      floatingActionButton: const CartFab(),
+      floatingActionButtonLocation: CartFab.location,
       body: SafeArea(
         top: false,
         child: Column(
@@ -221,7 +227,7 @@ class _ProductCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  _Thumbnail(image: image),
+                  ProductThumbnail(image: image),
                   // «٤ مقاسات» — sits on the picture, where it does not cost the card a line.
                   if (product.variantCount > 1)
                     PositionedDirectional(
@@ -295,37 +301,6 @@ class _ProductCard extends StatelessWidget {
   }
 }
 
-/// The product's picture, or the glyph that stands in for one.
-///
-/// A product with no photograph and a photograph that will not load are the same thing to
-/// somebody looking at the grid, so they are drawn the same way.
-class _Thumbnail extends StatelessWidget {
-  const _Thumbnail({required this.image});
-
-  final String? image;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    final placeholder = ColoredBox(
-      color: scheme.surfaceContainerHigh,
-      child: Center(
-        child: Icon(AppIcons.products, size: 30.sp, color: scheme.onSurfaceVariant),
-      ),
-    );
-
-    final url = image;
-    if (url == null) return placeholder;
-
-    return CachedNetworkImage(
-      imageUrl: url,
-      fit: BoxFit.cover,
-      placeholder: (context, _) => ColoredBox(color: scheme.surfaceContainerHigh),
-      errorWidget: (context, _, _) => placeholder,
-    );
-  }
-}
 
 class _Empty extends StatelessWidget {
   const _Empty({required this.search});

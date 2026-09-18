@@ -121,6 +121,18 @@ abstract class Product with _$Product {
 }
 
 extension ProductX on Product {
+  /// Whether this product is sold by something that cannot be halved.
+  ///
+  /// **The first place this app reads [pricingUnit] as a decision** rather than carrying it to a
+  /// label. The server is where the rule lives — `PricingUnit::requiresWholeQuantities()`, and
+  /// `RequestOrderRequest` refuses 2.5 of a product priced «قطعة» — and this is that rule read
+  /// forward, so the refusal happens under the customer's thumb instead of after a round trip.
+  ///
+  /// An unknown unit, or none, is treated as divisible: a build that has not heard of a unit the
+  /// server has added should let the order through and be told no, rather than refuse a quantity
+  /// that is perfectly good.
+  bool get isPricedByThePiece => pricingUnit == 'piece';
+
   /// The picture the grid draws: the primary one, or the first there is.
   String? get primaryImageUrl {
     if (images.isEmpty) return null;
