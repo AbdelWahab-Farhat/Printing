@@ -3,6 +3,7 @@ import 'package:dayaa_client/core/files/attachment_picker.dart';
 import 'package:dayaa_client/core/files/attachment_picker_impl.dart';
 import 'package:dayaa_client/core/network/dio_client.dart';
 import 'package:dayaa_client/core/storage/token_storage.dart';
+import 'package:dayaa_client/core/theme/theme_mode_cubit.dart';
 import 'package:dayaa_client/features/auth/presentation/viewmodel/login_cubit.dart';
 import 'package:dayaa_client/features/auth/presentation/viewmodel/register_cubit.dart';
 import 'package:dayaa_client/features/auth/repositories/auth_repository.dart';
@@ -114,6 +115,9 @@ abstract final class Injector {
 
     sl
       ..registerSingleton<SharedPreferences>(prefs)
+      // Above the router like the basket, because a palette is the app's and not a screen's —
+      // and eagerly, because `app.dart` reads it on the very first build.
+      ..registerSingleton<ThemeModeCubit>(ThemeModeCubit(prefs))
       ..registerSingleton<TokenStorage>(tokens)
       ..registerSingleton<Dio>(
         DioClient.create(tokens: tokens, onUnauthorized: onUnauthorized),

@@ -1,5 +1,7 @@
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
+import 'package:dayaa_client/core/theme/theme_mode_cubit.dart';
+import 'package:dayaa_client/core/theme/theme_mode_sheet.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/widgets/app_card.dart';
@@ -8,6 +10,7 @@ import 'package:dayaa_client/features/auth/models/customer_account.dart';
 import 'package:dayaa_client/features/auth/usecases/get_current_customer.dart';
 import 'package:dayaa_client/features/auth/usecases/logout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
@@ -116,6 +119,23 @@ class _ProfilePageState extends State<ProfilePage> {
               SizedBox(height: 22.h),
             ],
 
+            // First of the three, because it is the only one that changes the app rather than
+            // leaving it: «الدعم» and «سياسة الخصوصية» both take you somewhere else.
+            // The singleton is read with an explicit `bloc:` rather than from the tree, exactly
+            // as `CartButton` reads the basket: it has no scope, and a `BlocProvider.value` at
+            // the top of this screen would be ceremony around something already global.
+            BlocBuilder<ThemeModeCubit, ThemeMode>(
+              bloc: sl<ThemeModeCubit>(),
+              builder: (context, mode) => _ActionRow(
+                icon: AppIcons.appearance,
+                label: 'مظهر التطبيق',
+                // The row says what the app is wearing without being opened, which is most of
+                // why somebody taps it — to check, not to change.
+                value: mode.label,
+                onTap: () => showThemeModeSheet(context).ignore(),
+              ),
+            ),
+            SizedBox(height: 10.h),
             _ActionRow(
               icon: AppIcons.comments,
               label: 'تواصل مع الدعم',
@@ -238,11 +258,22 @@ class _FactRow extends StatelessWidget {
 }
 
 class _ActionRow extends StatelessWidget {
-  const _ActionRow({required this.icon, required this.label, required this.onTap});
+  const _ActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.value,
+  });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+
+  /// What the row is currently set to, drawn before the chevron.
+  ///
+  /// Null for a row that goes somewhere rather than holds something — «تواصل مع الدعم» has no
+  /// value, and a blank space where one would be is not the same as having none.
+  final String? value;
 
   @override
   Widget build(BuildContext context) {
@@ -261,6 +292,13 @@ class _ActionRow extends StatelessWidget {
               style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
+          if (value case final value?) ...[
+            Text(
+              value,
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            SizedBox(width: 8.w),
+          ],
           Icon(AppIcons.forward, size: 16.sp, color: scheme.onSurfaceVariant),
         ],
       ),

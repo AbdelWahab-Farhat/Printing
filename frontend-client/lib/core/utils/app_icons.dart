@@ -142,6 +142,14 @@ abstract final class AppIcons {
   /// step was reached.
   static IconData get check => _pick(Icons.check_rounded, CupertinoIcons.check_mark);
 
+  /// How the app looks: light, dark, or whatever the phone says.
+  ///
+  /// A half-filled circle rather than a sun or a moon, because the setting has *three* answers
+  /// and «حسب النظام» is neither of those two — a sun on a row whose value reads «داكن» is a row
+  /// arguing with itself.
+  static IconData get appearance =>
+      _pick(Icons.brightness_6_rounded, CupertinoIcons.circle_lefthalf_fill);
+
   /// Moves an order along its route. Two arrows passing, because a status change is a *move*
   /// from one place to another — not [refresh], which fetches the same thing again.
   static IconData get statusChange =>

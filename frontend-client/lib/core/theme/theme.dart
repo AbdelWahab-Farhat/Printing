@@ -36,12 +36,7 @@ class MaterialTheme {
 
   final TextTheme textTheme;
 
-  /// The design's palette, and the only scheme this app ships.
-  ///
-  /// **There is no light scheme yet, deliberately.** The mockup specifies one appearance; a
-  /// light palette invented here would be a set of colours nobody chose, and every screen would
-  /// then be judged against it. [light] returns this same scheme so a stray light code path
-  /// still draws the app correctly rather than falling back to Flutter's defaults.
+  /// The design's palette — the appearance the mockup was drawn in.
   static const ColorScheme darkScheme = ColorScheme(
     brightness: Brightness.dark,
 
@@ -95,10 +90,80 @@ class MaterialTheme {
     inversePrimary: Color(0xff9c3a15),
   );
 
+  /// The same app in daylight.
+  ///
+  /// **Derived from the design rather than drawn by it**, and that is worth saying plainly: the
+  /// mockup specifies one appearance, so every hex below is reasoned from [darkScheme] instead of
+  /// chosen by the designer. It is the honest way to ship a light mode without inventing a second
+  /// brand — but it is also why a screen that looks wrong in daylight is a bug in this table and
+  /// not in the screen.
+  ///
+  /// The reasoning, so the next person can check it rather than guess:
+  ///
+  ///   * **`primary` does not move.** `#F4622A` is the brand; an orange that changed with the
+  ///     time of day would be two brands. White still sits on it at both brightnesses, so
+  ///     `primaryContainer` stays solid for the same reason it is solid in the dark — see the
+  ///     class doc on selected chips.
+  ///   * **The navy becomes the ink.** `#0F2138` is the page in the dark and the text in the
+  ///     light; `#E8EEF5` is the text in the dark and the raised surface in the light. The pair
+  ///     the design already balanced against each other simply swaps ends.
+  ///   * **The surface ladder climbs the other way.** Dark stacks navy upward from `#0F2138`;
+  ///     light stacks blue-grey downward from white, so a card is still one step from the page
+  ///     and a border is still one step from the card.
+  ///   * **Amber and red darken.** `#E8A33D` and `#FFB4AB` are legible on navy and vanish on
+  ///     white, so each takes the tone that carries the same meaning against paper.
+  static const ColorScheme lightScheme = ColorScheme(
+    brightness: Brightness.light,
+
+    primary: Color(0xfff4622a),
+    onPrimary: Color(0xffffffff),
+    primaryContainer: Color(0xfff4622a),
+    onPrimaryContainer: Color(0xffffffff),
+
+    secondary: Color(0xff3d5a77),
+    onSecondary: Color(0xffffffff),
+    secondaryContainer: Color(0xffdce5ef),
+    onSecondaryContainer: Color(0xff1d3c5a),
+
+    tertiary: Color(0xff8a6100),
+    onTertiary: Color(0xffffffff),
+    tertiaryContainer: Color(0xffffdfa8),
+    onTertiaryContainer: Color(0xff2b1f00),
+
+    error: Color(0xffba1a1a),
+    onError: Color(0xffffffff),
+    errorContainer: Color(0xffffdad6),
+    onErrorContainer: Color(0xff410002),
+
+    surface: Color(0xfff7f9fc),
+    onSurface: Color(0xff0f2138),
+    onSurfaceVariant: Color(0xff56708c),
+    surfaceTint: Color(0xfff4622a),
+
+    surfaceDim: Color(0xffdfe6ef),
+    surfaceBright: Color(0xffffffff),
+    surfaceContainerLowest: Color(0xffffffff),
+    surfaceContainerLow: Color(0xffffffff),
+    surfaceContainer: Color(0xfff1f5fa),
+    surfaceContainerHigh: Color(0xffe9eff7),
+    surfaceContainerHighest: Color(0xffdce5ef),
+
+    // Same division of labour as the dark scheme: `outline` is a border meant to be seen,
+    // `outlineVariant` is the card hairline.
+    outline: Color(0xff8fa3ba),
+    outlineVariant: Color(0xffdce5ef),
+
+    shadow: Color(0xff000000),
+    scrim: Color(0xff000000),
+
+    inverseSurface: Color(0xff0f2138),
+    onInverseSurface: Color(0xffe8eef5),
+    inversePrimary: Color(0xffffb59a),
+  );
+
   ThemeData dark() => theme(darkScheme);
 
-  /// The same scheme. See [darkScheme] — there is no light palette yet.
-  ThemeData light() => theme(darkScheme);
+  ThemeData light() => theme(lightScheme);
 
   ThemeData theme(ColorScheme colorScheme) => ThemeData(
     useMaterial3: true,
