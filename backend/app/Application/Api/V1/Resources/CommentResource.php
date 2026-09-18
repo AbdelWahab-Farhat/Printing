@@ -48,20 +48,19 @@ class CommentResource extends JsonResource
             // holding a second copy of a rule that would drift the day it changes. Presentation
             // only: the endpoints refuse the request on their own — see CommentController.
             //
-            // **And the record's own state, which outranks it.** A note on a signed-off design
-            // ticket is frozen for its author and for a moderator alike, so both flags go false
-            // together the moment the conversation ends.
+            // **وحالُ السجلّ نفسه، وهي فوقها.** الملاحظة على تذكرة تصميمٍ اعتُمدت مجمَّدةٌ على
+            // كاتبها وعلى المشرف سواء، فتهبط الرايتان معاً إلى false لحظةَ تنتهي المحادثة.
             'can_edit' => $this->isChangeable($request),
             'can_delete' => $this->isChangeable($request),
         ];
     }
 
     /**
-     * Whether this reader may still touch this note.
+     * هل ما يزال لهذا القارئ أن يمسّ هذه الملاحظة.
      *
-     * The thread first: a closed conversation answers no to everybody, which is what stops the
-     * app drawing a button that can only ever meet {@see CommentThreadIsClosed}. The owner is
-     * already loaded by the list — see `CommentController::listFor()` — so this costs no query.
+     * الخيط أولاً: المحادثة المغلقة تجيب بـ«لا» للجميع، وهذا ما يمنع التطبيق من رسم زرٍّ لا يلقى
+     * إلا {@see CommentThreadIsClosed}. والمالك محمَّلٌ أصلاً من القائمة — انظر
+     * `CommentController::listFor()` — فلا تكلّف هذه استعلاماً.
      */
     private function isChangeable(Request $request): bool
     {

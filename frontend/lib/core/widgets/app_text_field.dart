@@ -112,11 +112,11 @@ class AppTextField extends StatefulWidget {
   final int? maxLength;
   final int? maxLines;
 
-  /// How short the box is allowed to be, when [maxLines] lets it grow.
+  /// كم يجوز أن يَقصُر الصندوق، حين تسمح له [maxLines] بأن يكبر.
   ///
-  /// Left null, a multi-line field is drawn [maxLines] tall from the start — a box reserving
-  /// four empty lines for a sentence nobody has typed yet. Given `1`, it starts at one line and
-  /// grows a line at a time, which is what a message box does.
+  /// متروكةً `null` يُرسم الحقلُ متعدّدُ الأسطر بارتفاع [maxLines] من البداية — صندوقٌ يحجز أربعة
+  /// أسطرٍ فارغة لجملةٍ لم يكتبها أحدٌ بعد. وبـ`1` يبدأ بسطرٍ ويكبر سطراً سطراً، وهذا ما يفعله
+  /// صندوق الرسائل.
   final int? minLines;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;

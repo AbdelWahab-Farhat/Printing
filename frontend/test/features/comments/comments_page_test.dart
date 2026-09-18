@@ -20,28 +20,27 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-/// The screen that holds what staff have written about a customer.
+/// الشاشة التي تحمل ما كتبه الموظفون عن سجلّ.
 ///
-/// **The rule under test is that this screen holds no authorization rule.** «صاحبه أو مشرف» is
-/// computed on the server per reader and arrives as `can_edit` / `can_delete` on each note; the
-/// row draws its buttons off those and compares no user ids of its own. A second copy of an
-/// authorization rule is a copy that drifts.
+/// **القاعدة المختبَرة أنّ هذه الشاشة لا تحمل قاعدة صلاحيات.** «صاحبه أو مشرف» تُحسب على الخادم
+/// لكل قارئ وتصل كـ`can_edit` / `can_delete` على كل ملاحظة؛ والصفّ يرسم أزراره منهما ولا يقارن
+/// معرّفات مستخدمين خاصةً به. ونسخةٌ ثانية من قاعدة صلاحيات نسخةٌ تنحرف.
 ///
-/// **The second rule is that it reads as a conversation.** The thread is parted by the day each
-/// note was said, a run from one person says their name once, and what can be done to a note is
-/// behind a long press — the three things every messaging app on these phones already does.
+/// **والقاعدة الثانية أنها تُقرأ محادثة.** الخيط يُفصل باليوم الذي قيلت فيه كلّ رسالة، ورسائل
+/// الشخص الواحد المتتابعة تقول اسمه مرّة، وما يُفعل بالرسالة خلف ضغطةٍ مطوّلة — وهي الأشياء
+/// الثلاثة التي يفعلها أصلاً كلّ تطبيق محادثة في هذه الهواتف.
 ///
-/// Real Cubit, real use cases, fake repository — so the pre-flight checks and the list patching
-/// are all exercised.
+/// Cubit حقيقي، وحالات استعمال حقيقية، ومستودعٌ مزيّف — فتُمارَس الفحوص القَبْلية وترقيعُ القائمة
+/// كلّها.
 ///
-/// Arrange - Act - Assert throughout.
+/// Arrange - Act - Assert في كل اختبار.
 class _MockCommentRepository extends Mock implements CommentRepository {}
 
 void main() {
-  /// The record every note in this file hangs off — one customer, named once.
+  /// السجلّ الذي تتعلّق به كلّ ملاحظةٍ في هذا الملف — عميلٌ واحد، يُسمّى مرّة.
   const subject = CommentSubject.customer(7);
 
-  // Mocktail needs something to hand an `any()` matcher when the parameter is not a primitive.
+  // Mocktail تحتاج شيئاً تسلّمه لمطابِق `any()` حين لا يكون المُعامل قيمةً بدائية.
   setUpAll(() => registerFallbackValue(subject));
 
   late _MockCommentRepository repository;
@@ -92,9 +91,9 @@ void main() {
 
   tearDown(Injector.reset);
 
-  // The toast's bookkeeping is library-level, so it outlives the tree that raised it — and by
-  // the time a `tearDown` runs, the Navigator that owns its ticker is already being torn down.
-  // A test that provokes a refusal clears it while there is still a tree to clear it from.
+  // دفاتر الشريحة على مستوى المكتبة، فتعيش أطولَ من الشجرة التي أطلقتها — وحين يجري `tearDown`
+  // يكون الـNavigator المالك لمؤقّتها قيد الفكّ أصلاً. فالاختبار الذي يستدرج رفضاً يمسحها ما دامت
+  // هناك شجرةٌ تُمسح منها.
   Future<void> clearTheToast(WidgetTester tester) async {
     resetSnackBars();
     await tester.pump();
@@ -122,16 +121,15 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — the name travels with the note, because a note nobody can be asked about is a
-    // rumour.
+    // Assert — الاسم يسافر مع الملاحظة، لأن ملاحظةً لا يمكن سؤال أحدٍ عنها إشاعة.
     expect(find.text('مطبعة النور'), findsOneWidget);
     expect(find.text('يفضّل التسليم صباحاً'), findsOneWidget);
     expect(find.text('علي'), findsOneWidget);
   });
 
   testWidgets('a bubble carries no buttons until it is held', (tester) async {
-    // Arrange — a row of «تعديل» and «حذف» under every note is what stopped this reading as a
-    // conversation: the words outnumbered the sentences.
+    // Arrange — صفُّ «تعديل» و«حذف» تحت كل ملاحظة هو ما منع هذه من أن تُقرأ محادثة: الكلماتُ
+    // فاقت الجُمل.
 
     // Act
     await tester.pumpWidget(host());
@@ -160,8 +158,8 @@ void main() {
   });
 
   testWidgets('holding a colleague\'s note offers only copying it', (tester) async {
-    // Arrange — absent rather than disabled: a greyed bin invites a tap that can only ever
-    // produce a 403. The server said `can_edit: false`, and the sheet says nothing more.
+    // Arrange — غائبةٌ لا معطَّلة: سلّةٌ رماديّة تدعو إلى ضغطةٍ لا تُنتج إلا 403. الخادم قال
+    // `can_edit: false`، والورقة لا تقول أكثر.
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
@@ -176,8 +174,8 @@ void main() {
   });
 
   testWidgets('opening the edit dialog and closing it throws nothing', (tester) async {
-    // Arrange — the plain sequence a person actually performs: hold the note, tap «تعديل», the
-    // dialog opens with its field autofocused, then back out.
+    // Arrange — التسلسل الذي يفعله الشخص فعلاً: يضغط الرسالة مطوّلاً، ثم «تعديل»، فتُفتح
+    // الحواريّة وحقلُها مركَّزٌ عليه، ثم يخرج.
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
@@ -199,8 +197,8 @@ void main() {
   });
 
   testWidgets('the thread is parted by the day each note was said', (tester) async {
-    // Arrange — a column of bubbles each repeating its own date is a column nobody reads. The
-    // date is said once, between the days, the way every messaging app says it.
+    // Arrange — عمودٌ من الفقاعات تكرّر كلٌّ منها تاريخها عمودٌ لا يقرؤه أحد. التاريخ يُقال
+    // مرّة، بين الأيام، كما يقوله كلّ تطبيق محادثة.
     final now = DateTime.now();
     final yesterday = Comment(
       id: 3,
@@ -232,7 +230,7 @@ void main() {
   });
 
   testWidgets('a run of notes from one person says their name once', (tester) async {
-    // Arrange — two sentences said one after the other are one person talking, not two.
+    // Arrange — جملتان قيلتا تباعاً هما شخصٌ واحد يتكلّم، لا اثنان.
     final at = DateTime.now();
     final first = Comment(
       id: 5,
@@ -258,15 +256,14 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — both sentences, one name.
+    // Assert — الجملتان كلتاهما، واسمٌ واحد.
     expect(find.text('مرّ على المحل'), findsOneWidget);
     expect(find.text('وطلب نفس الطلبية'), findsOneWidget);
     expect(find.text('علي'), findsOneWidget);
   });
 
   testWidgets('an empty screen says what notes are for', (tester) async {
-    // Arrange — an empty page that only reports emptiness leaves somebody wondering whether it
-    // is broken.
+    // Arrange — صفحةٌ فارغة لا تقول إلا إنها فارغة تترك صاحبها يتساءل هل هي معطّلة.
     when(() => repository.comments(subject))
         .thenAnswer((_) async => const Right(CommentThread(comments: [])));
 
@@ -279,9 +276,9 @@ void main() {
     expect(find.textContaining('موعد التسليم الذي يفضّله'), findsOneWidget);
   });
 
-  // The list is drawn reversed — oldest at the top, newest at the bottom, the way a chat reads —
-  // so a new note goes to the front of the *data* and renders at the bottom of the *screen*.
-  // Named for what the reader sees rather than for the index it lands at.
+  // القائمة تُرسم معكوسة — الأقدم فوق والأحدث تحت، كما تُقرأ المحادثة — فالملاحظة الجديدة تذهب
+  // إلى مقدّمة *البيانات* وتُرسم في أسفل *الشاشة*. والاسم لِما يراه القارئ لا للموضع الذي تحطّ
+  // فيه.
   testWidgets('writing a note puts it at the end of the thread and empties the box', (
     tester,
   ) async {
@@ -307,14 +304,14 @@ void main() {
     await tester.tap(find.byTooltip('إرسال'));
     await tester.pumpAndSettle();
 
-    // Assert — the note is on screen, and the box is ready for the next one.
+    // Assert — الملاحظة على الشاشة، والصندوق جاهزٌ للتالية.
     expect(find.text('اتفقنا على خصم ٥٪'), findsOneWidget);
     expect(tester.widget<TextField>(find.byType(TextField).first).controller?.text, isEmpty);
   });
 
   testWidgets('an empty box has nothing to send', (tester) async {
-    // Arrange — the send key is lit by there being a sentence to send, which is what spares
-    // somebody a refusal they could have been told about before tapping.
+    // Arrange — مفتاح الإرسال يُضيئه وجودُ جملةٍ تُرسل، وهذا ما يوفّر على صاحبه رفضاً كان يمكن
+    // أن يُقال له قبل الضغط.
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
@@ -322,12 +319,12 @@ void main() {
     await tester.tap(find.byTooltip('إرسال'));
     await tester.pumpAndSettle();
 
-    // Assert — nothing left the phone.
+    // Assert — لم يغادر الهاتفَ شيء.
     verifyNever(() => repository.add(any(), body: any(named: 'body')));
   });
 
   testWidgets('a refused note keeps what was typed', (tester) async {
-    // Arrange — a refusal that also empties the field costs somebody the sentence they wrote.
+    // Arrange — رفضٌ يُفرغ الحقل معه يكلّف صاحبه الجملة التي كتبها.
     when(() => repository.add(subject, body: any(named: 'body')))
         .thenAnswer((_) async => const Left(Failure.server(message: 'تعذّر الحفظ')));
 
@@ -350,8 +347,8 @@ void main() {
   });
 
   testWidgets('the same screen serves a supplier, reading a supplier\'s notes', (tester) async {
-    // Arrange — the point of the whole generalisation: one screen, one cubit, one repository,
-    // and the record it is about arrives as a subject.
+    // Arrange — مقصود التعميم كلّه: شاشةٌ واحدة، وcubit واحد، ومستودعٌ واحد، والسجلُّ الذي هي
+    // عنه يصل موضوعاً.
     const vendor = CommentSubject.vendor(4);
     const aboutTheVendor = Comment(
       id: 8,
@@ -368,15 +365,15 @@ void main() {
     await tester.pumpWidget(host(about: vendor, ownerName: 'مصنع الصفا'));
     await tester.pumpAndSettle();
 
-    // Assert — the supplier's note is on screen, and the customer's list was never asked for.
+    // Assert — ملاحظة المورّد على الشاشة، وقائمةُ العميل لم تُطلب أصلاً.
     expect(find.text('لا يسلّم قبل الظهر'), findsOneWidget);
     expect(find.text('مصنع الصفا'), findsOneWidget);
     verifyNever(() => repository.comments(subject));
   });
 
   testWidgets('and a design ticket, where the notes are the point of the record', (tester) async {
-    // Arrange — the third subject, and the one whose conversation is not an aside: «الرد داخل
-    // التذكرة» is most of what makes a ticket a ticket rather than a form.
+    // Arrange — الموضوع الثالث، وهو الوحيد الذي محادثتُه ليست هامشاً: «الرد داخل التذكرة» هو
+    // معظمُ ما يجعل التذكرة تذكرةً لا نموذجاً.
     const ticket = CommentSubject.designTicket(7);
     const fromTheDesigner = Comment(
       id: 11,
@@ -393,16 +390,15 @@ void main() {
     await tester.pumpWidget(host(about: ticket, ownerName: 'تصميم كيس شحن — أسود'));
     await tester.pumpAndSettle();
 
-    // Assert — one screen, three kinds of record, and neither of the other two was asked for.
+    // Assert — شاشةٌ واحدة، وثلاثةُ أنواعٍ من السجلات، ولم يُطلب أيٌّ من الآخرَين.
     expect(find.text('وصلني، أبدأ اليوم'), findsOneWidget);
     expect(find.text('تصميم كيس شحن — أسود'), findsOneWidget);
     verifyNever(() => repository.comments(subject));
   });
 
   testWidgets('a closed conversation has no box, and says why', (tester) async {
-    // Arrange — a ticket whose design was approved. Nothing more is written on it, by the
-    // designer or by the employee who asked, so the box is gone rather than greyed: a field
-    // somebody can type into and never send is worse than no field.
+    // Arrange — تذكرةٌ اعتُمد تصميمها. لا يُكتب عليها مزيد، لا من المصمّم ولا من الموظف الذي
+    // طلب، فالصندوق يختفي ولا يُعطَّل: حقلٌ يُكتب فيه ولا يُرسل أسوأ من لا حقل.
     const ticket = CommentSubject.designTicket(7);
     const settled = Comment(
       id: 11,
@@ -426,7 +422,7 @@ void main() {
     await tester.pumpWidget(host(about: ticket, ownerName: 'تصميم كيس شحن — أسود'));
     await tester.pumpAndSettle();
 
-    // Assert — the conversation is still readable; only writing has ended.
+    // Assert — المحادثة ما تزال تُقرأ؛ والذي انتهى هو الكتابة وحدها.
     expect(find.text('اعتمدنا النسخة الثالثة'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
     expect(find.byTooltip('إرسال'), findsNothing);
@@ -434,8 +430,8 @@ void main() {
   });
 
   testWidgets('an empty closed conversation still says why it is closed', (tester) async {
-    // Arrange — the case that made this a fact about the thread rather than about a note: a
-    // ticket signed off before anybody wrote a word has no row to hang the reason on.
+    // Arrange — الحالة التي جعلت هذه حقيقةً عن الخيط لا عن ملاحظة: تذكرةٌ اعتُمدت قبل أن يكتب
+    // أحدٌ كلمة لا صفَّ فيها يُعلَّق به السبب.
     const ticket = CommentSubject.designTicket(7);
     when(() => repository.comments(ticket)).thenAnswer(
       (_) async => const Right(
@@ -457,8 +453,8 @@ void main() {
   });
 
   testWidgets('a Latin sentence is drawn the way it was typed', (tester) async {
-    // Arrange — the app is right-to-left and a message box is the one place that stops being
-    // true: «ok» rendered right-to-left puts its full stop at the wrong end.
+    // Arrange — التطبيق من اليمين إلى اليسار، وصندوق الرسائل هو المكان الوحيد الذي يبطل فيه
+    // ذلك: «ok» مرسومةً من اليمين إلى اليسار تضع نقطتها في الطرف الخطأ.
     const inEnglish = Comment(
       id: 12,
       commentableType: 'customer',
@@ -473,7 +469,7 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — each bubble reads the way its own sentence does, in the same thread.
+    // Assert — كلّ فقاعةٍ تُقرأ باتجاه جملتها، في الخيط نفسه.
     expect(
       tester.widget<Text>(find.text('ok, sending the PDF now')).textDirection,
       TextDirection.ltr,
@@ -491,7 +487,7 @@ void main() {
 
     final box = find.byType(TextField).first;
 
-    // Act & Assert — an empty box has no opinion and keeps the app's own direction.
+    // Act & Assert — الصندوق الفارغ لا رأي له فيبقى على اتجاه التطبيق.
     expect(tester.widget<TextField>(box).textDirection, isNull);
 
     await tester.enterText(box, 'ok');
@@ -504,8 +500,8 @@ void main() {
   });
 
   testWidgets('a ticket asks for a reply, not for a note about a customer', (tester) async {
-    // Arrange — the same screen served three records while its box asked about «هذا العميل» on
-    // all three. What is being written differs, and the box is where somebody reads it.
+    // Arrange — الشاشة نفسها خدمت ثلاثة سجلات وصندوقُها يسأل عن «هذا العميل» في الثلاثة. والذي
+    // يُكتب يختلف، والصندوق هو المكان الذي يقرأ فيه صاحبه ذلك.
     const ticket = CommentSubject.designTicket(7);
     when(() => repository.comments(ticket))
         .thenAnswer((_) async => const Right(CommentThread(comments: [])));

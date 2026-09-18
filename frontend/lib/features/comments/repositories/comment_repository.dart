@@ -4,43 +4,42 @@ import 'package:dayaa/features/comments/models/comment.dart';
 import 'package:dayaa/features/comments/models/comment_subject.dart';
 import 'package:dayaa/features/comments/models/comment_thread.dart';
 
-/// What the app can do about the notes staff leave on a record.
+/// ما يستطيع التطبيق فعله بملاحظات الموظفين على سجلّ.
 ///
-/// Its own contract rather than four more methods on `CustomerRepository` — and now its own
-/// feature, because the same four calls serve a supplier: everything here is scoped to one
-/// record and none of it paginates, while a record's own repository is a searchable, paged list.
+/// عقدٌ خاصٌّ به لا أربعُ دوالّ إضافية على `CustomerRepository` — وميزةٌ خاصّةٌ به الآن، لأن
+/// النداءات الأربعة نفسها تخدم المورّد: كلّ ما هنا محصورٌ بسجلٍّ واحد ولا شيء منه يُصفَّح، بينما
+/// مستودع السجلّ نفسه قائمةٌ تُبحث وتُصفَّح.
 ///
-/// **Every call takes a [CommentSubject] rather than an id.** The API nests notes under their
-/// owner, so an id alone would not say which door to knock on.
+/// **وكلّ نداءٍ يأخذ [CommentSubject] لا معرّفاً.** الواجهة تُعشّش الملاحظات تحت مالكها، فالمعرّف
+/// وحده لا يقول أيَّ بابٍ يُطرق.
 abstract interface class CommentRepository {
-  /// Every note on this record, newest first, **and whether the conversation is still open**.
+  /// كلّ ملاحظات هذا السجلّ، الأحدث أولاً، **وهل ما تزال المحادثة مفتوحة**.
   ///
-  /// A plain list, not a page. Notes accumulate at the speed of conversation, and a load-more
-  /// spinner under a list that is already complete is a lie about there being more.
+  /// قائمةٌ مجرّدة لا صفحة. الملاحظات تتراكم بسرعة الكلام، ودوّارةُ «حمّل المزيد» تحت قائمةٍ
+  /// مكتملةٍ أصلاً كذبةٌ عن وجود مزيد.
   ///
-  /// The thread's own state comes back with it because an empty closed conversation — a ticket
-  /// signed off before anybody wrote a word — has no row to carry it, and the box is drawn
-  /// anyway. See [CommentThread].
+  /// وحالُ الخيط نفسه تعود معها لأن المحادثة المغلقة الفارغة — تذكرةٌ اعتُمدت قبل أن يكتب أحدٌ
+  /// كلمة — لا صفَّ فيها يحملها، والصندوق يُرسم على أي حال. انظر [CommentThread].
   Future<Either<Failure, CommentThread>> comments(CommentSubject subject);
 
-  /// Leaves a note, and answers with the one the server stored.
+  /// يترك ملاحظةً، ويجيب بالتي خزّنها الخادم.
   ///
-  /// The author is never sent: the backend stamps the signed-in user, which is what makes it
-  /// impossible to sign somebody else's name to a sentence.
+  /// الكاتب لا يُرسل أبداً: الخادم يختم المستخدم المسجَّل، وهذا ما يجعل توقيع اسم شخصٍ آخر على
+  /// جملةٍ مستحيلاً.
   Future<Either<Failure, Comment>> add(CommentSubject subject, {required String body});
 
-  /// Rewrites one.
+  /// يعيد كتابة واحدة.
   ///
-  /// Refused with 403 for a note this user did not write, unless they hold
-  /// `comments.moderate` — which is exactly what the note's `canEdit` already says,
-  /// so a screen drawing its buttons off that flag will not normally meet the refusal.
+  /// يُرفض بـ403 لملاحظةٍ لم يكتبها هذا المستخدم، إلا أن يملك `comments.moderate` — وهو تماماً ما
+  /// تقوله `canEdit` على الملاحظة أصلاً، فالشاشةُ التي ترسم أزرارها من تلك الراية لا تلقى الرفض
+  /// عادةً.
   Future<Either<Failure, Comment>> edit(
     CommentSubject subject,
     int commentId, {
     required String body,
   });
 
-  /// Removes one. Soft on the server: the list loses it, the history keeps it, and «من حذف
-  /// الملاحظة؟» stays answerable. Answers with the server's own message.
+  /// يحذف واحدة. حذفٌ ناعم على الخادم: القائمة تفقدها والسجلّ يحتفظ بها، ويبقى «من حذف
+  /// الملاحظة؟» سؤالاً له جواب. ويجيب برسالة الخادم نفسها.
   Future<Either<Failure, String>> remove(CommentSubject subject, int commentId);
 }

@@ -22,9 +22,8 @@ final class ApiEnvelope
     public const DEFAULT_ERROR_MESSAGE = 'حدث خطأ ما';
 
     /**
-     * [$meta] is for facts about the whole answer rather than about anything inside `data` — a
-     * page's numbers, or whether a conversation is still taking messages. Left empty it is
-     * absent from the body entirely, so nothing is promised a key that is never filled.
+     * [$meta] لحقائق عن الردّ كلّه لا عن شيءٍ داخل `data` — أرقامُ صفحة، أو هل ما تزال محادثةٌ
+     * تقبل رسائل. ومتروكةً فارغةً تغيب عن الجسم كلّياً، فلا يُوعَد أحدٌ بمفتاحٍ لا يُملأ أبداً.
      *
      * @param  array<string, mixed>  $meta
      */

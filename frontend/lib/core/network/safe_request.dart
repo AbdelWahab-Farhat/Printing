@@ -61,13 +61,12 @@ Future<Either<Failure, T>> safeForeignRequest<T>(
   });
 }
 
-/// For an answer whose `meta` matters but which is **not a page**.
+/// لردٍّ تهمّ فيه `meta` وهو **ليس صفحة**.
 ///
-/// [safeRequest] hands over `data` alone, which is right for almost everything: `meta` is
-/// normally the page numbers, and a list that does not paginate has none. The exception is a fact
-/// about the whole answer that no row can carry — whether a conversation is still taking
-/// messages, on a list that may be empty. Both halves go to [parse], and `meta` arrives empty
-/// rather than null when the server sent none, so a caller reads keys without asking twice.
+/// [safeRequest] تسلّم `data` وحدها، وهو الصواب في كل شيء تقريباً: `meta` عادةً أرقامُ الصفحات،
+/// والقائمة التي لا تُصفَّح لا أرقام لها. والاستثناء حقيقةٌ عن الردّ كلّه لا يحملها صفّ — هل ما
+/// تزال المحادثة تقبل رسائل، على قائمةٍ قد تكون فارغة. ويصل النصفان إلى [parse]، وتصل `meta`
+/// فارغةً لا `null` حين لا يرسلها الخادم، فيقرأ المستدعي مفاتيحها بلا سؤالٍ ثانٍ.
 Future<Either<Failure, T>> safeMetaRequest<T>(
   Future<Response<dynamic>> Function() send, {
   required T Function(dynamic data, Map<String, dynamic> meta) parse,

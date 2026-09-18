@@ -1,11 +1,10 @@
 part of 'comments_cubit.dart';
 
-/// Everything the notes screen can be.
+/// كلّ ما يمكن أن تكونه شاشة الملاحظات.
 ///
-/// **[loaded] is never left once it is reached.** Adding, editing and deleting all keep the
-/// list on screen and mark the one row that is moving — a page that blanks to a spinner
-/// because a sentence is being saved has taken away what the user was reading. [failure] is
-/// only for the first read, when there is nothing to keep.
+/// **[loaded] لا تُغادَر بعد بلوغها أبداً.** الإضافة والتعديل والحذف كلّها تُبقي القائمة على
+/// الشاشة وتُعلّم الصفّ المتحرّك وحده — وصفحةٌ تبيضّ إلى دوّارةٍ لأن جملةً تُحفظ سلبت المستخدمَ ما
+/// كان يقرؤه. و[failure] للقراءة الأولى وحدها، حين لا يوجد ما يُحتفظ به.
 @freezed
 sealed class CommentsState with _$CommentsState {
   const factory CommentsState.loading() = CommentsLoading;
@@ -13,22 +12,22 @@ sealed class CommentsState with _$CommentsState {
   const factory CommentsState.loaded({
     required List<Comment> comments,
 
-    /// Whether anything more may be said here — the server's answer, carried on the list.
+    /// هل بقي ما يُقال هنا — جواب الخادم، محمولاً على القائمة.
     ///
-    /// **A fact about the thread, not about any note.** A design ticket's conversation ends with
-    /// the ticket, and the screen that has to know it is the box: an empty closed thread has no
-    /// row to read it off. True for a customer and a supplier, always.
+    /// **حقيقةٌ عن الخيط لا عن ملاحظةٍ بعينها.** محادثة تذكرة التصميم تنتهي بانتهائها، والذي عليه
+    /// أن يعرف ذلك هو الصندوق: والخيط المغلق الفارغ لا صفَّ فيه يُقرأ منه. وهي `true` للعميل
+    /// وللمورّد دائماً.
     @Default(true) bool canComment,
 
-    /// Why it closed, in the record's own words. Null while it is open.
+    /// لماذا أُغلقت، بكلمات السجلّ نفسه. و`null` ما دامت مفتوحة.
     String? closedNote,
 
-    /// Ids of notes being rewritten or removed right now. A set rather than a single id
-    /// because two rows can be worked on at once and each has to show its own state.
+    /// معرّفات الملاحظات التي يُعاد كتابتها أو تُحذف الآن. مجموعةٌ لا معرّفاً واحداً لأن صفّين قد
+    /// يُعمل عليهما معاً وعلى كلٍّ منهما أن يُظهر حاله.
     @Default(<int>{}) Set<int> busy,
 
-    /// True while a *new* note is on its way up. Separate from [busy], which is keyed by id —
-    /// a note that does not exist yet has none.
+    /// `true` ما دامت ملاحظةٌ *جديدة* في طريقها إلى الأعلى. منفصلةٌ عن [busy] المفهرسة بالمعرّف —
+    /// وملاحظةٌ لم توجد بعدُ لا معرّف لها.
     @Default(false) bool isAdding,
   }) = CommentsLoaded;
 
@@ -36,7 +35,7 @@ sealed class CommentsState with _$CommentsState {
 }
 
 extension CommentsStateX on CommentsState {
-  /// The notes, whenever there are any — including while one of them is being saved.
+  /// الملاحظات، كلّما وُجدت — بما في ذلك أثناء حفظ إحداها.
   List<Comment>? get comments => switch (this) {
     CommentsLoaded(:final comments) => comments,
     _ => null,
@@ -47,8 +46,8 @@ extension CommentsStateX on CommentsState {
     _ => false,
   };
 
-  /// Whether the box is drawn. Open until the server says otherwise — including while the first
-  /// read is still out, so nothing flickers shut and open again.
+  /// هل يُرسم الصندوق. مفتوحٌ حتى يقول الخادم غير ذلك — بما في ذلك والقراءة الأولى ما تزال
+  /// خارجة، فلا يرتجف شيءٌ مغلقاً ثم مفتوحاً.
   bool get canComment => switch (this) {
     CommentsLoaded(:final canComment) => canComment,
     _ => true,
@@ -59,8 +58,8 @@ extension CommentsStateX on CommentsState {
     _ => null,
   };
 
-  /// Whether this particular note is mid-request, which is what greys its row and disables its
-  /// buttons without touching the rest of the list.
+  /// هل هذه الملاحظة بعينها في منتصف طلبها، وهو ما يُخفّت صفَّها ويعطّل أزرارها دون أن يمسّ بقية
+  /// القائمة.
   bool isBusy(int commentId) => switch (this) {
     CommentsLoaded(:final busy) => busy.contains(commentId),
     _ => false,

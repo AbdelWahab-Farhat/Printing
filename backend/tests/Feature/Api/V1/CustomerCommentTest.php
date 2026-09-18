@@ -174,9 +174,9 @@ class CustomerCommentTest extends TestCase
 
     public function test_a_customers_conversation_never_closes(): void
     {
-        // Arrange — a design ticket's notes end with the ticket; a customer's do not. The
-        // customer is still a customer, and the next thing learned about them is worth writing
-        // down a year from now. See DesignTicketClosedConversationTest for the other answer.
+        // Arrange — ملاحظات تذكرة التصميم تنتهي بانتهائها، وملاحظات العميل لا. العميل ما يزال
+        // عميلاً، وأوّلُ ما يُعرف عنه بعد عامٍ يستحقّ أن يُكتب. انظر
+        // DesignTicketClosedConversationTest للجواب الآخر.
         $user = $this->reader();
         $customer = Customer::factory()->create();
 
@@ -186,8 +186,8 @@ class CustomerCommentTest extends TestCase
             $this->headers($user),
         );
 
-        // Assert — said on an empty list too, because the box under it is what reads this and an
-        // empty conversation is exactly where somebody is about to write the first note.
+        // Assert — تُقال على قائمةٍ فارغة أيضاً، لأن الصندوق تحتها هو الذي يقرؤها، والمحادثة
+        // الفارغة هي تحديداً حيث يوشك أحدٌ أن يكتب أول ملاحظة.
         $response->assertOk()
             ->assertJsonPath('meta.can_comment', true)
             ->assertJsonPath('meta.closed_note', null);

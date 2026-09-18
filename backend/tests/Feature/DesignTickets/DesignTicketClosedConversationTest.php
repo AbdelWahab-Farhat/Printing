@@ -9,24 +9,21 @@ use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Enums\PermissionName;
 
 /**
- * «بعد الاعتماد لا يوجد مزيد» — the conversation ends with the ticket.
+ * «بعد الاعتماد لا يوجد مزيد» — المحادثة تنتهي بانتهاء التذكرة.
  *
- * **A ticket that has finished is a record of what was agreed, and a record that can still be
- * added to is not a record.** {@see DesignTicketStatus::isClosed()} already says it outright —
- * "nothing more will be drawn, reviewed or said" — and the first two halves of that sentence
- * were enforced from the beginning while the third was not: a designer could keep writing under
- * an approved design, and either side could quietly rewrite what they had promised before it was
- * signed off.
+ * **التذكرة التي انتهت سجلُّ ما اتُّفق عليه، والسجلُّ الذي يمكن أن يُضاف إليه ليس سجلّاً.**
+ * و{@see DesignTicketStatus::isClosed()} تقولها صراحةً أصلاً — «لا شيء بعدهما يُرسم ولا يُراجع
+ * ولا يُقال» — وكان ثلثا تلك الجملة مطبَّقَين من البداية والثالث لا: كان المصمّم يواصل الكتابة
+ * تحت تصميمٍ معتمَد، وكان لكلا الطرفين أن يعيد كتابة ما وعد به صامتاً قبل الاعتماد.
  *
- * **Both endings, and everybody.** «ملغى» closes it for the same reason «مكتمل» does: the
- * request is over. And the freeze is not a permission — a moderator is refused too, because what
- * is being protected is the state of the ticket rather than the ownership of a sentence.
+ * **النهايتان كلتاهما، والجميع.** «ملغى» تُغلقها للسبب الذي تُغلقها له «مكتمل»: الطلب انتهى.
+ * والتجميد ليس صلاحية — فالمشرف يُرفض أيضاً، لأن المحميّ هنا حالُ التذكرة لا مِلكيّةُ جملة.
  *
- * The app is told before it draws anything: `meta.can_comment` on the list, and `can_edit` /
- * `can_delete` false on every row. This file asserts both halves — the flags that hide the
- * buttons, and the refusals that are the actual rule.
+ * والتطبيق يُخبَر قبل أن يرسم شيئاً: `meta.can_comment` على القائمة، و`can_edit` / `can_delete`
+ * بـfalse على كل صفّ. وهذا الملف يؤكّد النصفين — الرايات التي تُخفي الأزرار، والرفض الذي هو
+ * القاعدة فعلاً.
  *
- * Arrange - Act - Assert throughout.
+ * Arrange - Act - Assert في كل اختبار.
  */
 class DesignTicketClosedConversationTest extends DesignTicketTestCase
 {
@@ -37,8 +34,7 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
         [$designerUser] = $this->designer();
         $ticket = $this->ticketFor($employee, $designerUser->id);
 
-        // Act — written and then read by its author, whose own note is his to rewrite while the
-        // ticket is still open.
+        // Act — تُكتب ثم يقرؤها كاتبها، وملاحظتُه له يعيد كتابتها ما دامت التذكرة مفتوحة.
         $written = $this->postJson(
             "/api/v1/design-tickets/{$ticket->id}/comments",
             ['body' => 'الشعار في المرفقات'],
@@ -46,7 +42,7 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
         );
         $list = $this->getJson("/api/v1/design-tickets/{$ticket->id}/comments", $employee);
 
-        // Assert — the ordinary case, stated so the closed one below means something.
+        // Assert — الحالة العادية، تُقال ليعني المغلقُ أدناه شيئاً.
         $written->assertCreated();
         $list->assertOk()
             ->assertJsonPath('meta.can_comment', true)
@@ -56,8 +52,8 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
 
     public function test_an_approved_ticket_takes_no_more_messages(): void
     {
-        // Arrange — the whole point: «اعتُمد التصميم» is the end of the conversation, for the
-        // designer who drew it and for the employee who asked.
+        // Arrange — المقصود كلّه: «اعتُمد التصميم» هو نهاية المحادثة، للمصمّم الذي رسمه وللموظف
+        // الذي طلب.
         [, $employee] = $this->employee();
         [, $designer] = $this->designer();
         $ticket = $this->approvedTicket($employee, $designer);
@@ -74,7 +70,7 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
             $designer,
         );
 
-        // Assert — 422 and the ticket's own words, so the app shows why rather than «حدث خطأ ما».
+        // Assert — 422 وكلماتُ التذكرة نفسها، فيعرض التطبيق السبب بدل «حدث خطأ ما».
         $fromEmployee->assertStatus(422);
         $fromDesigner->assertStatus(422)
             ->assertJsonPath('message', 'اعتُمد التصميم وأُغلقت المحادثة');
@@ -82,8 +78,7 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
 
     public function test_a_cancelled_ticket_takes_no_more_messages(): void
     {
-        // Arrange — the other ending. It is not a verdict on anybody's work, and it ends the
-        // request all the same.
+        // Arrange — النهاية الأخرى. ليست حكماً على عمل أحد، وهي تُنهي الطلب مع ذلك.
         [, $employee] = $this->employee();
         [$designerUser] = $this->designer();
         $ticket = $this->ticketFor($employee, $designerUser->id);
@@ -108,8 +103,8 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
 
     public function test_the_messages_already_in_a_closed_ticket_freeze(): void
     {
-        // Arrange — written while the ticket was open, by its author, who could rewrite it
-        // freely an hour ago.
+        // Arrange — كُتبت والتذكرة مفتوحة، بيد كاتبها الذي كان يستطيع إعادة كتابتها بحريّةٍ قبل
+        // ساعة.
         [, $employee] = $this->employee();
         [, $designer] = $this->designer();
         $ticket = $this->ticketFor($employee);
@@ -135,7 +130,7 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
         );
         $list = $this->getJson("/api/v1/design-tickets/{$ticket->id}/comments", $employee);
 
-        // Assert — what was agreed before the sign-off stays as it was written.
+        // Assert — ما اتُّفق عليه قبل الاعتماد يبقى كما كُتب.
         $rewritten->assertStatus(422);
         $removed->assertStatus(422);
         $list->assertOk()
@@ -147,8 +142,8 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
 
     public function test_even_a_moderator_is_refused_after_the_sign_off(): void
     {
-        // Arrange — `comments.moderate` is the power to rewrite a colleague's sentence, not the
-        // power to reopen a finished ticket. The freeze is about the ticket's state.
+        // Arrange — `comments.moderate` سلطةٌ على إعادة كتابة جملة زميل، لا على إعادة فتح تذكرةٍ
+        // منتهية. والتجميد عن حال التذكرة.
         [, $employee] = $this->employee();
         [, $designer] = $this->designer();
         [, $moderator] = $this->actor(
@@ -181,7 +176,7 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
     }
 
     /**
-     * A ticket raised by this employee, optionally already assigned to a designer.
+     * تذكرةٌ رفعها هذا الموظف، وقد تكون مُسنَدةً إلى مصمّمٍ أصلاً.
      *
      * @param  array<string, string>  $employee
      */
@@ -211,7 +206,7 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
     }
 
     /**
-     * Takes a ticket all the way to «مكتمل»: accepted, a version sent up, and approved.
+     * تأخذ التذكرة إلى «مكتمل»: قُبلت، ورُفعت نسخة، واعتُمدت.
      *
      * @param  array<string, string>  $employee
      * @param  array<string, string>  $designer

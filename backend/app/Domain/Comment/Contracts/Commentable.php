@@ -9,17 +9,16 @@ use App\Domain\Comment\Models\Comment;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
- * A record staff may leave notes on, and the one question that differs between them: **is the
- * conversation still open?**
+ * سجلٌّ يجوز للموظفين أن يتركوا عليه ملاحظات، والسؤال الوحيد الذي يختلف بين السجلات: **هل ما تزال
+ * المحادثة مفتوحة؟**
  *
- * A customer's notes are never finished — the customer is still a customer, and the next thing
- * learned about them is worth writing down years later. A design ticket's are: the ticket ends,
- * and «بعد الاعتماد لا يوجد مزيد». One interface, because the controller serving both must be
- * able to ask without knowing which it is holding, and because a `Comment`'s `commentable` is
- * typed as a bare `Model` — this is what makes asking it a question the type system allows.
+ * ملاحظات العميل لا تنتهي أبداً — العميل ما يزال عميلاً، وأوّلُ ما يُعرف عنه بعد سنواتٍ يستحقّ أن
+ * يُكتب. وملاحظات تذكرة التصميم تنتهي: التذكرة تنتهي، و«بعد الاعتماد لا يوجد مزيد». وعقدٌ واحد،
+ * لأن المتحكّم الذي يخدم الاثنين عليه أن يسأل دون أن يعرف أيَّهما يحمل، ولأن `commentable` على
+ * `Comment` مكتوبةٌ `Model` مجرّداً — وهذا ما يجعل سؤالها سؤالاً يسمح به نظام الأنواع.
  *
- * {@see HasComments} answers all three the open way, so joining in is still one `use` line plus
- * this name in the `implements` list; a record that ends overrides the two it needs.
+ * و{@see HasComments} تجيب عن الثلاثة جوابَ المفتوح، فيبقى الانضمام سطرَ `use` واحداً وهذا الاسم
+ * في قائمة `implements`؛ والسجلُّ الذي ينتهي يتجاوز الاثنين اللذين يحتاجهما.
  */
 interface Commentable
 {
@@ -28,15 +27,14 @@ interface Commentable
      */
     public function comments(): MorphMany;
 
-    /** Whether anything may still be written, rewritten or removed here. */
+    /** هل ما يزال يجوز أن يُكتب هنا شيء، أو يُعاد كتابته، أو يُحذف. */
     public function acceptsComments(): bool;
 
     /**
-     * Why it is closed, in the record's own words — «اعتُمد التصميم وأُغلقت المحادثة».
+     * لماذا أُغلقت، بكلمات السجلّ نفسه — «اعتُمد التصميم وأُغلقت المحادثة».
      *
-     * Null while it is open. It is the record that says this rather than the comments feature,
-     * because «مغلقة» on its own leaves a designer wondering whether their last message landed,
-     * and only the ticket knows which of its two endings it reached.
+     * و`null` ما دامت مفتوحة. والسجلُّ هو الذي يقول هذا لا ميزةُ التعليقات، لأن «مغلقة» وحدها
+     * تترك المصمّم يتساءل هل وصلت رسالته الأخيرة، ولأن التذكرة وحدها تعرف أيَّ نهايتيها بلغت.
      */
     public function commentsClosedNote(): ?string;
 }

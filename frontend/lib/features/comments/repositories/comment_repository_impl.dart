@@ -8,12 +8,11 @@ import 'package:dayaa/features/comments/models/comment_thread.dart';
 import 'package:dayaa/features/comments/repositories/comment_repository.dart';
 import 'package:dio/dio.dart';
 
-/// Fulfils [CommentRepository] over HTTP.
+/// ينفّذ [CommentRepository] فوق HTTP.
 ///
-/// **The one place that knows a note's URL depends on what it is about.** The API nests notes
-/// under their owner, and turning a [CommentSubject] into that path is this file's whole job —
-/// so a screen holds a subject and never a string, and adding a third kind of record is one arm
-/// of one switch.
+/// **المكان الوحيد الذي يعرف أنّ رابط الملاحظة يتبع ما هي عنه.** الواجهة تُعشّش الملاحظات تحت
+/// مالكها، وتحويلُ [CommentSubject] إلى ذلك المسار هو كلُّ عمل هذا الملف — فتحمل الشاشةُ موضوعاً
+/// لا نصّاً، وإضافةُ نوعٍ ثالث من السجلات ذراعٌ واحدة في تفرّعٍ واحد.
 class CommentRepositoryImpl implements CommentRepository {
   const CommentRepositoryImpl(this._dio);
 
@@ -30,9 +29,9 @@ class CommentRepositoryImpl implements CommentRepository {
 
   @override
   Future<Either<Failure, CommentThread>> comments(CommentSubject subject) {
-    // `safeMetaRequest`, not `safePaginatedRequest`: `data` is the bare list and `meta` holds
-    // one fact about the thread rather than a page's numbers — the paginated parser would report
-    // a malformed response for a reply that is exactly what the API promised.
+    // `safeMetaRequest` لا `safePaginatedRequest`: `data` هي القائمة المجرّدة، و`meta` تحمل
+    // حقيقةً واحدة عن الخيط لا أرقامَ صفحة — والمحلّل المصفَّح كان سيبلّغ عن ردٍّ مشوّه لردٍّ هو
+    // تماماً ما وعدت به الواجهة.
     return safeMetaRequest<CommentThread>(
       () => _dio.get(_base(subject)),
       parse: CommentThread.fromEnvelope,

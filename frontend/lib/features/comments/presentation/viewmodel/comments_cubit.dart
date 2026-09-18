@@ -11,18 +11,15 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'comments_cubit.freezed.dart';
 part 'comments_state.dart';
 
-/// The notes staff leave on one record — a customer, a supplier — and the three things done to
-/// them.
+/// ملاحظات الموظفين على سجلٍّ واحد — عميل، أو مورّد — والأشياء الثلاثة التي تُفعل بها.
 ///
-/// **Every write answers with a `Failure?` rather than putting the failure on the state.** The
-/// same reasoning `CustomerDesignsCubit` gives for renaming and deleting: there is nothing left
-/// on screen for a refusal to attach to, and a field holding it would either linger into the
-/// next rebuild or be cleared by a second emit nobody can see. The screen awaits the call and
-/// shows a snackbar, keeping whatever was typed.
+/// **كلّ كتابةٍ تجيب بـ`Failure?` بدل وضع الفشل في الحالة.** وهو تعليل `CustomerDesignsCubit`
+/// نفسه في إعادة التسمية والحذف: لم يبقَ على الشاشة شيءٌ يتعلّق به الرفض، وحقلٌ يحمله إمّا أن
+/// يتأخّر إلى إعادة البناء التالية أو يمحوه بثٌّ ثانٍ لا يراه أحد. فالشاشة تنتظر النداء وتعرض
+/// شريحة، وتحتفظ بما كُتب.
 ///
-/// **Nothing here re-reads the list after a write.** Each endpoint answers with the row it
-/// stored, so the list is patched from the response — a second round trip to fetch something
-/// already in hand is a spinner the user pays for twice.
+/// **ولا شيء هنا يعيد قراءة القائمة بعد كتابة.** كلّ نقطة نهاية تجيب بالصفّ الذي خزّنته، فتُرقّع
+/// القائمة من الردّ — ورحلةٌ ثانية لجلب ما هو في اليد أصلاً دوّارةٌ يدفع ثمنها المستخدم مرّتين.
 class CommentsCubit extends Cubit<CommentsState> {
   CommentsCubit({
     required CommentSubject subject,
@@ -44,7 +41,7 @@ class CommentsCubit extends Cubit<CommentsState> {
   final DeleteComment _deleteComment;
 
   Future<void> load() async {
-    // Only from nothing. A pull-to-refresh must not blank a list somebody is reading.
+    // من العدم فقط. السحب للتحديث يجب ألّا يُفرغ قائمةً يقرؤها أحد.
     if (state is! CommentsLoaded) emit(const CommentsState.loading());
 
     final result = await _getComments(_subject);
@@ -55,11 +52,11 @@ class CommentsCubit extends Cubit<CommentsState> {
         final current = state;
 
         return current is CommentsLoaded
-            // `busy` is deliberately kept: a refresh that lands while a row is saving must not
-            // un-grey it — the request it is waiting on is still out there.
+            // `busy` تبقى عن قصد: تحديثٌ يصل وصفٌّ يُحفظ يجب ألّا يرفع عنه التخفيت — الطلب الذي
+            // ينتظره ما يزال خارجاً.
             //
-            // The thread's own state is taken fresh every time, because a refresh is exactly how
-            // this screen learns that the ticket it is showing was approved a minute ago.
+            // وحالُ الخيط تُؤخذ جديدةً في كل مرّة، لأن التحديث هو تحديداً كيف تعرف هذه الشاشة أنّ
+            // التذكرة التي تعرضها اعتُمدت قبل دقيقة.
             ? current.copyWith(
                 comments: thread.comments,
                 canComment: thread.canComment,
@@ -74,22 +71,21 @@ class CommentsCubit extends Cubit<CommentsState> {
     );
   }
 
-  /// Leaves a note. Null when it landed; the failure when it did not.
+  /// يترك ملاحظة. `null` حين تحطّ، والفشلُ حين لا تحطّ.
   ///
-  /// **A new note goes to the front of the list, and that is the bottom of the screen.** The
-  /// server sends newest-first and this keeps that order, so the list here is the same one the
-  /// next `load()` will produce — which is what stops the screen re-ordering itself under the
-  /// reader a second later. The screen draws it reversed, so «front of the list» renders as «last
-  /// thing said», exactly where a chat puts it.
+  /// **الملاحظة الجديدة تذهب إلى مقدّمة القائمة، وهي أسفل الشاشة.** الخادم يرسل الأحدث أولاً وهذه
+  /// تحفظ ذلك الترتيب، فالقائمة هنا هي نفسها التي سينتجها `load()` التالي — وهذا ما يمنع الشاشة
+  /// من إعادة ترتيب نفسها تحت القارئ بعد ثانية. والشاشة ترسمها معكوسة، فتُرسم «مقدّمة القائمة»
+  /// «آخر ما قيل»، وهو تماماً حيث تضعه المحادثة.
   Future<Failure?> add(String body) async {
     final current = state;
     if (current is! CommentsLoaded) return null;
 
     final text = body.trim();
     if (text.isEmpty) {
-      // The server refuses this too — a line of spaces satisfies `required` while telling the
-      // next reader nothing — so this only spares the round trip, and is shaped as the 422 the
-      // API would have sent so the screen has one kind of refusal to render.
+      // الخادم يرفض هذه أيضاً — سطرٌ من الفراغات يُرضي `required` ولا يقول للقارئ التالي شيئاً —
+      // فهذه توفّر الرحلة فقط، وهي مصوغةٌ على شكل الـ422 التي كانت الواجهة سترسلها، ليكون للشاشة
+      // نوعٌ واحد من الرفض ترسمه.
       return const Failure.server(message: 'اكتب الملاحظة قبل الحفظ', statusCode: 422);
     }
 
@@ -117,19 +113,18 @@ class CommentsCubit extends Cubit<CommentsState> {
     );
   }
 
-  /// Rewrites one, in place.
+  /// يعيد كتابة واحدة، في مكانها.
   ///
-  /// **In place, not moved to the top.** A correction is not a new thing said, and a note that
-  /// jumped up the list every time a typo was fixed would keep re-ordering a page people read
-  /// as a conversation.
+  /// **في مكانها، لا تُنقل إلى الأعلى.** التصحيح ليس شيئاً جديداً قيل، وملاحظةٌ تقفز في القائمة
+  /// كلّما صُحّح خطأٌ مطبعيّ كانت ستُعيد ترتيب صفحةٍ يقرؤها الناس محادثة.
   Future<Failure?> edit(int commentId, String body) async {
     final current = state;
     if (current is! CommentsLoaded) return null;
 
     final text = body.trim();
     if (text.isEmpty) {
-      // 422 with the server's own wording, so the screen shows a refusal that reads exactly
-      // like the one the API would have sent — see UploadCustomerDesign's pre-flight check.
+      // 422 بكلمات الخادم نفسها، فتعرض الشاشة رفضاً يُقرأ تماماً كالذي كانت الواجهة سترسله —
+      // انظر فحص `UploadCustomerDesign` القَبْلي.
       return const Failure.server(message: 'اكتب الملاحظة قبل الحفظ', statusCode: 422);
     }
 
@@ -160,11 +155,11 @@ class CommentsCubit extends Cubit<CommentsState> {
     );
   }
 
-  /// Takes one off the record.
+  /// يرفع واحدةً عن السجلّ.
   ///
-  /// The row leaves the list only once the server has agreed. Removing it first would read
-  /// better for a second and then be contradicted by the next refresh — and this endpoint
-  /// refuses a colleague's note, which is precisely the case that would flicker.
+  /// الصفّ يغادر القائمة بعد موافقة الخادم لا قبلها. وحذفه أولاً كان سيُقرأ أفضلَ ثانيةً ثم
+  /// يناقضه التحديثُ التالي — ونقطة النهاية هذه ترفض ملاحظة الزميل، وهي تحديداً الحالة التي كانت
+  /// سترتجف.
   Future<Failure?> remove(int commentId) async {
     final current = state;
     if (current is! CommentsLoaded) return null;
@@ -196,10 +191,10 @@ class CommentsCubit extends Cubit<CommentsState> {
     );
   }
 
-  /// Applies a change to the loaded state, and does nothing at all if the screen has moved on.
+  /// يطبّق تغييراً على الحالة المحمَّلة، ولا يفعل شيئاً البتّة إن كانت الشاشة قد مضت.
   ///
-  /// Read fresh rather than closing over the state captured before the request: a refresh may
-  /// have landed while it was in flight, and writing the old list back would undo it.
+  /// تُقرأ جديدةً بدل الإغلاق على الحالة الملتقطة قبل الطلب: قد يكون تحديثٌ قد حطّ وهو في الطريق،
+  /// وإعادةُ كتابة القائمة القديمة فوقه تُبطله.
   void _patch(CommentsLoaded Function(CommentsLoaded loaded) change) {
     final current = state;
     if (current is! CommentsLoaded) return;

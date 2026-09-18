@@ -321,8 +321,9 @@ Every endpoint is published as OpenAPI 3.1 automatically. **Never hand-write API
 3. **Type everything** — parameters, returns, properties. `declare(strict_types=1)` in `app/`.
 4. **Server-assigned fields are never fillable.** Identifiers, codes and computed values are
    assigned directly, never mass-assigned, so a request can never supply them.
-5. **Arabic** for user-facing strings and validation messages; **English** for code, comments and
-   commit messages.
+5. **Arabic** for user-facing strings, validation messages, **comments and commit messages** —
+   a comment is written for whoever reads the code here. **English** for the code itself: names,
+   types and identifiers.
 6. **Comments explain *why*, not *what*.** A comment restating the code is noise; one recording a
    decision or a trap is worth keeping.
 7. **Never commit secrets.** `.env` is ignored; add every new key to `.env.example`.

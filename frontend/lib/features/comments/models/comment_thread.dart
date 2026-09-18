@@ -1,16 +1,15 @@
 import 'package:dayaa/features/comments/models/comment.dart';
 
-/// Every note on one record, **and whether anything more may be said**.
+/// كلّ ملاحظات سجلٍّ واحد، **وهل بقي ما يُقال**.
 ///
-/// The second half is why this exists rather than a bare `List<Comment>`. A design ticket ends —
-/// «بعد الاعتماد لا يوجد مزيد» — and the thing that has to know it is the box under the list,
-/// which is drawn whether or not there is a single note above it. An empty closed conversation
-/// has no row to carry the fact, so it travels beside the rows: the server sends it as `meta`,
-/// the same place a page's numbers come from.
+/// النصف الثاني هو سبب وجود هذا الصنف بدل `List<Comment>` مجرّدة. تذكرة التصميم تنتهي — «بعد
+/// الاعتماد لا يوجد مزيد» — والذي عليه أن يعرف ذلك هو الصندوق تحت القائمة، وهو يُرسم سواءٌ كان
+/// فوقه صفٌّ واحد أم لا. والمحادثة المغلقة الفارغة لا صفَّ فيها يحمل الخبر، فيسافر بجوار الصفوف:
+/// يرسله الخادم في `meta`، حيث تأتي أرقام الصفحات.
 ///
-/// **The server decides, as it does for `canEdit`.** A customer's conversation never closes and a
-/// ticket's closes with the ticket, and neither rule is written twice — the app draws what it is
-/// told and the endpoints refuse regardless.
+/// **والخادم هو الذي يقرّر، كما في `canEdit`.** محادثة العميل لا تُغلق أبداً، ومحادثة التذكرة
+/// تُغلق بإغلاقها، ولا تُكتب أيٌّ من القاعدتين مرّتين — التطبيق يرسم ما يُقال له، ونقاط النهاية
+/// ترفض على أي حال.
 class CommentThread {
   const CommentThread({
     required this.comments,
@@ -18,11 +17,10 @@ class CommentThread {
     this.closedNote,
   });
 
-  /// From the envelope's two halves: `data` is the list, `meta` is what is true of the thread.
+  /// من نصفَي الغلاف: `data` هي القائمة، و`meta` هي ما يصحّ عن الخيط كلّه.
   ///
-  /// **Open unless the server says otherwise.** An older build of the API sends no `meta` at
-  /// all, and a box that refuses to open because a key was missing is worse than a box that
-  /// opens and meets a refusal it can show.
+  /// **مفتوحةٌ ما لم يقل الخادم غير ذلك.** إصدارٌ أقدم من الواجهة لا يرسل `meta` أصلاً، وصندوقٌ
+  /// يرفض أن يُفتح لأن مفتاحاً كان غائباً أسوأ من صندوقٍ يُفتح ويلقى رفضاً يستطيع عرضه.
   factory CommentThread.fromEnvelope(dynamic data, Map<String, dynamic> meta) {
     return CommentThread(
       comments: (data! as List)
@@ -34,15 +32,14 @@ class CommentThread {
     );
   }
 
-  /// Newest first, exactly as the server sent them.
+  /// الأحدث أولاً، تماماً كما أرسلها الخادم.
   final List<Comment> comments;
 
-  /// Whether the box is open. False freezes the whole thread — nothing added, and nothing
-  /// rewritten or removed either, which arrives per row as `canEdit` and `canDelete` false.
+  /// هل الصندوق مفتوح. و`false` تُجمّد الخيط كلّه — لا إضافة، ولا تعديل ولا حذف، وهذان يصلان
+  /// لكل صفٍّ على حدة كـ`canEdit` و`canDelete` بقيمة false.
   final bool canComment;
 
-  /// Why it closed, in the record's own words — «اعتُمد التصميم وأُغلقت المحادثة». Null while it
-  /// is open, and never invented here: a reason the app wrote itself would be a guess printed as
-  /// a fact.
+  /// لماذا أُغلقت، بكلمات السجلّ نفسه — «اعتُمد التصميم وأُغلقت المحادثة». و`null` ما دامت
+  /// مفتوحة، ولا تُخترع هنا أبداً: سببٌ يكتبه التطبيق لنفسه تخمينٌ مطبوعٌ في صورة حقيقة.
   final String? closedNote;
 }

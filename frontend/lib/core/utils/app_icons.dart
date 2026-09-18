@@ -209,12 +209,12 @@ abstract final class AppIcons {
   static IconData get comments =>
       _pick(Icons.forum_outlined, CupertinoIcons.chat_bubble_2);
 
-  /// Sends what was just typed into the notes thread.
+  /// يُرسل ما كُتب للتوّ في خيط الملاحظات.
   ///
-  /// A paper plane, which is the one glyph every messaging app on these phones puts at the end
-  /// of its box — so the round button needs no label. **Not [resend]**, which happens to draw
-  /// the same plane on Android: that one is a parcel going out a second time, and two ideas
-  /// sharing a name here is how one of them quietly changes when the other is restyled.
+  /// طائرةٌ ورقية، وهي الشكل الذي يضعه كلّ تطبيق محادثة في هذه الهواتف في طرف صندوقه — فلا يحتاج
+  /// الزرّ المستدير تسمية. **وليست [resend]** التي تصادف أن ترسم الطائرة نفسها على أندرويد: تلك
+  /// طردٌ يخرج مرّةً ثانية، واشتراكُ فكرتين في اسمٍ هنا هو كيف تتغيّر إحداهما صامتةً حين تُعاد
+  /// صياغة الأخرى.
   static IconData get send =>
       _pick(Icons.send_rounded, CupertinoIcons.paperplane_fill);
 

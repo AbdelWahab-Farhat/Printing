@@ -94,15 +94,14 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
     }
 
     /**
-     * Whether anything may still be said on it — {@see Commentable}.
+     * هل بقي ما يُقال عليها — {@see Commentable}.
      *
-     * **The third half of a sentence this codebase already wrote.** `DesignTicketStatus::isClosed()`
-     * says of «مكتمل» and «ملغى» that "nothing more will be drawn, reviewed or said", and the
-     * first two were enforced from the start while the third was not. A ticket that has been
-     * signed off is the record of what was agreed, and a record somebody can still add to — or
-     * quietly rewrite — is not a record.
+     * **الثلثُ الثالث من جملةٍ كتبتها هذه الشيفرة أصلاً.** `DesignTicketStatus::isClosed()` تقول
+     * عن «مكتمل» و«ملغى» إنه «لا شيء بعدهما يُرسم ولا يُراجع ولا يُقال»، وكان الثلثان الأولان
+     * مطبَّقَين من اليوم الأول والثالث لا. والتذكرة التي اعتُمدت هي سجلُّ ما اتُّفق عليه، والسجلُّ
+     * الذي يستطيع أحدٌ أن يضيف إليه — أو أن يعيد كتابته صامتاً — ليس سجلّاً.
      *
-     * It is the ticket's *state* that closes it, never a permission: a moderator is refused too.
+     * و*حالُ* التذكرة هي التي تُغلقها، لا صلاحية أبداً: والمشرف يُرفض هو أيضاً.
      */
     public function acceptsComments(): bool
     {
@@ -110,8 +109,8 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
     }
 
     /**
-     * Which of the two endings it reached, because they mean different things to whoever is
-     * holding the phone — the same distinction {@see DesignTicketIsClosed} makes.
+     * أيَّ نهايتيها بلغت، لأنهما تعنيان شيئين مختلفين لمن يمسك الهاتف — وهو التمييز نفسه الذي
+     * يصنعه {@see DesignTicketIsClosed}.
      */
     public function commentsClosedNote(): ?string
     {

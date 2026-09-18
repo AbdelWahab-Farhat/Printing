@@ -14,20 +14,20 @@ import 'package:dayaa/features/comments/usecases/get_comments.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-/// The notes staff leave on a customer: reading them, and the three things done to them.
+/// ملاحظات الموظفين على عميل: قراءتها، والأشياء الثلاثة التي تُفعل بها.
 ///
-/// **The list is never thrown away once it is on screen.** Adding, editing and deleting all
-/// keep it and mark the one row that is moving — a page that blanks to a spinner because a
-/// sentence is being saved has taken away what the user was reading.
+/// **القائمة لا تُرمى بعد وصولها إلى الشاشة أبداً.** الإضافة والتعديل والحذف كلّها تُبقيها
+/// وتُعلّم الصفّ المتحرّك وحده — وصفحةٌ تبيضّ إلى دوّارةٍ لأن جملةً تُحفظ سلبت المستخدمَ ما كان
+/// يقرؤه.
 ///
-/// Arrange - Act - Assert throughout.
+/// Arrange - Act - Assert في كل اختبار.
 class _MockCommentRepository extends Mock implements CommentRepository {}
 
 void main() {
-  /// The record every note in this file hangs off — one customer, named once.
+  /// السجلّ الذي تتعلّق به كلّ ملاحظةٍ في هذا الملف — عميلٌ واحد، يُسمّى مرّة.
   const subject = CommentSubject.customer(7);
 
-  // Mocktail needs something to hand an `any()` matcher when the parameter is not a primitive.
+  // Mocktail تحتاج شيئاً تسلّمه لمطابِق `any()` حين لا يكون المُعامل قيمةً بدائية.
   setUpAll(() => registerFallbackValue(subject));
 
   late _MockCommentRepository repository;
@@ -64,10 +64,10 @@ void main() {
 
   tearDown(() => cubit.close());
 
-  // ───────────────────────────── reading them ─────────────────────────────
+  // ───────────────────────────── قراءتها ─────────────────────────────
 
   test('the notes arrive in the order the server sent them', () async {
-    // Arrange — newest first is the server's decision; the app does not re-sort it.
+    // Arrange — الأحدث أولاً قرارُ الخادم؛ والتطبيق لا يعيد ترتيبها.
     when(() => repository.comments(subject))
         .thenAnswer((_) async => const Right(CommentThread(comments: [theirs, mine])));
 
@@ -92,8 +92,8 @@ void main() {
   });
 
   test('a closed conversation arrives with the reason it closed', () async {
-    // Arrange — «بعد الاعتماد لا يوجد مزيد». The server decides this, and an empty thread on a
-    // signed-off ticket has no row to carry it, so it travels beside the rows.
+    // Arrange — «بعد الاعتماد لا يوجد مزيد». الخادم يقرّر هذا، والخيط الفارغ على تذكرةٍ اعتُمدت
+    // لا صفَّ فيه يحمله، فيسافر بجوار الصفوف.
     when(() => repository.comments(subject)).thenAnswer(
       (_) async => const Right(
         CommentThread(
@@ -125,7 +125,7 @@ void main() {
     expect(cubit.state.closedNote, isNull);
   });
 
-  // ───────────────────────────── adding one ─────────────────────────────
+  // ───────────────────────────── إضافة واحدة ─────────────────────────────
 
   test('a new note lands at the top of the list without a reload', () async {
     // Arrange
@@ -148,11 +148,11 @@ void main() {
     // Act
     final failure = await cubit.add('اتفقنا على خصم ٥٪ للطلبيات فوق ألف');
 
-    // Assert — newest first, and the row the server actually stored rather than a local copy.
+    // Assert — الأحدث أولاً، والصفُّ الذي خزّنه الخادم فعلاً لا نسخةً محليّة.
     expect(failure, isNull);
     expect(cubit.state.comments?.map((comment) => comment.id), [5, 1]);
-    // The opening read, and no second one: the created note *is* the response, so re-reading
-    // the whole list would be a round trip for something already in hand.
+    // القراءة الافتتاحية ولا ثانية لها: الملاحظة المُنشأة *هي* الردّ، فإعادةُ قراءة القائمة
+    // كلّها رحلةٌ لشيءٍ في اليد أصلاً.
     verify(() => repository.comments(subject)).called(1);
   });
 
@@ -168,8 +168,8 @@ void main() {
     // Act
     final failure = await cubit.add('ملاحظة لن تُحفظ');
 
-    // Assert — returned rather than put on the state: there is nothing on screen for it to
-    // attach to, and the screen shows a snackbar and keeps what was typed.
+    // Assert — تُعاد ولا تُوضع في الحالة: لم يبقَ على الشاشة شيءٌ تتعلّق به، والشاشةُ تعرض
+    // شريحةً وتحتفظ بما كُتب.
     expect(failure, isNotNull);
     expect(cubit.state.comments?.map((comment) => comment.id), [1]);
   });
@@ -183,12 +183,12 @@ void main() {
     // Act
     final failure = await cubit.add('   ');
 
-    // Assert — the server refuses it too; this only spares the round trip.
+    // Assert — الخادم يرفضها أيضاً؛ وهذه توفّر الرحلة فقط.
     expect(failure, isNotNull);
     verifyNever(() => repository.add(any(), body: any(named: 'body')));
   });
 
-  // ───────────────────────────── editing one ─────────────────────────────
+  // ───────────────────────────── تعديل واحدة ─────────────────────────────
 
   test('an edited note replaces itself where it sits', () async {
     // Arrange
@@ -211,7 +211,7 @@ void main() {
     // Act
     final failure = await cubit.edit(1, 'التصحيح: بعد الظهر وليس صباحاً');
 
-    // Assert — in place, not moved to the top: a correction is not a new thing said.
+    // Assert — في مكانها لا في الأعلى: التصحيح ليس شيئاً جديداً قيل.
     expect(failure, isNull);
     expect(cubit.state.comments?.map((comment) => comment.id), [2, 1]);
     expect(cubit.state.comments?.last.body, 'التصحيح: بعد الظهر وليس صباحاً');
@@ -230,7 +230,7 @@ void main() {
     // Act
     final pending = cubit.edit(1, 'نص جديد');
 
-    // Assert — the row shows it is working; the list stays on screen.
+    // Assert — الصفّ يقول إنه يعمل؛ والقائمة تبقى على الشاشة.
     expect(cubit.state.isBusy(1), isTrue);
 
     // Act
@@ -241,7 +241,7 @@ void main() {
     expect(cubit.state.isBusy(1), isFalse);
   });
 
-  // ───────────────────────────── removing one ─────────────────────────────
+  // ───────────────────────────── حذف واحدة ─────────────────────────────
 
   test('a removed note leaves the list', () async {
     // Arrange
@@ -273,8 +273,8 @@ void main() {
     // Act
     final failure = await cubit.remove(2);
 
-    // Assert — the server has the last word, and a note it refused to delete must not vanish
-    // from a screen that will still be showing the old list after a refresh.
+    // Assert — الكلمة الأخيرة للخادم، وملاحظةٌ رفض حذفها يجب ألّا تختفي من شاشةٍ ستعرض القائمة
+    // القديمة بعد التحديث.
     expect(failure, isNotNull);
     expect(cubit.state.comments?.map((comment) => comment.id), [2, 1]);
     expect(cubit.state.isBusy(2), isFalse);

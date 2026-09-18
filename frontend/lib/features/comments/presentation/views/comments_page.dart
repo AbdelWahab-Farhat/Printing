@@ -17,37 +17,33 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// The notes staff leave each other about one record — a customer, a supplier, a design ticket.
+/// ما يكتبه الموظفون لبعضهم عن سجلٍّ واحد — عميل، أو مورّد، أو تذكرة تصميم.
 ///
-/// **One screen for both, because it is one feature.** What differs between them is the record
-/// the notes hang off, which arrives as a [CommentSubject] and goes no further than the
-/// repository — except for the words the box and the empty page say, which are the one place a
-/// reader can tell what they are writing about. See GENERAL-COMMENTS.md.
+/// **شاشةٌ واحدة للثلاثة، لأنها ميزةٌ واحدة.** الذي يختلف بينها هو السجلّ الذي تتعلّق به
+/// الملاحظات، ويصل كـ[CommentSubject] ولا يتجاوز المستودع — إلا كلامَ الصندوق والصفحة الفارغة،
+/// وهو المكان الوحيد الذي يعرف منه القارئ عمّاذا يكتب. انظر GENERAL-COMMENTS.md.
 ///
-/// **It is shaped like the messaging app on the same phone, on purpose.** Bubbles on two sides,
-/// the day said once between the days rather than under every sentence, a run from one person
-/// carrying their name once, a round send key beside the box, and what can be *done* to a note
-/// behind a long press. None of that is decoration: every person opening this screen has spent
-/// years in Telegram and WhatsApp, and a thread that behaves the way those do is a thread nobody
-/// has to be taught.
+/// **وهي مصوغةٌ على شكل تطبيق المحادثة في الهاتف نفسه، عن قصد.** فقاعتان على جهتين، واليوم
+/// يُقال مرّةً بين الأيام لا تحت كل جملة، ورسائل الشخص الواحد المتتابعة تحمل اسمه مرّة، ومفتاح
+/// إرسالٍ مستدير بجانب الصندوق، وما *يُفعل* بالرسالة خلف ضغطةٍ مطوّلة. ليس في هذا زينة: كلّ من
+/// يفتح هذه الشاشة قضى سنواتٍ في تيليغرام وواتساب، والخيط الذي يتصرّف كما يتصرّفان خيطٌ لا يحتاج
+/// أحدٌ أن يُعلَّمه.
 ///
-/// **Writing one costs no more than reading the record does** — `customers.view` on a customer,
-/// `vendors.view` on a supplier. A note is a working tool rather than a privilege: anybody who
-/// may look a record up may tell the next person what they learned, which is the whole reason
-/// this exists, since otherwise that sentence is said out loud and leaves with whoever heard it.
+/// **وكتابةُ ملاحظةٍ لا تكلّف أكثر من قراءة السجلّ** — `customers.view` على عميل، و`vendors.view`
+/// على مورّد. الملاحظة أداةُ عملٍ لا امتياز: من جاز له أن يبحث عن السجلّ جاز له أن يخبر مَن
+/// بعده بما تعلّمه، وهذا سببُ وجود الميزة أصلاً، وإلا قيلت الجملةُ شفاهاً ورحلت مع سامعها.
 ///
-/// **Who may change one is the server's answer, carried on the note.** Its author, or somebody
-/// holding `comments.moderate`. The sheet draws its rows off `canEdit` and `canDelete` rather
-/// than comparing user ids here — a second copy of an authorization rule is a copy that drifts,
-/// and the endpoints refuse regardless.
+/// **ومَن يُعدّلها جوابُ الخادم، محمولاً على الملاحظة نفسها.** كاتبها، أو مَن يملك
+/// `comments.moderate`. والورقة ترسم صفوفها من `canEdit` و`canDelete` لا من مقارنة معرّفات هنا —
+/// فنسخةٌ ثانية من قاعدة صلاحيات هي نسخةٌ ستنحرف، ونقاط النهاية ترفض على أي حال.
 class CommentsPage extends StatelessWidget {
   const CommentsPage({required this.subject, this.ownerName, super.key});
 
-  /// Which record these notes are about.
+  /// أيُّ سجلٍّ هذه الملاحظات عنه.
   final CommentSubject subject;
 
-  /// Whose notes these are. Passed from the record's own screen so the bar can say it without a
-  /// second request; null on a cold deep link, where the heading stands alone.
+  /// لِمَن هذه الملاحظات. يصل من شاشة السجلّ نفسه ليقوله الشريط بلا طلبٍ ثانٍ؛ و`null` على رابطٍ
+  /// عميقٍ بارد، حيث يقف العنوان وحده.
   final String? ownerName;
 
   @override
@@ -100,40 +96,36 @@ class _CommentsView extends StatelessWidget {
                       ? _EmptyView(subject: subject)
                       : ListView.builder(
                           /*
-                           * **Oldest at the top, newest at the bottom — read as a conversation.**
+                           * **الأقدم فوق والأحدث تحت — تُقرأ كمحادثة.**
                            *
-                           * `reverse: true` rather than reversing the list, and it buys two
-                           * things at once. The data stays exactly as the server sends it
-                           * (newest first), so `add()` still puts a new note at index 0 and it
-                           * still lands where the eye is — now the bottom. And a reversed list
-                           * opens already scrolled to index 0, so the screen arrives showing the
-                           * last thing said instead of making somebody scroll a year of notes to
-                           * find it.
+                           * `reverse: true` بدل عكس القائمة، وهي تشتري أمرين معاً. البيانات تبقى
+                           * كما أرسلها الخادم (الأحدث أولاً)، فـ`add()` تضع الملاحظة الجديدة في
+                           * الموضع صفر وتظلّ تحطّ حيث العين — وهو الآن الأسفل. والقائمة المعكوسة
+                           * تُفتح وهي عند الموضع صفر أصلاً، فتصل الشاشة عارضةً آخر ما قيل بدل أن
+                           * تُجبر أحداً على تمرير سنةٍ من الملاحظات ليبلغه.
                            *
-                           * Reversing the *data* instead would have done neither: the list would
-                           * open at the oldest note, and every new one would arrive off-screen.
+                           * وعكسُ *البيانات* ما كان ليفعل أياً منهما: القائمة تُفتح على الأقدم،
+                           * وكلّ جديدةٍ تصل خارج الشاشة.
                            *
-                           * The trade is that pull-to-refresh now lives at the top edge, which in
-                           * a reversed list is the oldest end — which is where «load older» would
-                           * go if this ever paginates, so it is the right edge for it anyway.
+                           * والثمن أنّ السحب للتحديث صار على الحافة العليا، وهي في قائمةٍ معكوسة
+                           * طرفُ الأقدم — وهو مكان «حمّل الأقدم» إن صُفّحت هذه يوماً، فهي الحافة
+                           * الصحيحة له على أي حال.
                            */
                           reverse: true,
-                          // `always`, so pull-to-refresh works on a short list too.
+                          // `always`، ليعمل السحب للتحديث على قائمةٍ قصيرة أيضاً.
                           physics: const AlwaysScrollableScrollPhysics(),
-                          // Scrolling away from the box puts the keyboard down — somebody
-                          // reaching back through the thread is reading, not typing, and the
-                          // keyboard is covering half of what they are reaching for.
+                          // التمرير بعيداً عن الصندوق يُنزل لوحة المفاتيح — مَن يعود في الخيط
+                          // إلى الوراء يقرأ ولا يكتب، ولوحة المفاتيح تغطّي نصف ما يمدّ يده إليه.
                           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                           padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 12.h),
                           itemCount: comments.length,
-                          // **No `separatorBuilder`.** The gap between two bubbles is not one
-                          // number: three pixels inside a run from one person, ten between two
-                          // people, and none at all where a day divider already parts them. Each
-                          // entry owns the space above itself, because only it knows which of
-                          // the three it is.
+                          // **لا `separatorBuilder`.** الفجوة بين فقاعتين ليست رقماً واحداً:
+                          // ثلاثة داخل رسائل الشخص الواحد، وعشرة بين شخصين، ولا شيء حيث يفصل
+                          // فاصلُ اليوم أصلاً. كلّ مُدخلٍ يملك المسافة فوقه، لأنه وحده يعرف أيَّ
+                          // الثلاث هو.
                           itemBuilder: (context, index) {
-                            // Newest first in the data, so the note said *before* this one is
-                            // the next index up and the one said after it is the index below.
+                            // الأحدث أولاً في البيانات، فالرسالة التي قيلت *قبل* هذه هي الموضع
+                            // التالي، والتي قيلت بعدها هي الموضع السابق.
                             return _ThreadEntry(
                               comment: comments[index],
                               earlier: index + 1 < comments.length ? comments[index + 1] : null,
@@ -144,9 +136,8 @@ class _CommentsView extends StatelessWidget {
                         ),
                 ),
               ),
-              // **Gone, not greyed, once the record has ended.** A box somebody can type into
-              // and never send is worse than no box: it invites a sentence and then loses it.
-              // What takes its place says why, in the record's own words.
+              // **يختفي ولا يُعطَّل حين ينتهي السجلّ.** صندوقٌ يُكتب فيه ولا يُرسل أسوأ من لا
+              // صندوق: يدعو إلى جملةٍ ثم يضيّعها. والذي يحلّ محلّه يقول السبب، بكلمات السجلّ.
               if (state.canComment)
                 _Composer(subject: subject, isSending: state.isAdding)
               else
@@ -159,12 +150,11 @@ class _CommentsView extends StatelessWidget {
   }
 }
 
-/// One note with its neighbours in hand — which is what it takes to know how to draw it.
+/// ملاحظةٌ واحدة وجارتاها في اليد — وهذا ما يلزم لمعرفة كيف تُرسم.
 ///
-/// A bubble on its own can say who wrote it and what it says. Everything that makes a column of
-/// bubbles read as a conversation — the day said once, a name said once per run, the tail on the
-/// last of a run — is a fact about the note *beside* it, so the two neighbours are passed in
-/// rather than looked up.
+/// الفقاعة وحدها تستطيع أن تقول مَن كتبها وما تقول. أمّا ما يجعل عموداً من الفقاعات يُقرأ
+/// محادثةً — اليومُ يُقال مرّة، والاسمُ مرّةً لكلّ سلسلة، والذيلُ على آخرها — فحقائقُ عن الرسالة
+/// *المجاورة*، ولذلك تصل الجارتان معها بدل أن تُبحث عنهما.
 class _ThreadEntry extends StatelessWidget {
   const _ThreadEntry({
     required this.comment,
@@ -175,17 +165,16 @@ class _ThreadEntry extends StatelessWidget {
 
   final Comment comment;
 
-  /// The note said before this one, and the one said after it. Null at the two ends of the
-  /// thread.
+  /// الرسالة التي قيلت قبل هذه، والتي قيلت بعدها. `null` عند طرفَي الخيط.
   final Comment? earlier;
   final Comment? later;
 
   final bool isBusy;
 
-  /// Whether [comment] is the first thing said on its day.
+  /// هل [comment] أوّلُ ما قيل في يومه.
   ///
-  /// A note with no timestamp starts nothing: a divider needs a date to print, and «اليوم» over
-  /// a note that may be from last year is worse than no divider at all.
+  /// ملاحظةٌ بلا وقتٍ لا تبدأ شيئاً: الفاصل يحتاج تاريخاً يطبعه، و«اليوم» فوق ملاحظةٍ قد تكون من
+  /// العام الماضي أسوأ من لا فاصل.
   static bool _opensADay(Comment comment, Comment? previous) {
     final at = comment.createdAt?.toLocal();
     if (at == null) return false;
@@ -201,7 +190,7 @@ class _ThreadEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final opensADay = _opensADay(comment, earlier);
-    // Same person, same day, nothing between them: one person talking, not two.
+    // الشخص نفسه، واليوم نفسه، ولا شيء بينهما: شخصٌ واحد يتكلّم، لا اثنان.
     final opensARun = opensADay || earlier == null || earlier!.author.id != comment.author.id;
     final closesARun =
         later == null || later!.author.id != comment.author.id || _opensADay(later!, comment);
@@ -210,8 +199,8 @@ class _ThreadEntry extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (opensADay) _DayDivider(at: comment.createdAt!),
-        // The divider brings its own room; a new voice needs air, and a second sentence from
-        // the same one needs almost none.
+        // الفاصل يحمل مساحته معه؛ والصوت الجديد يحتاج هواءً، والجملة الثانية من الصوت نفسه لا
+        // تكاد تحتاج شيئاً.
         if (!opensADay) SizedBox(height: opensARun ? 10.h : 3.h),
         _CommentCard(
           comment: comment,
@@ -224,11 +213,10 @@ class _ThreadEntry extends StatelessWidget {
   }
 }
 
-/// «اليوم» · «أمس» · «18 سبتمبر» — said once, between the days.
+/// «اليوم» · «أمس» · «18 سبتمبر» — يُقال مرّةً، بين الأيام.
 ///
-/// The date used to sit inside every bubble, which meant a morning's ten notes printed the same
-/// date ten times and the thread still never said where one day ended. One centred line does
-/// both jobs and takes the date out of the sentences.
+/// كان التاريخ داخل كلّ فقاعة، فعشرُ ملاحظاتٍ في صباحٍ واحد تطبع التاريخ نفسه عشراً، والخيط مع
+/// ذلك لا يقول أين انتهى يومٌ وبدأ آخر. سطرٌ واحد في الوسط يؤدّي الأمرين ويخرج التاريخ من الجُمل.
 class _DayDivider extends StatelessWidget {
   const _DayDivider({required this.at});
 
@@ -260,11 +248,11 @@ class _DayDivider extends StatelessWidget {
   }
 }
 
-/// Where a note is written, pinned under the list.
+/// حيث تُكتب الرسالة، مثبَّتاً تحت القائمة.
 ///
-/// **Its own [StatefulWidget] so the text lives here and nowhere else.** A field whose every
-/// keystroke goes through a Cubit is a rebuild of the whole list per character, and this list
-/// can be long. The Cubit hears about the sentence once, when it is sent.
+/// **[StatefulWidget] خاصّ به ليعيش النصّ هنا ولا مكان سواه.** حقلٌ تمرّ كلُّ ضغطة مفتاحٍ فيه
+/// عبر الـCubit يعني إعادةَ بناء القائمة كلّها لكل حرف، وهذه القائمة قد تطول. الـCubit يسمع
+/// بالجملة مرّةً واحدة: حين تُرسل.
 class _Composer extends StatefulWidget {
   const _Composer({required this.subject, required this.isSending});
 
@@ -278,12 +266,12 @@ class _Composer extends StatefulWidget {
 class _ComposerState extends State<_Composer> {
   final TextEditingController _controller = TextEditingController();
 
-  /// Whether there is anything to send. Local [State] rather than anything the Cubit hears
-  /// about: it changes on the first and last keystroke only, and it lights one button.
+  /// هل هناك ما يُرسل. حالةٌ محليّة لا شيء يسمع بها في الـCubit: تتغيّر عند أول حرفٍ وآخره فقط،
+  /// وهي تُضيء زرّاً واحداً.
   bool _hasText = false;
 
-  /// Which way what is being typed runs — see [ReadingDirection]. Null until the first letter,
-  /// so an empty box keeps the app's own direction and its Arabic hint reads correctly.
+  /// اتجاه ما يُكتب الآن — انظر [ReadingDirection]. `null` حتى أول حرف، فيبقى الصندوق الفارغ على
+  /// اتجاه التطبيق ويُقرأ تلميحه العربي كما ينبغي.
   TextDirection? _direction;
 
   @override
@@ -305,8 +293,8 @@ class _ComposerState extends State<_Composer> {
     final hasText = text.trim().isNotEmpty;
     final direction = text.readingDirection;
 
-    // Two facts, one rebuild, and only when one of them actually moved: this runs on every
-    // keystroke, and the field below it is the most expensive thing on the screen to rebuild.
+    // حقيقتان، وإعادةُ بناءٍ واحدة، ولا تقع إلا إذا تحرّكت إحداهما فعلاً: هذه تعمل مع كل ضغطة
+    // مفتاح، والحقل تحتها أغلى ما يُعاد بناؤه في الشاشة.
     if (hasText == _hasText && direction == _direction) return;
 
     setState(() {
@@ -320,16 +308,15 @@ class _ComposerState extends State<_Composer> {
     if (!mounted) return;
 
     if (failure != null) {
-      // Whatever was typed stays in the box — a refusal that also empties the field costs
-      // somebody the sentence they just wrote.
+      // ما كُتب يبقى في الصندوق — رفضٌ يُفرغ الحقل معه يكلّف صاحبه الجملة التي كتبها للتوّ.
       context.showFailure(failure);
 
       return;
     }
 
     _controller.clear();
-    // Dismissed so the note that was just written is visible: on a phone the keyboard covers
-    // most of the list, and the point of sending is seeing it land.
+    // تُنزَّل لوحة المفاتيح لتُرى الملاحظة التي كُتبت للتوّ: على الهاتف تغطّي اللوحةُ معظم
+    // القائمة، والغاية من الإرسال أن يراه صاحبه يحطّ.
     FocusScope.of(context).unfocus();
   }
 
@@ -348,22 +335,20 @@ class _ComposerState extends State<_Composer> {
         child: Padding(
           padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 8.h),
           child: Row(
-            // **Centred against the box, not pinned to its last line.** The two are one control
-            // and they read as one when their middles agree; hung off the bottom, the key drifts
-            // away from the field the moment a second line is typed.
+            // **متوسّطٌ مقابل الصندوق، لا معلَّقٌ بسطره الأخير.** الاثنان أداةٌ واحدة، ويُقرآن
+            // واحداً حين يتفق منتصفاهما؛ ومعلَّقاً بالأسفل ينزاح المفتاح عن الحقل بمجرد كتابة
+            // سطرٍ ثانٍ.
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: AppTextField(
                   controller: _controller,
                   hint: widget.subject.kind.composerHint,
-                  // The box turns with the language being typed into it, the way a message box
-                  // does. The hint keeps the ambient direction until then — it is Arabic, and a
-                  // hint is not what the person is writing.
+                  // الصندوق يستدير مع اللغة التي تُكتب فيه، كما يفعل صندوق الرسائل. والتلميح
+                  // يبقى على اتجاه الشاشة حتى ذلك الحين — فهو عربي، وليس هو ما يكتبه الشخص.
                   textDirection: _direction,
-                  // One line to start with, growing to five and then scrolling. The box used to
-                  // open four lines tall, which is a form asking for a paragraph rather than a
-                  // message box — and it pushed the last thing said off the screen to do it.
+                  // يبدأ بسطرٍ ويكبر إلى خمسة ثم يُمرَّر. كان يُفتح بأربعة أسطر، وهذا نموذجٌ
+                  // يطلب فقرة لا صندوقُ رسائل — وكان يدفع آخر ما قيل خارج الشاشة ليفعلها.
                   minLines: 1,
                   maxLines: 5,
                   maxLength: 2000,
@@ -385,13 +370,11 @@ class _ComposerState extends State<_Composer> {
   }
 }
 
-/// What stands where the box was, once nothing more may be said.
+/// ما يقف مكان الصندوق حين لا يبقى ما يُقال.
 ///
-/// **It keeps the same footprint the composer had**, so a thread that closes while somebody is
-/// reading it does not jump under them. The words are the server's — «اعتُمد التصميم وأُغلقت
-/// المحادثة» — because only the record knows which of its endings it reached; the fallback is
-/// for a build of the API that closed a thread without saying why, and it says no more than it
-/// knows.
+/// **يحتفظ بمساحة الصندوق نفسها**، فالخيط الذي يُغلق وأحدهم يقرؤه لا يقفز تحته. والكلام كلام
+/// الخادم — «اعتُمد التصميم وأُغلقت المحادثة» — لأن السجلّ وحده يعرف أيَّ نهايتيه بلغ؛ والبديل
+/// لإصدارٍ من الواجهة أغلق خيطاً دون أن يقول لماذا، وهو لا يقول أكثر مما يعرف.
 class _ClosedNote extends StatelessWidget {
   const _ClosedNote({required this.note});
 
@@ -434,13 +417,12 @@ class _ClosedNote extends StatelessWidget {
   }
 }
 
-/// The round key at the end of the box.
+/// المفتاح المستدير في طرف الصندوق.
 ///
-/// **The one button in this app that is not full width**, and the exception is the reference
-/// rather than a whim: a message box with a full-width bar under it is a form, and the bar costs
-/// a line of the conversation on every screen. It is dark until there is something to send, so
-/// the button answers «اكتب الملاحظة قبل الحفظ» before somebody taps it and reads it as a
-/// refusal.
+/// **الزرّ الوحيد في هذا التطبيق الذي لا يأخذ عرض الشاشة**، والاستثناء هو المرجع لا المزاج:
+/// صندوقُ رسائلٍ تحته شريطٌ بعرض الشاشة نموذجٌ لا محادثة، والشريط يكلّف سطراً من الكلام في كل
+/// شاشة. وهو مطفأ ما لم يكن هناك ما يُرسل، فيجيب الزرّ عن «اكتب الملاحظة قبل الحفظ» قبل أن
+/// يضغطه أحدٌ ويقرأها رفضاً.
 class _SendKey extends StatelessWidget {
   const _SendKey({required this.isSending, required this.onPressed});
 
@@ -476,12 +458,11 @@ class _SendKey extends StatelessWidget {
   }
 }
 
-/// One note: who wrote it, when, and what it says.
+/// رسالةٌ واحدة: مَن كتبها، ومتى، وما تقول.
 ///
-/// **Nothing hangs off it.** What can be done to a note lives behind a long press, the way it
-/// does in every messaging app — a pair of text buttons under every bubble was a thread whose
-/// controls outnumbered its sentences, and they were drawn whether or not anybody was about to
-/// use them.
+/// **ولا شيء معلَّقٌ بها.** ما يُفعل بالرسالة يعيش خلف ضغطةٍ مطوّلة، كما في كل تطبيق محادثة —
+/// فزوجُ أزرارٍ تحت كل فقاعة كان خيطاً تفوق أدواتُه جُمَله، وكانت تُرسم سواء همّ أحدٌ باستعمالها
+/// أم لا.
 class _CommentCard extends StatelessWidget {
   const _CommentCard({
     required this.comment,
@@ -493,15 +474,15 @@ class _CommentCard extends StatelessWidget {
   final Comment comment;
   final bool isBusy;
 
-  /// Whether this is the first of a run from one person — the only one that says their name.
+  /// هل هذه أوّلُ سلسلةٍ من شخصٍ واحد — وهي وحدها التي تقول اسمه.
   final bool showsAuthor;
 
-  /// Whether this is the last of that run: the squared corner that points at the speaker's edge
-  /// belongs to the bottom of a run, not to every bubble in it.
+  /// هل هذه آخرُ تلك السلسلة: الزاوية المربّعة التي تشير إلى جهة المتكلّم تخصّ أسفلَ السلسلة، لا
+  /// كلَّ فقاعةٍ فيها.
   final bool hasTail;
 
   Future<void> _hold(BuildContext context) async {
-    // A note mid-request has nothing to offer: its body is about to be replaced or gone.
+    // رسالةٌ في منتصف طلبها لا تعرض شيئاً: نصّها على وشك أن يُستبدل أو يذهب.
     if (isBusy) return;
 
     final action = await _showNoteActions(context, comment: comment);
@@ -548,34 +529,30 @@ class _CommentCard extends StatelessWidget {
     final scheme = context.colorScheme;
     final text = context.textTheme;
 
-    // **Who wrote it, asked of the session rather than inferred from `canEdit`.** That flag is
-    // true for a moderator too, so drawing a moderator's view of somebody else's note as their
-    // own would put the wrong name and the wrong side on it.
+    // **مَن كتبها يُسأل عنه الجلسة، لا يُستنتج من `canEdit`.** تلك الراية صحيحةٌ للمشرف أيضاً،
+    // فرسمُ ملاحظةِ زميلٍ في يد مشرفٍ كأنها ملاحظته يضع عليها الاسم الخطأ والجهة الخطأ.
     final isMine = sl<Session>().isSelf(comment.author.id);
     final onBubble = isMine ? scheme.onPrimaryContainer : scheme.onSurface;
 
     return Opacity(
-      // Greyed while its own request is out, so the row says it is working without the list
-      // moving under anybody.
+      // تُخفَّت ما دام طلبها خارجاً، فيقول الصفّ إنه يعمل دون أن تتحرّك القائمة تحت أحد.
       opacity: isBusy ? 0.5 : 1,
       child: Align(
         /*
-         * **Mine at the end, theirs at the start — and never «left» or «right».**
+         * **رسائلي في النهاية ورسائلهم في البداية — ولا «يسار» ولا «يمين» أبداً.**
          *
-         * This app is Arabic and runs right-to-left, where a chat mirrors: outgoing sits on the
-         * left and incoming on the right, the opposite of an English one. Writing
-         * `Alignment.centerRight` would have hard-coded the English answer and put both sides of
-         * the conversation on the wrong edge. `AlignmentDirectional` resolves against the
-         * ambient direction, so this reads correctly in either without a branch.
+         * هذا التطبيق عربيٌّ يجري من اليمين إلى اليسار، وفيه تنعكس المحادثة: الصادر يسارٌ
+         * والوارد يمين، عكسَ الإنجليزية. وكتابة `Alignment.centerRight` كانت ستُثبّت الجواب
+         * الإنجليزي وتضع طرفَي المحادثة على الحافة الخطأ. أما `AlignmentDirectional` فتُحلّ
+         * مقابل الاتجاه المحيط، فيُقرأ هذا صحيحاً في الحالتين بلا تفرّع.
          */
         alignment: isMine
             ? AlignmentDirectional.centerEnd
             : AlignmentDirectional.centerStart,
         child: ConstrainedBox(
-          // **The whole of what was asked for.** A note used to fill the screen edge to edge,
-          // so a three-word reply looked like a paragraph and nothing said who was talking
-          // without reading. Capped at ~78%, a bubble is as wide as what is in it, and the gap
-          // on the other side is what makes the two sides legible at a glance.
+          // **هذا كلّ ما طُلب.** كانت الملاحظة تملأ الشاشة من حافةٍ إلى حافة، فيبدو ردٌّ من ثلاث
+          // كلماتٍ فقرةً ولا شيء يقول مَن المتكلّم قبل القراءة. وبسقفٍ عند ٧٨٪ تصير الفقاعة
+          // بعرض ما فيها، والفراغُ على الجهة الأخرى هو الذي يجعل الطرفين يُقرآن بنظرة.
           constraints: BoxConstraints(maxWidth: 0.78.sw),
           child: GestureDetector(
             onLongPress: () => unawaited(_hold(context)),
@@ -586,9 +563,9 @@ class _CommentCard extends StatelessWidget {
                 borderRadius: BorderRadiusDirectional.only(
                   topStart: Radius.circular(16.r),
                   topEnd: Radius.circular(16.r),
-                  // The squared corner is the tail: it points at the edge the speaker is on,
-                  // and it is drawn once per run — under the last thing they said — which is
-                  // what makes a run read as one turn rather than as four separate ones.
+                  // الزاوية المربّعة هي الذيل: تشير إلى الحافة التي عليها المتكلّم، وتُرسم مرّةً
+                  // لكل سلسلة — تحت آخر ما قاله — وهذا ما يجعل السلسلة تُقرأ دوراً واحداً بدل
+                  // أربعة أدوارٍ منفصلة.
                   bottomStart: Radius.circular(isMine || !hasTail ? 16.r : 4.r),
                   bottomEnd: Radius.circular(!isMine || !hasTail ? 16.r : 4.r),
                 ),
@@ -597,9 +574,8 @@ class _CommentCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // **Only on somebody else's, and only once per run.** You know who you are,
-                  // and a name over every line one colleague wrote in a row is the noise a chat
-                  // layout exists to drop.
+                  // **على رسائل غيري فقط، ومرّةً لكل سلسلة.** أنت تعرف مَن أنت، واسمٌ فوق كل
+                  // سطرٍ كتبه زميلٌ تباعاً هو الضجيج الذي جاء شكلُ المحادثة ليُسقطه.
                   if (!isMine && showsAuthor) ...[
                     Text(
                       comment.author.displayName,
@@ -614,18 +590,16 @@ class _CommentCard extends StatelessWidget {
                   ],
                   Text(
                     comment.body,
-                    // **Each sentence runs the way it was typed.** A Latin reply in an Arabic
-                    // thread — «ok», a file name, a brief pasted from the customer — comes out
-                    // with its full stop at the wrong end when the bubble forces the app's own
-                    // direction onto it. Null on a sentence with no letters in it, which keeps
-                    // a phone number reading the way the rest of the screen does.
+                    // **كلّ جملةٍ تجري كما كُتبت.** ردٌّ لاتينيّ في خيطٍ عربي — «ok»، أو اسم
+                    // ملف، أو وصفٌ منسوخٌ من العميل — يخرج ونقطتُه في الطرف الخطأ حين تفرض
+                    // الفقاعة عليه اتجاه التطبيق. و`null` لجملةٍ لا حرف فيها، فيبقى رقم الهاتف
+                    // على اتجاه بقية الشاشة.
                     textDirection: comment.body.readingDirection,
                     style: text.bodyMedium?.copyWith(color: onBubble),
                   ),
                   SizedBox(height: 2.h),
-                  // The clock and «عُدّلت» tucked into the trailing corner, the way every chat
-                  // app puts them — the *day* is not here any more: the divider above the run
-                  // already said it.
+                  // الساعة و«عُدّلت» مدسوستان في الزاوية الخلفية، كما يفعل كل تطبيق محادثة —
+                  // و*اليوم* لم يعد هنا: الفاصل فوق السلسلة قاله.
                   Align(
                     alignment: AlignmentDirectional.centerEnd,
                     child: Row(
@@ -660,18 +634,17 @@ class _CommentCard extends StatelessWidget {
   }
 }
 
-/// What holding a note offers.
+/// ما تعرضه الضغطة المطوّلة على رسالة.
 enum _NoteAction { copy, edit, remove }
 
-/// The sheet a long press opens.
+/// الورقة التي تفتحها الضغطة المطوّلة.
 ///
-/// **Copying is offered on every note, including a colleague's.** It is the one thing anybody
-/// who may read a note may also do with it, and it is most of what a long press is for — a phone
-/// number or an address written in here is meant to be lifted out and used.
+/// **النسخ معروضٌ على كل رسالة، بما فيها رسالة الزميل.** هو الشيء الوحيد الذي يجوز لمن يقرأ
+/// الرسالة أن يفعله بها، وهو أكثر ما تُستعمل له الضغطة المطوّلة — رقمُ هاتفٍ أو عنوانٌ مكتوبٌ
+/// هنا كُتب ليُؤخذ ويُستعمل.
 ///
-/// The other two rows are the server's answers, drawn from `can_edit` and `can_delete`. Absent
-/// rather than disabled: there is nothing the reader can do to that note, and a greyed bin
-/// invites a tap that only ever produces a refusal.
+/// والصفّان الآخران جوابُ الخادم، يُرسمان من `can_edit` و`can_delete`. غائبان لا معطَّلان: ليس
+/// في يد القارئ شيءٌ يفعله بتلك الرسالة، وسلّةٌ رماديّة تدعو إلى ضغطةٍ لا تُنتج إلا رفضاً.
 Future<_NoteAction?> _showNoteActions(BuildContext context, {required Comment comment}) {
   return showModalBottomSheet<_NoteAction>(
     context: context,
@@ -684,8 +657,8 @@ Future<_NoteAction?> _showNoteActions(BuildContext context, {required Comment co
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(height: 8.h),
-          // The note itself at the top, clipped to two lines: a sheet opened by holding one
-          // bubble in a long thread has to say which bubble it is about.
+          // الرسالة نفسها في أعلاها، مقصوصةً إلى سطرين: ورقةٌ فُتحت بضغطِ فقاعةٍ واحدة في خيطٍ
+          // طويل عليها أن تقول أيَّ فقاعةٍ تخصّ.
           ListTile(
             title: Text(
               comment.body,
@@ -723,10 +696,10 @@ Future<_NoteAction?> _showNoteActions(BuildContext context, {required Comment co
   );
 }
 
-/// The edit box, as a dialog rather than as an inline field.
+/// صندوق التعديل، حواريّةً لا حقلاً في مكان الصفّ.
 ///
-/// Inline editing would need the list to hold a controller per row and to know which row is
-/// open; a dialog is one field with the sentence already in it, and it closes.
+/// التعديل في المكان كان سيُلزم القائمة بحملِ متحكّمٍ لكل صفّ وبمعرفةِ أيُّ صفٍّ مفتوح؛ والحواريّة
+/// حقلٌ واحد فيه الجملة أصلاً، ثم يُغلق.
 Future<String?> _promptForBody(BuildContext context, {required String initial}) {
   return showDialog<String>(
     context: context,
@@ -734,22 +707,20 @@ Future<String?> _promptForBody(BuildContext context, {required String initial}) 
   );
 }
 
-/// The dialog's content, as a `StatefulWidget` **so that it owns its controller**.
+/// محتوى الحواريّة، `StatefulWidget` **لتملك متحكّمها بنفسها**.
 ///
-/// **This is the fix for a real crash, not a style preference.** The controller used to live in
-/// [_promptForBody] and be disposed with `.whenComplete(controller.dispose)`. That future
-/// completes the instant `Navigator.pop` is called — while the dialog is still animating out and
-/// its `EditableText` is still rebuilding against the controller it was handed. The next frame
-/// touched a disposed `ChangeNotifier`:
+/// **هذا إصلاحُ انهيارٍ حقيقي، لا تفضيلُ أسلوب.** كان المتحكّم يعيش في [_promptForBody] ويُتلَف
+/// بـ`.whenComplete(controller.dispose)`. ذلك المستقبَل يكتمل لحظةَ استدعاء `Navigator.pop` —
+/// والحواريّة ما تزال تخرج بحركةٍ و`EditableText` فيها ما يزال يُعاد بناؤه مقابل المتحكّم الذي
+/// أُعطيه. فيلمس الإطار التالي `ChangeNotifier` متلَفاً:
 ///
 ///     A TextEditingController was used after being disposed.
 ///
-/// and the tree unwound from there into a second, louder assertion about an inherited element
-/// unmounting with live dependents — which is what actually reached the screen, and which is why
-/// the message named a part of Flutter that had nothing to do with the mistake.
+/// ثم تتفكّك الشجرة من هناك إلى تأكيدٍ ثانٍ أعلى صوتاً عن عنصرٍ موروثٍ يُفكّ وله تابعون أحياء —
+/// وهو ما بلغ الشاشة فعلاً، ولهذا سمّت الرسالةُ جزءاً من فلاتر لا علاقة له بالخطأ.
 ///
-/// A `State` disposes after its element is unmounted, which is after the route is gone. So the
-/// controller outlives every frame that can still read it, by construction rather than by timing.
+/// و`State` تُتلِف بعد فكّ عنصرها، وذلك بعد ذهاب المسار. فيعيش المتحكّم أطولَ من كل إطارٍ قد
+/// يقرؤه، بالبنية لا بالتوقيت.
 class _EditBodyDialog extends StatefulWidget {
   const _EditBodyDialog({required this.initial});
 
@@ -805,7 +776,7 @@ class _EmptyView extends StatelessWidget {
     final scheme = context.colorScheme;
 
     return ListView(
-      // A list rather than a Center, so an empty screen can still be pulled to refresh.
+      // قائمةٌ لا `Center`، ليبقى السحب للتحديث ممكناً على شاشةٍ فارغة.
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 64.h),
       children: [
@@ -863,12 +834,11 @@ class _FailureView extends StatelessWidget {
   }
 }
 
-/// What this screen calls itself, and what it asks for, on each of the three records.
+/// بماذا تُسمّي هذه الشاشة نفسها، وعمّاذا تسأل، في كلٍّ من السجلات الثلاثة.
 ///
-/// **One screen, three vocabularies.** The box said «اكتب ملاحظة عن هذا العميل» on a design
-/// ticket, where there is no customer in the room and what is being written is a reply to the
-/// designer. The wording is the only thing on this screen that differs per subject, and it is
-/// the one thing a reader uses to know what they are writing.
+/// **شاشةٌ واحدة، وثلاثُ مفردات.** كان الصندوق يقول «اكتب ملاحظة عن هذا العميل» داخل تذكرة
+/// تصميم، حيث لا عميل في الغرفة وحيث المكتوب ردٌّ على المصمّم. والكلام هو الشيء الوحيد في هذه
+/// الشاشة الذي يختلف باختلاف السجلّ، وهو الشيء الذي يعرف به القارئ ما الذي يكتبه.
 extension on CommentSubjectKind {
   String get threadTitle => switch (this) {
     CommentSubjectKind.customer || CommentSubjectKind.vendor => 'الملاحظات',

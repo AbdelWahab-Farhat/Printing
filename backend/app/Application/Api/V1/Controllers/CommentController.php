@@ -47,18 +47,17 @@ abstract class CommentController extends Controller
     {
         $comments = $owner->comments()->with('author')->get();
 
-        // **The owner handed to every row it owns.** Each note's `can_edit` asks its record
-        // whether the conversation is still open, and a lazy `->commentable` would ask the
-        // database that question once per note for an answer already in hand.
+        // **المالك يُسلَّم لكل صفٍّ يملكه.** `can_edit` على كل ملاحظة تسأل سجلَّها هل ما تزال
+        // المحادثة مفتوحة، و`->commentable` الكسولة كانت ستسأل قاعدة البيانات هذا السؤال مرّةً
+        // لكل ملاحظة عن جوابٍ في اليد أصلاً.
         $comments->each->setRelation('commentable', $owner);
 
         return $this->successWithMeta(
             CommentResource::collection($comments),
             [
-                // **Said once, about the thread rather than about a note.** An empty closed
-                // conversation has no row to carry the fact, and the box under the list is
-                // exactly what has to know it. `closed_note` is the record's own sentence, so
-                // the app prints why instead of inventing a reason.
+                // **يُقال مرّة، عن الخيط لا عن ملاحظة.** المحادثة المغلقة الفارغة لا صفَّ فيها
+                // يحمل الخبر، والصندوق تحت القائمة هو تحديداً ما عليه أن يعرفه. و`closed_note`
+                // جملةُ السجلّ نفسه، فيطبع التطبيق السببَ بدل أن يخترع واحداً.
                 'can_comment' => $owner->acceptsComments(),
                 'closed_note' => $owner->commentsClosedNote(),
             ],
@@ -158,15 +157,14 @@ abstract class CommentController extends Controller
     }
 
     /**
-     * The other rule, and the one that is about the record rather than about the reader.
+     * القاعدة الأخرى، وهي التي عن السجلّ لا عن القارئ.
      *
-     * **Asked before who-may-change, on purpose.** A designer rewriting their own sentence under
-     * an approved design would otherwise be told they may — and refused for a reason that never
-     * applied to them. «انتهت التذكرة» is the true answer, and it is the same answer for
-     * everybody, moderator included.
+     * **تُسأل قبل «مَن يُعدّل» عن قصد.** وإلا لقيل لمصمّمٍ يعيد كتابة جملته تحت تصميمٍ معتمَد إنّ
+     * ذلك له — ثم رُفض لسببٍ لم ينطبق عليه قطّ. و«انتهت التذكرة» هو الجواب الصحيح، وهو الجواب
+     * نفسه للجميع، بمن فيهم المشرف.
      *
-     * A note whose record could not be loaded is left alone: a missing owner is a broken row, and
-     * refusing every write on it would make it unfixable.
+     * والملاحظة التي تعذّر تحميل سجلّها تُترك وشأنها: مالكٌ مفقود صفٌّ معطوب، ورفضُ كل كتابةٍ عليه
+     * يجعله غير قابلٍ للإصلاح.
      */
     private function refuseUnlessOpen(?Model $owner): void
     {

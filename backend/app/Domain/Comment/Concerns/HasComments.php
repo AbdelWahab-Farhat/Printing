@@ -17,9 +17,9 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * purchase order is a `use` and two routes away, and deliberately not added before a screen
  * wants it.
  *
- * **What it provides is the open answer to all three of {@see Commentable}'s questions**, because
- * that is what most records are: a customer is never finished, so their notes never are either. A
- * record that ends overrides {@see acceptsComments()} and says why — see `DesignTicket`.
+ * **وما يقدّمه هو الجوابُ المفتوح عن أسئلة {@see Commentable} الثلاثة**، لأن هذا حالُ معظم
+ * السجلات: العميل لا ينتهي، فملاحظاته لا تنتهي. والسجلُّ الذي ينتهي يتجاوز
+ * {@see acceptsComments()} ويقول لماذا — انظر `DesignTicket`.
  *
  * @phpstan-require-extends Model
  *
@@ -42,10 +42,10 @@ trait HasComments
     }
 
     /**
-     * Open, which is the answer for every record that does not end.
+     * مفتوحة، وهو جوابُ كل سجلٍّ لا ينتهي.
      *
-     * Overriding this is what closes a thread: the controller refuses every write against it and
-     * the resource stops drawing the buttons, without either of them naming a kind of record.
+     * وتجاوزُ هذه هو ما يُغلق خيطاً: المتحكّم يرفض كلّ كتابةٍ عليه، والمورد يكفّ عن رسم الأزرار،
+     * دون أن يسمّي أيٌّ منهما نوعاً من السجلات.
      */
     public function acceptsComments(): bool
     {

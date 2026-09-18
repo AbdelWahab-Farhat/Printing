@@ -4,14 +4,13 @@ import 'package:dayaa/features/comments/models/comment.dart';
 import 'package:dayaa/features/comments/models/comment_subject.dart';
 import 'package:dayaa/features/comments/repositories/comment_repository.dart';
 
-/// Rewrites a note.
+/// يعيد كتابة ملاحظة.
 ///
-/// **The text is the only thing an edit can touch** — not who wrote it and not which customer
-/// it is about. A note is a sentence somebody said about somebody, and an edit that could move
-/// either of those would turn a record into a forgery.
+/// **النصّ هو الشيء الوحيد الذي يمسّه التعديل** — لا مَن كتبها ولا عمّن هي. الملاحظة جملةٌ قالها
+/// أحدٌ عن أحد، وتعديلٌ يستطيع تحريك أيٍّ من الاثنين يحوّل السجلّ إلى تزوير.
 ///
-/// Whose notes may be rewritten is the server's answer, carried on each one as `canEdit`: its
-/// author, or somebody holding `customers.comments.moderate`.
+/// ومَن تُعدَّل ملاحظاته جوابُ الخادم، محمولاً على كلٍّ منها كـ`canEdit`: كاتبُها، أو مَن يملك
+/// `customers.comments.moderate`.
 class EditComment {
   const EditComment(this._repository);
 

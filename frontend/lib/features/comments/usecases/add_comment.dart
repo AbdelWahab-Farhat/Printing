@@ -4,10 +4,10 @@ import 'package:dayaa/features/comments/models/comment.dart';
 import 'package:dayaa/features/comments/models/comment_subject.dart';
 import 'package:dayaa/features/comments/repositories/comment_repository.dart';
 
-/// Leaves a note about a customer for whoever serves them next.
+/// يترك ملاحظةً عن سجلٍّ لمن يخدمه بعده.
 ///
-/// **Costs `customers.view` and nothing more.** A note is a working tool rather than a
-/// privilege: anyone who may look a customer up may tell the next person what they learned.
+/// **تكلّف `customers.view` ولا شيء أكثر.** الملاحظة أداةُ عملٍ لا امتياز: من جاز له أن يبحث عن
+/// عميلٍ جاز له أن يخبر مَن بعده بما تعلّمه.
 class AddComment {
   const AddComment(this._repository);
 

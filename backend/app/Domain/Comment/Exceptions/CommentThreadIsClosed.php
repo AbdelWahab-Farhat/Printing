@@ -8,15 +8,15 @@ use App\Domain\Comment\Contracts\Commentable;
 use App\Support\Exceptions\DomainException;
 
 /**
- * Something was written on a conversation that has ended.
+ * كُتب شيءٌ على محادثةٍ انتهت.
  *
- * **The record says why, not this class.** «مغلقة» on its own leaves a designer wondering whether
- * their last message landed; «اعتُمد التصميم وأُغلقت المحادثة» says both what happened and that
- * nothing was lost. The sentence comes from {@see Commentable::commentsClosedNote()}, so a second
- * kind of record that ends brings its own words rather than inheriting a ticket's.
+ * **والسجلّ هو الذي يقول لماذا، لا هذا الصنف.** «مغلقة» وحدها تترك المصمّم يتساءل هل وصلت رسالته
+ * الأخيرة؛ و«اعتُمد التصميم وأُغلقت المحادثة» تقول ما حدث وأنّ شيئاً لم يضع. والجملة تأتي من
+ * {@see Commentable::commentsClosedNote()}، فنوعٌ ثانٍ من السجلات ينتهي يجلب كلماته بدل أن يرث
+ * كلمات التذكرة.
  *
- * 422 rather than 403: nobody was refused for who they are. The moderator holding every grant in
- * the system meets this too — it is the state of the record that is being stated.
+ * و422 لا 403: لم يُرفض أحدٌ لِمن هو. والمشرفُ الذي يملك كلّ صلاحيةٍ في النظام يلقى هذه أيضاً —
+ * فالمُعلَن هنا حالُ السجلّ.
  */
 final class CommentThreadIsClosed extends DomainException
 {
