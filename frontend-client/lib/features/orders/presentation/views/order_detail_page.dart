@@ -7,6 +7,7 @@ import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/utils/dates.dart';
 import 'package:dayaa_client/core/utils/fixed_point.dart';
 import 'package:dayaa_client/core/widgets/app_card.dart';
+import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/views/stage_pill.dart';
@@ -82,7 +83,10 @@ class _Loaded extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('طلبية #${order.code}')),
+      appBar: AppBar(
+        title: Text('طلبية #${order.code}'),
+        actions: const [NotificationsButton()],
+      ),
       body: RefreshIndicator(
         onRefresh: onRefresh,
         child: ListView(

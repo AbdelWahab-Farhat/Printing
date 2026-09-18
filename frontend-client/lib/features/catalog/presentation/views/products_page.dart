@@ -10,6 +10,7 @@ import 'package:dayaa_client/core/widgets/product_thumbnail.dart';
 import 'package:dayaa_client/core/widgets/search_field.dart';
 import 'package:dayaa_client/features/catalog/models/product.dart';
 import 'package:dayaa_client/features/catalog/presentation/viewmodel/products_cubit.dart';
+import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
 import 'package:dayaa_client/features/orders/presentation/views/cart_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -43,6 +44,7 @@ class _ProductsView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('المنتجات'),
+        actions: const [NotificationsButton()],
       ),
       // **The basket floats here rather than sitting in the bar.** This screen is a branch of the
       // shell, so the navigation bar is drawn under it and a floating button has somewhere to

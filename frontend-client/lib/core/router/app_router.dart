@@ -8,6 +8,7 @@ import 'package:dayaa_client/features/catalog/presentation/views/products_page.d
 import 'package:dayaa_client/features/designs/presentation/views/designs_page.dart';
 import 'package:dayaa_client/features/home/presentation/views/home_page.dart';
 import 'package:dayaa_client/features/home/presentation/views/home_shell.dart';
+import 'package:dayaa_client/features/notifications/presentation/views/notifications_page.dart';
 import 'package:dayaa_client/features/orders/presentation/views/order_detail_page.dart';
 import 'package:dayaa_client/features/orders/presentation/views/orders_page.dart';
 import 'package:dayaa_client/features/orders/presentation/views/place_order_page.dart';
@@ -44,6 +45,10 @@ abstract final class Routes {
   static String order(int id) => '/orders/$id';
 
   static const String profile = '/profile';
+
+  /// «الإشعارات». Pushed rather than a tab: it is somewhere you glance at and come back from,
+  /// and the bar already draws the five places the customer lives in.
+  static const String notifications = '/notifications';
 
   static const String support = '/support';
 
@@ -126,6 +131,10 @@ abstract final class AppRouter {
       ),
 
       // ── pushed over the shell ────────────────────────────────────────────────
+      GoRoute(
+        path: Routes.notifications,
+        builder: (context, state) => const NotificationsPage(),
+      ),
       GoRoute(path: Routes.support, builder: (context, state) => const SupportPage()),
       GoRoute(
         path: '/products/:id',

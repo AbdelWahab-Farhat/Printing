@@ -10,6 +10,7 @@ import 'package:dayaa_client/core/widgets/attachment_sheet.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
 import 'package:dayaa_client/features/designs/models/design_rules.dart';
 import 'package:dayaa_client/features/designs/presentation/viewmodel/designs_cubit.dart';
+import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
 import 'package:dayaa_client/features/tools/presentation/views/qr_tool_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -148,7 +149,7 @@ class _DesignsView extends StatelessWidget {
             tooltip: 'أنشئ رمز QR',
             onPressed: () => _addQrCode(context),
           ),
-          SizedBox(width: 4.w),
+          const NotificationsButton(),
         ],
       ),
       body: SafeArea(

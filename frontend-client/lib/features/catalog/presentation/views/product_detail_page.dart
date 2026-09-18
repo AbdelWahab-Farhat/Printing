@@ -10,6 +10,7 @@ import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/core/widgets/app_text_field.dart';
 import 'package:dayaa_client/features/catalog/models/product.dart';
 import 'package:dayaa_client/features/catalog/presentation/viewmodel/product_detail_cubit.dart';
+import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/models/order_draft.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.dart';
@@ -177,7 +178,7 @@ class _Loaded extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(product.name),
-        actions: const [CartButton()],
+        actions: const [CartButton(), NotificationsButton()],
       ),
       body: ListView(
         padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),

@@ -9,6 +9,7 @@ import 'package:dayaa_client/features/badges/presentation/viewmodel/badges_cubit
 import 'package:dayaa_client/features/badges/presentation/views/badge_count.dart';
 import 'package:dayaa_client/features/billboards/presentation/viewmodel/billboard_cubit.dart';
 import 'package:dayaa_client/features/billboards/presentation/views/billboard_carousel.dart';
+import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -255,6 +256,11 @@ class _Greeting extends StatelessWidget {
             ),
           ),
         ],
+        // **The bell lives in the greeting here, because this screen has no `AppBar`** — it
+        // opens on this row instead. Last in the row, which in Arabic is the far left, so it
+        // stands in the same corner it does on every other screen; a control that moved corner
+        // between tabs is one people stop reaching for without looking.
+        const NotificationsButton(),
       ],
     );
   }

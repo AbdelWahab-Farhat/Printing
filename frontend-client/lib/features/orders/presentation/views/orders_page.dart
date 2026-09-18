@@ -7,6 +7,7 @@ import 'package:dayaa_client/core/utils/fixed_point.dart';
 import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/core/widgets/filter_option_chip.dart';
 import 'package:dayaa_client/core/widgets/paged_list_view.dart';
+import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/orders_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/views/stage_pill.dart';
@@ -45,7 +46,10 @@ class _OrdersView extends StatelessWidget {
     final cubit = context.read<OrdersCubit>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('طلباتي')),
+      appBar: AppBar(
+        title: const Text('طلباتي'),
+        actions: const [NotificationsButton()],
+      ),
       body: SafeArea(
         top: false,
         child: Column(

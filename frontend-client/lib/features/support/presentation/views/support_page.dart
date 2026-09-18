@@ -9,6 +9,7 @@ import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/core/widgets/app_text_field.dart';
 import 'package:dayaa_client/core/widgets/filter_option_chip.dart';
 import 'package:dayaa_client/core/widgets/paged_list_view.dart';
+import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
 import 'package:dayaa_client/features/support/models/support_ticket.dart';
 import 'package:dayaa_client/features/support/presentation/viewmodel/support_cubit.dart';
 import 'package:flutter/material.dart';
@@ -70,7 +71,10 @@ class _SupportView extends StatelessWidget {
     final cubit = context.read<SupportCubit>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('الدعم')),
+      appBar: AppBar(
+        title: const Text('الدعم'),
+        actions: const [NotificationsButton()],
+      ),
       body: SafeArea(
         top: false,
         child: Column(

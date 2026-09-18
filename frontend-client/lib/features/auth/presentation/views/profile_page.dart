@@ -9,6 +9,7 @@ import 'package:dayaa_client/core/widgets/app_dialog.dart';
 import 'package:dayaa_client/features/auth/models/customer_account.dart';
 import 'package:dayaa_client/features/auth/usecases/get_current_customer.dart';
 import 'package:dayaa_client/features/auth/usecases/logout.dart';
+import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -98,6 +99,7 @@ class _ProfilePageState extends State<ProfilePage> {
           tooltip: 'تسجيل الخروج',
           onPressed: _isSigningOut ? null : _signOut,
         ),
+        actions: const [NotificationsButton()],
       ),
       body: SafeArea(
         top: false,
