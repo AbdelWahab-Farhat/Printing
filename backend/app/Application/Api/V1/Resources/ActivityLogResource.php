@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources;
 
 use App\Domain\Audit\AuditAttributeLabels;
+use App\Domain\Audit\AuditHiddenAttributes;
 use App\Domain\Audit\AuditReferenceNames;
 use App\Domain\Audit\AuditValueLabels;
 use App\Domain\Audit\Enums\AuditEvent;
@@ -58,12 +59,14 @@ class ActivityLogResource extends JsonResource
         $event = AuditEvent::tryFrom((string) $this->event);
         $subject = AuditSubject::tryFrom((string) $this->subject_type);
 
-        $valueLabels = AuditValueLabels::forChanges(
-            $subject,
-            $this->attribute_changes?->get('old'),
-            $this->attribute_changes?->get('attributes'),
-            $this->referenceNames,
-        );
+        // The plumbing comes out first, and everything below is composed from what is left —
+        // the values, their labels and their translations. Narrowing in one place is what keeps
+        // the three in step: a column dropped from `changes` but still named in
+        // `attribute_labels` is a label for a line nobody draws.
+        $old = AuditHiddenAttributes::strip($this->attribute_changes?->get('old'));
+        $new = AuditHiddenAttributes::strip($this->attribute_changes?->get('attributes'));
+
+        $valueLabels = AuditValueLabels::forChanges($subject, $old, $new, $this->referenceNames);
         $propertyLabels = AuditValueLabels::forProperties($this->properties);
 
         return [
@@ -88,11 +91,17 @@ class ActivityLogResource extends JsonResource
             // Saying so explicitly beats an empty object the client has to interpret.
             'causer' => $this->whenLoaded('causer', fn () => $this->causerSummary()),
 
-            // What actually moved. `old` is absent on a creation and `attributes` on a
-            // deletion, because there is no such half in either case.
+            // What actually moved — minus how the bytes are kept, which is not something anybody
+            // opens a history to find out. See AuditHiddenAttributes: the columns are still
+            // logged, they are simply not drawn. `old` is absent on a creation and `attributes`
+            // on a deletion, because there is no such half in either case.
+            //
+            // Cast to an object so a half that is left empty by the stripping — an upload that
+            // replaced nothing but its own file — is `{}` and not `[]`, which the app reads as a
+            // map and would fail to parse.
             'changes' => [
-                'old' => $this->attribute_changes?->get('old'),
-                'attributes' => $this->attribute_changes?->get('attributes'),
+                'old' => is_array($old) ? (object) $old : $old,
+                'attributes' => is_array($new) ? (object) $new : $new,
             ],
 
             // What to call each of those columns in Arabic — «رابط الصفحة», not `page_url`.
@@ -105,7 +114,7 @@ class ActivityLogResource extends JsonResource
             // A column with no label is simply absent; the client falls back to the raw name.
             'attribute_labels' => (object) AuditAttributeLabels::forAttributes(
                 $subject,
-                $this->changedAttributeNames(),
+                self::changedAttributeNames($old, $new),
             ),
 
             // And what each of those values *says* — «قيد الطباعة», not `printing`.
@@ -140,24 +149,16 @@ class ActivityLogResource extends JsonResource
     }
 
     /**
-     * Every column this entry touched, from whichever half of the change carries it.
+     * Every column this entry draws, from whichever half of the change carries it.
      *
      * Both halves, not just `attributes`: a deletion records only `old`, and its columns need
-     * naming as much as a creation's do.
+     * naming as much as a creation's do. Taken from the halves the entry is actually sending
+     * rather than from the row, so a column the screen leaves out goes out unlabelled too.
      *
      * @return list<string>
      */
-    private function changedAttributeNames(): array
+    private static function changedAttributeNames(mixed $old, mixed $new): array
     {
-        $changes = $this->attribute_changes;
-
-        if ($changes === null) {
-            return [];
-        }
-
-        $old = $changes->get('old');
-        $new = $changes->get('attributes');
-
         return array_values(array_unique(array_merge(
             is_array($old) ? array_keys($old) : [],
             is_array($new) ? array_keys($new) : [],

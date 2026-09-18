@@ -425,7 +425,9 @@ class DesignTicketController extends Controller
     private function loadForDisplay(DesignTicket $ticket): DesignTicket
     {
         return $ticket->load([
+            'customer:id,code',
             'requester', 'designer', 'acceptedBy', 'approvedBy', 'approvedDesign', 'order',
+            'latestVersion',
             'attachments.uploader',
             'versions.uploader', 'versions.reviewer',
         ])->loadCount('versions');

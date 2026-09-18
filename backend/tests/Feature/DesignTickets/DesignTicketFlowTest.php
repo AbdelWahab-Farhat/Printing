@@ -10,6 +10,7 @@ use App\Domain\DesignTicket\Enums\DesignTicketStatus;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\DesignTicket\Models\DesignTicketFile;
 use App\Domain\Identity\Enums\PermissionName;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -288,6 +289,118 @@ class DesignTicketFlowTest extends DesignTicketTestCase
         $history->assertOk()
             ->assertJsonPath('data.status', DesignTicketStatus::Completed->value)
             ->assertJsonCount(1, 'data.versions');
+    }
+
+    /**
+     * What may actually be sent, on both doors — the designer's versions and the employee's
+     * briefs.
+     *
+     * The list lives in `config('media.design_tickets.mimes')` now rather than spelled out in
+     * two request classes, and both doors are exercised here because that is exactly the kind of
+     * pair where one gets widened and the other forgotten.
+     *
+     * **It also guards the coupling that widening this first broke.** An accepted version is
+     * promoted into the customer's library, where {@see DesignKind::fromMimeType()} throws on a
+     * type it has not been taught — so a format added to the config and not to that enum is a
+     * 500 on the first file anybody sends.
+     */
+    public function test_any_ordinary_image_or_a_pdf_may_be_sent_through_either_door(): void
+    {
+        // Arrange
+        [$designerUser, $designer] = $this->designer();
+        // `view_all` on top of the usual four: the ticket below is addressed to the designer,
+        // and a supervisor without it reads a colleague's ticket as a 404 by design.
+        [, $employee] = $this->actor(
+            PermissionName::ViewDesignTickets,
+            PermissionName::ViewAllDesignTickets,
+            PermissionName::ManageDesignTickets,
+            PermissionName::AssignDesignTickets,
+            PermissionName::ReviewDesignTickets,
+        );
+        $ticket = DesignTicket::factory()->create(['assigned_designer_id' => $designerUser->id]);
+        $this->postJson("/api/v1/design-tickets/{$ticket->id}/acceptance", [], $designer)->assertOk();
+
+        // `UploadedFile::fake()->image()` writes a real PNG whatever the name says, so the
+        // sniffed type would disagree with the extension. `create()` with the type stated is
+        // what puts both halves of the rule — `mimes` and `mimetypes` — under test.
+        $file = fn (string $extension, string $type): UploadedFile => UploadedFile::fake()
+            ->create("proof.{$extension}", 16, $type);
+
+        // Act - Assert — the brief door takes as many as it likes, so every format goes through
+        // it.
+        foreach ([['gif', 'image/gif'], ['bmp', 'image/bmp'], ['webp', 'image/webp'],
+            ['png', 'image/png'], ['pdf', 'application/pdf']] as [$extension, $type]) {
+            $this->postJson(
+                "/api/v1/design-tickets/{$ticket->id}/attachments",
+                ['file' => $file($extension, $type)],
+                $employee,
+            )->assertCreated();
+        }
+
+        // Act - Assert — and one through the designer's, which is the door that promotes a file
+        // into the customer's library and therefore the one that used to throw. A second
+        // version here would be refused for a different reason — one verdict at a time.
+        $this->postJson(
+            "/api/v1/design-tickets/{$ticket->id}/versions",
+            ['file' => $file('gif', 'image/gif')],
+            $designer,
+        )->assertCreated();
+    }
+
+    /**
+     * The list carries the newest version, and only that one.
+     *
+     * **The card draws it as a thumbnail**, which is the whole reason it is on the list payload
+     * at all. It is a `latestOfMany` relation rather than the `versions` list: a page of forty
+     * tickets eager-loading every version is four hundred rows to render one square each.
+     */
+    public function test_the_list_carries_the_newest_version_for_the_card(): void
+    {
+        // Arrange — two rounds on one ticket, so «newest» is a claim with something to be
+        // wrong about.
+        [$designerUser, $designer] = $this->designer();
+        [$reviewerUser, $reviewer] = $this->employee();
+        $ticket = DesignTicket::factory()->create([
+            'assigned_designer_id' => $designerUser->id,
+            'requested_by_user_id' => $reviewerUser->id,
+        ]);
+        $first = $this->ticketAwaitingReview($ticket, $designer)->versions()->first();
+        $this->postJson(
+            "/api/v1/design-tickets/{$ticket->id}/versions/{$first->id}/review",
+            ['verdict' => DesignSubmissionStatus::ChangesRequested->value, 'note' => 'كبّر الشعار'],
+            $reviewer,
+        )->assertOk();
+        $this->postJson(
+            "/api/v1/design-tickets/{$ticket->id}/versions",
+            ['file' => $this->image('v2.png')],
+            $designer,
+        )->assertCreated();
+
+        // Act
+        $list = $this->getJson('/api/v1/design-tickets', $reviewer);
+
+        // Assert — the second round, and no `versions` array beside it.
+        $list->assertOk()
+            ->assertJsonPath('data.0.latest_version.version', 2)
+            ->assertJsonMissingPath('data.0.versions');
+    }
+
+    /** A spreadsheet is not artwork, and the widening must not have let one through. */
+    public function test_something_that_is_not_an_image_or_a_pdf_is_still_refused(): void
+    {
+        // Arrange
+        [, $employee] = $this->employee();
+        $ticket = DesignTicket::factory()->create();
+
+        // Act
+        $sent = $this->postJson(
+            "/api/v1/design-tickets/{$ticket->id}/attachments",
+            ['file' => UploadedFile::fake()->create('prices.xlsx', 16, 'application/vnd.ms-excel')],
+            $employee,
+        );
+
+        // Assert
+        $sent->assertStatus(422)->assertJsonPath('errors.file.0', 'الملف يجب أن يكون صورة أو PDF');
     }
 
     public function test_the_file_is_stored_on_the_designs_disk_and_never_replaced(): void

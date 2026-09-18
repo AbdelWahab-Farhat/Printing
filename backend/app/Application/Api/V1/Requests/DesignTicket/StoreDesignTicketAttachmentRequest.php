@@ -35,10 +35,13 @@ class StoreDesignTicketAttachmentRequest extends FormRequest
             'file' => [
                 'required',
                 'file',
-                'mimetypes:application/pdf,image/jpeg,image/png,image/webp',
+                // Read from config rather than spelled out, like every other upload in the
+                // application. These two endpoints were the only ones carrying their own copy
+                // of the list, so widening it for HEIC would have missed them.
+                'mimetypes:'.implode(',', (array) config('media.design_tickets.mimetypes')),
                 // A second reading of the same bytes, kept because it is the rule whose Arabic
                 // message names extensions — which is what a person needs to be told.
-                'mimes:pdf,jpg,jpeg,png,webp',
+                'mimes:'.implode(',', (array) config('media.design_tickets.mimes')),
                 'max:'.config('media.design_tickets.max_kilobytes'),
             ],
             'note' => ['nullable', 'string', 'max:2000'],
@@ -53,7 +56,7 @@ class StoreDesignTicketAttachmentRequest extends FormRequest
         return [
             'file.required' => 'الملف مطلوب',
             'file.mimetypes' => 'الملف يجب أن يكون صورة أو PDF',
-            'file.mimes' => 'الملف يجب أن يكون بصيغة PDF أو JPG أو PNG أو WEBP',
+            'file.mimes' => 'الملف يجب أن يكون صورة أو PDF',
             'file.max' => 'حجم الملف يجب ألا يتجاوز '.
                 (int) (config('media.design_tickets.max_kilobytes') / 1024).' ميجابايت',
         ];

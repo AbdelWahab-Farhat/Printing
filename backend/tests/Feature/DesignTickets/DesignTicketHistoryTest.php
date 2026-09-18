@@ -145,4 +145,46 @@ class DesignTicketHistoryTest extends DesignTicketTestCase
         // Every status present, zeros included, so the app draws a stable row.
         $this->assertCount(6, $summary->json('data.counts'));
     }
+
+    public function test_the_history_of_a_file_says_what_happened_not_where_it_is_kept(): void
+    {
+        // Arrange — one uploaded version, whose row carries eight storage columns beside the
+        // four a person reads. The card drew all twelve, and «مكان التخزين: local» sat above
+        // «الحالة: بانتظار المراجعة» at the same weight.
+        [, $employee] = $this->employee();
+        [, $designer] = $this->designer();
+        [, $auditor] = $this->actor(
+            PermissionName::ViewDesignTickets,
+            PermissionName::ViewAllDesignTickets,
+            PermissionName::ViewActivityLogs,
+        );
+        $customer = $this->customer();
+
+        $ticket = DesignTicket::query()->find(
+            $this->postJson('/api/v1/design-tickets', $this->payload($customer), $employee)
+                ->json('data.id'),
+        );
+        $this->ticketAwaitingReview($ticket, $designer);
+
+        // Act
+        $response = $this->getJson("/api/v1/design-tickets/{$ticket->id}/logs", $auditor);
+
+        // Assert
+        $entry = collect($response->assertOk()->json('data'))
+            ->first(fn (array $row): bool => $row['subject_type'] === 'design_ticket_file'
+                && $row['event'] === 'created');
+        $this->assertNotNull($entry);
+
+        $stated = $entry['changes']['attributes'];
+
+        foreach (['disk', 'path', 'mime_type', 'size_bytes', 'checksum', 'width_px', 'height_px'] as $column) {
+            $this->assertArrayNotHasKey($column, $stated, "{$column} reached the screen");
+            $this->assertArrayNotHasKey($column, $entry['attribute_labels']);
+        }
+
+        // And what is left is the entry anybody opened the log for.
+        $this->assertSame(1, $stated['version']);
+        $this->assertSame('proposed', $stated['status']);
+        $this->assertSame('v1.png', $stated['original_filename']);
+    }
 }

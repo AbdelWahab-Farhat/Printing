@@ -68,6 +68,12 @@ final class AuditAttributeLabels
         'recorded_by' => 'سجّلها',
 
         // The media layer, which is the same five columns on every model that stores a file.
+        //
+        // Named here and drawn nowhere: all but `original_filename` are stripped from the entry
+        // by {@see AuditHiddenAttributes} before it is sent, because where the bytes are kept is
+        // not what anybody opens a history to find out. The names stay because the columns are
+        // still logged — the label is what the day somebody goes looking in `activity_log`
+        // needs, and `AuditAttributeLabelsTest` asks every loggable column for one.
         'disk' => 'مكان التخزين',
         'path' => 'مسار الملف',
         'original_filename' => 'اسم الملف',

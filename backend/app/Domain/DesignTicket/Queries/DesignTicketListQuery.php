@@ -31,7 +31,7 @@ final class DesignTicketListQuery
     public function __invoke(DesignTicketFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return $this->applyFilters(DesignTicket::query(), $filters)
-            ->with(['requester', 'designer', 'acceptedBy'])
+            ->with(['customer:id,code', 'requester', 'designer', 'acceptedBy', 'latestVersion'])
             ->withCount('versions')
             ->orderByDesc('id')
             ->paginate($perPage);

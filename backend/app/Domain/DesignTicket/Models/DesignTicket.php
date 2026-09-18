@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -225,6 +226,25 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
     public function versions(): HasMany
     {
         return $this->files()->where('kind', DesignTicketFileKind::Submission)->orderBy('version');
+    }
+
+    /**
+     * The newest version, as one row rather than a list.
+     *
+     * **For the list screen, which draws it as a thumbnail on the card.** A `HasMany` cannot be
+     * eager-loaded «one per parent» — twenty tickets would fetch every version of all twenty —
+     * and `latestOfMany` is the relation that compiles to exactly that per-parent subquery.
+     *
+     * Ordered by `version`, not by `id`: the number is allocated by the action and is the only
+     * thing that says which came last.
+     *
+     * @return HasOne<DesignTicketFile, $this>
+     */
+    public function latestVersion(): HasOne
+    {
+        return $this->hasOne(DesignTicketFile::class)
+            ->where('kind', DesignTicketFileKind::Submission)
+            ->latestOfMany('version');
     }
 
     /**

@@ -6,6 +6,7 @@ namespace Tests\Feature\DesignTickets;
 
 use App\Domain\DesignTicket\Enums\DesignTicketStatus;
 use App\Domain\DesignTicket\Models\DesignTicket;
+use App\Domain\Identity\Enums\PermissionName;
 
 /**
  * «قبول الطلب» — the step that stops two designers drawing the same bag.
@@ -37,6 +38,65 @@ class DesignTicketAcceptanceTest extends DesignTicketTestCase
         $lost->assertStatus(422)->assertJsonPath('message', "تم قبول هذه التذكرة من {$first->name}");
 
         $this->assertSame($first->id, (int) $ticket->refresh()->accepted_by_user_id);
+    }
+
+    /**
+     * «قبول الطلب» means «أنا آخذها وسأرسمها بنفسي», so it is not offered to the person whose
+     * part in this is handing the work out.
+     *
+     * An administrator holds every grant by rule, so before this the biggest, greenest button on
+     * their screen invited them to become the draughtsman of a ticket they meant to pass on —
+     * and one stray tap locks the real designer out of uploading anything, because `can_submit`
+     * charges being the acceptor.
+     */
+    public function test_somebody_who_hands_the_work_out_is_not_offered_the_pool(): void
+    {
+        // Arrange
+        [, $dispatcher] = $this->actor(
+            PermissionName::ViewDesignTickets,
+            PermissionName::AssignDesignTickets,
+            PermissionName::AcceptDesignTickets,
+            PermissionName::SubmitDesignTickets,
+        );
+        $ticket = DesignTicket::factory()->create(['assigned_designer_id' => null]);
+
+        // Act
+        $shown = $this->getJson("/api/v1/design-tickets/{$ticket->id}", $dispatcher);
+        $taken = $this->postJson("/api/v1/design-tickets/{$ticket->id}/acceptance", [], $dispatcher);
+
+        // Assert — the button is not drawn, and the endpoint says the same thing to a caller
+        // that asks anyway.
+        $shown->assertOk()->assertJsonPath('data.can_accept', false);
+        $taken->assertStatus(422);
+        $this->assertNull($ticket->refresh()->accepted_by_user_id);
+    }
+
+    /**
+     * The lead designer, who both dispatches and draws.
+     *
+     * The rule above is about the *pool* — work nobody has been named for. A ticket addressed to
+     * you by name is yours to take whatever else you may do, or a supervisor who designs could
+     * never touch their own queue.
+     */
+    public function test_a_dispatcher_may_still_take_a_ticket_addressed_to_them(): void
+    {
+        // Arrange
+        [$lead, $headers] = $this->actor(
+            PermissionName::ViewDesignTickets,
+            PermissionName::AssignDesignTickets,
+            PermissionName::AcceptDesignTickets,
+            PermissionName::SubmitDesignTickets,
+        );
+        $ticket = DesignTicket::factory()->create(['assigned_designer_id' => $lead->id]);
+
+        // Act
+        $shown = $this->getJson("/api/v1/design-tickets/{$ticket->id}", $headers);
+        $taken = $this->postJson("/api/v1/design-tickets/{$ticket->id}/acceptance", [], $headers);
+
+        // Assert
+        $shown->assertOk()->assertJsonPath('data.can_accept', true);
+        $taken->assertOk();
+        $this->assertSame($lead->id, $ticket->refresh()->accepted_by_user_id);
     }
 
     public function test_a_ticket_addressed_to_one_designer_is_refused_to_another(): void

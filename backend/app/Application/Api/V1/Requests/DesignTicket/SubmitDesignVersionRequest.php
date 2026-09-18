@@ -32,8 +32,11 @@ class SubmitDesignVersionRequest extends FormRequest
             'file' => [
                 'required',
                 'file',
-                'mimetypes:application/pdf,image/jpeg,image/png,image/webp',
-                'mimes:pdf,jpg,jpeg,png,webp',
+                // Read from config rather than spelled out, like every other upload in the
+                // application. These two were the only endpoints carrying their own copy of
+                // the list, so widening it for HEIC would have missed them.
+                'mimetypes:'.implode(',', (array) config('media.design_tickets.mimetypes')),
+                'mimes:'.implode(',', (array) config('media.design_tickets.mimes')),
                 'max:'.config('media.design_tickets.max_kilobytes'),
             ],
             // What the designer wants to say with the version — «غيّرت الخط، قوليلي رأيك».
@@ -49,7 +52,7 @@ class SubmitDesignVersionRequest extends FormRequest
         return [
             'file.required' => 'ملف التصميم مطلوب',
             'file.mimetypes' => 'الملف يجب أن يكون صورة أو PDF',
-            'file.mimes' => 'الملف يجب أن يكون بصيغة PDF أو JPG أو PNG أو WEBP',
+            'file.mimes' => 'الملف يجب أن يكون صورة أو PDF',
             'file.max' => 'حجم الملف يجب ألا يتجاوز '.
                 (int) (config('media.design_tickets.max_kilobytes') / 1024).' ميجابايت',
         ];

@@ -64,6 +64,21 @@ class DesignTicketResource extends JsonResource
             'customer_id' => $this->customer_id,
             'customer_name' => $this->customer_name,
 
+            /*
+             * The code, joined rather than snapshotted, which is the one place this parts from
+             * the name beside it.
+             *
+             * A customer's name is edited — corrected, or the shop starts trading as something
+             * else — and a ticket has to keep saying what it said when it was raised. A code is
+             * allocated once and never changes, so there is nothing for a snapshot to protect,
+             * and a second column would be a second thing to keep in step for no gain.
+             *
+             * `whenLoaded` rather than an unconditional read: `Model::shouldBeStrict()` turns a
+             * forgotten eager load into a 500, and this key is absent rather than wrong on any
+             * path that has not asked for the relation.
+             */
+            'customer_code' => $this->whenLoaded('customer', fn (): ?string => $this->customer?->code),
+
             'order_id' => $this->order_id,
             'order' => $this->whenLoaded('order', fn (): ?array => $this->order === null ? null : [
                 'id' => $this->order->id,
@@ -112,6 +127,20 @@ class DesignTicketResource extends JsonResource
 
             'versions_count' => $this->whenCounted('versions'),
 
+            /*
+             * The newest version, for the card on the list screen to draw as a thumbnail.
+             *
+             * **One row, not the list.** `versions` below is the detail endpoint's — a page of
+             * forty tickets has no use for four hundred file rows, which is the same reason
+             * `versions_count` exists beside it. This is the one file a card shows.
+             */
+            'latest_version' => $this->whenLoaded(
+                'latestVersion',
+                fn (): ?DesignTicketFileResource => $this->latestVersion === null
+                    ? null
+                    : new DesignTicketFileResource($this->latestVersion),
+            ),
+
             'attachments' => DesignTicketFileResource::collection(
                 $this->whenLoaded('attachments'),
             ),
@@ -145,7 +174,32 @@ class DesignTicketResource extends JsonResource
             && $this->status->isOpen()
             && ! $this->isAccepted()
             && $this->isWorkableBy($reader)
-            && $reader->can(PermissionName::AcceptDesignTickets->value);
+            && $reader->can(PermissionName::AcceptDesignTickets->value)
+            && $this->isTheirsToTake($reader);
+    }
+
+    /**
+     * Whether taking this ticket is this reader's part in it.
+     *
+     * **«قبول الطلب» means «أنا آخذها وسأرسمها بنفسي»**, and it is the one irreversible-feeling
+     * step in the flow: it moves the ticket to «قيد التصميم», locks every other designer out,
+     * and makes the acceptor the only account that may upload — {@see readerCanSubmit} charges
+     * being the acceptor. Somebody whose part is handing work out should not be invited to
+     * become the draughtsman by the biggest button on the screen; their action is «إسناد».
+     *
+     * **Phrased as «cannot dispatch» rather than «is not an administrator»**, because an
+     * administrator holds every grant by rule and no seeder can reach them — the same sentence
+     * `RoleSeeder` writes about `design_tickets.review`. A role that can hand tickets out is a
+     * dispatcher whatever it is called.
+     *
+     * **The exception is a ticket with their name on it.** The rule is about the *pool* — work
+     * nobody has been named for. A supervisor who also designs assigns one to themselves and
+     * takes it; without this they could never touch their own queue.
+     */
+    private function isTheirsToTake(User $reader): bool
+    {
+        return ! $reader->can(PermissionName::AssignDesignTickets->value)
+            || (int) $this->assigned_designer_id === (int) $reader->getKey();
     }
 
     private function readerCanSubmit(?User $reader): bool

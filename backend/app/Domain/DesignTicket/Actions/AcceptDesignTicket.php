@@ -9,7 +9,9 @@ use App\Domain\DesignTicket\Events\DesignTicketProgressed;
 use App\Domain\DesignTicket\Exceptions\DesignTicketAlreadyAccepted;
 use App\Domain\DesignTicket\Exceptions\DesignTicketBelongsToAnotherDesigner;
 use App\Domain\DesignTicket\Exceptions\DesignTicketIsClosed;
+use App\Domain\DesignTicket\Exceptions\DispatchersDoNotTakeFromThePool;
 use App\Domain\DesignTicket\Models\DesignTicket;
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 
 /**
@@ -34,6 +36,13 @@ use App\Domain\Identity\Models\User;
  * named designer is refused to everybody else. Both rules live in
  * {@see DesignTicket::isWorkableBy()}, because the app asks the same question to decide whether
  * to draw the button.
+ *
+ * **The pool is closed to whoever hands the work out** — see
+ * {@see DispatchersDoNotTakeFromThePool}. An administrator holds every grant by rule, so without
+ * this the greenest button on their screen invited them to become the draughtsman of a ticket
+ * they meant to pass on, and one stray tap locked the real designer out of uploading anything.
+ * A ticket carrying their own name is still theirs to take, so the supervisor who also designs
+ * loses nothing.
  */
 final class AcceptDesignTicket
 {
@@ -41,6 +50,7 @@ final class AcceptDesignTicket
      * @throws DesignTicketIsClosed
      * @throws DesignTicketAlreadyAccepted
      * @throws DesignTicketBelongsToAnotherDesigner
+     * @throws DispatchersDoNotTakeFromThePool
      */
     public function __invoke(DesignTicket $ticket, User $designer): DesignTicket
     {
@@ -54,6 +64,15 @@ final class AcceptDesignTicket
 
         if (! $ticket->isWorkableBy($designer)) {
             throw DesignTicketBelongsToAnotherDesigner::make();
+        }
+
+        // Charged after the two above, so somebody reaching for a colleague's ticket is told
+        // that rather than this — the more specific refusal is the more useful one.
+        $dispatches = $designer->can(PermissionName::AssignDesignTickets->value);
+        $addressedToThem = (int) $ticket->assigned_designer_id === (int) $designer->getKey();
+
+        if ($dispatches && ! $addressedToThem) {
+            throw DispatchersDoNotTakeFromThePool::make();
         }
 
         $now = now();

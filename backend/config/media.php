@@ -129,8 +129,37 @@ return [
     'design_tickets' => [
         'disk' => env('MEDIA_DESIGNS_DISK', 'local'),
         'max_kilobytes' => (int) env('MEDIA_DESIGN_MAX_KILOBYTES', 25600),
-        'mimes' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
-        'mimetypes' => ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
+        /*
+        | Every image the app can actually draw, and PDF.
+        |
+        | **Wider than `customer_designs` above, and deliberately.** A brief is whatever the
+        | employee has to hand — a screenshot, a photo of a printed bag — while that block
+        | governs the customer's own library, which `DesignRules` in the Flutter app duplicates
+        | and a contract test holds to the letter.
+        |
+        | **The list is bounded by the viewer, not by generosity.** A file accepted here is
+        | filed as an image and drawn inline on the ticket, so a format Flutter cannot decode
+        | would upload perfectly and then show the reviewer a broken box — worse than a refusal
+        | at the door. That rules out HEIC, HEIF and TIFF. The case that would have wanted HEIC
+        | — a designer photographing a printed proof — is covered anyway: `image_picker`
+        | re-encodes to JPEG on iOS, so both the camera and the photo library hand over a JPEG
+        | whatever the phone stored.
+        |
+        | **SVG is out for a different reason**: it is XML, it can carry script, and these files
+        | are served back through signed URLs.
+        |
+        | `DesignKind::fromMimeType()` has to be taught every type added here — it throws on one
+        | it does not know, which is a 500 on the first file anybody sends.
+        */
+        'mimes' => ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'],
+        'mimetypes' => [
+            'application/pdf',
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+            'image/bmp',
+        ],
 
         /*
         | How many files one ticket may carry, briefs and versions together.
