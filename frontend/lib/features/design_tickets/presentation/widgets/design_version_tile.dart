@@ -136,33 +136,51 @@ class DesignVersionTile extends StatelessWidget {
                     ),
                 ],
               ),
-              // What has to change — the whole reason this round happened.
-              if (version.reviewNote != null && version.reviewNote!.isNotEmpty) ...[
+              // The reviewer's words, headed and coloured by **the verdict they came with**.
+              //
+              // This box was red and headed «المطلوب تعديله» on any note at all, so a version
+              // the reviewer had *approved* with a word of praise was drawn as a rejection —
+              // a green «معتمد» pill a centimetre above a red «المطلوب تعديله» saying the
+              // opposite. The note does not know what it is; the status does.
+              if (version.reviewNote case final note? when note.isNotEmpty) ...[
                 SizedBox(height: 10.h),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(10.w),
-                  decoration: BoxDecoration(
-                    color: scheme.errorContainer.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'المطلوب تعديله',
-                        style: text.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: scheme.onErrorContainer,
-                        ),
+                Builder(
+                  builder: (context) {
+                    final (heading, background, foreground) = version.needsChanges
+                        ? (
+                            'المطلوب تعديله',
+                            scheme.errorContainer.withValues(alpha: 0.5),
+                            scheme.onErrorContainer,
+                          )
+                        : (
+                            'ملاحظة المُراجِع',
+                            scheme.surfaceContainerHighest,
+                            scheme.onSurface,
+                          );
+
+                    return Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(10.w),
+                      decoration: BoxDecoration(
+                        color: background,
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        version.reviewNote!,
-                        style: text.bodySmall?.copyWith(color: scheme.onErrorContainer),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            heading,
+                            style: text.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: foreground,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(note, style: text.bodySmall?.copyWith(color: foreground)),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ],
             ],

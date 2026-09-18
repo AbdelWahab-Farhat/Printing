@@ -210,7 +210,12 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
             ? scheme.surfaceContainerLowest
             : scheme.surfaceContainerLow,
         isDense: true,
-        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        // **The same 18 `AppTextField` uses, and that is the whole point of the number.** It was
+        // 14, which left the picker eight logical pixels shorter than every box beside it — two
+        // outlined controls of visibly different height on one row, which is exactly the "reads
+        // as two forms" this widget's own docblock exists to prevent. The content inside both is
+        // the same 24 high; only the padding disagreed.
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 18.h),
         labelStyle: textTheme.bodyMedium?.copyWith(color: accent),
         floatingLabelStyle: textTheme.bodySmall?.copyWith(
           color: accent,

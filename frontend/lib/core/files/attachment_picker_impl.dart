@@ -21,8 +21,11 @@ class AttachmentPickerImpl implements AttachmentPicker {
   final ImagePicker _images;
 
   @override
-  Future<List<PickedFile>> pick(AttachmentSource source) => switch (source) {
-    AttachmentSource.documents => _documents(),
+  Future<List<PickedFile>> pick(
+    AttachmentSource source, {
+    List<String> extensions = AttachmentPicker.defaultExtensions,
+  }) => switch (source) {
+    AttachmentSource.documents => _documents(extensions),
     AttachmentSource.photos => _photos(),
     AttachmentSource.camera => _camera(),
   };
@@ -32,11 +35,11 @@ class AttachmentPickerImpl implements AttachmentPicker {
   /// The filter is a courtesy — the server sniffs the bytes and refuses anything else — but it
   /// stops somebody walking through their whole Files app to pick a `.docx` that was never
   /// going to be accepted.
-  Future<List<PickedFile>> _documents() async {
+  Future<List<PickedFile>> _documents(List<String> extensions) async {
     final result = await FilePicker.pickFiles(
       allowMultiple: true,
       type: FileType.custom,
-      allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+      allowedExtensions: extensions,
       // The bytes are never held in memory: a 25 MB design multiplied by a multi-select is how
       // an app gets killed for memory on a mid-range phone. Dio streams from the path instead.
       withData: false,

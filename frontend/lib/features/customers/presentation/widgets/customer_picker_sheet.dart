@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Naming the customer an order is being taken for.
+/// Naming the customer something is being raised for — an order, or a design request.
 ///
 /// **Asked before the form opens, never inside it.** `customer_id` is read on create and ignored
 /// afterwards, so an order cannot change hands — which is why «طلبية جديدة» on a customer's own
@@ -20,8 +20,16 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// a deactivated customer is not an answer to «لمن هذه الطلبية», and `CreateOrder` refuses the
 /// request in any case.
 ///
+/// **[title] is the caller's, because the sheet does not know what it is naming somebody for.**
+/// It opened on «لمن هذه الطلبية؟» from the design tickets screen, which is the wrong noun —
+/// nothing is being sold there. The default is the older caller's question, so only the new one
+/// has to say anything.
+///
 /// Returns null when the user backs out — an ordinary ending, reported nowhere.
-Future<Customer?> showCustomerPicker({required BuildContext context}) {
+Future<Customer?> showCustomerPicker({
+  required BuildContext context,
+  String title = 'لمن هذه الطلبية؟',
+}) {
   return showModalBottomSheet<Customer>(
     context: context,
     isScrollControlled: true,
@@ -31,13 +39,15 @@ Future<Customer?> showCustomerPicker({required BuildContext context}) {
     ),
     builder: (_) => BlocProvider<CustomersCubit>(
       create: (_) => sl<CustomersCubit>(instanceName: Injector.activeCustomersCubit)..load(),
-      child: const _CustomerPicker(),
+      child: _CustomerPicker(title: title),
     ),
   );
 }
 
 class _CustomerPicker extends StatelessWidget {
-  const _CustomerPicker();
+  const _CustomerPicker({required this.title});
+
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +70,7 @@ class _CustomerPicker extends StatelessWidget {
           Padding(
             padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 8.h),
             child: Text(
-              'لمن هذه الطلبية؟',
+              title,
               style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
           ),

@@ -84,6 +84,7 @@ void main() {
     cubit = DesignTicketsCubit(
       getTickets: GetDesignTickets(repository),
       getCounts: GetDesignTicketCounts(repository),
+      acceptTicket: AcceptDesignTicket(repository),
     );
   });
 

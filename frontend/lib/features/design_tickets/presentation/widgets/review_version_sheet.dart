@@ -1,18 +1,26 @@
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// The verdict on one version — «موافقة» or «تعديل مطلوب».
+/// The verdict on one version — «اعتماد التصميم» or «طلب تعديل».
 ///
-/// **The note is required for a change request and optional for an approval**, which is why this
-/// is a sheet rather than two buttons on the screen: the words are the whole content of a
-/// revision round, and a dialog with a single «تأكيد» invites somebody to send one without them.
+/// **Two buttons, one for each verdict.** It was a segmented control above a single button that
+/// renamed itself with the segment, which made two taps of a choice between two things and put
+/// the word the reader was aiming at under their own finger.
 ///
-/// The server refuses an empty note too, and that refusal is the guarantee — this is the part
-/// that makes the message land under the field instead of arriving as a toast after the fact.
+/// **The note is required for a change request and optional for an approval**, which is why
+/// this is a sheet rather than two buttons on the ticket screen: the words are the whole content
+/// of a revision round. The rule is caught here so the complaint lands under the box; the server
+/// refuses an empty one too, and that refusal is the guarantee.
+///
+/// **Each verdict is confirmed.** Approving closes the ticket and files the artwork on the
+/// customer's account and cannot be undone; a change request goes back to a designer who has to
+/// redraw. The warning about the first used to sit on the sheet as grey prose above the button —
+/// read once, then never again. It is in the confirmation now, where it is read every time.
 ///
 /// Answers with a [ReviewChoice], never a bare verdict: `showModalBottomSheet` returns null when
 /// the sheet is **dismissed**, and backing out is not a decision.
@@ -50,9 +58,8 @@ class _ReviewSheet extends StatefulWidget {
 class _ReviewSheetState extends State<_ReviewSheet> {
   final TextEditingController _note = TextEditingController();
 
-  /// Which of the two is being sent. Purely visual state inside one widget, which is the one
-  /// thing `setState` is still for.
-  DesignSubmissionStatus _verdict = DesignSubmissionStatus.approved;
+  /// «اكتب ما المطلوب تعديله», once somebody has asked for a change without saying which.
+  String? _noteError;
 
   @override
   void dispose() {
@@ -60,7 +67,53 @@ class _ReviewSheetState extends State<_ReviewSheet> {
     super.dispose();
   }
 
-  bool get _needsNote => _verdict == DesignSubmissionStatus.changesRequested;
+  /// Closes the sheet with a verdict, once the reader has said they meant it.
+  Future<void> _answer(
+    BuildContext context, {
+    required DesignSubmissionStatus verdict,
+    required String title,
+    required String description,
+    required String confirmLabel,
+  }) async {
+    final confirmed = await showCustomDialog(
+      context: context,
+      title: title,
+      description: description,
+      confirmLabel: confirmLabel,
+    );
+
+    if (!(confirmed ?? false) || !context.mounted) return;
+
+    Navigator.of(context).pop(ReviewChoice(verdict: verdict, note: _note.text));
+  }
+
+  Future<void> _approve(BuildContext context) => _answer(
+    context,
+    verdict: DesignSubmissionStatus.approved,
+    title: 'اعتماد التصميم؟',
+    description: 'تُغلق التذكرة ويُحفظ التصميم في حساب الزبون. لا يمكن التراجع.',
+    confirmLabel: 'اعتماد',
+  );
+
+  Future<void> _requestChanges(BuildContext context) async {
+    // Caught before the dialog rather than after it: a confirmation for something that is
+    // about to be refused anyway is one tap spent on nothing.
+    if (_note.text.trim().isEmpty) {
+      setState(() => _noteError = 'اكتب ما المطلوب تعديله');
+
+      return;
+    }
+
+    setState(() => _noteError = null);
+
+    await _answer(
+      context,
+      verdict: DesignSubmissionStatus.changesRequested,
+      title: 'طلب تعديل؟',
+      description: 'تعود التذكرة إلى المصمم مع ملاحظتك، ويرفع نسخة جديدة.',
+      confirmLabel: 'إرسال',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,46 +135,17 @@ class _ReviewSheetState extends State<_ReviewSheet> {
             style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
           ),
           SizedBox(height: 14.h),
-          SegmentedButton<DesignSubmissionStatus>(
-            segments: const [
-              ButtonSegment(
-                value: DesignSubmissionStatus.approved,
-                label: Text('موافقة'),
-              ),
-              ButtonSegment(
-                value: DesignSubmissionStatus.changesRequested,
-                label: Text('طلب تعديل'),
-              ),
-            ],
-            selected: {_verdict},
-            onSelectionChanged: (picked) => setState(() => _verdict = picked.first),
-          ),
-          SizedBox(height: 14.h),
           AppTextField(
             controller: _note,
-            label: _needsNote ? 'ما المطلوب تعديله' : 'ملاحظة (اختياري)',
-            hint: _needsNote ? 'كبّر الشعار وغيّر رقم الهاتف' : null,
+            label: 'ملاحظة',
+            hint: 'كبّر الشعار وغيّر رقم الهاتف',
             maxLines: 3,
+            errorText: _noteError,
           ),
-          if (_verdict == DesignSubmissionStatus.approved) ...[
-            SizedBox(height: 10.h),
-            // Said before the tap, not after: approving is the one action here that cannot be
-            // undone — it closes the ticket and puts the file on the customer's account.
-            Text(
-              'الموافقة تُغلق التذكرة وتحفظ التصميم في حساب الزبون.',
-              style: text.bodySmall?.copyWith(color: context.colorScheme.onSurfaceVariant),
-            ),
-          ],
           SizedBox(height: 18.h),
-          SizedBox(
-            width: double.infinity,
-            child: AppButton(
-              label: _needsNote ? 'إرسال طلب التعديل' : 'اعتماد التصميم',
-              onPressed: () => Navigator.of(context).pop(
-                ReviewChoice(verdict: _verdict, note: _note.text),
-              ),
-            ),
-          ),
+          AppButton(label: 'اعتماد التصميم', onPressed: () => _approve(context)),
+          SizedBox(height: 10.h),
+          AppButton.tonal(label: 'طلب تعديل', onPressed: () => _requestChanges(context)),
         ],
       ),
     );

@@ -115,6 +115,14 @@ abstract class DesignTicket with _$DesignTicket {
     /// customers.
     @JsonKey(name: 'customer_name') required String customerName,
 
+    /// «C12» — joined on the server rather than snapshotted like the name, because a code is
+    /// allocated once and never edited.
+    ///
+    /// **Nullable, and absent is ordinary**: the server sends it only where the relation was
+    /// eager-loaded, so a payload from a path that did not ask carries no key at all rather
+    /// than a wrong one.
+    @JsonKey(name: 'customer_code') String? customerCode,
+
     @JsonKey(name: 'order_id') int? orderId,
     DesignTicketOrder? order,
 
@@ -141,6 +149,13 @@ abstract class DesignTicket with _$DesignTicket {
     @JsonKey(name: 'cancellation_reason') String? cancellationReason,
 
     @JsonKey(name: 'versions_count') int? versionsCount,
+
+    /// The newest version, as one row.
+    ///
+    /// **Sent on the list as well as the detail**, which [versions] is not: the card draws this
+    /// as a thumbnail, and a page of forty tickets has no use for four hundred file rows. Null
+    /// on a ticket nobody has drawn for yet.
+    @JsonKey(name: 'latest_version') DesignTicketFile? latestVersion,
 
     /// Only the detail endpoint sends these two; a list row carries neither.
     @Default(<DesignTicketFile>[]) List<DesignTicketFile> attachments,
@@ -169,8 +184,15 @@ abstract class DesignTicket with _$DesignTicket {
     return null;
   }
 
-  /// The most recent version, whatever its verdict — what the header shows.
-  DesignTicketFile? get latestVersion => versions.isEmpty ? null : versions.last;
+  /// The most recent version, whatever its verdict.
+  ///
+  /// **Reads the field first and the list second**, because the two endpoints answer
+  /// differently: the list sends `latest_version` and no rows, the detail sends the rows. A
+  /// call site that only looked at [versions] drew nothing on a card, and one that only looked
+  /// at [latestVersion] would go stale on the detail screen the moment a version is uploaded
+  /// into a payload already in hand.
+  DesignTicketFile? get newestVersion =>
+      versions.isNotEmpty ? versions.last : latestVersion;
 
   /// Who is actually doing the work: whoever took it, or failing that whoever it was given to.
   DesignTicketActor? get workingDesigner => acceptedBy ?? designer;

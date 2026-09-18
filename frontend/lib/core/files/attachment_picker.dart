@@ -24,10 +24,23 @@ enum AttachmentSource {
 /// `flutter_test`, so a widget test of an upload flow would hang or throw on the pick. A fake
 /// implementation of this hands back two paths and the rest of the flow is exercised for real.
 abstract interface class AttachmentPicker {
+  /// What every caller took before any of them said otherwise — the customer design library's
+  /// list, which is also the receipts'.
+  static const List<String> defaultExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+
   /// What the user chose, or an empty list if they backed out.
   ///
   /// **Cancelling is not a failure.** It returns empty rather than throwing or answering a
   /// `Failure`, because a person changing their mind is the expected ending of this call and
   /// nothing should be reported to them about it.
-  Future<List<PickedFile>> pick(AttachmentSource source);
+  ///
+  /// [extensions] filters the document browser, and **the caller owns it** because the three
+  /// endpoints behind this do not agree: a design ticket's brief takes more formats than the
+  /// customer's design library, whose list a contract test holds to the server's to the letter.
+  /// One shared list here meant widening it for one caller silently widened it for all three.
+  /// The filter is a courtesy in any case — the server sniffs the bytes and refuses the rest.
+  Future<List<PickedFile>> pick(
+    AttachmentSource source, {
+    List<String> extensions = defaultExtensions,
+  });
 }

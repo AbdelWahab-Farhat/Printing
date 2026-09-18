@@ -1,12 +1,17 @@
+import 'dart:async';
+
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
+import 'package:dayaa/core/widgets/image_viewer.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
@@ -69,8 +74,23 @@ class _DesignTicketDetailView extends StatelessWidget {
     }
   }
 
-  Future<void> _accept(BuildContext context) async {
+  /// Taking the ticket.
+  ///
+  /// **Asked first, in the same words the list asks it in.** Accepting is the one step in this
+  /// flow the person doing it cannot undo: it locks every other designer out and makes this
+  /// account the only one allowed to upload. The list grew the confirmation first, and a rule
+  /// guarded on one screen and not the other is the kind that gets found by accident.
+  Future<void> _accept(BuildContext context, DesignTicket ticket) async {
     final cubit = context.read<DesignTicketDetailCubit>();
+
+    final confirmed = await showCustomDialog(
+      context: context,
+      title: 'قبول الطلب؟',
+      description: 'ستصبح أنت المصمم المسؤول عن «${ticket.title}»، ولن يستطيع مصمم آخر أخذها.',
+      confirmLabel: 'قبول الطلب',
+    );
+
+    if (!(confirmed ?? false) || !context.mounted) return;
 
     await _run(context, cubit.accept, 'تم قبول الطلب');
   }
@@ -82,6 +102,22 @@ class _DesignTicketDetailView extends StatelessWidget {
   /// impossible: artwork arrives over WhatsApp far more often than by email, and on iOS a photo
   /// from WhatsApp lands in the photo library — a place the Files app cannot see at all. A
   /// designer with the bag on their camera roll simply found nothing to pick.
+  ///
+  /// **Several briefs at once, one after another.** The picker has always returned a list and
+  /// this screen took `picked.first` and dropped the rest without saying so — somebody
+  /// selecting four reference photos got one and no explanation. They go up sequentially rather
+  /// than together: each is its own multipart request against a 25 MB cap, and four of those in
+  /// flight on shop Wi-Fi is how a batch fails for a reason that has nothing to do with any of
+  /// the files.
+  ///
+  /// **One failure does not end the batch.** The remaining files are still tried and the count
+  /// is reported at the end, because the alternative — stopping on the first — leaves the
+  /// person guessing which of the four arrived.
+  ///
+  /// **A version is one file, always**, and that is the model rather than a shortcut: a version
+  /// is one piece of artwork put up for one verdict, and `pendingVersion` is the single row the
+  /// review button reads. Four at once would queue three that nobody can reach. Picking several
+  /// for a version says so instead of silently taking one.
   Future<void> _upload(BuildContext context, {required bool asVersion}) async {
     final cubit = context.read<DesignTicketDetailCubit>();
 
@@ -93,21 +129,61 @@ class _DesignTicketDetailView extends StatelessWidget {
     // Dismissing the sheet is a decision to do nothing, not a failure.
     if (source == null || !context.mounted) return;
 
-    final picked = await sl<AttachmentPicker>().pick(source);
+    final picked = await sl<AttachmentPicker>().pick(
+      source,
+      // Mirrors `config('media.design_tickets.mimes')`, which is wider than the customer
+      // library's — see the note in that file.
+      extensions: const ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'],
+    );
 
     // Backing out of the picker is the expected ending of that call, not a failure — nothing is
     // reported about it.
     if (picked.isEmpty || !context.mounted) return;
 
-    final file = picked.first;
+    if (asVersion) {
+      if (picked.length > 1) {
+        // This screen's own rule rather than the server's, so it is said here rather than
+        // dressed up as a `Failure` the API never sent.
+        context.showError('اختر ملفاً واحداً — كل تصميم يُراجَع على حدة');
 
-    await _run(
-      context,
-      () => asVersion
-          ? cubit.submit(path: file.path, filename: file.name)
-          : cubit.attach(path: file.path, filename: file.name),
-      asVersion ? 'تم إرسال التصميم للمراجعة' : 'تم رفع المرفق',
-    );
+        return;
+      }
+
+      await _run(
+        context,
+        () => cubit.submit(path: picked.first.path, filename: picked.first.name),
+        'تم إرسال التصميم للمراجعة',
+      );
+
+      return;
+    }
+
+    Failure? lastFailure;
+    var uploaded = 0;
+
+    for (final file in picked) {
+      final failure = await cubit.attach(path: file.path, filename: file.name);
+
+      if (failure == null) {
+        uploaded++;
+      } else {
+        lastFailure = failure;
+      }
+
+      if (!context.mounted) return;
+    }
+
+    // What happened, in the three shapes it can take. The partial case names both numbers,
+    // because «فشل الرفع» over a screen that gained two files is the message that sends
+    // somebody looking for a bug.
+    switch ((uploaded, picked.length)) {
+      case (0, _) when lastFailure != null:
+        context.showFailure(lastFailure);
+      case (final done, final total) when done == total:
+        context.showSuccess(total == 1 ? 'تم رفع المرفق' : 'تم رفع $total مرفقات');
+      case (final done, final total):
+        context.showSuccess('تم رفع $done من $total — أعد المحاولة للباقي');
+    }
   }
 
   Future<void> _review(BuildContext context, DesignTicketFile version) async {
@@ -278,11 +354,17 @@ class _DesignTicketDetailView extends StatelessWidget {
                   onPressed: state.isWorking ? null : () => _cancel(context),
                   icon: Icon(AppIcons.close),
                 ),
-              IconButton(
-                tooltip: 'السجل',
-                onPressed: () => context.push(Routes.activityLog(AuditSubject.designTicket, ticket.id)),
-                icon: Icon(AppIcons.history),
-              ),
+              // **Gated, like the same button on every other detail screen in this app.** It
+              // was the one that was not, so a designer — whose three grants are view, accept
+              // and submit — was offered «السجل» and answered with a 403 by the endpoint
+              // behind it. Who edited a ticket and when is a supervisor's question.
+              if (sl<Session>().can(AppPermission.viewActivityLogs))
+                IconButton(
+                  tooltip: 'السجل',
+                  onPressed: () =>
+                      context.push(Routes.activityLog(AuditSubject.designTicket, ticket.id)),
+                  icon: Icon(AppIcons.history),
+                ),
             ],
           ),
           body: RefreshIndicator(
@@ -314,7 +396,7 @@ class _DesignTicketDetailView extends StatelessWidget {
                   ticket: ticket,
                   isWorking: state.isWorking,
                   onAssign: () => _assign(context, ticket),
-                  onAccept: () => _accept(context),
+                  onAccept: () => _accept(context, ticket),
                   onSubmit: () => _upload(context, asVersion: true),
                   onAttach: () => _upload(context, asVersion: false),
                   onReview: () {
@@ -364,13 +446,30 @@ class _Header extends StatelessWidget {
           ticket.customerName,
           style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
         ),
-        SizedBox(height: 10.h),
-        Wrap(
-          spacing: 16.w,
-          runSpacing: 4.h,
-          children: [
-            if (ticket.requester != null)
-              _Fact(label: 'طلبها', value: ticket.requester!.name),
+        SizedBox(height: 14.h),
+        // **Two to a line, label over value, at reading size.** These were a `Wrap` of
+        // «العميل: A713   المصمم: محمد علي   استلمها: …» in `bodySmall` — four facts crushed
+        // onto one 12sp line where the labels and the names ran together and nothing could be
+        // found by glancing. Paired rows give each one a column of its own and let the value
+        // take body size, which is what every other list in this app settled on.
+        _Facts(
+          facts: [
+            // **The customer's code, and it is the way back to them.** «طلبها: فرحات» stood
+            // here — who keyed the request in, which the history already records and which
+            // nobody on this screen has to act on. «A713» is what somebody says on the
+            // telephone, and tapping it opens the account the design will land on.
+            //
+            // The tap is offered only to a reader holding `customers.view`: the ticket carries
+            // the customer as a snapshot precisely so a designer needs no grant on that table,
+            // and a link that 403s is worse than no link.
+            if (ticket.customerCode case final code?)
+              _Fact(
+                label: 'العميل',
+                value: code,
+                onTap: sl<Session>().can(AppPermission.viewCustomers)
+                    ? () => context.push(Routes.customer(ticket.customerId))
+                    : null,
+              ),
             // **Two facts, not one.** Who it is addressed to, and who actually took it — a
             // reassignment moves the first and never the second.
             if (ticket.designer != null) _Fact(label: 'المصمم', value: ticket.designer!.name),
@@ -378,7 +477,12 @@ class _Header extends StatelessWidget {
               _Fact(label: 'استلمها', value: ticket.acceptedBy!.name),
             if (ticket.approvedBy != null)
               _Fact(label: 'اعتمدها', value: ticket.approvedBy!.name),
-            if (ticket.isInSharedPool) const _Fact(label: 'الحالة', value: 'الطابور المشترك'),
+            // **«المصمم», not «الحالة».** It was labelled «الحالة» and sat a centimetre under
+            // the pill that says «جديد» — which is the status — so one screen used the same
+            // word for two different things. This answers who is drawing it, and the honest
+            // answer while nobody has claimed it is that it is still in the pool.
+            if (ticket.isInSharedPool)
+              const _Fact(label: 'المصمم', value: 'الطابور المشترك'),
           ],
         ),
         if (ticket.cancellationReason != null) ...[
@@ -398,31 +502,83 @@ class _Header extends StatelessWidget {
   }
 }
 
+/// The header's facts, two to a line.
+///
+/// A `Column` of `Row`s rather than a `Wrap`: a wrap sizes each child to its own text, so
+/// «العميل: A713» and «اعتمدها: عبدالوهاب فرحات» end up different widths and the second column
+/// never lines up. Pairs of `Expanded` give every fact the same half of the row.
+class _Facts extends StatelessWidget {
+  const _Facts({required this.facts});
+
+  final List<_Fact> facts;
+
+  @override
+  Widget build(BuildContext context) {
+    if (facts.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var row = 0; row < facts.length; row += 2) ...[
+          if (row > 0) SizedBox(height: 12.h),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: facts[row]),
+              SizedBox(width: 12.w),
+              // An empty half rather than a stretched one: a lone fact on the last line keeps
+              // the column it would have had if there were two.
+              Expanded(
+                child: row + 1 < facts.length ? facts[row + 1] : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// One fact: what it is, then what it says.
 class _Fact extends StatelessWidget {
-  const _Fact({required this.label, required this.value});
+  const _Fact({required this.label, required this.value, this.onTap});
 
   final String label;
   final String value;
 
+  /// Where the value leads, when it leads anywhere. Null leaves the fact as plain text — and it
+  /// is null on most of them, so the one that *is* a link has to look like one: it takes the
+  /// primary colour and an underline rather than only becoming tappable, which nothing on a
+  /// line of grey text advertises.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final text = context.textTheme;
+    final scheme = context.colorScheme;
 
-    return RichText(
-      text: TextSpan(
-        style: text.bodySmall?.copyWith(color: context.colorScheme.onSurfaceVariant),
-        children: [
-          TextSpan(text: '$label: '),
-          TextSpan(
-            text: value,
-            style: text.bodySmall?.copyWith(
-              color: context.colorScheme.onSurface,
-              fontWeight: FontWeight.w700,
-            ),
+    final fact = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+        SizedBox(height: 2.h),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: text.bodyMedium?.copyWith(
+            color: onTap == null ? scheme.onSurface : scheme.primary,
+            fontWeight: FontWeight.w700,
+            decoration: onTap == null ? null : TextDecoration.underline,
+            decorationColor: scheme.primary,
           ),
-        ],
-      ),
+        ),
+      ],
     );
+
+    return onTap == null
+        ? fact
+        : InkWell(onTap: onTap, borderRadius: BorderRadius.circular(6.r), child: fact);
   }
 }
 
@@ -438,19 +594,20 @@ class _Brief extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // **One heading, not two.** «الطلب» and «الملاحظات والتعليمات» were separate on the
+        // argument that the first is read on the card and the second only once the ticket is
+        // opened — a split nobody filling the form could act on, so it got the request cut down
+        // the middle and made the designer read two blocks to know what was asked. The form
+        // asks one question now; see `DesignTicketFormPage`.
         Text('الطلب', style: text.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
         SizedBox(height: 6.h),
         Text(ticket.description, style: text.bodyMedium),
-        // Split from the description on the server for exactly this reason: the brief is read on
-        // the card, the instructions only once somebody has opened the ticket.
-        if (ticket.instructions != null && ticket.instructions!.isNotEmpty) ...[
-          SizedBox(height: 12.h),
-          Text(
-            'الملاحظات والتعليمات',
-            style: text.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
+        // **Drawn under the same heading rather than dropped.** Nothing writes `instructions`
+        // any more, but a ticket raised before the merge still carries one, and hiding words
+        // somebody typed is worse than an extra paragraph.
+        if (ticket.instructions case final instructions? when instructions.isNotEmpty) ...[
           SizedBox(height: 6.h),
-          Text(ticket.instructions!, style: text.bodyMedium),
+          Text(instructions, style: text.bodyMedium),
         ],
       ],
     );
@@ -528,7 +685,35 @@ class _Versions extends StatelessWidget {
             DesignVersionTile(
               version: version,
               onTap: () {
-                if (version.isAwaitingReview && ticket.canReview) onReview(version);
+                if (version.isAwaitingReview && ticket.canReview) {
+                  onReview(version);
+
+                  return;
+                }
+
+                // **Every other tap opens the picture**, through the same viewer the list card
+                // uses. A tile that did nothing at all for anybody who could not judge it —
+                // the designer who drew it, or anybody reading a closed ticket — was a
+                // thumbnail too small to see and no way to make it bigger.
+                //
+                // The whole conversation is handed over rather than the one tile, so the
+                // reviewer swipes between rounds instead of closing and reopening: comparing
+                // «قبل» with «بعد» is the reason to open one at all.
+                final pictures = [
+                  for (final file in ticket.versions)
+                    if (file.thumbnailUrl ?? file.fileUrl case final url?) (file, url),
+                ];
+
+                unawaited(
+                  openImageViewer(
+                    context,
+                    urls: [for (final (_, url) in pictures) url],
+                    initialIndex: pictures.indexWhere((pair) => pair.$1.id == version.id),
+                    cacheKeys: [
+                      for (final (file, _) in pictures) 'design-ticket-file-${file.id}',
+                    ],
+                  ),
+                );
               },
             ),
       ],
@@ -584,7 +769,12 @@ class _Actions extends StatelessWidget {
           AppButton.tonal(
             label: ticket.isInSharedPool ? 'إسناد إلى مصمم' : 'تغيير المصمم',
             isLoading: isWorking,
-            onPressed: onAssign,
+            // **Dead while a version is waiting on a verdict.** Moving the ticket to somebody
+            // else at «بانتظار المراجعة» hands them a design they did not draw and are about
+            // to be judged on, and leaves the person who did draw it holding nothing. Judge
+            // the version first — «اعتماد» closes the ticket, «تعديل مطلوب» sends it back to
+            // «قيد التصميم» and this button wakes up again.
+            onPressed: ticket.status == DesignTicketStatus.underReview ? null : onAssign,
           ),
         ],
         if (ticket.canManage) ...[

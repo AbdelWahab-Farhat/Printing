@@ -28,11 +28,14 @@ class DesignTicketsCubit extends PagedCubit<DesignTicket> {
   DesignTicketsCubit({
     required GetDesignTickets getTickets,
     required GetDesignTicketCounts getCounts,
+    required AcceptDesignTicket acceptTicket,
   }) : _getTickets = getTickets,
-       _getCounts = getCounts;
+       _getCounts = getCounts,
+       _accept = acceptTicket;
 
   final GetDesignTickets _getTickets;
   final GetDesignTicketCounts _getCounts;
+  final AcceptDesignTicket _accept;
 
   /// Which status the list is showing. Null is every status — **closed ones included**, which is
   /// what it opens on: the historical record is part of what the section is for.
@@ -120,6 +123,31 @@ class DesignTicketsCubit extends PagedCubit<DesignTicket> {
     designer = next;
 
     await load(search: currentSearch);
+  }
+
+  /// A designer taking a ticket without opening it.
+  ///
+  /// **The row is patched from what the server hands back, not re-read.** Accepting returns the
+  /// whole ticket, so the list already knows the answer — and a refresh here would throw away
+  /// the reader's scroll position in the middle of a queue they are working down.
+  ///
+  /// **The counts are re-asked, and they are the reason this is not a pure patch.** The ticket
+  /// leaves «جديد» for «قيد التصميم», so two of the numbers in the picker above the list are
+  /// wrong the moment the row changes.
+  ///
+  /// Returns the failure when there is one, so the screen says it in its own words — a Cubit
+  /// that emitted a failure state here would blank the list it is sitting under.
+  Future<Failure?> accept(int ticketId) async {
+    final result = await _accept(ticketId);
+
+    if (isClosed) return null;
+
+    return result.fold((failure) => failure, (ticket) {
+      replace(ticket);
+      unawaited(_refreshCounts(currentSearch));
+
+      return null;
+    });
   }
 
   @override

@@ -1147,6 +1147,7 @@ abstract final class Injector {
         () => DesignTicketsCubit(
           getTickets: sl<GetDesignTickets>(),
           getCounts: sl<GetDesignTicketCounts>(),
+          acceptTicket: sl<AcceptDesignTicket>(),
         ),
       )
       ..registerFactoryParam<DesignTicketDetailCubit, int, void>(

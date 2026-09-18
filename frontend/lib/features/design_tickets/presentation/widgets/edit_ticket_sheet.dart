@@ -51,15 +51,11 @@ class _EditSheetState extends State<_EditSheet> {
   late final TextEditingController _description = TextEditingController(
     text: widget.ticket.description,
   );
-  late final TextEditingController _instructions = TextEditingController(
-    text: widget.ticket.instructions ?? '',
-  );
 
   @override
   void dispose() {
     _title.dispose();
     _description.dispose();
-    _instructions.dispose();
     super.dispose();
   }
 
@@ -83,12 +79,13 @@ class _EditSheetState extends State<_EditSheet> {
             SizedBox(height: 14.h),
             AppTextField(controller: _title, label: 'عنوان الطلب'),
             SizedBox(height: 12.h),
-            AppTextField(controller: _description, label: 'وصف الطلب', maxLines: 4),
-            SizedBox(height: 12.h),
+            // One box, like the form that raised the ticket — see `DesignTicketFormPage`. An
+            // older ticket may still carry `instructions`; the detail screen keeps drawing it
+            // when it is there, and nothing writes one any more.
             AppTextField(
-              controller: _instructions,
-              label: 'الملاحظات والتعليمات (اختياري)',
-              maxLines: 4,
+              controller: _description,
+              label: 'وصف الطلب والتعليمات',
+              maxLines: 6,
             ),
             SizedBox(height: 18.h),
             SizedBox(
@@ -99,11 +96,7 @@ class _EditSheetState extends State<_EditSheet> {
                 // the field, so nothing is blocked here — an empty box reaches a 422 that says
                 // which one, rather than a disabled button that says nothing.
                 onPressed: () => Navigator.of(context).pop(
-                  TicketEdit(
-                    title: _title.text,
-                    description: _description.text,
-                    instructions: _instructions.text,
-                  ),
+                  TicketEdit(title: _title.text, description: _description.text),
                 ),
               ),
             ),

@@ -31,7 +31,10 @@ class _FakePicker implements AttachmentPicker {
   List<PickedFile> answer = const [];
 
   @override
-  Future<List<PickedFile>> pick(AttachmentSource source) async => answer;
+  Future<List<PickedFile>> pick(
+    AttachmentSource source, {
+    List<String> extensions = AttachmentPicker.defaultExtensions,
+  }) async => answer;
 }
 
 void main() {

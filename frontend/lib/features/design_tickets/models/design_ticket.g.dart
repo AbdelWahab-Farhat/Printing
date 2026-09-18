@@ -56,6 +56,7 @@ _DesignTicket _$DesignTicketFromJson(
       const <DesignTicketTransition>[],
   customerId: (json['customer_id'] as num).toInt(),
   customerName: json['customer_name'] as String,
+  customerCode: json['customer_code'] as String?,
   orderId: (json['order_id'] as num?)?.toInt(),
   order: json['order'] == null
       ? null
@@ -88,6 +89,11 @@ _DesignTicket _$DesignTicketFromJson(
         ),
   cancellationReason: json['cancellation_reason'] as String?,
   versionsCount: (json['versions_count'] as num?)?.toInt(),
+  latestVersion: json['latest_version'] == null
+      ? null
+      : DesignTicketFile.fromJson(
+          json['latest_version'] as Map<String, dynamic>,
+        ),
   attachments:
       (json['attachments'] as List<dynamic>?)
           ?.map((e) => DesignTicketFile.fromJson(e as Map<String, dynamic>))
@@ -127,6 +133,7 @@ Map<String, dynamic> _$DesignTicketToJson(_DesignTicket instance) =>
           .toList(),
       'customer_id': instance.customerId,
       'customer_name': instance.customerName,
+      'customer_code': instance.customerCode,
       'order_id': instance.orderId,
       'order': instance.order?.toJson(),
       'requester': instance.requester?.toJson(),
@@ -140,6 +147,7 @@ Map<String, dynamic> _$DesignTicketToJson(_DesignTicket instance) =>
       'approved_design': instance.approvedDesign?.toJson(),
       'cancellation_reason': instance.cancellationReason,
       'versions_count': instance.versionsCount,
+      'latest_version': instance.latestVersion?.toJson(),
       'attachments': instance.attachments.map((e) => e.toJson()).toList(),
       'versions': instance.versions.map((e) => e.toJson()).toList(),
       'can_accept': instance.canAccept,
