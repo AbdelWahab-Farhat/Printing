@@ -18,6 +18,15 @@ enum AudienceKind
 {
     case Permission;
     case User;
+
+    /**
+     * أكثرُ من شخصٍ بأعيانهم، لا صفةٌ تجمعهم.
+     *
+     * **ليست `User` مكرّرةً مرّتين.** الطرفان في محادثةٍ واحدة خبرٌ واحد، وصفُّ بريدٍ لكلِّ طرف
+     * يعني صفَّين في `notifications` عن تعليقٍ واحد — ومفتاحَي منعِ تكرارٍ لا يمنعان شيئاً.
+     * انظر `DesignTicketCommentPosted`.
+     */
+    case Users;
     case Role;
     case Everyone;
 }

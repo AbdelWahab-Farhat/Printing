@@ -11,10 +11,13 @@ use App\Application\Api\V1\Requests\Comment\UpdateCommentRequest;
 use App\Application\Api\V1\Resources\CommentResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
+use App\Domain\Comment\Actions\PostComment;
+use App\Domain\Comment\CommentService;
 use App\Domain\Comment\Contracts\Commentable;
 use App\Domain\Comment\Exceptions\CommentBelongsToSomebodyElse;
 use App\Domain\Comment\Exceptions\CommentThreadIsClosed;
 use App\Domain\Comment\Models\Comment;
+use App\Domain\Identity\Models\User;
 use App\Support\ResponseTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -35,6 +38,8 @@ use Illuminate\Http\Request;
 abstract class CommentController extends Controller
 {
     use ReadsAuditTrail, ResponseTrait;
+
+    public function __construct(private readonly CommentService $comments) {}
 
     /**
      * List a record's comments
@@ -69,15 +74,23 @@ abstract class CommentController extends Controller
      *
      * The author is the signed-in user and is never read from the body: a note is attributed,
      * and attribution nobody can set is attribution nobody can forge.
+     *
+     * **والكتابةُ نفسها في {@see PostComment} لا هنا**،
+     * لأنها صارت تُعلن `CommentPosted` — ولا حدثَ واحدٌ في هذا التطبيق يُطلق من طبقة
+     * `Application`. وما بقي في هذا التابع هو ما يخصّ الطبقةَ حقّاً: رفضُ المحادثة المغلقة،
+     * والمغلَّف.
+     *
+     * و`Commentable&Model` هنا لا `Commentable` وحدها: الفعلُ يحتاج صفّاً يربط به، والعقدُ وحده
+     * لا يَعِد بواحد. وكلُّ مالكٍ شُحن عقدَه هو نموذجٌ أصلاً، فلا يضيق هذا بأحد.
      */
-    protected function storeFor(StoreCommentRequest $request, Commentable $owner): JsonResponse
+    protected function storeFor(StoreCommentRequest $request, Commentable&Model $owner): JsonResponse
     {
         $this->refuseUnlessOpen($owner);
 
-        $comment = new Comment($request->validated());
-        $comment->commentable()->associate($owner);
-        $comment->author()->associate($request->user());
-        $comment->save();
+        /** @var User $author */
+        $author = $request->user();
+
+        $comment = $this->comments->post($owner, (string) $request->validated('body'), $author);
 
         return $this->created(
             new CommentResource($comment->load('author')),

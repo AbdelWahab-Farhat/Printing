@@ -492,6 +492,14 @@ abstract final class AppIcons {
   static IconData get notifications =>
       _pick(Icons.notifications_none_rounded, CupertinoIcons.bell);
 
+  /// عملٌ وصل إلى صفِّ أحدهم — نقصٌ أُسند إليه، أو تذكرةُ تصميمٍ صارت باسمه.
+  ///
+  /// **ورقةٌ في سلّة، لا [urgent] ولا [error].** هذان عن شيءٍ فيه خلل، وهذا عن شيءٍ يسير كما
+  /// ينبغي: العملُ يُوزَّع فيصل. وليست [notifications] أيضاً — الجرسُ هو ما يُرسم حين لا نعرف
+  /// ما الخبر، ونحن نعرفه هنا.
+  static IconData get task =>
+      _pick(Icons.assignment_outlined, CupertinoIcons.tray_arrow_down);
+
   static IconData get settings =>
       _pick(Icons.settings_outlined, CupertinoIcons.gear_alt);
 

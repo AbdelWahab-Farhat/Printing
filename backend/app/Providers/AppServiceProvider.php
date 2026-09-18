@@ -6,6 +6,7 @@ use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Carrier\Actions\BuildNawrisPayload;
 use App\Domain\Carrier\Actions\ResolveNawrisDestination;
 use App\Domain\Carrier\Support\NawrisClient;
+use App\Domain\Comment\Events\CommentPosted;
 use App\Domain\Customer\Queries\CustomerOrderActivity;
 use App\Domain\Delivery\DeliveryService;
 use App\Domain\DesignTicket\Events\DesignTicketAssigned;
@@ -18,6 +19,7 @@ use App\Domain\Investor\Listeners\PostPurchaseWhenStockIsRedrawn;
 use App\Domain\Investor\Listeners\UnwindEarningsWhenOrderIsDeleted;
 use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
+use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsCommentedOn;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketProgresses;
 use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
 use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
@@ -203,6 +205,12 @@ class AppServiceProvider extends ServiceProvider
         // which side that is depends on the status; see DesignTicketReachedStatus.
         Event::listen(DesignTicketAssigned::class, NotifyWhenDesignTicketIsAssigned::class);
         Event::listen(DesignTicketProgressed::class, NotifyWhenDesignTicketProgresses::class);
+
+        // **والملاحظاتُ تُعلن، والإشعاراتُ تُصغي** — والحدثُ عامٌّ عن كلِّ ما يُعلَّق عليه، لأن
+        // «كُتبت ملاحظة» واقعةٌ عن الملاحظات لا عن التصميم. والغربلةُ — «التذاكرُ وحدها اليوم» —
+        // في المستمِع، فتُضاف ملاحظاتُ العميل يوماً بمستمِعٍ ثانٍ لا بحدثٍ ثانٍ ولا بتعديلٍ في
+        // سياق الملاحظات. مُدرَجٌ وبعد الإيداع كجيرانه.
+        Event::listen(CommentPosted::class, NotifyWhenDesignTicketIsCommentedOn::class);
 
         // Turns three silent classes of bug into loud exceptions everywhere except
         // production: lazy-loaded relations (N+1), reading an attribute that was never

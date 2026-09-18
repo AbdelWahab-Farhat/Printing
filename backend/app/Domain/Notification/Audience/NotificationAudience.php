@@ -30,11 +30,15 @@ use App\Domain\Identity\Enums\PermissionName;
  */
 final readonly class NotificationAudience
 {
+    /**
+     * @param  list<int>|null  $userIds
+     */
     private function __construct(
         public AudienceKind $kind,
         public ?PermissionName $permission = null,
         public ?int $userId = null,
         public ?int $roleId = null,
+        public ?array $userIds = null,
     ) {}
 
     /**
@@ -52,6 +56,25 @@ final readonly class NotificationAudience
     public static function user(int $userId): self
     {
         return new self(AudienceKind::User, userId: $userId);
+    }
+
+    /**
+     * عدّةُ أشخاصٍ بأعيانهم — طرفا محادثةٍ يُخاطَبان معاً.
+     *
+     * **الفرقُ عن استدعاء `user()` مرّتين ليس في التوفير بل في الصحّة.** النشرةُ الواحدة تكتب صفّاً
+     * واحداً في `notifications`، فيصل الخبرُ إلى الطرفين ويُقرأ كلٌّ منهما على حدة عبر
+     * `notification_recipients` — وهي الحالةُ التي بُني عليها الجدولان أصلاً. ونشرتان تعنيان
+     * خبرَين عن شيءٍ واحد، ومفتاحَي منعِ تكرارٍ على التعليق نفسه يُلغي أحدُهما الآخر.
+     *
+     * **ومَن سبّب الحدث يخرج من القائمة في {@see ResolveRecipients} لا هنا**، فتستطيع التعريفةُ أن
+     * تقول «الطرفان» دون أن تسأل أيُّهما الكاتب — وهو ما يجعل تعليقَ مديرٍ من خارج الطرفين يصل
+     * إليهما معاً بلا فرعٍ ثانٍ في الشيفرة.
+     *
+     * @param  list<int>  $userIds  والفارغةُ نتيجةٌ عاديّة: تذكرةٌ لم يأخذها أحدٌ بعد
+     */
+    public static function users(array $userIds): self
+    {
+        return new self(AudienceKind::Users, userIds: array_values($userIds));
     }
 
     /** Everybody holding one role, chosen by the sender of an announcement. */

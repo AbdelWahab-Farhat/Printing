@@ -70,6 +70,11 @@ class NotificationTile extends StatelessWidget {
         'order' => AppIcons.orders,
         'inventory' => AppIcons.warehouse,
         'money' => AppIcons.payment,
+        // الثلاثةُ التالية يرسلها الخادم منذ أن شُحنت تذاكرُ التصميم، وكانت تسقط إلى الجرس
+        // لأنها لم تُذكر هنا — وهو ما يفعله الاحتياطُ بالضبط حين يسبق الخادمُ التطبيق.
+        'task' => AppIcons.task,
+        'design' => AppIcons.designs,
+        'comment' => AppIcons.comments,
         // The same glyph as the fallback today, named anyway: when a megaphone is added to
         // AppIcons it changes here, in one place, rather than being hunted for.
         'announcement' => AppIcons.notifications,

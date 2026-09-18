@@ -7,6 +7,7 @@ namespace App\Domain\Notification\Enums;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Notification\Contracts\NotificationDefinition;
 use App\Domain\Notification\Definitions\DesignTicketAssignedToYou;
+use App\Domain\Notification\Definitions\DesignTicketCommentPosted;
 use App\Domain\Notification\Definitions\DesignTicketReachedStatus;
 use App\Domain\Notification\Definitions\ManualAnnouncement;
 use App\Domain\Notification\Definitions\OrderReachedShortage;
@@ -64,6 +65,15 @@ enum NotificationType: string
      */
     case DesignTicketStatus = 'design_ticket.status';
 
+    /**
+     * كُتب ردٌّ داخل تذكرة تصميم، والطرفُ الآخر لم يره.
+     *
+     * **النوعُ الوحيد الذي يُخاطِب شخصَين معاً** — طالبَ التذكرة والمصمّم — لا واحداً ولا صفةً
+     * يحملها جمع. ومَن كتب يخرج من الاثنين، فيصل الردُّ إلى الطرف الآخر وحده؛ وتعليقُ ثالثٍ من
+     * خارجهما — مديرٌ يقرأ التذاكر كلَّها — يصل إليهما معاً. انظر {@see DesignTicketCommentPosted}.
+     */
+    case DesignTicketComment = 'design_ticket.comment';
+
     /** Somebody wrote a message and sent it to staff. The only one a human composes. */
     case Announcement = 'announcement.manual';
 
@@ -84,6 +94,7 @@ enum NotificationType: string
             self::ShortageAssigned => ShortageAssignedToYou::class,
             self::DesignTicketAssigned => DesignTicketAssignedToYou::class,
             self::DesignTicketStatus => DesignTicketReachedStatus::class,
+            self::DesignTicketComment => DesignTicketCommentPosted::class,
             self::Announcement => ManualAnnouncement::class,
         };
     }
@@ -109,6 +120,9 @@ enum NotificationType: string
             // month degrades gracefully rather than drawing the wrong thing.
             self::DesignTicketAssigned => 'task',
             self::DesignTicketStatus => 'design',
+            // مفتاحٌ جديد على الخادم، وجرسٌ عاديٌّ في نسخةٍ قديمة من التطبيق حتى تُحدَّث — وهو
+            // بالضبط ما يجعل نوعاً يُشحن اليوم يظهر في بناءٍ جُمّع الشهر الماضي.
+            self::DesignTicketComment => 'comment',
             self::Announcement => 'announcement',
         };
     }
@@ -124,6 +138,7 @@ enum NotificationType: string
             self::ShortageAssigned => 'نقص مُسنَد',
             self::DesignTicketAssigned => 'طلب تصميم',
             self::DesignTicketStatus => 'حالة طلب تصميم',
+            self::DesignTicketComment => 'تعليق على طلب تصميم',
             self::Announcement => 'إشعار عام',
         };
     }

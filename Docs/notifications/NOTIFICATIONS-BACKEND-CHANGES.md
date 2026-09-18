@@ -246,6 +246,20 @@ definition, and nothing else.
 `NotificationAudience::role($roleId)` and `::everyone()` — what announcements use (§8.1). Roles
 are administrator-created data, so a new role is a new possible audience with no code change.
 
+`NotificationAudience::users([...])` — **several named people, as one notification.** Added for
+`design_ticket.comment`, whose audience is the two ends of a conversation: whoever raised the
+ticket and whoever is drawing it.
+
+Deliberately not `user()` called twice. Two publishes would write two `notifications` rows about
+one comment, give each its own `dedupe_key`, and make "the same reply announced twice" impossible
+to suppress. One row fanned out to two recipients is the shape the two tables were built for.
+
+It also removes a branch rather than adding one. Because `ResolveRecipients` strips the causer
+(§5.1), a definition can name *both* parties unconditionally and still be correct in all three
+cases: the designer writes and the requester hears, the requester writes and the designer hears,
+and somebody from outside the pair — a manager holding `design_tickets.view_all` — writes and
+**both** hear. A definition that instead asked "who wrote this?" and returned a single `user()`
+has to get that third case right by hand, and silently drops it when it does not.
 ### 5.3 The variant that is specified but not built
 
 `NotificationAudience::investorFor($dealId)` is **reserved in phase 1 and implemented later.**
@@ -509,6 +523,21 @@ Three do not exist yet and are added in their **owning** context, following the 
 - `StockFellBelowThreshold` (Inventory) — must carry *crossed*, not *is below*, or §4.4 is lost.
 - `PurchaseOrderReceivedShort` (PurchaseOrder).
 
+**`CommentPosted` (Comment)** — added later, and the one that cost more than a line. Comments had
+no Action at all: `CommentController::storeFor` built the row inline, and **no event in this
+application is dispatched from the `Application` layer**. So the write moved into
+`Comment/Actions/PostComment`, behind a `CommentService` door, which is what RULES §3 asks of a
+controller anyway.
+
+The event is generic — it carries `commentableType` as a morph alias and fires for a customer's
+notes and a supplier's alike. **The opinion that only design tickets are worth a bell lives in the
+listener**, exactly as `NotifyWhenOrderStatusChanges` holds the list of statuses worth one. So the
+day a note on a customer should notify somebody, it is a second listener, not a second event and
+not an edit to the Comment context.
+
+`CommentService` is a half door on purpose: only `post()` goes through it, because only the write
+has something to announce. Reading, editing and deleting stay in the controller until one of them
+needs an event of its own.
 ---
 
 ## 9. Config, dependencies, environment

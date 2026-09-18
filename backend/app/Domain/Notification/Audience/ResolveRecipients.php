@@ -26,6 +26,7 @@ final readonly class ResolveRecipients
         $ids = match ($audience->kind) {
             AudienceKind::Permission => $this->holdersOfPermission($audience->permission->value),
             AudienceKind::User => [$audience->userId],
+            AudienceKind::Users => $audience->userIds ?? [],
             AudienceKind::Role => $this->holdersOfRole($audience->roleId),
             AudienceKind::Everyone => $this->everyEmployee(),
         };
