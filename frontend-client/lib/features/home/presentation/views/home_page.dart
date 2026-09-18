@@ -191,6 +191,39 @@ class _Greeting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // **The whole of who you are, and one tap to the screen about it.** The avatar, the
+        // name and the customer code are the account looking back at you; tapping them to reach
+        // «حسابي» is what people try first, and before this they tried it and nothing happened.
+        //
+        // `go`, not `push`: «حسابي» is one of the five tabs, so this moves the bar to it rather
+        // than stacking a second copy over the home screen with no way back to the bar.
+        Expanded(
+          child: InkWell(
+            onTap: () => context.go(Routes.profile),
+            borderRadius: BorderRadius.circular(16.r),
+            child: _Identity(name: name, code: code, shop: shop),
+          ),
+        ),
+        // Outside the tap target on purpose: the bell is its own errand, and a customer aiming
+        // for it who landed on «حسابي» would have been given a worse version of both.
+        const NotificationsButton(),
+      ],
+    );
+  }
+}
+
+/// The avatar, the name, and the customer code — the account, drawn.
+class _Identity extends StatelessWidget {
+  const _Identity({required this.name, required this.code, required this.shop});
+
+  final String? name;
+  final String? code;
+  final CustomerShop? shop;
+
+  @override
+  Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
     // «متجر النور · بنغازي» when the account has a shop, and the app's own line when it does
@@ -256,11 +289,6 @@ class _Greeting extends StatelessWidget {
             ),
           ),
         ],
-        // **The bell lives in the greeting here, because this screen has no `AppBar`** — it
-        // opens on this row instead. Last in the row, which in Arabic is the far left, so it
-        // stands in the same corner it does on every other screen; a control that moved corner
-        // between tabs is one people stop reaching for without looking.
-        const NotificationsButton(),
       ],
     );
   }
