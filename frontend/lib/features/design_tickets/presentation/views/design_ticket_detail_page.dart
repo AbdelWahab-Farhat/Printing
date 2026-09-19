@@ -202,6 +202,19 @@ class _DesignTicketDetailView extends StatelessWidget {
     );
   }
 
+  /// يفتح «الرد داخل التذكرة»، ثم يُحدّث التذكرة عند العودة.
+  ///
+  /// **التحديث هو نصفُ الشارة.** الشاشةُ التي تفتحها تُعلّم المحادثة مقروءةً على الخادم، فلو
+  /// عاد القارئ إلى هذه الصفحة دون إعادة قراءتها لبقيت الشارةُ ترسم رقماً أطفأه صاحبه بنفسه
+  /// قبل ثانية — وهو ما يُقرأ كعطبٍ لا كتأخير.
+  Future<void> _openConversation(BuildContext context, DesignTicket ticket) async {
+    final cubit = context.read<DesignTicketDetailCubit>();
+
+    await context.push(Routes.designTicketComments(ticket.id), extra: ticket.title);
+
+    await cubit.load();
+  }
+
   Future<void> _assign(BuildContext context, DesignTicket ticket) async {
     final cubit = context.read<DesignTicketDetailCubit>();
 
@@ -336,11 +349,16 @@ class _DesignTicketDetailView extends StatelessWidget {
               // is part of doing the work rather than a privilege over it.
               IconButton(
                 tooltip: 'المحادثة',
-                onPressed: () => context.push(
-                  Routes.designTicketComments(ticket.id),
-                  extra: ticket.title,
+                onPressed: () => _openConversation(context, ticket),
+                // الشارةُ رقمٌ لا نقطة، كشارة الجرس بجوارها: ردٌّ واحد ونوبةُ ذهابٍ وإياب في
+                // عطلةٍ طويلة ليسا خبراً واحداً، والسقفُ «+99» يمنع الشريط من إعادة التوزيع.
+                icon: Badge(
+                  isLabelVisible: ticket.unreadComments > 0,
+                  label: Text(
+                    ticket.unreadComments > 99 ? '+99' : '${ticket.unreadComments}',
+                  ),
+                  child: Icon(AppIcons.comments),
                 ),
-                icon: Icon(AppIcons.comments),
               ),
               if (ticket.canManage)
                 IconButton(

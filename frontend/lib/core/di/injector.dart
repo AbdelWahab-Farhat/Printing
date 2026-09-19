@@ -66,6 +66,7 @@ import 'package:dayaa/features/comments/usecases/add_comment.dart';
 import 'package:dayaa/features/comments/usecases/delete_comment.dart';
 import 'package:dayaa/features/comments/usecases/edit_comment.dart';
 import 'package:dayaa/features/comments/usecases/get_comments.dart';
+import 'package:dayaa/features/comments/usecases/mark_thread_read.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/add_customer_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
@@ -1808,6 +1809,7 @@ abstract final class Injector {
       ..registerLazySingleton<AddComment>(() => AddComment(sl<CommentRepository>()))
       ..registerLazySingleton<EditComment>(() => EditComment(sl<CommentRepository>()))
       ..registerLazySingleton<DeleteComment>(() => DeleteComment(sl<CommentRepository>()))
+      ..registerLazySingleton<MarkThreadRead>(() => MarkThreadRead(sl<CommentRepository>()))
       // Parameterised on the subject rather than an id: the notes screen is about one record,
       // and *which kind* of record is half of what identifies it.
       ..registerFactoryParam<CommentsCubit, CommentSubject, void>(

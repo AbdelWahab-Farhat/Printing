@@ -310,6 +310,12 @@ abstract final class DesignTicketEndpoints {
   /// «الرد داخل التذكرة» — the same comment shape every other commentable record uses.
   static String comments(int ticketId) => '/design-tickets/$ticketId/comments';
 
+  /// «قرأتُ المحادثة» — تُطفئ شارة هذه التذكرة، ومعها خبرُها في الجرس لأنهما صفوفٌ واحدة.
+  ///
+  /// مُعلَنٌ على الخادم **قبل** `comments/{comment}`، وإلا قرأ المتغيّرُ كلمةَ «read» معرّفاً.
+  /// و`POST` لا أثرٌ جانبيٌّ على `GET` القائمة: طلبٌ يغيّر حالةً لا يُعاد إرساله عند كلّ تحديث.
+  static String commentsRead(int ticketId) => '/design-tickets/$ticketId/comments/read';
+
   static String comment(int ticketId, int commentId) =>
       '/design-tickets/$ticketId/comments/$commentId';
 

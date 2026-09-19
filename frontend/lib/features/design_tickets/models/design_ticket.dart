@@ -150,6 +150,16 @@ abstract class DesignTicket with _$DesignTicket {
 
     @JsonKey(name: 'versions_count') int? versionsCount,
 
+    /// كم ردّاً في المحادثة لم يقرأه **هذا** القارئ — شارةُ زرّ المحادثة، وشارةُ صفّ القائمة.
+    ///
+    /// **رقمٌ عن القارئ لا عن التذكرة**، كالرايات الأربع `can*`: التذكرة الواحدة تحمل رقمَين
+    /// مختلفَين لطالبها ولمصمّمها في اللحظة نفسها، وصفراً لمديرٍ يقرأ التذاكر كلَّها ولم يُوجَّه
+    /// إليه شيء منها.
+    ///
+    /// و`null` تعني «لم يقل الخادم»، لا صفراً: نسخةٌ أقدم من الواجهة لا ترسل المفتاح أصلاً،
+    /// وشارةٌ تُرسم من تخمينٍ أسوأ من شارةٍ لا تُرسم. انظر [unreadComments].
+    @JsonKey(name: 'unread_comments_count') int? unreadCommentsCount,
+
     /// The newest version, as one row.
     ///
     /// **Sent on the list as well as the detail**, which [versions] is not: the card draws this
@@ -202,4 +212,10 @@ abstract class DesignTicket with _$DesignTicket {
   /// The list sends `versions_count` and no rows; the detail sends the rows. Reading one or the
   /// other at each call site is how a card ends up showing «0 نسخ» on a ticket with three.
   int get versionCount => versionsCount ?? versions.length;
+
+  /// كم ردّاً ينتظر هذا القارئ، صفراً حين لا شيء **وحين لا يقول الخادم**.
+  ///
+  /// موضعُ الاحتياط الوحيد، فلا يسأل موضعُ الرسم عن `null` مرّتين — والصفر هو الجواب الصحيح
+  /// للحالتين: لا شارة تُرسم في أيٍّ منهما.
+  int get unreadComments => unreadCommentsCount ?? 0;
 }

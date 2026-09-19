@@ -89,6 +89,7 @@ _DesignTicket _$DesignTicketFromJson(
         ),
   cancellationReason: json['cancellation_reason'] as String?,
   versionsCount: (json['versions_count'] as num?)?.toInt(),
+  unreadCommentsCount: (json['unread_comments_count'] as num?)?.toInt(),
   latestVersion: json['latest_version'] == null
       ? null
       : DesignTicketFile.fromJson(
@@ -147,6 +148,7 @@ Map<String, dynamic> _$DesignTicketToJson(_DesignTicket instance) =>
       'approved_design': instance.approvedDesign?.toJson(),
       'cancellation_reason': instance.cancellationReason,
       'versions_count': instance.versionsCount,
+      'unread_comments_count': instance.unreadCommentsCount,
       'latest_version': instance.latestVersion?.toJson(),
       'attachments': instance.attachments.map((e) => e.toJson()).toList(),
       'versions': instance.versions.map((e) => e.toJson()).toList(),

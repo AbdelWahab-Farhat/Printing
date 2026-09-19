@@ -915,6 +915,17 @@ Route::prefix('v1')->group(function (): void {
         // it. Who may change *this* note is a per-row question answered in the controller.
         //
         // No `show`: the list carries every field, and a note is only ever met in a list.
+        //
+        // **قبل `apiResource`، وإلا ابتلع `{comment}` كلمةَ «read» الحرفيّة** — الفخُّ نفسه الذي
+        // تحمل `notifications/read-all` تعليقاً عنه. وهي POST لا أثرٌ جانبيٌّ على GET القائمة:
+        // طلبُ قراءةٍ يغيّر حالةً يُعاد إرساله عند كلِّ تحديثٍ للصفحة، ويُوثَّق في المواصفة على
+        // أنه لا يغيّر شيئاً.
+        Route::post(
+            'design-tickets/{ticket}/comments/read',
+            [DesignTicketCommentController::class, 'markThreadAsRead'],
+        )->middleware('can:design_tickets.view')
+            ->name('design-tickets.comments.read');
+
         Route::apiResource('design-tickets.comments', DesignTicketCommentController::class)
             ->only(['index', 'store', 'update', 'destroy'])
             ->parameters(['design-tickets' => 'ticket'])

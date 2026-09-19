@@ -192,6 +192,24 @@ class _Details extends StatelessWidget {
                       style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
                     ),
                   ],
+                  // ردودٌ تنتظر هذا القارئ — آخِرُ الصفّ، وباللون الأساسيّ وحده بين ما حوله.
+                  //
+                  // **زوجُ أيقونةٍ ورقم لا `Badge` مادّيّة**، خلافاً لزرّ المحادثة في شريط
+                  // التفاصيل: هذا الصفُّ كلُّه أزواجٌ من أيقونةٍ وكلمة بقياس ١٤، وشارةٌ حمراء
+                  // معلَّقةٌ على أيقونةٍ بهذا الحجم تقتطع نفسها. والتمييزُ يأتي من اللون، وهي
+                  // الحيلة التي يستعملها هذا الصفُّ أصلاً لـ«الطابور المشترك».
+                  if (ticket.unreadComments > 0) ...[
+                    SizedBox(width: 8.w),
+                    Icon(AppIcons.comments, size: 14.sp, color: scheme.primary),
+                    SizedBox(width: 4.w),
+                    Text(
+                      ticket.unreadComments > 99 ? '+99' : '${ticket.unreadComments}',
+                      style: text.labelSmall?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],

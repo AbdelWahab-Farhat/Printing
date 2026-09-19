@@ -62,6 +62,20 @@ class CommentRepositoryImpl implements CommentRepository {
   }
 
   @override
+  Future<Either<Failure, int>> markThreadRead(CommentSubject subject) async {
+    // العميل والمورّد لا مسار لهما ولا شارة، فلا شيء يُطفأ. صفرٌ بلا رحلة، لا فشلٌ: الشاشة
+    // نفسها تخدم الثلاثة، وخطأٌ هنا كان سيظهر للمستخدم كعطبٍ في فتح محادثةٍ فُتحت.
+    if (subject.kind != CommentSubjectKind.designTicket) return const Right(0);
+
+    return safeRequest<int>(
+      () => _dio.post(DesignTicketEndpoints.commentsRead(subject.id)),
+      // `unread_total` لا `unread_comments_count`: الثانية صفرٌ بالتعريف بعد هذا النداء، وما
+      // يحتاجه المتّصل هو الرقم الذي يضعه فوق الجرس.
+      parse: (data) => ((data! as Map<String, dynamic>)['unread_total'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  @override
   Future<Either<Failure, String>> remove(CommentSubject subject, int commentId) {
     // A command: there is no body to parse and nothing left to show, so the answer is the
     // server's own message.

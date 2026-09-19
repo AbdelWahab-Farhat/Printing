@@ -379,6 +379,39 @@ signed-in user's recipient rows, and another person's id returns **404, not 403*
 instinct as `investor-portal` carrying no id at all. RULES §6's ownership case is a required test
 here, not an optional one.
 
+### 7.1 The per-record badge — one more read of the same rows
+
+A screen that shows one record often wants the count *for that record*: how many replies on this
+design ticket this reader has not seen. **That needs no new table**, because the rows above already
+answer it — one `notifications` row per comment, one `read_at` per person.
+
+| Method | Path | |
+|---|---|---|
+| `POST` | `/design-tickets/{ticket}/comments/read` | marks this ticket's conversation read — `{ "unread_comments_count": 0, "unread_total": 2 }` |
+
+`DesignTicketResource` carries `unread_comments_count` on the detail **and on every list row**,
+stamped by the controller from one grouped query per page. It is a number about the *reader*, not
+about the ticket: the same ticket reads `2` for the employee, `0` for the designer who wrote them,
+and `0` for a manager holding `design_tickets.view_all` who was never a party.
+
+Three consequences worth stating, because each is a trade rather than an oversight:
+
+- **The badge and the bell are the same rows.** Opening the conversation clears the notification
+  entries behind the bell, and tapping one in the bell lowers the ticket badge. That coherence is
+  the reason for deriving rather than tracking separately — the alternative leaves the bell
+  announcing a conversation the reader has just finished reading.
+- **A reader who was never a party gets no badge**, because no row was ever addressed to them.
+- **A `last_read_at` table would have been the obvious alternative and is worse here.** No row
+  means "never read", so every ticket in the system would light up on deploy day until somebody
+  wrote a backfill. Deriving from notifications starts correct.
+
+The endpoint returns the account's **new total** so the app corrects the ticket badge and the bell
+in one round trip rather than asking `unread-count` again after every thread it opens.
+
+The query and the action are generic over `(subject_type, subject_id, type)` — `UnreadBySubjectQuery`
+and `MarkSubjectAsRead` — so a badge on a customer's notes is a route and a resource field, with
+nothing new in this context.
+
 `NotificationResource`:
 
 ```jsonc

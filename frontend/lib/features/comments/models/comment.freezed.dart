@@ -15,11 +15,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Comment {
 
- int get id;/// What it is about, as the server's own short name — `customer`, `vendor`. Kept even
-/// though every screen already knows whose page it is on: a note handed around without its
-/// screen is a note that cannot say what it belongs to.
-@JsonKey(name: 'commentable_type') String get commentableType;@JsonKey(name: 'commentable_id') int get commentableId; String get body; CommentAuthor get author;@JsonKey(name: 'created_at') DateTime? get createdAt;/// When it was last rewritten. Null means «as it was written» — a note that changed says
-/// so, because a sentence that quietly becomes a different sentence is worse than none.
+ int get id;/// عمّاذا هي، بالاسم القصير للخادم نفسه — `customer`، `vendor`. يبقى رغم أن كل شاشةٍ تعرف
+/// أصلاً على صفحة مَن هي: ملاحظةٌ تُتداول بلا شاشتها ملاحظةٌ لا تستطيع أن تقول لمن تتبع.
+@JsonKey(name: 'commentable_type') String get commentableType;@JsonKey(name: 'commentable_id') int get commentableId; String get body; CommentAuthor get author;@JsonKey(name: 'created_at') DateTime? get createdAt;/// متى أُعيدت كتابتها آخر مرّة. و`null` معناها «كما كُتبت» — والملاحظة التي تغيّرت تقول ذلك،
+/// لأن جملةً تصير صامتةً جملةً أخرى أسوأ من لا جملة.
 @JsonKey(name: 'edited_at') DateTime? get editedAt;@JsonKey(name: 'can_edit') bool get canEdit;@JsonKey(name: 'can_delete') bool get canDelete;
 /// Create a copy of Comment
 /// with the given fields replaced by the non-null parameter values.
@@ -235,16 +234,15 @@ class _Comment extends Comment {
   factory _Comment.fromJson(Map<String, dynamic> json) => _$CommentFromJson(json);
 
 @override final  int id;
-/// What it is about, as the server's own short name — `customer`, `vendor`. Kept even
-/// though every screen already knows whose page it is on: a note handed around without its
-/// screen is a note that cannot say what it belongs to.
+/// عمّاذا هي، بالاسم القصير للخادم نفسه — `customer`، `vendor`. يبقى رغم أن كل شاشةٍ تعرف
+/// أصلاً على صفحة مَن هي: ملاحظةٌ تُتداول بلا شاشتها ملاحظةٌ لا تستطيع أن تقول لمن تتبع.
 @override@JsonKey(name: 'commentable_type') final  String commentableType;
 @override@JsonKey(name: 'commentable_id') final  int commentableId;
 @override final  String body;
 @override final  CommentAuthor author;
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
-/// When it was last rewritten. Null means «as it was written» — a note that changed says
-/// so, because a sentence that quietly becomes a different sentence is worse than none.
+/// متى أُعيدت كتابتها آخر مرّة. و`null` معناها «كما كُتبت» — والملاحظة التي تغيّرت تقول ذلك،
+/// لأن جملةً تصير صامتةً جملةً أخرى أسوأ من لا جملة.
 @override@JsonKey(name: 'edited_at') final  DateTime? editedAt;
 @override@JsonKey(name: 'can_edit') final  bool canEdit;
 @override@JsonKey(name: 'can_delete') final  bool canDelete;

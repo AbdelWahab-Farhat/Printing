@@ -7,8 +7,11 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Controllers\Concerns\NarrowsDesignTickets;
 use App\Application\Api\V1\Requests\Comment\StoreCommentRequest;
 use App\Application\Api\V1\Requests\Comment\UpdateCommentRequest;
+use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Comment\Models\Comment;
 use App\Domain\DesignTicket\Models\DesignTicket;
+use App\Domain\Notification\Enums\NotificationType;
+use App\Domain\Notification\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -69,5 +72,45 @@ class DesignTicketCommentController extends CommentController
         $this->refuseUnlessVisibleTicket($request, $ticket);
 
         return $this->destroyFor($request, $comment);
+    }
+
+    /**
+     * Mark this conversation as read
+     *
+     * Called when the app opens the thread. Clears this reader's unread badge on the ticket —
+     * and, because they are the same rows, the matching entries behind the bell.
+     *
+     * Idempotent, and an empty conversation answers the same as a full one.
+     *
+     * **مَن قرأ الردودَ في مكانها قرأها.** والشارةُ وصفوفُ الجرس شيءٌ واحد — كلُّ تعليقٍ صفُّ
+     * إشعارٍ واحد، و`read_at` فيه لكلِّ شخصٍ على حدة — فإبقاءُ الخبر في الجرس بعد قراءة المحادثة
+     * يجعل الرقمَ فوق الجرس كذبةً صغيرةً تتكرّر.
+     *
+     * **يُحقن `NotificationService` في التابع لا في الباني**، لأن هذا التابع وحده يحتاجه من بين
+     * الخمسة: وباني الأب يخدم ثلاثة متحكّمات لا شأن لاثنين منها بالإشعارات.
+     *
+     * ويُعاد العدُّ الكلّيّ للجرس مع الجواب، فيصحّح التطبيق الشارتين بذهابٍ واحد بدل أن يسأل
+     * `notifications/unread-count` مرّةً ثانية بعد كلِّ فتحِ محادثة.
+     */
+    public function markThreadAsRead(
+        Request $request,
+        DesignTicket $ticket,
+        NotificationService $notifications,
+    ): JsonResponse {
+        $this->refuseUnlessVisibleTicket($request, $ticket);
+
+        $readerId = (int) $request->user()->getKey();
+
+        $notifications->markSubjectAsRead(
+            AuditSubject::DesignTicket->value,
+            (int) $ticket->getKey(),
+            $readerId,
+            NotificationType::DesignTicketComment,
+        );
+
+        return $this->success([
+            'unread_comments_count' => 0,
+            'unread_total' => $notifications->unreadCountFor($readerId),
+        ]);
     }
 }

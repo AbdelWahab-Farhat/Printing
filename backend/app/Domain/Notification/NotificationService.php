@@ -6,6 +6,7 @@ namespace App\Domain\Notification;
 
 use App\Domain\Notification\Actions\MarkAllAsRead;
 use App\Domain\Notification\Actions\MarkAsRead;
+use App\Domain\Notification\Actions\MarkSubjectAsRead;
 use App\Domain\Notification\Actions\PublishNotification;
 use App\Domain\Notification\Actions\RegisterDeviceToken;
 use App\Domain\Notification\Actions\ReleaseDeviceToken;
@@ -13,10 +14,12 @@ use App\Domain\Notification\Actions\SendAnnouncement;
 use App\Domain\Notification\DTOs\AnnouncementData;
 use App\Domain\Notification\DTOs\PendingNotification;
 use App\Domain\Notification\Enums\DevicePlatform;
+use App\Domain\Notification\Enums\NotificationType;
 use App\Domain\Notification\Models\DeviceToken;
 use App\Domain\Notification\Models\Notification;
 use App\Domain\Notification\Models\NotificationRecipient;
 use App\Domain\Notification\Queries\NotificationListQuery;
+use App\Domain\Notification\Queries\UnreadBySubjectQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
@@ -36,10 +39,12 @@ final readonly class NotificationService
         private PublishNotification $publish,
         private MarkAsRead $markAsRead,
         private MarkAllAsRead $markAllAsRead,
+        private MarkSubjectAsRead $markSubjectAsRead,
         private RegisterDeviceToken $registerDevice,
         private ReleaseDeviceToken $releaseDevice,
         private SendAnnouncement $announce,
         private NotificationListQuery $list,
+        private UnreadBySubjectQuery $unreadBySubject,
     ) {}
 
     /**
@@ -76,6 +81,48 @@ final readonly class NotificationService
     public function markAllAsRead(int $userId): int
     {
         return $this->markAllAsRead->handle($userId);
+    }
+
+    /**
+     * كم بقي لهذا القارئ غيرَ مقروءٍ عن سجلٍّ واحد — ما ترسمه شارةُ المحادثة.
+     */
+    public function unreadForSubject(
+        string $subjectType,
+        int $subjectId,
+        int $userId,
+        NotificationType $type,
+    ): int {
+        return $this->unreadBySubject->forSubject($subjectType, $subjectId, $userId, $type);
+    }
+
+    /**
+     * الشيء نفسه لصفحةٍ كاملة، باستعلامٍ واحد.
+     *
+     * **يُطلب بالجملة لا صفّاً صفّاً**: قائمةُ التذاكر ترسم شارةً لكلِّ صفّ، والنداءُ المفرد في
+     * حلقةٍ هو N+1، وهو عيبٌ لا ذوق (RULES §3).
+     *
+     * @param  list<int>  $subjectIds
+     * @return array<int, int> معرِّفُ السجلّ ← العدد، وما لا شيء فيه لا مفتاح له
+     */
+    public function unreadForSubjects(
+        string $subjectType,
+        array $subjectIds,
+        int $userId,
+        NotificationType $type,
+    ): array {
+        return $this->unreadBySubject->forSubjects($subjectType, $subjectIds, $userId, $type);
+    }
+
+    /**
+     * قرأ هذا الشخصُ كلَّ ما قيل له عن هذا السجلّ — تُستدعى حين تُفتح المحادثة.
+     */
+    public function markSubjectAsRead(
+        string $subjectType,
+        int $subjectId,
+        int $userId,
+        NotificationType $type,
+    ): int {
+        return $this->markSubjectAsRead->handle($subjectType, $subjectId, $userId, $type);
     }
 
     public function registerDevice(int $userId, string $token, DevicePlatform $platform): DeviceToken

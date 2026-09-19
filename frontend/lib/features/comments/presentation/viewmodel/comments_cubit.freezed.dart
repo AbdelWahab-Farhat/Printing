@@ -223,27 +223,27 @@ class CommentsLoaded implements CommentsState {
   return EqualUnmodifiableListView(_comments);
 }
 
-/// Whether anything more may be said here — the server's answer, carried on the list.
+/// هل بقي ما يُقال هنا — جواب الخادم، محمولاً على القائمة.
 ///
-/// **A fact about the thread, not about any note.** A design ticket's conversation ends with
-/// the ticket, and the screen that has to know it is the box: an empty closed thread has no
-/// row to read it off. True for a customer and a supplier, always.
+/// **حقيقةٌ عن الخيط لا عن ملاحظةٍ بعينها.** محادثة تذكرة التصميم تنتهي بانتهائها، والذي عليه
+/// أن يعرف ذلك هو الصندوق: والخيط المغلق الفارغ لا صفَّ فيه يُقرأ منه. وهي `true` للعميل
+/// وللمورّد دائماً.
 @JsonKey() final  bool canComment;
-/// Why it closed, in the record's own words. Null while it is open.
+/// لماذا أُغلقت، بكلمات السجلّ نفسه. و`null` ما دامت مفتوحة.
  final  String? closedNote;
-/// Ids of notes being rewritten or removed right now. A set rather than a single id
-/// because two rows can be worked on at once and each has to show its own state.
+/// معرّفات الملاحظات التي يُعاد كتابتها أو تُحذف الآن. مجموعةٌ لا معرّفاً واحداً لأن صفّين قد
+/// يُعمل عليهما معاً وعلى كلٍّ منهما أن يُظهر حاله.
  final  Set<int> _busy;
-/// Ids of notes being rewritten or removed right now. A set rather than a single id
-/// because two rows can be worked on at once and each has to show its own state.
+/// معرّفات الملاحظات التي يُعاد كتابتها أو تُحذف الآن. مجموعةٌ لا معرّفاً واحداً لأن صفّين قد
+/// يُعمل عليهما معاً وعلى كلٍّ منهما أن يُظهر حاله.
 @JsonKey() Set<int> get busy {
   if (_busy is EqualUnmodifiableSetView) return _busy;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableSetView(_busy);
 }
 
-/// True while a *new* note is on its way up. Separate from [busy], which is keyed by id —
-/// a note that does not exist yet has none.
+/// `true` ما دامت ملاحظةٌ *جديدة* في طريقها إلى الأعلى. منفصلةٌ عن [busy] المفهرسة بالمعرّف —
+/// وملاحظةٌ لم توجد بعدُ لا معرّف لها.
 @JsonKey() final  bool isAdding;
 
 /// Create a copy of CommentsState

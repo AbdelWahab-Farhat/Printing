@@ -31,7 +31,15 @@ class UnreadBadgeCubit extends Cubit<UnreadBadgeState> {
     );
   }
 
+  /// Sets the badge from a number the app already holds, without a request.
+  ///
+  /// **Every write endpoint that changes the count answers with the new one**, so a round trip
+  /// to ask what we were just told would only delay the badge catching up with the screen.
+  /// Opening a ticket's conversation is the case this was added for: the mark-read call returns
+  /// the account's new total, and the bell must not go on showing what it cleared.
+  void setCount(int count) => emit(UnreadBadgeState.loaded(count < 0 ? 0 : count));
+
   /// Drops the badge to zero without a request — for «قراءة الكل», where the app already knows
-  /// the answer and a round trip would only delay the badge catching up with the screen.
-  void clear() => emit(const UnreadBadgeState.loaded(0));
+  /// the answer.
+  void clear() => setCount(0);
 }

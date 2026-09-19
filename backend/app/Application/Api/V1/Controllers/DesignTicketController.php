@@ -18,6 +18,7 @@ use App\Application\Api\V1\Resources\DesignTicketFileResource;
 use App\Application\Api\V1\Resources\DesignTicketResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
+use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\DesignTicket\DesignTicketService;
 use App\Domain\DesignTicket\DTOs\DesignTicketData;
 use App\Domain\DesignTicket\Enums\DesignTicketFileKind;
@@ -26,7 +27,10 @@ use App\Domain\DesignTicket\Models\DesignTicketFile;
 use App\Domain\DesignTicket\Queries\DesignTicketFilters;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Notification\Enums\NotificationType;
+use App\Domain\Notification\NotificationService;
 use App\Support\ResponseTrait;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -61,7 +65,12 @@ class DesignTicketController extends Controller
 {
     use NarrowsDesignTickets, ReadsAuditTrail, ResponseTrait;
 
-    public function __construct(private readonly DesignTicketService $tickets) {}
+    public function __construct(
+        private readonly DesignTicketService $tickets,
+        // الشارةُ على كلِّ صفّ تُقرأ من صفوف الإشعارات، وهي سياقٌ آخر — فتُسأل من بابها.
+        // والاتّجاه يبقى صحيحاً: الطبقةُ التطبيقيّة تعرف السياقين، ولا يعرف أحدُهما الآخر.
+        private readonly NotificationService $notifications,
+    ) {}
 
     /**
      * List design tickets
@@ -79,9 +88,10 @@ class DesignTicketController extends Controller
         $filters = $this->filtersFrom($request);
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
-        return $this->successWithPagination(
-            DesignTicketResource::collection($this->tickets->paginate($filters, $perPage)),
-        );
+        $tickets = $this->tickets->paginate($filters, $perPage);
+        $this->stampUnreadComments($request, $tickets->getCollection());
+
+        return $this->successWithPagination(DesignTicketResource::collection($tickets));
     }
 
     /**
@@ -131,7 +141,7 @@ class DesignTicketController extends Controller
         $ticket = $this->tickets->create(DesignTicketData::fromArray($data), $request->user());
 
         return $this->created(
-            new DesignTicketResource($this->loadForDisplay($ticket)),
+            new DesignTicketResource($this->loadForDisplay($request, $ticket)),
             'تم إرسال طلب التصميم',
         );
     }
@@ -147,7 +157,7 @@ class DesignTicketController extends Controller
     {
         $this->refuseUnlessVisibleTicket($request, $ticket);
 
-        return $this->success(new DesignTicketResource($this->loadForDisplay($ticket)));
+        return $this->success(new DesignTicketResource($this->loadForDisplay($request, $ticket)));
     }
 
     /**
@@ -165,7 +175,7 @@ class DesignTicketController extends Controller
         $updated = $this->tickets->update($ticket, $request->validated());
 
         return $this->success(
-            new DesignTicketResource($this->loadForDisplay($updated)),
+            new DesignTicketResource($this->loadForDisplay($request, $updated)),
             'تم تحديث الطلب',
         );
     }
@@ -194,7 +204,7 @@ class DesignTicketController extends Controller
         );
 
         return $this->success(
-            new DesignTicketResource($this->loadForDisplay($updated)),
+            new DesignTicketResource($this->loadForDisplay($request, $updated)),
             $designerId === null ? 'تم إرجاع التذكرة إلى الطابور المشترك' : 'تم إسناد التذكرة',
         );
     }
@@ -237,7 +247,7 @@ class DesignTicketController extends Controller
         $accepted = $this->tickets->accept($ticket, $designer);
 
         return $this->success(
-            new DesignTicketResource($this->loadForDisplay($accepted)),
+            new DesignTicketResource($this->loadForDisplay($request, $accepted)),
             'تم قبول الطلب',
         );
     }
@@ -263,7 +273,7 @@ class DesignTicketController extends Controller
         );
 
         return $this->success(
-            new DesignTicketResource($this->loadForDisplay($cancelled)),
+            new DesignTicketResource($this->loadForDisplay($request, $cancelled)),
             'تم إلغاء التذكرة',
         );
     }
@@ -422,8 +432,44 @@ class DesignTicketController extends Controller
      * than an N+1 nobody notices, so this list and `DesignTicketResource` are kept in step on
      * purpose.
      */
-    private function loadForDisplay(DesignTicket $ticket): DesignTicket
+    /**
+     * يختم على كلِّ تذكرةٍ كم بقي من ردودها غيرَ مقروءٍ لهذا القارئ — ما ترسمه الشارة.
+     *
+     * **استعلامٌ واحد للصفحة كلّها، لا واحدٌ لكلِّ صفّ.** وهو سببُ وجود
+     * {@see NotificationService::unreadForSubjects()} بصيغة الجمع أصلاً: صفحةٌ من خمس عشرة تذكرة
+     * تعني خمسة عشر استعلاماً لو سُئل عن كلٍّ على حدة، وذلك N+1 وهو عيبٌ لا ذوق (RULES §3).
+     *
+     * **ويُكتب على النموذج لا على المورد**، لأن `DesignTicketResource` لا يجوز أن يستعلم، ولأن
+     * علاقةً من `DesignTicket` إلى `Notification` كانت ستقلب اتّجاه التبعيّة: سياقُ الإشعارات
+     * يقرأ غيرَه ولا يقرؤه أحد. فالطبقةُ التطبيقيّة هي التي تعرف الاثنين وتجمع بينهما.
+     *
+     * والصفرُ يُكتب صراحةً حين لا شيء: `whenHas` في المورد تحذف المفتاح الغائب، ومفتاحٌ غائب
+     * يترك التطبيق يختار بين الفراغ والصفر، وهما شيئان مختلفان.
+     *
+     * @param  Collection<int, DesignTicket>  $tickets
+     */
+    private function stampUnreadComments(Request $request, Collection $tickets): void
     {
+        if ($tickets->isEmpty()) {
+            return;
+        }
+
+        $counts = $this->notifications->unreadForSubjects(
+            AuditSubject::DesignTicket->value,
+            $tickets->map(fn (DesignTicket $ticket): int => (int) $ticket->getKey())->all(),
+            (int) $request->user()?->getKey(),
+            NotificationType::DesignTicketComment,
+        );
+
+        foreach ($tickets as $ticket) {
+            $ticket->setAttribute('unread_comments_count', $counts[(int) $ticket->getKey()] ?? 0);
+        }
+    }
+
+    private function loadForDisplay(Request $request, DesignTicket $ticket): DesignTicket
+    {
+        $this->stampUnreadComments($request, new Collection([$ticket]));
+
         return $ticket->load([
             'customer:id,code',
             'requester', 'designer', 'acceptedBy', 'approvedBy', 'approvedDesign', 'order',

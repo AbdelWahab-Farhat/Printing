@@ -12,6 +12,8 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/comments/models/comment.dart';
 import 'package:dayaa/features/comments/models/comment_subject.dart';
 import 'package:dayaa/features/comments/presentation/viewmodel/comments_cubit.dart';
+import 'package:dayaa/features/comments/usecases/mark_thread_read.dart';
+import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,7 +38,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **ومَن يُعدّلها جوابُ الخادم، محمولاً على الملاحظة نفسها.** كاتبها، أو مَن يملك
 /// `comments.moderate`. والورقة ترسم صفوفها من `canEdit` و`canDelete` لا من مقارنة معرّفات هنا —
 /// فنسخةٌ ثانية من قاعدة صلاحيات هي نسخةٌ ستنحرف، ونقاط النهاية ترفض على أي حال.
-class CommentsPage extends StatelessWidget {
+class CommentsPage extends StatefulWidget {
   const CommentsPage({required this.subject, this.ownerName, super.key});
 
   /// أيُّ سجلٍّ هذه الملاحظات عنه.
@@ -47,10 +49,39 @@ class CommentsPage extends StatelessWidget {
   final String? ownerName;
 
   @override
+  State<CommentsPage> createState() => _CommentsPageState();
+}
+
+class _CommentsPageState extends State<CommentsPage> {
+  @override
+  void initState() {
+    super.initState();
+
+    // مرّةً واحدة عند الفتح، لا مع كلّ إعادة بناء — ولهذا صارت هذه الشاشة ذات حالة.
+    unawaited(_markRead());
+  }
+
+  /// **فتحُ المحادثة هو قراءتها.** لا انتظار لتمرير القارئ إلى آخرها: الخيط قصير، ومَن فتحه
+  /// جاء لأجله.
+  ///
+  /// ويُطفئ الجرسَ معه، لأن الشارة وصفوف الجرس شيءٌ واحد على الخادم. والرقم يصل في الجواب
+  /// فيُوضع كما هو — رحلةٌ ثانية لسؤال `unread-count` عمّا قيل لنا للتوّ تأخيرٌ بلا مقابل، وهي
+  /// الحجّة نفسها التي يسوقها `UnreadBadgeCubit.clear()`.
+  ///
+  /// **والفشل يُبتلع عن قصد.** شارةٌ لم تنطفئ ليست خطأً يستحقّ شريطاً أحمر فوق محادثةٍ فُتحت كما
+  /// ينبغي — والنداء يتكرّر في المرّة القادمة على أي حال، وهو عديم الأثر عند التكرار.
+  Future<void> _markRead() async {
+    final result = await sl<MarkThreadRead>()(widget.subject);
+    if (!mounted) return;
+
+    result.fold((_) {}, sl<UnreadBadgeCubit>().setCount);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider<CommentsCubit>(
-      create: (_) => sl<CommentsCubit>(param1: subject)..load(),
-      child: _CommentsView(subject: subject, ownerName: ownerName),
+      create: (_) => sl<CommentsCubit>(param1: widget.subject)..load(),
+      child: _CommentsView(subject: widget.subject, ownerName: widget.ownerName),
     );
   }
 }

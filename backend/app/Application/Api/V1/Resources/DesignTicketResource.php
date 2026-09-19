@@ -128,6 +128,20 @@ class DesignTicketResource extends JsonResource
             'versions_count' => $this->whenCounted('versions'),
 
             /*
+             * كم ردّاً في المحادثة لم يقرأه *هذا* القارئ — شارةُ زرّ المحادثة، وشارةُ الصفّ في
+             * القائمة.
+             *
+             * **رقمٌ عن القارئ لا عن التذكرة**، كالرايات الأربع فوقه: التذكرة نفسها تحمل رقمَين
+             * مختلفَين لطالبها ولمصمّمها، وثالثاً — صفراً — لمديرٍ يقرأ التذاكر كلَّها ولم يُوجَّه
+             * إليه شيء منها.
+             *
+             * و`whenHas` لا `whenCounted`: ليست علاقةً معدودة بل عمودٌ يختمه المتحكّم، لأن الجواب
+             * في صفوف الإشعارات وهي سياقٌ آخر. والمسارُ الذي ينسى أن يختم يُسقط المفتاح بدل أن
+             * يرمي، فلا تنكسر شاشةٌ لأجل شارة.
+             */
+            'unread_comments_count' => $this->whenHas('unread_comments_count'),
+
+            /*
              * The newest version, for the card on the list screen to draw as a thumbnail.
              *
              * **One row, not the list.** `versions` below is the detail endpoint's — a page of
