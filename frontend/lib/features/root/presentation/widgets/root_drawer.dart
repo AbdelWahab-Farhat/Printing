@@ -92,21 +92,10 @@ class _RootDrawerState extends State<RootDrawer> {
           label: 'مجالات العمل',
           route: Routes.businessFields,
         ),
-        // **Under «المنتجات والخدمات», because design *is* one of the services.** It sat under
-        // «المشتريات والتوصيل» beside النواقص on the argument that both are work standing
-        // outside an order — true, but it put the thing the shop sells next to the things the
-        // shop buys, which is the wrong half of the business to read it in.
-        //
-        // Gated on `design_tickets.view`, which is narrow by itself: a holder sees the tickets
-        // they raised, the ones addressed to them, and the unclaimed pool. So this row is safe to
-        // show to a designer and to the employee who raises them, and the screen behind it shows
-        // each of them a different list.
-        _Link(
-          icon: _LinkIcon.designTickets,
-          label: 'تذاكر التصميم',
-          route: Routes.designTickets,
-          permission: AppPermission.viewDesignTickets,
-        ),
+        // **«تذاكر التصميم» ليست هنا** — قرار المستخدم، ٢٠٢٦-٠٩-١٩. كانت صفّاً تحت هذا العنوان
+        // على أن التصميم خدمةٌ من خدمات الورشة، وهو تصنيفٌ صادق لكنه يقيس الشاشة بما هي لا بمن
+        // يفتحها: المصمّم يفتح الصفّ كل صباح، فصار أيقونةً في الشريط بجانب الأدوات — انظر
+        // [DesignTicketsButton]. وبقيت صلاحيّته معه، فما تحجبه هذه الرفوف يحجبه ذاك الزرّ.
       ],
     ),
     _Section(
@@ -435,7 +424,6 @@ enum _LinkIcon {
   businessField,
   purchaseOrders,
   shortages,
-  designTickets,
   warehouse,
   city,
   manufacturingCostRates,
@@ -452,7 +440,6 @@ enum _LinkIcon {
     _LinkIcon.businessField => AppIcons.businessField,
     _LinkIcon.purchaseOrders => AppIcons.purchaseOrders,
     _LinkIcon.shortages => AppIcons.error,
-    _LinkIcon.designTickets => AppIcons.designs,
     _LinkIcon.warehouse => AppIcons.warehouse,
     _LinkIcon.city => AppIcons.city,
     _LinkIcon.manufacturingCostRates => AppIcons.manufacturingCostRates,

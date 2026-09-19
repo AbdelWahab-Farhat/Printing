@@ -26,6 +26,7 @@ void main() {
     'users.view',
     'roles.manage',
     'orders.archive.view',
+    'design_tickets.view',
   ];
 
   /// Every screen the drawer can reach — the router has to know them, because tapping a row
@@ -234,6 +235,21 @@ void main() {
     expect(find.text('الأدوات'), findsNothing);
     expect(find.text('إنشاء QR'), findsNothing);
     expect(find.text('معاينة التصميم'), findsNothing);
+  });
+
+  testWidgets('تذاكر التصميم are not in this panel any more either', (tester) async {
+    // Arrange — `design_tickets.view` among the grants, so an absence here is a row that moved
+    // and not a row that was hidden.
+    await arrange(allGrants);
+    await open(tester);
+
+    // Act — under the heading they used to sit in.
+    await tester.tap(find.text('المنتجات والخدمات'));
+    await tester.pumpAndSettle();
+
+    // Assert — the queue is an app bar button beside الأدوات now, see [DesignTicketsButton];
+    // that widget's own test pins down the grant it still carries.
+    expect(find.text('تذاكر التصميم'), findsNothing);
   });
 
   testWidgets('the screen being read opens its heading and marks its row', (tester) async {

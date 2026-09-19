@@ -4,6 +4,7 @@ import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/features/design_tickets/presentation/widgets/design_tickets_button.dart';
 import 'package:dayaa/features/notifications/presentation/widgets/notification_bell.dart';
 import 'package:dayaa/features/root/presentation/widgets/root_drawer.dart';
 import 'package:dayaa/features/tools/presentation/widgets/tools_menu_button.dart';
@@ -81,6 +82,12 @@ class RootPage extends StatelessWidget {
           // they belong where the hand already is instead of three taps away. See
           // [ToolsMenuButton].
           const ToolsMenuButton(),
+          // Third beside them, and out of the drawer for the same reason الأدوات left it: the
+          // designer opens the queue every morning and the employee opens it to see where the
+          // thing they asked for got to, both of them on their way back to the screen they were
+          // already on. Unlike الأدوات it carries a grant — there are records behind it. See
+          // [DesignTicketsButton].
+          const DesignTicketsButton(),
           // The workshop-wide ledger — the door [WarehousesPage] hung off its own bar when it
           // lived behind the drawer. The shell owns the bar now, so the shell offers it, and
           // only on the tab it is about.
