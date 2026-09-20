@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Investor\Actions;
 
+use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Investor\DTOs\WalletEntryData;
+use App\Domain\Investor\Enums\CashEntryType;
 use App\Domain\Investor\Enums\DealStatus;
 use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Exceptions\DealTakesNoMoreCapital;
@@ -14,6 +16,7 @@ use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\InvestorBalances;
+use App\Domain\Investor\Queries\PeriodForEntry;
 use App\Domain\Investor\Support\Money;
 use Illuminate\Support\Facades\DB;
 
@@ -30,7 +33,11 @@ use Illuminate\Support\Facades\DB;
  */
 final class RecordWalletEntry
 {
-    public function __construct(private readonly InvestorBalances $balances) {}
+    public function __construct(
+        private readonly InvestorBalances $balances,
+        private readonly PeriodForEntry $periodFor,
+        private readonly RecordCashEntry $cash,
+    ) {}
 
     /**
      * @throws WithdrawalExceedsBalance
@@ -54,19 +61,38 @@ final class RecordWalletEntry
             $this->guardCeiling($data, (int) $investor->getKey());
             $this->guardDeal($data, $deal);
 
+            $occurredAt = $data->occurredAt ?? now();
+
             $entry = new InvestorWalletEntry([
                 'amount' => $data->amount,
                 'method' => $data->method,
                 'reference' => $data->reference,
-                'occurred_at' => $data->occurredAt ?? now(),
+                'occurred_at' => $occurredAt,
                 'notes' => $data->notes,
             ]);
 
             $entry->investor_id = $investor->getKey();
             $entry->investor_deal_id = $deal?->getKey();
+            // **بتاريخ وقوعه لا بتاريخ كتابته** — إيداعٌ حدث يوم ٢٨ وسُجِّل يوم ٢ يخصّ الفترة
+            // التي وقع فيها، كما تخصّ الطلبيةُ فترةَ تاريخها. والأرضيةُ تردّه إلى المفتوحة اليوم
+            // إن كانت فترتُه قد أُقفلت.
+            $entry->investment_period_id = $this->periodFor->byDate($occurredAt);
             $entry->type = $data->type;
             $entry->recorded_by = $actorId;
             $entry->save();
+
+            // **صرفُ الأرباح نقدٌ يخرج من الخزينة.** رأسُ المال يخرج من {@see WithdrawFromFund}
+            // لأنه يُلغي وحداتٍ معه؛ والأرباحُ لا وحداتِ لها — أُفرِج عنها بالفعل ولا تغيّر
+            // نسبةَ أحد — فبابُها هنا. والإيداعُ كذلك في {@see DepositToFund} لأنه يشتري وحدات.
+            if ($data->type === WalletEntryType::ProfitWithdrawal) {
+                ($this->cash)(
+                    type: CashEntryType::ProfitPayout,
+                    amount: $entry->amount,
+                    sourceType: AuditSubject::InvestorWalletEntry->value,
+                    sourceId: (int) $entry->getKey(),
+                    actorId: $actorId,
+                );
+            }
 
             return $entry;
         });
@@ -84,7 +110,10 @@ final class RecordWalletEntry
 
         $available = match ($data->type) {
             WalletEntryType::Withdrawal, WalletEntryType::Allocation => $balances['wallet']['capital'],
-            WalletEntryType::ProfitWithdrawal => $balances['wallet']['profit'],
+            // **وسقفُ التحويل هو الربحُ المتاح**: من يحوّل إلى رأس المال أكثر مما ربح يخلق
+            // مالاً من لا شيء، ولا يظهر ذلك في أيّ رصيدٍ لأن الجيبين يتحرّكان معاً.
+            WalletEntryType::ProfitWithdrawal,
+            WalletEntryType::ProfitCapitalisation => $balances['wallet']['profit'],
             default => null,
         };
 

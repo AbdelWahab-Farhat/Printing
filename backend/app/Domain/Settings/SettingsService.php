@@ -36,11 +36,42 @@ final class SettingsService
         return (string) $this->current()->investor_profit_share_percent;
     }
 
-    public function update(string $investorProfitSharePercent, ?int $actorId): CompanySetting
+    /**
+     * المدد الأربع التي يحكم بها الصندوقُ نفسَه، لمن يفتح فترةً جديدة.
+     *
+     * **تُقرأ مرّةً وتُنسَخ على صفّ الفترة**، ولا تُقرأ من هنا بعدها — فمن أقفل سبتمبر على شهرٍ
+     * واحد يبقى شهراً واحداً ولو صارت المدةُ شهرين في أكتوبر. وهو الانضباطُ نفسه الذي تمشي عليه
+     * {@see investorProfitSharePercent()} بجانبها.
+     *
+     * تُسلَّم أربعتُها معاً لا واحدةً واحدة: فتحُ الفترة يحتاجها كلَّها في اللحظة نفسها، وأربعُ
+     * قراءاتٍ لصفٍّ واحد تفتح أربعَ نوافذَ يتغيّر فيها الإعداد بين واحدةٍ وأختها.
+     *
+     * @return array{period_months: int, subscription_window_days: int, settlement_months: int, capital_lock_months: int}
+     */
+    public function investmentDurations(): array
     {
         $settings = $this->current();
 
-        $settings->fill(['investor_profit_share_percent' => $investorProfitSharePercent]);
+        return [
+            'period_months' => (int) $settings->investment_period_months,
+            'subscription_window_days' => (int) $settings->investment_subscription_window_days,
+            'settlement_months' => (int) $settings->investment_settlement_months,
+            'capital_lock_months' => (int) $settings->investment_capital_lock_months,
+        ];
+    }
+
+    /**
+     * @param  array<string, int>  $durations  ما وصل من المدد، بأسماء أعمدتها. الفارغُ يعني
+     *                                         «لم تُذكر» فتبقى كما هي — لا «صفّرها».
+     */
+    public function update(string $investorProfitSharePercent, ?int $actorId, array $durations = []): CompanySetting
+    {
+        $settings = $this->current();
+
+        $settings->fill([
+            'investor_profit_share_percent' => $investorProfitSharePercent,
+            ...$durations,
+        ]);
         $settings->updated_by = $actorId;
         $settings->save();
 

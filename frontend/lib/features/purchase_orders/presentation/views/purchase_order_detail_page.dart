@@ -114,8 +114,11 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
       return;
     }
 
+    // **بابُ الصندوق لا بابُ الصفقة.** الصفقةُ صارت دفعةَ شراءٍ داخلية لا شراكةً تُبنى لكل
+    // لوري؛ والصندوقُ يدفع الثمن كلَّه من خزينته، فالشاشةُ الجديدة تسأل سؤالين بدل خمسة.
+    // مسارُ الشاشة القديمة ما زال قائماً لأمرٍ يُموَّل بشراكةٍ مستقلّة، ولا شيء يقود إليه.
     final deal = await context.push<Object?>(
-      Routes.purchaseOrderFunding,
+      Routes.fundPurchase,
       extra: order,
     );
 

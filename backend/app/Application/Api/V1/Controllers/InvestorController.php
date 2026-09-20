@@ -14,6 +14,7 @@ use App\Application\Api\V1\Resources\InvestorResource;
 use App\Application\Api\V1\Resources\InvestorWalletEntryResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
+use App\Domain\Investor\Actions\ReverseWalletEntry;
 use App\Domain\Investor\DTOs\InvestorData;
 use App\Domain\Investor\DTOs\WalletEntryData;
 use App\Domain\Investor\InvestorService;
@@ -176,5 +177,35 @@ class InvestorController extends Controller
     public function logs(ActivityLogFilterRequest $request, Investor $investor, AuditService $audit): JsonResponse
     {
         return $this->auditTrailResponse($request, $investor, $audit);
+    }
+
+    /**
+     * Reverse a wallet entry
+     *
+     * **الشريحة ٠ب**: المؤشّرُ `can_be_reversed` كان يُرسَل إلى التطبيق منذ البداية بلا مسارٍ
+     * خلفه. والإبطالُ هنا يبطل ما تبع الحركةَ أيضاً — صفَّ الخزينة ووحداتِ الصندوق — وإلا بقيت
+     * نسبةُ رجلٍ استُرجع مالُه تقاسم ربحاً لا يموّله.
+     */
+    public function reverseWalletEntry(Request $request, int $investor, int $entry): JsonResponse
+    {
+        $validated = $request->validate([
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $row = InvestorWalletEntry::query()
+            ->where('investor_id', $investor)
+            ->whereKey($entry)
+            ->firstOrFail();
+
+        $reversal = app(ReverseWalletEntry::class)(
+            $row,
+            $request->user()?->id,
+            $validated['notes'] ?? null,
+        );
+
+        return $this->success(
+            ['id' => $reversal->id],
+            'أُبطلت الحركة — ومعها ما تبعها في الخزينة والوحدات',
+        );
     }
 }

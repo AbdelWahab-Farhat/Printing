@@ -22,6 +22,7 @@ void main() {
     'purchase_orders.view',
     'shipping_companies.view',
     'investors.view',
+    'settings.view',
     'reports.pnl.view',
     'users.view',
     'roles.manage',
@@ -37,7 +38,8 @@ void main() {
     '/purchase-orders',
     '/shipping-companies',
     '/cities',
-    '/investor-deals',
+    '/investment',
+    '/investment-settings',
     '/reports/profit-loss',
     '/employees',
     '/roles',
@@ -105,10 +107,12 @@ void main() {
     // Act
     await open(tester);
 
-    // Assert — the four headings are there and none of their rows is.
+    // Assert — the headings are there and none of their rows is.
     expect(find.text('المنتجات والخدمات'), findsOneWidget);
     expect(find.text('المشتريات والتوصيل'), findsOneWidget);
-    expect(find.text('الاستثمار والمالية'), findsOneWidget);
+    // **الاستثمار قسمٌ قائمٌ بذاته**، والتقاريرُ قسمٌ آخر — كانا واحداً يقرأ الصندوقَ تقريراً.
+    expect(find.text('الاستثمار'), findsOneWidget);
+    expect(find.text('التقارير المالية'), findsOneWidget);
     expect(find.text('الإدارة والصلاحيات'), findsOneWidget);
     expect(find.text('المنتجات'), findsNothing);
     expect(find.text('أوامر الشراء'), findsNothing);
@@ -157,9 +161,14 @@ void main() {
     for (final heading in const [
       'المنتجات والخدمات',
       'المشتريات والتوصيل',
-      'الاستثمار والمالية',
+      'الاستثمار',
+      'التقارير المالية',
       'الإدارة والصلاحيات',
     ]) {
+      // القسمُ المفتوحُ قبله يدفع ما تحته خارج الشاشة، فيُمرَّر إلى العنوان قبل نقره.
+      await tester.scrollUntilVisible(find.text(heading), 120);
+      await tester.pumpAndSettle();
+
       await tester.tap(find.text(heading));
       await tester.pumpAndSettle();
       for (final row in const [
@@ -169,7 +178,7 @@ void main() {
         'أوامر الشراء',
         'شركات التوصيل',
         'مدن التوصيل',
-        'صفقات المستثمرين',
+        'الصندوق الاستثماري',
         'الأرباح والخسائر',
         'الموظفون',
         'الأدوار والصلاحيات',
@@ -336,5 +345,41 @@ void main() {
     // Assert — the drawer closed behind it, and no route was missing.
     expect(tester.takeException(), isNull);
     expect(find.text('أرشيف الطلبيات'), findsNothing);
+  });
+
+  testWidgets('الاستثمار is a heading of its own, and the fund is what it opens on', (
+    tester,
+  ) async {
+    // Arrange — كان سطراً تحت «الاستثمار والمالية» بجانب تقريرين، فيُقرأ كأنه تقريرٌ ثالث.
+    await arrange(allGrants);
+    await open(tester);
+
+    // Act
+    await tester.tap(find.text('الاستثمار'));
+    await tester.pumpAndSettle();
+
+    // Assert — الصندوقُ أوّلُ ما فيه، وقواعدُه بجانبه.
+    expect(find.text('الصندوق الاستثماري'), findsOneWidget);
+    expect(find.text('إعدادات الاستثمار'), findsOneWidget);
+
+    // **ولا بابَ للصفقات.** صارت دفعةَ شراءٍ داخلية لا كياناً يديره أحد؛ مسارُها قائمٌ ولا
+    // شيء يقود إليه.
+    expect(find.text('صفقات المستثمرين'), findsNothing);
+  });
+
+  testWidgets('a reader of investors who cannot read settings sees only the fund', (
+    tester,
+  ) async {
+    // Arrange — حقّان لا واحد: الصندوقُ بـ`investors.view`، وقواعدُه بإعدادات الشركة.
+    await arrange(['investors.view']);
+    await open(tester);
+
+    // Act
+    await tester.tap(find.text('الاستثمار'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('الصندوق الاستثماري'), findsOneWidget);
+    expect(find.text('إعدادات الاستثمار'), findsNothing);
   });
 }

@@ -31,8 +31,8 @@ use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use App\Domain\Reporting\Queries\ProfitAndLossFilters;
 use App\Domain\Reporting\Queries\ProfitAndLossSummaryQuery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Testing\TestResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 

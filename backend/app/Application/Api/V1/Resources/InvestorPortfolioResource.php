@@ -48,6 +48,10 @@ class InvestorPortfolioResource extends JsonResource
             'profit_withdrawn' => $data['profit_withdrawn'],
 
             'deals' => $data['deals'],
+
+            // **الشريحة ٨**: شريكُ الصندوق لا صفَّ له في `deals` — نصيبُه وحداتٌ في دفترٍ
+            // آخر. وبدونه كان يفتح البوابةَ فيرى صفراً وماله في الصندوق.
+            'fund' => $data['fund'],
         ];
     }
 }

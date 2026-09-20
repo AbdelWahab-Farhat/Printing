@@ -22,6 +22,9 @@ _InvestorPortfolio _$InvestorPortfolioFromJson(Map<String, dynamic> json) =>
               ?.map((e) => InvestorDealLine.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const <InvestorDealLine>[],
+      fund: json['fund'] == null
+          ? null
+          : FundShare.fromJson(json['fund'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$InvestorPortfolioToJson(_InvestorPortfolio instance) =>
@@ -34,6 +37,7 @@ Map<String, dynamic> _$InvestorPortfolioToJson(_InvestorPortfolio instance) =>
       'profit_available': instance.profitAvailable,
       'profit_withdrawn': instance.profitWithdrawn,
       'deals': instance.deals.map((e) => e.toJson()).toList(),
+      'fund': instance.fund?.toJson(),
     };
 
 _InvestorIdentity _$InvestorIdentityFromJson(Map<String, dynamic> json) =>
@@ -70,4 +74,62 @@ Map<String, dynamic> _$InvestorDealLineToJson(_InvestorDealLine instance) =>
       'share_percent': instance.sharePercent,
       'capital': instance.capital,
       'profit': instance.profit,
+    };
+
+_FundShare _$FundShareFromJson(Map<String, dynamic> json) => _FundShare(
+  units: json['units'] as String,
+  unitPrice: json['unit_price'] as String,
+  value: json['value'] as String,
+  sharePercent: json['share_percent'] as String,
+  unlockedUnits: json['unlocked_units'] as String? ?? '0.000000',
+  period: json['period'] == null
+      ? null
+      : FundPeriodBrief.fromJson(json['period'] as Map<String, dynamic>),
+  deposits:
+      (json['deposits'] as List<dynamic>?)
+          ?.map((e) => FundDeposit.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <FundDeposit>[],
+);
+
+Map<String, dynamic> _$FundShareToJson(_FundShare instance) =>
+    <String, dynamic>{
+      'units': instance.units,
+      'unit_price': instance.unitPrice,
+      'value': instance.value,
+      'share_percent': instance.sharePercent,
+      'unlocked_units': instance.unlockedUnits,
+      'period': instance.period?.toJson(),
+      'deposits': instance.deposits.map((e) => e.toJson()).toList(),
+    };
+
+_FundPeriodBrief _$FundPeriodBriefFromJson(Map<String, dynamic> json) =>
+    _FundPeriodBrief(
+      code: json['code'] as String,
+      startsOn: json['starts_on'] as String,
+      endsOn: json['ends_on'] as String,
+      acceptsCapital: json['accepts_capital'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$FundPeriodBriefToJson(_FundPeriodBrief instance) =>
+    <String, dynamic>{
+      'code': instance.code,
+      'starts_on': instance.startsOn,
+      'ends_on': instance.endsOn,
+      'accepts_capital': instance.acceptsCapital,
+    };
+
+_FundDeposit _$FundDepositFromJson(Map<String, dynamic> json) => _FundDeposit(
+  units: json['units'] as String,
+  amount: json['amount'] as String,
+  lockedUntil: json['locked_until'] as String?,
+  isLocked: json['is_locked'] as bool? ?? true,
+);
+
+Map<String, dynamic> _$FundDepositToJson(_FundDeposit instance) =>
+    <String, dynamic>{
+      'units': instance.units,
+      'amount': instance.amount,
+      'locked_until': instance.lockedUntil,
+      'is_locked': instance.isLocked,
     };

@@ -10,7 +10,13 @@ use App\Application\Controller;
 use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Exceptions\InvestorHasNoAccount;
 use App\Domain\Investor\InvestorService;
+use App\Domain\Investor\Models\InvestmentPeriod;
+use App\Domain\Investor\Models\InvestmentUnit;
 use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Investor\Queries\FundUnits;
+use App\Domain\Investor\Queries\PeriodShares;
+use App\Domain\Investor\Queries\UnitPrice;
+use App\Domain\Investor\Support\Money;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,7 +37,12 @@ class InvestorPortalController extends Controller
 {
     use ResponseTrait;
 
-    public function __construct(private readonly InvestorService $investors) {}
+    public function __construct(
+        private readonly InvestorService $investors,
+        private readonly FundUnits $units,
+        private readonly UnitPrice $price,
+        private readonly PeriodShares $shares,
+    ) {}
 
     /**
      * My money
@@ -127,6 +138,59 @@ class InvestorPortalController extends Controller
             'profit_available' => $balances['wallet']['profit'],
             'profit_withdrawn' => number_format((float) $withdrawn, 2, '.', ''),
             'deals' => $deals,
+            'fund' => $this->fundStanding($investorId),
+        ];
+    }
+
+    /**
+     * موقفُه من الصندوق: وحداتُه، ونسبتُه في الفترة الجارية، وما تساويه حصتُه اليوم.
+     *
+     * **الشريحة ٨.** البوابةُ كانت تقرأ `investor_deal_shares` وحدها — وشريكُ الصندوق لا صفَّ له
+     * هناك: نصيبُه وحداتٌ في دفترٍ آخر. فكان يفتح الشاشةَ فيرى صفراً وماله في الصندوق.
+     *
+     * **و«قيمة حصتي» تُقال هنا ولا تُحسب على الهاتف.** هي `وحداتُه × سعرَ الوحدة`، والسعرُ
+     * قسمةُ قيمة الصندوق على وحداته — أربعةُ استعلاماتٍ لا يملكها من يقرأ.
+     *
+     * **والحبسُ يُعرض دفعةً دفعة** لأنه كذلك: «كل deposit Timer خاص به لوحده». رقمٌ واحد
+     * كان سيقول «محبوسٌ إلى ٢٠٢٨» لمن نصفُ ماله يخرج في ٢٠٢٧.
+     *
+     * @return array<string, mixed>
+     */
+    private function fundStanding(int $investorId): array
+    {
+        $held = $this->units->heldBy($investorId);
+        $price = ($this->price)();
+        $open = InvestmentPeriod::open();
+
+        $locks = InvestmentUnit::query()
+            ->where('investor_id', $investorId)
+            ->whereNotNull('locked_until')
+            ->whereDoesntHave('reversedBy')
+            ->orderBy('locked_until')
+            ->get()
+            ->map(fn (InvestmentUnit $row): array => [
+                'units' => (string) $row->units,
+                'amount' => (string) $row->amount,
+                'locked_until' => $row->locked_until?->toDateString(),
+                'is_locked' => $row->isLockedOn(now()),
+            ])
+            ->all();
+
+        return [
+            'units' => $held,
+            'unit_price' => $price,
+            'value' => Money::round(bcmul($held, $price, 8)),
+            'share_percent' => $open === null
+                ? '0.000000'
+                : ($this->shares->forPeriod((int) $open->getKey())[$investorId] ?? '0.000000'),
+            'unlocked_units' => $this->units->unlockedFor($investorId, now()),
+            'period' => $open === null ? null : [
+                'code' => $open->code,
+                'starts_on' => $open->starts_on->toDateString(),
+                'ends_on' => $open->ends_on->toDateString(),
+                'accepts_capital' => $open->acceptsCapitalOn(now()),
+            ],
+            'deposits' => $locks,
         ];
     }
 }

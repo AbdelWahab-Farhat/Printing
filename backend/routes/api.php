@@ -13,6 +13,7 @@ use App\Application\Api\V1\Controllers\DesignTicketCommentController;
 use App\Application\Api\V1\Controllers\DesignTicketController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
+use App\Application\Api\V1\Controllers\InvestmentFundController;
 use App\Application\Api\V1\Controllers\InvestorController;
 use App\Application\Api\V1\Controllers\InvestorDealController;
 use App\Application\Api\V1\Controllers\InvestorPortalController;
@@ -764,6 +765,50 @@ Route::prefix('v1')->group(function (): void {
 
         Route::post('investor-deals/{deal}/expenses', [InvestorDealController::class, 'storeExpense'])
             ->middleware('can:investor_deals.expenses.record')->name('investor-deals.expenses.store');
+
+        // ── الصندوق الاستثماري ──────────────────────────────────────────────────────────
+        //
+        // `investment` لا `investor-deals`: الصفقةُ صارت دفعةَ شراءٍ داخلية، والذي يُقرأ ويُدار
+        // هو الصندوقُ وفتراتُه.
+        Route::get('investment/fund', [InvestmentFundController::class, 'show'])
+            ->middleware('can:investors.view')->name('investment.fund.show');
+
+        // **بـ`investors.manage` لا بصلاحيةٍ جديدة.** فتحُ فترةٍ يقرّر بأيّ نسبٍ يُقسَّم ربحُ
+        // شهرٍ كامل، وهي السلطةُ نفسها التي تحرّك مال المستثمرين — وصلاحيةٌ جديدة تعني مرآةً في
+        // التطبيق واختباراً تعاقدياً يسقط، مقابل تمييزٍ لا يطلبه أحد.
+        Route::post('investment/periods', [InvestmentFundController::class, 'openPeriod'])
+            ->middleware('can:investors.manage')->name('investment.periods.store');
+
+        // الإقفالُ هو الباب الوحيد الذي يصير به الربحُ قابلاً للسحب، فصلاحيتُه صلاحيةُ المال.
+        Route::post('investment/periods/close', [InvestmentFundController::class, 'closePeriod'])
+            ->middleware('can:investors.manage')->name('investment.periods.close');
+
+        Route::get('investment/periods', [InvestmentFundController::class, 'periods'])
+            ->middleware('can:investors.view')->name('investment.periods.index');
+
+        // **بـ`investors.money.record` لا بـ`investors.manage`.** هذه حركاتُ مالٍ تُسجَّل عند
+        // الكاشير، وهي الصلاحيةُ نفسُها التي تحرس دفترَ المحفظة اليوم — بينما `manage` تقرّر
+        // شروطَ الصندوق نفسِه. وصلاحيةٌ جديدة تعني مرآةً في التطبيق واختباراً تعاقدياً يسقط.
+        Route::post('investment/deposits', [InvestmentFundController::class, 'storeDeposit'])
+            ->middleware('can:investors.money.record')->name('investment.deposits.store');
+
+        Route::post('investment/withdrawals', [InvestmentFundController::class, 'storeWithdrawal'])
+            ->middleware('can:investors.money.record')->name('investment.withdrawals.store');
+
+        // المصروفُ يأكل من ربح الشهر، فصلاحيتُه صلاحيةُ مصروف الصفقة نفسُها.
+        Route::post('investment/expenses', [InvestmentFundController::class, 'storeExpense'])
+            ->middleware('can:investor_deals.expenses.record')->name('investment.expenses.store');
+
+        // **الشريحة ٠ب**: `can_be_reversed` كان يُرسَل إلى التطبيق بلا مسارٍ خلفه — يظهر الزرُّ
+        // ولا يفعل شيئاً. والإبطالُ يبطل الوحداتِ والخزينةَ معه، فصلاحيتُه صلاحيةُ من كتبه.
+        Route::post('investors/{investor}/wallet/{entry}/reversal', [InvestorController::class, 'reverseWalletEntry'])
+            ->whereNumber(['investor', 'entry'])
+            ->middleware('can:investors.money.record')->name('investors.wallet.reversal');
+
+        // شراءٌ بمال الصندوق: لا صفقةَ تُولد، ولا ممولين يُجمعون — الرفوفُ تُضاف والنقدُ يخرج.
+        Route::post('purchase-orders/{purchase_order}/fund-purchase', [InvestmentFundController::class, 'purchase'])
+            ->whereNumber('purchase_order')
+            ->middleware('can:investors.manage')->name('purchase-orders.fund-purchase.store');
 
         Route::get('investor-portal/summary', [InvestorPortalController::class, 'summary'])
             ->middleware('can:investor_portal.view')->name('investor-portal.summary');

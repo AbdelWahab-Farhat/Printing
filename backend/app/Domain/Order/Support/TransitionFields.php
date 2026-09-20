@@ -11,6 +11,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Order\Actions\DeductOrderStock;
 use App\Domain\Order\Actions\RecordPartialDelivery;
+use App\Domain\Order\Actions\ReverseOrderStockDeduction;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
@@ -381,7 +382,88 @@ final class TransitionFields
             hint: 'تُسجَّل في سجل الطلبية',
         );
 
+        // **آخرُ ما يُضاف عن قصد.** التحذير يُقرأ بعد أن يرى الموظف ما يُطلب منه، لا قبله — وهو
+        // ليس خانةً يملؤها بل جملةٌ يقرّر على أساسها.
+        $warning = self::cancellationEffect($order, $target);
+
+        if ($warning !== null) {
+            $fields[] = $warning;
+        }
+
         return $fields;
+    }
+
+    /**
+     * ما سيحدث للبضاعة إن أُلغيت الطلبية الآن — سطرٌ لكل بندٍ خرجت بضاعتُه.
+     *
+     * **لأن الإلغاء صار له جوابان لا جواب.** منذ أن فرّق
+     * {@see ReverseOrderStockDeduction} بين ما مرّ على المكينة وما
+     * لم يمرّ، صارت الطلبيةُ الواحدة قد تُعيد بنداً وتشطب آخر في الضغطة نفسها — وهذا فرقٌ في
+     * المال لا يجوز أن يكتشفه أحدٌ بعد أن يضغط.
+     *
+     * **ومن المصدر نفسه الذي يتصرّف به الفعل:** {@see UndeliveredDisposition::forItem()}
+     * و`ready_at`. فالجملةُ على الشاشة لا تستطيع أن تفترق عمّا يفعله الزرّ — وهي القاعدة التي
+     * يمشي عليها {@see deductionPreview()} و`StockEffectPreview` قبلها.
+     *
+     * تُرجع `null` حين لا شيء يُقال: طلبيةٌ لم تخرج بضاعتُها بعد لا تُحذّر من شيء.
+     */
+    private static function cancellationEffect(Order $order, OrderStatus $target): ?TransitionField
+    {
+        if ($target !== OrderStatus::Cancelled) {
+            return null;
+        }
+
+        // `product.productCategory.parent` لأن التصرّف يمشي عليها، و`variant.stockItem` لوحدة
+        // الرفّ. مرّةً واحدة هنا، لا مرّةً لكل بند.
+        $order->loadMissing(['items.product.productCategory.parent', 'items.variant.stockItem']);
+
+        $returns = [];
+        $lost = [];
+
+        foreach ($order->items as $item) {
+            if ($item->fulfillment_stock_movement_id === null) {
+                continue;
+            }
+
+            $line = sprintf(
+                '%s — %s %s',
+                $item->variant_label,
+                DecimalText::trim($item->producedQuantity()),
+                $item->stockUnit()->label(),
+            );
+
+            $printed = $order->ready_at !== null
+                && UndeliveredDisposition::forItem($item) === UndeliveredDisposition::WrittenOff;
+
+            if ($printed) {
+                $lost[] = $line;
+            } else {
+                $returns[] = $line;
+            }
+        }
+
+        if ($returns === [] && $lost === []) {
+            return null;
+        }
+
+        $body = [];
+
+        if ($lost !== []) {
+            $body[] = 'لا تعود إلى المخزن — طُبعت، وتُسجَّل خسارة:';
+            $body[] = '• '.implode("\n• ", $lost);
+        }
+
+        if ($returns !== []) {
+            $body[] = 'يعود إلى المخزن:';
+            $body[] = '• '.implode("\n• ", $returns);
+        }
+
+        return TransitionField::notice(
+            key: 'cancellation_effect',
+            // الخسارةُ أولاً في العنوان كما هي أولاً في المتن: هي التي لا رجعةَ فيها.
+            label: $lost === [] ? 'ما يعود إلى المخزن' : 'تحذير — بضاعةٌ لن تعود',
+            hint: implode("\n", $body),
+        );
     }
 
     /**

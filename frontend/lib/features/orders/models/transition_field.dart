@@ -23,6 +23,17 @@ enum TransitionFieldType {
   @JsonValue('customer_designs')
   customerDesigns,
 
+  /// جملةٌ تُقرأ لا خانةٌ تُملأ — تحذيرٌ بناه الخادم عن أثرٍ لا رجعةَ فيه.
+  ///
+  /// **لا قيمة له ولا يُرسَل مع الطلب.** وجودُه أن الشاشة تعرض ما سيقع قبل أن يُضغط الزرّ:
+  /// إلغاءُ طلبيةٍ طُبعت بضاعتُها يشطبها خسارةً ولا يعيدها إلى الرفّ، وإلغاؤها قبل الطباعة
+  /// يعيدها — والفرقُ مالٌ لا يجوز أن يكتشفه أحدٌ بعد الضغط.
+  ///
+  /// النصُّ كلُّه من الخادم، كما في `stock_effect`: يبلغ كلَّ نسخةٍ مثبَّتة بلا إصدار، ولا
+  /// يستطيع أن يفترق عمّا يفعله الزرّ لأن المعاينة والفعل يقرآن المصدر نفسه.
+  @JsonValue('notice')
+  notice,
+
   /// One of the carriers the business maintains.
   ///
   /// No options arrive with the field: this app already owns that list — it manages it — so the

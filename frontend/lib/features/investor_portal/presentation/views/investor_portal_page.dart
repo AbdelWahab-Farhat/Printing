@@ -1,6 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/investor_portal/models/investor_portfolio.dart';
 import 'package:dayaa/features/investor_portal/presentation/viewmodel/investor_portal_cubit.dart';
 import 'package:dayaa/features/investor_portal/presentation/widgets/investor_deal_card.dart';
@@ -92,6 +93,13 @@ class _Portfolio extends StatelessWidget {
         ),
         SizedBox(height: 20.h),
 
+        // **نصيبُه من الصندوق قبل كل شيء**، لأنه اليوم الطريقُ الذي دخل منه: صفقاتُه — إن كانت
+        // له صفقات — تاريخٌ يجري إلى نهايته، والوحداتُ هي ما يعمل.
+        if (portfolio.fund case final fund?) ...[
+          _FundShareCard(fund: fund),
+          SizedBox(height: 24.h),
+        ],
+
         // **The two figures he came for**, and they are two rather than one on purpose: what is
         // committed to goods and what is sitting free are different answers to «كم مالي لديكم؟»,
         // and a single total would answer neither.
@@ -138,25 +146,117 @@ class _Portfolio extends StatelessWidget {
         ),
         SizedBox(height: 24.h),
 
-        Text(
-          'صفقاتي',
-          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        SizedBox(height: 8.h),
-
-        if (portfolio.deals.isEmpty)
+        // قائمةُ الصفقات تبقى لمن له صفقاتٌ قديمة، وتغيب عمّن دخل الصندوق مباشرةً: عنوانٌ
+        // فوق فراغٍ يجعله يظنّ أن شيئاً لم يُسجَّل.
+        if (portfolio.deals.isNotEmpty) ...[
           Text(
-            'لا توجد صفقات بعد',
-            style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-          )
-        else
+            'صفقاتي',
+            style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          SizedBox(height: 8.h),
           for (final deal in portfolio.deals)
             Padding(
               padding: EdgeInsets.only(bottom: 12.h),
               child: InvestorDealCard(deal: deal),
             ),
+        ],
       ],
     );
+  }
+}
+
+/// نصيبُه من الصندوق: ما تساويه حصتُه، ونسبتُه، ومتى يخرج مالُه.
+///
+/// **«قيمة حصتي» فوق، والنسبةُ تحتها.** الرجلُ يسأل «كم مالي؟» قبل «كم نسبتي؟»؛ والنسبةُ جوابُ
+/// سؤالٍ آخر — كم آخذ من ربح هذا الشهر.
+///
+/// **ومواعيدُ الحبس دفعةً دفعة**، لأن الحبسَ كذلك: من أودع مرّتين يخرج مالُه على مرّتين.
+class _FundShareCard extends StatelessWidget {
+  const _FundShareCard({required this.fund});
+
+  final FundShare fund;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'حصتي في الصندوق',
+            style: context.textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            '${fund.value.grouped} د.ل',
+            textDirection: TextDirection.ltr,
+            style: context.textTheme.headlineSmall?.copyWith(
+              color: scheme.onPrimaryContainer,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            '${fund.units.grouped} وحدة، سعر الوحدة ${fund.unitPrice}',
+            textDirection: TextDirection.ltr,
+            style: context.textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer),
+          ),
+          if (fund.period case final period?) ...[
+            SizedBox(height: 10.h),
+            Text(
+              'نصيبي من ربح ${period.code}: ${_twoPlaces(fund.sharePercent)}%',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: scheme.onPrimaryContainer,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              '${period.startsOn} ← ${period.endsOn}',
+              textDirection: TextDirection.ltr,
+              style: context.textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer),
+            ),
+          ],
+          if (fund.deposits.isNotEmpty) ...[
+            SizedBox(height: 14.h),
+            Text(
+              'دفعاتي ومواعيد فكّها',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: scheme.onPrimaryContainer,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 6.h),
+            for (final deposit in fund.deposits)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 3.h),
+                child: Text(
+                  deposit.isLocked
+                      ? '${deposit.amount.grouped} د.ل — محبوسة إلى ${deposit.lockedUntil ?? '—'}'
+                      : '${deposit.amount.grouped} د.ل — متاحة للسحب',
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static String _twoPlaces(String value) {
+    final parsed = double.tryParse(value);
+
+    return parsed == null ? value : parsed.toStringAsFixed(2);
   }
 }
 

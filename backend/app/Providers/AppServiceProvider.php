@@ -13,6 +13,7 @@ use App\Domain\DesignTicket\Events\DesignTicketAssigned;
 use App\Domain\DesignTicket\Events\DesignTicketProgressed;
 use App\Domain\Identity\Models\User;
 use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
+use App\Domain\Investor\Listeners\PostFundProceedsWhenPaymentsMove;
 use App\Domain\Investor\Listeners\PostPurchasesWhenStockLeaves;
 use App\Domain\Investor\Listeners\PostPurchaseWhenScrapIsDrawn;
 use App\Domain\Investor\Listeners\PostPurchaseWhenStockIsRedrawn;
@@ -27,6 +28,7 @@ use App\Domain\Notification\Listeners\NotifyWhenShortageIsAssigned;
 use App\Domain\Notification\Support\FcmClient;
 use App\Domain\Notification\Support\GoogleServiceAccountToken;
 use App\Domain\Order\Events\OrderEnteredShortage;
+use App\Domain\Order\Events\OrderPaymentsRecalculated;
 use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderProfitUnwound;
 use App\Domain\Order\Events\OrderScrapDrawn;
@@ -129,6 +131,7 @@ class AppServiceProvider extends ServiceProvider
         // transaction that moved the status, so the money and the status land together or not
         // at all.
         Event::listen(OrderProfitFinalised::class, PostEarningsWhenOrderIsFinalised::class);
+        Event::listen(OrderPaymentsRecalculated::class, PostFundProceedsWhenPaymentsMove::class);
 
         // **And its counterpart, for an order that leaves the books altogether.** A delete
         // archives the row, so `ProfitAndLossSummaryQuery` stops counting the sale — while the

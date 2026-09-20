@@ -27,12 +27,21 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 enum WalletAction {
   deposit('deposit', 'إيداع رأس مال'),
   withdrawal('withdrawal', 'سحب رأس مال'),
-  profitWithdrawal('profit_withdrawal', 'سحب أرباح');
+  profitWithdrawal('profit_withdrawal', 'سحب أرباح'),
+
+  /// **تحويلُ الأرباح إلى رأس مال** — «يمكنه تحويل رصيد الأرباح إلى رأس المال ليقوم بإستعماله».
+  ///
+  /// الرابعةُ التي لا يعبر فيها مالٌ الطاولة: جيبٌ في محفظته يفرغ وجيبٌ يمتلئ، ثم يصير قابلاً
+  /// للاشتراك في الصندوق. ولذلك تغيب عنها طريقةُ الدفع — والخادمُ يرفضها لو أُرسلت.
+  profitCapitalisation('profit_capitalisation', 'تحويل أرباح إلى رأس مال');
 
   const WalletAction(this.wire, this.label);
 
   final String wire;
   final String label;
+
+  /// أيَعبر المالُ الطاولةَ في هذه الحركة؟ ما لا يعبر لا طريقةَ دفعٍ له.
+  bool get movesCash => this != WalletAction.profitCapitalisation;
 }
 
 Future<void> showWalletEntrySheet({
@@ -101,7 +110,9 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
       investorId: widget.investor.id,
       type: _action.wire,
       amount: _amount.text,
-      method: _method.wire,
+      // **تُحذف لا تُرسَل فارغة**: قيدُ الخادم يرفض طريقةَ دفعٍ على حركةٍ لا مالَ يعبر فيها،
+      // وهو يرفضها لأن ذكرَها يوحي بأن شيئاً سُلِّم.
+      method: _action.movesCash ? _method.wire : null,
       notes: _notes.text,
     );
 
@@ -179,21 +190,24 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
               ),
               SizedBox(height: 16.h),
 
-              AppDropdown<PaymentMethod>(
-                value: _method,
-                // `selectable` rather than `values`: the unknown case exists so an entry written
-                // by a newer server still renders, and it is never a person's choice.
-                items: PaymentMethod.selectable,
-                labelOf: (method) => method.label,
-                label: 'طريقة الدفع',
-                prefixIcon: AppIcons.payment,
-                onChanged: (method) {
-                  if (method == null) return;
+              // تغيب حين لا يعبر المالُ الطاولة — تحويلُ الأرباح إلى رأس مال نقلٌ داخليّ.
+              if (_action.movesCash) ...[
+                AppDropdown<PaymentMethod>(
+                  value: _method,
+                  // `selectable` rather than `values`: the unknown case exists so an entry
+                  // written by a newer server still renders, and it is never a person's choice.
+                  items: PaymentMethod.selectable,
+                  labelOf: (method) => method.label,
+                  label: 'طريقة الدفع',
+                  prefixIcon: AppIcons.payment,
+                  onChanged: (method) {
+                    if (method == null) return;
 
-                  setState(() => _method = method);
-                },
-              ),
-              SizedBox(height: 16.h),
+                    setState(() => _method = method);
+                  },
+                ),
+                SizedBox(height: 16.h),
+              ],
 
               AppTextField(
                 controller: _amount,

@@ -6,7 +6,10 @@ namespace App\Domain\Investor\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Identity\Models\User;
+use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Enums\WalletEntryType;
+use App\Domain\Investor\Exceptions\PeriodIsClosed;
+use App\Domain\Investor\Queries\PeriodForEntry;
 use Database\Factories\InvestorWalletEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -62,6 +65,40 @@ class InvestorWalletEntry extends Model
     public function deal(): BelongsTo
     {
         return $this->belongsTo(InvestorDeal::class, 'investor_deal_id');
+    }
+
+    /**
+     * @return BelongsTo<InvestmentPeriod, $this>
+     */
+    public function period(): BelongsTo
+    {
+        return $this->belongsTo(InvestmentPeriod::class, 'investment_period_id');
+    }
+
+    /**
+     * لا يدخل صفٌّ فترةً أُقفلت — وهو حارسُ من يأتي بعدنا لا رسالةٌ لمستخدم.
+     *
+     * كلُّ مسارٍ يكتب هنا يمرّ بـ{@see PeriodForEntry}، وهو لا
+     * يُخرج فترةً مغلقةً أبداً: يردّ التصحيحَ إلى المفتوحة اليوم. فمن يصل إلى هذا الاستثناء كتب
+     * الختمَ بيده. ولولا الحارسُ لمرّ صامتاً: الفترةُ المغلقة تحمل أرقامها مجمّدةً على صفّها،
+     * فصفٌّ يدخلها **لا يغيّر رقماً واحداً** — يجعل الصفَّ يكذب فحسب، ولا يشتكي أحد.
+     *
+     * على `creating` لا `saving`: الصفّ لا يُعدَّل بعد كتابته أصلاً — التصحيحُ صفٌّ عكسيّ —
+     * و`saving` كان سيفشل كلَّ حذفٍ ناعمٍ لصفٍّ قديم يوم تُقفَل فترتُه.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $entry): void {
+            if ($entry->investment_period_id === null) {
+                return;
+            }
+
+            $period = InvestmentPeriod::query()->whereKey($entry->investment_period_id)->first();
+
+            if ($period !== null && $period->status === PeriodStatus::Closed) {
+                throw PeriodIsClosed::make((string) $period->code);
+            }
+        });
     }
 
     /**

@@ -69,6 +69,17 @@ enum WalletEntryType: string
     /** Profit paid out to the investor. */
     case ProfitWithdrawal = 'profit_withdrawal';
 
+    /**
+     * ربحٌ يصير رأسَ مالٍ في محفظته — «يمكنه تحويل رصيد الأرباح إلى رأس المال ليقوم بإستعماله».
+     *
+     * **صفٌّ واحد يحرّك جيبين**، لا سحبٌ ثم إيداع. الثاني يكتب في الخزينة صرفاً وقبضاً لم يقعا،
+     * ويقول إن مالاً عبر الطاولة ولم يعبرها شيء: المالُ عندنا منذ البداية، والذي تغيّر أنه صار
+     * يعمل بدل أن ينتظر السحب.
+     *
+     * ولا طريقةَ دفعٍ له لذلك — انظر ذراعه في قيد `_shape`.
+     */
+    case ProfitCapitalisation = 'profit_capitalisation';
+
     /** Undoes one earlier row, carrying its amount verbatim. */
     case Reversal = 'reversal';
 
@@ -85,6 +96,7 @@ enum WalletEntryType: string
             self::LossAbsorbedByCompany => 'خسارة تحمّلتها الشركة',
             self::ProfitRelease => 'إتاحة أرباح الصفقة للسحب',
             self::ProfitWithdrawal => 'سحب أرباح',
+            self::ProfitCapitalisation => 'تحويل أرباح إلى رأس مال',
             self::Reversal => 'عكس حركة',
         };
     }
@@ -122,6 +134,8 @@ enum WalletEntryType: string
             self::LossAbsorbedByCompany => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 1, 'profit_wallet' => 0],
             self::ProfitRelease => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => -1, 'profit_wallet' => 1],
             self::ProfitWithdrawal => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 0, 'profit_wallet' => -1],
+            // الجيبان معاً: يخرج من الأرباح ويدخل رأسَ المال، فيصير قابلاً للاشتراك في الصندوق.
+            self::ProfitCapitalisation => ['capital_wallet' => 1, 'capital_deal' => 0, 'profit_deal' => 0, 'profit_wallet' => -1],
             // A reversal has no deltas of its own — it takes the negation of the row it undoes.
             self::Reversal => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 0, 'profit_wallet' => 0],
         };
@@ -155,7 +169,8 @@ enum WalletEntryType: string
     public function isRecordableByHand(): bool
     {
         return match ($this) {
-            self::Deposit, self::Withdrawal, self::Allocation, self::ProfitWithdrawal => true,
+            self::Deposit, self::Withdrawal, self::Allocation,
+            self::ProfitWithdrawal, self::ProfitCapitalisation => true,
             default => false,
         };
     }

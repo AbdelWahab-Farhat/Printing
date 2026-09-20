@@ -53,6 +53,7 @@ class TransitionFieldInput extends StatelessWidget {
         value: value is String ? value! as String : '',
         onChanged: onChanged,
       ),
+      TransitionFieldType.notice => _Notice(field: field),
       TransitionFieldType.number => _Number(
         field: field,
         value: value is String ? value! as String : '',
@@ -517,6 +518,54 @@ class _Designs extends StatelessWidget {
 ///
 /// Said rather than skipped: a required field the screen never showed is a form that cannot be
 /// submitted, and «حدّث التطبيق» is an answer somebody can act on.
+/// تحذيرٌ يُقرأ ولا يُجاب.
+///
+/// **لا سطرَ من نصّه مكتوبٌ هنا** — العنوان والأسطر كلُّها تصل من الخادم، على سُنّة
+/// `stock_effect_dialog.dart` و`TransitionFields::deductionPreview()`. وهي ليست أناقة: المعاينة
+/// والفعل يقرآن `UndeliveredDisposition` نفسه، فلا تستطيع الجملةُ أن تفترق عمّا يفعله الزرّ.
+///
+/// **واللوحةُ هي الجزءُ العالي الصوت لا العنوان**، تماماً كما في حوار أثر المخزون: القارئ يُسأل
+/// عن بضاعةٍ لن تعود، فتسكن الأسطر في `errorContainer` ليقرأها سطراً سطراً قبل أن يوافق.
+class _Notice extends StatelessWidget {
+  const _Notice({required this.field});
+
+  final TransitionField field;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          field.label,
+          style: context.textTheme.bodyMedium?.copyWith(
+            color: scheme.error,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (field.hint case final body? when body.isNotEmpty) ...[
+          SizedBox(height: 8.h),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: scheme.errorContainer,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Text(
+              body,
+              style: context.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _Unsupported extends StatelessWidget {
   const _Unsupported({required this.field});
 

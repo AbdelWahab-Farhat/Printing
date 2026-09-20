@@ -30,7 +30,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * still answers.
  */
 #[UseFactory(CompanySettingFactory::class)]
-#[Fillable(['investor_profit_share_percent'])]
+#[Fillable([
+    'investor_profit_share_percent',
+    'investment_period_months',
+    'investment_subscription_window_days',
+    'investment_settlement_months',
+    'investment_capital_lock_months',
+])]
 class CompanySetting extends Model implements HasAuditTrail
 {
     /** @use HasFactory<CompanySettingFactory> */

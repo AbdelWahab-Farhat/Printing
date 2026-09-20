@@ -49,6 +49,37 @@ abstract final class InvestorEndpoints {
       '/purchase-orders/$purchaseOrderId/investor-funding';
 }
 
+/// إعدادات الشركة — نقطةٌ واحدة تُقرأ وتُكتب.
+///
+/// نقطةٌ واحدة لا اثنتان: الإعداداتُ صفٌّ واحد على الخادم، وتقسيمُها إلى «عامة» و«استثمار» في
+/// المسار كان سيعد بفصلٍ لا يوجد خلفه.
+/// الصندوق الاستثماري وفتراته.
+///
+/// `investment` لا `investor-deals`: الصفقةُ صارت دفعةَ شراءٍ داخلية، والذي يُقرأ ويُدار هو
+/// الصندوقُ وفتراتُه.
+abstract final class InvestmentEndpoints {
+  static const String fund = '/investment/fund';
+  static const String periods = '/investment/periods';
+  static const String closePeriod = '/investment/periods/close';
+
+  /// حركاتُ مالٍ تمرّ بالصندوق: تشتري وحداتٍ أو تُلغيها، فلها بابُها لا بابُ المحفظة.
+  static const String deposits = '/investment/deposits';
+  static const String withdrawals = '/investment/withdrawals';
+  static const String expenses = '/investment/expenses';
+
+  /// إبطالُ حركةٍ في محفظة — يبطل الخزينةَ والوحداتِ معها.
+  static String walletReversal(int investorId, int entryId) =>
+      '/investors/$investorId/wallet/$entryId/reversal';
+
+  /// شراءٌ بمال الصندوق: لا صفقةَ تُولد.
+  static String fundPurchase(int purchaseOrderId) =>
+      '/purchase-orders/$purchaseOrderId/fund-purchase';
+}
+
+abstract final class SettingsEndpoints {
+  static const String settings = '/settings';
+}
+
 abstract final class HomeEndpoints {
   /// Four counts and one row per order status, in one call — they are read together and go
   /// stale together.

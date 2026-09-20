@@ -151,6 +151,52 @@ final class InvestorBalances
     }
 
     /**
+     * ما ربحه كلُّ مستثمر في كل صفقة **داخل فترةٍ واحدة** — ما يُفرَج عنه عند إقفالها.
+     *
+     * **ولماذا فترةً لا الدفترَ كلَّه.** الإقفالُ كان يُفرج عن كل ربحٍ موجبٍ في الدفتر بلا سؤالٍ
+     * عن فترته، فإقفالُ سبتمبر في ١٥ أكتوبر كان يسلّم حَمَلةَ سبتمبر ربحَ طلبيةٍ من أكتوبر.
+     * الشريحة ٢ من المواصفة، وهذه هي قراءتُها.
+     *
+     * والمشيُ بـ`deltas()` كبقيّة هذا الصنف: `profit_deal` وحده — `capital_writedown` يرفعه
+     * و`profit_release` يخفضه، فإقفالٌ يُعاد لا يُفرج عمّا أُفرج عنه مرّة.
+     *
+     * @return array<int, array<int, string>> المستثمر ← الصفقة ← ربحُه فيها، بإشارته
+     */
+    public function profitInPeriod(int $periodId): array
+    {
+        $entries = InvestorWalletEntry::query()
+            ->with('reversedEntry')
+            ->where('investment_period_id', $periodId)
+            ->whereNotNull('investor_deal_id')
+            ->get();
+
+        $profit = [];
+
+        foreach ($entries as $entry) {
+            $investorId = (int) $entry->investor_id;
+            $dealId = (int) $entry->investor_deal_id;
+
+            $profit[$investorId][$dealId] = bcadd(
+                $profit[$investorId][$dealId] ?? '0',
+                $entry->deltas()['profit_deal'],
+                8,
+            );
+        }
+
+        // حلقتان لا `array_map`، للسبب المكتوب في `forInvestor()`: التعيينُ يُعيد ترقيم
+        // المفاتيح الصحيحة، فيصير المستثمرُ ٧ مستثمراً ٠ وتقع أرقامُه كلُّها على غيره.
+        $out = [];
+
+        foreach ($profit as $investorId => $deals) {
+            foreach ($deals as $dealId => $amount) {
+                $out[$investorId][$dealId] = Money::round($amount);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * One investor's standing in one deal.
      *
      * @return array{capital: string, profit: string}
