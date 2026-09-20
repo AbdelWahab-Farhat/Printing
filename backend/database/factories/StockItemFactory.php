@@ -22,12 +22,33 @@ class StockItemFactory extends Factory
     private static int $sequence = 0;
 
     /**
+     * The next free size, shared with {@see ProductVariantFactory}.
+     *
+     * **One counter, because there is one unique index.** A variant mints its own shelf at its own
+     * label's size, so a second counter over there produced the same `(name, width, height)` pair
+     * this one had already used — and any test that created a bare shelf *and* a variant died on
+     * `stock_items_name_size_unique` with nothing in the message to say why. The two sequences were
+     * independent; the constraint they both feed is not.
+     *
+     * Still wrapped at 40 so sizes stay legible in a failure message. That is safe now: within one
+     * process the pair is drawn once and never reissued until the wrap, and a wrap needs 40 shelves
+     * in a single test.
+     *
+     * @return array{int, int}
+     */
+    public static function nextSize(): array
+    {
+        $width = 20 + (++self::$sequence % 40);
+
+        return [$width, $width + 10];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function definition(): array
     {
-        $width = 20 + (++self::$sequence % 40);
-        $height = $width + 10;
+        [$width, $height] = self::nextSize();
 
         return [
             'name' => 'كيس شحن',

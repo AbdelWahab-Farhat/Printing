@@ -59,7 +59,7 @@ final class PostDealStockPurchases
     public function __construct(
         private readonly OrderService $orders,
         private readonly InventoryService $inventory,
-        private readonly PostDealShare $postShare,
+        private readonly PostContainerResult $postResult,
     ) {}
 
     /**
@@ -206,9 +206,9 @@ final class PostDealStockPurchases
                     continue;
                 }
 
-                $rows = ($this->postShare)(
+                $rows = ($this->postResult)(
                     $deal,
-                    $deal->investorsCutOf($margins[$dealId] ?? '0.00'),
+                    $margins[$dealId] ?? '0.00',
                     $sourceType,
                     $sourceId,
                     $correctionNote,

@@ -30,7 +30,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * still answers.
  */
 #[UseFactory(CompanySettingFactory::class)]
-#[Fillable(['investor_profit_share_percent'])]
+#[Fillable([
+    'investor_profit_share_percent',
+    'profit_period_months',
+    'settlement_period_months',
+    'minimum_term_months',
+    'entry_grace_days',
+])]
 class CompanySetting extends Model implements HasAuditTrail
 {
     /** @use HasFactory<CompanySettingFactory> */
@@ -46,6 +52,12 @@ class CompanySetting extends Model implements HasAuditTrail
     {
         return [
             'investor_profit_share_percent' => 'decimal:2',
+            // The investment calendar, shared by every pool. Integers rather than an interval
+            // type: the business says «كل شهرين», and a month is the unit it reasons in.
+            'profit_period_months' => 'integer',
+            'settlement_period_months' => 'integer',
+            'minimum_term_months' => 'integer',
+            'entry_grace_days' => 'integer',
         ];
     }
 }

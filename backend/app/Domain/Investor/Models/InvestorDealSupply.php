@@ -31,6 +31,20 @@ class InvestorDealSupply extends Model
     use Auditable, HasFactory, SoftDeletes;
 
     /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            // سعر السادة **for this lorry**, agreed when the line was marked for pool money. Null
+            // means «nobody said», which puts these goods on the other road. A legacy صفقة leaves
+            // this null and answers from its own frozen column instead — see
+            // `InvestorService::dealForSupply()`.
+            'printing_sale_price' => 'decimal:3',
+        ];
+    }
+
+    /**
      * @return BelongsTo<InvestorDeal, $this>
      */
     public function deal(): BelongsTo

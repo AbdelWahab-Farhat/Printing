@@ -13,6 +13,7 @@ use App\Application\Api\V1\Controllers\DesignTicketCommentController;
 use App\Application\Api\V1\Controllers\DesignTicketController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
+use App\Application\Api\V1\Controllers\InvestmentPoolController;
 use App\Application\Api\V1\Controllers\InvestorController;
 use App\Application\Api\V1\Controllers\InvestorDealController;
 use App\Application\Api\V1\Controllers\InvestorPortalController;
@@ -765,6 +766,136 @@ Route::prefix('v1')->group(function (): void {
         Route::post('investor-deals/{deal}/expenses', [InvestorDealController::class, 'storeExpense'])
             ->middleware('can:investor_deals.expenses.record')->name('investor-deals.expenses.store');
 
+        // ── investment pools ────────────────────────────────────────────────────────────
+        //
+        // صناديق الاستثمار — one continuous pool per material, replacing the per-lorry صفقة.
+        //
+        // **`{pool}` can never resolve to a legacy deal**, though both live in `investor_deals`:
+        // the binding in AppServiceProvider scopes it to `kind = 'pool'`, so a صفقة struck last
+        // year cannot be renamed through here. Nothing about an existing deal is ever rewritten.
+        //
+        // Guarded by the same two grants the deals are: reading somebody's money is
+        // `investors.view`, and opening a pool moves nothing but decides where money will go, so
+        // it is `investors.manage` rather than an inventory grant — the buyer who raises a
+        // purchase order is not who decides which material the partners are in.
+        Route::get('investment-pools', [InvestmentPoolController::class, 'index'])
+            ->middleware('can:investors.view')->name('investment-pools.index');
+
+        Route::post('investment-pools', [InvestmentPoolController::class, 'store'])
+            ->middleware('can:investors.manage')->name('investment-pools.store');
+
+        Route::get('investment-pools/{pool}', [InvestmentPoolController::class, 'show'])
+            ->whereNumber('pool')
+            ->middleware('can:investors.view')->name('investment-pools.show');
+
+        Route::put('investment-pools/{pool}', [InvestmentPoolController::class, 'update'])
+            ->whereNumber('pool')
+            ->middleware('can:investors.manage')->name('investment-pools.update');
+
+        // ── periods and the capital queue ────────────────────────────────────────────────
+        //
+        // A pool never closes; its **periods** do. Opening one is guarded by `investors.manage`
+        // rather than by a grant of its own: it decides which period a man's money joins, and that
+        // is the same authority as deciding he may join at all.
+        Route::get('investment-pools/{pool}/periods', [InvestmentPoolController::class, 'periods'])
+            ->whereNumber('pool')
+            ->middleware('can:investors.view')->name('investment-pools.periods.index');
+
+        Route::post('investment-pools/{pool}/periods', [InvestmentPoolController::class, 'openPeriod'])
+            ->whereNumber('pool')
+            ->middleware('can:investors.manage')->name('investment-pools.periods.store');
+
+        // **`investors.money.record`, not `investors.manage`.** This moves a man's capital between
+        // his wallet and a pool — the same grant `investors/{investor}/wallet` already requires,
+        // and deliberately not the one that merely opens and names pools.
+        Route::get('investment-pools/{pool}/capital-requests', [InvestmentPoolController::class, 'capitalRequests'])
+            ->whereNumber('pool')
+            ->middleware('can:investors.view')->name('investment-pools.capital-requests.index');
+
+        Route::post('investment-pools/{pool}/capital-requests', [InvestmentPoolController::class, 'storeCapitalRequest'])
+            ->whereNumber('pool')
+            ->middleware('can:investors.money.record')->name('investment-pools.capital-requests.store');
+
+        Route::delete('investment-capital-requests/{capitalRequest}', [InvestmentPoolController::class, 'cancelCapitalRequest'])
+            ->whereNumber('capitalRequest')
+            ->middleware('can:investors.money.record')->name('investment-capital-requests.destroy');
+
+        // **Closing pays money out, and is not the same authority as naming a pool.** Its own
+        // grant, so the person who edits a pool's shelves is not automatically the person who can
+        // divide a month's profit into withdrawable wallets.
+        Route::get('investment-periods/{period}/figures', [InvestmentPoolController::class, 'periodFigures'])
+            ->whereNumber('period')
+            ->middleware('can:investors.view')->name('investment-periods.figures');
+
+        // Who got what, once a period has been divided. `investors.view`, like every other
+        // reading of a pool — it is a record of what happened, not an action.
+        Route::get('investment-periods/{period}/shares', [InvestmentPoolController::class, 'periodShares'])
+            ->whereNumber('period')
+            ->middleware('can:investors.view')->name('investment-periods.shares');
+
+        Route::post('investment-periods/{period}/close', [InvestmentPoolController::class, 'closePeriod'])
+            ->whereNumber('period')
+            ->middleware('can:investment_periods.close')->name('investment-periods.close');
+
+        // **The question that holds a close up.** A cancelled printed order credits its paper back
+        // to the shelf as good stock, and nothing here can tell whether there is ink on it.
+        //
+        // Reading is `investors.view` with everything else on the pool's screen. **Answering is
+        // `inventory.manage`**, and deliberately not an investor grant: «تالفة» writes a damage
+        // adjustment against a warehouse, which is the same authority every other write-off needs,
+        // and the person qualified to give the answer is the one holding the paper — not the one
+        // who divides the profit.
+        Route::get('investment-pools/{pool}/returned-goods', [InvestmentPoolController::class, 'returnedGoods'])
+            ->whereNumber('pool')
+            ->middleware('can:investors.view')->name('investment-pools.returned-goods.index');
+
+        Route::post('investment-returned-goods/{returnedGoodsQuestion}/answer', [InvestmentPoolController::class, 'answerReturnedGoods'])
+            ->whereNumber('returnedGoodsQuestion')
+            ->middleware('can:inventory.manage')->name('investment-returned-goods.answer');
+
+        // ── settlement ──────────────────────────────────────────────────────────────────
+        //
+        // التسوية — the periodic assertion that the books match the goods, per pool. It **moves
+        // nothing**: no wallet row, no stock movement, no period touched, and the pool trades on
+        // through it. So reading the position is `investors.view` like every other pool figure.
+        //
+        // **Signing it has its own grant.** Not because it moves money — it does not — but because
+        // a settlement is somebody putting their name to «these are the books». That is a different
+        // act from editing a pool's shelves, and it wants a different person's authority.
+        Route::get('investment-pools/{pool}/settlement-snapshot', [InvestmentPoolController::class, 'settlementSnapshot'])
+            ->whereNumber('pool')
+            ->middleware('can:investors.view')->name('investment-pools.settlement-snapshot');
+
+        Route::get('investment-pools/{pool}/settlements', [InvestmentPoolController::class, 'settlements'])
+            ->whereNumber('pool')
+            ->middleware('can:investors.view')->name('investment-pools.settlements.index');
+
+        Route::post('investment-pools/{pool}/settlements', [InvestmentPoolController::class, 'storeSettlement'])
+            ->whereNumber('pool')
+            ->middleware('can:investment_settlements.record')->name('investment-pools.settlements.store');
+
+        // What has been charged to the pool. `investors.view`: reading what a cost did is not the
+        // same authority as recording one, which keeps its own `investor_deals.expenses.record`.
+        Route::get('investment-pools/{pool}/expenses', [InvestmentPoolController::class, 'expenses'])
+            ->whereNumber('pool')
+            ->middleware('can:investors.view')->name('investment-pools.expenses.index');
+
+        // What a pool can spend, and the lines it is spending on.
+        Route::get('investment-pools/{pool}/deployable-cash', [InvestmentPoolController::class, 'deployableCash'])
+            ->whereNumber('pool')
+            ->middleware('can:investors.view')->name('investment-pools.deployable-cash');
+
+        // **On the purchase order, the way funding always was** — the decision is made before the
+        // lorry arrives, because the cost layer is stamped at the gate and never afterwards. What
+        // has changed is only how small the decision is: pool money or the company's, with the pool
+        // itself following from the material.
+        //
+        // `investors.manage` rather than `purchase_orders.manage`: it commits investors' money, and
+        // the buyer who raises an order is not who decides that.
+        Route::post('purchase-orders/{purchaseOrder}/pool-purchase', [InvestmentPoolController::class, 'buyWithPoolMoney'])
+            ->whereNumber('purchaseOrder')
+            ->middleware('can:investors.manage')->name('purchase-orders.pool-purchase.store');
+
         Route::get('investor-portal/summary', [InvestorPortalController::class, 'summary'])
             ->middleware('can:investor_portal.view')->name('investor-portal.summary');
 
@@ -1103,6 +1234,9 @@ Route::prefix('v1')->group(function (): void {
             Route::get('investors/{investor}/logs', [InvestorController::class, 'logs'])->name('investors.logs');
             Route::get('investor-deals/{deal}/logs', [InvestorDealController::class, 'logs'])
                 ->name('investor-deals.logs');
+
+            Route::get('investment-pools/{pool}/logs', [InvestmentPoolController::class, 'logs'])
+                ->whereNumber('pool')->name('investment-pools.logs');
 
             // Scoped like the rest of the nested region routes: another city's region id is a
             // 404 here too, not a history leaked from the wrong place.

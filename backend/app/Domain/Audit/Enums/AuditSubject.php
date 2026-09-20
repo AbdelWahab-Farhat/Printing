@@ -31,6 +31,13 @@ use App\Domain\Inventory\Models\StockItemGroup;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
+use App\Domain\Investor\Models\InvestmentCapitalRequest;
+use App\Domain\Investor\Models\InvestmentPeriod;
+use App\Domain\Investor\Models\InvestmentPeriodShare;
+use App\Domain\Investor\Models\InvestmentPoolItem;
+use App\Domain\Investor\Models\InvestmentRealizedEarning;
+use App\Domain\Investor\Models\InvestmentReturnedGoodsQuestion;
+use App\Domain\Investor\Models\InvestmentSettlement;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorDealExpense;
@@ -143,6 +150,13 @@ enum AuditSubject: string
     case InvestorDealSupply = 'investor_deal_supply';
     case InvestorDealExpense = 'investor_deal_expense';
     case InvestorWalletEntry = 'investor_wallet_entry';
+    case InvestmentPoolItem = 'investment_pool_item';
+    case InvestmentPeriod = 'investment_period';
+    case InvestmentCapitalRequest = 'investment_capital_request';
+    case InvestmentPeriodShare = 'investment_period_share';
+    case InvestmentRealizedEarning = 'investment_realized_earning';
+    case InvestmentReturnedGoodsQuestion = 'investment_returned_goods_question';
+    case InvestmentSettlement = 'investment_settlement';
 
     // Shortages
     case Shortage = 'shortage';
@@ -216,6 +230,13 @@ enum AuditSubject: string
             self::InvestorDealItem => InvestorDealItem::class,
             self::InvestorDealShare => InvestorDealShare::class,
             self::InvestorDealSupply => InvestorDealSupply::class,
+            self::InvestmentPoolItem => InvestmentPoolItem::class,
+            self::InvestmentPeriod => InvestmentPeriod::class,
+            self::InvestmentCapitalRequest => InvestmentCapitalRequest::class,
+            self::InvestmentPeriodShare => InvestmentPeriodShare::class,
+            self::InvestmentRealizedEarning => InvestmentRealizedEarning::class,
+            self::InvestmentReturnedGoodsQuestion => InvestmentReturnedGoodsQuestion::class,
+            self::InvestmentSettlement => InvestmentSettlement::class,
             self::InvestorDealExpense => InvestorDealExpense::class,
             self::InvestorWalletEntry => InvestorWalletEntry::class,
             self::Shortage => Shortage::class,
@@ -278,6 +299,13 @@ enum AuditSubject: string
             self::InvestorDealSupply => 'إقرار تمويل',
             self::InvestorDealExpense => 'مصروف صفقة',
             self::InvestorWalletEntry => 'حركة محفظة مستثمر',
+            self::InvestmentPoolItem => 'مادة في صندوق',
+            self::InvestmentPeriod => 'فترة محاسبية',
+            self::InvestmentCapitalRequest => 'طلب رأس مال',
+            self::InvestmentPeriodShare => 'حصة مستثمر في فترة',
+            self::InvestmentRealizedEarning => 'ربح محقَّق للصندوق',
+            self::InvestmentReturnedGoodsQuestion => 'بضاعة راجعة',
+            self::InvestmentSettlement => 'تسوية صندوق',
             self::Shortage => 'نقص',
             self::DesignTicket => 'تذكرة تصميم',
             self::DesignTicketFile => 'ملف تذكرة تصميم',

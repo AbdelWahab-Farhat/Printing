@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Settings;
 
+use App\Domain\Settings\DTOs\CompanySettingsData;
 use App\Domain\Settings\Models\CompanySetting;
 
 /**
@@ -36,11 +37,61 @@ final class SettingsService
         return (string) $this->current()->investor_profit_share_percent;
     }
 
-    public function update(string $investorProfitSharePercent, ?int $actorId): CompanySetting
+    /**
+     * How long a profit period runs, in months.
+     *
+     * Read when a period is **opened**, to derive its `ends_on`, and never again for that period —
+     * so a change tomorrow decides where the next boundary falls and cannot move one that has
+     * already closed and paid out. The same split as the profit share above.
+     */
+    public function profitPeriodMonths(): int
+    {
+        return (int) $this->current()->profit_period_months;
+    }
+
+    /** How often the comprehensive review falls due, in months. */
+    public function settlementPeriodMonths(): int
+    {
+        return (int) $this->current()->settlement_period_months;
+    }
+
+    /**
+     * How many days after a period opens that capital may still join **that** period.
+     *
+     * Read at the moment a capital request is made, to decide whether it takes effect now or
+     * waits for the next period. Never read backwards.
+     */
+    public function entryGraceDays(): int
+    {
+        return (int) $this->current()->entry_grace_days;
+    }
+
+    /**
+     * How many months capital must stay in a pool before its owner may ask for it back.
+     *
+     * **Read when the request is made, never when it is paid.** An exit already queued was
+     * legitimate the day it was asked for, and lengthening the term tomorrow must not strand it —
+     * the same standing every setting here has: it decides what happens next and never rewrites
+     * what already did.
+     *
+     * Zero is no minimum, and is what this system did before the setting existed.
+     */
+    public function minimumTermMonths(): int
+    {
+        return (int) $this->current()->minimum_term_months;
+    }
+
+    public function update(CompanySettingsData $data, ?int $actorId): CompanySetting
     {
         $settings = $this->current();
 
-        $settings->fill(['investor_profit_share_percent' => $investorProfitSharePercent]);
+        $settings->fill([
+            'investor_profit_share_percent' => $data->investorProfitSharePercent,
+            'profit_period_months' => $data->profitPeriodMonths,
+            'settlement_period_months' => $data->settlementPeriodMonths,
+            'entry_grace_days' => $data->entryGraceDays,
+            'minimum_term_months' => $data->minimumTermMonths,
+        ]);
         $settings->updated_by = $actorId;
         $settings->save();
 

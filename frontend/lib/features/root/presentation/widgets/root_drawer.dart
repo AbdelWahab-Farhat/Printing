@@ -160,6 +160,24 @@ class _RootDrawerState extends State<RootDrawer> {
       title: 'الاستثمار والمالية',
       icon: _SectionIcon.investorDeals,
       items: [
+        // **Above the صفقات, because it is where new money goes.** The صفقة is read-only from
+        // the day pools arrived: its rows are preserved and its screens still open, but nothing
+        // new is financed through one. Listed second so nobody reaches for it first.
+        _Link(
+          icon: _LinkIcon.investorDeals,
+          label: 'صناديق الاستثمار',
+          route: Routes.investmentPools,
+          permission: AppPermission.viewInvestors,
+        ),
+        // Beside the صناديق rather than under «الإعدادات»: that screen is device preferences and
+        // the way out, and these four numbers decide when every pool closes. A person who comes
+        // looking for «متى تُقفل الفترة؟» looks here.
+        _Link(
+          icon: _LinkIcon.report,
+          label: 'إعدادات الاستثمار',
+          route: Routes.companySettings,
+          permission: AppPermission.viewCompanySettings,
+        ),
         _Link(
           icon: _LinkIcon.investorDeals,
           label: 'صفقات المستثمرين',

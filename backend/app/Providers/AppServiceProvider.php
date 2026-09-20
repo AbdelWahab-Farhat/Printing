@@ -12,11 +12,14 @@ use App\Domain\Delivery\DeliveryService;
 use App\Domain\DesignTicket\Events\DesignTicketAssigned;
 use App\Domain\DesignTicket\Events\DesignTicketProgressed;
 use App\Domain\Identity\Models\User;
+use App\Domain\Investor\Enums\PoolKind;
+use App\Domain\Investor\Listeners\AskAboutReturnedGoods;
 use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
 use App\Domain\Investor\Listeners\PostPurchasesWhenStockLeaves;
 use App\Domain\Investor\Listeners\PostPurchaseWhenScrapIsDrawn;
 use App\Domain\Investor\Listeners\PostPurchaseWhenStockIsRedrawn;
 use App\Domain\Investor\Listeners\UnwindEarningsWhenOrderIsDeleted;
+use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsCommentedOn;
@@ -34,6 +37,7 @@ use App\Domain\Order\Events\OrderShortagesRecorded;
 use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Events\OrderStockRedrawn;
+use App\Domain\Order\Events\OrderStockReturned;
 use App\Domain\Order\Queries\OrderCustomerActivity;
 use App\Domain\Shortage\Events\ShortageAssigned;
 use App\Domain\Shortage\Listeners\CloseShortagesWhenOrderEnds;
@@ -42,6 +46,7 @@ use App\Domain\Shortage\Listeners\SyncWhenOrderShortagesChange;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -121,6 +126,17 @@ class AppServiceProvider extends ServiceProvider
         // migration that rewrote the rows written before it.
         AuditSubject::register();
 
+        // **`{pool}` resolves to a صندوق and never to a legacy صفقة**, though both are rows of
+        // `investor_deals`. Without this, `POST /investment-pools/7` would happily rename a deal
+        // struck last year — and the one promise this migration makes is that nothing about an
+        // existing deal is ever rewritten. A binding rather than a check in each controller
+        // method: the guarantee then holds for every pool route that will ever be added,
+        // including the ones in the slices after this.
+        Route::bind('pool', fn (string $value): InvestorDeal => InvestorDeal::query()
+            ->where('kind', PoolKind::Pool->value)
+            ->whereKey($value)
+            ->firstOrFail());
+
         // **Orders announces, Investment listens.** The dependency runs one way — Investment
         // reads Orders through its Service and Orders knows nothing about investors — so the
         // moment a sale's profit becomes final is an event rather than a call. A direct call
@@ -147,6 +163,13 @@ class AppServiceProvider extends ServiceProvider
         // at what it paid, not back to the deal. See {@see OrderStockRedrawn}. Synchronous like
         // the ones above, and for the same reason.
         Event::listen(OrderStockRedrawn::class, PostPurchaseWhenStockIsRedrawn::class);
+
+        // **And the question only a person can answer.** A cancelled printed line's material is
+        // credited back as good stock; paper that has been through a press is not. Investment
+        // raises the question and refuses to close the pool's period until somebody has looked.
+        // Synchronous, inside the transaction that cancelled the order, so the goods and the
+        // question about them land together or not at all.
+        Event::listen(OrderStockReturned::class, AskAboutReturnedGoods::class);
 
         // **Orders announces, the notification centre listens** — the same one-way dependency,
         // for a different reason: Notification reads Orders to build its sentence, and Orders

@@ -30,7 +30,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class RecordWalletEntry
 {
-    public function __construct(private readonly InvestorBalances $balances) {}
+    public function __construct(
+        private readonly InvestorBalances $balances,
+        private readonly EnsurePoolMembership $ensureMembership,
+    ) {}
 
     /**
      * @throws WithdrawalExceedsBalance
@@ -67,6 +70,17 @@ final class RecordWalletEntry
             $entry->type = $data->type;
             $entry->recorded_by = $actorId;
             $entry->save();
+
+            // **Capital landing in a pool puts him on its roster**, and it is done here rather
+            // than in the capital-request action because this is the one place every path passes
+            // through. `allocation` is recordable by hand, so money can reach a pool without ever
+            // touching a request — and a partner whose capital is right while the pool's «الشركاء»
+            // list is empty is exactly the bug this closes.
+            //
+            // A no-op for a legacy صفقة, whose roster is its frozen terms.
+            if ($deal !== null && $data->type === WalletEntryType::Allocation) {
+                ($this->ensureMembership)($deal, (int) $investor->getKey());
+            }
 
             return $entry;
         });

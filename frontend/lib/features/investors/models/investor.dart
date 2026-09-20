@@ -21,6 +21,12 @@ abstract class Investor with _$Investor {
 
     @JsonKey(name: 'is_active') @Default(true) bool isActive,
 
+    /// **The company's own row.** It is a partner in every صندوق like anybody else — it takes a
+    /// capital weight and the operator's cut — but it is not a person: there is exactly one of it,
+    /// enforced by a partial unique index, and one renamed or switched off by somebody who thought
+    /// it was an ordinary investor would stop every pool paying the company at the next close.
+    @JsonKey(name: 'is_company') @Default(false) bool isCompany,
+
     /// Whether he has an account he can sign in with.
     @JsonKey(name: 'has_login') @Default(false) bool hasLogin,
 

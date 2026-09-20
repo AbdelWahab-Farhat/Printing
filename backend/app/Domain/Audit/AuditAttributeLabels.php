@@ -498,11 +498,20 @@ final class AuditAttributeLabels
             'name' => 'البيان',
         ],
         'investor' => [
+            // The company, as a participant in its own pools — it takes a capital weight like
+            // any partner's, and the operator's share on top.
+            'is_company' => 'حساب الشركة',
             'name' => 'اسم المستثمر',
             'user_id' => 'حساب الدخول',
             'created_by' => 'أضافه',
         ],
         'investor_deal' => [
+            // Which of the two containers this row is: the صفقة that was, or the صندوق that
+            // is. A row never changes kind — a folded deal stays a deal — so this appearing
+            // in a history at all would itself be the finding.
+            'kind' => 'النوع',
+            // Pools only. A صفقة is «that lorry» and has none.
+            'name' => 'الاسم',
             'product_id' => 'المنتج',
             // The order the deal was born from. Empty on one assembled by hand out of several.
             'purchase_order_id' => 'أمر الشراء',
@@ -522,6 +531,107 @@ final class AuditAttributeLabels
             'cancellation_reason' => 'سبب الإلغاء',
             'created_by' => 'أنشأها',
         ],
+        // A pool's claim on a shelf. It holds no figures at all — how much of the shelf the
+        // pool has and what it cost are read from the cost layers — so the only things that
+        // can change here are which pool and who claimed it.
+        // The accounting period. Everything before `closed_by` is the calendar; everything
+        // after it is the snapshot the close froze, and a change to one of those after the
+        // fact is the finding rather than the record.
+        'investment_period' => [
+            'investor_deal_id' => 'الصندوق',
+            'starts_on' => 'بداية الفترة',
+            'ends_on' => 'نهاية الفترة',
+            // No `status` here: the shared «الحالة» serves it. Overriding it with «حالة الفترة»
+            // would stop `status` being shared vocabulary — the label must be the same word for
+            // every subject — and every table without the column would start failing
+            // AuditAttributeLabelsTest. Same rule the `unit` note above states.
+            'closed_at' => 'وقت الإغلاق',
+            'closed_by' => 'أغلقها',
+            'opening_cash' => 'النقد الافتتاحي',
+            'closing_cash' => 'النقد الختامي',
+            'opening_stock_cost' => 'بضاعة افتتاحية بالتكلفة',
+            'closing_stock_cost' => 'بضاعة ختامية بالتكلفة',
+            'realized_margin' => 'الربح المحقَّق',
+            'deductible_expenses' => 'المصاريف المخصومة',
+            'damage_cost' => 'تكلفة الهالك',
+            'shortage_cost' => 'تكلفة العجز',
+            'net_profit' => 'صافي الربح',
+            'investor_share_percent_applied' => 'نسبة المستثمرين المطبَّقة',
+            'investor_capital_weight_applied' => 'وزن رأس مال المستثمرين المطبَّق',
+            'total_pool_capital' => 'إجمالي رأس مال الصندوق',
+            'total_investor_capital' => 'إجمالي رأس مال المستثمرين',
+        ],
+        // Capital waiting at a boundary. It holds no money — the deposit stays in the wallet
+        // — so what changes here is an intention, and `applied_entry_id` is the receipt.
+        'investment_capital_request' => [
+            'investor_id' => 'المستثمر',
+            'investor_deal_id' => 'الصندوق',
+            'direction' => 'الاتجاه',
+            // Neither `amount` nor `status`: both are shared vocabulary and already named.
+            'requested_at' => 'وقت الطلب',
+            'effective_period_id' => 'الفترة التي نُفِّذ فيها',
+            'applied_entry_id' => 'حركة المحفظة الناتجة',
+            'requested_by' => 'طلبها',
+        ],
+        // The pool's P&L as it accrues, before anybody's share of it is known. `amount` is the
+        // shared «المبلغ»; `status` does not exist here at all.
+        'investment_realized_earning' => [
+            'investment_period_id' => 'الفترة',
+            'source_type' => 'نوع المصدر',
+            'source_id' => 'رقم المصدر',
+            'source_sequence' => 'رقم المحاولة',
+            'occurred_at' => 'وقت التحقق',
+            'recorded_by' => 'سجّلها',
+        ],
+        // How one period was divided. Written once, at the close, and never again — a change here
+        // after the fact is the finding rather than the record.
+        'investment_period_share' => [
+            'investment_period_id' => 'الفترة',
+            'investor_id' => 'المستثمر',
+            'capital' => 'رأس المال في الفترة',
+            'share_percent' => 'النسبة',
+            'net_share' => 'الحصة الصافية',
+            'is_company' => 'حصة الشركة',
+        ],
+        // «صالحة أم تالفة» — the one fact the system cannot work out for itself.
+        'investment_returned_goods_question' => [
+            'investor_deal_id' => 'الصندوق',
+            'order_id' => 'الطلبية',
+            'order_item_id' => 'بند الطلبية',
+            'cost' => 'تكلفة البضاعة الراجعة',
+            'verdict' => 'النتيجة',
+            'answered_at' => 'وقت الفحص',
+            'answered_by' => 'فحصها',
+            'damage_movement_id' => 'حركة الإتلاف',
+        ],
+        // التسوية — a dated, signed statement of where a pool's money is. `drift` is the only
+        // column here that is not a plain derivation, and it is the one anybody opens this history
+        // to look at.
+        'investment_settlement' => [
+            'investor_deal_id' => 'الصندوق',
+            'period_from_id' => 'من فترة',
+            'period_to_id' => 'إلى فترة',
+            'settled_on' => 'تاريخ التسوية',
+            'approved_by' => 'اعتمدها',
+            'total_capital' => 'إجمالي رأس المال',
+            'investor_capital' => 'رأس مال المستثمرين',
+            'company_capital' => 'رأس مال الشركة',
+            'deployable_cash' => 'النقد القابل للصرف',
+            'stock_at_cost' => 'البضاعة بالتكلفة',
+            'undeployed_current_profit' => 'ربح الفترة الجارية غير الموزَّع',
+            'receivables' => 'مستحقات على الزبائن',
+            'liabilities' => 'أرباح مستحقة لم تُسحب',
+            'distributed_profit_to_date' => 'الأرباح الموزَّعة حتى تاريخه',
+            'damage_to_date' => 'التالف حتى تاريخه',
+            'shortage_to_date' => 'النقص حتى تاريخه',
+            'reconstructed_cash' => 'النقد المحسوب من الحركات',
+            'drift' => 'الفرق',
+            'created_by' => 'أنشأها',
+        ],
+        'investment_pool_item' => [
+            'investor_deal_id' => 'الصندوق',
+            'created_by' => 'أضافها',
+        ],
         'investor_deal_item' => [
             'investor_deal_id' => 'الصفقة',
             'quantity_expected' => 'الكمية المتوقعة',
@@ -538,12 +648,18 @@ final class AuditAttributeLabels
             'joined_at' => 'تاريخ الانضمام',
         ],
         'investor_deal_supply' => [
+            // سعر السادة for **this lorry**. The container-level column still answers for a
+            // legacy صفقة; a صندوق outlives every lorry it buys, so its price lives here.
+            'printing_sale_price' => 'سعر بيع السادة للطباعة',
             'investor_deal_id' => 'الصفقة',
             'source_type' => 'نوع المستند',
             'source_id' => 'رقم المستند',
             'claimed_by' => 'أقرّها',
         ],
         'investor_deal_expense' => [
+            // A pool's expense is charged to a period, never dated into one: a closed period is
+            // immutable, so a late invoice lands in the open one keeping its true `incurred_on`.
+            'investment_period_id' => 'الفترة المحمَّلة',
             'investor_deal_id' => 'الصفقة',
             'kind' => 'نوع المصروف',
             'name' => 'بيان المصروف',
@@ -643,6 +759,13 @@ final class AuditAttributeLabels
         ],
         'company_setting' => [
             'investor_profit_share_percent' => 'نسبة المستثمرين من الربح (الافتراضية)',
+            // The investment calendar, shared by every pool. Read forward only — when a
+            // period is opened, when a settlement falls due, when capital is offered — so a
+            // change here decides what happens next and moves no closed period.
+            'profit_period_months' => 'مدة إغلاق الأرباح (بالأشهر)',
+            'settlement_period_months' => 'مدة التسوية (بالأشهر)',
+            'minimum_term_months' => 'الحد الأدنى للبقاء (بالأشهر)',
+            'entry_grace_days' => 'مهلة دخول رأس المال (بالأيام)',
             'updated_by' => 'عدّلها',
         ],
         // Only ever an announcement. Notifications as a class are outside the audit trail — see

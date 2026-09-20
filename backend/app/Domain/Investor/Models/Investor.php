@@ -43,6 +43,10 @@ class Investor extends Model implements HasAuditTrail
     {
         return [
             'is_active' => 'boolean',
+            // **The company, as a participant in its own pools.** Its capital earns a weight like
+            // any partner's, and the operator's share is the residual on top — see the migration
+            // for why that is one row rather than a special case in five places.
+            'is_company' => 'boolean',
         ];
     }
 

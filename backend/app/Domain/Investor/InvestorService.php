@@ -6,21 +6,39 @@ namespace App\Domain\Investor;
 
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Identity\Models\User;
+use App\Domain\Investor\Actions\BuyPurchaseOrderLinesFromPools;
+use App\Domain\Investor\Actions\CancelCapitalRequest;
+use App\Domain\Investor\Actions\CloseInvestmentPeriod;
 use App\Domain\Investor\Actions\CloseInvestorDeal;
 use App\Domain\Investor\Actions\CreateInvestor;
+use App\Domain\Investor\Actions\CreatePool;
 use App\Domain\Investor\Actions\FundPurchaseOrder;
+use App\Domain\Investor\Actions\OpenInvestmentPeriod;
 use App\Domain\Investor\Actions\PostDealEarningsForOrder;
 use App\Domain\Investor\Actions\PostDealStockPurchases;
+use App\Domain\Investor\Actions\RaiseReturnedGoodsQuestions;
 use App\Domain\Investor\Actions\RecordDealExpense;
+use App\Domain\Investor\Actions\RecordReturnedGoodsVerdict;
+use App\Domain\Investor\Actions\RecordSettlement;
 use App\Domain\Investor\Actions\RecordWalletEntry;
+use App\Domain\Investor\Actions\RequestPoolCapital;
 use App\Domain\Investor\Actions\SetInvestorActivation;
 use App\Domain\Investor\Actions\UnwindDealEarningsForOrder;
 use App\Domain\Investor\Actions\UpdateInvestor;
+use App\Domain\Investor\Actions\UpdatePool;
+use App\Domain\Investor\DTOs\CapitalRequestData;
 use App\Domain\Investor\DTOs\DealExpenseData;
 use App\Domain\Investor\DTOs\FundPurchaseOrderData;
 use App\Domain\Investor\DTOs\InvestorData;
+use App\Domain\Investor\DTOs\PoolData;
+use App\Domain\Investor\DTOs\PoolPurchaseData;
 use App\Domain\Investor\DTOs\SupplyFunding;
 use App\Domain\Investor\DTOs\WalletEntryData;
+use App\Domain\Investor\Enums\ReturnedGoodsVerdict;
+use App\Domain\Investor\Models\InvestmentCapitalRequest;
+use App\Domain\Investor\Models\InvestmentPeriod;
+use App\Domain\Investor\Models\InvestmentReturnedGoodsQuestion;
+use App\Domain\Investor\Models\InvestmentSettlement;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorDealExpense;
@@ -32,7 +50,12 @@ use App\Domain\Investor\Queries\DealStockPosition;
 use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Queries\InvestorListQuery;
 use App\Domain\Investor\Queries\OrderInvestorSharesQuery;
+use App\Domain\Investor\Queries\PeriodNetProfit;
+use App\Domain\Investor\Queries\PoolDeployableCash;
+use App\Domain\Investor\Queries\PoolListQuery;
 use App\Domain\Investor\Queries\PurchaseOrderFundingQuery;
+use App\Domain\Investor\Queries\SettlementSnapshot;
+use App\Domain\Investor\Support\GraceWindow;
 use App\Domain\Investor\Support\Money;
 use App\Domain\Order\Events\OrderProfitUnwound;
 use App\Domain\Order\Events\OrderStockDrawn;
@@ -55,6 +78,19 @@ final class InvestorService
         private readonly SetInvestorActivation $setActivation,
         private readonly FundPurchaseOrder $fundPurchaseOrder,
         private readonly CloseInvestorDeal $closeDeal,
+        private readonly CreatePool $createPool,
+        private readonly UpdatePool $updatePool,
+        private readonly OpenInvestmentPeriod $openPeriod,
+        private readonly BuyPurchaseOrderLinesFromPools $buyFromPools,
+        private readonly CloseInvestmentPeriod $closePeriod,
+        private readonly RaiseReturnedGoodsQuestions $raiseReturnedGoods,
+        private readonly RecordReturnedGoodsVerdict $recordVerdict,
+        private readonly PeriodNetProfit $periodNetProfit,
+        private readonly PoolDeployableCash $deployableCash,
+        private readonly SettlementSnapshot $settlementSnapshot,
+        private readonly RecordSettlement $recordSettlement,
+        private readonly RequestPoolCapital $requestCapital,
+        private readonly CancelCapitalRequest $cancelCapitalRequest,
         private readonly RecordWalletEntry $recordEntry,
         private readonly RecordDealExpense $recordExpense,
         private readonly PostDealEarningsForOrder $postEarnings,
@@ -63,6 +99,7 @@ final class InvestorService
         private readonly InvestorBalances $balances,
         private readonly InvestorListQuery $investorList,
         private readonly DealListQuery $dealList,
+        private readonly PoolListQuery $poolList,
         private readonly DealStockPosition $stockPosition,
         private readonly DealOrdersQuery $dealOrderList,
         private readonly OrderInvestorSharesQuery $orderShares,
@@ -141,6 +178,228 @@ final class InvestorService
     public function closeDeal(InvestorDeal $deal): InvestorDeal
     {
         return ($this->closeDeal)($deal);
+    }
+
+    // ── pools ────────────────────────────────────────────────────────────────
+
+    /**
+     * Opens a صندوق — a continuous pool for one material.
+     *
+     * It is born open and empty: money arrives later through its own act, and ownership is
+     * recomputed from that money at every period close. Unlike a deal, it is never «struck».
+     */
+    public function createPool(PoolData $data, ?int $actorId): InvestorDeal
+    {
+        return ($this->createPool)($data, $actorId);
+    }
+
+    /** Renames a pool and changes which shelves it owns — never its profit share. */
+    public function updatePool(InvestorDeal $pool, PoolData $data, ?int $actorId): InvestorDeal
+    {
+        return ($this->updatePool)($pool, $data, $actorId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, InvestorDeal>
+     */
+    public function paginatePools(array $filters, int $perPage = 15)
+    {
+        return ($this->poolList)($filters, $perPage);
+    }
+
+    // ── periods and queued capital ───────────────────────────────────────────
+
+    /**
+     * Starts a pool's next accounting period, and lets in the capital that was waiting for it.
+     *
+     * The dates come from the company calendar, not from the caller: the day after the last period
+     * ended, for `profit_period_months`. Read once, here, and never again for this period.
+     *
+     * @return array{period: InvestmentPeriod, applied: list<InvestmentCapitalRequest>, short: array<int, array{investor_id: int, wanted: string, available: string}>}
+     */
+    public function openPeriod(InvestorDeal $pool): array
+    {
+        return ($this->openPeriod)($pool);
+    }
+
+    /** The pool's current period, or null between a close and the next open. */
+    public function currentPeriodFor(int $poolId): ?InvestmentPeriod
+    {
+        return InvestmentPeriod::query()
+            ->where('investor_deal_id', $poolId)
+            ->where('status', 'open')
+            ->first();
+    }
+
+    /**
+     * Capital offered to a pool, or asked back from it.
+     *
+     * Taken now when it is capital coming in and today is still inside the grace window; queued for
+     * the next boundary otherwise. An exit is always queued — see {@see RequestPoolCapital}.
+     */
+    public function requestPoolCapital(InvestorDeal $pool, CapitalRequestData $data, ?int $actorId): InvestmentCapitalRequest
+    {
+        return ($this->requestCapital)($pool, $data, $actorId);
+    }
+
+    public function cancelCapitalRequest(InvestmentCapitalRequest $request): InvestmentCapitalRequest
+    {
+        return ($this->cancelCapitalRequest)($request);
+    }
+
+    /**
+     * What a pool's screen must say **before** somebody commits money: when the window shuts, and
+     * what would happen if he pressed the button now.
+     *
+     * Computed through {@see GraceWindow}, the same function {@see RequestPoolCapital} then acts on,
+     * so the promise and the behaviour cannot disagree.
+     *
+     * @return array{period: ?InvestmentPeriod, grace_window_ends_on: ?string, capital_takes_effect_on: ?string, is_inside_grace_window: bool}
+     */
+    public function capitalTimingFor(int $poolId): array
+    {
+        $period = $this->currentPeriodFor($poolId);
+
+        if ($period === null) {
+            return [
+                'period' => null,
+                'grace_window_ends_on' => null,
+                'capital_takes_effect_on' => null,
+                'is_inside_grace_window' => false,
+            ];
+        }
+
+        $graceDays = $this->settings->entryGraceDays();
+        $now = now();
+
+        return [
+            'period' => $period,
+            'grace_window_ends_on' => GraceWindow::closesOn($period, $graceDays)->toDateString(),
+            'capital_takes_effect_on' => GraceWindow::takesEffectOn($period, $graceDays, $now)->toDateString(),
+            'is_inside_grace_window' => GraceWindow::admits($period, $graceDays, $now),
+        ];
+    }
+
+    /**
+     * Closes a period: divides what it made, pays it into wallets, lets out whoever asked to leave,
+     * and opens the next one.
+     *
+     * The only door profit walks through to become withdrawable. Refused while any returned-goods
+     * question is unanswered.
+     */
+    public function closePeriod(InvestmentPeriod $period, ?int $actorId): InvestmentPeriod
+    {
+        return ($this->closePeriod)($period, $actorId);
+    }
+
+    /**
+     * What a period made, and whether anything is holding its close up — the same arithmetic the
+     * close itself performs, so a screen can print its working before the button is pressed.
+     *
+     * @return array<string, mixed>
+     */
+    public function periodFigures(InvestmentPeriod $period): array
+    {
+        return ($this->periodNetProfit)($period) + [
+            'has_unanswered_returns' => $this->periodNetProfit->hasUnansweredReturns($period),
+        ];
+    }
+
+    /**
+     * A cancelled order gave its material back — ask whether it is still usable.
+     *
+     * Called from the `OrderStockReturned` listener. Does nothing for the ordinary cancellation,
+     * which is most of them.
+     *
+     * @return list<InvestmentReturnedGoodsQuestion>
+     */
+    public function askAboutReturnedGoods(int $orderId): array
+    {
+        return ($this->raiseReturnedGoods)($orderId);
+    }
+
+    /** «صالحة» writes nothing; «تالفة» takes the goods off the shelf as damage. */
+    public function answerReturnedGoods(
+        InvestmentReturnedGoodsQuestion $question,
+        ReturnedGoodsVerdict $verdict,
+        int $warehouseId,
+        int $actorId,
+        ?string $notes = null,
+    ): InvestmentReturnedGoodsQuestion {
+        return ($this->recordVerdict)($question, $verdict, $warehouseId, $actorId, $notes);
+    }
+
+    // ── buying with pool money ───────────────────────────────────────────────
+
+    /**
+     * Marks lines of a purchase order as bought with pool money.
+     *
+     * The pool follows from the material; the only decision carried in is the yes/no. Refused if a
+     * line is already claimed, if a material belongs to no pool, or if a pool cannot cover its
+     * share of the lorry.
+     *
+     * @return list<InvestorDealSupply>
+     */
+    public function buyPurchaseOrderLinesFromPools(int $purchaseOrderId, PoolPurchaseData $data, ?int $actorId): array
+    {
+        return ($this->buyFromPools)($purchaseOrderId, $data, $actorId);
+    }
+
+    /**
+     * What a pool can actually spend — book value less the goods it is already holding.
+     *
+     * Derived on every read. Undrawn profit is excluded by construction: it left `profit_deal` for
+     * the investor's wallet when the period closed.
+     *
+     * @return array{book_value: string, stock_at_cost: string, deployable_cash: string, capital: string, unsettled_profit: string}
+     */
+    public function deployableCashFor(int $poolId): array
+    {
+        return ($this->deployableCash)($poolId);
+    }
+
+    /**
+     * How many months capital must stay in a pool before its owner may ask for it back.
+     *
+     * Exposed through this door rather than by handing screens the settings service, so «متى يحق
+     * له السحب؟» is answered in the same place the refusal is written.
+     */
+    public function minimumTermMonths(): int
+    {
+        return $this->settings->minimumTermMonths();
+    }
+
+    // ── settlement ───────────────────────────────────────────────────────────
+
+    /**
+     * Where a pool's money is — **worked out twice**, from the wallet ledger and from the
+     * movements, so the two can be compared rather than assumed equal.
+     *
+     * Derived on demand, and the same figures {@see RecordSettlement()} then freezes. A screen that
+     * asks somebody to sign a position must print the position that gets signed.
+     *
+     * @return array<string, mixed>
+     */
+    public function settlementSnapshotFor(int $poolId): array
+    {
+        return ($this->settlementSnapshot)($poolId);
+    }
+
+    /**
+     * Freeze and sign that position.
+     *
+     * **Moves nothing.** No wallet row, no stock movement, no period touched — and a non-zero drift
+     * is written down and left standing rather than adjusted away.
+     */
+    public function recordSettlement(
+        InvestorDeal $pool,
+        ?string $settledOn,
+        ?int $approvedBy,
+        ?string $notes,
+        ?int $actorId,
+    ): InvestmentSettlement {
+        return ($this->recordSettlement)($pool, $settledOn, $approvedBy, $notes, $actorId);
     }
 
     // ── money ────────────────────────────────────────────────────────────────
@@ -275,9 +534,16 @@ final class InvestorService
             dealId: (int) $supply->investor_deal_id,
             // Carried out with the id because the layer this answer opens must freeze both, and
             // asking twice would be two reads of one row for one decision.
-            printingSalePrice: $supply->deal?->printing_sale_price === null
-                ? null
-                : (string) $supply->deal->printing_sale_price,
+            //
+            // **The supply's own price wins, and the container's is the fallback.** سعر السادة is
+            // agreed per lorry now, because a صندوق outlives every lorry it buys; a legacy صفقة
+            // agreed it once for its whole life and still answers from its own column. Reading the
+            // supply first is what lets both roads coexist without a `kind` check here.
+            printingSalePrice: match (true) {
+                $supply->printing_sale_price !== null => (string) $supply->printing_sale_price,
+                $supply->deal?->printing_sale_price !== null => (string) $supply->deal->printing_sale_price,
+                default => null,
+            },
         );
     }
 

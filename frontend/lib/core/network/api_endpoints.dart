@@ -49,6 +49,100 @@ abstract final class InvestorEndpoints {
       '/purchase-orders/$purchaseOrderId/investor-funding';
 }
 
+/// صناديق الاستثمار — one continuous pool per material, replacing the per-lorry صفقة.
+///
+/// **Kept apart from [InvestorEndpoints] deliberately.** The two models live side by side and
+/// always will: a صفقة struck last year is read-only but still readable, and its screens go on
+/// working. Folding both sets of paths into one class would invite a screen to reach for the
+/// wrong pair — and the server refuses that anyway, because `{pool}` is bound to `kind = 'pool'`
+/// and can never resolve to a legacy deal.
+///
+/// **A pool never closes; its periods do.** That is why there is no `closePool` here and why the
+/// close hangs off a period id rather than a pool's.
+abstract final class InvestmentPoolEndpoints {
+  static const String pools = '/investment-pools';
+
+  static String pool(int id) => '/investment-pools/$id';
+
+  /// The pool's accounting periods. `POST` opens the next one — its dates come from the company
+  /// calendar and never from the caller — and lets in the capital queued for that boundary.
+  static String periods(int poolId) => '/investment-pools/$poolId/periods';
+
+  /// What a period made, and whether anything is holding its close up. The **same arithmetic**
+  /// the close then performs, so the screen that asks somebody to press the button prints the
+  /// figure the ledger will write.
+  static String periodFigures(int periodId) =>
+      '/investment-periods/$periodId/figures';
+
+  /// Who got what, once a period has been divided. **The frozen record**, not a fresh
+  /// calculation — empty while the period is still open.
+  static String periodShares(int periodId) =>
+      '/investment-periods/$periodId/shares';
+
+  /// Divides the period, releases profit into wallets, pays whoever asked to leave — and opens
+  /// the next period in the same breath. Irreversible.
+  static String closePeriod(int periodId) =>
+      '/investment-periods/$periodId/close';
+
+  /// Capital offered to the pool or asked back from it. Inside the grace window it is taken now;
+  /// outside it the request waits for the next boundary, which is what `capital_timing` on the
+  /// pool warns about **before** the form is submitted.
+  static String capitalRequests(int poolId) =>
+      '/investment-pools/$poolId/capital-requests';
+
+  static String cancelCapitalRequest(int requestId) =>
+      '/investment-capital-requests/$requestId';
+
+  /// What the pool may spend — book value less the goods it already holds. Undrawn profit is not
+  /// in it, and the screen shows the two figures and never their total.
+  static String deployableCash(int poolId) =>
+      '/investment-pools/$poolId/deployable-cash';
+
+  /// Material a cancelled printed order gave back, waiting for «صالحة أم تالفة». **This is the
+  /// list that holds a close up.**
+  static String returnedGoods(int poolId) =>
+      '/investment-pools/$poolId/returned-goods';
+
+  static String answerReturnedGoods(int questionId) =>
+      '/investment-returned-goods/$questionId/answer';
+
+  /// Where the pool's money is, worked out twice — once from the ledger, once by walking the
+  /// movements. The gap between them is `drift`, and a non-zero one is a finding.
+  static String settlementSnapshot(int poolId) =>
+      '/investment-pools/$poolId/settlement-snapshot';
+
+  /// `GET` the signed statements, `POST` a new one. Signing moves no money.
+  static String settlements(int poolId) =>
+      '/investment-pools/$poolId/settlements';
+
+  /// `GET` what has been charged to the pool, `POST` a new cost.
+  ///
+  /// A cost charged to the pool — storage, internal transport, and the like.
+  ///
+  /// **The same path a صفقة's expenses take**, and deliberately so: the server decides from the
+  /// container's own `kind` whether the cost is charged to a period or written as a loss on the
+  /// spot, so there is nothing for a second endpoint to do differently.
+  static String expenses(int poolId) => '/investor-deals/$poolId/expenses';
+
+  /// What has been charged, newest first. A separate path from the write because the write goes
+  /// through the container's own endpoint, which serves a صفقة and a صندوق alike.
+  static String poolExpenses(int poolId) => '/investment-pools/$poolId/expenses';
+
+  /// Which of a lorry's lines are bought with pool money. **No pool is named** — the material
+  /// decides, because each shelf belongs to exactly one.
+  static String poolPurchase(int purchaseOrderId) =>
+      '/purchase-orders/$purchaseOrderId/pool-purchase';
+}
+
+/// The company's editable defaults — the four numbers every صندوق runs on.
+///
+/// **One row, read and written whole.** They are read together on one screen and saved together
+/// by one button; a per-field endpoint would let a client save three and leave the fourth showing
+/// a value the server never took.
+abstract final class CompanySettingsEndpoints {
+  static const String settings = '/settings';
+}
+
 abstract final class HomeEndpoints {
   /// Four counts and one row per order status, in one call — they are read together and go
   /// stale together.

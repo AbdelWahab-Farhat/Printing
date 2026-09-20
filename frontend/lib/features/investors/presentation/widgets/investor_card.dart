@@ -31,7 +31,16 @@ class InvestorCard extends StatelessWidget {
       code: investor.code,
       icon: AppIcons.investors,
       tone: investor.isActive ? RegisterTone.investors : RegisterTone.muted,
-      badge: investor.isActive ? null : 'موقوف',
+      // **The company's row says so on its face.** It is a partner in every صندوق like anybody
+      // else, but it is not a person — and one switched off by somebody who took it for an
+      // ordinary investor would stop every pool paying the company, silently, at the next close.
+      // A stopped company row is the worst of both, so it says both.
+      badge: switch ((investor.isCompany, investor.isActive)) {
+        (true, true) => 'الشركة',
+        (true, false) => 'الشركة · موقوف',
+        (false, false) => 'موقوف',
+        (false, true) => null,
+      },
       onTap: onTap,
       fields: [
         RegisterField(

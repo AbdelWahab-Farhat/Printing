@@ -271,6 +271,15 @@ enum AppPermission {
   reverseInvestorMoney('investors.money.reverse', 'عكس حركة مالية لمستثمر'),
   recordDealExpenses('investor_deals.expenses.record', 'تسجيل مصاريف الصفقة'),
 
+  // صناديق الاستثمار. Two verbs split off `investors.manage`, because neither is «editing a
+  // pool»: closing a period **pays money out irreversibly**, and signing a settlement is putting
+  // a name to «these are the books». Whoever renames a صندوق is not necessarily either person.
+  closeInvestmentPeriods('investment_periods.close', 'إقفال فترات الاستثمار'),
+  recordInvestmentSettlements(
+    'investment_settlements.record',
+    'اعتماد تسويات الصناديق',
+  ),
+
   /// An investor's own account, and nothing else in the system.
   ///
   /// Held by the «مستثمر» role and by no employee. **An investor must never be granted

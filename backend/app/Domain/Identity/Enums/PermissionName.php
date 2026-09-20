@@ -256,6 +256,12 @@ enum PermissionName: string
     case RecordInvestorMoney = 'investors.money.record';
     case ReverseInvestorMoney = 'investors.money.reverse';
     case RecordDealExpenses = 'investor_deals.expenses.record';
+    // **Closing a period pays money out**, and that is not the same trust as naming a pool or
+    // editing its shelves. It divides a month's profit, writes losses down against capital, and
+    // releases the result into wallets it can be withdrawn from the same afternoon — the most
+    // irreversible act in the feature, so it has a grant of its own.
+    case CloseInvestmentPeriods = 'investment_periods.close';
+    case RecordInvestmentSettlements = 'investment_settlements.record';
     // What an investor's own account holds, and nothing else in the system. Granted to the
     // «مستثمر» role and to no employee — an investor holding `orders.view` would read every
     // order's cost and profit, which OrderResource publishes to anyone who has it.
@@ -423,6 +429,8 @@ enum PermissionName: string
             self::RecordInvestorMoney => 'تسجيل إيداع أو تمويل أو سحب لمستثمر',
             self::ReverseInvestorMoney => 'عكس حركة مالية لمستثمر',
             self::RecordDealExpenses => 'تسجيل مصاريف الصفقة',
+            self::CloseInvestmentPeriods => 'إقفال فترات الاستثمار',
+            self::RecordInvestmentSettlements => 'اعتماد تسويات الصناديق',
             self::ViewInvestorPortal => 'بوابة المستثمر — رأس ماله وأرباحه وحدها',
             self::ViewShortages => 'عرض النواقص',
             self::ManageShortages => 'إضافة وتعديل النواقص وتغيير حالتها',
@@ -502,7 +510,8 @@ enum PermissionName: string
             self::ReverseReceiptAnyTime => 'أوامر الشراء',
             self::ViewInvestors, self::ManageInvestors,
             self::RecordInvestorMoney, self::ReverseInvestorMoney,
-            self::RecordDealExpenses, self::ViewInvestorPortal => 'المستثمرون',
+            self::RecordDealExpenses, self::CloseInvestmentPeriods,
+            self::RecordInvestmentSettlements, self::ViewInvestorPortal => 'المستثمرون',
             self::ViewShortages, self::ManageShortages, self::AssignShortages,
             self::RecordShortageSupplies, self::ReverseShortageSupplies => 'النواقص',
             self::ViewDesignTickets, self::ViewAllDesignTickets, self::ManageDesignTickets,

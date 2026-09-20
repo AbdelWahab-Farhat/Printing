@@ -10,6 +10,7 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Identity\Models\User;
 use App\Domain\Investor\Actions\FundPurchaseOrder;
 use App\Domain\Investor\Enums\DealStatus;
+use App\Domain\Investor\Enums\PoolKind;
 use App\Domain\Investor\Support\Money;
 use Database\Factories\InvestorDealFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -22,6 +23,25 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
 /**
+ * A container for investors' money — and since 2026-09-20 there are two kinds of it.
+ *
+ * **`kind = 'pool'`** is صندوق: one continuous pool for one material, which never closes. Its
+ * **periods** close instead, and its ownership is recomputed from capital at each one. Everything
+ * new is a pool. See INVESTMENT-FUND-DESIGN.md.
+ *
+ * **`kind = 'deal'`** is صفقة, described in full below: one financed purchase of stock, opened
+ * against one purchase order and closed when its goods were gone. **Read-only from the day pools
+ * arrived, and never rewritten** — the terms on these rows are what was actually agreed, and the
+ * columns that freeze them (`investor_funded_percent`, `company_stake`, `printing_sale_price`,
+ * the frozen `share_percent` on its shares) go on meaning exactly what they meant. A deal still
+ * open at the migration was *folded into* a pool through the ordinary ledger and left closed
+ * here, rather than converted in place.
+ *
+ * Everything from here down describes the صفقة. {@see isPool()} is the one predicate that tells
+ * the two apart.
+ *
+ * ---
+ *
  * صفقة — one financed purchase of stock.
  *
  * **It holds no money and no quantity.** Everything a screen shows about it is derived: the
@@ -51,7 +71,7 @@ use Illuminate\Support\Facades\DB;
  * are kept apart by `order_items.stock_purchased_at`.
  */
 #[UseFactory(InvestorDealFactory::class)]
-#[Fillable(['opened_on', 'notes'])]
+#[Fillable(['name', 'opened_on', 'notes'])]
 class InvestorDeal extends Model implements HasAuditTrail
 {
     /** @use HasFactory<InvestorDealFactory> */
@@ -63,6 +83,7 @@ class InvestorDeal extends Model implements HasAuditTrail
     protected function casts(): array
     {
         return [
+            'kind' => PoolKind::class,
             'status' => DealStatus::class,
             'investor_profit_share_percent' => 'decimal:2',
             'company_stake' => 'decimal:2',
@@ -122,6 +143,68 @@ class InvestorDeal extends Model implements HasAuditTrail
     }
 
     /**
+     * The shelves a **pool** owns — always empty on a legacy deal, which uses {@see items()}.
+     *
+     * Kept apart from `items()` because the two answer different questions: `investor_deal_items`
+     * records what a deal was *written against*, quantities and expected prices included, while
+     * this is a bare claim whose only content is the unique index behind it.
+     *
+     * @return HasMany<InvestmentPoolItem, $this>
+     */
+    public function poolItems(): HasMany
+    {
+        return $this->hasMany(InvestmentPoolItem::class, 'investor_deal_id');
+    }
+
+    /**
+     * A **pool's** accounting periods, newest last. Always empty on a legacy deal, which had none:
+     * what closed there was the صفقة itself.
+     *
+     * @return HasMany<InvestmentPeriod, $this>
+     */
+    public function periods(): HasMany
+    {
+        return $this->hasMany(InvestmentPeriod::class, 'investor_deal_id');
+    }
+
+    /**
+     * Capital queued at this pool's boundaries, in both directions.
+     *
+     * @return HasMany<InvestmentCapitalRequest, $this>
+     */
+    public function capitalRequests(): HasMany
+    {
+        return $this->hasMany(InvestmentCapitalRequest::class, 'investor_deal_id');
+    }
+
+    /**
+     * Material a cancelled printed order gave back, and whether anybody has looked at it yet.
+     *
+     * Hung off the **pool** rather than off the period, deliberately: a question raised in
+     * September and still open in October blocks October's close too, because the goods are still
+     * either on the shelf or not. Tying it to the period it happened in would let it expire.
+     *
+     * @return HasMany<InvestmentReturnedGoodsQuestion, $this>
+     */
+    public function returnedGoodsQuestions(): HasMany
+    {
+        return $this->hasMany(InvestmentReturnedGoodsQuestion::class, 'investor_deal_id');
+    }
+
+    /**
+     * Signed statements of where this pool's money was, newest last.
+     *
+     * A settlement moves nothing and closes nothing — the pool trades on through it. What it leaves
+     * is a dated position somebody approved, and the drift between the two ways of deriving it.
+     *
+     * @return HasMany<InvestmentSettlement, $this>
+     */
+    public function settlements(): HasMany
+    {
+        return $this->hasMany(InvestmentSettlement::class, 'investor_deal_id');
+    }
+
+    /**
      * Who is in it, and for what percentage.
      *
      * @return HasMany<InvestorDealShare, $this>
@@ -153,6 +236,18 @@ class InvestorDeal extends Model implements HasAuditTrail
     public function walletEntries(): HasMany
     {
         return $this->hasMany(InvestorWalletEntry::class)->orderBy('occurred_at')->orderBy('id');
+    }
+
+    /**
+     * Whether this row is a continuous pool rather than one of the صفقات that came before.
+     *
+     * **The one predicate every «is this the old road or the new one?» question asks**, so that a
+     * behaviour which must differ between the two differs in one place. A legacy deal is not a
+     * pool that has been closed: it is a different arrangement, frozen as it was agreed.
+     */
+    public function isPool(): bool
+    {
+        return $this->kind === PoolKind::Pool;
     }
 
     /** Whether the terms may still be rewritten. */

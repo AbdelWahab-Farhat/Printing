@@ -67,6 +67,10 @@ import 'package:dayaa/features/comments/usecases/delete_comment.dart';
 import 'package:dayaa/features/comments/usecases/edit_comment.dart';
 import 'package:dayaa/features/comments/usecases/get_comments.dart';
 import 'package:dayaa/features/comments/usecases/mark_thread_read.dart';
+import 'package:dayaa/features/company_settings/presentation/viewmodel/company_settings_cubit.dart';
+import 'package:dayaa/features/company_settings/repositories/company_settings_repository.dart';
+import 'package:dayaa/features/company_settings/repositories/company_settings_repository_impl.dart';
+import 'package:dayaa/features/company_settings/usecases/company_settings_usecases.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/add_customer_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
@@ -95,6 +99,13 @@ import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/repositories/home_repository.dart';
 import 'package:dayaa/features/home/repositories/home_repository_impl.dart';
 import 'package:dayaa/features/home/usecases/get_home_summary.dart';
+import 'package:dayaa/features/investment_pools/presentation/viewmodel/investment_pools_cubit.dart';
+import 'package:dayaa/features/investment_pools/presentation/viewmodel/pool_detail_cubit.dart';
+import 'package:dayaa/features/investment_pools/presentation/viewmodel/pool_periods_cubit.dart';
+import 'package:dayaa/features/investment_pools/presentation/viewmodel/pool_settlements_cubit.dart';
+import 'package:dayaa/features/investment_pools/repositories/investment_pool_repository.dart';
+import 'package:dayaa/features/investment_pools/repositories/investment_pool_repository_impl.dart';
+import 'package:dayaa/features/investment_pools/usecases/investment_pool_usecases.dart';
 import 'package:dayaa/features/investor_portal/presentation/viewmodel/investor_portal_cubit.dart';
 import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository.dart';
 import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository_impl.dart';
@@ -356,6 +367,8 @@ abstract final class Injector {
     _registerHome();
     _registerInvestorPortal();
     _registerInvestors();
+    _registerInvestmentPools();
+    _registerCompanySettings();
     _registerProducts();
     _registerCities();
     _registerBusinessFields();
@@ -707,6 +720,134 @@ abstract final class Injector {
           getDeal: sl<GetInvestorDeal>(),
           changeState: sl<ChangeDealState>(),
           recordExpense: sl<RecordDealExpense>(),
+        ),
+      );
+  }
+
+  /// صناديق الاستثمار — the continuous pools that replaced the per-lorry صفقة.
+  ///
+  /// **Registered apart from `_registerInvestors`**, because the two models live side by side and
+  /// always will: a صفقة struck last year is read-only but still readable, and its screens go on
+  /// working off the other repository.
+  static void _registerInvestmentPools() {
+    sl
+      ..registerLazySingleton<InvestmentPoolRepository>(
+        () => InvestmentPoolRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetInvestmentPools>(
+        () => GetInvestmentPools(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<GetInvestmentPool>(
+        () => GetInvestmentPool(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<CreateInvestmentPool>(
+        () => CreateInvestmentPool(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<UpdateInvestmentPool>(
+        () => UpdateInvestmentPool(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<GetPoolPeriods>(
+        () => GetPoolPeriods(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<OpenInvestmentPeriod>(
+        () => OpenInvestmentPeriod(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<GetPeriodFigures>(
+        () => GetPeriodFigures(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<CloseInvestmentPeriod>(
+        () => CloseInvestmentPeriod(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<GetPeriodShares>(
+        () => GetPeriodShares(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<GetCapitalRequests>(
+        () => GetCapitalRequests(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<RequestPoolCapital>(
+        () => RequestPoolCapital(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<CancelCapitalRequest>(
+        () => CancelCapitalRequest(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<GetPoolDeployableCash>(
+        () => GetPoolDeployableCash(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<GetReturnedGoods>(
+        () => GetReturnedGoods(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<AnswerReturnedGoods>(
+        () => AnswerReturnedGoods(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<GetSettlementSnapshot>(
+        () => GetSettlementSnapshot(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<GetSettlements>(
+        () => GetSettlements(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<RecordSettlement>(
+        () => RecordSettlement(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<GetPoolExpenses>(
+        () => GetPoolExpenses(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<RecordPoolExpense>(
+        () => RecordPoolExpense(sl<InvestmentPoolRepository>()),
+      )
+      ..registerLazySingleton<BuyWithPoolMoney>(
+        () => BuyWithPoolMoney(sl<InvestmentPoolRepository>()),
+      )
+      // Factories: each screen owns its Cubit and closes it on dispose.
+      ..registerFactory<InvestmentPoolsCubit>(
+        () => InvestmentPoolsCubit(getPools: sl<GetInvestmentPools>()),
+      )
+      ..registerFactory<PoolDetailCubit>(
+        () => PoolDetailCubit(
+          getPool: sl<GetInvestmentPool>(),
+          getCash: sl<GetPoolDeployableCash>(),
+          getReturnedGoods: sl<GetReturnedGoods>(),
+          answerReturnedGoods: sl<AnswerReturnedGoods>(),
+          requestCapital: sl<RequestPoolCapital>(),
+          cancelCapitalRequest: sl<CancelCapitalRequest>(),
+          getCapitalRequests: sl<GetCapitalRequests>(),
+          getExpenses: sl<GetPoolExpenses>(),
+        ),
+      )
+      ..registerFactory<PoolPeriodsCubit>(
+        () => PoolPeriodsCubit(
+          getPeriods: sl<GetPoolPeriods>(),
+          openPeriod: sl<OpenInvestmentPeriod>(),
+          getFigures: sl<GetPeriodFigures>(),
+          getShares: sl<GetPeriodShares>(),
+          closePeriod: sl<CloseInvestmentPeriod>(),
+        ),
+      )
+      ..registerFactory<PoolSettlementsCubit>(
+        () => PoolSettlementsCubit(
+          getSnapshot: sl<GetSettlementSnapshot>(),
+          getSettlements: sl<GetSettlements>(),
+          recordSettlement: sl<RecordSettlement>(),
+        ),
+      );
+  }
+
+  /// إعدادات الشركة — the four numbers every صندوق runs on.
+  static void _registerCompanySettings() {
+    sl
+      ..registerLazySingleton<CompanySettingsRepository>(
+        () => CompanySettingsRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetCompanySettings>(
+        () => GetCompanySettings(sl<CompanySettingsRepository>()),
+      )
+      ..registerLazySingleton<UpdateCompanySettings>(
+        () => UpdateCompanySettings(sl<CompanySettingsRepository>()),
+      )
+      // Factory: the screen owns its Cubit and closes it on dispose.
+      ..registerFactory<CompanySettingsCubit>(
+        () => CompanySettingsCubit(
+          getSettings: sl<GetCompanySettings>(),
+          updateSettings: sl<UpdateCompanySettings>(),
         ),
       );
   }

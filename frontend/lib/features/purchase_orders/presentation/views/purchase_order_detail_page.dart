@@ -10,6 +10,7 @@ import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/investment_pools/presentation/widgets/pool_purchase_sheet.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
 import 'package:dayaa/features/purchase_orders/presentation/widgets/receive_arrival_sheet.dart';
@@ -126,6 +127,30 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
     await cubit.load();
   }
 
+  /// Marks lines of this order as bought with a صندوق's money.
+  ///
+  /// **No pool is chosen.** Each material belongs to exactly one, so the sheet asks only which
+  /// lines — and the storekeeper is still asked nothing at receipt.
+  Future<void> _buyWithPoolMoney(BuildContext context) async {
+    final cubit = context.read<PurchaseOrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    if (order.items.isEmpty) {
+      context.showInfo('أضف بنود الأمر أولاً — الشراء يقف على ما تشتريه');
+
+      return;
+    }
+
+    final claimed = await showPoolPurchaseSheet(context: context, order: order);
+
+    if (!claimed || !context.mounted) return;
+
+    // Re-read: the order itself did not change, but its lines now carry a claim the server is the
+    // one that knows about.
+    await cubit.load();
+  }
+
   Future<void> _receive(BuildContext context) async {
     final cubit = context.read<PurchaseOrderDetailCubit>();
     final order = cubit.state.order;
@@ -214,6 +239,7 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
                 onReceive: _receive,
                 onReverseReceipt: _reverseReceipt,
                 onFund: _fund,
+                onBuyWithPoolMoney: _buyWithPoolMoney,
               );
             },
           ),
@@ -255,6 +281,7 @@ class _Actions extends StatelessWidget {
     required this.onReceive,
     required this.onReverseReceipt,
     required this.onFund,
+    required this.onBuyWithPoolMoney,
   });
 
   final PurchaseOrder order;
@@ -263,6 +290,7 @@ class _Actions extends StatelessWidget {
   final Future<void> Function(BuildContext context) onReceive;
   final Future<void> Function(BuildContext context) onReverseReceipt;
   final Future<void> Function(BuildContext context) onFund;
+  final Future<void> Function(BuildContext context) onBuyWithPoolMoney;
 
   @override
   Widget build(BuildContext context) {
@@ -303,6 +331,18 @@ class _Actions extends StatelessWidget {
             onTap: onReverseReceipt,
           ),
         // Only while nothing has arrived: who paid for goods is declared before they land.
+        //
+        // **Two entries, because they are two different models.** «تمويل مستثمرين» strikes a صفقة
+        // around this order — partners, amounts, percentages. «الشراء من مال الصناديق» spends a
+        // pool that already exists, and asks only which lines. Everything new goes the second way.
+        if (order.status.isEditable)
+          AppAction(
+            label: 'الشراء من مال الصناديق',
+            icon: AppIcons.investors,
+            tone: AppActionTone.primary,
+            permission: AppPermission.manageInvestors,
+            onTap: onBuyWithPoolMoney,
+          ),
         if (order.status.isEditable)
           AppAction(
             label: 'تمويل مستثمرين',

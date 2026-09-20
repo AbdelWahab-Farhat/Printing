@@ -54,7 +54,7 @@ final class PostDealEarningsForOrder
     public function __construct(
         private readonly OrderService $orders,
         private readonly InventoryService $inventory,
-        private readonly PostDealShare $postShare,
+        private readonly PostContainerResult $postResult,
     ) {}
 
     /**
@@ -122,17 +122,19 @@ final class PostDealEarningsForOrder
     /**
      * Turns one deal's slice into one row per investor.
      *
-     * The slice is what the deal's goods earned, all of it; {@see InvestorDeal::investorsCutOf()}
-     * takes the partners' fraction of it — the goods their money bought, and their half of what
-     * that fraction made — and {@see PostDealShare} turns the result into ledger rows.
+     * The slice is what the container's goods earned, all of it, and it is handed on **undivided**:
+     * {@see PostContainerResult} knows which road this container is on. A legacy صفقة has its
+     * partners' fraction taken now, by {@see InvestorDeal::investorsCutOf()}, because its
+     * percentages were frozen when its lorry was funded. A صندوق banks the whole figure against its
+     * open period and divides it at the close, when its capital weight is finally known.
      *
      * @return list<InvestorWalletEntry>
      */
     private function rowsFor(InvestorDeal $deal, string $slice, int $orderId): array
     {
-        return ($this->postShare)(
+        return ($this->postResult)(
             $deal,
-            $deal->investorsCutOf($slice),
+            $slice,
             AuditSubject::Order->value,
             $orderId,
             'تصحيح إسناد ربح الطلبية',

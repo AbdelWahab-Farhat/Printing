@@ -28,6 +28,12 @@ class InvestorResource extends JsonResource
             'notes' => $this->notes,
             'is_active' => (bool) $this->is_active,
 
+            // **The company's own row, and a screen must say so.** It is a partner in every pool
+            // like anybody else — it takes a capital weight and it takes the operator's cut — but
+            // it is not a person, and one renamed or switched off by somebody who thought it was
+            // would stop every pool paying the company, silently, at the next close.
+            'is_company' => (bool) $this->is_company,
+
             // Whether he can sign in. A fact about the row rather than a role name, so renaming
             // the role cannot change what the app believes.
             'has_login' => $this->user_id !== null,

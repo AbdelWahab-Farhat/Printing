@@ -86,7 +86,19 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [STOCK-UNIT-AND-READY-DEDUCTION-BACKEND-CHANGES.md](inventory/STOCK-UNIT-AND-READY-DEDUCTION-BACKEND-CHANGES.md) | Settable stock unit, fulfilment moved to «جاهزة» — backend. |
 | [STOCK-UNIT-AND-READY-DEDUCTION-FRONTEND-INTEGRATION.md](inventory/STOCK-UNIT-AND-READY-DEDUCTION-FRONTEND-INTEGRATION.md) | The same change in the Flutter app. |
 
+## [investment-fund/](investment-fund/)
+
+| Document | |
+|---|---|
+| [INVESTMENT-FUND-DESIGN.md](investment-fund/INVESTMENT-FUND-DESIGN.md) | Continuous per-material pools replacing per-deal investment — periods, settlements, ownership. **Being built** on `investment-pools`. Supersedes `investor-deals/` for all new work. |
+| [INVESTMENT-FUND-HOW-IT-WORKS.md](investment-fund/INVESTMENT-FUND-HOW-IT-WORKS.md) | كيف يعمل النظام — the flow end to end, with worked numbers for every scenario. **Start here.** |
+| [INVESTMENT-FUND-PLAN.md](investment-fund/INVESTMENT-FUND-PLAN.md) | The build plan — six slices, what each migrates, builds and must prove. Read after the design. |
+
 ## [investor-deals/](investor-deals/)
+
+**بُدِّل بـ[investment-fund/](investment-fund/).** الصفقة باقية ولم تُمسّ — القائم منها يُقرأ ويُحسب
+كما تصف هذه الملفات — لكن التمويل الجديد كلّه يمرّ بالصندوق. اقرأها لتفهم ما هو قائم، لا لتبني
+عليها.
 
 | Document | |
 |---|---|

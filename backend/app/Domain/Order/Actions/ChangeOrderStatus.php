@@ -15,6 +15,7 @@ use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
+use App\Domain\Order\Events\OrderStockReturned;
 use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\OrderIsDeletedForStatusChange;
@@ -878,5 +879,12 @@ final class ChangeOrderStatus
         }
 
         ($this->reverseStockDeduction)($order->loadMissing('items'), (int) $actor->getKey());
+
+        // **The goods are back on the shelf — but nobody knows yet whether they are usable.**
+        // A printed line's material comes back credited as good stock, and paper that has been
+        // through a press is not. Investment raises the question and blocks its period's close
+        // until somebody answers it. Announced rather than called, for the reason every other
+        // Orders→Investment hop here is announced: the dependency runs one way.
+        OrderStockReturned::dispatch((int) $order->getKey());
     }
 }

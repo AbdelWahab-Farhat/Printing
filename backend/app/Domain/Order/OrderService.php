@@ -18,10 +18,10 @@ use App\Domain\Order\Actions\ReinstateCancelledOrder;
 use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\ReviewOrderDesign;
 use App\Domain\Order\Actions\SetOrderShortages;
-use App\Domain\Order\DTOs\LineShortage;
 use App\Domain\Order\Actions\UpdateManufacturingCostRate;
 use App\Domain\Order\Actions\UpdateOrder;
 use App\Domain\Order\Actions\WriteOffOrderBalance;
+use App\Domain\Order\DTOs\LineShortage;
 use App\Domain\Order\DTOs\ManufacturingCostRateData;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderLineShortage;
@@ -49,6 +49,7 @@ use App\Domain\Order\Queries\OrderStatusCountsQuery;
 use App\Domain\Order\Queries\OrderStockShortfallQuery;
 use App\Domain\Order\Queries\OrderTotalsQuery;
 use App\Domain\Order\Queries\ProfitAttributionQuery;
+use App\Domain\Order\Queries\ReturnedMaterialQuery;
 use App\Domain\Order\Queries\StockPurchaseAttributionQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -85,6 +86,7 @@ class OrderService
         private readonly OrderListQuery $listQuery,
         private readonly ProfitAttributionQuery $profitAttribution,
         private readonly StockPurchaseAttributionQuery $stockPurchaseAttribution,
+        private readonly ReturnedMaterialQuery $returnedMaterial,
         private readonly OrderCountQuery $count,
         private readonly OrderStockShortfallQuery $stockShortfall,
         private readonly OrderStatusCountsQuery $statusCounts,
@@ -402,6 +404,20 @@ class OrderService
     public function stockPurchaseAttributionFor(int $orderId): array
     {
         return ($this->stockPurchaseAttribution)($orderId);
+    }
+
+    /**
+     * The lines of a cancelled order whose material went back to a shelf.
+     *
+     * Read by Investment to ask whether what came back is still usable: a printed line's material is
+     * credited back **as good stock**, and paper that has been through a press is not. Carries
+     * `is_printed` per line — the line's own answer, never the order's.
+     *
+     * @return list<array{line_id: int, movement_id: int, stock_item_id: ?int, is_printed: bool}>
+     */
+    public function returnedMaterialFor(int $orderId): array
+    {
+        return ($this->returnedMaterial)($orderId);
     }
 
     /**

@@ -22,6 +22,7 @@ import 'package:dayaa/features/cities/presentation/views/cities_page.dart';
 import 'package:dayaa/features/cities/presentation/views/city_regions_page.dart';
 import 'package:dayaa/features/comments/models/comment_subject.dart';
 import 'package:dayaa/features/comments/presentation/views/comments_page.dart';
+import 'package:dayaa/features/company_settings/presentation/views/company_settings_page.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/presentation/views/add_customer_page.dart';
 import 'package:dayaa/features/customers/presentation/views/customer_designs_page.dart';
@@ -31,6 +32,10 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_d
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_form_page.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_page.dart';
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
+import 'package:dayaa/features/investment_pools/presentation/views/investment_pools_page.dart';
+import 'package:dayaa/features/investment_pools/presentation/views/pool_detail_page.dart';
+import 'package:dayaa/features/investment_pools/presentation/views/pool_periods_page.dart';
+import 'package:dayaa/features/investment_pools/presentation/views/pool_settlements_page.dart';
 import 'package:dayaa/features/investor_portal/presentation/views/investor_portal_page.dart';
 import 'package:dayaa/features/investors/presentation/views/deal_detail_page.dart';
 import 'package:dayaa/features/investors/presentation/views/deal_orders_page.dart';
@@ -133,6 +138,29 @@ abstract final class Routes {
   /// **Registered before `/investor-deals/:id`**, or a bare `:id` swallows the segment behind it
   /// and hands «7/orders» to `int.parse`.
   static String investorDealOrders(int id) => '/investor-deals/$id/orders';
+
+  /// صناديق الاستثمار — the continuous pools that replaced the per-lorry صفقة.
+  ///
+  /// **Kept separate from [investorDeals] for good.** A صفقة struck last year is read-only but
+  /// still readable, and its screens go on working; the server binds `{pool}` to `kind = 'pool'`
+  /// so neither path can ever resolve to the other's row.
+  static const String investmentPools = '/investment-pools';
+
+  /// The four numbers every صندوق runs on. **Its own screen, not a section of الإعدادات** —
+  /// that one is device preferences and the way out, and a company default is neither.
+  static const String companySettings = '/company-settings';
+
+  static String investmentPool(int id) => '/investment-pools/$id';
+
+  /// A pool's periods — **what actually closes**, since the pool itself never does.
+  ///
+  /// **Registered before `/investment-pools/:id`**, or a bare `:id` swallows the segment behind
+  /// it and hands «7/periods» to `int.parse`.
+  static String investmentPoolPeriods(int id) => '/investment-pools/$id/periods';
+
+  /// Where the pool's money is, and every position somebody has signed.
+  static String investmentPoolSettlements(int id) =>
+      '/investment-pools/$id/settlements';
   static const String orders = '/orders';
 
   /// The orders behind one number on the home screen. Takes an [OrdersFilter] as `extra` — the
@@ -542,6 +570,34 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.investorDeals,
         builder: (context, state) => const InvestorDealsPage(),
+      ),
+      GoRoute(
+        path: Routes.investmentPools,
+        builder: (context, state) => const InvestmentPoolsPage(),
+      ),
+      GoRoute(
+        path: Routes.companySettings,
+        builder: (context, state) => const CompanySettingsPage(),
+      ),
+      // **Both registered before `/investment-pools/:id`**, or a bare `:id` swallows the segment
+      // behind it and hands «7/periods» to `int.parse`.
+      GoRoute(
+        path: '/investment-pools/:id/periods',
+        builder: (context, state) => PoolPeriodsPage(
+          poolId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/investment-pools/:id/settlements',
+        builder: (context, state) => PoolSettlementsPage(
+          poolId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/investment-pools/:id',
+        builder: (context, state) => PoolDetailPage(
+          poolId: int.parse(state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/investor-deals/:id/orders',

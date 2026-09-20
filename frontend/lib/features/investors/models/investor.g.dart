@@ -13,6 +13,7 @@ _Investor _$InvestorFromJson(Map<String, dynamic> json) => _Investor(
   phone: json['phone'] as String?,
   notes: json['notes'] as String?,
   isActive: json['is_active'] as bool? ?? true,
+  isCompany: json['is_company'] as bool? ?? false,
   hasLogin: json['has_login'] as bool? ?? false,
   totals: json['totals'] == null
       ? null
@@ -29,6 +30,7 @@ Map<String, dynamic> _$InvestorToJson(_Investor instance) => <String, dynamic>{
   'phone': instance.phone,
   'notes': instance.notes,
   'is_active': instance.isActive,
+  'is_company': instance.isCompany,
   'has_login': instance.hasLogin,
   'totals': instance.totals?.toJson(),
   'balances': instance.balances?.toJson(),

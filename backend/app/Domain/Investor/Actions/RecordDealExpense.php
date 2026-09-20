@@ -6,10 +6,13 @@ namespace App\Domain\Investor\Actions;
 
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Investor\DTOs\DealExpenseData;
+use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Enums\WalletEntryType;
+use App\Domain\Investor\Models\InvestmentPeriod;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorDealExpense;
 use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Investor\Queries\PeriodNetProfit;
 use App\Domain\Investor\Support\Money;
 use Illuminate\Support\Facades\DB;
 
@@ -20,6 +23,11 @@ use Illuminate\Support\Facades\DB;
  * are what actually move anybody's money. Keeping both means the deal's profit is one walk of one
  * ledger whatever produced the numbers: a sale, a spoiled pallet, or a customs invoice that
  * turned up late.
+ *
+ * **A pool's expense takes a different road from this point.** It is charged to a *period* and
+ * subtracted once, at the close, by {@see PeriodNetProfit} — never
+ * written as `loss` rows here. A pool does not know anybody's share until its period ends, and
+ * charging it now would take the investors' cut twice.
  *
  * `is_landed` is false for everything a person records. Shipping and customs typed on a purchase
  * order are already inside the cost of the layers that arrived — proportioned into
@@ -45,12 +53,60 @@ final class RecordDealExpense
             $expense->investor_deal_id = $locked->getKey();
             $expense->is_landed = false;
             $expense->recorded_by = $actorId;
+
+            if ($locked->isPool()) {
+                // **A pool's expense is charged to a period, not to anybody's ledger.** Nobody's
+                // share is known until the close, so the cost waits in `PeriodNetProfit`'s
+                // subtraction with the damage and the shortage. Writing `loss` rows here would take
+                // the investors' cut twice: once now, and again when the period divides a net
+                // profit that had already been reduced by it.
+                $expense->investment_period_id = $this->periodFor($locked, (string) $expense->incurred_on?->toDateString());
+                $expense->save();
+
+                return $expense;
+            }
+
             $expense->save();
 
             $this->chargeInvestors($locked, $expense);
 
             return $expense;
         });
+    }
+
+    /**
+     * Which period a pool's expense is charged to.
+     *
+     * The period covering `incurred_on` when that period is still **open**; otherwise the period
+     * that is open now.
+     *
+     * **A closed period is immutable**, so an invoice that turns up in October bearing a September
+     * date is charged to October — keeping its true `incurred_on`, and carrying a note that says
+     * where it was meant for. September's profit has been divided and paid into wallets it can be
+     * withdrawn from; reaching back into it would be rewriting a figure somebody has already spent.
+     *
+     * Recorded on the row rather than derived at read time, because deriving it would put that
+     * invoice back into September every time a screen was redrawn, and the period's frozen snapshot
+     * and its live figures would disagree for ever.
+     */
+    private function periodFor(InvestorDeal $pool, string $incurredOn): ?int
+    {
+        $covering = InvestmentPeriod::query()
+            ->where('investor_deal_id', $pool->getKey())
+            ->whereDate('starts_on', '<=', $incurredOn)
+            ->whereDate('ends_on', '>=', $incurredOn)
+            ->first();
+
+        if ($covering !== null && $covering->isOpen()) {
+            return (int) $covering->getKey();
+        }
+
+        $open = InvestmentPeriod::query()
+            ->where('investor_deal_id', $pool->getKey())
+            ->where('status', PeriodStatus::Open->value)
+            ->first();
+
+        return $open === null ? null : (int) $open->getKey();
     }
 
     /**

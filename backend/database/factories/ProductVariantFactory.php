@@ -15,16 +15,17 @@ class ProductVariantFactory extends Factory
     /** @var class-string<ProductVariant> */
     protected $model = ProductVariant::class;
 
-    /** A label is unique per product; a counter keeps generated ones from colliding. */
-    private static int $labelSequence = 0;
-
     /**
      * @return array<string, mixed>
      */
     public function definition(): array
     {
-        $width = 20 + (++self::$labelSequence % 40);
-        $height = $width + 10;
+        // Drawn from {@see StockItemFactory} rather than from a counter of its own. A label is
+        // unique per product, which a local counter handled; the **shelf** this then mints at the
+        // same size is unique across the whole table, which it did not — two independent sequences
+        // issued the same `(name, width, height)` pair, and a test that created a bare shelf beside
+        // a variant died on `stock_items_name_size_unique` for no reason it could see.
+        [$width, $height] = StockItemFactory::nextSize();
 
         return [
             'product_id' => Product::factory(),
