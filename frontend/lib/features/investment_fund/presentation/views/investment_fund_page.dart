@@ -1,6 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -215,61 +216,76 @@ class _Period extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'الفترة ${period.code} — ${period.statusLabel}',
-            style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          SizedBox(height: 10.h),
-          Text(
-            '${period.startsOn} ← ${period.endsOn}',
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.bodyMedium,
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            'الاكتتاب مفتوح حتى ${period.subscriptionClosesOn}',
-            style: context.textTheme.bodyMedium,
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            'حصة المستثمرين ${period.investorProfitSharePercent}%',
-            style: context.textTheme.bodyMedium,
-          ),
-          if (period.overrideReason case final reason?) ...[
-            SizedBox(height: 12.h),
-            Text('أُقفلت بتجاوز: $reason', style: context.textTheme.bodyMedium),
-          ],
-          if (period.isDueToClose) ...[
-            SizedBox(height: 12.h),
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(12.w),
-              decoration: BoxDecoration(
-                color: scheme.errorContainer,
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Text(
-                'حلّ موعد إقفالها — تُقفَل متى سُلِّمت آخرُ طلبياتها',
-                style: context.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer),
-              ),
+    // **البطاقةُ بابٌ لا لافتة.** الأرقامُ التي تحتها — المبيعات، وصافي الربح، ونصيبُ كلٍّ —
+    // صحيحةٌ ولا تقول من أين جاءت؛ وصفحةُ الفترة تفتحها على الطلبيات التي صنعتها. وكان الطريقُ
+    // الوحيد إليها «سجل الفترات»، فيمرّ من يقرأ الفترةَ الجارية أمامه ولا يعرف أنها تُفتح.
+    return InkWell(
+      onTap: () => context.push(Routes.investmentPeriod(period.id), extra: period.code),
+      borderRadius: BorderRadius.circular(16.r),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'الفترة ${period.code} — ${period.statusLabel}',
+                    style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                // السهمُ هو ما يقول إنها تُفتح — بلا كلمةٍ تحتها تشرح ذلك.
+                Icon(AppIcons.forward, size: 20.sp, color: scheme.onSurfaceVariant),
+              ],
             ),
-            SizedBox(height: 12.h),
-            const PermissionGate(
-              permission: AppPermission.manageInvestors,
-              child: _CloseButton(),
+            SizedBox(height: 10.h),
+            Text(
+              '${period.startsOn} ← ${period.endsOn}',
+              textDirection: TextDirection.ltr,
+              style: context.textTheme.bodyMedium,
             ),
+            SizedBox(height: 8.h),
+            Text(
+              'الاكتتاب مفتوح حتى ${period.subscriptionClosesOn}',
+              style: context.textTheme.bodyMedium,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'حصة المستثمرين ${period.investorProfitSharePercent}%',
+              style: context.textTheme.bodyMedium,
+            ),
+            if (period.overrideReason case final reason?) ...[
+              SizedBox(height: 12.h),
+              Text('أُقفلت بتجاوز: $reason', style: context.textTheme.bodyMedium),
+            ],
+            if (period.isDueToClose) ...[
+              SizedBox(height: 12.h),
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: scheme.errorContainer,
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Text(
+                  'حلّ موعد إقفالها — تُقفَل متى سُلِّمت آخرُ طلبياتها',
+                  style: context.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer),
+                ),
+              ),
+              SizedBox(height: 12.h),
+              const PermissionGate(
+                permission: AppPermission.manageInvestors,
+                child: _CloseButton(),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

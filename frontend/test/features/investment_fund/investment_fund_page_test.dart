@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
@@ -373,4 +374,45 @@ void main() {
     // Assert — بلا صلاحيةٍ في الجلسة: القراءةُ ليست خلف `manage`، ومن يرى اللوحة يرى سجلَّها.
     expect(find.text('سجل الفترات'), findsOneWidget);
   });
+  testWidgets('the running period card is a door into the period itself', (tester) async {
+    // Arrange — الأرقامُ على البطاقة صحيحةٌ ولا تقول من أين جاءت. وكان الطريقُ الوحيد إلى
+    // تفصيلها «سجل الفترات»، فيمرّ من يقرأ الفترةَ الجارية أمامه ولا يعرف أنها تُفتح.
+    await register(
+      const FundStanding(
+        valuation: _valuation,
+        period: FundPeriod(
+          id: 7,
+          code: 'P7',
+          status: 'open',
+          statusLabel: 'مفتوحة',
+          startsOn: '2026-09-20',
+          endsOn: '2026-10-19',
+          subscriptionClosesOn: '2026-09-26',
+          isDueToClose: false,
+          periodMonths: 1,
+          investorProfitSharePercent: '50.00',
+          openingStockCost: '0.00',
+          openingCash: '0.00',
+        ),
+      ),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — بطاقةٌ تُنقر، وسهمٌ يقول ذلك قبل أن يجرّب أحد.
+    final card = find.ancestor(
+      of: find.text('الفترة P7 — مفتوحة'),
+      matching: find.byType(InkWell),
+    );
+
+    expect(card, findsOneWidget);
+    expect(tester.widget<InkWell>(card).onTap, isNotNull);
+    expect(
+      find.descendant(of: card, matching: find.byIcon(AppIcons.forward)),
+      findsOneWidget,
+    );
+  });
+
 }
