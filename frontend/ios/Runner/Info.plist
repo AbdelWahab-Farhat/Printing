@@ -14,7 +14,13 @@
 		القيمة واحدة لكل الأجهزة مهما كانت لغة النظام، وهو المقصود.
 	-->
 		<key>CFBundleDisplayName</key>
-		<string>دعاية</string>
+		<!--
+		متغيّرٌ لا نصّ: نكهةُ الاختبار يجب أن تحمل اسماً آخر تحت الأيقونة، وهذا الملفُّ واحدٌ
+		للنكهتين. القيمةُ الفعلية في `APP_DISPLAY_NAME` على كل تهيئة — «دعاية» للإنتاج
+		و«دعاية تجريبي» لـ`*-dev`. و`INFOPLIST_KEY_CFBundleDisplayName` لا ينفع هنا: لا يقرؤه
+		Xcode إلا حين يولّد الـplist بنفسه، ومشروع Flutter يشير إلى ملفٍّ صريح.
+	-->
+		<string>$(APP_DISPLAY_NAME)</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
