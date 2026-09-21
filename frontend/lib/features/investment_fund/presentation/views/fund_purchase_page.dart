@@ -18,7 +18,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// الجوابُ واحدٌ لكلّها: **الصندوقُ يدفع الثمن كلَّه**، والنسبُ وحداتٌ تُقرأ لكل فترة، ولا صفقةَ
 /// تُولد أصلاً.
 ///
-/// فما بقي سؤالان: أيَّ الرفوف يأخذ، وهل في الدرج ما يكفي.
+/// فما بقي ثلاثة: أيَّ الرفوف يأخذ، وهل في الدرج ما يكفي، وبكم تشتري المطبعةُ سادةَ كلِّ رفّ.
+///
+/// **وسعرُ السادة يُكتب هنا أو لا يُكتب أبداً.** هو شرطُ شراءٍ يُجمَّد على السطر لحظةَ المطالبة
+/// به، فلا شاشةَ ثانية تعدّله بعد أن تصير البضاعةُ طبقةَ تكلفة. ورفٌّ يُترك حقلُه فارغاً يمشي
+/// على الطريق الآخر — يركب البيعَ إلى التسليم — وهو ما كان يفعله كلُّ رفٍّ قبل اليوم.
 class FundPurchasePage extends StatefulWidget {
   const FundPurchasePage({required this.order, super.key});
 
@@ -33,6 +37,14 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
     for (final line in widget.order.items) line.stockItemId,
   };
 
+  /// حقلُ سعر السادة لكل رفّ — واحدٌ لكل سطر، يعيش ما دامت الشاشة.
+  ///
+  /// **يُبنى للسطور كلِّها لا للمختار وحده**: بناؤه عند أول ظهورٍ كان يعني حقلاً جديداً — وقيمةً
+  /// ضائعة — كلَّما رُفع الصحُّ عن رفٍّ ثم أُعيد.
+  late final Map<int, TextEditingController> _prices = {
+    for (final line in widget.order.items) line.stockItemId: TextEditingController(),
+  };
+
   FundStanding? _standing;
   bool _loading = true;
   bool _saving = false;
@@ -41,6 +53,15 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _prices.values) {
+      controller.dispose();
+    }
+
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -76,10 +97,20 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
 
     setState(() => _saving = true);
 
+    // الرفُّ المختار بسعرٍ مكتوبٍ وحده يُرسَل سعرَه؛ والفارغُ لا مفتاحَ له أصلاً، فيقرأه الخادمُ
+    // «لا سعر» لا «صفر» — والصفرُ يسلّم المطبعةَ البضاعةَ بلا ثمن.
+    final prices = <String, String>{
+      for (final id in _chosen)
+        if ((_prices[id]?.text.trim() ?? '').isNotEmpty) '$id': _prices[id]!.text.trim(),
+    };
+
     final result = await safeRequest<void>(
       () => sl<Dio>().post(
         InvestmentEndpoints.fundPurchase(widget.order.id),
-        data: {'stock_item_ids': _chosen.toList()},
+        data: {
+          'stock_item_ids': _chosen.toList(),
+          if (prices.isNotEmpty) 'printing_sale_prices': prices,
+        },
       ),
       parse: (_) {},
     );
@@ -134,7 +165,7 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
                   style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 SizedBox(height: 8.h),
-                for (final line in widget.order.items)
+                for (final line in widget.order.items) ...[
                   CheckboxListTile(
                     value: _chosen.contains(line.stockItemId),
                     title: Text(line.title),
@@ -150,6 +181,25 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
                       }
                     }),
                   ),
+                  // الحقلُ تحت رفِّه لا في شاشةٍ ثانية: السعرُ يخصّ هذا الرفَّ وحده، ومن يكتبه
+                  // يحتاج أن يرى تكلفتَه فوقه — فالبيعُ بأقلّ منها خسارةٌ يكتبها بيده.
+                  if (_chosen.contains(line.stockItemId))
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
+                      child: TextField(
+                        controller: _prices[line.stockItemId],
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        textDirection: TextDirection.ltr,
+                        decoration: InputDecoration(
+                          labelText: 'سعر السادة للوحدة — اختياري',
+                          helperText: 'يُترك فارغاً فيبقى الربح على البيع إلى التسليم',
+                          helperMaxLines: 2,
+                          suffixText: 'د.ل',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+                        ),
+                      ),
+                    ),
+                ],
                 SizedBox(height: 20.h),
                 AppButton(
                   label: 'شراء بمال الصندوق',

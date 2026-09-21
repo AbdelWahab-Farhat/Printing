@@ -170,18 +170,39 @@ class InvestmentFundController extends Controller
 
     /**
      * Buy a purchase order with the fund's cash
+     *
+     * **وسعرُ السادة يُسأل هنا أو لا يُسأل أبداً.** هو شرطُ شراءٍ يُجمَّد على السطر لحظةَ
+     * المطالبة به، فلا موضعَ ثانياً يُكتب فيه بعد أن تصير البضاعةُ طبقةَ تكلفة.
      */
     public function purchase(Request $request, int $purchase_order): JsonResponse
     {
         $validated = $request->validate([
             'stock_item_ids' => ['nullable', 'array'],
             'stock_item_ids.*' => ['integer', 'exists:stock_items,id'],
+
+            // **سعرُ السادة لكل رفّ، والمفتاحُ رقمُ المادة.** رفٌّ بلا سعرٍ هنا يمشي على الطريق
+            // الآخر — يركب البيعَ إلى التسليم — وهو ما كان يفعله كلُّ رفٍّ قبل اليوم، فالغيابُ
+            // هو التصرّف القديم بعينه لا نقصاً في الطلب.
+            //
+            // و`min:0.001` لا `min:0`: صفرٌ يمرّ من التحقّق ثم يصطدم بـCHECK في قاعدة البيانات
+            // فيخرج 500 بدل رسالةٍ يقرأها إنسان. نفسُ حدّ {@see FundPurchaseOrderRequest}.
+            'printing_sale_prices' => ['nullable', 'array'],
+            'printing_sale_prices.*' => ['nullable', 'numeric', 'min:0.001', 'max:999999999'],
         ]);
+
+        $prices = [];
+
+        foreach ($validated['printing_sale_prices'] ?? [] as $stockItemId => $price) {
+            if ($price !== null && $price !== '') {
+                $prices[(int) $stockItemId] = (string) $price;
+            }
+        }
 
         $deal = ($this->purchase)(
             $purchase_order,
             $validated['stock_item_ids'] ?? null,
             $request->user()?->id,
+            $prices,
         );
 
         return $this->success(

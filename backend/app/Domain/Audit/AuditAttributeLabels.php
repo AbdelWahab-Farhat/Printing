@@ -541,6 +541,9 @@ final class AuditAttributeLabels
             'investor_deal_id' => 'الصفقة',
             'source_type' => 'نوع المستند',
             'source_id' => 'رقم المستند',
+            // سعر السادة لهذا الرفّ وحده. على السطر لا على الصفقة، لأن الصندوق صفقةٌ واحدةٌ
+            // أبداً — وعمودٌ عليه كان سعراً واحداً لكل مادةٍ يملكها ما دام.
+            'printing_sale_price' => 'سعر بيع السادة للطباعة',
             'claimed_by' => 'أقرّها',
         ],
         'investor_deal_expense' => [

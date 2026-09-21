@@ -20,8 +20,16 @@ use App\Domain\Investor\Models\InvestorDealSupply;
  */
 final class ClaimDealSupply
 {
-    public function __invoke(InvestorDeal $deal, int $sourceId, int $stockItemId, ?int $actorId): InvestorDealSupply
-    {
+    /**
+     * @param  string|null  $printingSalePrice  سعر السادة لهذا السطر — أو null فيسقط إلى سعر صفقته
+     */
+    public function __invoke(
+        InvestorDeal $deal,
+        int $sourceId,
+        int $stockItemId,
+        ?int $actorId,
+        ?string $printingSalePrice = null,
+    ): InvestorDealSupply {
         if ($deal->status !== DealStatus::Open) {
             throw DealIsNotEditable::make((string) $deal->code);
         }
@@ -39,6 +47,10 @@ final class ClaimDealSupply
         $supply->source_type = AuditSubject::PurchaseOrder->value;
         $supply->source_id = $sourceId;
         $supply->stock_item_id = $stockItemId;
+        // **Frozen here, on the row, and never read live afterwards.** A man puts his money in
+        // knowing what his goods sell to the press at; a price looked up at the moment stock
+        // left the shelf would move under goods already bought and paid for.
+        $supply->printing_sale_price = $printingSalePrice;
         $supply->claimed_by = $actorId;
         $supply->save();
 

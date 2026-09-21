@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\DB;
  * | المال | `allocation` من كل محفظة | **في الخزينة منذ الإيداع** |
  * | النسب | تُجمَّد من المبالغ | **وحداتٌ تُقرأ لكل فترة** |
  * | نصيبُ الشركة | ما لم تغطِّه أموالُهم | **صفر** — الصندوقُ يدفع الثمن كلَّه |
+ * | سعرُ السادة | على الصفقة، يمشي على مادّتيها | **على السطر** — لكل رفٍّ سعرُه |
  *
  * فالذي يبقى ثلاثة: **الرفوفُ تُضاف** إلى مواد الصندوق، و**السطورُ تُطالَب** فيعرف الاستلامُ
  * لمن يُنسب الوارد، و**النقدُ يخرج** من الخزينة.
@@ -63,13 +64,19 @@ final class PurchaseFromFund
 
     /**
      * @param  list<int>|null  $stockItemIds  الرفوفُ المختارة، أو الكلُّ حين تُترك فارغة
+     * @param  array<int, string>  $printingSalePrices  سعرُ السادة لكل رفّ — الرفُّ الغائب عنها
+     *                                                  يمشي على الطريق الآخر: يركب البيعَ نفسَه
      *
      * @throws PurchaseOrderCannotBeFunded
      * @throws FundHasNotGotTheCash
      */
-    public function __invoke(int $purchaseOrderId, ?array $stockItemIds, ?int $actorId): InvestorDeal
-    {
-        return DB::transaction(function () use ($purchaseOrderId, $stockItemIds, $actorId): InvestorDeal {
+    public function __invoke(
+        int $purchaseOrderId,
+        ?array $stockItemIds,
+        ?int $actorId,
+        array $printingSalePrices = [],
+    ): InvestorDeal {
+        return DB::transaction(function () use ($purchaseOrderId, $stockItemIds, $actorId, $printingSalePrices): InvestorDeal {
             $order = ($this->snapshot)($purchaseOrderId, lock: true);
 
             $this->guardOrder($order);
@@ -88,7 +95,13 @@ final class PurchaseFromFund
             $this->items->append($deal, $shelves);
 
             foreach ($shelves as $stockItemId) {
-                ($this->claimSupply)($deal, $purchaseOrderId, $stockItemId, $actorId);
+                ($this->claimSupply)(
+                    $deal,
+                    $purchaseOrderId,
+                    $stockItemId,
+                    $actorId,
+                    $printingSalePrices[$stockItemId] ?? null,
+                );
             }
 
             // **بالتكلفة الواصلة لا بالمدفوع.** الصندوقُ يملك ما على الرفّ بتكلفته، وهي ما

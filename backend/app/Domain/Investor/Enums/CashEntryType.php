@@ -51,6 +51,15 @@ enum CashEntryType: string
     /** رأسُ مالٍ يعود إلى مستثمر بعد انقضاء مدة حجزه — مصدرُه صفُّ محفظته. */
     case CapitalReturn = 'capital_return';
 
+    /**
+     * المطبعةُ اشترت سادةَ الصندوق عند باب المخزن — مصدرُه سطرُ الطلبية التي سحبتها.
+     *
+     * الثمنُ كاملاً (`سعر السادة × الكمية`) لا الهامش: التكلفةُ خرجت من هذه الخزينة يوم الشراء
+     * فتعود إليها مع ربحها، ثم يخرج الهامشُ إلى المحافظ بـ{@see self::ProfitPayout}. ولا علاقةَ
+     * له بما دفعه العميل: «استلم الزبون ما استلمش، المطبعة تتحمّل».
+     */
+    case StockSoldToPress = 'stock_sold_to_press';
+
     /** يُبطل صفّاً واحداً سابقاً، حاملاً مبلغَه كما هو. */
     case Reversal = 'reversal';
 
@@ -64,6 +73,7 @@ enum CashEntryType: string
             self::ProfitPayout => 'صرف أرباح',
             self::CompanyPayout => 'نصيب الشركة',
             self::CapitalReturn => 'إرجاع رأس مال',
+            self::StockSoldToPress => 'بيع سادة للمطبعة',
             self::Reversal => 'عكس حركة',
         };
     }
@@ -77,7 +87,7 @@ enum CashEntryType: string
     public function isInflow(): bool
     {
         return match ($this) {
-            self::Deposit, self::SaleProceeds => true,
+            self::Deposit, self::SaleProceeds, self::StockSoldToPress => true,
             default => false,
         };
     }

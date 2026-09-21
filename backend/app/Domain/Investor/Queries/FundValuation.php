@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Investor\Queries;
 
+use App\Domain\Investor\Actions\PostPressPurchaseProceeds;
 use App\Domain\Investor\Models\InvestmentCashEntry;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Support\Money;
+use App\Domain\Investor\Support\OrderDealSlices;
 use App\Domain\Order\Enums\OrderStatus;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +21,7 @@ use Illuminate\Support\Facades\DB;
  * ```
  * قيمة الصندوق = نقد
  *              + بضاعة على الرفّ            (بالتكلفة)
- *              + بضاعة خرجت ولم تُسلَّم      (بالتكلفة)
+ *              + بضاعة خرجت ولم تُسلَّم      (بالتكلفة، خلا ما اشترته المطبعة سادةً)
  *              + مبيعات سُلِّمت ولم تُحصَّل   (بتكلفتها)
  *              − أرباحٌ لم تصل جيبَ أصحابها بعد
  * ```
@@ -128,6 +130,18 @@ final class FundValuation
      * والحركاتُ المعكوسة مستثناةٌ كاملةً — البضاعة رجعت، فهي محسوبةٌ في الرفّ لا هنا. والتحويلُ
      * الداخلي مستثنىً كذلك، وإلا قُرئ سحبُ المصدر بيعاً.
      *
+     * ## والسحبُ المسعَّر ليس مال الصندوق أصلاً
+     *
+     * سادةٌ خرجت بسعرٍ متّفقٍ عليه **بِيعت عند باب المخزن**، فثمنُها في الخزينة بـ
+     * {@see PostPressPurchaseProceeds} ولا شأن للصندوق بعدها
+     * بالطلبية: لا بتسليمها ولا بتحصيلها ولا بإلغائها. فعدُّها هنا بتكلفتها يحسب المال مرّتين —
+     * نقداً في الدرج وبضاعةً في المطبعة.
+     *
+     * والشرطُ هو الشرطُ نفسه الذي تُقسَّم به الأرباح في
+     * {@see OrderDealSlices}: طبقةٌ تحمل سعراً **وسطرٌ اشترى
+     * فعلاً** (`order_items.stock_purchased_at`). سعرٌ على طبقةٍ سحبها سطرُ سادةٍ لم يطبع لا
+     * يشتري شيئاً، وصاحبُها ما زال راكباً البيع.
+     *
      * @param  callable(Builder): mixed  $scope
      */
     private function drawnCostFor(?int $dealId, callable $scope): string
@@ -145,6 +159,9 @@ final class FundValuation
             ->whereNull('oi.deleted_at')
             ->whereNull('o.deleted_at')
             ->where('m.movement_type', '<>', 'internal_transfer')
+            ->where(fn ($q) => $q
+                ->whereNull('b.printing_sale_price')
+                ->orWhereNull('oi.stock_purchased_at'))
             ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
                 ->from('stock_movements as r')
                 ->whereColumn('r.reverses_movement_id', 'm.id')

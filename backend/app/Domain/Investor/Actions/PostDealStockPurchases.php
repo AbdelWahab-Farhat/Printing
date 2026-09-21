@@ -60,6 +60,7 @@ final class PostDealStockPurchases
         private readonly OrderService $orders,
         private readonly InventoryService $inventory,
         private readonly PostDealShare $postShare,
+        private readonly PostPressPurchaseProceeds $postProceeds,
     ) {}
 
     /**
@@ -188,15 +189,28 @@ final class PostDealStockPurchases
             $this->dealsStandingOn($sourceType, $sourceId),
         ));
 
-        if ($dealIds === []) {
-            return [];
-        }
+        // **No early return on an empty set**, and the reason is a price that happens to equal
+        // the cost: the margin is then exactly zero, {@see StockPurchaseMargins::byDeal()} drops
+        // it, no wallet row is ever written — and the press still bought those goods and still
+        // owes the fund their price. Leaving here would lose that cash, and would leave a
+        // standing payment un-reversed when a restatement takes the priced draw away.
 
         // Ascending by id, always — the deadlock discipline this whole context shares with
         // CreditBackStockBatches.
         sort($dealIds);
 
-        return DB::transaction(function () use ($dealIds, $margins, $sourceType, $sourceId, $correctionNote): array {
+        return DB::transaction(function () use ($dealIds, $margins, $draws, $sourceType, $sourceId, $correctionNote): array {
+            // **والثمنُ يدخل الخزينة حيث يخرج الهامشُ إلى المحافظ** — وفي المعاملة نفسها.
+            // نصفان لحدثٍ واحد: نفسُ السحوب، ونفسُ المصدر، ونفسُ التصحيح حين يُعاد حساب
+            // السطر. ولو انفصلا لوقع يومٌ قُبض فيه المستثمرُ هامشاً عن بضاعةٍ لم يعد ثمنُها
+            // إلى الصندوق. ولا يخصّ إلا الصندوق: الصفقةُ القديمة لا خزينةَ لها، وهامشُها
+            // وحدَه ما كان يُقيَّد ويبقى.
+            ($this->postProceeds)($draws, $sourceType, $sourceId);
+
+            if ($dealIds === []) {
+                return [];
+            }
+
             $written = [];
 
             foreach ($dealIds as $dealId) {
