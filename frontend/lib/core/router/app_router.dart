@@ -33,6 +33,7 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_purchase_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_fund_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/investment_period_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_periods_page.dart';
 import 'package:dayaa/features/investment_settings/presentation/views/investment_settings_page.dart';
 import 'package:dayaa/features/investor_portal/presentation/views/investor_portal_page.dart';
@@ -133,6 +134,9 @@ abstract final class Routes {
 
   /// سجلُّ الفترات — ما حلّ محلّ «قائمة الصفقات».
   static const String investmentPeriods = '/investment/periods';
+
+  /// فترةٌ واحدة: طلبياتُها، ونصيبُ كلِّ مستثمرٍ من كلٍّ منها.
+  static String investmentPeriod(int id) => '/investment/periods/$id';
 
   /// شراءُ أمرِ شراءٍ بمال الصندوق — ما حلّ محلّ شاشة «تمويل الأمر».
   static const String fundPurchase = '/investment/purchase';
@@ -566,6 +570,14 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.investmentPeriods,
         builder: (context, state) => const InvestmentPeriodsPage(),
+      ),
+      GoRoute(
+        // خلف «/periods» لا أمامه: المسارُ الثابتُ أطولُ مطابقةً، ولا يبتلعه متغيّرٌ بعده.
+        path: '/investment/periods/:id',
+        builder: (context, state) => InvestmentPeriodPage(
+          periodId: int.parse(state.pathParameters['id']!),
+          periodCode: state.payload as String?,
+        ),
       ),
       GoRoute(
         path: Routes.fundPurchase,

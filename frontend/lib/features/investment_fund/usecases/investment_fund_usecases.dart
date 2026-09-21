@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
+import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
 
 class GetFundStanding {
@@ -34,6 +35,16 @@ class GetFundPeriods {
   final InvestmentFundRepository _repository;
 
   Future<Either<Failure, List<FundPeriod>>> call() => _repository.periods();
+}
+
+/// طلبياتُ فترةٍ واحدة ومن أخذ منها — ما تُبنى عليه شاشةُ الفترة.
+class GetPeriodOrders {
+  const GetPeriodOrders(this._repository);
+
+  final InvestmentFundRepository _repository;
+
+  Future<Either<Failure, PeriodOrders>> call(int periodId) =>
+      _repository.periodOrders(periodId);
 }
 
 /// إيداعُ رأس مال — يشتري وحداتٍ بسعر اليوم ويحبسها بمدّة فترتها.

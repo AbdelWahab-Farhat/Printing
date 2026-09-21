@@ -3,6 +3,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
+import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
 import 'package:dio/dio.dart';
 
@@ -46,6 +47,14 @@ class InvestmentFundRepositoryImpl implements InvestmentFundRepository {
       parse: (data) => (data as List<dynamic>)
           .map((row) => FundPeriod.fromJson(row as Map<String, dynamic>))
           .toList(),
+    );
+  }
+
+  @override
+  Future<Either<Failure, PeriodOrders>> periodOrders(int periodId) {
+    return safeRequest<PeriodOrders>(
+      () => _dio.get(InvestmentEndpoints.periodOrders(periodId)),
+      parse: (data) => PeriodOrders.fromJson(data as Map<String, dynamic>),
     );
   }
 

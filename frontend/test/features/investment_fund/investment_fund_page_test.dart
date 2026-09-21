@@ -4,6 +4,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
+import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_fund_page.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
@@ -44,9 +45,13 @@ class _FakeRepository implements InvestmentFundRepository {
     return const Left(Failure.server(message: 'فيها طلبيات لم تصل العملاء بعد'));
   }
 
-  // الأبوابُ الثلاثة الجديدة — لا تُستدعى في هذه الاختبارات، وتُنفَّذ لأن العقد يطلبها.
+  // الأبوابُ الجديدة — لا تُستدعى في هذه الاختبارات، وتُنفَّذ لأن العقد يطلبها.
   @override
   Future<Either<Failure, List<FundPeriod>>> periods() async => const Right(<FundPeriod>[]);
+
+  @override
+  Future<Either<Failure, PeriodOrders>> periodOrders(int periodId) async =>
+      const Left(Failure.server(message: 'لم يُستدعَ'));
 
   @override
   Future<Either<Failure, DepositReceipt>> deposit({
@@ -356,4 +361,16 @@ void main() {
     );
   });
 
+  testWidgets('the record of the periods has a door on the dashboard', (tester) async {
+    // Arrange — اللوحةُ تعرض الفترةَ الجارية وحدها؛ وما صنعته كلُّ فترةٍ سؤالٌ ثانٍ خلف زرّ،
+    // لا سجلٌّ يُحشر فوق الرقم الذي فُتحت الشاشةُ لأجله.
+    await register(const FundStanding(valuation: _valuation));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — بلا صلاحيةٍ في الجلسة: القراءةُ ليست خلف `manage`، ومن يرى اللوحة يرى سجلَّها.
+    expect(find.text('سجل الفترات'), findsOneWidget);
+  });
 }

@@ -786,6 +786,13 @@ Route::prefix('v1')->group(function (): void {
         Route::get('investment/periods', [InvestmentFundController::class, 'periods'])
             ->middleware('can:investors.view')->name('investment.periods.index');
 
+        // **أمامَ `{period}` لأن «close» ليست رقماً.** الفخُّ نفسُه الذي يحرس
+        // `orders/{order}/payments/refunds`: مسارٌ بمتغيّرٍ أوّلاً يبتلع الكلمةَ الثابتة ويردّ
+        // 404. و`whereNumber` تسدّه من الجهة الثانية.
+        Route::get('investment/periods/{period}/orders', [InvestmentFundController::class, 'periodOrders'])
+            ->whereNumber('period')
+            ->middleware('can:investors.view')->name('investment.periods.orders');
+
         // **بـ`investors.money.record` لا بـ`investors.manage`.** هذه حركاتُ مالٍ تُسجَّل عند
         // الكاشير، وهي الصلاحيةُ نفسُها التي تحرس دفترَ المحفظة اليوم — بينما `manage` تقرّر
         // شروطَ الصندوق نفسِه. وصلاحيةٌ جديدة تعني مرآةً في التطبيق واختباراً تعاقدياً يسقط.

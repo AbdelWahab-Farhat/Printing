@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -12,6 +13,7 @@ import 'package:dayaa/features/investment_fund/presentation/widgets/fund_expense
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 /// لوحةُ الصندوق — قيمتُه ببنودها، والفترةُ التي تستقبل القيد.
 ///
@@ -121,6 +123,8 @@ class _Standing extends StatelessWidget {
           _Period(period: period)
         else
           const _NoPeriod(),
+        SizedBox(height: 16.h),
+        const _PeriodsButton(),
         if (standing.investors.isNotEmpty) ...[
           SizedBox(height: 28.h),
           _Partners(holders: standing.investors),
@@ -351,6 +355,23 @@ class _NoPeriodState extends State<_NoPeriod> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// البابُ إلى الفترات — الحاضرةُ فوقه، وكلُّ ما قبلها خلفه.
+///
+/// **واللوحةُ تعرض فترةً واحدة عن قصد**: هي التي تستقبل القيد اليوم، وحشرُ السجلِّ كلِّه فوقها
+/// يدفن السؤالَ الذي فُتحت الشاشةُ لأجله. وما خلف هذا الزرّ سؤالٌ آخر — **ماذا صنعت كلُّ فترة،
+/// وأيُّ طلبيةٍ صنعته، وكم أخذ كلُّ شريكٍ منها**.
+class _PeriodsButton extends StatelessWidget {
+  const _PeriodsButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton.outlined(
+      label: 'سجل الفترات',
+      onPressed: () => context.push(Routes.investmentPeriods),
     );
   }
 }

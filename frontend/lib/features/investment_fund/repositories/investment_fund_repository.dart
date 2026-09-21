@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
+import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 
 abstract interface class InvestmentFundRepository {
   Future<Either<Failure, FundStanding>> standing();
@@ -14,6 +15,9 @@ abstract interface class InvestmentFundRepository {
 
   /// سجلُّ الفترات — المغلقةُ بأرقامها المجمّدة.
   Future<Either<Failure, List<FundPeriod>>> periods();
+
+  /// طلبياتُ فترةٍ واحدة، ونصيبُ كل مستثمرٍ من كلٍّ منها — من دفتر المحافظ لا من حسابٍ ثانٍ.
+  Future<Either<Failure, PeriodOrders>> periodOrders(int periodId);
 
   /// **اشتراكٌ من المحفظة**: بابٌ واحد يكتب في ثلاثة دفاتر — المحفظةُ والخزينةُ والوحدات. لا
   /// `method` له: المالُ في المحفظة منذ أن سُلِّم على الطاولة، وهذا نقلٌ داخليّ لا يعبر فيه

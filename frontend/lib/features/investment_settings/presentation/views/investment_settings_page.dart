@@ -155,18 +155,38 @@ class _FormState extends State<_Form> {
     return ListView(
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
       children: [
-        AppTextField(
-          controller: _share,
-          label: 'حصة المستثمرين من الربح (%)',
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        // حقلان في الصفّ. والنصيبُ يُقسَم على قدر التسمية لا بالتساوي: «حصة المستثمرين من
+        // الربح» تسميةٌ طويلة، ولو أخذت نصفاً كنصفِ جارتها القصيرة لقُصَّت بنقاطٍ ثلاث —
+        // والتسميةُ هنا هي الشرح كلّه، فلا يجوز أن يُقصّ منها حرف.
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: AppTextField(
+                controller: _share,
+                label: 'حصة المستثمرين من الربح (%)',
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              flex: 2,
+              child: _Months(controller: _period, label: 'مدة الفترة (شهر)'),
+            ),
+          ],
         ),
         SizedBox(height: 16.h),
-        _Months(controller: _period, label: 'مدة الفترة (شهر)'),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _Months(controller: _window, label: 'نافذة الاكتتاب (يوم)')),
+            SizedBox(width: 12.w),
+            Expanded(child: _Months(controller: _settlement, label: 'مدة التسوية (شهر)')),
+          ],
+        ),
         SizedBox(height: 16.h),
-        _Months(controller: _window, label: 'نافذة الاكتتاب (يوم)'),
-        SizedBox(height: 16.h),
-        _Months(controller: _settlement, label: 'مدة التسوية (شهر)'),
-        SizedBox(height: 16.h),
+        // وحدَه في صفّه: تسميتُه أطولُ الخمس، ونصفُ الشاشة لا يسعها.
         _Months(
           controller: _lock,
           label: 'حجز رأس المال بعد إيداعه (شهر)',

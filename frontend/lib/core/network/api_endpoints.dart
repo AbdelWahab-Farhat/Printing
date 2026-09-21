@@ -62,6 +62,9 @@ abstract final class InvestmentEndpoints {
   static const String periods = '/investment/periods';
   static const String closePeriod = '/investment/periods/close';
 
+  /// طلبياتُ فترةٍ واحدة ومن أخذ منها — «أي طلبية أعطت ربحاً، وكم أخذ كل مستثمر».
+  static String periodOrders(int periodId) => '/investment/periods/$periodId/orders';
+
   /// حركاتُ مالٍ تمرّ بالصندوق: تشتري وحداتٍ أو تُلغيها، فلها بابُها لا بابُ المحفظة.
   static const String deposits = '/investment/deposits';
   static const String withdrawals = '/investment/withdrawals';

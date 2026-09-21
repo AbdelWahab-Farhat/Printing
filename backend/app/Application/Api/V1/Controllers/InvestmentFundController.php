@@ -18,6 +18,7 @@ use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Queries\FundUnits;
 use App\Domain\Investor\Queries\FundValuation;
 use App\Domain\Investor\Queries\InvestorBalances;
+use App\Domain\Investor\Queries\PeriodOrdersQuery;
 use App\Domain\Investor\Queries\PeriodShares;
 use App\Domain\Investor\Queries\UnitPrice;
 use App\Support\ResponseTrait;
@@ -49,6 +50,7 @@ class InvestmentFundController extends Controller
         private readonly WithdrawFromFund $withdraw,
         private readonly RecordFundExpense $expense,
         private readonly PurchaseFromFund $purchase,
+        private readonly PeriodOrdersQuery $periodOrders,
     ) {}
 
     /**
@@ -198,6 +200,26 @@ class InvestmentFundController extends Controller
         return $this->success(
             $periods->map(fn (InvestmentPeriod $period): array => $this->periodPayload($period))->all(),
         );
+    }
+
+    /**
+     * The orders of one period, and what each investor took from each
+     *
+     * «الطلبيات التي أعطت ربح المستثمرين فيها، وربح كل مستثمر» — صفٌّ لكل طلبية، وتحته من أخذ
+     * منها وكم.
+     *
+     * **والأرقامُ من دفتر المحافظ لا من حسابٍ ثانٍ.** هذا سؤالُ «ماذا قبض الناسُ في هذه الفترة»،
+     * وجوابُه الصفوفُ التي قُبض بها؛ وإعادةُ اشتقاقه من الـFIFO بعد سنةٍ كانت تُظهر رقماً غير
+     * الذي دخل الجيوب — انظر {@see PeriodOrdersQuery}.
+     *
+     * والفترةُ تسافر مع قائمتها فترسم الشاشةُ ترويستَها وجسمَها بنداءٍ واحد.
+     */
+    public function periodOrders(InvestmentPeriod $period): JsonResponse
+    {
+        return $this->success([
+            'period' => $this->periodPayload($period),
+            ...($this->periodOrders)((int) $period->getKey()),
+        ]);
     }
 
     /**
