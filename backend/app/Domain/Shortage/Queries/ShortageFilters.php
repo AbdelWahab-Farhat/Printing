@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Shortage\Queries;
 
 use App\Domain\Shortage\Enums\ShortageSource;
-use App\Domain\Shortage\Enums\ShortageType;
 use App\Domain\Shortage\Enums\ShortageStatus;
+use App\Domain\Shortage\Enums\ShortageType;
 
 /**
  * What the shortages list is being asked for.

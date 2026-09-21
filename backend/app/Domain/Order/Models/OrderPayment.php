@@ -6,9 +6,9 @@ namespace App\Domain\Order\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Identity\Models\User;
-use App\Support\Media\StoreReceipt;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\PaymentMethod;
+use App\Support\Media\StoreReceipt;
 use Database\Factories\OrderPaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;

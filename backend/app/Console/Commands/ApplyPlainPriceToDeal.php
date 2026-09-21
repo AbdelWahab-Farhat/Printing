@@ -6,9 +6,13 @@ namespace App\Console\Commands;
 
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Models\StockBatch;
+use App\Domain\Inventory\Queries\ConsumptionBreakdownQuery;
+use App\Domain\Investor\Actions\FundPurchaseOrder;
+use App\Domain\Investor\Actions\PostDealStockPurchases;
 use App\Domain\Investor\InvestorService;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Support\StockPurchaseMargins;
+use App\Domain\Order\Actions\DeductOrderStock;
 use App\Domain\Order\Actions\RecalculateOrderCogs;
 use App\Domain\Order\Actions\RecalculateOrderItemCost;
 use App\Domain\Order\Enums\OrderStatus;
@@ -16,6 +20,7 @@ use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Support\MaterialCost;
 use Illuminate\Console\Command;
 use Illuminate\Console\ConfirmableTrait;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -23,7 +28,7 @@ use Illuminate\Support\Facades\DB;
  * lines that already drew on it.
  *
  * **Why a command rather than an edit screen.** `printing_sale_price` is written once, by
- * {@see \App\Domain\Investor\Actions\FundPurchaseOrder}, and frozen with the percentages — it is
+ * {@see FundPurchaseOrder}, and frozen with the percentages — it is
  * a term the men putting money in were shown, and a deal whose terms can be retyped is not a
  * term at all. D1 was funded on 2026-09-05, before the column existed, so it has been riding the
  * sale itself: every printed order it stocked paid its investor a share of the *order's* profit,
@@ -34,14 +39,14 @@ use Illuminate\Support\Facades\DB;
  * **What it does, in the order it must be done:**
  *
  * 1. the price onto the deal, and onto every cost layer that arrived under it — the layer is
- *    where {@see \App\Domain\Inventory\Queries\ConsumptionBreakdownQuery} reads it from, so a
+ *    where {@see ConsumptionBreakdownQuery} reads it from, so a
  *    layer left null is a kilo the press never bought;
  * 2. every **printed** line that already drew on one of those layers is re-costed through
- *    {@see MaterialCost}, exactly as {@see \App\Domain\Order\Actions\DeductOrderStock} would have
+ *    {@see MaterialCost}, exactly as {@see DeductOrderStock} would have
  *    costed it on the day: `material_cost` becomes what the press pays, `material_cost_actual`
  *    keeps what the goods cost, and `stock_purchased_at` is stamped with the moment the stock
  *    actually left rather than today;
- * 3. {@see \App\Domain\Investor\Actions\PostDealStockPurchases} is run for each of those orders,
+ * 3. {@see PostDealStockPurchases} is run for each of those orders,
  *    which pays the investors their share of the margin and — being keyed on the line — will
  *    correct itself if the press later restates the run.
  *
@@ -161,7 +166,7 @@ class ApplyPlainPriceToDeal extends Command
      * Re-costs every printed line that already drew on this deal's layers.
      *
      * @return array{0: list<array<string, mixed>>, 1: list<array<string, string>>} what was
-     *                                                                             repaired, and what was left alone with the reason why
+     *                                                                              repaired, and what was left alone with the reason why
      */
     private function repair(
         InvestorDeal $deal,
@@ -253,9 +258,9 @@ class ApplyPlainPriceToDeal extends Command
      * **A reversed movement is not one of them**: its goods went back on the shelf, so there is
      * no purchase to record and the line is holding nothing.
      *
-     * @return \Illuminate\Support\Collection<int, OrderItem>
+     * @return Collection<int, OrderItem>
      */
-    private function linesDrawnFrom(int $dealId): \Illuminate\Support\Collection
+    private function linesDrawnFrom(int $dealId): Collection
     {
         return OrderItem::query()
             ->whereNotNull('fulfillment_stock_movement_id')

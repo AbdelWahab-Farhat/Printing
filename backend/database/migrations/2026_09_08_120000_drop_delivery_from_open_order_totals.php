@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\DeshapeStoredText;
 use App\Console\Commands\DropDeliveryFromOrderTotals;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
 use Illuminate\Database\Migrations\Migration;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Artisan;
  * Nawris to collect it *and* leave the courier charging it at the door.
  *
  * **The work lives in `orders:drop-delivery-from-totals` rather than here**, following
- * {@see \App\Console\Commands\DeshapeStoredText}: it is worth running
+ * {@see DeshapeStoredText}: it is worth running
  * `--dry-run` against the live database first and reading the two lists it prints before letting
  * it write. See {@see DropDeliveryFromOrderTotals} for what it
  * refuses to touch — closed orders above all, whose figures record what was really billed.

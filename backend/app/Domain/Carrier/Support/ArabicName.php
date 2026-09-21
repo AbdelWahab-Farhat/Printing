@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Carrier\Support;
 
+use App\Domain\Carrier\Actions\MatchNawrisGeography;
+
 /**
  * One spelling of an Arabic place name, so two lists written by different people can be compared.
  *
@@ -21,7 +23,7 @@ namespace App\Domain\Carrier\Support;
  *
  * **{@see normalize} and {@see withoutArticles} are still exact comparisons.** Neither measures
  * anything; they rewrite one spelling and then demand equality. The edit distance lives in
- * {@see distance} and is used by nothing here — {@see \App\Domain\Carrier\Actions\MatchNawrisGeography}
+ * {@see distance} and is used by nothing here — {@see MatchNawrisGeography}
  * reaches for it only after both exact passes have failed, and carries the threshold and the
  * tie-breaking rule itself, because those are a matching policy and not a fact about spelling.
  */

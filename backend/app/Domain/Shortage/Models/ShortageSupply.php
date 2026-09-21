@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Shortage\Models;
 
+use App\Application\Api\V1\Requests\Shortage\RecordShortageSupplyRequest;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Models\StockMovement;
@@ -11,17 +12,16 @@ use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Shortage\Actions\RecalculateShortageTotals;
 use App\Domain\Shortage\Enums\SupplyKind;
+use App\Support\Media\StoreReceipt;
 use Database\Factories\ShortageSupplyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Application\Api\V1\Requests\Shortage\RecordShortageSupplyRequest;
-use App\Support\Media\StoreReceipt;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * One go at closing a shortage — what came back, what it cost, and how it was paid for.
