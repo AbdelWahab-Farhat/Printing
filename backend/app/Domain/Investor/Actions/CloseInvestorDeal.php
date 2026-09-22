@@ -8,10 +8,12 @@ use App\Domain\Investor\Enums\DealStatus;
 use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Exceptions\DealIsNotEditable;
 use App\Domain\Investor\Exceptions\DealStillHoldsStock;
+use App\Domain\Investor\Exceptions\TheFundIsNotADeal;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\DealOrdersInFlightQuery;
 use App\Domain\Investor\Queries\InvestorBalances;
+use App\Domain\Investor\Support\FundDeal;
 use App\Domain\Investor\Support\Money;
 use Illuminate\Support\Facades\DB;
 
@@ -40,10 +42,17 @@ final class CloseInvestorDeal
     public function __construct(
         private readonly InvestorBalances $balances,
         private readonly DealOrdersInFlightQuery $ordersInFlight,
+        private readonly FundDeal $fund,
     ) {}
 
     public function __invoke(InvestorDeal $deal): InvestorDeal
     {
+        // **الصندوقُ أولاً**، قبل سؤال الحالة: هو مفتوحٌ دائماً فيمرّ من كل حارسٍ بعده، وقد
+        // يكون رفّه فارغاً ولا طلبيةَ في الطريق فيُقفل بلا اعتراضٍ واحد — وهو بالضبط ما وقع.
+        if ($this->fund->is($deal)) {
+            throw TheFundIsNotADeal::closing();
+        }
+
         if ($deal->status !== DealStatus::Open) {
             throw DealIsNotEditable::make((string) $deal->code);
         }
