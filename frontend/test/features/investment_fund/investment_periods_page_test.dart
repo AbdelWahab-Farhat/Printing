@@ -59,6 +59,13 @@ class _FakeRepository implements InvestmentFundRepository {
   }) async => const Left(Failure.server(message: 'لم يُستدعَ'));
 
   @override
+  Future<Either<Failure, Unit>> buyPurchaseOrder({
+    required int purchaseOrderId,
+    required List<int> stockItemIds,
+    Map<int, String> printingSalePrices = const {},
+  }) async => const Left(Failure.server(message: 'لم يُستدعَ'));
+
+  @override
   Future<Either<Failure, Unit>> recordExpense({
     required String kind,
     required String name,

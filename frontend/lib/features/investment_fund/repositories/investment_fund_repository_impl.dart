@@ -89,6 +89,30 @@ class InvestmentFundRepositoryImpl implements InvestmentFundRepository {
   }
 
   @override
+  Future<Either<Failure, Unit>> buyPurchaseOrder({
+    required int purchaseOrderId,
+    required List<int> stockItemIds,
+    Map<int, String> printingSalePrices = const {},
+  }) {
+    return safeRequest<Unit>(
+      () => _dio.post(
+        InvestmentEndpoints.fundPurchase(purchaseOrderId),
+        data: {
+          'stock_item_ids': stockItemIds,
+          // المفتاحُ رقمُ المادة نصّاً — هكذا يقرؤه الخادم — ولا يُرسَل أصلاً حين لا سعرَ
+          // لأيّ رفّ، فالمصفوفةُ الفارغة سؤالٌ بلا جواب.
+          if (printingSalePrices.isNotEmpty)
+            'printing_sale_prices': {
+              for (final entry in printingSalePrices.entries)
+                '${entry.key}': entry.value,
+            },
+        },
+      ),
+      parse: (_) => unit,
+    );
+  }
+
+  @override
   Future<Either<Failure, Unit>> recordExpense({
     required String kind,
     required String name,

@@ -100,3 +100,28 @@ class RecordFundExpense {
     notes: notes,
   );
 }
+
+/// ما يُطلب من الصندوق مع أمر شراء: أيَّ الرفوف يأخذ، وبكم تشتري المطبعةُ سادةَ كلٍّ منها.
+///
+/// **رفٌّ بلا سعرٍ هنا ليس رفّاً بسعرِ صفر**: الغائبُ عن [printingSalePrices] يمشي على الطريق
+/// الآخر — يركب البيعَ إلى التسليم — وهو ما كان يفعله كلُّ رفٍّ قبل أن يوجد هذا الحقل.
+typedef FundPurchaseRequest = ({
+  List<int> stockItemIds,
+  Map<int, String> printingSalePrices,
+});
+
+/// شراءُ أمرِ شراءٍ بمال الصندوق — من شاشة الأمر، أو في الضغطة التي أنشأته.
+class BuyWithFund {
+  const BuyWithFund(this._repository);
+
+  final InvestmentFundRepository _repository;
+
+  Future<Either<Failure, Unit>> call(
+    int purchaseOrderId,
+    FundPurchaseRequest request,
+  ) => _repository.buyPurchaseOrder(
+    purchaseOrderId: purchaseOrderId,
+    stockItemIds: request.stockItemIds,
+    printingSalePrices: request.printingSalePrices,
+  );
+}

@@ -35,6 +35,17 @@ abstract interface class InvestmentFundRepository {
     String? notes,
   });
 
+  /// **شراءُ أمرِ شراءٍ بمال الصندوق.** الرفوفُ المختارة تصير من مواده، وسطورُها تُطالَب فيعرف
+  /// الاستلامُ لمن يُنسب الوارد، والنقدُ يخرج من الخزينة بالتكلفة الواصلة.
+  ///
+  /// [printingSalePrices] سعرُ السادة لكل رفّ — والرفُّ الغائب عنها يمشي على الطريق الآخر:
+  /// يركب البيعَ إلى التسليم. ولا يُرسَل مفتاحٌ بقيمةٍ فارغة: صفرٌ يسلّم المطبعةَ بضاعةً بلا ثمن.
+  Future<Either<Failure, Unit>> buyPurchaseOrder({
+    required int purchaseOrderId,
+    required List<int> stockItemIds,
+    Map<int, String> printingSalePrices,
+  });
+
   /// مصروفٌ على الصندوق: يأكل من ربح فترته ويخرج من خزينته.
   Future<Either<Failure, Unit>> recordExpense({
     required String kind,

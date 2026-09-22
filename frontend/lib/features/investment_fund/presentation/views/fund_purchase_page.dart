@@ -1,13 +1,10 @@
 import 'package:dayaa/core/di/injector.dart';
-import 'package:dayaa/core/network/api_endpoints.dart';
-import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
-import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/fund_purchase_chooser.dart';
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -18,11 +15,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// الجوابُ واحدٌ لكلّها: **الصندوقُ يدفع الثمن كلَّه**، والنسبُ وحداتٌ تُقرأ لكل فترة، ولا صفقةَ
 /// تُولد أصلاً.
 ///
-/// فما بقي ثلاثة: أيَّ الرفوف يأخذ، وهل في الدرج ما يكفي، وبكم تشتري المطبعةُ سادةَ كلِّ رفّ.
+/// فما بقي ثلاثة: أيَّ الرفوف يأخذ، وهل في الدرج ما يكفي، وبكم تشتري المطبعةُ سادةَ كلِّ رفّ —
+/// وهي أسئلةُ {@see FundPurchaseChooser}، تُسأل هنا وعلى نموذج أمرٍ يُنشأ الآن بالنصّ نفسه.
 ///
-/// **وسعرُ السادة يُكتب هنا أو لا يُكتب أبداً.** هو شرطُ شراءٍ يُجمَّد على السطر لحظةَ المطالبة
-/// به، فلا شاشةَ ثانية تعدّله بعد أن تصير البضاعةُ طبقةَ تكلفة. ورفٌّ يُترك حقلُه فارغاً يمشي
-/// على الطريق الآخر — يركب البيعَ إلى التسليم — وهو ما كان يفعله كلُّ رفٍّ قبل اليوم.
+/// **وهذه الشاشةُ لأمرٍ قائم.** أمرٌ يُنشأ ليشتريه الصندوقُ يُموَّل في الضغطة التي أنشأته، من
+/// صفِّ الصندوق على النموذج نفسِه؛ ويبقى هذا البابُ لمن أنشأ أمراً ثم قرّر.
 class FundPurchasePage extends StatefulWidget {
   const FundPurchasePage({required this.order, super.key});
 
@@ -42,7 +39,8 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
   /// **يُبنى للسطور كلِّها لا للمختار وحده**: بناؤه عند أول ظهورٍ كان يعني حقلاً جديداً — وقيمةً
   /// ضائعة — كلَّما رُفع الصحُّ عن رفٍّ ثم أُعيد.
   late final Map<int, TextEditingController> _prices = {
-    for (final line in widget.order.items) line.stockItemId: TextEditingController(),
+    for (final line in widget.order.items)
+      line.stockItemId: TextEditingController(),
   };
 
   FundStanding? _standing;
@@ -72,8 +70,26 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
     setState(() {
       _loading = false;
       _standing = result.fold((_) => null, (standing) => standing);
+      // الافتراضُ يصل مع اللوحة فيُملأ به ما لم يُكتب — ورفوفُ الكيلو وحدها.
+      seedFundPrices(
+        fallback: _standing?.defaultPlainSalePrice,
+        shelves: _shelves,
+        prices: _prices,
+      );
     });
   }
+
+  /// رفوفُ الأمر كما تُعرض وتُسعَّر.
+  List<FundShelf> get _shelves => [
+    for (final line in widget.order.items)
+      (
+        stockItemId: line.stockItemId,
+        title: line.title,
+        cost: line.finalTotalCost ?? line.baseTotalCost ?? '0',
+        unitWire: line.unit,
+        per: line.perUnitSuffix,
+      ),
+  ];
 
   /// تكلفةُ ما اختير — بالتكلفة الواصلة، وهي نفسُها ما سيخرج من الخزينة.
   String get _cost {
@@ -81,7 +97,9 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
 
     for (final line in widget.order.items) {
       if (_chosen.contains(line.stockItemId)) {
-        total += double.tryParse(line.finalTotalCost ?? line.baseTotalCost ?? '0') ?? 0;
+        total +=
+            double.tryParse(line.finalTotalCost ?? line.baseTotalCost ?? '0') ??
+            0;
       }
     }
 
@@ -97,22 +115,9 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
 
     setState(() => _saving = true);
 
-    // الرفُّ المختار بسعرٍ مكتوبٍ وحده يُرسَل سعرَه؛ والفارغُ لا مفتاحَ له أصلاً، فيقرأه الخادمُ
-    // «لا سعر» لا «صفر» — والصفرُ يسلّم المطبعةَ البضاعةَ بلا ثمن.
-    final prices = <String, String>{
-      for (final id in _chosen)
-        if ((_prices[id]?.text.trim() ?? '').isNotEmpty) '$id': _prices[id]!.text.trim(),
-    };
-
-    final result = await safeRequest<void>(
-      () => sl<Dio>().post(
-        InvestmentEndpoints.fundPurchase(widget.order.id),
-        data: {
-          'stock_item_ids': _chosen.toList(),
-          if (prices.isNotEmpty) 'printing_sale_prices': prices,
-        },
-      ),
-      parse: (_) {},
+    final result = await sl<BuyWithFund>()(
+      widget.order.id,
+      (stockItemIds: _chosen.toList(), printingSalePrices: fundPricesFrom(_prices, _chosen)),
     );
 
     if (!mounted) return;
@@ -131,9 +136,6 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
 
   @override
   Widget build(BuildContext context) {
-    final cash = _standing?.valuation.cash ?? '0';
-    final enough = (double.tryParse(cash) ?? 0) >= (double.tryParse(_cost) ?? 0);
-
     return Scaffold(
       appBar: AppBar(title: const Text('شراء بمال الصندوق')),
       body: _loading
@@ -141,65 +143,20 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
           : ListView(
               padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
               children: [
-                _Figure(label: 'نقد الصندوق', amount: cash),
-                _Figure(label: 'تكلفة ما اخترت', amount: _cost, emphasis: true),
-                if (!enough) ...[
-                  SizedBox(height: 12.h),
-                  Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: Text(
-                      'نقد الصندوق لا يكفي — الباقي بضاعةٌ ومستحقّاتٌ لم تُحصَّل',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: context.colorScheme.onErrorContainer,
-                      ),
-                    ),
-                  ),
-                ],
-                SizedBox(height: 20.h),
-                Text(
-                  'الرفوف',
-                  style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                FundPurchaseChooser(
+                  cash: _standing?.valuation.cash,
+                  cost: _cost,
+                  shelves: _shelves,
+                  chosen: _chosen,
+                  prices: _prices,
+                  onToggle: (stockItemId, chosen) => setState(() {
+                    if (chosen) {
+                      _chosen.add(stockItemId);
+                    } else {
+                      _chosen.remove(stockItemId);
+                    }
+                  }),
                 ),
-                SizedBox(height: 8.h),
-                for (final line in widget.order.items) ...[
-                  CheckboxListTile(
-                    value: _chosen.contains(line.stockItemId),
-                    title: Text(line.title),
-                    subtitle: Text(
-                      '${line.totalCostLabel} د.ل',
-                      textDirection: TextDirection.ltr,
-                    ),
-                    onChanged: (checked) => setState(() {
-                      if (checked ?? false) {
-                        _chosen.add(line.stockItemId);
-                      } else {
-                        _chosen.remove(line.stockItemId);
-                      }
-                    }),
-                  ),
-                  // الحقلُ تحت رفِّه لا في شاشةٍ ثانية: السعرُ يخصّ هذا الرفَّ وحده، ومن يكتبه
-                  // يحتاج أن يرى تكلفتَه فوقه — فالبيعُ بأقلّ منها خسارةٌ يكتبها بيده.
-                  if (_chosen.contains(line.stockItemId))
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
-                      child: TextField(
-                        controller: _prices[line.stockItemId],
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        textDirection: TextDirection.ltr,
-                        decoration: InputDecoration(
-                          labelText: 'سعر السادة للوحدة — اختياري',
-                          helperText: 'يُترك فارغاً فيبقى الربح على البيع إلى التسليم',
-                          helperMaxLines: 2,
-                          suffixText: 'د.ل',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
-                        ),
-                      ),
-                    ),
-                ],
                 SizedBox(height: 20.h),
                 AppButton(
                   label: 'شراء بمال الصندوق',
@@ -208,33 +165,6 @@ class _FundPurchasePageState extends State<FundPurchasePage> {
                 ),
               ],
             ),
-    );
-  }
-}
-
-class _Figure extends StatelessWidget {
-  const _Figure({required this.label, required this.amount, this.emphasis = false});
-
-  final String label;
-  final String amount;
-  final bool emphasis;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6.h),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: context.textTheme.bodyMedium)),
-          Text(
-            '${amount.grouped} د.ل',
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.bodyMedium?.copyWith(
-              fontWeight: emphasis ? FontWeight.w800 : FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

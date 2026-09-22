@@ -1,10 +1,17 @@
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/fund_purchase_chooser.dart';
+import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/save_purchase_order_cubit.dart';
 import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
@@ -95,6 +102,9 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
         // re-declared since must not silently re-label the quantity already agreed with the
         // vendor.
         unit: item.lineUnit,
+        // وقيمةُ الخادم نفسُها بجانب تسميتها: على «kilogram» يقوم سريانُ سعر السادة الافتراضي،
+        // ومطابقةُ «كجم» نصّاً تنكسر أوّلَ ما تُترجم تسمية.
+        unitWire: item.unit,
         quantity: item.orderedLabel,
         // Empty for a line raised before cost tracking, so the field opens asking rather than
         // opening on a zero somebody would have to notice was never typed.
@@ -124,10 +134,37 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
       ),
   ];
 
+  /// **صفُّ الصندوق: هل يشتري هذا الأمرَ بماله؟** مطفأٌ حتى يُشعَل — الشراءُ قرارٌ يُتَّخذ لا
+  /// افتراضٌ يُنسى، والنقدُ يخرج من الخزينة لحظةَ الحفظ.
+  bool _fundBuys = false;
+
+  /// الرفوفُ التي يأخذها الصندوق. تبدأ بالكلّ يوم يُشعَل الصفّ، ويتبعها ما يُضاف بعده.
+  final Set<int> _fundedShelves = <int>{};
+
+  /// نقدُ الصندوق وقيمتُه — يُقرأ مرّةً عند أول إشعالٍ للصفّ لا عند فتح الشاشة: أكثرُ أوامر
+  /// الشراء لا يموّلها أحد، وطلبٌ في كل مرّة ثمنُه على من لا يستعمله.
+  FundStanding? _standing;
+  bool _loadingStanding = false;
+
   bool get _isEditing => widget.order != null;
 
   /// Locked once the order exists — see the note on the page.
   bool get _mayPickVendor => !_isEditing;
+
+  /// **لمن يُعرض صفُّ الصندوق، وعلى أيّ أمر.**
+  ///
+  /// التمويلُ صلاحيةُ من يدير المستثمرين لا صلاحيةُ من يشتري — والخادمُ هو الحدّ، وهذا إخفاءُ
+  /// عملٍ لا يستطيع صاحبُه إتمامه. وأمرٌ موّله الصندوقُ مرّةً لا يُموَّل ثانية: الخادمُ يرفض
+  /// السطرَ المُطالَبَ به باسم صفقته، فالصفُّ يغيب بدل أن يَعِد بما يُرفض. وأمرٌ وصلت بضاعتُه
+  /// فات وقتُه أصلاً — طبقةُ التكلفة تُختم بصفقتها عند البوابة ولا تُختم بعدها.
+  bool get _mayFund {
+    if (!sl<Session>().can(AppPermission.manageInvestors)) return false;
+
+    final order = widget.order;
+    if (order == null) return true;
+
+    return order.investorFunding.isEmpty && order.status.isEditable;
+  }
 
   ({int id, String name})? _seedVendor() {
     if (widget.vendor case final vendor?) {
@@ -232,6 +269,10 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
     }
 
     setState(() {
+      // الرفُّ الجديد يدخل ما يشتريه الصندوق: الصفُّ حين يُشعَل يعني «اللوري كلُّه»، وبندٌ
+      // يُضاف بعده يبقى خارجاً بلا أن يقول أحدٌ لماذا.
+      if (_fundBuys) _fundedShelves.add(picked.id);
+
       _lines.add(
         _LineDraft(
           stockItemId: picked.id,
@@ -243,17 +284,128 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
           // typed into them. `CreatePurchaseOrder` force-fills the line from the same field when
           // it saves, so the form asks in the word the order will report in.
           unit: PurchaseLineUnit(picked.unitLabel),
+          unitWire: picked.unit.wire,
           quantity: '',
           baseTotalCost: '',
         ),
       );
+
+      // ويأخذ الافتراضَ كما أخذه من سبقه: بندٌ يُضاف بعد إشعال الصفّ لا يُفتح حقلُه فارغاً
+      // لمجرّد أنه تأخّر.
+      _seedPrices();
     });
   }
 
   void _removeLine(_LineDraft line) {
-    setState(() => _lines.remove(line));
+    setState(() {
+      _lines.remove(line);
+      _fundedShelves.remove(line.stockItemId);
+    });
     // Disposed after the rebuild, so nothing is reading the controller as it goes.
     WidgetsBinding.instance.addPostFrameCallback((_) => line.dispose());
+  }
+
+  /// إشعالُ صفِّ الصندوق أو إطفاؤه.
+  ///
+  /// الإشعالُ يختار الرفوفَ كلَّها — «يشتريه الصندوق» يعني اللوري، ومن أراد بعضَه يرفع الصحَّ
+  /// عمّا لا يريد — ويقرأ نقدَ الخزينة مرّةً واحدة. والإطفاءُ لا يمسح الحقولَ المكتوبة: من
+  /// أطفأ الصفَّ ليراجع رقماً ثم أعاده يجد ما كتبه مكانه.
+  Future<void> _toggleFunding(bool on) async {
+    setState(() {
+      _fundBuys = on;
+
+      if (on) {
+        _fundedShelves
+          ..clear()
+          ..addAll(_lines.map((line) => line.stockItemId));
+      }
+    });
+
+    if (!on || _standing != null || _loadingStanding) return;
+
+    setState(() => _loadingStanding = true);
+
+    final result = await sl<GetFundStanding>()();
+
+    if (!mounted) return;
+
+    // **وسقوطُ القراءة لا يغلق الباب.** الرقمُ المعروض راحةٌ لمن يقرّر، والسقفَ الحقيقيّ يفرضه
+    // الخادمُ لحظةَ الشراء ويسمّي الرقمين في رفضه.
+    setState(() {
+      _loadingStanding = false;
+      _standing = result.fold((_) => null, (standing) => standing);
+      _seedPrices();
+    });
+  }
+
+  /// يملأ حقولَ سعر السادة بالافتراض الواصل مع اللوحة — ما لم يُكتب فيها شيءٌ بعد.
+  void _seedPrices() => seedFundPrices(
+    fallback: _standing?.defaultPlainSalePrice,
+    shelves: _shelves,
+    prices: {for (final line in _lines) line.stockItemId: line.printingSalePrice},
+  );
+
+  /// ما كُتب في حقلِ مالٍ، رقماً — بأرقامٍ عربيةٍ كانت أو لاتينية.
+  double _amount(String text) =>
+      double.tryParse(
+        Validators.toWesternDigits(text).replaceAll(',', '.').trim(),
+      ) ??
+      0;
+
+  /// تكلفةُ رفٍّ واحدٍ **واصلةً**: ما كُتب في سطره، وحصّتُه من توصيلِ الأمر وجماركه.
+  ///
+  /// **وحصّةُ الشحن ليست تزيّداً في الحساب.** الخادمُ يوزّع التكاليف الإضافية على البنود بنسبة
+  /// قيمة كلٍّ منها ({@see AllocatePurchaseOrderAdditionalCosts})، ويقيس نقدَ الصندوق بالتكلفة
+  /// الواصلة لا بالمدفوع للمورد. فنموذجٌ يجمع السطورَ وحدها يقول «يكفي النقد» ثم يردّ الخادمُ
+  /// «لا يكفي» — وقد صار الأمرُ مكتوباً.
+  String _shelfCost(_LineDraft line) {
+    final base = _amount(line.baseTotalCost.text);
+
+    return (base + _extrasShare(base)).toStringAsFixed(2);
+  }
+
+  /// تكلفةُ ما يشتريه الصندوق من هذا الأمر، على القاعدة نفسها.
+  String get _fundedCost {
+    var chosen = 0.0;
+
+    for (final line in _lines) {
+      if (_fundedShelves.contains(line.stockItemId)) {
+        chosen += _amount(line.baseTotalCost.text);
+      }
+    }
+
+    return (chosen + _extrasShare(chosen)).toStringAsFixed(2);
+  }
+
+  /// رفوفُ الأمر كما يراها صفُّ الصندوق.
+  List<FundShelf> get _shelves => [
+    for (final line in _lines)
+      (
+        stockItemId: line.stockItemId,
+        title: line.title,
+        cost: _shelfCost(line),
+        unitWire: line.unitWire,
+        per: line.unit.per,
+      ),
+  ];
+
+  /// نصيبُ [base] من التكاليف الإضافية — بنسبة ما تمثّله من قيمة الأمر كلِّه.
+  double _extrasShare(double base) {
+    var lines = 0.0;
+
+    for (final line in _lines) {
+      lines += _amount(line.baseTotalCost.text);
+    }
+
+    if (lines <= 0) return 0;
+
+    var extras = 0.0;
+
+    for (final cost in _additionalCosts) {
+      extras += _amount(cost.amount.text);
+    }
+
+    return extras * (base / lines);
   }
 
   /// A blank row, rather than a dialog: there is nothing to pick from — the name is whatever the
@@ -279,6 +431,13 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
 
     if (vendor == null || warehouse == null || _lines.isEmpty) {
       context.showInfo('اختر المورد والمخزن، وأضف بنداً واحداً على الأقل');
+
+      return;
+    }
+
+    // صفٌّ مُشعَلٌ بلا رفّ: الخادمُ يردّها «لم يُختر أيُّ سطر» بعد أن يكون الأمرُ قد كُتب.
+    if (_fundBuys && _fundedShelves.isEmpty) {
+      context.showInfo('اختر رفّاً واحداً على الأقل ليشتريه الصندوق');
 
       return;
     }
@@ -311,21 +470,77 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
             amount: cost.amount.text,
           ),
       ],
+      // فعلٌ ثانٍ في الضغطة نفسها، برقمِ الأمر الذي يعود من الأوّل — وسعرُ السادة يُكتب هنا أو
+      // لا يُكتب أبداً: يُجمَّد على السطر لحظةَ المطالبة به.
+      funding: _fundBuys
+          ? (
+              stockItemIds: _fundedShelves.toList(),
+              printingSalePrices: fundPricesFrom({
+                for (final line in _lines)
+                  line.stockItemId: line.printingSalePrice,
+              }, _fundedShelves),
+            )
+          : null,
+    );
+  }
+
+  /// حرفٌ كُتب في حقلِ تكلفة — سطراً كان أو توصيلاً.
+  ///
+  /// يمسح شكوى الخادم السابقة، **ويعيد رسمَ صفِّ الصندوق**: «تكلفة ما اخترت» تُقرأ من هذه
+  /// الحقول نفسِها، ورقمٌ لا يتحرّك مع ما يُكتب فوقه رقمٌ يكذب — وعليه يُقرَّر إن كان في الدرج
+  /// ما يكفي.
+  void _typed(SavePurchaseOrderCubit cubit) {
+    cubit.clearFailure();
+
+    if (_fundBuys) setState(() {});
+  }
+
+  /// مغادرةُ الشاشة بعد كتابةٍ نجحت — ومعها ما لم ينجح.
+  ///
+  /// **[fundingFailure] يُقال في حوارٍ لا في شريطٍ عابر.** الأمرُ كُتب والتمويلُ لم يقع: رسالةٌ
+  /// تمرّ في ثانيتين على شاشةٍ تُغلق تترك صاحبَها يظنّ أن الصندوق اشترى. والبابُ يبقى مفتوحاً
+  /// على تفصيل الأمر، فالجملةُ تقول أين.
+  Future<void> _leave(
+    BuildContext context,
+    PurchaseOrder order,
+    Failure? fundingFailure,
+  ) async {
+    if (fundingFailure != null) {
+      await showCustomDialog(
+        context: context,
+        title: 'كُتب الأمر، ولم يشترِه الصندوق',
+        description:
+            '${fundingFailure.message}\n\n'
+            'التمويل من شاشة الأمر: «تمويل مستثمرين».',
+        confirmLabel: 'حسناً',
+        cancelLabel: null,
+        severity: DialogSeverity.warning,
+      );
+
+      if (!context.mounted) return;
+    }
+
+    // الأمرُ المحفوظ يعود مع الإغلاق، فالشاشةُ التي خلفه ترسم صفَّه مما خزّنه الخادمُ لا
+    // بطلبٍ ثانٍ.
+    Navigator.of(context).pop(order);
+
+    context.showSuccess(
+      switch ((_isEditing, _fundBuys && fundingFailure == null)) {
+        (true, true) => 'تم حفظ أمر الشراء واشتراه الصندوق',
+        (true, false) => 'تم حفظ أمر الشراء',
+        (false, true) => 'تم إنشاء أمر الشراء واشتراه الصندوق',
+        (false, false) => 'تم إنشاء أمر الشراء',
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<SavePurchaseOrderCubit, SavePurchaseOrderState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         switch (state) {
-          case SavePurchaseOrderSuccess(:final order):
-            // The saved order goes back with it, so the screen behind redraws its row from what
-            // the server stored rather than asking for it again.
-            Navigator.of(context).pop(order);
-            context.showSuccess(
-              _isEditing ? 'تم حفظ أمر الشراء' : 'تم إنشاء أمر الشراء',
-            );
+          case SavePurchaseOrderSuccess(:final order, :final fundingFailure):
+            await _leave(context, order, fundingFailure);
           case SavePurchaseOrderFailure(:final failure)
               when state.hasUnrenderedErrors:
             context.showFailure(failure);
@@ -406,7 +621,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
                     _LineRow(
                       key: ValueKey(line.stockItemId),
                       line: line,
-                      onChanged: (_) => cubit.clearFailure(),
+                      onChanged: (_) => _typed(cubit),
                       onRemove: () => _removeLine(line),
                     ),
                   SizedBox(height: 8.h),
@@ -439,7 +654,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
                     _AdditionalCostRow(
                       key: ObjectKey(cost),
                       cost: cost,
-                      onChanged: (_) => cubit.clearFailure(),
+                      onChanged: (_) => _typed(cubit),
                       onRemove: () => _removeAdditionalCost(cost),
                     ),
                   SizedBox(height: 8.h),
@@ -448,6 +663,45 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
                     icon: AppIcons.add,
                     onPressed: _addAdditionalCost,
                   ),
+
+                  // تحت البنود وتكاليفها، لأن ما يشتريه الصندوق يُقاس بهما معاً: الرفوفُ
+                  // تُختار من الأولى، وتكلفتُها الواصلة تحمل حصّتَها من الثانية.
+                  if (_mayFund) ...[
+                    SizedBox(height: 20.h),
+                    _ListHeader(
+                      title: 'التمويل',
+                      count: _fundBuys ? _fundedShelves.length : 0,
+                      emptyLabel: 'لا تمويل',
+                    ),
+                    SwitchListTile.adaptive(
+                      value: _fundBuys,
+                      title: const Text('يشتريه الصندوق بماله'),
+                      contentPadding: EdgeInsets.zero,
+                      // مقفولٌ والحفظُ في الطريق: القرارُ صار مُرسَلاً، وتغييرُه الآن يغيّر
+                      // جملةَ النهاية لا ما وقع.
+                      onChanged: state.isSubmitting ? null : _toggleFunding,
+                    ),
+                    // الرفوفُ تُعرض فوراً والنقدُ يلحق: سطرُ النقد يظهر حين يصل، بدل دوّارةٍ
+                    // تُخفي القائمةَ ثم تردّها فتقفز الشاشة.
+                    if (_fundBuys)
+                      FundPurchaseChooser(
+                        cash: _standing?.valuation.cash,
+                        cost: _fundedCost,
+                        shelves: _shelves,
+                        chosen: _fundedShelves,
+                        prices: {
+                          for (final line in _lines)
+                            line.stockItemId: line.printingSalePrice,
+                        },
+                        onToggle: (stockItemId, chosen) => setState(() {
+                          if (chosen) {
+                            _fundedShelves.add(stockItemId);
+                          } else {
+                            _fundedShelves.remove(stockItemId);
+                          }
+                        }),
+                      ),
+                  ],
 
                   SizedBox(height: 20.h),
                   AppTextField(
@@ -483,6 +737,7 @@ class _LineDraft {
     required String baseTotalCost,
     this.code,
     this.unit = const PurchaseLineUnit(null),
+    this.unitWire,
     this.id,
   }) : quantity = TextEditingController(text: quantity),
        baseTotalCost = TextEditingController(text: baseTotalCost);
@@ -510,14 +765,27 @@ class _LineDraft {
   /// guessing.
   final PurchaseLineUnit unit;
 
+  /// «kilogram» / «piece» — قيمةُ الخادم نفسُها، لا تسميتُها العربية.
+  ///
+  /// عليها وحدَها يقوم سريانُ سعر السادة الافتراضي: الافتراضُ سعرُ كيلو، ورفٌّ يُعدّ بالقطعة
+  /// يُفتح حقلُه فارغاً. null على سطرٍ أقدم من عمود الوحدة — فلا يُملأ أيضاً.
+  final String? unitWire;
+
   final TextEditingController quantity;
 
   /// What the whole line costs, as invoiced. Names no unit — see the note on the page.
   final TextEditingController baseTotalCost;
 
+  /// بكم تشتري المطبعةُ سادةَ هذا الرفّ من الصندوق — حين يشتريه الصندوق، واختياريٌّ حينها.
+  ///
+  /// **يعيش مع سطره لا مع صفِّ التمويل**: بناؤه عند أول ظهورٍ في القائمة كان يعني حقلاً جديداً
+  /// — وقيمةً ضائعة — كلَّما رُفع الصحُّ عن رفٍّ ثم أُعيد، أو أُطفئ الصفُّ ثم أُشعل.
+  final TextEditingController printingSalePrice = TextEditingController();
+
   void dispose() {
     quantity.dispose();
     baseTotalCost.dispose();
+    printingSalePrice.dispose();
   }
 }
 

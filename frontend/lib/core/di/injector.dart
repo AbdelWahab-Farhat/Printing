@@ -700,6 +700,9 @@ abstract final class Injector {
       )
       ..registerLazySingleton<CloseFundPeriod>(
         () => CloseFundPeriod(sl<InvestmentFundRepository>()),
+      )
+      ..registerLazySingleton<BuyWithFund>(
+        () => BuyWithFund(sl<InvestmentFundRepository>()),
       );
   }
 
@@ -1306,8 +1309,13 @@ abstract final class Injector {
           reverseReceiptUseCase: sl<ReverseReceipt>(),
         ),
       )
+      // **ويحمل بابَ الصندوق معه**: أمرٌ يُنشأ ليشتريه الصندوق يُموَّل في الضغطة نفسِها، فلا
+      // تُترك الشاشةُ ليُبحث بعدها عن زرٍّ في تفصيل الأمر.
       ..registerFactory<SavePurchaseOrderCubit>(
-        () => SavePurchaseOrderCubit(saveOrder: sl<SavePurchaseOrder>()),
+        () => SavePurchaseOrderCubit(
+          saveOrder: sl<SavePurchaseOrder>(),
+          buyWithFund: sl<BuyWithFund>(),
+        ),
       )
       // One fixed question, asked from a supplier's screen. Parameterised on the filter for the
       // same reason the orders one is: the question is settled before the screen opens.
