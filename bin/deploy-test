@@ -1,0 +1,217 @@
+#!/usr/bin/env bash
+#
+# نشرٌ إلى بيئة التجربة بأمرٍ واحد: اختبار → commit → push → نشرٌ على السيرفر → تحقُّق.
+#
+#   bin/deploy-test -m "رسالة الـcommit"     # يُودع المُجهَّز (staged)، يدفع، ثم ينشر
+#   bin/deploy-test -a -m "رسالة"            # يُجهِّز كلَّ تعديلات الملفات المتتبَّعة أولاً
+#   bin/deploy-test --deploy-only            # نشرٌ فقط لما هو مدفوعٌ أصلاً
+#   bin/deploy-test --skip-tests -m "..."    # بلا اختبارات (لا يُنصح)
+#
+# ## لماذا سكربتٌ بدل أوامرَ تُكتب بالذاكرة
+#
+# لأن ثلاثةً من خطواته أُغفلت فعلاً وكلّفت وقتاً، ولا تترك واحدةٌ منها أثراً في سجلّ:
+#
+#   ١ · **كاشُ المسارات.** لارافيل يقرأ `bootstrap/cache/routes-v7.php` متى وُجد، فمسارٌ جديد
+#       يردّ 404 وكأنّه غير مكتوب. وقع على الإنتاج في ٢٣ أغسطس وعلى صندوق التجربة في ٢١ سبتمبر.
+#   ٢ · **إصدارُ PHP.** الـ`php` و`composer` الافتراضيان على الصندوق يعملان بـ8.2.33، والتطبيق
+#       يحتاج ≥8.4.1. و`composer install` بلا المسار الكامل يموت، ويأخذ معه بقيةَ النشر بصمت.
+#   ٣ · **النسخةُ الاحتياطية.** الهجراتُ تكتب في المال أحياناً (انظر هجرةَ إصلاح الصندوق في
+#       ٢٢ سبتمبر). قاعدةٌ بلا نسخةٍ قبل الهجرة قرارٌ لا يُتَّخذ بالسهو.
+#
+# ## وما لا يفعله
+#
+# **لا يلمس الإنتاج.** هذا الصندوقُ صندوقُ تجربة، وبياناتُه بياناتُ تجربة. ويرفض الدفعَ من
+# `main` إلا بموافقةٍ صريحة، لأن `main` هو ما ينشره النشرُ الآخر.
+#
+# ## وأينَ اسمُ الصندوق
+#
+# **ليس هنا.** المستودعُ عامّ، وخريطةُ النشر استطلاعٌ لمن يقرأ — وهي قاعدةُ README نفسِها.
+# فالعنوانُ يُقرأ من `bin/deploy-test.local`، ملفٍّ غيرِ متتبَّع إلى جانب هذا:
+#
+#     TEST_HOST=<اسم المضيف في ~/.ssh/config>
+#     API_BASE=https://<المضيف>/api/v1
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+# shellcheck source=/dev/null
+[[ -f "$REPO_ROOT/bin/deploy-test.local" ]] && source "$REPO_ROOT/bin/deploy-test.local"
+
+TEST_HOST="${TEST_HOST:-}"
+API_BASE="${API_BASE:-}"
+REMOTE_REPO="${REMOTE_REPO:-/var/www/printing}"
+REMOTE_PHP="${REMOTE_PHP:-/opt/cpanel/ea-php84/root/usr/bin/php}"
+REMOTE_FPM="${REMOTE_FPM:-ea-php84-php-fpm}"
+
+if [[ -z "$TEST_HOST" || -z "$API_BASE" ]]; then
+    cat >&2 <<'HINT'
+ينقص عنوانُ صندوق التجربة. أنشئ bin/deploy-test.local (غير متتبَّع) بسطرين:
+
+    TEST_HOST=<اسم المضيف كما في ~/.ssh/config>
+    API_BASE=https://<المضيف>/api/v1
+
+لا يُكتب العنوانُ في السكربت: المستودعُ عامّ.
+HINT
+    exit 1
+fi
+
+message=""
+stage_all=false
+deploy_only=false
+run_tests=true
+allow_main=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -m|--message) message="${2:-}"; shift 2 ;;
+        -a|--all) stage_all=true; shift ;;
+        --deploy-only) deploy_only=true; shift ;;
+        --skip-tests) run_tests=false; shift ;;
+        --allow-main) allow_main=true; shift ;;
+        -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"; exit 0 ;;
+        *) echo "خيار غير معروف: $1" >&2; exit 2 ;;
+    esac
+done
+
+branch="$(git rev-parse --abbrev-ref HEAD)"
+say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
+
+if [[ "$branch" == "main" && "$allow_main" != true ]]; then
+    echo "أنت على main. انشر من فرع، أو مرِّر --allow-main إن كنت تقصد ذلك." >&2
+    exit 1
+fi
+
+# ————— ١ · الإيداع والدفع —————
+
+if [[ "$deploy_only" != true ]]; then
+    # **التجهيزُ بالمسار لا بـ`-A`.** هذا المجلد يشتغل عليه أكثرُ من جلسة في الوقت نفسه، و
+    # `git add -A` يبتلع عملَ غيرك نصفَ مكتوب ويدفعه إلى الصندوق باسمك.
+    if [[ "$stage_all" == true ]]; then
+        say "git add -u (الملفات المتتبَّعة فقط)"
+        git add -u
+    fi
+
+    staged="$(git diff --cached --name-only)"
+
+    if [[ -n "$staged" ]]; then
+        if [[ -z "$message" ]]; then
+            echo "هناك تغييراتٌ مُجهَّزة بلا رسالة. مرِّر -m \"…\"." >&2
+            exit 1
+        fi
+
+        say "ما سيُودَع"
+        printf '%s\n' "$staged" | sed 's/^/    /'
+
+        if ! git diff --quiet; then
+            printf '\n\033[33mملاحظة:\033[0m تعديلاتٌ غير مُجهَّزة ستبقى كما هي:\n'
+            git diff --name-only | sed 's/^/    /'
+        fi
+    else
+        echo "لا شيء مُجهَّزٌ للإيداع — أكمل إلى الدفع والنشر."
+    fi
+
+    say "الاختبارات"
+    if [[ "$run_tests" == true ]]; then
+        # `-d memory_limit=2G` ليست ترفاً: السويتُ كاملةً تنهار في منتصفها بلا ذلك،
+        # والانهيارُ يشبه فشلاً حقيقياً ولا علاقة له بالتغيير.
+        (cd backend && php -d memory_limit=2G artisan test)
+
+        # **pint على المُجهَّز وحده.** تشغيلُه على المجلد كلّه يُبلِّغ عن ملفاتٍ لم يمسسها أحدٌ
+        # في هذه الجلسة، فيصير النشرُ رهينةَ انحرافِ نمطٍ قديم لا شأن له بما يُدفَع.
+        # حلقةٌ بدل `mapfile`: الـbash الذي تشحنه macOS هو 3.2، ولا يعرفها.
+        php_staged=()
+        while IFS= read -r file; do
+            [[ -n "$file" ]] && php_staged+=("$file")
+        done < <(printf '%s\n' "$staged" | sed -n 's|^backend/\(.*\.php\)$|\1|p')
+
+        if [[ ${#php_staged[@]} -gt 0 ]]; then
+            (cd backend && ./vendor/bin/pint --test "${php_staged[@]}")
+        fi
+    else
+        echo "    تُخُطِّيت (--skip-tests)"
+    fi
+
+    if [[ -n "$staged" ]]; then
+        say "git commit"
+        git commit -m "$message"
+    fi
+
+    say "git push origin $branch"
+    git push origin "$branch"
+fi
+
+pushed_sha="$(git rev-parse --short HEAD)"
+
+# ————— ٢ · النشر على الصندوق —————
+
+say "النشر على $TEST_HOST (الفرع $branch @ $pushed_sha)"
+
+ssh -o BatchMode=yes "$TEST_HOST" bash -s -- \
+    "$REMOTE_REPO" "$REMOTE_PHP" "$REMOTE_FPM" "$branch" <<'REMOTE'
+set -euo pipefail
+repo="$1"; php="$2"; fpm="$3"; branch="$4"
+
+echo "--> نسخةٌ احتياطية قبل أيّ هجرة"
+mkdir -p /root/backups
+backup="/root/backups/printing_bags_$(date +%Y%m%d_%H%M%S).dump"
+pg_dump -U postgres -Fc printing_bags -f "$backup"
+echo "    $backup"
+
+cd "$repo"
+echo "--> قبل: $(git log --oneline -1)"
+
+# النسخةُ على الصندوق مبتورةُ التاريخ (shallow) وبفرعٍ واحد، فالجلبُ صريحٌ بالفرع
+# و`reset` لا `pull`: لا تاريخَ مشتركاً يُدمج عليه.
+git remote set-branches origin '*' >/dev/null 2>&1 || true
+git fetch origin "$branch" --depth=1
+git reset --hard FETCH_HEAD
+echo "--> بعد:  $(git log --oneline -1)"
+
+cd "$repo/backend"
+
+# composer عند تغيّر القفل وحده — وبمسار 8.4 الكامل، لأن `composer` في PATH يعمل بـ8.2.
+stamp="storage/framework/.composer.lock.md5"
+now="$(md5sum composer.lock | cut -d' ' -f1)"
+if [[ ! -f "$stamp" || "$(cat "$stamp")" != "$now" ]]; then
+    echo "--> composer install"
+    "$php" /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction
+    echo "$now" > "$stamp"
+else
+    echo "--> composer: القفل لم يتغيّر"
+fi
+
+echo "--> migrate"
+"$php" artisan migrate --force
+
+echo "--> permissions:sync"
+"$php" artisan permissions:sync
+
+echo "--> إعادةُ بناء الكاش"
+PHP_BIN="$php" bin/rebuild-caches
+
+echo "--> reload $fpm"
+systemctl reload "$fpm"
+REMOTE
+
+# ————— ٣ · التحقُّق —————
+#
+# **المسبارُ الذي يفرّق بين «لم يُنشر» و«لا سجلّ بهذا الرقم»:** اطرق مساراً محميّاً بلا رمز.
+# 401 ⇒ المسارُ مسجَّل والمصادقةُ سبقت الربط. 404 ⇒ الراوتر نفسُه لا يعرف الطريق، أي أن
+# الكاشَ قديم. وهي 404 نفسُها التي يعرضها التطبيق كـ«العنصر المطلوب غير موجود».
+
+say "التحقُّق"
+
+health="$(curl -s -o /dev/null -w '%{http_code}' "$API_BASE/health" || true)"
+echo "    GET /health            → $health   (المنتظر 200)"
+
+route="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_BASE/investment/deposits" || true)"
+echo "    POST /investment/deposits (بلا رمز) → $route   (المنتظر 401)"
+
+if [[ "$health" != "200" || "$route" != "401" ]]; then
+    echo
+    echo "التحقُّق لم يمرّ. 404 على المسار تعني كاشاً قديماً؛ 503 على health تعني قاعدةً لا تُوصَل." >&2
+    exit 1
+fi
+
+say "تمّ — $branch @ $pushed_sha على $TEST_HOST"

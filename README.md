@@ -71,6 +71,31 @@ ssh <server> printing-deploy
 **Hostnames, addresses and credentials are deliberately not written down here** — this repository
 is public, and a deployment map is reconnaissance. They live in the operator's own notes.
 
+### The test box in one command — [`bin/deploy-test`](bin/deploy-test)
+
+Tests, commit, push, deploy and verify, in that order:
+
+```bash
+bin/deploy-test -m "رسالة الـcommit"   # commits what is staged
+bin/deploy-test -a -m "…"              # stages tracked changes first
+bin/deploy-test --deploy-only          # deploys what is already pushed
+```
+
+It stages by path and never `git add -A`, because more than one session works this tree at a
+time. It takes a `pg_dump` before migrating — migrations sometimes write money. It runs
+`composer` and `artisan` through the box's own PHP 8.4 binary, because the `php` on `PATH` there
+is 8.2 and the failure is silent. And it finishes by asking the API two questions: `/health`
+must answer `200`, and a route behind auth must answer `401` — a `404` there means the route
+cache was not rebuilt, which reads on screen as «العنصر المطلوب غير موجود» and looks exactly
+like a missing record.
+
+The host is not in the script. Put it in `bin/deploy-test.local`, which is git-ignored:
+
+```bash
+TEST_HOST=<the Host name in ~/.ssh/config>
+API_BASE=https://<host>/api/v1
+```
+
 ### Rebuilding the caches — [`backend/bin/rebuild-caches`](backend/bin/rebuild-caches)
 
 New code on a box does nothing until the framework caches are rebuilt, and **skipping it fails
