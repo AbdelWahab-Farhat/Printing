@@ -943,7 +943,10 @@ mixin _$FundStanding {
  FundValuation get valuation;/// `null` قبل أن تُفتح أوّلُ فترة — وهي حالةٌ تُقال صراحةً لا تُخترع لها فترةٌ وهمية.
  FundPeriod? get period;/// **سعرُ الوحدة اليوم** — ما يشتري به الداخلُ الجديد. يُحسب في الخادم ولا يُعاد حسابُه
 /// هنا: تنفيذٌ ثانٍ للقاعدة هو الذي يخالفها يوم تتغيّر.
-@JsonKey(name: 'unit_price') String get unitPrice;@JsonKey(name: 'units_outstanding') String get unitsOutstanding; List<FundHolder> get investors;/// **سقفُ اشتراك كل مستثمر اليوم** — رصيدُ محفظته. يصل مع اللوحة لأن الورقة تحتاجه قبل أن
+@JsonKey(name: 'unit_price') String get unitPrice;@JsonKey(name: 'units_outstanding') String get unitsOutstanding; List<FundHolder> get investors;/// **سعرُ السادة الافتراضي** — يصل مع اللوحة لأن شاشةَ الشراء تقرأ اللوحةَ قبل أن تُملأ
+/// حقولُها، وطلبٌ ثانٍ للإعدادات في اللحظة نفسها رحلةٌ زائدة لرقمٍ واحد. افتراضٌ يُعرض
+/// ويُغيَّر، لا قاعدةٌ في حساب.
+@JsonKey(name: 'default_plain_sale_price') String? get defaultPlainSalePrice;/// **سقفُ اشتراك كل مستثمر اليوم** — رصيدُ محفظته. يصل مع اللوحة لأن الورقة تحتاجه قبل أن
 /// يُكتب رقم، ولأنه رصيدٌ لا يعرفه إلا الخادم: زميلٌ سجّل سحباً قبل ثانية.
  List<FundSubscriber> get subscribable;
 /// Create a copy of FundStanding
@@ -958,16 +961,16 @@ $FundStandingCopyWith<FundStanding> get copyWith => _$FundStandingCopyWithImpl<F
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other.investors, investors)&&const DeepCollectionEquality().equals(other.subscribable, subscribable));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other.investors, investors)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&const DeepCollectionEquality().equals(other.subscribable, subscribable));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,valuation,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(investors),const DeepCollectionEquality().hash(subscribable));
+int get hashCode => Object.hash(runtimeType,valuation,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(investors),defaultPlainSalePrice,const DeepCollectionEquality().hash(subscribable));
 
 @override
 String toString() {
-  return 'FundStanding(valuation: $valuation, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, subscribable: $subscribable)';
+  return 'FundStanding(valuation: $valuation, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, defaultPlainSalePrice: $defaultPlainSalePrice, subscribable: $subscribable)';
 }
 
 
@@ -978,7 +981,7 @@ abstract mixin class $FundStandingCopyWith<$Res>  {
   factory $FundStandingCopyWith(FundStanding value, $Res Function(FundStanding) _then) = _$FundStandingCopyWithImpl;
 @useResult
 $Res call({
- FundValuation valuation, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors, List<FundSubscriber> subscribable
+ FundValuation valuation, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice, List<FundSubscriber> subscribable
 });
 
 
@@ -995,14 +998,15 @@ class _$FundStandingCopyWithImpl<$Res>
 
 /// Create a copy of FundStanding
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? valuation = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? subscribable = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? valuation = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? defaultPlainSalePrice = freezed,Object? subscribable = null,}) {
   return _then(_self.copyWith(
 valuation: null == valuation ? _self.valuation : valuation // ignore: cast_nullable_to_non_nullable
 as FundValuation,period: freezed == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as FundPeriod?,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,unitsOutstanding: null == unitsOutstanding ? _self.unitsOutstanding : unitsOutstanding // ignore: cast_nullable_to_non_nullable
 as String,investors: null == investors ? _self.investors : investors // ignore: cast_nullable_to_non_nullable
-as List<FundHolder>,subscribable: null == subscribable ? _self.subscribable : subscribable // ignore: cast_nullable_to_non_nullable
+as List<FundHolder>,defaultPlainSalePrice: freezed == defaultPlainSalePrice ? _self.defaultPlainSalePrice : defaultPlainSalePrice // ignore: cast_nullable_to_non_nullable
+as String?,subscribable: null == subscribable ? _self.subscribable : subscribable // ignore: cast_nullable_to_non_nullable
 as List<FundSubscriber>,
   ));
 }
@@ -1109,10 +1113,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors,  List<FundSubscriber> subscribable)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FundStanding() when $default != null:
-return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.subscribable);case _:
+return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.defaultPlainSalePrice,_that.subscribable);case _:
   return orElse();
 
 }
@@ -1130,10 +1134,10 @@ return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstand
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors,  List<FundSubscriber> subscribable)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)  $default,) {final _that = this;
 switch (_that) {
 case _FundStanding():
-return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.subscribable);case _:
+return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.defaultPlainSalePrice,_that.subscribable);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1150,10 +1154,10 @@ return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstand
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors,  List<FundSubscriber> subscribable)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)?  $default,) {final _that = this;
 switch (_that) {
 case _FundStanding() when $default != null:
-return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.subscribable);case _:
+return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.defaultPlainSalePrice,_that.subscribable);case _:
   return null;
 
 }
@@ -1165,7 +1169,7 @@ return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstand
 @JsonSerializable()
 
 class _FundStanding implements FundStanding {
-  const _FundStanding({required this.valuation, this.period, @JsonKey(name: 'unit_price') this.unitPrice = '1.000000', @JsonKey(name: 'units_outstanding') this.unitsOutstanding = '0.000000', final  List<FundHolder> investors = const <FundHolder>[], final  List<FundSubscriber> subscribable = const <FundSubscriber>[]}): _investors = investors,_subscribable = subscribable;
+  const _FundStanding({required this.valuation, this.period, @JsonKey(name: 'unit_price') this.unitPrice = '1.000000', @JsonKey(name: 'units_outstanding') this.unitsOutstanding = '0.000000', final  List<FundHolder> investors = const <FundHolder>[], @JsonKey(name: 'default_plain_sale_price') this.defaultPlainSalePrice, final  List<FundSubscriber> subscribable = const <FundSubscriber>[]}): _investors = investors,_subscribable = subscribable;
   factory _FundStanding.fromJson(Map<String, dynamic> json) => _$FundStandingFromJson(json);
 
 @override final  FundValuation valuation;
@@ -1182,6 +1186,10 @@ class _FundStanding implements FundStanding {
   return EqualUnmodifiableListView(_investors);
 }
 
+/// **سعرُ السادة الافتراضي** — يصل مع اللوحة لأن شاشةَ الشراء تقرأ اللوحةَ قبل أن تُملأ
+/// حقولُها، وطلبٌ ثانٍ للإعدادات في اللحظة نفسها رحلةٌ زائدة لرقمٍ واحد. افتراضٌ يُعرض
+/// ويُغيَّر، لا قاعدةٌ في حساب.
+@override@JsonKey(name: 'default_plain_sale_price') final  String? defaultPlainSalePrice;
 /// **سقفُ اشتراك كل مستثمر اليوم** — رصيدُ محفظته. يصل مع اللوحة لأن الورقة تحتاجه قبل أن
 /// يُكتب رقم، ولأنه رصيدٌ لا يعرفه إلا الخادم: زميلٌ سجّل سحباً قبل ثانية.
  final  List<FundSubscriber> _subscribable;
@@ -1207,16 +1215,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other._investors, _investors)&&const DeepCollectionEquality().equals(other._subscribable, _subscribable));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other._investors, _investors)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&const DeepCollectionEquality().equals(other._subscribable, _subscribable));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,valuation,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(_investors),const DeepCollectionEquality().hash(_subscribable));
+int get hashCode => Object.hash(runtimeType,valuation,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(_investors),defaultPlainSalePrice,const DeepCollectionEquality().hash(_subscribable));
 
 @override
 String toString() {
-  return 'FundStanding(valuation: $valuation, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, subscribable: $subscribable)';
+  return 'FundStanding(valuation: $valuation, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, defaultPlainSalePrice: $defaultPlainSalePrice, subscribable: $subscribable)';
 }
 
 
@@ -1227,7 +1235,7 @@ abstract mixin class _$FundStandingCopyWith<$Res> implements $FundStandingCopyWi
   factory _$FundStandingCopyWith(_FundStanding value, $Res Function(_FundStanding) _then) = __$FundStandingCopyWithImpl;
 @override @useResult
 $Res call({
- FundValuation valuation, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors, List<FundSubscriber> subscribable
+ FundValuation valuation, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice, List<FundSubscriber> subscribable
 });
 
 
@@ -1244,14 +1252,15 @@ class __$FundStandingCopyWithImpl<$Res>
 
 /// Create a copy of FundStanding
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? valuation = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? subscribable = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? valuation = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? defaultPlainSalePrice = freezed,Object? subscribable = null,}) {
   return _then(_FundStanding(
 valuation: null == valuation ? _self.valuation : valuation // ignore: cast_nullable_to_non_nullable
 as FundValuation,period: freezed == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as FundPeriod?,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,unitsOutstanding: null == unitsOutstanding ? _self.unitsOutstanding : unitsOutstanding // ignore: cast_nullable_to_non_nullable
 as String,investors: null == investors ? _self._investors : investors // ignore: cast_nullable_to_non_nullable
-as List<FundHolder>,subscribable: null == subscribable ? _self._subscribable : subscribable // ignore: cast_nullable_to_non_nullable
+as List<FundHolder>,defaultPlainSalePrice: freezed == defaultPlainSalePrice ? _self.defaultPlainSalePrice : defaultPlainSalePrice // ignore: cast_nullable_to_non_nullable
+as String?,subscribable: null == subscribable ? _self._subscribable : subscribable // ignore: cast_nullable_to_non_nullable
 as List<FundSubscriber>,
   ));
 }

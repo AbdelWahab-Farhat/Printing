@@ -61,16 +61,41 @@ final class SettingsService
     }
 
     /**
+     * سعرُ السادة الافتراضي، أو null حين لا افتراضَ أصلاً.
+     *
+     * **افتراضٌ لشاشةٍ لا قاعدةٌ في حساب.** تُملأ به حقولُ التمويل قبل أن يُكتب رقم، فيُرى
+     * ويُغيَّر لكل رفّ؛ والمكتوبُ وحده يُجمَّد على سطر التوريد. فلا شيءَ في المال يقرأ هذا
+     * العمود بعد لحظة التمويل، وتغييرُه غداً لا يحرّك ديناراً وُقِّع عليه أمس.
+     *
+     * ووحدتُه الكيلو — انظر ترحيلَ العمود.
+     */
+    public function defaultPlainSalePrice(): ?string
+    {
+        $price = $this->current()->default_plain_sale_price;
+
+        return $price === null ? null : (string) $price;
+    }
+
+    /**
      * @param  array<string, int>  $durations  ما وصل من المدد، بأسماء أعمدتها. الفارغُ يعني
      *                                         «لم تُذكر» فتبقى كما هي — لا «صفّرها».
      */
-    public function update(string $investorProfitSharePercent, ?int $actorId, array $durations = []): CompanySetting
-    {
+    public function update(
+        string $investorProfitSharePercent,
+        ?int $actorId,
+        array $durations = [],
+        bool $touchesPlainPrice = false,
+        ?string $defaultPlainSalePrice = null,
+    ): CompanySetting {
         $settings = $this->current();
 
         $settings->fill([
             'investor_profit_share_percent' => $investorProfitSharePercent,
             ...$durations,
+            // **رايةٌ بجانب القيمة، لأن null هنا جوابان.** «لم تُذكر فتبقى كما هي» و«امسحها»
+            // يصلان كـnull في الجسد نفسه، والمدد فوقها تفرّق بينهما بغياب المفتاح — وقيمةٌ
+            // تُمحى لا تستطيع ذلك.
+            ...($touchesPlainPrice ? ['default_plain_sale_price' => $defaultPlainSalePrice] : []),
         ]);
         $settings->updated_by = $actorId;
         $settings->save();

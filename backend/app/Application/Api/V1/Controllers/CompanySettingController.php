@@ -43,6 +43,12 @@ class CompanySettingController extends Controller
             'investment_settlement_months' => (int) $settings->investment_settlement_months,
             'investment_capital_lock_months' => (int) $settings->investment_capital_lock_months,
 
+            // **سعرُ السادة الافتراضي، وnull حين لا افتراض.** نصٌّ لا عدد، كسائر المال هنا:
+            // تمريرُ عشريٍّ عبر float هو كيف يصير 32.000 رقماً بذيلٍ طويل على شاشةٍ ما.
+            'default_plain_sale_price' => $settings->default_plain_sale_price === null
+                ? null
+                : (string) $settings->default_plain_sale_price,
+
             'updated_at' => $settings->updated_at?->toIso8601String(),
         ]);
     }
@@ -61,12 +67,20 @@ class CompanySettingController extends Controller
             'investment_subscription_window_days' => ['sometimes', 'integer', 'min:1', 'max:28'],
             'investment_settlement_months' => ['sometimes', 'integer', 'min:1', 'max:36'],
             'investment_capital_lock_months' => ['sometimes', 'integer', 'min:0', 'max:120'],
+
+            // **`sometimes` و`nullable` معاً**: الغيابُ يعني «لم تُذكر فتبقى»، وnull صريحةٌ تعني
+            // «ارفع الافتراض» — والشاشةُ تُرسل الثانية حين يُفرَّغ المربع.
+            //
+            // و`min:0.001` لا `min:0`: صفرٌ يمرّ من التحقّق ثم يصطدم بقيد القاعدة فيخرج 500 بدل
+            // رسالةٍ يقرأها إنسان. نفسُ حدّ {@see FundPurchaseOrderRequest}.
+            'default_plain_sale_price' => ['sometimes', 'nullable', 'numeric', 'min:0.001', 'max:999999999'],
         ], [
             'investor_profit_share_percent.required' => 'نسبة المستثمرين مطلوبة',
             'investor_profit_share_percent.max' => 'النسبة لا تتجاوز 100',
             'investment_period_months.min' => 'مدة الفترة شهرٌ على الأقل',
             'investment_subscription_window_days.max' => 'نافذة الاكتتاب لا تتجاوز ٢٨ يوماً',
             'investment_capital_lock_months.min' => 'مدة الحجز لا تكون سالبة',
+            'default_plain_sale_price.min' => 'أقل سعر سادة يمكن تسجيله هو 0.001 د.ل',
         ]);
 
         // **المضاعَفُ يُفحص هنا وفي القاعدة معاً.** القيدُ في القاعدة يمنع الكتابة مهما كان
@@ -88,10 +102,17 @@ class CompanySettingController extends Controller
             ]);
         }
 
+        // **المفتاحُ الموجود هو الإذن بالكتابة، وقيمتُه — null كانت أو رقماً — هي ما يُكتب.**
+        // شاشةٌ لا تذكره لا تمسّه، وشاشةٌ تُفرّغ المربع ترسل null فتُرفع الافتراضُ عمداً.
+        $touchesPlainPrice = array_key_exists('default_plain_sale_price', $validated);
+        $plainPrice = $validated['default_plain_sale_price'] ?? null;
+
         $settings = $this->settings->update(
             number_format((float) $validated['investor_profit_share_percent'], 2, '.', ''),
             $request->user()?->id,
             $durations,
+            $touchesPlainPrice,
+            $plainPrice === null || $plainPrice === '' ? null : (string) $plainPrice,
         );
 
         return $this->success([
@@ -100,6 +121,9 @@ class CompanySettingController extends Controller
             'investment_subscription_window_days' => (int) $settings->investment_subscription_window_days,
             'investment_settlement_months' => (int) $settings->investment_settlement_months,
             'investment_capital_lock_months' => (int) $settings->investment_capital_lock_months,
+            'default_plain_sale_price' => $settings->default_plain_sale_price === null
+                ? null
+                : (string) $settings->default_plain_sale_price,
         ], 'تم تحديث الإعدادات — تسري على ما يُفتح بعدها ولا تمسّ فترةً قائمة');
     }
 }

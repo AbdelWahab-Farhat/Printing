@@ -720,6 +720,9 @@ final class AuditAttributeLabels
             'investment_subscription_window_days' => 'نافذة الاكتتاب (أيام)',
             'investment_settlement_months' => 'مدة التسوية (شهور)',
             'investment_capital_lock_months' => 'حبس رأس المال (شهور)',
+            // افتراضُ الشاشة لا قاعدةُ حساب: يُملأ به المربعُ يوم التمويل ثم يُجمَّد المكتوبُ
+            // على سطر التوريد، فتغييرُه لا يمسّ رفّاً مُوِّل.
+            'default_plain_sale_price' => 'سعر السادة الافتراضي (للكيلو)',
             'updated_by' => 'عدّلها',
         ],
         // Only ever an announcement. Notifications as a class are outside the audit trail — see

@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_snackbar.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
@@ -91,6 +92,7 @@ class _FormState extends State<_Form> {
   late final TextEditingController _window;
   late final TextEditingController _settlement;
   late final TextEditingController _lock;
+  late final TextEditingController _plainPrice;
 
   bool _saving = false;
 
@@ -104,11 +106,15 @@ class _FormState extends State<_Form> {
     _window = TextEditingController(text: '${s.subscriptionWindowDays}');
     _settlement = TextEditingController(text: '${s.settlementMonths}');
     _lock = TextEditingController(text: '${s.capitalLockMonths}');
+    // أصفارُ الحشو مقصوصة: الخادمُ يخزّنه بثلاث خاناتٍ لأنه مال، ومن يقرأ مربعاً يريد «32».
+    _plainPrice = TextEditingController(
+      text: s.defaultPlainSalePrice == null ? '' : trimDecimals(s.defaultPlainSalePrice!),
+    );
   }
 
   @override
   void dispose() {
-    for (final controller in [_share, _period, _window, _settlement, _lock]) {
+    for (final controller in [_share, _period, _window, _settlement, _lock, _plainPrice]) {
       controller.dispose();
     }
     super.dispose();
@@ -126,6 +132,9 @@ class _FormState extends State<_Form> {
         settlementMonths:
             int.tryParse(_settlement.text.trim()) ?? widget.settings.settlementMonths,
         capitalLockMonths: int.tryParse(_lock.text.trim()) ?? widget.settings.capitalLockMonths,
+        // **فارغٌ يعني null لا ''**: الخادمُ يقرأ الأولى «ارفع الافتراض فتُفتح الحقولُ فارغةً»،
+        // والثانيةَ رقماً لا يُفهم فيردّها.
+        defaultPlainSalePrice: _plainPrice.text.trim().isEmpty ? null : _plainPrice.text.trim(),
       ),
     );
 
@@ -187,10 +196,19 @@ class _FormState extends State<_Form> {
         ),
         SizedBox(height: 16.h),
         // وحدَه في صفّه: تسميتُه أطولُ الخمس، ونصفُ الشاشة لا يسعها.
-        _Months(
-          controller: _lock,
-          label: 'حجز رأس المال بعد إيداعه (شهر)',
-          action: TextInputAction.done,
+        _Months(controller: _lock, label: 'حجز رأس المال بعد إيداعه (شهر)'),
+        SizedBox(height: 16.h),
+        // **وحدَه أيضاً، وهو الوحيد الذي يُترك فارغاً عن قصد.** فارغٌ يعني «بلا افتراض»: تُفتح
+        // حقولُ التمويل خاليةً فتمشي البضاعةُ إلى المطبعة بالتكلفة، ويعود ربحُ المستثمر إلى
+        // بيع الطلبية. والوحدةُ في التسمية لأن الرقمَ يُضرب في وزن الرفّ.
+        AppTextField(
+          controller: _plainPrice,
+          label: 'سعر السادة الافتراضي للكيلو (د.ل)',
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          textInputAction: TextInputAction.done,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
+          ],
         ),
         SizedBox(height: 32.h),
         AppButton(label: 'حفظ', isLoading: _saving, onPressed: _saving ? null : _save),
@@ -201,15 +219,10 @@ class _FormState extends State<_Form> {
 
 /// حقلُ عددٍ صحيح — أرقامٌ لا غير، فلا فاصلةَ عشرية في شهرٍ ولا يوم.
 class _Months extends StatelessWidget {
-  const _Months({
-    required this.controller,
-    required this.label,
-    this.action = TextInputAction.next,
-  });
+  const _Months({required this.controller, required this.label});
 
   final TextEditingController controller;
   final String label;
-  final TextInputAction action;
 
   @override
   Widget build(BuildContext context) {
@@ -217,7 +230,6 @@ class _Months extends StatelessWidget {
       controller: controller,
       label: label,
       keyboardType: TextInputType.number,
-      textInputAction: action,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
     );
   }

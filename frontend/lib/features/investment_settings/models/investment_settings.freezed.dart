@@ -19,7 +19,12 @@ mixin _$InvestmentSettings {
 @JsonKey(name: 'investor_profit_share_percent') String get investorProfitSharePercent;/// كم شهراً تدوم الفترة المحاسبية — وعليها يقع إقفال الأرباح.
 @JsonKey(name: 'investment_period_months') int get periodMonths;/// أوّلُ الفترة الذي يُقبَل فيه إيداعُ رأس مال. ما يصل بعده يُحتجز ولا يُنفَق.
 @JsonKey(name: 'investment_subscription_window_days') int get subscriptionWindowDays;/// دورةُ المراجعة الشاملة — أطول من دورة الأرباح ومستقلّةٌ عنها.
-@JsonKey(name: 'investment_settlement_months') int get settlementMonths;/// كم يبقى رأسُ المال محجوزاً بعد إيداعه. **ولكلّ إيداعٍ ساعتُه**: من أودع في يناير وأودع
+@JsonKey(name: 'investment_settlement_months') int get settlementMonths;/// **سعرُ السادة الافتراضي — بالكيلو.** ما تُملأ به حقولُ التمويل قبل أن يُكتب رقم، فيُرى
+/// ويُغيَّر لكل رفّ؛ والمكتوبُ وحده يُجمَّد على سطر التوريد. null يعني «لا افتراض»: تُفتح
+/// الحقولُ فارغةً فتمشي البضاعةُ إلى المطبعة بالتكلفة.
+///
+/// **ووحدتُه الكيلو**، لأن السادة تُشترى بالوزن اليوم — فلا يُملأ به رفٌّ يُعدّ بالقطعة.
+@JsonKey(name: 'default_plain_sale_price') String? get defaultPlainSalePrice;/// كم يبقى رأسُ المال محجوزاً بعد إيداعه. **ولكلّ إيداعٍ ساعتُه**: من أودع في يناير وأودع
 /// ثانيةً في يونيو يُفكّ الأول قبل الثاني بخمسة أشهر.
 @JsonKey(name: 'investment_capital_lock_months') int get capitalLockMonths;
 /// Create a copy of InvestmentSettings
@@ -34,16 +39,16 @@ $InvestmentSettingsCopyWith<InvestmentSettings> get copyWith => _$InvestmentSett
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettings&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.periodMonths, periodMonths) || other.periodMonths == periodMonths)&&(identical(other.subscriptionWindowDays, subscriptionWindowDays) || other.subscriptionWindowDays == subscriptionWindowDays)&&(identical(other.settlementMonths, settlementMonths) || other.settlementMonths == settlementMonths)&&(identical(other.capitalLockMonths, capitalLockMonths) || other.capitalLockMonths == capitalLockMonths));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettings&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.periodMonths, periodMonths) || other.periodMonths == periodMonths)&&(identical(other.subscriptionWindowDays, subscriptionWindowDays) || other.subscriptionWindowDays == subscriptionWindowDays)&&(identical(other.settlementMonths, settlementMonths) || other.settlementMonths == settlementMonths)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&(identical(other.capitalLockMonths, capitalLockMonths) || other.capitalLockMonths == capitalLockMonths));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorProfitSharePercent,periodMonths,subscriptionWindowDays,settlementMonths,capitalLockMonths);
+int get hashCode => Object.hash(runtimeType,investorProfitSharePercent,periodMonths,subscriptionWindowDays,settlementMonths,defaultPlainSalePrice,capitalLockMonths);
 
 @override
 String toString() {
-  return 'InvestmentSettings(investorProfitSharePercent: $investorProfitSharePercent, periodMonths: $periodMonths, subscriptionWindowDays: $subscriptionWindowDays, settlementMonths: $settlementMonths, capitalLockMonths: $capitalLockMonths)';
+  return 'InvestmentSettings(investorProfitSharePercent: $investorProfitSharePercent, periodMonths: $periodMonths, subscriptionWindowDays: $subscriptionWindowDays, settlementMonths: $settlementMonths, defaultPlainSalePrice: $defaultPlainSalePrice, capitalLockMonths: $capitalLockMonths)';
 }
 
 
@@ -54,7 +59,7 @@ abstract mixin class $InvestmentSettingsCopyWith<$Res>  {
   factory $InvestmentSettingsCopyWith(InvestmentSettings value, $Res Function(InvestmentSettings) _then) = _$InvestmentSettingsCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'investment_period_months') int periodMonths,@JsonKey(name: 'investment_subscription_window_days') int subscriptionWindowDays,@JsonKey(name: 'investment_settlement_months') int settlementMonths,@JsonKey(name: 'investment_capital_lock_months') int capitalLockMonths
+@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'investment_period_months') int periodMonths,@JsonKey(name: 'investment_subscription_window_days') int subscriptionWindowDays,@JsonKey(name: 'investment_settlement_months') int settlementMonths,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice,@JsonKey(name: 'investment_capital_lock_months') int capitalLockMonths
 });
 
 
@@ -71,13 +76,14 @@ class _$InvestmentSettingsCopyWithImpl<$Res>
 
 /// Create a copy of InvestmentSettings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? investorProfitSharePercent = null,Object? periodMonths = null,Object? subscriptionWindowDays = null,Object? settlementMonths = null,Object? capitalLockMonths = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? investorProfitSharePercent = null,Object? periodMonths = null,Object? subscriptionWindowDays = null,Object? settlementMonths = null,Object? defaultPlainSalePrice = freezed,Object? capitalLockMonths = null,}) {
   return _then(_self.copyWith(
 investorProfitSharePercent: null == investorProfitSharePercent ? _self.investorProfitSharePercent : investorProfitSharePercent // ignore: cast_nullable_to_non_nullable
 as String,periodMonths: null == periodMonths ? _self.periodMonths : periodMonths // ignore: cast_nullable_to_non_nullable
 as int,subscriptionWindowDays: null == subscriptionWindowDays ? _self.subscriptionWindowDays : subscriptionWindowDays // ignore: cast_nullable_to_non_nullable
 as int,settlementMonths: null == settlementMonths ? _self.settlementMonths : settlementMonths // ignore: cast_nullable_to_non_nullable
-as int,capitalLockMonths: null == capitalLockMonths ? _self.capitalLockMonths : capitalLockMonths // ignore: cast_nullable_to_non_nullable
+as int,defaultPlainSalePrice: freezed == defaultPlainSalePrice ? _self.defaultPlainSalePrice : defaultPlainSalePrice // ignore: cast_nullable_to_non_nullable
+as String?,capitalLockMonths: null == capitalLockMonths ? _self.capitalLockMonths : capitalLockMonths // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }
@@ -163,10 +169,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'investment_period_months')  int periodMonths, @JsonKey(name: 'investment_subscription_window_days')  int subscriptionWindowDays, @JsonKey(name: 'investment_settlement_months')  int settlementMonths, @JsonKey(name: 'investment_capital_lock_months')  int capitalLockMonths)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'investment_period_months')  int periodMonths, @JsonKey(name: 'investment_subscription_window_days')  int subscriptionWindowDays, @JsonKey(name: 'investment_settlement_months')  int settlementMonths, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice, @JsonKey(name: 'investment_capital_lock_months')  int capitalLockMonths)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InvestmentSettings() when $default != null:
-return $default(_that.investorProfitSharePercent,_that.periodMonths,_that.subscriptionWindowDays,_that.settlementMonths,_that.capitalLockMonths);case _:
+return $default(_that.investorProfitSharePercent,_that.periodMonths,_that.subscriptionWindowDays,_that.settlementMonths,_that.defaultPlainSalePrice,_that.capitalLockMonths);case _:
   return orElse();
 
 }
@@ -184,10 +190,10 @@ return $default(_that.investorProfitSharePercent,_that.periodMonths,_that.subscr
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'investment_period_months')  int periodMonths, @JsonKey(name: 'investment_subscription_window_days')  int subscriptionWindowDays, @JsonKey(name: 'investment_settlement_months')  int settlementMonths, @JsonKey(name: 'investment_capital_lock_months')  int capitalLockMonths)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'investment_period_months')  int periodMonths, @JsonKey(name: 'investment_subscription_window_days')  int subscriptionWindowDays, @JsonKey(name: 'investment_settlement_months')  int settlementMonths, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice, @JsonKey(name: 'investment_capital_lock_months')  int capitalLockMonths)  $default,) {final _that = this;
 switch (_that) {
 case _InvestmentSettings():
-return $default(_that.investorProfitSharePercent,_that.periodMonths,_that.subscriptionWindowDays,_that.settlementMonths,_that.capitalLockMonths);case _:
+return $default(_that.investorProfitSharePercent,_that.periodMonths,_that.subscriptionWindowDays,_that.settlementMonths,_that.defaultPlainSalePrice,_that.capitalLockMonths);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +210,10 @@ return $default(_that.investorProfitSharePercent,_that.periodMonths,_that.subscr
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'investment_period_months')  int periodMonths, @JsonKey(name: 'investment_subscription_window_days')  int subscriptionWindowDays, @JsonKey(name: 'investment_settlement_months')  int settlementMonths, @JsonKey(name: 'investment_capital_lock_months')  int capitalLockMonths)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'investment_period_months')  int periodMonths, @JsonKey(name: 'investment_subscription_window_days')  int subscriptionWindowDays, @JsonKey(name: 'investment_settlement_months')  int settlementMonths, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice, @JsonKey(name: 'investment_capital_lock_months')  int capitalLockMonths)?  $default,) {final _that = this;
 switch (_that) {
 case _InvestmentSettings() when $default != null:
-return $default(_that.investorProfitSharePercent,_that.periodMonths,_that.subscriptionWindowDays,_that.settlementMonths,_that.capitalLockMonths);case _:
+return $default(_that.investorProfitSharePercent,_that.periodMonths,_that.subscriptionWindowDays,_that.settlementMonths,_that.defaultPlainSalePrice,_that.capitalLockMonths);case _:
   return null;
 
 }
@@ -219,7 +225,7 @@ return $default(_that.investorProfitSharePercent,_that.periodMonths,_that.subscr
 @JsonSerializable()
 
 class _InvestmentSettings implements InvestmentSettings {
-  const _InvestmentSettings({@JsonKey(name: 'investor_profit_share_percent') required this.investorProfitSharePercent, @JsonKey(name: 'investment_period_months') required this.periodMonths, @JsonKey(name: 'investment_subscription_window_days') required this.subscriptionWindowDays, @JsonKey(name: 'investment_settlement_months') required this.settlementMonths, @JsonKey(name: 'investment_capital_lock_months') required this.capitalLockMonths});
+  const _InvestmentSettings({@JsonKey(name: 'investor_profit_share_percent') required this.investorProfitSharePercent, @JsonKey(name: 'investment_period_months') required this.periodMonths, @JsonKey(name: 'investment_subscription_window_days') required this.subscriptionWindowDays, @JsonKey(name: 'investment_settlement_months') required this.settlementMonths, @JsonKey(name: 'default_plain_sale_price') this.defaultPlainSalePrice, @JsonKey(name: 'investment_capital_lock_months') required this.capitalLockMonths});
   factory _InvestmentSettings.fromJson(Map<String, dynamic> json) => _$InvestmentSettingsFromJson(json);
 
 /// حصة المستثمرين من ربح الفترة — والباقي للشركة.
@@ -230,6 +236,12 @@ class _InvestmentSettings implements InvestmentSettings {
 @override@JsonKey(name: 'investment_subscription_window_days') final  int subscriptionWindowDays;
 /// دورةُ المراجعة الشاملة — أطول من دورة الأرباح ومستقلّةٌ عنها.
 @override@JsonKey(name: 'investment_settlement_months') final  int settlementMonths;
+/// **سعرُ السادة الافتراضي — بالكيلو.** ما تُملأ به حقولُ التمويل قبل أن يُكتب رقم، فيُرى
+/// ويُغيَّر لكل رفّ؛ والمكتوبُ وحده يُجمَّد على سطر التوريد. null يعني «لا افتراض»: تُفتح
+/// الحقولُ فارغةً فتمشي البضاعةُ إلى المطبعة بالتكلفة.
+///
+/// **ووحدتُه الكيلو**، لأن السادة تُشترى بالوزن اليوم — فلا يُملأ به رفٌّ يُعدّ بالقطعة.
+@override@JsonKey(name: 'default_plain_sale_price') final  String? defaultPlainSalePrice;
 /// كم يبقى رأسُ المال محجوزاً بعد إيداعه. **ولكلّ إيداعٍ ساعتُه**: من أودع في يناير وأودع
 /// ثانيةً في يونيو يُفكّ الأول قبل الثاني بخمسة أشهر.
 @override@JsonKey(name: 'investment_capital_lock_months') final  int capitalLockMonths;
@@ -247,16 +259,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestmentSettings&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.periodMonths, periodMonths) || other.periodMonths == periodMonths)&&(identical(other.subscriptionWindowDays, subscriptionWindowDays) || other.subscriptionWindowDays == subscriptionWindowDays)&&(identical(other.settlementMonths, settlementMonths) || other.settlementMonths == settlementMonths)&&(identical(other.capitalLockMonths, capitalLockMonths) || other.capitalLockMonths == capitalLockMonths));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestmentSettings&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.periodMonths, periodMonths) || other.periodMonths == periodMonths)&&(identical(other.subscriptionWindowDays, subscriptionWindowDays) || other.subscriptionWindowDays == subscriptionWindowDays)&&(identical(other.settlementMonths, settlementMonths) || other.settlementMonths == settlementMonths)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&(identical(other.capitalLockMonths, capitalLockMonths) || other.capitalLockMonths == capitalLockMonths));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorProfitSharePercent,periodMonths,subscriptionWindowDays,settlementMonths,capitalLockMonths);
+int get hashCode => Object.hash(runtimeType,investorProfitSharePercent,periodMonths,subscriptionWindowDays,settlementMonths,defaultPlainSalePrice,capitalLockMonths);
 
 @override
 String toString() {
-  return 'InvestmentSettings(investorProfitSharePercent: $investorProfitSharePercent, periodMonths: $periodMonths, subscriptionWindowDays: $subscriptionWindowDays, settlementMonths: $settlementMonths, capitalLockMonths: $capitalLockMonths)';
+  return 'InvestmentSettings(investorProfitSharePercent: $investorProfitSharePercent, periodMonths: $periodMonths, subscriptionWindowDays: $subscriptionWindowDays, settlementMonths: $settlementMonths, defaultPlainSalePrice: $defaultPlainSalePrice, capitalLockMonths: $capitalLockMonths)';
 }
 
 
@@ -267,7 +279,7 @@ abstract mixin class _$InvestmentSettingsCopyWith<$Res> implements $InvestmentSe
   factory _$InvestmentSettingsCopyWith(_InvestmentSettings value, $Res Function(_InvestmentSettings) _then) = __$InvestmentSettingsCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'investment_period_months') int periodMonths,@JsonKey(name: 'investment_subscription_window_days') int subscriptionWindowDays,@JsonKey(name: 'investment_settlement_months') int settlementMonths,@JsonKey(name: 'investment_capital_lock_months') int capitalLockMonths
+@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'investment_period_months') int periodMonths,@JsonKey(name: 'investment_subscription_window_days') int subscriptionWindowDays,@JsonKey(name: 'investment_settlement_months') int settlementMonths,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice,@JsonKey(name: 'investment_capital_lock_months') int capitalLockMonths
 });
 
 
@@ -284,13 +296,14 @@ class __$InvestmentSettingsCopyWithImpl<$Res>
 
 /// Create a copy of InvestmentSettings
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? investorProfitSharePercent = null,Object? periodMonths = null,Object? subscriptionWindowDays = null,Object? settlementMonths = null,Object? capitalLockMonths = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? investorProfitSharePercent = null,Object? periodMonths = null,Object? subscriptionWindowDays = null,Object? settlementMonths = null,Object? defaultPlainSalePrice = freezed,Object? capitalLockMonths = null,}) {
   return _then(_InvestmentSettings(
 investorProfitSharePercent: null == investorProfitSharePercent ? _self.investorProfitSharePercent : investorProfitSharePercent // ignore: cast_nullable_to_non_nullable
 as String,periodMonths: null == periodMonths ? _self.periodMonths : periodMonths // ignore: cast_nullable_to_non_nullable
 as int,subscriptionWindowDays: null == subscriptionWindowDays ? _self.subscriptionWindowDays : subscriptionWindowDays // ignore: cast_nullable_to_non_nullable
 as int,settlementMonths: null == settlementMonths ? _self.settlementMonths : settlementMonths // ignore: cast_nullable_to_non_nullable
-as int,capitalLockMonths: null == capitalLockMonths ? _self.capitalLockMonths : capitalLockMonths // ignore: cast_nullable_to_non_nullable
+as int,defaultPlainSalePrice: freezed == defaultPlainSalePrice ? _self.defaultPlainSalePrice : defaultPlainSalePrice // ignore: cast_nullable_to_non_nullable
+as String?,capitalLockMonths: null == capitalLockMonths ? _self.capitalLockMonths : capitalLockMonths // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

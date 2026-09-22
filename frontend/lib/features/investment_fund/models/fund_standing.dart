@@ -133,6 +133,11 @@ abstract class FundStanding with _$FundStanding {
 
     @Default(<FundHolder>[]) List<FundHolder> investors,
 
+    /// **سعرُ السادة الافتراضي** — يصل مع اللوحة لأن شاشةَ الشراء تقرأ اللوحةَ قبل أن تُملأ
+    /// حقولُها، وطلبٌ ثانٍ للإعدادات في اللحظة نفسها رحلةٌ زائدة لرقمٍ واحد. افتراضٌ يُعرض
+    /// ويُغيَّر، لا قاعدةٌ في حساب.
+    @JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice,
+
     /// **سقفُ اشتراك كل مستثمر اليوم** — رصيدُ محفظته. يصل مع اللوحة لأن الورقة تحتاجه قبل أن
     /// يُكتب رقم، ولأنه رصيدٌ لا يعرفه إلا الخادم: زميلٌ سجّل سحباً قبل ثانية.
     @Default(<FundSubscriber>[]) List<FundSubscriber> subscribable,

@@ -168,6 +168,114 @@ class FundSettingsTest extends TestCase
             ->update(['investment_subscription_window_days' => 30]);
     }
 
+    public function test_the_default_plain_price_is_read_and_written_from_the_screen(): void
+    {
+        // Arrange — **الافتراضُ الذي كان على الصفقة صار في الإعدادات.** صفقةُ D1 تحمل سعرَ سادةٍ
+        // على صفّها، فكلُّ رفٍّ موّلته بلا سعرٍ خاصّ يسقط عليه. والصندوقُ صفقةٌ واحدةٌ لا تنتهي
+        // ولا يجوز أن يحمل رقماً واحداً لكلّ مادةٍ سيشتريها أبداً — فالافتراضُ هنا، يراه من
+        // يموّل ويغيّره لكل رفّ.
+        $headers = $this->headersFor([
+            PermissionName::ViewCompanySettings,
+            PermissionName::ManageCompanySettings,
+        ]);
+
+        // Act
+        $written = $this->withHeaders($headers)->putJson('/api/v1/settings', [
+            'investor_profit_share_percent' => '50',
+            'default_plain_sale_price' => '32',
+        ]);
+
+        // Assert
+        $written->assertOk()->assertJsonPath('data.default_plain_sale_price', '32.000');
+
+        $this->withHeaders($headers)->getJson('/api/v1/settings')
+            ->assertOk()
+            ->assertJsonPath('data.default_plain_sale_price', '32.000');
+    }
+
+    public function test_the_column_is_born_carrying_the_price_the_company_works_with(): void
+    {
+        // Arrange — «تقدر تكتبه مباشرة 32»، وهي نفسُها التي تحملها D1 على صفّها. أسلوبُ الجدول
+        // نفسِه: النسبةُ تُولد بـ٥٠ والمددُ بقيمها، كلُّها في ترحيلها.
+        $headers = $this->headersFor([PermissionName::ViewCompanySettings]);
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/settings');
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.default_plain_sale_price', '32.000');
+    }
+
+    public function test_a_default_plain_price_of_zero_is_refused(): void
+    {
+        // Arrange — الحدُّ نفسُه الذي يحرس سعرَ الرفّ: `min:0.001`، فلا يصطدم الصفرُ بقيد
+        // القاعدة فيخرج 500 بدل رسالةٍ يقرأها إنسان.
+        $headers = $this->headersFor([
+            PermissionName::ViewCompanySettings,
+            PermissionName::ManageCompanySettings,
+        ]);
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson('/api/v1/settings', [
+            'investor_profit_share_percent' => '50',
+            'default_plain_sale_price' => '0',
+        ]);
+
+        // Assert
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('default_plain_sale_price');
+    }
+
+    public function test_the_default_plain_price_can_be_taken_back_off(): void
+    {
+        // Arrange — «بلا افتراض» جوابٌ مشروع: تُترك الحقولُ فارغةً فتمشي البضاعةُ بالتكلفة،
+        // وهو ما كان قبل هذا الإعداد.
+        $headers = $this->headersFor([
+            PermissionName::ViewCompanySettings,
+            PermissionName::ManageCompanySettings,
+        ]);
+
+        $this->withHeaders($headers)->putJson('/api/v1/settings', [
+            'investor_profit_share_percent' => '50',
+            'default_plain_sale_price' => '32',
+        ])->assertOk();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson('/api/v1/settings', [
+            'investor_profit_share_percent' => '50',
+            'default_plain_sale_price' => null,
+        ]);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.default_plain_sale_price', null);
+        $this->assertDatabaseHas('company_settings', [
+            'id' => 1,
+            'default_plain_sale_price' => null,
+        ]);
+    }
+
+    public function test_the_fund_standing_carries_the_default_so_the_funding_screen_can_fill_its_boxes(): void
+    {
+        // Arrange — الشاشةُ تقرأ اللوحةَ قبل أن تُملأ الحقول؛ طلبٌ ثانٍ للإعدادات في اللحظة
+        // نفسها رحلةٌ زائدة لرقمٍ واحد.
+        $headers = $this->headersFor([
+            PermissionName::ViewCompanySettings,
+            PermissionName::ManageCompanySettings,
+            PermissionName::ViewInvestors,
+        ]);
+
+        $this->withHeaders($headers)->putJson('/api/v1/settings', [
+            'investor_profit_share_percent' => '50',
+            'default_plain_sale_price' => '32',
+        ])->assertOk();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/investment/fund');
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.default_plain_sale_price', '32.000');
+    }
+
     public function test_the_service_hands_the_durations_to_whoever_opens_a_period(): void
     {
         // Arrange — تُقرأ من الخدمة لا من النموذج، فيبقى بابُ الإعدادات واحداً.

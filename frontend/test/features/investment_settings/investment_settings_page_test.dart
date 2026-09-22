@@ -46,6 +46,7 @@ const _stored = InvestmentSettings(
   subscriptionWindowDays: 7,
   settlementMonths: 6,
   capitalLockMonths: 12,
+  defaultPlainSalePrice: '32.000',
 );
 
 void main() {
@@ -136,6 +137,56 @@ void main() {
 
     // يُترك الـsnackbar يمضي إلى نهايته: مؤقّتُه ثم حركةُ خروجه. بلا هذا يُهدَم الشجرُ وفيه
     // مؤقّتٌ حيٌّ وحركةٌ جارية، فيشتكي الإطارُ في التفكيك لا في التوكيد.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('سعرُ السادة الافتراضي يُعرَض بلا أصفارِ حشو', (tester) async {
+    // Arrange — الخادمُ يخزّنه بثلاث خانات لأنه مال؛ ومن يقرأ شاشةً يريد «32».
+    await register();
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.widgetWithText(TextField, '32'), findsOneWidget);
+    expect(find.text('سعر السادة الافتراضي للكيلو (د.ل)'), findsOneWidget);
+  });
+
+  testWidgets('وتغييرُه يُرسَل مع الخمسة الباقية', (tester) async {
+    // Arrange
+    await register();
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.enterText(find.widgetWithText(TextField, '32'), '40');
+    await tester.tap(find.text('حفظ'));
+    await tester.pump();
+
+    // Assert — نصٌّ لا عدد: تمريرُ مالٍ عبر double هو كيف يصير 32.000 رقماً بذيلٍ طويل.
+    expect(repository.sent?.defaultPlainSalePrice, '40');
+    expect(repository.sent?.capitalLockMonths, 12);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('وتفريغُ المربع جوابٌ: لا افتراضَ بعد اليوم', (tester) async {
+    // Arrange — «بلا افتراض» حالةٌ مشروعة: تُترك حقولُ التمويل فارغةً فتمشي البضاعةُ بالتكلفة.
+    await register();
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.enterText(find.widgetWithText(TextField, '32'), '');
+    await tester.tap(find.text('حفظ'));
+    await tester.pump();
+
+    // Assert — null لا '' : الخادمُ يقرأ الأولى «ارفع الافتراض»، والثانية رقماً لا يُفهم.
+    expect(repository.sent?.defaultPlainSalePrice, isNull);
+
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
   });

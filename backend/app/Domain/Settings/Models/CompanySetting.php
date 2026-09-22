@@ -36,6 +36,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'investment_subscription_window_days',
     'investment_settlement_months',
     'investment_capital_lock_months',
+    'default_plain_sale_price',
 ])]
 class CompanySetting extends Model implements HasAuditTrail
 {
@@ -52,6 +53,8 @@ class CompanySetting extends Model implements HasAuditTrail
     {
         return [
             'investor_profit_share_percent' => 'decimal:2',
+            // سعرُ السادة بثلاث خاناتٍ أينما كُتب — على الصفقة، وعلى طبقة التكلفة، وهنا.
+            'default_plain_sale_price' => 'decimal:3',
         ];
     }
 }

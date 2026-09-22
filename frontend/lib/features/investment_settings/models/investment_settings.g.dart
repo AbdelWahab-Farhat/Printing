@@ -14,6 +14,7 @@ _InvestmentSettings _$InvestmentSettingsFromJson(
   subscriptionWindowDays: (json['investment_subscription_window_days'] as num)
       .toInt(),
   settlementMonths: (json['investment_settlement_months'] as num).toInt(),
+  defaultPlainSalePrice: json['default_plain_sale_price'] as String?,
   capitalLockMonths: (json['investment_capital_lock_months'] as num).toInt(),
 );
 
@@ -23,5 +24,6 @@ Map<String, dynamic> _$InvestmentSettingsToJson(_InvestmentSettings instance) =>
       'investment_period_months': instance.periodMonths,
       'investment_subscription_window_days': instance.subscriptionWindowDays,
       'investment_settlement_months': instance.settlementMonths,
+      'default_plain_sale_price': instance.defaultPlainSalePrice,
       'investment_capital_lock_months': instance.capitalLockMonths,
     };

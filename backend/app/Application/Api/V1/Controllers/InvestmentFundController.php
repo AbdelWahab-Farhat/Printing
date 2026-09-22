@@ -22,6 +22,7 @@ use App\Domain\Investor\Queries\PeriodOrdersQuery;
 use App\Domain\Investor\Queries\PeriodShares;
 use App\Domain\Investor\Queries\UnitPrice;
 use App\Domain\Investor\Support\FundDeal;
+use App\Domain\Settings\SettingsService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -53,6 +54,7 @@ class InvestmentFundController extends Controller
         private readonly PurchaseFromFund $purchase,
         private readonly PeriodOrdersQuery $periodOrders,
         private readonly FundDeal $fund,
+        private readonly SettingsService $settings,
     ) {}
 
     /**
@@ -76,6 +78,11 @@ class InvestmentFundController extends Controller
             // رصيدُ محفظته، ومن يكتب فوقه يُردّ بعد أن كتب. وهو رصيدٌ لا تعرفه إلا الخوادم —
             // زميلٌ سجّل سحباً قبل ثانية.
             'subscribable' => $this->subscribable(),
+
+            // **الافتراضُ الذي تُملأ به حقولُ سعر السادة في شاشة الشراء.** يصل مع اللوحة لأن
+            // تلك الشاشة تقرأ اللوحةَ قبل أن يُكتب رقم، وطلبٌ ثانٍ للإعدادات في اللحظة نفسها
+            // رحلةٌ زائدة لرقمٍ واحد. افتراضٌ يُعرض ويُغيَّر، لا قاعدةٌ في حساب.
+            'default_plain_sale_price' => $this->settings->defaultPlainSalePrice(),
         ]);
     }
 

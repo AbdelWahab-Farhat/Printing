@@ -118,6 +118,7 @@ _FundStanding _$FundStandingFromJson(Map<String, dynamic> json) =>
               ?.map((e) => FundHolder.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const <FundHolder>[],
+      defaultPlainSalePrice: json['default_plain_sale_price'] as String?,
       subscribable:
           (json['subscribable'] as List<dynamic>?)
               ?.map((e) => FundSubscriber.fromJson(e as Map<String, dynamic>))
@@ -132,6 +133,7 @@ Map<String, dynamic> _$FundStandingToJson(_FundStanding instance) =>
       'unit_price': instance.unitPrice,
       'units_outstanding': instance.unitsOutstanding,
       'investors': instance.investors.map((e) => e.toJson()).toList(),
+      'default_plain_sale_price': instance.defaultPlainSalePrice,
       'subscribable': instance.subscribable.map((e) => e.toJson()).toList(),
     };
 
