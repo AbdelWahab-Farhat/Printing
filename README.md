@@ -76,13 +76,16 @@ is public, and a deployment map is reconnaissance. They live in the operator's o
 Tests, commit, push, deploy and verify, in that order:
 
 ```bash
-bin/deploy-test -m "رسالة الـcommit"   # commits what is staged
-bin/deploy-test -a -m "…"              # stages tracked changes first
+bin/deploy-test -m "رسالة الـcommit"   # stages your changes, asks, commits, pushes, deploys
+bin/deploy-test -y -m "…"              # the same without the confirmation
+bin/deploy-test --staged-only -m "…"   # commits only what is already staged
 bin/deploy-test --deploy-only          # deploys what is already pushed
 ```
 
-It stages by path and never `git add -A`, because more than one session works this tree at a
-time. It takes a `pg_dump` before migrating — migrations sometimes write money. It runs
+It stages tracked changes with `git add -u`, and it prints them and asks before it does,
+because more than one session works this tree at a time and a silent `git add -A` would carry
+somebody else's half-written work to the box under your name. Untracked files never go in. It
+takes a `pg_dump` before migrating — migrations sometimes write money. It runs
 `composer` and `artisan` through the box's own PHP 8.4 binary, because the `php` on `PATH` there
 is 8.2 and the failure is silent. And it finishes by asking the API two questions: `/health`
 must answer `200`, and a route behind auth must answer `401` — a `404` there means the route

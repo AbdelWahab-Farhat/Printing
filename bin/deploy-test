@@ -2,10 +2,12 @@
 #
 # نشرٌ إلى بيئة التجربة بأمرٍ واحد: اختبار → commit → push → نشرٌ على السيرفر → تحقُّق.
 #
-#   bin/deploy-test -m "رسالة الـcommit"     # يُودع المُجهَّز (staged)، يدفع، ثم ينشر
-#   bin/deploy-test -a -m "رسالة"            # يُجهِّز كلَّ تعديلات الملفات المتتبَّعة أولاً
+#   bin/deploy-test -m "رسالة الـcommit"     # يُجهِّز تعديلاتك، يستأذن، يُودع، يدفع، ينشر
+#   bin/deploy-test                          # نفسُه، ويسأل عن الرسالة
+#   bin/deploy-test -y -m "رسالة"            # بلا استئذان
+#   bin/deploy-test --staged-only -m "…"     # يُودع المُجهَّز (staged) وحده
 #   bin/deploy-test --deploy-only            # نشرٌ فقط لما هو مدفوعٌ أصلاً
-#   bin/deploy-test --skip-tests -m "..."    # بلا اختبارات (لا يُنصح)
+#   bin/deploy-test --skip-tests -m "…"      # بلا اختبارات (لا يُنصح)
 #
 # ## لماذا سكربتٌ بدل أوامرَ تُكتب بالذاكرة
 #
@@ -57,15 +59,18 @@ HINT
 fi
 
 message=""
-stage_all=false
+staged_only=false
 deploy_only=false
 run_tests=true
 allow_main=false
+assume_yes=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -m|--message) message="${2:-}"; shift 2 ;;
-        -a|--all) stage_all=true; shift ;;
+        -y|--yes) assume_yes=true; shift ;;
+        --staged-only) staged_only=true; shift ;;
+        -a|--all) shift ;;  # صار هو الأصل — يُقبل للتوافق ولا يفعل شيئاً
         --deploy-only) deploy_only=true; shift ;;
         --skip-tests) run_tests=false; shift ;;
         --allow-main) allow_main=true; shift ;;
@@ -77,6 +82,20 @@ done
 branch="$(git rev-parse --abbrev-ref HEAD)"
 say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
+# استئذانٌ يفهم أنه قد يعمل بلا طرفيّة: بلا TTY وبلا `-y` يقف بدل أن يفترض «نعم».
+confirm() {
+    [[ "$assume_yes" == true ]] && return 0
+
+    if [[ ! -t 0 ]]; then
+        echo "لا طرفيّة للسؤال. مرِّر -y إن كنت تقصد المضيّ." >&2
+        return 1
+    fi
+
+    local answer
+    read -r -p "$1 [y/N] " answer
+    [[ "$answer" == "y" || "$answer" == "Y" ]]
+}
+
 if [[ "$branch" == "main" && "$allow_main" != true ]]; then
     echo "أنت على main. انشر من فرع، أو مرِّر --allow-main إن كنت تقصد ذلك." >&2
     exit 1
@@ -85,10 +104,23 @@ fi
 # ————— ١ · الإيداع والدفع —————
 
 if [[ "$deploy_only" != true ]]; then
-    # **التجهيزُ بالمسار لا بـ`-A`.** هذا المجلد يشتغل عليه أكثرُ من جلسة في الوقت نفسه، و
-    # `git add -A` يبتلع عملَ غيرك نصفَ مكتوب ويدفعه إلى الصندوق باسمك.
-    if [[ "$stage_all" == true ]]; then
-        say "git add -u (الملفات المتتبَّعة فقط)"
+    # **يُجهِّز تعديلاتِك ثم يستأذن — ولا يستعمل `git add -A` أبداً.**
+    #
+    # تشغيلُه وحده يجب أن يُودع فعلاً، وإلا لم يكن سكربتَ نشرٍ بل تذكيراً. لكنّ هذا المجلد
+    # يشتغل عليه أكثرُ من جلسةٍ في الوقت نفسه، فما يُجهَّز يُعرض بأسمائه ويُستأذن عليه قبل
+    # أن يصير commit‑اً باسمك. و`-u` لا يلمس غيرَ المتتبَّع: ملفٌّ جديد لا يدخل بالسهو.
+    if [[ "$staged_only" != true ]] && ! git diff --quiet; then
+        say "سيُجهَّز ويُودَع"
+        git diff --name-only | sed 's/^/    /'
+
+        untracked="$(git ls-files --others --exclude-standard)"
+        if [[ -n "$untracked" ]]; then
+            printf '\n\033[33mغيرُ متتبَّع — لن يدخل:\033[0m\n'
+            printf '%s\n' "$untracked" | sed 's/^/    /'
+        fi
+
+        printf '\n'
+        confirm "أودِع هذه الملفات؟" || { echo "أُلغي." >&2; exit 1; }
         git add -u
     fi
 
@@ -96,19 +128,20 @@ if [[ "$deploy_only" != true ]]; then
 
     if [[ -n "$staged" ]]; then
         if [[ -z "$message" ]]; then
-            echo "هناك تغييراتٌ مُجهَّزة بلا رسالة. مرِّر -m \"…\"." >&2
-            exit 1
+            if [[ -t 0 ]]; then
+                read -r -p "رسالة الـcommit: " message
+            fi
+
+            if [[ -z "$message" ]]; then
+                echo "بلا رسالة لا commit. مرِّر -m \"…\"." >&2
+                exit 1
+            fi
         fi
 
         say "ما سيُودَع"
         printf '%s\n' "$staged" | sed 's/^/    /'
-
-        if ! git diff --quiet; then
-            printf '\n\033[33mملاحظة:\033[0m تعديلاتٌ غير مُجهَّزة ستبقى كما هي:\n'
-            git diff --name-only | sed 's/^/    /'
-        fi
     else
-        echo "لا شيء مُجهَّزٌ للإيداع — أكمل إلى الدفع والنشر."
+        echo "لا شيء يُودَع — أكمل إلى الدفع والنشر."
     fi
 
     say "الاختبارات"
