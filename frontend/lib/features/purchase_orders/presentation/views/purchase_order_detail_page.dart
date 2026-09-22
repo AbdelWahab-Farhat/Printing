@@ -550,6 +550,8 @@ class _FundingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
+    if (funding.isFund) return _FundPurchaseSection(lines: _lines, funding: funding);
+
     return _Section(
       title: 'تمويل ${funding.code}',
       child: Column(
@@ -622,6 +624,87 @@ class _FundingSection extends StatelessWidget {
                 style: context.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ما اشتراه الصندوقُ من هذا اللوري — لا شراكةٌ عُقدت عليه.
+///
+/// **نصفُ أسئلة «تمويل الصفقة» لم يعد لها معنى.** تلك تسأل: من الممولون، وكم وضع كلٌّ منهم،
+/// وبأيّ نسبٍ يُقسَّم. وفي الصندوق الجوابُ واحدٌ لكلّها — **دفع الثمنَ كلَّه من خزينته**، والنسبُ
+/// وحداتٌ تُقرأ لكل فترة، ولا صفقةَ وُلدت أصلاً.
+///
+/// **والبابُ يقود إلى لوحة الصندوق لا إلى صفحة صفقة.** كانت البطاقةُ تفتح تلك الصفحة، وعليها
+/// زرُّ «إغلاق وتسوية الحسابات» — وهو البابُ الذي أُغلق منه صندوقُ سيرفر التجربة فعلاً في ٢٢
+/// سبتمبر ٢٠٢٦. وقائمةُ الصفقات وصفحةُ المستثمر لم تعودا تعرضانه، فكان هذا آخرَ ما بقي.
+class _FundPurchaseSection extends StatelessWidget {
+  const _FundPurchaseSection({required this.lines, required this.funding});
+
+  final String lines;
+  final PurchaseOrderFunding funding;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return _Section(
+      title: 'شراء بمال الصندوق',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => context.push(Routes.investmentFund),
+            borderRadius: BorderRadius.circular(8.r),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          lines.isEmpty ? 'بضاعة هذا الأمر' : lines,
+                          style: context.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      // السهمُ يقول إنها تُفتح — ولا حالةَ صفقةٍ بجانبه: الصندوقُ مفتوحٌ أبداً،
+                      // و«مفتوحة» بجانب اسمه تَعِد بأنه يُغلَق.
+                      Icon(AppIcons.forward, size: 18.r, color: scheme.onSurfaceVariant),
+                    ],
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    'اشتراه الصندوق بماله كلِّه',
+                    style: context.textTheme.bodyLarge?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Divider(height: 18.h),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'حصة المستثمرين من الربح',
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Text(
+                '${trimDecimals(funding.investorProfitSharePercent)}%',
+                style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
             ],
           ),

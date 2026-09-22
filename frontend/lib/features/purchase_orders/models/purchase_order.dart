@@ -523,6 +523,10 @@ abstract class PurchaseOrderFunding with _$PurchaseOrderFunding {
   const factory PurchaseOrderFunding({
     @JsonKey(name: 'deal_id') required int dealId,
     required String code,
+
+    /// **الصندوقُ ليس شراكةً على هذا اللوري.** لا ممولين يُعدّون ولا نسبٌ جُمّدت — دفع الثمنَ
+    /// كلَّه من خزينته — فبطاقتُه تقول ما اشتراه وتفتح لوحةَ الصندوق، لا صفحةَ صفقة.
+    @JsonKey(name: 'is_fund') @Default(false) bool isFund,
     required String status,
     @JsonKey(name: 'status_label') required String statusLabel,
 

@@ -10,6 +10,7 @@ _InvestorDeal _$InvestorDealFromJson(Map<String, dynamic> json) =>
     _InvestorDeal(
       id: (json['id'] as num).toInt(),
       code: json['code'] as String,
+      isFund: json['is_fund'] as bool? ?? false,
       status: json['status'] as String,
       statusLabel: json['status_label'] as String,
       canBeEdited: json['can_be_edited'] as bool? ?? false,
@@ -49,6 +50,7 @@ Map<String, dynamic> _$InvestorDealToJson(_InvestorDeal instance) =>
     <String, dynamic>{
       'id': instance.id,
       'code': instance.code,
+      'is_fund': instance.isFund,
       'status': instance.status,
       'status_label': instance.statusLabel,
       'can_be_edited': instance.canBeEdited,

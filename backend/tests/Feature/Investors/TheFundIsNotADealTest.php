@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Investors;
 
+use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Investor\Actions\DepositToFund;
 use App\Domain\Investor\Actions\OpenInvestmentPeriod;
 use App\Domain\Investor\Actions\RecordWalletEntry;
@@ -13,8 +15,10 @@ use App\Domain\Investor\DTOs\WalletEntryData;
 use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDeal;
+use App\Domain\Investor\Models\InvestorDealSupply;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\InvestorBalances;
+use App\Domain\Investor\Queries\PurchaseOrderFundingQuery;
 use App\Domain\Investor\Support\FundDeal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -172,6 +176,56 @@ class TheFundIsNotADealTest extends TestCase
         // Assert
         $response->assertOk();
         $this->assertSame('closed', $legacy->refresh()->status->value);
+    }
+
+    public function test_the_purchase_order_payload_tells_the_fund_apart_from_a_real_deal(): void
+    {
+        // Arrange — **آخرُ بابٍ بقي مفتوحاً إلى شاشة الصفقة.** قائمةُ الصفقات لم تعد تعرضه،
+        // وصفحةُ المستثمر لم تعد تعدّه من صفقاته؛ وبطاقةُ «تمويل FUND» على أمر الشراء ما زالت
+        // تفتحه بزرِّ إغلاقه. وحتى تعرف الشاشةُ أنّ هذا الصفَّ صندوقٌ لا شراكة، يقولها الخادم.
+        $fund = app(FundDeal::class)();
+        $legacy = InvestorDeal::factory()->open()->create();
+        $orderId = 4242;
+
+        $this->claim($fund, $orderId);
+        $this->claim($legacy, $orderId);
+
+        // Act
+        $rows = app(PurchaseOrderFundingQuery::class)($orderId);
+
+        // Assert — الرمزُ «FUND» محجوز، وقراءتُه في التطبيق تعريفٌ ثانٍ له. الخادمُ يقول الحكم.
+        $byDeal = collect($rows)->keyBy('deal_id');
+
+        $this->assertTrue($byDeal[(int) $fund->getKey()]['is_fund']);
+        $this->assertFalse($byDeal[(int) $legacy->getKey()]['is_fund']);
+    }
+
+    public function test_a_deals_own_payload_says_whether_it_is_the_fund(): void
+    {
+        // Arrange — وشاشةُ الصفقة نفسُها تحمل زرَّ الإغلاق: الخادمُ يرفض الضغطة، والزرُّ يبقى
+        // وعداً كاذباً حتى تعرف الشاشةُ ما بين يديها.
+        $headers = $this->headersFor([PermissionName::ViewInvestors]);
+        $fund = app(FundDeal::class)();
+        $legacy = InvestorDeal::factory()->open()->create();
+
+        // Act
+        $asFund = $this->withHeaders($headers)->getJson("/api/v1/investor-deals/{$fund->id}");
+        $asDeal = $this->withHeaders($headers)->getJson("/api/v1/investor-deals/{$legacy->id}");
+
+        // Assert
+        $asFund->assertOk()->assertJsonPath('data.is_fund', true);
+        $asDeal->assertOk()->assertJsonPath('data.is_fund', false);
+    }
+
+    /** سطرُ مطالبةٍ على أمر شراء — رفٌّ واحد لكل صفقة. */
+    private function claim(InvestorDeal $deal, int $purchaseOrderId): void
+    {
+        $supply = new InvestorDealSupply;
+        $supply->investor_deal_id = $deal->getKey();
+        $supply->source_type = AuditSubject::PurchaseOrder->value;
+        $supply->source_id = $purchaseOrderId;
+        $supply->stock_item_id = StockItem::factory()->create()->getKey();
+        $supply->save();
     }
 
     public function test_a_fund_that_was_already_closed_is_put_back_together(): void

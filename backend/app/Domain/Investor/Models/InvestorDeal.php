@@ -10,6 +10,7 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Identity\Models\User;
 use App\Domain\Investor\Actions\FundPurchaseOrder;
 use App\Domain\Investor\Enums\DealStatus;
+use App\Domain\Investor\Support\FundDeal;
 use App\Domain\Investor\Support\Money;
 use Database\Factories\InvestorDealFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -212,6 +213,17 @@ class InvestorDeal extends Model implements HasAuditTrail
         ));
 
         return $negative && bccomp($cut, '0', Money::SCALE) !== 0 ? '-'.$cut : $cut;
+    }
+
+    /**
+     * أهذا الصفُّ هو الصندوق؟
+     *
+     * **التعريفُ الواحد للرمز المحجوز.** {@see FundDeal::is()}
+     * يُحيل إلى هنا، والخادمُ يُرسل الحكمَ إلى الشاشة — فلا يقرأ تطبيقٌ حرفَ «FUND» بيده.
+     */
+    public function isTheFund(): bool
+    {
+        return $this->code === FundDeal::CODE;
     }
 
     /** Whether this deal sells its plain stock to the press at an agreed price. */

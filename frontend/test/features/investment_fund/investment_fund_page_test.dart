@@ -507,6 +507,42 @@ void main() {
     expect(find.text('100.00%'), findsOneWidget);
   });
 
+  testWidgets('a partner row is a door into that investor', (tester) async {
+    // Arrange — الاسمُ على السطر ونسبتُه بجانبه، وما وراءهما — دفعاتُه، وسحوباتُه، ومتى يُفكّ
+    // حبسُ ماله — على شاشة المستثمر. وكان الطريقُ إليها «المستثمرون» في القائمة الجانبية ثم
+    // بحثاً عن الاسم نفسِه الذي يقرؤه الآن أمامه.
+    await register(
+      const FundStanding(
+        valuation: _valuation,
+        investors: [
+          FundHolder(
+            investorId: 9,
+            name: 'أحمد',
+            units: '3000.000000',
+            sharePercent: '100.000000',
+            capital: '3000.00',
+            profit: '400.00',
+          ),
+        ],
+      ),
+    );
+
+    // Act — شاشةٌ طويلة: `ListView` يبني ما يُرى فقط.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — بطاقةٌ تُنقر، وسهمٌ يقول ذلك قبل أن يجرّب أحد، كبطاقة الفترة فوقها.
+    final row = find.ancestor(of: find.text('أحمد'), matching: find.byType(InkWell));
+
+    expect(row, findsOneWidget);
+    expect(tester.widget<InkWell>(row).onTap, isNotNull);
+    expect(find.descendant(of: row, matching: find.byIcon(AppIcons.forward)), findsOneWidget);
+  });
+
   testWidgets('the period window is read from its start, on the right', (tester) async {
     // Arrange — سطرُ المدى كان يُجبَر على الاتجاه اللاتيني، فيقع أوّلُ التاريخين يساراً
     // والسهمُ يشير إليه: فترةٌ تمشي إلى الوراء في عين من يقرأ.

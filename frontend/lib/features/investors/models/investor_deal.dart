@@ -13,6 +13,11 @@ abstract class InvestorDeal with _$InvestorDeal {
     required int id,
     required String code,
 
+    /// **أهذه الصفقةُ هي الصندوق؟** يقولها الخادم، لأن «FUND» رمزٌ محجوز وقراءتُه هنا تعريفٌ
+    /// ثانٍ له. والصندوقُ لا يُغلَق — ما يُقفَل فترةُ الأرباح — فالشاشةُ تُخفي الزرَّ بدل أن
+    /// تَعِد بضغطةٍ يرفضها الخادم.
+    @JsonKey(name: 'is_fund') @Default(false) bool isFund,
+
     required String status,
     @JsonKey(name: 'status_label') required String statusLabel,
 

@@ -156,6 +156,7 @@ _PurchaseOrderFunding _$PurchaseOrderFundingFromJson(
 ) => _PurchaseOrderFunding(
   dealId: (json['deal_id'] as num).toInt(),
   code: json['code'] as String,
+  isFund: json['is_fund'] as bool? ?? false,
   status: json['status'] as String,
   statusLabel: json['status_label'] as String,
   investorProfitSharePercent: json['investor_profit_share_percent'] as String,
@@ -176,6 +177,7 @@ Map<String, dynamic> _$PurchaseOrderFundingToJson(
 ) => <String, dynamic>{
   'deal_id': instance.dealId,
   'code': instance.code,
+  'is_fund': instance.isFund,
   'status': instance.status,
   'status_label': instance.statusLabel,
   'investor_profit_share_percent': instance.investorProfitSharePercent,

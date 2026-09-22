@@ -82,7 +82,7 @@ final class FundDeal
     /** هل هذه الصفقةُ هي الصندوق؟ */
     public function is(InvestorDeal $deal): bool
     {
-        return $deal->code === self::CODE;
+        return $deal->isTheFund();
     }
 
     /** رقمُه إن وُجد، بلا إنشاء — لمن يقرأ ولا يكتب. */

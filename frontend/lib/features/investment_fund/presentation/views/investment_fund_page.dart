@@ -487,63 +487,75 @@ class _PartnerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
-    return Container(
-      margin: EdgeInsets.only(bottom: 10.h),
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
+    // **السطرُ بابٌ لا لافتة.** اسمُه ونسبتُه تقولان ماذا يأخذ من هذا الشهر؛ ومن وضع المال ومتى،
+    // وما سحبه، ومتى يُفكّ حبسُ رأس ماله — كلُّه على شاشته. وكان الطريقُ إليها أن يخرج من هنا
+    // إلى «المستثمرون» ثم يبحث عن الاسم نفسِه الذي يقرؤه أمامه.
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10.h),
+      child: InkWell(
+        onTap: () => context.push(Routes.investor(holder.investorId)),
         borderRadius: BorderRadius.circular(14.r),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        child: Container(
+          padding: EdgeInsets.all(14.w),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(14.r),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  holder.name,
-                  style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      holder.name,
+                      style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  if (holder.shareStartsNextPeriod)
+                    // نصيبُه من هذا الشهر صفر، و«٠٫٠٠٪» وحدها تُقرأ عطباً لا قاعدة.
+                    Text(
+                      'من الفترة القادمة',
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    )
+                  else
+                    Text(
+                      // ستُّ خاناتٍ على الشاشة ضجيج؛ اثنتان تكفيان للقراءة، والقسمةُ نفسُها
+                      // تجري بالستّ في الخادم.
+                      '${_twoPlaces(holder.sharePercent)}%',
+                      textDirection: TextDirection.ltr,
+                      style: context.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: scheme.primary,
+                      ),
+                    ),
+                  SizedBox(width: 8.w),
+                  // السهمُ هو ما يقول إنه يُفتح — كبطاقة الفترة فوقه، وبلا كلمةٍ تشرحه.
+                  Icon(AppIcons.forward, size: 18.sp, color: scheme.onSurfaceVariant),
+                ],
               ),
-              SizedBox(width: 8.w),
-              if (holder.shareStartsNextPeriod)
-                // نصيبُه من هذا الشهر صفر، و«٠٫٠٠٪» وحدها تُقرأ عطباً لا قاعدة.
-                Text(
-                  'من الفترة القادمة',
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurfaceVariant,
+              SizedBox(height: 8.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'رأس المال ${holder.capital.grouped} د.ل',
+                      style: context.textTheme.bodyMedium,
+                    ),
                   ),
-                )
-              else
-                Text(
-                  // ستُّ خاناتٍ على الشاشة ضجيج؛ اثنتان تكفيان للقراءة، والقسمةُ نفسُها تجري
-                  // بالستّ في الخادم.
-                  '${_twoPlaces(holder.sharePercent)}%',
-                  textDirection: TextDirection.ltr,
-                  style: context.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: scheme.primary,
+                  Text(
+                    'الربح ${holder.profit.grouped} د.ل',
+                    style: context.textTheme.bodyMedium,
                   ),
-                ),
+                ],
+              ),
             ],
           ),
-          SizedBox(height: 8.h),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'رأس المال ${holder.capital.grouped} د.ل',
-                  style: context.textTheme.bodyMedium,
-                ),
-              ),
-              Text(
-                'الربح ${holder.profit.grouped} د.ل',
-                style: context.textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
