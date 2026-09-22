@@ -21,6 +21,7 @@ use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Queries\PeriodOrdersQuery;
 use App\Domain\Investor\Queries\PeriodShares;
 use App\Domain\Investor\Queries\UnitPrice;
+use App\Domain\Investor\Support\FundDeal;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,6 +52,7 @@ class InvestmentFundController extends Controller
         private readonly RecordFundExpense $expense,
         private readonly PurchaseFromFund $purchase,
         private readonly PeriodOrdersQuery $periodOrders,
+        private readonly FundDeal $fund,
     ) {}
 
     /**
@@ -275,6 +277,12 @@ class InvestmentFundController extends Controller
      * **ثلاثةُ أرقامٍ لا رقمٌ واحد.** «نسبتُه» تقول ماذا سيأخذ من ربح هذا الشهر، و«رأسُ ماله»
      * ماذا وضع، و«ربحُه» ماذا أخذ ولم يسحبه. جمعُها في عمودٍ واحد يُخفي أيَّها يتحرّك.
      *
+     * **ورأسُ المال هنا ما في الصندوق وحده**، لا مجموعُ ما يملكه الرجلُ عندنا. السطرُ يجيب
+     * «بماذا يموّل هذا الصندوق»، ومالٌ باقٍ في محفظته لم يشترك به لا يموّله — فكان يقف بجانب
+     * نسبةٍ لا يفسّرها: صاحبُ الأربعةِ آلافِ المشتركة يقرأ نسبةً أكبرَ من صاحب السبعةِ الراقدة
+     * في محفظته، والرقمان على سطرٍ واحد يقولان إن القسمة ظالمة. والنسبةُ بالوحدات لا بهذا
+     * الرقم في كل حال — انظر {@see FundUnits}.
+     *
      * @return list<array<string, mixed>>
      */
     private function holders(?InvestmentPeriod $period): array
@@ -287,8 +295,16 @@ class InvestmentFundController extends Controller
 
         $ids = array_keys($units);
         $shares = $period === null ? [] : $this->shares->forPeriod((int) $period->getKey());
-        $balances = $this->balances->forInvestors($ids);
         $names = Investor::query()->whereIn('id', $ids)->pluck('name', 'id');
+
+        // بلا إنشاء: هذه قراءةٌ لا تكتب. ولا صندوقَ بعد يعني لا مالَ فيه لأحد.
+        $fundId = $this->fund->idOrNull();
+        $inFund = $fundId === null ? [] : $this->balances->forDeal($fundId)['per_investor'];
+
+        // والربحُ يبقى «ما استحقّه ولم يسحبه»: ما لم يُفرَج عنه في الصندوق، وما أُفرِج عنه عند
+        // إقفالِ فترةٍ ولم يخرج من محفظته بعد. إقفالُ الفترة ينقل الأول إلى الثاني ولا يُنقصه،
+        // فقصرُه على الصندوق كان يُصفّر ربحَ الشركاء صباحَ كلِّ إقفال ومالُهم في مكانه.
+        $balances = $this->balances->forInvestors($ids);
 
         $rows = [];
 
@@ -298,7 +314,11 @@ class InvestmentFundController extends Controller
                 'name' => (string) ($names[$id] ?? ''),
                 'units' => $units[$id],
                 'share_percent' => $shares[$id] ?? '0.000000',
-                'capital' => $balances[$id]['capital'] ?? '0.00',
+
+                // **من اكتتب في نافذة هذه الفترة يقف هنا بصفر**، لأن نصيبَه يبدأ من التالية.
+                // وصفرٌ بجانب اسمِ رجلٍ وضع مالَه أمس يُقرأ عطباً، فيقولها السطرُ بلفظها.
+                'share_starts_next_period' => $period !== null && ! isset($shares[$id]),
+                'capital' => $inFund[$id]['capital'] ?? '0.00',
                 'profit' => $balances[$id]['profit'] ?? '0.00',
             ];
         }
@@ -375,6 +395,12 @@ class InvestmentFundController extends Controller
 
             // بابُ الاكتتاب — ما يقرّر أيظهر زرُّ «إيداع» أم يظهر سببُ غيابه.
             'accepts_capital' => $period->acceptsCapitalOn(now()),
+
+            // **ولمن هذه النافذة؟** الداخلُ منها لا يقاسم شهراً بدأ بالفعل: «تجمد نسبته ولا
+            // تحسب له أرباح شهر تسعة إنما تحسب له أرباح شهر عشرة». والاستثناءُ أوّلُ فتراتِ
+            // الصندوق — {@see InvestmentPeriod::isTheFirstOfTheFund()} — فالخادمُ يقول أيُّهما
+            // هذه ولا تحسبها الشاشةُ بمقارنة تواريخ.
+            'subscription_serves_next_period' => ! $period->isTheFirstOfTheFund(),
 
             'opening_stock_cost' => (string) $period->opening_stock_cost,
             'opening_cash' => (string) $period->opening_cash,

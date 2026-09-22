@@ -138,6 +138,51 @@ void main() {
       expect(find.text('0 د.ل'), findsNWidgets(2));
     });
 
+    testWidgets('a fresh subscriber reads when his share starts, not a bare zero', (
+      tester,
+    ) async {
+      // Arrange — اكتتب في نافذة فترةٍ بدأت بالفعل، فنصيبُه منها صفرٌ ومن التالية كامل. وصفرٌ
+      // وحده على بوابته يُقرأ ضياعاً لماله لا قاعدةً تحكمه.
+      arrange(
+        const Right(
+          InvestorPortfolio(
+            investor: InvestorIdentity(id: 1, code: 'I1', name: 'أحمد'),
+            capitalInWallet: '0',
+            capitalInDeals: '1000',
+            capitalTotal: '1000',
+            profitInDeals: '0',
+            profitAvailable: '0',
+            profitWithdrawn: '0',
+            fund: FundShare(
+              units: '1000.000000',
+              unitPrice: '1.000000',
+              value: '1000',
+              sharePercent: '0.000000',
+              shareStartsNextPeriod: true,
+              period: FundPeriodBrief(
+                code: 'P2',
+                startsOn: '2026-10-01',
+                endsOn: '2026-10-31',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await Injector.reset();
+      sl.registerFactory<InvestorPortalCubit>(
+        () => InvestorPortalCubit(getPortfolio: GetInvestorPortfolio(repository)),
+      );
+
+      // Act
+      await tester.pumpWidget(host(const InvestorPortalPage()));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('نصيبي يبدأ من الفترة القادمة'), findsOneWidget);
+      expect(find.text('نصيبي من ربح P2: 0.00%'), findsNothing);
+    });
+
     testWidgets('a deal card shows his stake and his share, and no quantities', (tester) async {
       // Arrange
       await tester.pumpWidget(

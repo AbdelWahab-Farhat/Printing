@@ -176,13 +176,20 @@ class InvestorPortalController extends Controller
             ])
             ->all();
 
+        $shares = $open === null ? [] : $this->shares->forPeriod((int) $open->getKey());
+
         return [
             'units' => $held,
             'unit_price' => $price,
             'value' => Money::round(bcmul($held, $price, 8)),
-            'share_percent' => $open === null
-                ? '0.000000'
-                : ($this->shares->forPeriod((int) $open->getKey())[$investorId] ?? '0.000000'),
+            'share_percent' => $shares[$investorId] ?? '0.000000',
+
+            // **صفرٌ بجانب مالٍ في الصندوق سؤالٌ لا خبر.** من اكتتب في نافذة فترةٍ بدأت لا
+            // يقاسمها — «تجمد نسبته ولا تحسب له أرباح شهر تسعة إنما تحسب له أرباح شهر عشرة» —
+            // فتقول البوابةُ متى يبدأ نصيبُه بدل أن تتركه يحسب أن مالَه ضاع.
+            'share_starts_next_period' => $open !== null
+                && ! isset($shares[$investorId])
+                && bccomp($held, '0', FundUnits::SCALE) > 0,
             'unlocked_units' => $this->units->unlockedFor($investorId, now()),
             'period' => $open === null ? null : [
                 'code' => $open->code,

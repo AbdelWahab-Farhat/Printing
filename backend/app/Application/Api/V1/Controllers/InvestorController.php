@@ -20,6 +20,7 @@ use App\Domain\Investor\DTOs\WalletEntryData;
 use App\Domain\Investor\InvestorService;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Investor\Support\FundDeal;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,7 +40,10 @@ class InvestorController extends Controller
 {
     use ReadsAuditTrail, ResponseTrait;
 
-    public function __construct(private readonly InvestorService $investors) {}
+    public function __construct(
+        private readonly InvestorService $investors,
+        private readonly FundDeal $fund,
+    ) {}
 
     /**
      * List investors
@@ -85,10 +89,26 @@ class InvestorController extends Controller
      *
      * With his balances: what is in his wallet, and what each of his deals is holding and has
      * earned him.
+     *
+     * **والصندوقُ ليس منها.** هو صفقةٌ في الجدول — ختمُ ملكيةٍ على طبقات التكلفة، لا كيانٌ يديره
+     * أحد ({@see FundDeal}) — وقسمُ «في الصفقات» على صفحته كان يعرضه صفّاً يفتح صفحةَ الصفقة
+     * بزرِّ إغلاقها. وهو البابُ الذي أُغلق منه الصندوقُ فعلاً في ٢٢ سبتمبر ٢٠٢٦: رابطُ قائمة
+     * الصفقات كان قد رُفع من الدرج، وبقي هذا الطريقُ إليه مفتوحاً من صفحة كلِّ مشترك.
+     *
+     * ومالُه فيه لا يغيب عنه بهذا: بابُه لوحةُ الصندوق، وهي تقوله بوحداتٍ ونسبةٍ ورأسِ مال.
+     * والحذفُ هنا في طبقة العرض وحدها — `InvestorBalances` يبقى يمشي على كل صفقة، وعليه
+     * يقف حارسُ الاسترداد وتسويةُ الإقفال.
      */
     public function show(Investor $investor): JsonResponse
     {
-        $investor->setAttribute('balances', $this->investors->balancesFor((int) $investor->getKey()));
+        $balances = $this->investors->balancesFor((int) $investor->getKey());
+        $fundId = $this->fund->idOrNull();
+
+        if ($fundId !== null) {
+            unset($balances['deals'][$fundId]);
+        }
+
+        $investor->setAttribute('balances', $balances);
 
         return $this->success(new InvestorResource($investor));
     }

@@ -923,9 +923,11 @@ as String,
 mixin _$FundShare {
 
  String get units;@JsonKey(name: 'unit_price') String get unitPrice;/// وحداتُه × السعر — ما يساويه نصيبُه لو قُوِّم اليوم.
- String get value;/// نسبتُه من ربح هذه الفترة. مربوطةٌ بالفترة لا بالحاضر: من دخل بعد إغلاق النافذة نسبتُه
-/// في التالية.
-@JsonKey(name: 'share_percent') String get sharePercent;/// ما انقضت مدةُ حبسه من وحداته — وحده ما يمكن أن يخرج.
+ String get value;/// نسبتُه من ربح هذه الفترة. مربوطةٌ بالفترة لا بالحاضر: نافذةُ الاكتتاب في أوّلها بابُ
+/// الفترة **التالية**، فمن اكتتب فيها لا يقاسم شهراً بدأ قبل أن يصل مالُه.
+@JsonKey(name: 'share_percent') String get sharePercent;/// **صفرٌ بجانب مالٍ في الصندوق سؤالٌ لا خبر.** هذه هي إجابتُه: نصيبُه يبدأ من الفترة
+/// القادمة، فلا يحسب أن مالَه ضاع.
+@JsonKey(name: 'share_starts_next_period') bool get shareStartsNextPeriod;/// ما انقضت مدةُ حبسه من وحداته — وحده ما يمكن أن يخرج.
 @JsonKey(name: 'unlocked_units') String get unlockedUnits; FundPeriodBrief? get period;/// **دفعةً دفعة**، لأن الحبس كذلك: لكل إيداعٍ مدّتُه. رقمٌ واحد كان سيقول «محبوسٌ إلى
 /// ٢٠٢٨» لمن نصفُ ماله يخرج في ٢٠٢٧.
  List<FundDeposit> get deposits;
@@ -941,16 +943,16 @@ $FundShareCopyWith<FundShare> get copyWith => _$FundShareCopyWithImpl<FundShare>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundShare&&(identical(other.units, units) || other.units == units)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.value, value) || other.value == value)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.unlockedUnits, unlockedUnits) || other.unlockedUnits == unlockedUnits)&&(identical(other.period, period) || other.period == period)&&const DeepCollectionEquality().equals(other.deposits, deposits));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundShare&&(identical(other.units, units) || other.units == units)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.value, value) || other.value == value)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.shareStartsNextPeriod, shareStartsNextPeriod) || other.shareStartsNextPeriod == shareStartsNextPeriod)&&(identical(other.unlockedUnits, unlockedUnits) || other.unlockedUnits == unlockedUnits)&&(identical(other.period, period) || other.period == period)&&const DeepCollectionEquality().equals(other.deposits, deposits));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,units,unitPrice,value,sharePercent,unlockedUnits,period,const DeepCollectionEquality().hash(deposits));
+int get hashCode => Object.hash(runtimeType,units,unitPrice,value,sharePercent,shareStartsNextPeriod,unlockedUnits,period,const DeepCollectionEquality().hash(deposits));
 
 @override
 String toString() {
-  return 'FundShare(units: $units, unitPrice: $unitPrice, value: $value, sharePercent: $sharePercent, unlockedUnits: $unlockedUnits, period: $period, deposits: $deposits)';
+  return 'FundShare(units: $units, unitPrice: $unitPrice, value: $value, sharePercent: $sharePercent, shareStartsNextPeriod: $shareStartsNextPeriod, unlockedUnits: $unlockedUnits, period: $period, deposits: $deposits)';
 }
 
 
@@ -961,7 +963,7 @@ abstract mixin class $FundShareCopyWith<$Res>  {
   factory $FundShareCopyWith(FundShare value, $Res Function(FundShare) _then) = _$FundShareCopyWithImpl;
 @useResult
 $Res call({
- String units,@JsonKey(name: 'unit_price') String unitPrice, String value,@JsonKey(name: 'share_percent') String sharePercent,@JsonKey(name: 'unlocked_units') String unlockedUnits, FundPeriodBrief? period, List<FundDeposit> deposits
+ String units,@JsonKey(name: 'unit_price') String unitPrice, String value,@JsonKey(name: 'share_percent') String sharePercent,@JsonKey(name: 'share_starts_next_period') bool shareStartsNextPeriod,@JsonKey(name: 'unlocked_units') String unlockedUnits, FundPeriodBrief? period, List<FundDeposit> deposits
 });
 
 
@@ -978,13 +980,14 @@ class _$FundShareCopyWithImpl<$Res>
 
 /// Create a copy of FundShare
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? units = null,Object? unitPrice = null,Object? value = null,Object? sharePercent = null,Object? unlockedUnits = null,Object? period = freezed,Object? deposits = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? units = null,Object? unitPrice = null,Object? value = null,Object? sharePercent = null,Object? shareStartsNextPeriod = null,Object? unlockedUnits = null,Object? period = freezed,Object? deposits = null,}) {
   return _then(_self.copyWith(
 units: null == units ? _self.units : units // ignore: cast_nullable_to_non_nullable
 as String,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,sharePercent: null == sharePercent ? _self.sharePercent : sharePercent // ignore: cast_nullable_to_non_nullable
-as String,unlockedUnits: null == unlockedUnits ? _self.unlockedUnits : unlockedUnits // ignore: cast_nullable_to_non_nullable
+as String,shareStartsNextPeriod: null == shareStartsNextPeriod ? _self.shareStartsNextPeriod : shareStartsNextPeriod // ignore: cast_nullable_to_non_nullable
+as bool,unlockedUnits: null == unlockedUnits ? _self.unlockedUnits : unlockedUnits // ignore: cast_nullable_to_non_nullable
 as String,period: freezed == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as FundPeriodBrief?,deposits: null == deposits ? _self.deposits : deposits // ignore: cast_nullable_to_non_nullable
 as List<FundDeposit>,
@@ -1084,10 +1087,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String units, @JsonKey(name: 'unit_price')  String unitPrice,  String value, @JsonKey(name: 'share_percent')  String sharePercent, @JsonKey(name: 'unlocked_units')  String unlockedUnits,  FundPeriodBrief? period,  List<FundDeposit> deposits)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String units, @JsonKey(name: 'unit_price')  String unitPrice,  String value, @JsonKey(name: 'share_percent')  String sharePercent, @JsonKey(name: 'share_starts_next_period')  bool shareStartsNextPeriod, @JsonKey(name: 'unlocked_units')  String unlockedUnits,  FundPeriodBrief? period,  List<FundDeposit> deposits)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FundShare() when $default != null:
-return $default(_that.units,_that.unitPrice,_that.value,_that.sharePercent,_that.unlockedUnits,_that.period,_that.deposits);case _:
+return $default(_that.units,_that.unitPrice,_that.value,_that.sharePercent,_that.shareStartsNextPeriod,_that.unlockedUnits,_that.period,_that.deposits);case _:
   return orElse();
 
 }
@@ -1105,10 +1108,10 @@ return $default(_that.units,_that.unitPrice,_that.value,_that.sharePercent,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String units, @JsonKey(name: 'unit_price')  String unitPrice,  String value, @JsonKey(name: 'share_percent')  String sharePercent, @JsonKey(name: 'unlocked_units')  String unlockedUnits,  FundPeriodBrief? period,  List<FundDeposit> deposits)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String units, @JsonKey(name: 'unit_price')  String unitPrice,  String value, @JsonKey(name: 'share_percent')  String sharePercent, @JsonKey(name: 'share_starts_next_period')  bool shareStartsNextPeriod, @JsonKey(name: 'unlocked_units')  String unlockedUnits,  FundPeriodBrief? period,  List<FundDeposit> deposits)  $default,) {final _that = this;
 switch (_that) {
 case _FundShare():
-return $default(_that.units,_that.unitPrice,_that.value,_that.sharePercent,_that.unlockedUnits,_that.period,_that.deposits);case _:
+return $default(_that.units,_that.unitPrice,_that.value,_that.sharePercent,_that.shareStartsNextPeriod,_that.unlockedUnits,_that.period,_that.deposits);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1125,10 +1128,10 @@ return $default(_that.units,_that.unitPrice,_that.value,_that.sharePercent,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String units, @JsonKey(name: 'unit_price')  String unitPrice,  String value, @JsonKey(name: 'share_percent')  String sharePercent, @JsonKey(name: 'unlocked_units')  String unlockedUnits,  FundPeriodBrief? period,  List<FundDeposit> deposits)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String units, @JsonKey(name: 'unit_price')  String unitPrice,  String value, @JsonKey(name: 'share_percent')  String sharePercent, @JsonKey(name: 'share_starts_next_period')  bool shareStartsNextPeriod, @JsonKey(name: 'unlocked_units')  String unlockedUnits,  FundPeriodBrief? period,  List<FundDeposit> deposits)?  $default,) {final _that = this;
 switch (_that) {
 case _FundShare() when $default != null:
-return $default(_that.units,_that.unitPrice,_that.value,_that.sharePercent,_that.unlockedUnits,_that.period,_that.deposits);case _:
+return $default(_that.units,_that.unitPrice,_that.value,_that.sharePercent,_that.shareStartsNextPeriod,_that.unlockedUnits,_that.period,_that.deposits);case _:
   return null;
 
 }
@@ -1140,16 +1143,19 @@ return $default(_that.units,_that.unitPrice,_that.value,_that.sharePercent,_that
 @JsonSerializable()
 
 class _FundShare implements FundShare {
-  const _FundShare({required this.units, @JsonKey(name: 'unit_price') required this.unitPrice, required this.value, @JsonKey(name: 'share_percent') required this.sharePercent, @JsonKey(name: 'unlocked_units') this.unlockedUnits = '0.000000', this.period, final  List<FundDeposit> deposits = const <FundDeposit>[]}): _deposits = deposits;
+  const _FundShare({required this.units, @JsonKey(name: 'unit_price') required this.unitPrice, required this.value, @JsonKey(name: 'share_percent') required this.sharePercent, @JsonKey(name: 'share_starts_next_period') this.shareStartsNextPeriod = false, @JsonKey(name: 'unlocked_units') this.unlockedUnits = '0.000000', this.period, final  List<FundDeposit> deposits = const <FundDeposit>[]}): _deposits = deposits;
   factory _FundShare.fromJson(Map<String, dynamic> json) => _$FundShareFromJson(json);
 
 @override final  String units;
 @override@JsonKey(name: 'unit_price') final  String unitPrice;
 /// وحداتُه × السعر — ما يساويه نصيبُه لو قُوِّم اليوم.
 @override final  String value;
-/// نسبتُه من ربح هذه الفترة. مربوطةٌ بالفترة لا بالحاضر: من دخل بعد إغلاق النافذة نسبتُه
-/// في التالية.
+/// نسبتُه من ربح هذه الفترة. مربوطةٌ بالفترة لا بالحاضر: نافذةُ الاكتتاب في أوّلها بابُ
+/// الفترة **التالية**، فمن اكتتب فيها لا يقاسم شهراً بدأ قبل أن يصل مالُه.
 @override@JsonKey(name: 'share_percent') final  String sharePercent;
+/// **صفرٌ بجانب مالٍ في الصندوق سؤالٌ لا خبر.** هذه هي إجابتُه: نصيبُه يبدأ من الفترة
+/// القادمة، فلا يحسب أن مالَه ضاع.
+@override@JsonKey(name: 'share_starts_next_period') final  bool shareStartsNextPeriod;
 /// ما انقضت مدةُ حبسه من وحداته — وحده ما يمكن أن يخرج.
 @override@JsonKey(name: 'unlocked_units') final  String unlockedUnits;
 @override final  FundPeriodBrief? period;
@@ -1178,16 +1184,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundShare&&(identical(other.units, units) || other.units == units)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.value, value) || other.value == value)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.unlockedUnits, unlockedUnits) || other.unlockedUnits == unlockedUnits)&&(identical(other.period, period) || other.period == period)&&const DeepCollectionEquality().equals(other._deposits, _deposits));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundShare&&(identical(other.units, units) || other.units == units)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.value, value) || other.value == value)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.shareStartsNextPeriod, shareStartsNextPeriod) || other.shareStartsNextPeriod == shareStartsNextPeriod)&&(identical(other.unlockedUnits, unlockedUnits) || other.unlockedUnits == unlockedUnits)&&(identical(other.period, period) || other.period == period)&&const DeepCollectionEquality().equals(other._deposits, _deposits));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,units,unitPrice,value,sharePercent,unlockedUnits,period,const DeepCollectionEquality().hash(_deposits));
+int get hashCode => Object.hash(runtimeType,units,unitPrice,value,sharePercent,shareStartsNextPeriod,unlockedUnits,period,const DeepCollectionEquality().hash(_deposits));
 
 @override
 String toString() {
-  return 'FundShare(units: $units, unitPrice: $unitPrice, value: $value, sharePercent: $sharePercent, unlockedUnits: $unlockedUnits, period: $period, deposits: $deposits)';
+  return 'FundShare(units: $units, unitPrice: $unitPrice, value: $value, sharePercent: $sharePercent, shareStartsNextPeriod: $shareStartsNextPeriod, unlockedUnits: $unlockedUnits, period: $period, deposits: $deposits)';
 }
 
 
@@ -1198,7 +1204,7 @@ abstract mixin class _$FundShareCopyWith<$Res> implements $FundShareCopyWith<$Re
   factory _$FundShareCopyWith(_FundShare value, $Res Function(_FundShare) _then) = __$FundShareCopyWithImpl;
 @override @useResult
 $Res call({
- String units,@JsonKey(name: 'unit_price') String unitPrice, String value,@JsonKey(name: 'share_percent') String sharePercent,@JsonKey(name: 'unlocked_units') String unlockedUnits, FundPeriodBrief? period, List<FundDeposit> deposits
+ String units,@JsonKey(name: 'unit_price') String unitPrice, String value,@JsonKey(name: 'share_percent') String sharePercent,@JsonKey(name: 'share_starts_next_period') bool shareStartsNextPeriod,@JsonKey(name: 'unlocked_units') String unlockedUnits, FundPeriodBrief? period, List<FundDeposit> deposits
 });
 
 
@@ -1215,13 +1221,14 @@ class __$FundShareCopyWithImpl<$Res>
 
 /// Create a copy of FundShare
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? units = null,Object? unitPrice = null,Object? value = null,Object? sharePercent = null,Object? unlockedUnits = null,Object? period = freezed,Object? deposits = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? units = null,Object? unitPrice = null,Object? value = null,Object? sharePercent = null,Object? shareStartsNextPeriod = null,Object? unlockedUnits = null,Object? period = freezed,Object? deposits = null,}) {
   return _then(_FundShare(
 units: null == units ? _self.units : units // ignore: cast_nullable_to_non_nullable
 as String,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,sharePercent: null == sharePercent ? _self.sharePercent : sharePercent // ignore: cast_nullable_to_non_nullable
-as String,unlockedUnits: null == unlockedUnits ? _self.unlockedUnits : unlockedUnits // ignore: cast_nullable_to_non_nullable
+as String,shareStartsNextPeriod: null == shareStartsNextPeriod ? _self.shareStartsNextPeriod : shareStartsNextPeriod // ignore: cast_nullable_to_non_nullable
+as bool,unlockedUnits: null == unlockedUnits ? _self.unlockedUnits : unlockedUnits // ignore: cast_nullable_to_non_nullable
 as String,period: freezed == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as FundPeriodBrief?,deposits: null == deposits ? _self._deposits : deposits // ignore: cast_nullable_to_non_nullable
 as List<FundDeposit>,

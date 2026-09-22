@@ -102,9 +102,15 @@ abstract class FundShare with _$FundShare {
     /// وحداتُه × السعر — ما يساويه نصيبُه لو قُوِّم اليوم.
     required String value,
 
-    /// نسبتُه من ربح هذه الفترة. مربوطةٌ بالفترة لا بالحاضر: من دخل بعد إغلاق النافذة نسبتُه
-    /// في التالية.
+    /// نسبتُه من ربح هذه الفترة. مربوطةٌ بالفترة لا بالحاضر: نافذةُ الاكتتاب في أوّلها بابُ
+    /// الفترة **التالية**، فمن اكتتب فيها لا يقاسم شهراً بدأ قبل أن يصل مالُه.
     @JsonKey(name: 'share_percent') required String sharePercent,
+
+    /// **صفرٌ بجانب مالٍ في الصندوق سؤالٌ لا خبر.** هذه هي إجابتُه: نصيبُه يبدأ من الفترة
+    /// القادمة، فلا يحسب أن مالَه ضاع.
+    @JsonKey(name: 'share_starts_next_period')
+    @Default(false)
+    bool shareStartsNextPeriod,
 
     /// ما انقضت مدةُ حبسه من وحداته — وحده ما يمكن أن يخرج.
     @JsonKey(name: 'unlocked_units') @Default('0.000000') String unlockedUnits,

@@ -94,6 +94,47 @@ class TheFundIsNotADealTest extends TestCase
             ->assertJsonPath('data.0.code', $legacy->code);
     }
 
+    public function test_an_investors_own_page_does_not_list_the_fund_among_his_deals(): void
+    {
+        // Arrange — رجلٌ ماله في الصندوق وفي دفعةِ شراءٍ قديمة. وقسمُ «في الصفقات» على صفحته
+        // كان يعرضهما صفَّين، وصفُّ الصندوق يفتح صفحةَ الصفقة بزرِّ إغلاقها — وهذا هو الباب
+        // الذي أُغلق منه فعلاً: رابطُ قائمة الصفقات رُفع من الدرج، وبقي هذا مفتوحاً.
+        $headers = $this->headersFor([PermissionName::ViewInvestors]);
+        app(OpenInvestmentPeriod::class)(actorId: null);
+        $investor = Investor::factory()->create();
+        $this->deposit($investor, '3000.00');
+
+        $legacy = InvestorDeal::factory()->open()->create();
+        app(RecordWalletEntry::class)(
+            new WalletEntryData(
+                investorId: (int) $investor->id,
+                type: WalletEntryType::Deposit,
+                amount: '1000.00',
+                method: 'cash',
+            ),
+            null,
+        );
+        app(RecordWalletEntry::class)(
+            new WalletEntryData(
+                investorId: (int) $investor->id,
+                type: WalletEntryType::Allocation,
+                amount: '1000.00',
+                investorDealId: (int) $legacy->getKey(),
+            ),
+            null,
+        );
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/investors/{$investor->id}");
+
+        // Assert — صفقتُه القديمة وحدها. ومالُه في الصندوق لم يضِع من الشاشة: بابُه لوحةُ
+        // الصندوق، وهي تقوله بوحداتٍ ونسبةٍ ورأسِ مال.
+        $response->assertOk()
+            ->assertJsonCount(1, 'data.balances.deals')
+            ->assertJsonPath('data.balances.deals.0.investor_deal_id', (int) $legacy->getKey())
+            ->assertJsonPath('data.balances.deals.0.capital', '1000.00');
+    }
+
     public function test_the_fund_refuses_to_be_closed_and_keeps_everybodys_capital_where_it_is(): void
     {
         // Arrange — صندوقٌ حيّ فيه رأسُ مال مستثمرٍ اشترى به وحدات.

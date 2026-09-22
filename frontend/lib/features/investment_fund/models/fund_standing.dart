@@ -64,6 +64,12 @@ abstract class FundPeriod with _$FundPeriod {
     /// واحد، ولا تختلف نسخةٌ مثبَّتةٌ على هاتف عن الخادم يوم تتغيّر.
     @JsonKey(name: 'accepts_capital') @Default(false) bool acceptsCapital,
 
+    /// **ولمن هذه النافذة؟** الداخلُ منها لا يقاسم شهراً بدأ بالفعل: نصيبُه يبدأ من الفترة
+    /// التالية. والاستثناءُ أوّلُ فتراتِ الصندوق — ولا تحسبه الشاشةُ، الخادمُ يقوله.
+    @JsonKey(name: 'subscription_serves_next_period')
+    @Default(false)
+    bool subscriptionServesNextPeriod,
+
     /// مدةُ حبس رأس المال المجمَّدة على هذه الفترة — ما سيُنسَخ على كل دفعةٍ تدخل فيها.
     @JsonKey(name: 'capital_lock_months') @Default(12) int capitalLockMonths,
 
@@ -99,6 +105,12 @@ abstract class FundHolder with _$FundHolder {
     @JsonKey(name: 'share_percent') required String sharePercent,
     required String capital,
     required String profit,
+
+    /// **اكتتب في نافذة هذه الفترة، فنصيبُه منها صفر ومن التالية كامل.** وصفرٌ بجانب اسمِ رجلٍ
+    /// وضع مالَه أمس يُقرأ عطباً، فيقولها السطرُ بلفظها.
+    @JsonKey(name: 'share_starts_next_period')
+    @Default(false)
+    bool shareStartsNextPeriod,
   }) = _FundHolder;
 
   factory FundHolder.fromJson(Map<String, dynamic> json) => _$FundHolderFromJson(json);

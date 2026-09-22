@@ -153,7 +153,6 @@ class _Header extends StatelessWidget {
           SizedBox(height: 10.h),
           Text(
             '${period.startsOn} ← ${period.endsOn}',
-            textDirection: TextDirection.ltr,
             style: context.textTheme.bodyMedium,
           ),
           SizedBox(height: 8.h),

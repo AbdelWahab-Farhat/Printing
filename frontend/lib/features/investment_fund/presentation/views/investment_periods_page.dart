@@ -105,7 +105,6 @@ class _PeriodCard extends StatelessWidget {
                 SizedBox(height: 8.h),
                 Text(
                   '${period.startsOn} ← ${period.endsOn}',
-                  textDirection: TextDirection.ltr,
                   style: context.textTheme.bodyMedium,
                 ),
                 if (period.endsSettlementCycle) ...[

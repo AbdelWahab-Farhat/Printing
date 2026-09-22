@@ -40,6 +40,8 @@ _FundPeriod _$FundPeriodFromJson(Map<String, dynamic> json) => _FundPeriod(
   openingStockCost: json['opening_stock_cost'] as String,
   openingCash: json['opening_cash'] as String,
   acceptsCapital: json['accepts_capital'] as bool? ?? false,
+  subscriptionServesNextPeriod:
+      json['subscription_serves_next_period'] as bool? ?? false,
   capitalLockMonths: (json['capital_lock_months'] as num?)?.toInt() ?? 12,
   endsSettlementCycle: json['ends_settlement_cycle'] as bool? ?? false,
   overrideReason: json['override_reason'] as String?,
@@ -67,6 +69,7 @@ Map<String, dynamic> _$FundPeriodToJson(_FundPeriod instance) =>
       'opening_stock_cost': instance.openingStockCost,
       'opening_cash': instance.openingCash,
       'accepts_capital': instance.acceptsCapital,
+      'subscription_serves_next_period': instance.subscriptionServesNextPeriod,
       'capital_lock_months': instance.capitalLockMonths,
       'ends_settlement_cycle': instance.endsSettlementCycle,
       'override_reason': instance.overrideReason,
@@ -86,6 +89,7 @@ _FundHolder _$FundHolderFromJson(Map<String, dynamic> json) => _FundHolder(
   sharePercent: json['share_percent'] as String,
   capital: json['capital'] as String,
   profit: json['profit'] as String,
+  shareStartsNextPeriod: json['share_starts_next_period'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$FundHolderToJson(_FundHolder instance) =>
@@ -96,6 +100,7 @@ Map<String, dynamic> _$FundHolderToJson(_FundHolder instance) =>
       'share_percent': instance.sharePercent,
       'capital': instance.capital,
       'profit': instance.profit,
+      'share_starts_next_period': instance.shareStartsNextPeriod,
     };
 
 _FundStanding _$FundStandingFromJson(Map<String, dynamic> json) =>

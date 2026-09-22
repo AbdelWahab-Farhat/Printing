@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:dayaa/app.dart';
+import 'package:dayaa/core/config/app_config.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/push/push_service.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
 import 'package:dayaa/firebase_options.dart';
+import 'package:dayaa/firebase_options_dev.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -33,8 +35,17 @@ Future<void> main() async {
   // and the whole in-app notification centre are plain authenticated endpoints that owe Firebase
   // nothing. A missing google-services.json on somebody's machine should cost them notifications,
   // not the application.
+  //
+  // **والخياراتُ تُنتقى بالنكهة.** مُعرّفُ `DefaultFirebaseOptions` هو تطبيقُ الإنتاج، وتمريرُه
+  // من حزمة `ly.dayaa.app.dev` يطلب تسجيلاً لدى تطبيقٍ لا يملك هذه الحزمة فيُرفَض — فتموت
+  // الإشعاراتُ وحدَها بينما كلُّ شيءٍ آخر يعمل. و`google-services.json` لا يُنقذ: التهيئةُ
+  // بخياراتٍ صريحةٍ هنا تَجُبّ ما فيه.
   try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+      options: AppConfig.isDev
+          ? DevFirebaseOptions.currentPlatform
+          : DefaultFirebaseOptions.currentPlatform,
+    );
   } on Exception catch (error) {
     debugPrint('Firebase did not start; push is off for this run: $error');
   }

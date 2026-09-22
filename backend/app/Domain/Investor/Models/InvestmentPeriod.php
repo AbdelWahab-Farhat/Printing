@@ -8,6 +8,7 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Queries\PeriodForEntry;
+use App\Domain\Investor\Queries\PeriodShares;
 use Database\Factories\InvestmentPeriodFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -107,6 +108,22 @@ class InvestmentPeriod extends Model implements HasAuditTrail
         return $this->status === PeriodStatus::Open
             && $date >= $this->starts_on->startOfDay()
             && $date <= $this->subscription_closes_on->endOfDay();
+    }
+
+    /**
+     * أهذه أوّلُ فترةٍ في عمر الصندوق؟
+     *
+     * **وهي وحدها التي تُدخَل من نافذتها هي.** نافذةُ الاكتتاب في أول كل فترةٍ بابُ الفترة
+     * **التالية** — «ولا تحسب له أرباح شهر تسعة إنما تحسب له أرباح شهر عشرة» — ولا فترةَ قبل
+     * الأولى يُكتتب فيها، فلو حُرمت نافذتُها لما كان للصندوق ملّاكٌ في شهره الأول.
+     *
+     * والسؤالُ عن الفترات لا عن الوحدات: فترةٌ هجرها شركاؤها جميعاً ليست أوّلَ فترة. {@see
+     * PeriodShares} يقرأ منها لالتقاط صورة الملّاك، والشاشةُ تقرؤها لتقول لمن يكتتب اليوم متى
+     * يبدأ نصيبُه.
+     */
+    public function isTheFirstOfTheFund(): bool
+    {
+        return ! self::query()->where('starts_on', '<', $this->starts_on)->exists();
     }
 
     /** أحلّ موعدُ إقفالها؟ التاريخُ يجعلها مستحقّة، والطلبياتُ الطائرة تقرّر إن كانت تستطيع. */

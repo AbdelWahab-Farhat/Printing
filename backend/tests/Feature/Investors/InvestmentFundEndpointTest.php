@@ -208,6 +208,33 @@ class InvestmentFundEndpointTest extends TestCase
         $response->assertStatus(422)->assertJsonValidationErrors('override_reason');
     }
 
+    public function test_a_partner_row_carries_what_he_put_in_the_fund_not_everything_he_owns(): void
+    {
+        // Arrange — رجلٌ في محفظته عشرةُ آلاف اشترك بثلاثةٍ منها. السبعةُ الباقية مالُه عندنا
+        // ولا تموّل هذا الصندوق، فلا تقف في سطرِ شركائه.
+        Carbon::setTestNow('2026-09-01 09:00:00');
+        $headers = $this->headersFor([
+            PermissionName::ViewInvestors,
+            PermissionName::ManageInvestors,
+            PermissionName::RecordInvestorMoney,
+        ]);
+        $this->withHeaders($headers)->postJson('/api/v1/investment/periods')->assertOk();
+
+        $investor = Investor::factory()->create();
+        $this->fundWallet($headers, (int) $investor->id, '10000');
+        $this->withHeaders($headers)->postJson('/api/v1/investment/deposits', [
+            'investor_id' => $investor->id, 'amount' => '3000',
+        ])->assertOk();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/investment/fund');
+
+        // Assert — ما في الصندوق وحده؛ ولو كان المجموعَ لقرأ الشريكُ نسبةً لا يفسّرها رأسُ مالها.
+        $response->assertOk()
+            ->assertJsonPath('data.investors.0.investor_id', $investor->id)
+            ->assertJsonPath('data.investors.0.capital', '3000.00');
+    }
+
     /** إيداعٌ نقديّ على الطاولة — ما يملأ المحفظة قبل أن يُشترك به. */
     private function fundWallet(array $headers, int $investorId, string $amount): void
     {
@@ -276,7 +303,52 @@ class InvestmentFundEndpointTest extends TestCase
             ->assertJsonPath('data.investors.0.investor_id', $big->id)
             ->assertJsonPath('data.investors.0.share_percent', '75.000000')
             ->assertJsonPath('data.investors.1.share_percent', '25.000000')
-            ->assertJsonPath('data.valuation.cash', '4000.00');
+            ->assertJsonPath('data.valuation.cash', '4000.00')
+            // وأوّلُ فترةٍ في عمر الصندوق تُدخَل من نافذتها هي، فلا تقول الشاشةُ «للقادمة».
+            ->assertJsonPath('data.period.subscription_serves_next_period', false);
+    }
+
+    public function test_the_dashboard_says_the_window_feeds_the_next_period_and_who_waits_for_it(): void
+    {
+        // Arrange — فترةٌ ثانية: من اكتتب في نافذتها مالُه في الصندوق ونصيبُه من التي بعدها.
+        // «تجمد نسبته ولا تحسب له أرباح شهر تسعة إنما تحسب له أرباح شهر عشرة» — والشاشةُ تقولها
+        // بدل أن تضع «٠٫٠٠٪» بجانب اسمه بلا تفسير.
+        Carbon::setTestNow('2026-09-01 09:00:00');
+        $headers = $this->headersFor([
+            PermissionName::ViewInvestors,
+            PermissionName::ManageInvestors,
+            PermissionName::RecordInvestorMoney,
+        ]);
+        $this->withHeaders($headers)->postJson('/api/v1/investment/periods')->assertOk();
+
+        $founder = Investor::factory()->create();
+        $this->fundWallet($headers, (int) $founder->id, '3000');
+        $this->withHeaders($headers)->postJson('/api/v1/investment/deposits', [
+            'investor_id' => $founder->id, 'amount' => '3000',
+        ])->assertOk();
+
+        Carbon::setTestNow('2026-10-02 09:00:00');
+        $this->withHeaders($headers)->postJson('/api/v1/investment/periods/close')->assertOk();
+        $this->withHeaders($headers)->postJson('/api/v1/investment/periods')->assertOk();
+
+        $newcomer = Investor::factory()->create();
+        $this->fundWallet($headers, (int) $newcomer->id, '1000');
+        $this->withHeaders($headers)->postJson('/api/v1/investment/deposits', [
+            'investor_id' => $newcomer->id, 'amount' => '1000',
+        ])->assertOk();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/investment/fund');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.period.subscription_serves_next_period', true)
+            ->assertJsonPath('data.investors.0.investor_id', $founder->id)
+            ->assertJsonPath('data.investors.0.share_percent', '100.000000')
+            ->assertJsonPath('data.investors.0.share_starts_next_period', false)
+            ->assertJsonPath('data.investors.1.investor_id', $newcomer->id)
+            ->assertJsonPath('data.investors.1.share_percent', '0.000000')
+            ->assertJsonPath('data.investors.1.share_starts_next_period', true);
     }
 
     public function test_a_withdrawal_needs_the_lock_to_have_run_out(): void

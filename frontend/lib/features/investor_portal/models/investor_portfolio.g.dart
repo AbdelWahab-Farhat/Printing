@@ -81,6 +81,7 @@ _FundShare _$FundShareFromJson(Map<String, dynamic> json) => _FundShare(
   unitPrice: json['unit_price'] as String,
   value: json['value'] as String,
   sharePercent: json['share_percent'] as String,
+  shareStartsNextPeriod: json['share_starts_next_period'] as bool? ?? false,
   unlockedUnits: json['unlocked_units'] as String? ?? '0.000000',
   period: json['period'] == null
       ? null
@@ -98,6 +99,7 @@ Map<String, dynamic> _$FundShareToJson(_FundShare instance) =>
       'unit_price': instance.unitPrice,
       'value': instance.value,
       'share_percent': instance.sharePercent,
+      'share_starts_next_period': instance.shareStartsNextPeriod,
       'unlocked_units': instance.unlockedUnits,
       'period': instance.period?.toJson(),
       'deposits': instance.deposits.map((e) => e.toJson()).toList(),

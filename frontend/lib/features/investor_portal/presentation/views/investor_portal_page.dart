@@ -212,7 +212,9 @@ class _FundShareCard extends StatelessWidget {
           if (fund.period case final period?) ...[
             SizedBox(height: 10.h),
             Text(
-              'نصيبي من ربح ${period.code}: ${_twoPlaces(fund.sharePercent)}%',
+              fund.shareStartsNextPeriod
+                  ? 'نصيبي يبدأ من الفترة القادمة'
+                  : 'نصيبي من ربح ${period.code}: ${_twoPlaces(fund.sharePercent)}%',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: scheme.onPrimaryContainer,
                 fontWeight: FontWeight.w700,
@@ -221,7 +223,6 @@ class _FundShareCard extends StatelessWidget {
             SizedBox(height: 4.h),
             Text(
               '${period.startsOn} ← ${period.endsOn}',
-              textDirection: TextDirection.ltr,
               style: context.textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer),
             ),
           ],

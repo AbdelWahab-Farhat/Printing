@@ -263,9 +263,10 @@ class FundUnitsTest extends TestCase
         $this->deposit($late, '1000.00');
     }
 
-    public function test_shares_of_a_period_are_the_units_held_when_its_window_closed(): void
+    public function test_the_first_period_of_the_fund_is_entered_through_its_own_window(): void
     {
-        // Arrange — اثنان دخلا داخل النافذة بمالٍ مختلف، فنسبتاهما بنسبة وحداتهما.
+        // Arrange — اثنان دخلا داخل نافذة **أوّل** فترة، فنسبتاهما فيها بنسبة وحداتهما: لا فترةَ
+        // قبلها يُكتتب فيها، ولولا ذلك لما كان للصندوق ملّاكٌ في شهره الأول.
         Carbon::setTestNow('2026-09-01 09:00:00');
         $period = $this->openPeriod();
 
@@ -282,6 +283,57 @@ class FundUnitsTest extends TestCase
         // Assert
         $this->assertSame('75.000000', $shares[(int) $big->id] ?? null);
         $this->assertSame('25.000000', $shares[(int) $small->id] ?? null);
+    }
+
+    public function test_capital_that_joins_in_a_window_does_not_share_the_period_it_joined(): void
+    {
+        // Arrange — قرارُ المالك بنصّه: «لو فترة الاكتتاب ٧ أيام من بداية شهر تسعة، يقدر يحط
+        // فلوسه في الصندوق وتجمد نسبته ولا تحسب له أرباح شهر تسعة إنما تحسب له أرباح شهر عشرة».
+        // فالنافذةُ بابُ الفترة **التالية**: لا يُدخَل شهرٌ بدأ بالفعل.
+        Carbon::setTestNow('2026-09-01 09:00:00');
+        $this->openPeriod();
+        $founder = Investor::factory()->create();
+        $this->deposit($founder, '3000.00');
+
+        Carbon::setTestNow('2026-10-02 09:00:00');
+        $this->close();
+        $second = $this->openPeriod();
+
+        $newcomer = Investor::factory()->create();
+        $this->deposit($newcomer, '1000.00');
+
+        // Act
+        $shares = app(PeriodShares::class)->forPeriod((int) $second->id);
+
+        // Assert — مالُه في الصندوق ووحداتُه قائمة، ونصيبُه من هذا الشهر لا شيء.
+        $this->assertSame('100.000000', $shares[(int) $founder->id] ?? null);
+        $this->assertArrayNotHasKey((int) $newcomer->id, $shares);
+    }
+
+    public function test_capital_that_waited_out_a_period_shares_the_one_after_it(): void
+    {
+        // Arrange — والنصفُ الثاني من القرار: ما جُمّد شهراً يُحتسب في الذي يليه بوحداته كاملة.
+        Carbon::setTestNow('2026-09-01 09:00:00');
+        $this->openPeriod();
+        $founder = Investor::factory()->create();
+        $this->deposit($founder, '3000.00');
+
+        Carbon::setTestNow('2026-10-02 09:00:00');
+        $this->close();
+        $this->openPeriod();
+        $newcomer = Investor::factory()->create();
+        $this->deposit($newcomer, '1000.00');
+
+        // Act
+        Carbon::setTestNow('2026-11-02 09:00:00');
+        $this->close();
+        $third = $this->openPeriod();
+
+        // Assert
+        $shares = app(PeriodShares::class)->forPeriod((int) $third->id);
+
+        $this->assertSame('75.000000', $shares[(int) $founder->id] ?? null);
+        $this->assertSame('25.000000', $shares[(int) $newcomer->id] ?? null);
     }
 
     public function test_a_closed_period_keeps_the_shares_it_was_divided_by(): void

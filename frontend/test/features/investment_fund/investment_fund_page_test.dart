@@ -10,6 +10,7 @@ import 'package:dayaa/features/investment_fund/presentation/views/investment_fun
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -414,5 +415,128 @@ void main() {
       findsOneWidget,
     );
   });
+  testWidgets('the open window says it feeds the next period, not this one', (tester) async {
+    // Arrange — «يقدر يحط فلوسه في الصندوق وتجمد نسبته ولا تحسب له أرباح شهر تسعة إنما تحسب له
+    // أرباح شهر عشرة». فالسطرُ يقول لمن هذه النافذة قبل أن يضع أحدٌ مالَه فيها.
+    await register(
+      const FundStanding(
+        valuation: _valuation,
+        period: FundPeriod(
+          id: 2,
+          code: 'P2',
+          status: 'open',
+          statusLabel: 'مفتوحة',
+          startsOn: '2026-10-01',
+          endsOn: '2026-10-31',
+          subscriptionClosesOn: '2026-10-07',
+          isDueToClose: false,
+          periodMonths: 1,
+          investorProfitSharePercent: '50.00',
+          openingStockCost: '0.00',
+          openingCash: '0.00',
+          subscriptionServesNextPeriod: true,
+        ),
+      ),
+    );
 
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('اكتتاب الفترة القادمة مفتوح حتى 2026-10-07'), findsOneWidget);
+    expect(find.text('الاكتتاب مفتوح حتى 2026-10-07'), findsNothing);
+  });
+
+  testWidgets('a partner who just subscribed reads when his share starts, not a zero', (
+    tester,
+  ) async {
+    // Arrange — مالُه في الصندوق ووحداتُه قائمة، ونصيبُه من هذا الشهر صفر. و«٠٫٠٠٪» وحدها
+    // بجانب اسمه تُقرأ عطباً لا قاعدة.
+    await register(
+      const FundStanding(
+        valuation: _valuation,
+        investors: [
+          FundHolder(
+            investorId: 1,
+            name: 'أحمد',
+            units: '3000.000000',
+            sharePercent: '100.000000',
+            capital: '3000.00',
+            profit: '0.00',
+          ),
+          FundHolder(
+            investorId: 2,
+            name: 'محمد',
+            units: '1000.000000',
+            sharePercent: '0.000000',
+            capital: '1000.00',
+            profit: '0.00',
+            shareStartsNextPeriod: true,
+          ),
+        ],
+        period: FundPeriod(
+          id: 2,
+          code: 'P2',
+          status: 'open',
+          statusLabel: 'مفتوحة',
+          startsOn: '2026-10-01',
+          endsOn: '2026-10-31',
+          subscriptionClosesOn: '2026-10-07',
+          isDueToClose: false,
+          periodMonths: 1,
+          investorProfitSharePercent: '50.00',
+          openingStockCost: '0.00',
+          openingCash: '0.00',
+          subscriptionServesNextPeriod: true,
+        ),
+      ),
+    );
+
+    // Act — شاشةٌ طويلة: `ListView` يبني ما يُرى فقط.
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('من الفترة القادمة'), findsOneWidget);
+    expect(find.text('0.00%'), findsNothing);
+    expect(find.text('100.00%'), findsOneWidget);
+  });
+
+  testWidgets('the period window is read from its start, on the right', (tester) async {
+    // Arrange — سطرُ المدى كان يُجبَر على الاتجاه اللاتيني، فيقع أوّلُ التاريخين يساراً
+    // والسهمُ يشير إليه: فترةٌ تمشي إلى الوراء في عين من يقرأ.
+    await register(
+      const FundStanding(
+        valuation: _valuation,
+        period: FundPeriod(
+          id: 1,
+          code: 'P1',
+          status: 'open',
+          statusLabel: 'مفتوحة',
+          startsOn: '2026-09-01',
+          endsOn: '2026-09-30',
+          subscriptionClosesOn: '2026-09-07',
+          isDueToClose: false,
+          periodMonths: 1,
+          investorProfitSharePercent: '50.00',
+          openingStockCost: '0.00',
+          openingCash: '0.00',
+        ),
+      ),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — السطرُ يرث اتجاه الصفحة: البدايةُ يميناً، والسهمُ يمشي منها إلى النهاية.
+    final window = tester.renderObject<RenderParagraph>(find.text('2026-09-01 ← 2026-09-30'));
+
+    expect(window.textDirection, TextDirection.rtl);
+  });
 }

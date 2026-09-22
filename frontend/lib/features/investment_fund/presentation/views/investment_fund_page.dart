@@ -247,12 +247,15 @@ class _Period extends StatelessWidget {
             SizedBox(height: 10.h),
             Text(
               '${period.startsOn} ← ${period.endsOn}',
-              textDirection: TextDirection.ltr,
               style: context.textTheme.bodyMedium,
             ),
             SizedBox(height: 8.h),
+            // **ولمن هذه النافذة؟** المالُ الداخل فيها لا يقاسم شهراً بدأ بالفعل — يُجمَّد
+            // نصيبُه إلى الفترة التالية. والسطرُ يقولها قبل أن يضع أحدٌ مالَه ويسأل بعدها.
             Text(
-              'الاكتتاب مفتوح حتى ${period.subscriptionClosesOn}',
+              period.subscriptionServesNextPeriod
+                  ? 'اكتتاب الفترة القادمة مفتوح حتى ${period.subscriptionClosesOn}'
+                  : 'الاكتتاب مفتوح حتى ${period.subscriptionClosesOn}',
               style: context.textTheme.bodyMedium,
             ),
             SizedBox(height: 8.h),
@@ -503,16 +506,26 @@ class _PartnerRow extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 8.w),
-              Text(
-                // ستُّ خاناتٍ على الشاشة ضجيج؛ اثنتان تكفيان للقراءة، والقسمةُ نفسُها تجري
-                // بالستّ في الخادم.
-                '${_twoPlaces(holder.sharePercent)}%',
-                textDirection: TextDirection.ltr,
-                style: context.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: scheme.primary,
+              if (holder.shareStartsNextPeriod)
+                // نصيبُه من هذا الشهر صفر، و«٠٫٠٠٪» وحدها تُقرأ عطباً لا قاعدة.
+                Text(
+                  'من الفترة القادمة',
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                Text(
+                  // ستُّ خاناتٍ على الشاشة ضجيج؛ اثنتان تكفيان للقراءة، والقسمةُ نفسُها تجري
+                  // بالستّ في الخادم.
+                  '${_twoPlaces(holder.sharePercent)}%',
+                  textDirection: TextDirection.ltr,
+                  style: context.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: scheme.primary,
+                  ),
                 ),
-              ),
             ],
           ),
           SizedBox(height: 8.h),
