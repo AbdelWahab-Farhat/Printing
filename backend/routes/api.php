@@ -11,6 +11,7 @@ use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\CustomerDesignController;
 use App\Application\Api\V1\Controllers\DesignTicketCommentController;
 use App\Application\Api\V1\Controllers\DesignTicketController;
+use App\Application\Api\V1\Controllers\FundBreakdownController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
 use App\Application\Api\V1\Controllers\InvestmentFundController;
@@ -772,6 +773,20 @@ Route::prefix('v1')->group(function (): void {
         // هو الصندوقُ وفتراتُه.
         Route::get('investment/fund', [InvestmentFundController::class, 'show'])
             ->middleware('can:investors.view')->name('investment.fund.show');
+
+        // **ما وراء كلّ بندٍ في اللوحة** — طلبُ المالك 2026-09-24: النقدُ يُفتح على سجلّه،
+        // والبضاعةُ على موادّها وطلبياتها، والأرباحُ المستحقّة على ما صنعها. قراءةٌ كلُّها،
+        // فصلاحيتُها صلاحيةُ اللوحة نفسِها.
+        Route::get('investment/fund/cash', [FundBreakdownController::class, 'cash'])
+            ->middleware('can:investors.view')->name('investment.fund.cash');
+        Route::get('investment/fund/shelf', [FundBreakdownController::class, 'shelf'])
+            ->middleware('can:investors.view')->name('investment.fund.shelf');
+        Route::get('investment/fund/in-flight', [FundBreakdownController::class, 'inFlight'])
+            ->middleware('can:investors.view')->name('investment.fund.in-flight');
+        Route::get('investment/fund/receivables', [FundBreakdownController::class, 'receivables'])
+            ->middleware('can:investors.view')->name('investment.fund.receivables');
+        Route::get('investment/fund/profit-owed', [FundBreakdownController::class, 'profitOwed'])
+            ->middleware('can:investors.view')->name('investment.fund.profit-owed');
 
         // **بـ`investors.manage` لا بصلاحيةٍ جديدة.** فتحُ فترةٍ يقرّر بأيّ نسبٍ يُقسَّم ربحُ
         // شهرٍ كامل، وهي السلطةُ نفسها التي تحرّك مال المستثمرين — وصلاحيةٌ جديدة تعني مرآةً في

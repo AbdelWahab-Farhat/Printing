@@ -31,7 +31,12 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_d
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_form_page.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_page.dart';
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
+import 'package:dayaa/features/investment_fund/models/fund_breakdown.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/fund_cash_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/fund_goods_out_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/fund_profit_owed_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_purchase_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/fund_shelf_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_fund_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_partners_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_period_page.dart';
@@ -144,6 +149,14 @@ abstract final class Routes {
 
   /// شراءُ أمرِ شراءٍ بمال الصندوق — ما حلّ محلّ شاشة «تمويل الأمر».
   static const String fundPurchase = '/investment/purchase';
+
+  /// ما وراء كلّ بندٍ في لوحة الصندوق: سجلُّ الخزينة، وموادُّ الرفّ، وطلبياتُ البضاعة الخارجة،
+  /// والطلبياتُ التي صنعت الأرباحَ المستحقّة.
+  static const String investmentCash = '/investment/cash';
+  static const String investmentShelf = '/investment/shelf';
+  static const String investmentInFlight = '/investment/in-flight';
+  static const String investmentReceivables = '/investment/receivables';
+  static const String investmentProfitOwed = '/investment/profit-owed';
 
   /// قواعدُ الصندوق الأربع — خلف `settings.view`.
   static const String investmentSettings = '/investment-settings';
@@ -578,6 +591,26 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.investmentPartners,
         builder: (context, state) => const InvestmentPartnersPage(),
+      ),
+      GoRoute(
+        path: Routes.investmentCash,
+        builder: (context, state) => const FundCashPage(),
+      ),
+      GoRoute(
+        path: Routes.investmentShelf,
+        builder: (context, state) => const FundShelfPage(),
+      ),
+      GoRoute(
+        path: Routes.investmentInFlight,
+        builder: (context, state) => const FundGoodsOutPage(stage: FundGoodsStage.inFlight),
+      ),
+      GoRoute(
+        path: Routes.investmentReceivables,
+        builder: (context, state) => const FundGoodsOutPage(stage: FundGoodsStage.uncollected),
+      ),
+      GoRoute(
+        path: Routes.investmentProfitOwed,
+        builder: (context, state) => const FundProfitOwedPage(),
       ),
       GoRoute(
         // خلف «/periods» لا أمامه: المسارُ الثابتُ أطولُ مطابقةً، ولا يبتلعه متغيّرٌ بعده.

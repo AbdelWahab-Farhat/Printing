@@ -269,10 +269,13 @@ final class InvestorBalances
      * استعلامٌ واحد لكلّ الصفوف لا واحدٌ لكلّ صفّ — والصفوفُ قليلةٌ في الفترة، والطلبياتُ
      * أقلُّ منها لأن طلبيةً واحدة تحمل صفَّ كلِّ مستثمر.
      *
+     * **وعامّةٌ لأن {@see FundProfitOwed} يسأل السؤالَ نفسَه**: ما بقي من ربح فترةٍ سُوّيت هو
+     * ربحُ ما حجزته هذه البوّابة. شرطٌ ثانٍ هناك كان سيعرض طلبيةً غيرَ التي حُجز ربحُها.
+     *
      * @param  iterable<InvestorWalletEntry>  $entries
      * @return array<int, true>
      */
-    private function ordersNotCollected(iterable $entries): array
+    public function ordersNotCollected(iterable $entries): array
     {
         $orderIds = [];
 

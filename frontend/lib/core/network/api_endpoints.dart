@@ -59,6 +59,14 @@ abstract final class InvestorEndpoints {
 /// الصندوقُ وفتراتُه.
 abstract final class InvestmentEndpoints {
   static const String fund = '/investment/fund';
+
+  /// ما وراء كلّ بندٍ في اللوحة — النقدُ بسجلّه، والبضاعةُ بموادّها وطلبياتها، والأرباحُ بما
+  /// صنعها. وكلُّ قائمةٍ تجمع إلى رقم اللوحة الذي فُتحت منه.
+  static const String fundCash = '/investment/fund/cash';
+  static const String fundShelf = '/investment/fund/shelf';
+  static const String fundInFlight = '/investment/fund/in-flight';
+  static const String fundReceivables = '/investment/fund/receivables';
+  static const String fundProfitOwed = '/investment/fund/profit-owed';
   static const String periods = '/investment/periods';
   static const String closePeriod = '/investment/periods/close';
 

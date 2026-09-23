@@ -95,8 +95,11 @@ import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/repositories/home_repository.dart';
 import 'package:dayaa/features/home/repositories/home_repository_impl.dart';
 import 'package:dayaa/features/home/usecases/get_home_summary.dart';
+import 'package:dayaa/features/investment_fund/repositories/fund_breakdown_repository.dart';
+import 'package:dayaa/features/investment_fund/repositories/fund_breakdown_repository_impl.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository_impl.dart';
+import 'package:dayaa/features/investment_fund/usecases/fund_breakdown_usecases.dart';
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
 import 'package:dayaa/features/investment_settings/repositories/investment_settings_repository.dart';
 import 'package:dayaa/features/investment_settings/repositories/investment_settings_repository_impl.dart';
@@ -703,6 +706,18 @@ abstract final class Injector {
       )
       ..registerLazySingleton<BuyWithFund>(
         () => BuyWithFund(sl<InvestmentFundRepository>()),
+      )
+      // ما وراء كلّ بندٍ في اللوحة — قراءةٌ كلُّها، بعقدٍ منفصلٍ عن إدارة الصندوق.
+      ..registerLazySingleton<FundBreakdownRepository>(
+        () => FundBreakdownRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetFundCash>(() => GetFundCash(sl<FundBreakdownRepository>()))
+      ..registerLazySingleton<GetFundShelf>(() => GetFundShelf(sl<FundBreakdownRepository>()))
+      ..registerLazySingleton<GetFundGoodsOut>(
+        () => GetFundGoodsOut(sl<FundBreakdownRepository>()),
+      )
+      ..registerLazySingleton<GetFundProfitOwed>(
+        () => GetFundProfitOwed(sl<FundBreakdownRepository>()),
       );
   }
 

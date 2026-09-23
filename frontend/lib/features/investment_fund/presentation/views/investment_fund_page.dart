@@ -13,6 +13,7 @@ import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/presentation/viewmodel/investment_fund_cubit.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/fund_capital_sheet.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/fund_expense_sheet.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/fund_total_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -126,11 +127,26 @@ class _Standing extends StatelessWidget {
       children: [
         _Total(amount: value.total),
         SizedBox(height: 20.h),
-        _Row(label: 'نقد في الخزينة', amount: value.cash),
-        _Row(label: 'بضاعة على الرفّ', amount: value.stockOnShelf),
-        _Row(label: 'بضاعة خرجت ولم تُسلَّم', amount: value.goodsInFlight),
-        _Row(label: 'سُلِّمت ولم تُحصَّل', amount: value.receivablesAtCost),
-        _Row(label: 'أرباح مستحقّة للمستثمرين', amount: value.profitOwed),
+        // **كلُّ رقمٍ بابٌ إلى ما صنعه** — طلبُ المالك 2026-09-24: النقدُ إلى سجلّه، والبضاعةُ
+        // إلى موادّها وطلبياتها، والأرباحُ إلى الطلبيات التي أعطتها. وكلُّ قائمةٍ هناك تجمع إلى
+        // الرقم الذي فُتحت منه.
+        _Row(label: 'نقد في الخزينة', amount: value.cash, opens: Routes.investmentCash),
+        _Row(label: 'بضاعة على الرفّ', amount: value.stockOnShelf, opens: Routes.investmentShelf),
+        _Row(
+          label: 'بضاعة خرجت ولم تُسلَّم',
+          amount: value.goodsInFlight,
+          opens: Routes.investmentInFlight,
+        ),
+        _Row(
+          label: 'سُلِّمت ولم تُحصَّل',
+          amount: value.receivablesAtCost,
+          opens: Routes.investmentReceivables,
+        ),
+        _Row(
+          label: 'أرباح مستحقّة للمستثمرين',
+          amount: value.profitOwed,
+          opens: Routes.investmentProfitOwed,
+        ),
         SizedBox(height: 24.h),
         _Unit(price: standing.unitPrice, outstanding: standing.unitsOutstanding),
         SizedBox(height: 24.h),
@@ -160,31 +176,15 @@ class _Total extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 16.w),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Column(
-        children: [
-          Text(
-            'قيمة الصندوق',
-            style: context.textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer),
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            '${amount.grouped} د.ل',
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.headlineSmall?.copyWith(
-              color: scheme.onPrimaryContainer,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+    // **سجلُّ الخزينة بجانب قيمة الصندوق** — «ممكن تكون بجانب قيمة الصندوق». البابُ نفسُه الذي
+    // يفتحه سطرُ النقد تحته، في الموضع الذي تقع عليه العينُ أوّلاً.
+    return FundTotalCard(
+      label: 'قيمة الصندوق',
+      amount: amount,
+      action: IconButton(
+        tooltip: 'سجل الخزينة',
+        onPressed: () => context.push(Routes.investmentCash),
+        icon: Icon(AppIcons.history, color: context.colorScheme.onPrimaryContainer),
       ),
     );
   }
@@ -196,28 +196,39 @@ class _Total extends StatelessWidget {
 /// يُطرح؛ وقرارُ المالك أنها لا تحتاج ذلك — العنوانُ يقول ما هي، والمجموعُ فوقها محسوبٌ في
 /// الخادم فلا أحدَ يجمع هذا العمود بيده أصلاً. وإشارةُ الناقص في سطرٍ عربيّ تسبق الرقم من
 /// الجهة الخطأ بصرياً، فتُقرأ زينةً لا معنى.
+///
+/// **والسطرُ بابٌ**، والسهمُ في آخره هو ما يقول ذلك — كبطاقة الفترة تحته، بلا كلمةٍ تشرحه.
 class _Row extends StatelessWidget {
-  const _Row({required this.label, required this.amount});
+  const _Row({required this.label, required this.amount, required this.opens});
 
   final String label;
   final String amount;
+
+  /// الشاشةُ التي تقول ما يتكوّن منه هذا الرقم.
+  final String opens;
 
   @override
   Widget build(BuildContext context) {
     final figure = amount.grouped;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8.h),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: context.textTheme.bodyMedium)),
-          SizedBox(width: 8.w),
-          Text(
-            '$figure د.ل',
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ],
+    return InkWell(
+      onTap: () => context.push(opens),
+      borderRadius: BorderRadius.circular(8.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 8.h),
+        child: Row(
+          children: [
+            Expanded(child: Text(label, style: context.textTheme.bodyMedium)),
+            SizedBox(width: 8.w),
+            Text(
+              '$figure د.ل',
+              textDirection: TextDirection.ltr,
+              style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            SizedBox(width: 4.w),
+            Icon(AppIcons.forward, size: 18.sp, color: context.colorScheme.onSurfaceVariant),
+          ],
+        ),
       ),
     );
   }
