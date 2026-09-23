@@ -432,8 +432,10 @@ void main() {
   testWidgets('كُتب الأمرُ ولم يشترِه الصندوق: يُقال في حوارٍ لا في شريطٍ عابر', (
     tester,
   ) async {
-    // Arrange — الحفظُ ينجح، والشراءُ يُرفض: هو حالُ صندوقٍ قيمتُه كبيرةٌ ودرجُه فارغ.
-    await register('3000.00');
+    // Arrange — **الحارسُ على الشاشة لا يمنع هذه الحال، وهي سببُ بقاء الحوار.** النقدُ الذي
+    // قرأته الشاشةُ يكفي، ثم أُنفق بين القراءة والضغطة — أمرٌ آخرُ اشتراه الصندوق، أو سحبٌ خرج
+    // — فيرفض الخادمُ وحدَه. والسقفُ الحقيقيّ عنده دائماً.
+    await register('12000.00');
     session.adopt(userWith(['purchase_orders.manage', 'investors.manage']));
     when(
       () => orders.update(
@@ -466,5 +468,53 @@ void main() {
       find.textContaining('نقدُ الصندوق لا يكفي: المطلوب 7,700 والمتاح 3,000'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('ونقدٌ لا يكفي يمنع الحفظ أصلاً — لا أمرٌ يُكتب ثم يُعتذَر عنه', (
+    tester,
+  ) async {
+    // Arrange — ٣٠٠٠ في الدرج و٧٧٠٠ على الطاولة. **كان الأمرُ يُكتب ثم يُقال «لم يشترِه
+    // الصندوق»**، فيبقى أمرٌ بلا تمويلٍ في النظام ويُطلب من صاحبه أن يعيد الكرّة من شاشةٍ
+    // أخرى — وهو ما رفضه المالك: «امنعه أصلاً وليس تحذيراً».
+    await register('3000.00');
+    session.adopt(userWith(['purchase_orders.manage', 'investors.manage']));
+
+    await tester.pumpWidget(host(existing: order));
+    await tester.pumpAndSettle();
+    await scrollTo(tester, find.text('يشتريه الصندوق بماله'));
+    await tester.tap(find.text('يشتريه الصندوق بماله'));
+    await tester.pumpAndSettle();
+
+    // Act
+    await scrollTo(tester, find.text('حفظ التعديلات'));
+    await tester.tap(find.text('حفظ التعديلات'));
+    await tester.pumpAndSettle();
+
+    // Assert — لا شيءَ ذهب إلى الخادم، ولا حوارَ اعتذار؛ الشكوى مكانُها الشاشةُ التي ما زالت
+    // مفتوحةً ليُصلح فيها ما اختار.
+    verifyNever(
+      () => orders.update(
+        any(),
+        vendorId: any(named: 'vendorId'),
+        warehouseId: any(named: 'warehouseId'),
+        orderDate: any(named: 'orderDate'),
+        items: any(named: 'items'),
+        additionalCosts: any(named: 'additionalCosts'),
+        expectedDate: any(named: 'expectedDate'),
+        notes: any(named: 'notes'),
+      ),
+    );
+    expect(find.text('كُتب الأمر، ولم يشترِه الصندوق'), findsNothing);
+    expect(
+      find.text('نقد الصندوق لا يكفي — أزل رفّاً أو ارفع الصحَّ عن «يشتريه الصندوق بماله»'),
+      findsOneWidget,
+    );
+
+    // **فخّان لا واحد، وترتيبُهما لازم.** الشريطُ يحمل مؤقّتَ إخفاءٍ لثلاث ثوانٍ و`pumpAndSettle`
+    // يسوّي الحركاتِ لا المؤقّتات، فيسقط الاختبارُ بـ«A Timer is still pending». وتمريرُ الوقت
+    // وحدَه يُطلق حركةَ الخروج ويترك `AnimationController` حيّاً على `Navigator`، فيسقط
+    // بـ«disposed with an active Ticker». فالمؤقّتُ أولاً ثم التسوية.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
   });
 }

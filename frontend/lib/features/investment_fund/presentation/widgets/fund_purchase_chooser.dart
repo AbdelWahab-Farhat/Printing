@@ -71,6 +71,22 @@ Map<int, String> fundPricesFrom(
   return written;
 }
 
+/// أنقدُ الصندوق أقلُّ ممّا اختير؟ — القاعدةُ الواحدة، تقرؤها الشاشةُ والحارسُ معاً.
+///
+/// **دالّةٌ حرّة لا خاصيّةٌ على الودجة**، لأن لها قارئين لا واحداً: الودجةُ ترسم بها الشريطَ
+/// الأحمر، والنموذجُ يمنع بها الحفظ. ونسختان منها تعنيان شاشةً تقول «لا يكفي» وزرّاً يحفظ
+/// رغم ذلك — وهي الحالُ التي رفضها المالك: «امنعه أصلاً وليس تحذيراً».
+///
+/// **و`null` ليست صفراً**: قراءةٌ لم تصل بعد لا تُقال «لا يكفي» ولا تمنع أحداً من الحفظ —
+/// فمن في درجه المال لا تُقفَل الشاشةُ في وجهه لأن نداءً تأخّر. والسقفُ الحقيقيّ عند الخادم
+/// لحظةَ الشراء، يسمّي الرقمين في رفضه.
+bool fundCannotCover({required String? cash, required String cost}) {
+  final held = cash;
+  if (held == null) return false;
+
+  return (double.tryParse(held) ?? 0) < (double.tryParse(cost) ?? 0);
+}
+
 /// **ما يسأله الصندوقُ قبل أن يشتري لورياً — سؤالان لا خمسة.**
 ///
 /// أيَّ الرفوف يأخذ، وبكم تشتري المطبعةُ سادةَ كلٍّ منها. أمّا «من الممولون» و«كم وضع كلٌّ منهم»
@@ -113,12 +129,7 @@ class FundPurchaseChooser extends StatelessWidget {
 
   final void Function(int stockItemId, bool chosen) onToggle;
 
-  bool get _short {
-    final held = cash;
-    if (held == null) return false;
-
-    return (double.tryParse(held) ?? 0) < (double.tryParse(cost) ?? 0);
-  }
+  bool get _short => fundCannotCover(cash: cash, cost: cost);
 
   @override
   Widget build(BuildContext context) {

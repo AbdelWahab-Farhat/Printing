@@ -442,6 +442,21 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
       return;
     }
 
+    // **يُمنع الحفظُ أصلاً، لا يُكتب الأمرُ ثم يُعتذَر عنه** — قرارُ المالك: «امنعه أصلاً وليس
+    // تحذيراً في حال ليس للصندوق مال». وكان الحفظُ فعلين فينجح الأوّل ويسقط الثاني، فيبقى في
+    // النظام أمرٌ بلا تمويل ويُطلب من صاحبه أن يعيد الكرّة من شاشةٍ أخرى.
+    //
+    // والشكوى هنا **قبل** الضغطة يراها فوق: الشريطُ الأحمر مرسومٌ بالقاعدة نفسها
+    // ({@link fundCannotCover})، وهذه الجملةُ تقول ما يُفعَل به.
+    if (_fundBuys &&
+        fundCannotCover(cash: _standing?.valuation.cash, cost: _fundedCost)) {
+      context.showInfo(
+        'نقد الصندوق لا يكفي — أزل رفّاً أو ارفع الصحَّ عن «يشتريه الصندوق بماله»',
+      );
+
+      return;
+    }
+
     context.read<SavePurchaseOrderCubit>().submit(
       id: widget.order?.id,
       vendorId: vendor.id,
