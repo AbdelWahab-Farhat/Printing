@@ -20,6 +20,7 @@ use App\Domain\Investor\DTOs\WalletEntryData;
 use App\Domain\Investor\InvestorService;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Investor\Queries\FundStanding;
 use App\Domain\Investor\Queries\ProfitAwaitingDelivery;
 use App\Domain\Investor\Support\FundDeal;
 use App\Support\ResponseTrait;
@@ -45,6 +46,7 @@ class InvestorController extends Controller
         private readonly InvestorService $investors,
         private readonly FundDeal $fund,
         private readonly ProfitAwaitingDelivery $awaiting,
+        private readonly FundStanding $fundStanding,
     ) {}
 
     /**
@@ -89,15 +91,17 @@ class InvestorController extends Controller
     /**
      * Show an investor
      *
-     * With his balances: what is in his wallet, and what each of his deals is holding and has
-     * earned him.
+     * With his balances: what is in his wallet, what each of his deals is holding and has
+     * earned him, and what he has in the fund.
      *
      * **والصندوقُ ليس منها.** هو صفقةٌ في الجدول — ختمُ ملكيةٍ على طبقات التكلفة، لا كيانٌ يديره
      * أحد ({@see FundDeal}) — وقسمُ «في الصفقات» على صفحته كان يعرضه صفّاً يفتح صفحةَ الصفقة
      * بزرِّ إغلاقها. وهو البابُ الذي أُغلق منه الصندوقُ فعلاً في ٢٢ سبتمبر ٢٠٢٦: رابطُ قائمة
      * الصفقات كان قد رُفع من الدرج، وبقي هذا الطريقُ إليه مفتوحاً من صفحة كلِّ مشترك.
      *
-     * ومالُه فيه لا يغيب عنه بهذا: بابُه لوحةُ الصندوق، وهي تقوله بوحداتٍ ونسبةٍ ورأسِ مال.
+     * **ومالُه فيه يُقال في `fund` لا في الصفقات** ({@see FundStanding}): ما وضعه، ووحداتُه،
+     * ونسبتُه، ودفعاتُه بمواعيد فكّها — ما تقوله بوابتُه له. كان الظنُّ أنّ لوحةَ الصندوق تكفيه،
+     * فكان رجلٌ مالُه كلُّه في الصندوق يُقرأ على صفحته «رصيد المحفظة 0» و«لا مال له في أي صفقة».
      * والحذفُ هنا في طبقة العرض وحدها — `InvestorBalances` يبقى يمشي على كل صفقة، وعليه
      * يقف حارسُ الاسترداد وتسويةُ الإقفال.
      */
@@ -128,6 +132,7 @@ class InvestorController extends Controller
         }
 
         $investor->setAttribute('balances', $balances);
+        $investor->setAttribute('fund', $this->fundStanding->forInvestor((int) $investor->getKey()));
 
         return $this->success(new InvestorResource($investor));
     }

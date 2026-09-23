@@ -1,3 +1,4 @@
+import 'package:dayaa/features/investors/models/fund_share.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'investor.freezed.dart';
@@ -34,6 +35,10 @@ abstract class Investor with _$Investor {
 
     /// **الأرقامُ الثلاثة** — على صفحته وحدها، كما `balances`.
     @JsonKey(name: 'profit_figures') ProfitFigures? profitFigures,
+
+    /// **مالُه في الصندوق** — على صفحته وحدها كذلك. الصندوقُ ليس من [InvestorBalances.deals]
+    /// عمداً، وهذا ما يقوله بدلاً منه.
+    FundShare? fund,
   }) = _Investor;
 
   factory Investor.fromJson(Map<String, dynamic> json) => _$InvestorFromJson(json);
@@ -107,7 +112,8 @@ abstract class InvestorTotals with _$InvestorTotals {
 ///
 /// **قيد التسليم** طلبياتٌ بلغت «جاهزة» ولم تُسلَّم: محسوبٌ بالقسمة التي سيقيّده بها التسليم،
 /// ولا صفَّ له في الدفتر. **معلّقة** سُلِّمت فقُيِّدت، ولا تُسحب حتى تنقضي فترتُها وتُحصَّل
-/// طلبيتُها. **متاحة للسحب** اجتمع شرطاها. جمعُها في رقمٍ واحد يَعِد بمالٍ لا يُسحب.
+/// طلبيتُها. **متاحة للسحب** اجتمع شرطاها. الشاشةُ تعرض مجموعَها، وزرٌّ لكل بوّابة
+/// يفصلها — المجموعُ وحده يَعِد بمالٍ لا يُسحب.
 @freezed
 abstract class ProfitFigures with _$ProfitFigures {
   const factory ProfitFigures({

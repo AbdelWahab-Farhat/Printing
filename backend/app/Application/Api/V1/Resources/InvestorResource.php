@@ -64,6 +64,10 @@ class InvestorResource extends JsonResource
             // منها، و«متاحة للسحب» من المحفظة.
             'profit_figures' => $this->when(isset($this->profit_figures), fn (): array => $this->profit_figures),
 
+            // **مالُه في الصندوق** — على صفحته وحدها كذلك. الصندوقُ محذوفٌ من `balances.deals`
+            // عمداً (صفقةٌ في الجدول لا على الشاشة)، وهذا ما يقوله بدلاً منه.
+            'fund' => $this->when(isset($this->fund), fn (): array => $this->fund),
+
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

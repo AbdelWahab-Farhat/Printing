@@ -27,6 +27,7 @@ class InvestorMoneyTile extends StatelessWidget {
     this.caption,
     this.emphasis = false,
     this.icon,
+    this.footer,
   }) : artwork = null;
 
   /// The one figure the screen exists to show: teal, gradient, with [artwork] on it.
@@ -39,7 +40,8 @@ class InvestorMoneyTile extends StatelessWidget {
     super.key,
     this.caption,
   }) : emphasis = true,
-       icon = null;
+       icon = null,
+       footer = null;
 
   final String label;
 
@@ -56,6 +58,9 @@ class InvestorMoneyTile extends StatelessWidget {
 
   /// The asset painted on the hero card — `'assets/images/wallet.png'`.
   final String? artwork;
+
+  /// ما يُرسم تحت الرقم على عرض البطاقة كلّه — أزرارُ `InvestorProfitTile`. للبطاقة العادية وحدها.
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -87,29 +92,39 @@ class InvestorMoneyTile extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: _Figure(
-              label: label,
-              amount: amount,
-              caption: caption,
-              ink: onSurface,
-              muted: muted,
-            ),
-          ),
-          if (icon case final icon?) ...[
-            SizedBox(width: 12.w),
-            Container(
-              height: 44.w,
-              width: 44.w,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: scheme.secondaryContainer,
+          Row(
+            children: [
+              Expanded(
+                child: _Figure(
+                  label: label,
+                  amount: amount,
+                  caption: caption,
+                  ink: onSurface,
+                  muted: muted,
+                ),
               ),
-              child: Icon(icon, size: 20.sp, color: scheme.onSecondaryContainer),
-            ),
+              if (icon case final icon?) ...[
+                SizedBox(width: 12.w),
+                Container(
+                  height: 44.w,
+                  width: 44.w,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: scheme.secondaryContainer,
+                  ),
+                  child: Icon(icon, size: 20.sp, color: scheme.onSecondaryContainer),
+                ),
+              ],
+            ],
+          ),
+          if (footer case final footer?) ...[
+            SizedBox(height: 12.h),
+            footer,
           ],
         ],
       ),

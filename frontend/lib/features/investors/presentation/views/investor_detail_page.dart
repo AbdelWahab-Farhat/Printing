@@ -2,14 +2,17 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
-import 'package:dayaa/core/utils/arabic_counts.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/utils/fixed_point.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/permission_gate.dart';
+import 'package:dayaa/features/investors/models/fund_share.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
 import 'package:dayaa/features/investors/presentation/widgets/investor_money_tile.dart';
+import 'package:dayaa/features/investors/presentation/widgets/investor_profit_tile.dart';
 import 'package:dayaa/features/investors/presentation/widgets/wallet_entry_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -121,8 +124,15 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
     final balances = investor.balances;
+
+    // **صفقةٌ لا يبقى له فيها شيء لا سطرَ لها.** صفقةٌ أُقفلت رجع منها رأسُ ماله وربحُه، فسطرُها
+    // صفرٌ على صفر إلى الأبد. وما بقي فيه مالُه — دفعةُ شراءٍ قديمة لم تُطوَ في الصندوق — يبقى،
+    // لأن إخفاءه يُخفي ماله.
+    final deals = [
+      for (final pots in balances?.deals ?? const <DealPots>[])
+        if (!_isZero(pots.capital) || !_isZero(pots.profit)) pots,
+    ];
 
     return ListView(
       // `always`, so pull-to-refresh works on an investor short enough not to scroll.
@@ -133,60 +143,123 @@ class _Body extends StatelessWidget {
         SizedBox(height: 16.h),
 
         if (balances != null) ...[
-          // **Two figures rather than one total.** What is free and what is committed are
-          // different answers to «كم ماله عندنا؟», and a single number would answer neither.
-          // The wallet is the hero of the screen; the profit sits under it as a plain card,
-          // which is the difference between «ماله» and «ما ربحه» said without a word.
+          // **ماله أولاً، في كلّ مكانٍ هو فيه، ثم ما ربحه.** المحفظةُ بطلةُ الشاشة لأنها ما يتحرّك
+          // من هنا؛ والصندوقُ تحتها لأن مالَ أكثر المستثمرين فيه، وصفحةٌ تقول «رصيد المحفظة 0»
+          // وحدها لرجلٍ مالُه كلُّه في الصندوق تقول إنه لا مال له.
           InvestorMoneyTile.hero(
             label: 'رصيد المحفظة',
             amount: balances.wallet.capital,
-            caption: 'متاح للتمويل أو للسحب',
             artwork: 'assets/images/wallet.png',
           ),
           SizedBox(height: 12.h),
-          // **الأرقامُ الثلاثة كما يقرؤها على بوابته** — §٠.٨: قيد التسليم، ثم معلّقة، ثم
-          // متاحة للسحب. وكانت الصفحةُ تعرض الثالثَ وحده، وربحُه في الصندوق لا يظهر فيها.
-          if (investor.profitFigures case final figures?) ...[
-            InvestorMoneyTile(
-              label: 'ربح قيد التسليم',
-              amount: figures.awaitingDelivery,
-              caption: figures.ordersAwaitingDelivery > 0
-                  ? 'من ${ordersCount(figures.ordersAwaitingDelivery)} في الطريق'
-                  : 'لا طلبيات في الطريق',
-              icon: AppIcons.report,
-            ),
-            SizedBox(height: 12.h),
-            InvestorMoneyTile(
-              label: 'أرباح معلّقة',
-              amount: figures.pending,
-              caption: 'سُلِّمت — تُتاح بانتهاء فترتها وتحصيلها',
-              icon: AppIcons.report,
-            ),
+          if (investor.fund case final fund?) ...[
+            _FundTile(fund: fund),
             SizedBox(height: 12.h),
           ],
-          InvestorMoneyTile(
-            label: 'أرباح متاحة للسحب',
-            amount: balances.wallet.profit,
-            caption: 'انتهت فترتها وحُصِّلت',
-            icon: AppIcons.report,
-          ),
-          SizedBox(height: 24.h),
-
-          const _SectionTitle(title: 'في الصفقات'),
-          SizedBox(height: 8.h),
-          if (balances.deals.isEmpty)
-            Text(
-              'لا مال له في أي صفقة',
-              style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+          // **الربحُ كما يقرؤه على بوابته**: مجموعُ البوّابات الثلاث، وزرٌّ لكل واحدة — §٠.٨.
+          // ومن لا أرقامَ له منها يرى ما يُسحب وحده، كما كانت الصفحة قبل الصندوق.
+          if (investor.profitFigures case final figures?)
+            InvestorProfitTile(
+              awaitingDelivery: figures.awaitingDelivery,
+              pending: figures.pending,
+              available: balances.wallet.profit,
+              icon: AppIcons.report,
             )
           else
-            for (final pots in balances.deals)
+            InvestorMoneyTile(
+              label: 'أرباح متاحة للسحب',
+              amount: balances.wallet.profit,
+              icon: AppIcons.report,
+            ),
+
+          if (deals.isNotEmpty) ...[
+            SizedBox(height: 24.h),
+            const _SectionTitle(title: 'في الصفقات'),
+            SizedBox(height: 8.h),
+            for (final pots in deals)
               Padding(
                 padding: EdgeInsets.only(bottom: 8.h),
                 child: _DealRow(pots: pots),
               ),
+          ],
         ],
       ],
+    );
+  }
+}
+
+bool _isZero(String amount) => thousandths(amount) == BigInt.zero;
+
+/// مالُه في الصندوق: ما وضعه، ونصيبُه من ربح الفترة، ودفعاتُه بمواعيد فكّها.
+///
+/// **الرقمُ الكبير رأسُ ماله فيه، لا قيمةُ حصته.** هو ما وضعه ولم يستردّه — سطرُه في لوحة الصندوق،
+/// وسقفُ ما يستردّه. والقيمةُ (وحداتُه × سعرَ اليوم) قريبةٌ منه في الحال السويّة، وتقولها بوابتُه.
+///
+/// **والحبسُ دفعةً دفعة**، لأنه كذلك: من اشترك مرّتين يُفكّ مالُه على مرّتين، و«متى أستردّ مالي؟»
+/// سؤالٌ يُسأل على الهاتف.
+class _FundTile extends StatelessWidget {
+  const _FundTile({required this.fund});
+
+  final FundShare fund;
+
+  @override
+  Widget build(BuildContext context) {
+    // لا نسبةَ تُقال لمن لا مالَ له فيه، ولا فترةَ تُسمّى قبل أن تُفتح أُولاها.
+    final period = fund.period;
+    final caption = period == null || _isZero(fund.capital)
+        ? null
+        : fund.shareStartsNextPeriod
+        ? 'نصيبه يبدأ من الفترة القادمة'
+        : 'نصيبه من ربح ${period.code}: ${fromThousandths(thousandths(fund.sharePercent), scale: 2)}%';
+
+    return InvestorMoneyTile(
+      label: 'في الصندوق',
+      amount: fund.capital,
+      caption: caption,
+      icon: AppIcons.fundDeposit,
+      footer: fund.deposits.isEmpty
+          ? null
+          : Column(
+              children: [for (final deposit in fund.deposits) _DepositLine(deposit: deposit)],
+            ),
+    );
+  }
+}
+
+/// دفعةٌ واحدة: مبلغُها، ومتى يُفكّ حبسُها.
+class _DepositLine extends StatelessWidget {
+  const _DepositLine({required this.deposit});
+
+  final FundDeposit deposit;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final until = DateTime.tryParse(deposit.lockedUntil ?? '');
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4.h),
+      child: Row(
+        children: [
+          Text(
+            '${deposit.amount.grouped} د.ل',
+            textDirection: TextDirection.ltr,
+            style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Text(
+              // «متاحة للاسترداد» لا «للسحب»: ما انقضى حبسُه يرجع إلى محفظته بـ«استرداد رأس مال»
+              // من لوحة الصندوق، والسحبُ من المحفظة حركةٌ بعده.
+              deposit.isLocked
+                  ? 'محبوسة إلى ${until == null ? '—' : AppDates.day(until)}'
+                  : 'متاحة للاسترداد',
+              textAlign: TextAlign.end,
+              style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

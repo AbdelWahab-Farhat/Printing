@@ -8,7 +8,9 @@ import 'package:dayaa/features/investor_portal/presentation/views/investor_porta
 import 'package:dayaa/features/investor_portal/presentation/widgets/investor_deal_card.dart';
 import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository.dart';
 import 'package:dayaa/features/investor_portal/usecases/get_investor_portfolio.dart';
+import 'package:dayaa/features/investors/models/fund_share.dart';
 import 'package:dayaa/features/investors/presentation/widgets/investor_money_tile.dart';
+import 'package:dayaa/features/investors/presentation/widgets/investor_profit_tile.dart';
 import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
 import 'package:dayaa/features/notifications/repositories/notifications_repository.dart';
 import 'package:dayaa/features/notifications/usecases/get_unread_count.dart';
@@ -111,7 +113,7 @@ void main() {
       ),
     );
 
-    testWidgets('the three profit figures are three gates, never one number', (tester) async {
+    testWidgets('the profit card opens on the total, and each gate is one tap away', (tester) async {
       // Arrange — the whole screen, driven by the portfolio the server sent: 750 on its way in
       // two orders past «جاهزة», 1,500 booked and not yet released, and nothing released. §٠.٨
       // of the fund spec. Built from the *portfolio* rather than
@@ -137,19 +139,32 @@ void main() {
       await tester.pumpWidget(host(const InvestorPortalPage()));
       await tester.pumpAndSettle();
 
-      // Assert — three figures under their own headings. One number for all three would either
-      // promise him money he cannot have yet or hide money he has already made.
+      // Assert — the total of the three gates first: 750 + 1,500 + 0. Withdrawn stays out of it.
+      // Scoped to the card: the deal list below it carries the same 1,500.
+      Finder profit(String text) =>
+          find.descendant(of: find.byType(InvestorProfitTile), matching: find.text(text));
+      expect(profit('إجمالي الأرباح'), findsOneWidget);
+      expect(profit('2,250 د.ل'), findsOneWidget);
       Finder tile(String label) =>
           find.ancestor(of: find.text(label), matching: find.byType(InvestorMoneyTile));
-      Finder shows(String label, String text) =>
-          find.descendant(of: tile(label), matching: find.text(text));
+      expect(
+        find.descendant(of: tile('أرباح مسحوبة'), matching: find.text('0 د.ل')),
+        findsOneWidget,
+      );
 
-      expect(shows('ربح قيد التسليم', '750 د.ل'), findsOneWidget);
-      expect(shows('ربح قيد التسليم', 'من طلبيتين في الطريق'), findsOneWidget);
-      expect(shows('أرباح معلّقة', '1,500 د.ل'), findsOneWidget);
-      // Nothing released and nothing withdrawn yet.
-      expect(shows('أرباح متاحة للسحب', '0 د.ل'), findsOneWidget);
-      expect(shows('أرباح مسحوبة', '0 د.ل'), findsOneWidget);
+      // Act — each gate's own figure is one tap away.
+      await tester.tap(find.text('قيد التسليم'));
+      await tester.pump();
+
+      // Assert
+      expect(profit('750 د.ل'), findsOneWidget);
+
+      // Act
+      await tester.tap(find.text('معلّقة'));
+      await tester.pump();
+
+      // Assert
+      expect(profit('1,500 د.ل'), findsOneWidget);
     });
 
     testWidgets('a fresh subscriber reads when his share starts, not a bare zero', (

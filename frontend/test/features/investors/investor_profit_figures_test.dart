@@ -4,7 +4,6 @@ import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
 import 'package:dayaa/features/investors/presentation/views/investor_detail_page.dart';
-import 'package:dayaa/features/investors/presentation/widgets/investor_money_tile.dart';
 import 'package:dayaa/features/investors/usecases/investor_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,8 +16,8 @@ class _MockRecordWalletEntry extends Mock implements RecordWalletEntry {}
 
 /// الأرقامُ الثلاثة على صفحة المستثمر — §٠.٨ من مواصفة الصندوق.
 ///
-/// المديرُ يرى ما يراه صاحبُ المال على بوابته: **قيد التسليم**، و**معلّقة**، و**متاحة للسحب**.
-/// وكانت الصفحةُ تعرض الثالثَ وحده، وربحُه في الصندوق لا يظهر في أيّ مكانٍ منها.
+/// المديرُ يرى ما يراه صاحبُ المال على بوابته: مجموعَ الربح، وزرّاً لكل بوّابة — **قيد التسليم**،
+/// و**معلّقة**، و**متاحة للسحب**.
 ///
 /// Arrange - Act - Assert في كلٍّ منها.
 void main() {
@@ -78,15 +77,30 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
-    Finder tile(String label) =>
-        find.ancestor(of: find.text(label), matching: find.byType(InvestorMoneyTile));
-    Finder shows(String label, String text) =>
-        find.descendant(of: tile(label), matching: find.text(text));
+    // Assert — المجموعُ أولاً: 750 + 1,500 + 300.
+    expect(find.text('إجمالي الأرباح'), findsOneWidget);
+    expect(find.text('2,550 د.ل'), findsOneWidget);
 
-    expect(shows('ربح قيد التسليم', '750 د.ل'), findsOneWidget);
-    expect(shows('ربح قيد التسليم', 'من طلبيتين في الطريق'), findsOneWidget);
-    expect(shows('أرباح معلّقة', '1,500 د.ل'), findsOneWidget);
-    expect(shows('أرباح متاحة للسحب', '300 د.ل'), findsOneWidget);
+    // Act
+    await tester.tap(find.text('قيد التسليم'));
+    await tester.pump();
+
+    // Assert
+    expect(find.text('750 د.ل'), findsOneWidget);
+
+    // Act
+    await tester.tap(find.text('معلّقة'));
+    await tester.pump();
+
+    // Assert
+    expect(find.text('1,500 د.ل'), findsOneWidget);
+
+    // Act
+    await tester.tap(find.text('متاحة للسحب'));
+    await tester.pump();
+
+    // Assert
+    expect(find.text('أرباح متاحة للسحب'), findsOneWidget);
+    expect(find.text('300 د.ل'), findsOneWidget);
   });
 }

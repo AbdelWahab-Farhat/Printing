@@ -131,12 +131,52 @@ class TheFundIsNotADealTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->getJson("/api/v1/investors/{$investor->id}");
 
-        // Assert — صفقتُه القديمة وحدها. ومالُه في الصندوق لم يضِع من الشاشة: بابُه لوحةُ
-        // الصندوق، وهي تقوله بوحداتٍ ونسبةٍ ورأسِ مال.
+        // Assert — صفقتُه القديمة وحدها. ومالُه في الصندوق لا يُعدّ صفقةً، وتقوله `fund`.
         $response->assertOk()
             ->assertJsonCount(1, 'data.balances.deals')
             ->assertJsonPath('data.balances.deals.0.investor_deal_id', (int) $legacy->getKey())
             ->assertJsonPath('data.balances.deals.0.capital', '1000.00');
+    }
+
+    public function test_an_investors_own_page_says_what_he_put_in_the_fund(): void
+    {
+        // Arrange — مالُه كلُّه في الصندوق ومحفظتُه فارغة. والصفحةُ كانت تقول «رصيد المحفظة 0»
+        // و«لا مال له في أي صفقة»، وثلاثةُ آلافٍ له في الصندوق لا تظهر في أيّ مكانٍ منها.
+        $headers = $this->headersFor([PermissionName::ViewInvestors]);
+        app(OpenInvestmentPeriod::class)(actorId: null);
+        $investor = Investor::factory()->create();
+        $this->deposit($investor, '3000.00');
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/investors/{$investor->id}");
+
+        // Assert — رأسُ ماله فيه، ووحداتُه، ودفعتُه بموعد فكّها — ما تقوله بوابتُه له.
+        $response->assertOk()
+            ->assertJsonPath('data.balances.wallet.capital', '0.00')
+            ->assertJsonPath('data.fund.capital', '3000.00')
+            ->assertJsonPath('data.fund.units', '3000.000000')
+            ->assertJsonCount(1, 'data.fund.deposits')
+            ->assertJsonPath('data.fund.deposits.0.amount', '3000.00')
+            ->assertJsonPath('data.fund.deposits.0.is_locked', true);
+
+        $this->assertNotNull($response->json('data.fund.deposits.0.locked_until'));
+    }
+
+    public function test_an_investor_outside_the_fund_reads_zero_in_it_rather_than_nothing(): void
+    {
+        // Arrange — لا صندوقَ بعد في الجدول، ولا مالَ له فيه. والقراءةُ لا تُنشئ الصندوق.
+        $headers = $this->headersFor([PermissionName::ViewInvestors]);
+        $investor = Investor::factory()->create();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/investors/{$investor->id}");
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.fund.capital', '0.00')
+            ->assertJsonPath('data.fund.deposits', []);
+
+        $this->assertNull(app(FundDeal::class)->idOrNull());
     }
 
     public function test_the_fund_refuses_to_be_closed_and_keeps_everybodys_capital_where_it_is(): void

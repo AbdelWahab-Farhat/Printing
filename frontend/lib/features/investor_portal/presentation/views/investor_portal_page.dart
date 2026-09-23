@@ -1,12 +1,13 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
-import 'package:dayaa/core/utils/arabic_counts.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/investor_portal/models/investor_portfolio.dart';
 import 'package:dayaa/features/investor_portal/presentation/viewmodel/investor_portal_cubit.dart';
 import 'package:dayaa/features/investor_portal/presentation/widgets/investor_deal_card.dart';
+import 'package:dayaa/features/investors/models/fund_share.dart';
 import 'package:dayaa/features/investors/presentation/widgets/investor_money_tile.dart';
+import 'package:dayaa/features/investors/presentation/widgets/investor_profit_tile.dart';
 import 'package:dayaa/features/notifications/presentation/widgets/notification_bell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -124,28 +125,13 @@ class _Portfolio extends StatelessWidget {
         ),
         SizedBox(height: 8.h),
 
-        // **ثلاثُ بوّاباتٍ متتابعة — §٠.٨ من مواصفة الصندوق —** ثم ما قبضه فعلاً. الأوّلُ محسوبٌ
-        // لا مقيَّد: طلبياتٌ بلغت «جاهزة» ولم تُسلَّم. والثاني سُلِّم فقُيِّد، ولا يُسحب حتى تنقضي
-        // فترتُه ويُحصَّل. والثالثُ اجتمع شرطاه. رقمٌ واحد لها كان سيَعِد بمالٍ لا يُسحب.
-        InvestorMoneyTile(
-          label: 'ربح قيد التسليم',
-          amount: portfolio.profitAwaitingDelivery,
-          caption: portfolio.ordersAwaitingDelivery > 0
-              ? 'من ${ordersCount(portfolio.ordersAwaitingDelivery)} في الطريق'
-              : 'لا طلبيات في الطريق',
-        ),
-        SizedBox(height: 12.h),
-        InvestorMoneyTile(
-          label: 'أرباح معلّقة',
-          amount: portfolio.profitInDeals,
-          caption: 'سُلِّمت — تُتاح بانتهاء فترتها وتحصيلها',
-          emphasis: true,
-        ),
-        SizedBox(height: 12.h),
-        InvestorMoneyTile(
-          label: 'أرباح متاحة للسحب',
-          amount: portfolio.profitAvailable,
-          caption: 'انتهت فترتها وحُصِّلت',
+        // **مجموعُ البوّابات الثلاث، وزرٌّ لكل واحدة — §٠.٨ من مواصفة الصندوق.** الأولى محسوبةٌ
+        // لا مقيَّدة: طلبياتٌ بلغت «جاهزة» ولم تُسلَّم. والثانية سُلِّمت فقُيِّدت، ولا تُسحب حتى
+        // تنقضي فترتُها وتُحصَّل. والثالثةُ اجتمع شرطاها. ثم ما قبضه فعلاً، خارجَ المجموع.
+        InvestorProfitTile(
+          awaitingDelivery: portfolio.profitAwaitingDelivery,
+          pending: portfolio.profitInDeals,
+          available: portfolio.profitAvailable,
         ),
         SizedBox(height: 12.h),
         InvestorMoneyTile(
