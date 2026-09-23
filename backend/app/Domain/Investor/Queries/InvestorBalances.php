@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domain\Investor\Queries;
 
+use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Support\Money;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The four balances, walked from the ledger — the only place any of them is computed.
@@ -194,6 +196,111 @@ final class InvestorBalances
         }
 
         return $out;
+    }
+
+    /**
+     * ما يجوز الإفراجُ عنه من ربح هذه الفترة اليوم — ببوّابة التحصيل.
+     *
+     * المواصفة: §٠.٨ — **بوّابتان لا واحدة**. انقضاءُ مدّة الفترة يفتح الأولى، وهذا يفحص
+     * الثانية: «في حال انتهت الفترة التي فيها طلبية **وسُلّمت للزبون (Paid)**».
+     *
+     * ## ولماذا لا يكفي التسليم
+     *
+     * الربحُ يُقيَّد عند التسليم، ومالُه يدخل خزينةَ الصندوق عند **التحصيل**. فطلبيةٌ بالأجل
+     * تصنع رقماً قابلاً للسحب بلا دينارٍ خلفه — و`RecordWalletEntry` لا يفحص الخزينة في سحب
+     * الأرباح إطلاقاً، فيمرّ السحبُ وتصير خزينةُ الصندوق سالبة. البوّابةُ هنا تجعل ذلك
+     * مستحيلاً بالبناء بدل أن يُضاف حارسٌ ثالث.
+     *
+     * ## والشرطُ رقمٌ لا زرّ
+     *
+     * `paid_amount >= grand_total` — الواقعةُ المالية لا حالةٌ يضغطها موظّف، **وهو الشرطُ
+     * بعينه الذي تقيس به {@see FundValuation} المستحقّات**. فلا يخرج دينارٌ من بند «مبيعاتٌ لم
+     * تُحصَّل» إلا وقد فُتحت له بوّابةُ السحب في اللحظة نفسها.
+     *
+     * ## وما لا طلبيةَ له يمرّ
+     *
+     * المصروفُ خرج مالُه فعلاً، وهامشُ المكينة قُبض يوم اشترت، وصفوفُ التسوية نفسُها لا مصدرَ
+     * لها — فلا شيءَ من ذلك ينتظر تحصيلاً. والبوّابةُ للطلبيات وحدها.
+     *
+     * @return array<int, array<int, string>> المستثمر ← الصفقة ← ما يجوز الإفراج عنه، بإشارته
+     */
+    public function releasableInPeriod(int $periodId): array
+    {
+        $entries = InvestorWalletEntry::query()
+            ->with('reversedEntry')
+            ->where('investment_period_id', $periodId)
+            ->whereNotNull('investor_deal_id')
+            ->get();
+
+        $withheld = $this->ordersNotCollected($entries);
+        $profit = [];
+
+        foreach ($entries as $entry) {
+            [$sourceType, $sourceId] = $entry->effectiveSource();
+
+            if ($sourceType === AuditSubject::Order->value && isset($withheld[$sourceId])) {
+                continue;
+            }
+
+            $investorId = (int) $entry->investor_id;
+            $dealId = (int) $entry->investor_deal_id;
+
+            $profit[$investorId][$dealId] = bcadd(
+                $profit[$investorId][$dealId] ?? '0',
+                $entry->deltas()['profit_deal'],
+                8,
+            );
+        }
+
+        $out = [];
+
+        foreach ($profit as $investorId => $deals) {
+            foreach ($deals as $dealId => $amount) {
+                $out[$investorId][$dealId] = Money::round($amount);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * أيُّ الطلبيات وراء هذه الصفوف لم يصل مالُها بعد.
+     *
+     * استعلامٌ واحد لكلّ الصفوف لا واحدٌ لكلّ صفّ — والصفوفُ قليلةٌ في الفترة، والطلبياتُ
+     * أقلُّ منها لأن طلبيةً واحدة تحمل صفَّ كلِّ مستثمر.
+     *
+     * @param  iterable<InvestorWalletEntry>  $entries
+     * @return array<int, true>
+     */
+    private function ordersNotCollected(iterable $entries): array
+    {
+        $orderIds = [];
+
+        foreach ($entries as $entry) {
+            [$sourceType, $sourceId] = $entry->effectiveSource();
+
+            if ($sourceType === AuditSubject::Order->value && $sourceId !== null) {
+                $orderIds[$sourceId] = true;
+            }
+        }
+
+        if ($orderIds === []) {
+            return [];
+        }
+
+        $unpaid = DB::table('orders')
+            ->whereIn('id', array_keys($orderIds))
+            ->whereNull('deleted_at')
+            ->whereColumn('paid_amount', '<', 'grand_total')
+            ->pluck('id');
+
+        $withheld = [];
+
+        foreach ($unpaid as $id) {
+            $withheld[(int) $id] = true;
+        }
+
+        return $withheld;
     }
 
     /**

@@ -17,6 +17,7 @@ use App\Domain\Investor\Listeners\PostFundProceedsWhenPaymentsMove;
 use App\Domain\Investor\Listeners\PostPurchasesWhenStockLeaves;
 use App\Domain\Investor\Listeners\PostPurchaseWhenScrapIsDrawn;
 use App\Domain\Investor\Listeners\PostPurchaseWhenStockIsRedrawn;
+use App\Domain\Investor\Listeners\ReleaseProfitWhenBothGatesOpen;
 use App\Domain\Investor\Listeners\UnwindEarningsWhenOrderIsDeleted;
 use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
@@ -131,7 +132,13 @@ class AppServiceProvider extends ServiceProvider
         // transaction that moved the status, so the money and the status land together or not
         // at all.
         Event::listen(OrderProfitFinalised::class, PostEarningsWhenOrderIsFinalised::class);
+        // **والبابُ نفسُه على هذا الحدث كذلك.** طلبيةٌ دُفعت سلفاً يكتمل شرطاها لحظةَ التسليم،
+        // فلا حدثَ تحصيلٍ يأتي بعدها — ولولا هذا السطر لانتظر مالُ صاحبها كنسةَ الكرون.
+        Event::listen(OrderProfitFinalised::class, ReleaseProfitWhenBothGatesOpen::class);
         Event::listen(OrderPaymentsRecalculated::class, PostFundProceedsWhenPaymentsMove::class);
+        // **بعده لا قبله.** ذاك يُدخل النقدَ إلى الخزينة، وهذا يُخرج الربحَ منها — فالترتيبُ
+        // يجعل المالَ موجوداً لحظةَ الإفراج عنه لا بعدها بسطر.
+        Event::listen(OrderPaymentsRecalculated::class, ReleaseProfitWhenBothGatesOpen::class);
 
         // **And its counterpart, for an order that leaves the books altogether.** A delete
         // archives the row, so `ProfitAndLossSummaryQuery` stops counting the sale — while the

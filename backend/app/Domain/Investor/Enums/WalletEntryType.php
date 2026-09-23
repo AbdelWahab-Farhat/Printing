@@ -63,6 +63,20 @@ enum WalletEntryType: string
      */
     case LossAbsorbedByCompany = 'loss_absorbed_by_company';
 
+    /**
+     * خسارةٌ بقيت على فترةٍ تُقفَل، تخرج منها إلى التي بعدها — §٠.٨.
+     *
+     * **الحالُ:** أُفرِج عن ربح سبتمبر وخرج من الجيوب، ثم تُسلَّم آخرُ طلبياته بخسارة. فلا
+     * رأسُ المال يُمسّ ولا الشركةُ تتحمّل — «مطالبة على المستثمر نفسه، تُرحّل حتى تُخصم من
+     * أرباحه المستقبلية».
+     *
+     * وهو يسدّ حفرةَ الفترة المنتهية فتُقفَل على صفر، وأخوه يفتحها في التالية.
+     */
+    case LossCarriedOut = 'loss_carried_out';
+
+    /** نظيرُه في الفترة التي تستقبله: تُستنزل من أوّل ربحٍ يُفرَج عنه فيها. */
+    case LossCarriedIn = 'loss_carried_in';
+
     /** The deal's net profit moving to the wallet at close — where it becomes withdrawable. */
     case ProfitRelease = 'profit_release';
 
@@ -95,6 +109,8 @@ enum WalletEntryType: string
             self::CapitalWritedown => 'خصم خسارة من رأس المال',
             self::LossAbsorbedByCompany => 'خسارة تحمّلتها الشركة',
             self::ProfitRelease => 'إتاحة أرباح الصفقة للسحب',
+            self::LossCarriedOut => 'ترحيل خسارة إلى الفترة التالية',
+            self::LossCarriedIn => 'خسارة مرحَّلة من فترة سابقة',
             self::ProfitWithdrawal => 'سحب أرباح',
             self::ProfitCapitalisation => 'تحويل أرباح إلى رأس مال',
             self::Reversal => 'عكس حركة',
@@ -133,6 +149,9 @@ enum WalletEntryType: string
             self::CapitalWritedown => ['capital_wallet' => 0, 'capital_deal' => -1, 'profit_deal' => 1, 'profit_wallet' => 0],
             self::LossAbsorbedByCompany => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 1, 'profit_wallet' => 0],
             self::ProfitRelease => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => -1, 'profit_wallet' => 1],
+            // الزوجُ يتعادل في الدفتر كلِّه ويفترق في الفترتين: يسدّ هنا ويفتح هناك.
+            self::LossCarriedOut => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 1, 'profit_wallet' => 0],
+            self::LossCarriedIn => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => -1, 'profit_wallet' => 0],
             self::ProfitWithdrawal => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 0, 'profit_wallet' => -1],
             // الجيبان معاً: يخرج من الأرباح ويدخل رأسَ المال، فيصير قابلاً للاشتراك في الصندوق.
             self::ProfitCapitalisation => ['capital_wallet' => 1, 'capital_deal' => 0, 'profit_deal' => 0, 'profit_wallet' => -1],
@@ -154,7 +173,8 @@ enum WalletEntryType: string
     {
         return match ($this) {
             self::Allocation, self::Release, self::Profit, self::Loss,
-            self::CapitalWritedown, self::LossAbsorbedByCompany, self::ProfitRelease => true,
+            self::CapitalWritedown, self::LossAbsorbedByCompany, self::ProfitRelease,
+            self::LossCarriedOut, self::LossCarriedIn => true,
             default => false,
         };
     }

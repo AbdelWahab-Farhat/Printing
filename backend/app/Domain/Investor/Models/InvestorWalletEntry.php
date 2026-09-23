@@ -134,6 +134,27 @@ class InvestorWalletEntry extends Model
         return $this->belongsTo(User::class, 'recorded_by');
     }
 
+    /**
+     * المصدرُ الذي يحكم هذا الصفَّ — مصدرُه، أو مصدرُ الصفّ الذي يعكسه.
+     *
+     * **ونظيرُ {@see effectiveType()} تماماً، وللسبب نفسه.** صفُّ العكس لا يحمل مصدرَ أصله،
+     * فمن قرأه بلا هذه الدالّة رأى عكساً بلا طلبية وأصلاً بها — فيمرّ أحدُهما من بوّابة
+     * التحصيل ويقف الآخر، ولا يُلغي أحدُهما الآخرَ في الجمع. والرقمُ يبقى «صحيحاً» في الحالتين.
+     *
+     * @return array{0: ?string, 1: ?int}
+     */
+    public function effectiveSource(): array
+    {
+        $row = $this->type === WalletEntryType::Reversal
+            ? ($this->reversedEntry ?? $this)
+            : $this;
+
+        return [
+            $row->source_type === null ? null : (string) $row->source_type,
+            $row->source_id === null ? null : (int) $row->source_id,
+        ];
+    }
+
     /** The type this row acts on — its own, or that of the row it reverses. */
     public function effectiveType(): WalletEntryType
     {
