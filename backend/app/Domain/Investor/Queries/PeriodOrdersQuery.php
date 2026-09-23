@@ -120,10 +120,13 @@ final class PeriodOrdersQuery
      * يجعل مجموعَ الصفوف أقلَّ من مجموع الفترة بلا سبب. والطلبيةُ نفسُها هي ما يُصفّى لاحقاً،
      * حين تُقرأ بياناتُها.
      *
+     * **وعامّةٌ لأن {@see FundProfitOwed} يقرؤها كذلك**: ربحٌ لم يُفرَج عنه يُردّ إلى طلبيته
+     * بالخريطة نفسها، فلا تعرف شاشتان طريقين مختلفين من السطر إلى طلبيته.
+     *
      * @param  list<array{type: string, id: int, investor_id: int, amount: string}>  $sourced
      * @return array<string, array<int, int>> النوع ← المصدر ← الطلبية
      */
-    private function ordersBehind(array $sourced): array
+    public function ordersBehind(array $sourced): array
     {
         $ids = [];
 
@@ -171,6 +174,8 @@ final class PeriodOrdersQuery
      * **والصفرُ ليس صفّاً.** طلبيةٌ قُيِّدت ثم أُبطلت في فترتها نفسِها لم تُعطِ أحداً شيئاً،
      * و«0.00» أمامها تقول إنها تعادلت — وهي جملةٌ أخرى تُقرأ خطأً.
      *
+     * وتبني بها {@see FundProfitOwed} صفوفَ «الأرباح المستحقّة»، فتُرسم الشاشتان بالبطاقة نفسها.
+     *
      * @param  array<int, array<int, string>>  $perOrder
      * @return array{
      *     orders: list<array<string, mixed>>,
@@ -178,7 +183,7 @@ final class PeriodOrdersQuery
      *     totals: array{orders: int, investors_total: string}
      * }
      */
-    private function rows(array $perOrder): array
+    public function rows(array $perOrder): array
     {
         $orders = DB::table('orders as o')
             ->leftJoin('customers as cu', 'cu.id', '=', 'o.customer_id')

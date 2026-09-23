@@ -14,6 +14,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 /// لوحةُ الصندوق.
 ///
@@ -136,6 +137,85 @@ void main() {
       ),
     );
   }
+
+  /// اللوحةُ داخل موجّه — لما يُفتح منها. كلُّ بابٍ يكتب مسارَه في [pushed] ويقف.
+  Widget routedHost(void Function(String path) pushed) {
+    final router = GoRouter(
+      initialLocation: '/investment',
+      routes: [
+        GoRoute(path: '/investment', builder: (context, state) => const InvestmentFundPage()),
+        for (final path in const [
+          '/investment/cash',
+          '/investment/shelf',
+          '/investment/in-flight',
+          '/investment/receivables',
+          '/investment/profit-owed',
+        ])
+          GoRoute(
+            path: path,
+            builder: (context, state) {
+              pushed(state.uri.path);
+
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+      ],
+    );
+
+    return ScreenUtilInit(
+      designSize: const Size(430, 932),
+      builder: (context, _) => MaterialApp.router(
+        locale: const Locale('ar'),
+        supportedLocales: const [Locale('ar')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        routerConfig: router,
+      ),
+    );
+  }
+
+  // **كلُّ رقمٍ في اللوحة بابٌ إلى ما صنعه** — طلبُ المالك 2026-09-24: النقدُ إلى سجلّه،
+  // والبضاعةُ إلى موادّها وطلبياتها، والأرباحُ إلى ما أعطاها.
+  for (final (label, path) in const [
+    ('نقد في الخزينة', '/investment/cash'),
+    ('بضاعة على الرفّ', '/investment/shelf'),
+    ('بضاعة خرجت ولم تُسلَّم', '/investment/in-flight'),
+    ('سُلِّمت ولم تُحصَّل', '/investment/receivables'),
+    ('أرباح مستحقّة للمستثمرين', '/investment/profit-owed'),
+  ]) {
+    testWidgets('«$label» opens what it is made of', (tester) async {
+      // Arrange
+      await register(const FundStanding(valuation: _valuation));
+      String? opened;
+      await tester.pumpWidget(routedHost((path) => opened = path));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text(label));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(opened, path);
+    });
+  }
+
+  testWidgets('the cash log also sits beside the fund value', (tester) async {
+    // Arrange — «ممكن تكون بجانب قيمة الصندوق».
+    await register(const FundStanding(valuation: _valuation));
+    String? opened;
+    await tester.pumpWidget(routedHost((path) => opened = path));
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.byTooltip('سجل الخزينة'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(opened, '/investment/cash');
+  });
 
   testWidgets('the total is shown above its parts, never instead of them', (tester) async {
     // Arrange — بندٌ مخفيٌّ في هذا الرقم مالُ مستثمر.
