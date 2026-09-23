@@ -59,6 +59,11 @@ class InvestorResource extends JsonResource
                 ),
             ]),
 
+            // **الأرقامُ الثلاثة — §٠.٨.** صفحةُ المستثمر وحدها تطلبها، كما تطلب `balances`:
+            // «قيد التسليم» محسوبٌ من طلبياتٍ في الطريق، و«معلّقة» من كلّ جيبٍ مقيَّد والصندوقُ
+            // منها، و«متاحة للسحب» من المحفظة.
+            'profit_figures' => $this->when(isset($this->profit_figures), fn (): array => $this->profit_figures),
+
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

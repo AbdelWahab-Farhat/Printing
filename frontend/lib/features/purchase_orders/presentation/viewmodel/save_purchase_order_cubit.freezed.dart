@@ -125,12 +125,12 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  submitting,TResult Function( PurchaseOrder order)?  success,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  submitting,TResult Function( PurchaseOrder order,  Failure? fundingFailure)?  success,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case SavePurchaseOrderInitial() when initial != null:
 return initial();case SavePurchaseOrderSubmitting() when submitting != null:
 return submitting();case SavePurchaseOrderSuccess() when success != null:
-return success(_that.order);case SavePurchaseOrderFailure() when failure != null:
+return success(_that.order,_that.fundingFailure);case SavePurchaseOrderFailure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
 
@@ -149,12 +149,12 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  submitting,required TResult Function( PurchaseOrder order)  success,required TResult Function( Failure failure)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  submitting,required TResult Function( PurchaseOrder order,  Failure? fundingFailure)  success,required TResult Function( Failure failure)  failure,}) {final _that = this;
 switch (_that) {
 case SavePurchaseOrderInitial():
 return initial();case SavePurchaseOrderSubmitting():
 return submitting();case SavePurchaseOrderSuccess():
-return success(_that.order);case SavePurchaseOrderFailure():
+return success(_that.order,_that.fundingFailure);case SavePurchaseOrderFailure():
 return failure(_that.failure);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -169,12 +169,12 @@ return failure(_that.failure);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  submitting,TResult? Function( PurchaseOrder order)?  success,TResult? Function( Failure failure)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  submitting,TResult? Function( PurchaseOrder order,  Failure? fundingFailure)?  success,TResult? Function( Failure failure)?  failure,}) {final _that = this;
 switch (_that) {
 case SavePurchaseOrderInitial() when initial != null:
 return initial();case SavePurchaseOrderSubmitting() when submitting != null:
 return submitting();case SavePurchaseOrderSuccess() when success != null:
-return success(_that.order);case SavePurchaseOrderFailure() when failure != null:
+return success(_that.order,_that.fundingFailure);case SavePurchaseOrderFailure() when failure != null:
 return failure(_that.failure);case _:
   return null;
 
@@ -251,10 +251,11 @@ String toString() {
 
 
 class SavePurchaseOrderSuccess implements SavePurchaseOrderState {
-  const SavePurchaseOrderSuccess(this.order);
+  const SavePurchaseOrderSuccess(this.order, {this.fundingFailure});
   
 
  final  PurchaseOrder order;
+ final  Failure? fundingFailure;
 
 /// Create a copy of SavePurchaseOrderState
 /// with the given fields replaced by the non-null parameter values.
@@ -266,16 +267,16 @@ $SavePurchaseOrderSuccessCopyWith<SavePurchaseOrderSuccess> get copyWith => _$Sa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderSuccess&&(identical(other.order, order) || other.order == order));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderSuccess&&(identical(other.order, order) || other.order == order)&&(identical(other.fundingFailure, fundingFailure) || other.fundingFailure == fundingFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,order);
+int get hashCode => Object.hash(runtimeType,order,fundingFailure);
 
 @override
 String toString() {
-  return 'SavePurchaseOrderState.success(order: $order)';
+  return 'SavePurchaseOrderState.success(order: $order, fundingFailure: $fundingFailure)';
 }
 
 
@@ -286,11 +287,11 @@ abstract mixin class $SavePurchaseOrderSuccessCopyWith<$Res> implements $SavePur
   factory $SavePurchaseOrderSuccessCopyWith(SavePurchaseOrderSuccess value, $Res Function(SavePurchaseOrderSuccess) _then) = _$SavePurchaseOrderSuccessCopyWithImpl;
 @useResult
 $Res call({
- PurchaseOrder order
+ PurchaseOrder order, Failure? fundingFailure
 });
 
 
-$PurchaseOrderCopyWith<$Res> get order;
+$PurchaseOrderCopyWith<$Res> get order;$FailureCopyWith<$Res>? get fundingFailure;
 
 }
 /// @nodoc
@@ -303,10 +304,11 @@ class _$SavePurchaseOrderSuccessCopyWithImpl<$Res>
 
 /// Create a copy of SavePurchaseOrderState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? order = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? order = null,Object? fundingFailure = freezed,}) {
   return _then(SavePurchaseOrderSuccess(
 null == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
-as PurchaseOrder,
+as PurchaseOrder,fundingFailure: freezed == fundingFailure ? _self.fundingFailure : fundingFailure // ignore: cast_nullable_to_non_nullable
+as Failure?,
   ));
 }
 
@@ -318,6 +320,18 @@ $PurchaseOrderCopyWith<$Res> get order {
   
   return $PurchaseOrderCopyWith<$Res>(_self.order, (value) {
     return _then(_self.copyWith(order: value));
+  });
+}/// Create a copy of SavePurchaseOrderState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FailureCopyWith<$Res>? get fundingFailure {
+    if (_self.fundingFailure == null) {
+    return null;
+  }
+
+  return $FailureCopyWith<$Res>(_self.fundingFailure!, (value) {
+    return _then(_self.copyWith(fundingFailure: value));
   });
 }
 }

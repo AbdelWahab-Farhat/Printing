@@ -20,6 +20,13 @@ use Illuminate\Validation\Rule;
  */
 class StoreWalletEntryRequest extends FormRequest
 {
+    /**
+     * الحركاتُ التي لا يعبر فيها مالٌ الطاولة، فلا طريقةَ دفعٍ لها.
+     *
+     * @var list<string>
+     */
+    private const WITHOUT_METHOD = ['allocation', 'profit_capitalisation'];
+
     public function authorize(): bool
     {
         return true;
@@ -41,11 +48,12 @@ class StoreWalletEntryRequest extends FormRequest
                 Rule::exists('investor_deals', 'id')->withoutTrashed(),
             ],
 
-            // Money crossing the counter always says how. The one type that moves nothing
-            // between the company and the investor — an allocation — has no method to name.
+            // Money crossing the counter always says how. The two types that move nothing
+            // between the company and the investor — an allocation, and turning profit into
+            // capital — have no method to name; the money was already here.
             'method' => [
-                Rule::requiredIf(fn () => $this->input('type') !== WalletEntryType::Allocation->value),
-                Rule::prohibitedIf(fn () => $this->input('type') === WalletEntryType::Allocation->value),
+                Rule::requiredIf(fn () => ! in_array($this->input('type'), self::WITHOUT_METHOD, true)),
+                Rule::prohibitedIf(fn () => in_array($this->input('type'), self::WITHOUT_METHOD, true)),
                 'string',
                 'max:20',
             ],
@@ -69,7 +77,7 @@ class StoreWalletEntryRequest extends FormRequest
             'investor_deal_id.required' => 'الصفقة مطلوبة عند تمويل صفقة',
             'investor_deal_id.prohibited' => 'هذه الحركة على المحفظة، لا على صفقة',
             'method.required' => 'طريقة الدفع مطلوبة',
-            'method.prohibited' => 'تمويل الصفقة تحويل داخلي، بلا طريقة دفع',
+            'method.prohibited' => 'هذه الحركة تحويل داخلي، بلا طريقة دفع',
             'occurred_at.before_or_equal' => 'لا يمكن تسجيل حركة بتاريخ مستقبلي',
         ];
     }

@@ -877,6 +877,6 @@ final class ChangeOrderStatus
             throw FulfillmentRequiresAnActor::make();
         }
 
-        ($this->reverseStockDeduction)($order->loadMissing('items'), (int) $actor->getKey());
+        ($this->reverseStockDeduction)($order->loadMissing('items'), (int) $actor->getKey(), printedMaterialIsLost: true);
     }
 }

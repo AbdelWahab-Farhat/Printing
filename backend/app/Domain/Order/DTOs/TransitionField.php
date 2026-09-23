@@ -82,6 +82,23 @@ final class TransitionField
         public readonly ?int $maxKilobytes = null,
     ) {}
 
+    /**
+     * تحذيرٌ يُقرأ ولا يُجاب — {@see TransitionFieldType::Notice}.
+     *
+     * `required: false` دائماً و`key` له رغم أنه لا يُرسَل: القائمة تُرسم بمفاتيحها، ومفتاحٌ
+     * فارغ يجعل عنصرَين في قائمةٍ واحدة متطابقَين أمام أيّ واجهة.
+     */
+    public static function notice(string $key, string $label, string $hint): self
+    {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::Notice,
+            label: $label,
+            required: false,
+            hint: $hint,
+        );
+    }
+
     public static function text(
         string $key,
         string $label,
@@ -337,6 +354,9 @@ final class TransitionField
         }
 
         return match ($this->type) {
+            // لا شيء: جملةٌ تُقرأ لا تُرسَل، فقاعدةٌ عليها قاعدةٌ على ما لا يصل.
+            TransitionFieldType::Notice => [],
+
             TransitionFieldType::Text => [
                 "fields.{$this->key}" => [$presence, 'string', 'max:1000'],
             ],
@@ -406,6 +426,9 @@ final class TransitionField
     public function messages(): array
     {
         return match ($this->type) {
+            // لا رسائلَ لحقلٍ بلا قواعد — ولا يصل هنا إلا لأن الطلب يمشي على الحقول كلّها.
+            TransitionFieldType::Notice => [],
+
             TransitionFieldType::CustomerDesigns => [
                 "fields.{$this->key}.required" => "{$this->label} مطلوبة",
                 "fields.{$this->key}.min" => "{$this->label} مطلوبة",

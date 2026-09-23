@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Actions;
 
+use App\Domain\Carrier\Actions\BuildNawrisPayload;
 use App\Domain\Order\Exceptions\DiscountExceedsTotal;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
@@ -26,7 +27,7 @@ use App\Domain\Order\Support\Money;
  * neither money we take nor a cost we bear, so an order's total is the goods and our own charges
  * and nothing else. The column stays on the row and on every screen, because a clerk quoting an
  * order still has to say what the trip will cost; it simply stops being added to anything. See
- * {@see \App\Domain\Carrier\Actions\BuildNawrisPayload::amountToCollect()}, which stopped
+ * {@see BuildNawrisPayload::amountToCollect()}, which stopped
  * subtracting it on the same day for the same reason.
  *
  * **The additional cost joins the base the discount is measured against, deliberately.** The

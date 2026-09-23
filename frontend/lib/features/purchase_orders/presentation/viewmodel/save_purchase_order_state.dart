@@ -9,8 +9,15 @@ sealed class SavePurchaseOrderState with _$SavePurchaseOrderState {
       SavePurchaseOrderSubmitting;
 
   /// Written. Carries what the server stored — including the lines' ids, which an edit needs.
-  const factory SavePurchaseOrderState.success(PurchaseOrder order) =
-      SavePurchaseOrderSuccess;
+  ///
+  /// **و[fundingFailure] عثرةٌ في نجاح، لا فشلٌ في ثوب نجاح.** حين يُطلب أن يشتريه الصندوق
+  /// يكون الحفظُ فعلين: الأمرُ كُتب، والشراءُ قد يُرفض وحده — «لا يكفي النقد» أشهرُ ردوده.
+  /// فالأمرُ يعود إلى الشاشة التي خلفه كاملاً، ويُقال ما لم يقع، ويبقى بابُ التمويل على تفصيل
+  /// الأمر مفتوحاً لمن أراد أن يعيد الكرّة.
+  const factory SavePurchaseOrderState.success(
+    PurchaseOrder order, {
+    Failure? fundingFailure,
+  }) = SavePurchaseOrderSuccess;
 
   const factory SavePurchaseOrderState.failure(Failure failure) =
       SavePurchaseOrderFailure;

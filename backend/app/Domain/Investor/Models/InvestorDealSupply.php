@@ -31,6 +31,19 @@ class InvestorDealSupply extends Model
     use Auditable, HasFactory, SoftDeletes;
 
     /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            // سعر السادة for *this* line — what the press pays for a unit of the goods this
+            // purchase order brings onto this shelf. Null on every supply claimed before the
+            // price moved down here, and those fall back to their deal's own column.
+            'printing_sale_price' => 'decimal:3',
+        ];
+    }
+
+    /**
      * @return BelongsTo<InvestorDeal, $this>
      */
     public function deal(): BelongsTo

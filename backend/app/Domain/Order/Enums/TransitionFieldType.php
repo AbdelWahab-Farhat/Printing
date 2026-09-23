@@ -76,5 +76,14 @@ enum TransitionFieldType: string
      * `warehouses.id`. Asked only once per order — see `TransitionFields::for()` on `ready` —
      * because stock leaves a warehouse exactly once for a given order.
      */
+    /**
+     * **جملةٌ تُقرأ لا خانةٌ تُملأ** — تحذيرٌ يبنيه الخادم عن أثرٍ لا رجعةَ فيه.
+     *
+     * لا يحمل قيمةً ولا يُرسَل مع الطلب ولا يُولّد قاعدةَ تحقّقٍ واحدة؛ وجودُه أن الشاشة تعرض
+     * ما سيقع **قبل** أن يُضغط الزرّ. والسابقة قائمة: `deductionPreview()` يبني تحذيرَ الخصم
+     * بالعربية في الخادم فتعرضه كلُّ واجهةٍ بلا إصدارٍ جديد — وهذا هو هو، بلا خانةٍ يتعلّق بها.
+     */
+    case Notice = 'notice';
+
     case Warehouse = 'warehouse';
 }

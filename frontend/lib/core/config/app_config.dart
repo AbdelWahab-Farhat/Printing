@@ -63,13 +63,36 @@ abstract final class AppConfig {
   /// itself — so development on Android goes through `10.0.2.2`. Getting this wrong costs an
   /// afternoon of "the app just hangs", which is why it is resolved here rather than typed
   /// into a config by each developer.
-  static String get baseUrl {
-    if (isDev && !kIsWeb && Platform.isAndroid) {
-      final androidUrl = dotenv.env['BASE_URL_ANDROID'];
-      if (androidUrl != null && androidUrl.isNotEmpty) return androidUrl;
+  static String get baseUrl => resolveBaseUrl(
+    isDevFlavor: isDev,
+    isDebugBuild: kDebugMode,
+    isAndroid: !kIsWeb && Platform.isAndroid,
+    androidUrl: dotenv.env['BASE_URL_ANDROID'],
+    url: dotenv.env['BASE_URL'],
+  );
+
+  /// القرارُ وحدَه، بلا منصّةٍ ولا ملفِّ بيئة — ليكون له اختبار.
+  ///
+  /// **وهذا سببُ وجوده مكشوفاً.** الشروطُ الأربعة كانت داخل [baseUrl] تقرأ `Platform` و`dotenv`
+  /// مباشرة، فلا يُكتب لها اختبارٌ إلا بتشغيل التطبيق على جهاز — ولذلك مرّت نسخةُ مُختبِرٍ
+  /// تطلب `10.0.2.2` من هاتفٍ حقيقيّ ولم يكتشفها أحد حتى شكا المُختبِر من «تحميلٍ لا يتوقّف».
+  ///
+  /// **و`isDebugBuild` هو الشرطُ الذي كان ناقصاً.** `10.0.2.2` لا معنى له خارج مُحاكي أندرويد:
+  /// على جهازٍ حقيقيّ لا يُوجَّه إلى شيء، فيقف كلُّ طلبٍ على مهلة الاتصال بلا ردٍّ ولا رسالةِ
+  /// خطأ. ونسخةُ `dev` المُصدَّرة هي بالضبط ما يُسلَّم للمُختبِر، فلا تُعيد الكتابة أبداً؛
+  /// والمُحاكي يعمل بالتصحيح، وهناك وحدَه تبقى الحيلة.
+  @visibleForTesting
+  static String resolveBaseUrl({
+    required bool isDevFlavor,
+    required bool isDebugBuild,
+    required bool isAndroid,
+    required String? androidUrl,
+    required String? url,
+  }) {
+    if (isDevFlavor && isDebugBuild && isAndroid && androidUrl != null && androidUrl.isNotEmpty) {
+      return androidUrl;
     }
 
-    final url = dotenv.env['BASE_URL'];
     assert(url != null && url.isNotEmpty, 'BASE_URL is missing from ${flavor.envFile}');
 
     return url ?? '';

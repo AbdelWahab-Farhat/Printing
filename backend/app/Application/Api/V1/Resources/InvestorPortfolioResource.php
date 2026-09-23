@@ -41,13 +41,21 @@ class InvestorPortfolioResource extends JsonResource
             'capital_in_deals' => $data['capital_in_deals'],
             'capital_total' => $data['capital_total'],
 
-            // Earned so far by deals still running — his, but not yet his to take.
+            // **الأرقامُ الثلاثة — §٠.٨، ثلاثُ بوّاباتٍ متتابعة.** الأوّلُ لطلبياتٍ بلغت «جاهزة» ولم
+            // تُسلَّم: محسوبٌ بالقسمة التي سيقيّده بها التسليم، ولا صفَّ له. ومعه عددُ طلبياته.
+            'profit_awaiting_delivery' => $data['profit_awaiting_delivery'],
+            'orders_awaiting_delivery' => $data['orders_awaiting_delivery'],
+            // سُلِّمت فقُيِّد — له، ولا يُسحب حتى تنقضي فترتُها وتُحصَّل طلبيتُها.
             'profit_in_deals' => $data['profit_in_deals'],
-            // Released by closed deals, and withdrawable.
+            // اجتمع شرطاه فأُفرِج عنه، ويُسحب.
             'profit_available' => $data['profit_available'],
             'profit_withdrawn' => $data['profit_withdrawn'],
 
             'deals' => $data['deals'],
+
+            // **الشريحة ٨**: شريكُ الصندوق لا صفَّ له في `deals` — نصيبُه وحداتٌ في دفترٍ
+            // آخر. وبدونه كان يفتح البوابةَ فيرى صفراً وماله في الصندوق.
+            'fund' => $data['fund'],
         ];
     }
 }

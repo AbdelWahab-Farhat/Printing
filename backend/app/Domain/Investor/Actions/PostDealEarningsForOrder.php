@@ -8,6 +8,7 @@ use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Investor\Queries\ProfitShareForEntry;
 use App\Domain\Investor\Support\OrderDealSlices;
 use App\Domain\Order\OrderService;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +56,7 @@ final class PostDealEarningsForOrder
         private readonly OrderService $orders,
         private readonly InventoryService $inventory,
         private readonly PostDealShare $postShare,
+        private readonly ProfitShareForEntry $profitShare,
     ) {}
 
     /**
@@ -132,7 +134,12 @@ final class PostDealEarningsForOrder
     {
         return ($this->postShare)(
             $deal,
-            $deal->investorsCutOf($slice),
+            $deal->investorsCutOf(
+                $slice,
+                // نسبةُ **فترة الطلبية** لا افتراضِ صفّ الصندوق — وإلا قسّم الدفترُ بغير ما
+                // تعرضه اللوحة أوّلَ ما يُغيَّر الإعداد. {@see ProfitShareForEntry}
+                $this->profitShare->bySource($deal, AuditSubject::Order->value, $orderId),
+            ),
             AuditSubject::Order->value,
             $orderId,
             'تصحيح إسناد ربح الطلبية',

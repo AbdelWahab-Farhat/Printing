@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Orders;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
@@ -16,6 +17,7 @@ use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\Order\Enums\ManufacturingCostType;
+use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
@@ -77,10 +79,199 @@ class OrderCancellationReversalTest extends TestCase
             ->first()?->quantity ?? '0.000');
     }
 
+    /**
+     * البضاعة التي مرّت على المكينة لا تعود — تُسجَّل خسارةً مسمّاة.
+     *
+     * المنتجُ بلا تصنيف، و{@see OrderItem::productionMode()} يقرأ ذلك
+     * `InHouse` — أي أن مكينتنا تطبعه، وهو الحال الغالب في هذا المحلّ.
+     */
+    /**
+     * زرُّ الإلغاء يقول ما سيفعله قبل أن يُضغط.
+     *
+     * الفرقُ بين بندٍ يعود وبندٍ يُشطب فرقٌ في المال، ولا يجوز أن يُكتشف بعد الضغط.
+     */
+    public function test_the_cancel_button_warns_which_goods_will_not_come_back(): void
+    {
+        // Arrange — بضاعةٌ خرجت وطُبعت، فالإلغاء الآن يشطبها.
+        $product = Product::factory()->create();
+        $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+        $warehouse = Warehouse::factory()->create();
+        $headers = $this->foreman();
+
+        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
+            'stock_item_id' => $variant->stock_item_id, 'to_warehouse_id' => $warehouse->id,
+            'quantity' => 100, 'unit_cost' => 5,
+        ])->assertCreated();
+
+        $order = Order::factory()->create();
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
+        ]);
+
+        foreach ([OrderStatus::ReadyToPrint, OrderStatus::Printing, OrderStatus::Ready] as $step) {
+            $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", array_filter([
+                'status' => $step->value,
+                'fields' => $step === OrderStatus::ReadyToPrint
+                    ? ['warehouse_id' => $warehouse->id]
+                    : null,
+            ]))->assertOk();
+        }
+
+        // Act
+        $show = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}")->assertOk();
+
+        $cancel = collect($show->json('data.available_transitions'))
+            ->firstWhere('status', OrderStatus::Cancelled->value);
+        $notice = collect($cancel['fields'])->firstWhere('type', 'notice');
+
+        // Assert — تحذيرٌ يُقرأ ولا يُملأ، ونصُّه من الخادم لا من التطبيق.
+        $this->assertNotNull($notice, 'الإلغاء بعد الطباعة يجب أن يحمل تحذيراً');
+        $this->assertSame('تحذير — بضاعةٌ لن تعود', $notice['label']);
+        $this->assertFalse($notice['required']);
+        $this->assertStringContainsString('لا تعود إلى المخزن', $notice['hint']);
+        $this->assertStringContainsString('تُسجَّل خسارة', $notice['hint']);
+    }
+
+    /** وقبل الطباعة يقول العكس: تعود. */
+    public function test_the_cancel_button_says_the_goods_come_back_before_printing(): void
+    {
+        // Arrange
+        $product = Product::factory()->create();
+        $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+        $warehouse = Warehouse::factory()->create();
+        $headers = $this->foreman();
+
+        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
+            'stock_item_id' => $variant->stock_item_id, 'to_warehouse_id' => $warehouse->id,
+            'quantity' => 100, 'unit_cost' => 5,
+        ])->assertCreated();
+
+        $order = Order::factory()->create();
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
+        ]);
+
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::ReadyToPrint->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ])->assertOk();
+
+        // Act
+        $show = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}")->assertOk();
+
+        $cancel = collect($show->json('data.available_transitions'))
+            ->firstWhere('status', OrderStatus::Cancelled->value);
+        $notice = collect($cancel['fields'])->firstWhere('type', 'notice');
+
+        // Assert
+        $this->assertNotNull($notice);
+        $this->assertSame('ما يعود إلى المخزن', $notice['label']);
+        $this->assertStringNotContainsString('خسارة', $notice['hint']);
+    }
+
+    public function test_cancelling_after_printing_writes_the_material_off_instead_of_shelving_it(): void
+    {
+        // Arrange
+        $product = Product::factory()->create();
+        $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+        $warehouse = Warehouse::factory()->create();
+        $headers = $this->foreman();
+
+        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
+            'stock_item_id' => $variant->stock_item_id, 'to_warehouse_id' => $warehouse->id,
+            'quantity' => 100, 'unit_cost' => 5,
+        ])->assertCreated();
+
+        $order = Order::factory()->create();
+        $item = OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
+        ]);
+
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::ReadyToPrint->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ])->assertOk();
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Printing->value,
+        ])->assertOk();
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Ready->value,
+        ])->assertOk();
+
+        $this->assertSame('60.000', $this->balanceOf($warehouse, $variant));
+
+        // Act
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Cancelled->value,
+            'reason' => 'العميل ألغى بعد الطباعة',
+        ])->assertOk();
+
+        // Assert — لا شيء رجع إلى الرفّ
+        $this->assertSame('60.000', $this->balanceOf($warehouse, $variant));
+        $this->assertSame('60.000', (string) StockBatch::query()
+            ->where('warehouse_id', $warehouse->id)->first()->quantity_remaining);
+        $this->assertDatabaseMissing('stock_movements', ['movement_type' => 'order_reversal']);
+
+        // وخسارةٌ مسمّاة بتكلفة المادة — ٤٠ × ٥
+        $this->assertDatabaseHas('production_cost_entries', [
+            'order_item_id' => $item->id,
+            'cost_type' => ManufacturingCostType::DeliveryLoss->value,
+            'amount' => '200.00',
+            'reverses_entry_id' => null,
+        ]);
+    }
+
+    /** الإلغاء قبل «جاهزة»: البضاعة لم تُطبع بعد، فتعود كاملة. */
+    public function test_cancelling_before_printing_still_puts_the_material_back(): void
+    {
+        // Arrange — تخرج البضاعة عند «جاهزة للطباعة» ويقف الطريق هناك، فـ`ready_at` فارغ.
+        $product = Product::factory()->create();
+        $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+        $warehouse = Warehouse::factory()->create();
+        $headers = $this->foreman();
+
+        $this->withHeaders($headers)->postJson('/api/v1/stock-movements/arrivals', [
+            'stock_item_id' => $variant->stock_item_id, 'to_warehouse_id' => $warehouse->id,
+            'quantity' => 100, 'unit_cost' => 5,
+        ])->assertCreated();
+
+        $order = Order::factory()->create();
+        OrderItem::factory()->for($order)->create([
+            'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
+        ]);
+
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::ReadyToPrint->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
+        ])->assertOk();
+
+        $this->assertSame('60.000', $this->balanceOf($warehouse, $variant));
+        $this->assertNull($order->refresh()->ready_at);
+
+        // Act
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Cancelled->value,
+            'reason' => 'العميل ألغى قبل الطباعة',
+        ])->assertOk();
+
+        // Assert
+        $this->assertSame('100.000', $this->balanceOf($warehouse, $variant));
+        $this->assertDatabaseHas('stock_movements', ['movement_type' => 'order_reversal']);
+        $this->assertDatabaseMissing('production_cost_entries', [
+            'cost_type' => ManufacturingCostType::DeliveryLoss->value,
+        ]);
+    }
+
     public function test_cancelling_after_ready_credits_back_the_exact_batches_it_drew_from(): void
     {
-        // Arrange — two cost layers, so the fulfillment must span both
-        $product = Product::factory()->create();
+        // Arrange — two cost layers, so the fulfillment must span both.
+        //
+        // **بضاعةٌ سادة عن قصد.** غرضُ هذا الاختبار أن الإرجاع يُصيب الطبقات بعينها لا طبقةً
+        // متوسّطة، وذلك سؤالٌ عن البضاعة التي تعود. والمطبوعُ لا يعود أصلاً منذ أن صار الإلغاء
+        // يفرّق بين ما مرّ على المكينة وما لم يمرّ — له اختبارُه أعلاه.
+        $product = Product::factory()->create([
+            'product_category_id' => ProductCategory::factory()->skipsProduction()->create()->id,
+        ]);
         $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
         $warehouse = Warehouse::factory()->create();
         $headers = $this->foreman();
@@ -95,25 +286,16 @@ class OrderCancellationReversalTest extends TestCase
             'quantity' => 60, 'unit_cost' => 8,
         ])->assertCreated();
 
-        $order = Order::factory()->create();
+        // الطريق يُحسم بالبنود، والبنود تُخلق بعد الطلبية هنا — فيُسمّى صراحةً.
+        $order = Order::factory()->create(['production_flow' => OrderFlow::NoProduction]);
         $item = OrderItem::factory()->for($order)->create([
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '90',
         ]);
 
-        // The stock leaves at the handover, so that is where the warehouse is named — and then on
-        // through the press to «جاهزة», because labour and overhead are costed there rather than
-        // at the handover: that is where the run has actually happened.
-        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::ReadyToPrint->value,
-            'fields' => ['warehouse_id' => $warehouse->id],
-        ])->assertOk();
-
-        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::Printing->value,
-        ])->assertOk();
-
+        // بضاعةٌ سادة لا تمرّ بالمكينة: «جديدة ← جاهزة» خطوةً واحدة، وعندها تخرج من الرفّ.
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Ready->value,
+            'fields' => ['warehouse_id' => $warehouse->id],
         ])->assertOk();
 
         // 90 drawn: the whole 60@5 layer, then 30 of the 60@8 layer

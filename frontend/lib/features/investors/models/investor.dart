@@ -31,6 +31,9 @@ abstract class Investor with _$Investor {
     /// Present on the detail screen only — a list of fifty investors does not walk fifty
     /// ledgers to draw a table.
     InvestorBalances? balances,
+
+    /// **الأرقامُ الثلاثة** — على صفحته وحدها، كما `balances`.
+    @JsonKey(name: 'profit_figures') ProfitFigures? profitFigures,
   }) = _Investor;
 
   factory Investor.fromJson(Map<String, dynamic> json) => _$InvestorFromJson(json);
@@ -98,4 +101,23 @@ abstract class InvestorTotals with _$InvestorTotals {
 
   factory InvestorTotals.fromJson(Map<String, dynamic> json) =>
       _$InvestorTotalsFromJson(json);
+}
+
+/// ربحُه في ثلاث بوّاباتٍ متتابعة — لا رقماً واحداً.
+///
+/// **قيد التسليم** طلبياتٌ بلغت «جاهزة» ولم تُسلَّم: محسوبٌ بالقسمة التي سيقيّده بها التسليم،
+/// ولا صفَّ له في الدفتر. **معلّقة** سُلِّمت فقُيِّدت، ولا تُسحب حتى تنقضي فترتُها وتُحصَّل
+/// طلبيتُها. **متاحة للسحب** اجتمع شرطاها. جمعُها في رقمٍ واحد يَعِد بمالٍ لا يُسحب.
+@freezed
+abstract class ProfitFigures with _$ProfitFigures {
+  const factory ProfitFigures({
+    @JsonKey(name: 'awaiting_delivery') required String awaitingDelivery,
+
+    /// كم طلبيةً وراء «قيد التسليم».
+    @JsonKey(name: 'orders_awaiting_delivery') @Default(0) int ordersAwaitingDelivery,
+    required String pending,
+    required String available,
+  }) = _ProfitFigures;
+
+  factory ProfitFigures.fromJson(Map<String, dynamic> json) => _$ProfitFiguresFromJson(json);
 }

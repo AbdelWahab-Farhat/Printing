@@ -25,6 +25,7 @@ final class PurchaseOrderFundingQuery
      * @return list<array{
      *     deal_id: int,
      *     code: string,
+     *     is_fund: bool,
      *     status: string,
      *     status_label: string,
      *     investor_profit_share_percent: string,
@@ -52,6 +53,11 @@ final class PurchaseOrderFundingQuery
         return $deals->map(fn (InvestorDeal $deal): array => [
             'deal_id' => (int) $deal->getKey(),
             'code' => (string) $deal->code,
+
+            // **الصندوقُ ليس شراكةً على هذا اللوري.** لا ممولين يُعدّون ولا نسبٌ جُمّدت، وبطاقتُه
+            // على الشاشة تفتح لوحةَ الصندوق لا صفحةَ صفقةٍ بزرِّ إغلاقها. والحكمُ يُقال هنا
+            // لأن «FUND» رمزٌ محجوز، وقراءتُه في التطبيق تعريفٌ ثانٍ يخالف الأولَ يوم يتغيّر.
+            'is_fund' => $deal->isTheFund(),
             'status' => $deal->status->value,
             'status_label' => $deal->status->label(),
             'investor_profit_share_percent' => (string) $deal->investor_profit_share_percent,

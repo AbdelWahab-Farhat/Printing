@@ -40,9 +40,18 @@ class DropProductTypeMigrationTest extends TestCase
      * into a failure in this test on work that had nothing to do with «النوع» — which is the very
      * breakage the search above exists to prevent, reintroduced by the counter meant to bound it. A
      * loop that ends the moment it finds the column costs nothing for the extra headroom.
+     *
+     * **Then 80 fell the same way**, on the ninety-sixth migration after the drop and again on work
+     * about investment periods. A hand-written number is the same trap however large it is written,
+     * because the thing it bounds grows on its own. So it is now **counted, not guessed**: a
+     * rollback can never need more steps than there are migrations applied, and that number moves
+     * with the ones being rolled back. The guard still ends a loop that would otherwise not
+     * terminate, and it stops being a tripwire under everyone else's feet.
      */
-    private function rollBackToTheSchemaThatStillHadTheColumn(int $mostSteps = 80): void
+    private function rollBackToTheSchemaThatStillHadTheColumn(): void
     {
+        $mostSteps = DB::table('migrations')->count();
+
         for ($step = 0; $step < $mostSteps; $step++) {
             if (Schema::hasColumn('products', 'category')) {
                 return;

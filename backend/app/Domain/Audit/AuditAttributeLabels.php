@@ -519,6 +519,7 @@ final class AuditAttributeLabels
             'opened_on' => 'تاريخ الصفقة',
             'opened_at' => 'وقت الفتح',
             'closed_at' => 'وقت الإغلاق',
+            'folded_into_fund_at' => 'وقت دخولها الصندوق',
             'cancellation_reason' => 'سبب الإلغاء',
             'created_by' => 'أنشأها',
         ],
@@ -541,6 +542,9 @@ final class AuditAttributeLabels
             'investor_deal_id' => 'الصفقة',
             'source_type' => 'نوع المستند',
             'source_id' => 'رقم المستند',
+            // سعر السادة لهذا الرفّ وحده. على السطر لا على الصفقة، لأن الصندوق صفقةٌ واحدةٌ
+            // أبداً — وعمودٌ عليه كان سعراً واحداً لكل مادةٍ يملكها ما دام.
+            'printing_sale_price' => 'سعر بيع السادة للطباعة',
             'claimed_by' => 'أقرّها',
         ],
         'investor_deal_expense' => [
@@ -566,6 +570,74 @@ final class AuditAttributeLabels
             'source_sequence' => 'رقم المحاولة على المصدر',
             'occurred_at' => 'تاريخ الحركة',
             'reverses_entry_id' => 'تعكس الحركة',
+            'investment_period_id' => 'الفترة',
+        ],
+        // ── الصندوق الاستثماري ──────────────────────────────────────────────────────────
+        //
+        // الفترةُ تُكتب مرّتين في عمرها: يوم تُفتح بما ورثته، ويوم تُقفَل بأرقامها. وكلُّ عمودٍ
+        // هنا رقمٌ وُزّع به مالٌ على ناس، فسؤال «من غيّره ومتى» ليس ترفاً.
+        'investment_period' => [
+            // **ولا `code` ولا `status` هنا.** المشتركُ يسمّيهما، وتجاوزُه بترجمةٍ أخرى يُخرجهما
+            // من المشترك كلَّه — فيصير كلُّ جدولٍ بلا `code` مخالفاً، وهو ما يمسكه
+            // `AuditAttributeLabelsTest::isSharedColumn()`.
+            'starts_on' => 'تبدأ في',
+            'ends_on' => 'تنتهي في',
+            'subscription_closes_on' => 'يُغلق الاكتتاب في',
+            'period_months' => 'مدة الفترة (شهور)',
+            'subscription_window_days' => 'نافذة الاكتتاب (أيام)',
+            'settlement_months' => 'مدة التسوية (شهور)',
+            'capital_lock_months' => 'حبس رأس المال (شهور)',
+            'ends_settlement_cycle' => 'تُغلق دورة تسوية',
+            'investor_profit_share_percent' => 'نسبة المستثمرين من الربح',
+            'opening_stock_cost' => 'البضاعة عند الفتح',
+            'opening_cash' => 'النقد عند الفتح',
+            'closing_stock_cost' => 'البضاعة عند الإقفال',
+            'closing_cash' => 'النقد عند الإقفال',
+            'sales_revenue' => 'المبيعات',
+            'cost_of_goods_sold' => 'تكلفة المبيعات',
+            'cost_damaged' => 'تكلفة الهالك',
+            'cost_short' => 'تكلفة العجز',
+            'expenses_amount' => 'المصاريف',
+            'net_profit' => 'صافي الربح',
+            'investors_pool' => 'نصيب المستثمرين',
+            'company_share' => 'نصيب الشركة',
+            // العلاماتُ المائية: «حتى أين حُسبت» جوابٌ مكتوب لا استنتاجٌ من تواريخ.
+            'through_consumption_id' => 'آخر سحب محسوب',
+            'through_movement_id' => 'آخر حركة مخزون محسوبة',
+            'through_wallet_entry_id' => 'آخر حركة محفظة محسوبة',
+            'through_cash_entry_id' => 'آخر حركة خزينة محسوبة',
+            'closed_at' => 'تاريخ الإقفال',
+            'closed_by' => 'أقفلها',
+            'override_reason' => 'سبب التجاوز',
+            'overridden_by' => 'من تجاوز',
+            'created_by' => 'فتحها',
+        ],
+        'investment_cash_entry' => [
+            'type' => 'نوع الحركة',
+            'source_type' => 'نوع المصدر',
+            'source_id' => 'رقم المصدر',
+            'source_sequence' => 'رقم المحاولة على المصدر',
+            'occurred_at' => 'تاريخ الحركة',
+            'reverses_entry_id' => 'تعكس الحركة',
+        ],
+        'investment_unit' => [
+            'investor_id' => 'المستثمر',
+            'investment_period_id' => 'الفترة',
+            'type' => 'نوع الحركة',
+            'units' => 'عدد الوحدات',
+            'unit_price' => 'سعر الوحدة',
+            // ما يجعل «متى يخرج مالي» جواباً لكل دفعةٍ على حدة.
+            'locked_until' => 'محبوسة حتى',
+            'source_type' => 'نوع المصدر',
+            'source_id' => 'رقم المصدر',
+            'occurred_at' => 'تاريخ الحركة',
+            'reverses_unit_entry_id' => 'تعكس الحركة',
+        ],
+        'investment_period_share' => [
+            'investment_period_id' => 'الفترة',
+            'investor_id' => 'المستثمر',
+            'units' => 'عدد الوحدات',
+            'share_percent' => 'نسبته من الربح',
         ],
         'shortage' => [
             'source' => 'مصدر النقص',
@@ -643,6 +715,15 @@ final class AuditAttributeLabels
         ],
         'company_setting' => [
             'investor_profit_share_percent' => 'نسبة المستثمرين من الربح (الافتراضية)',
+            // المددُ الأربع. تُنسَخ على صفّ الفترة يوم تُفتح ولا تُقرأ من هنا بعدها — فتغييرُها
+            // لا يمسّ فترةً قائمة، وسجلُّ من غيّرها هو ما يفسّر اختلافَ فترتين متجاورتين.
+            'investment_period_months' => 'مدة الفترة (شهور)',
+            'investment_subscription_window_days' => 'نافذة الاكتتاب (أيام)',
+            'investment_settlement_months' => 'مدة التسوية (شهور)',
+            'investment_capital_lock_months' => 'حبس رأس المال (شهور)',
+            // افتراضُ الشاشة لا قاعدةُ حساب: يُملأ به المربعُ يوم التمويل ثم يُجمَّد المكتوبُ
+            // على سطر التوريد، فتغييرُه لا يمسّ رفّاً مُوِّل.
+            'default_plain_sale_price' => 'سعر السادة الافتراضي (للكيلو)',
             'updated_by' => 'عدّلها',
         ],
         // Only ever an announcement. Notifications as a class are outside the audit trail — see

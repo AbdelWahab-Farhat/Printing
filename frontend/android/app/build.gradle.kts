@@ -39,6 +39,31 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // نكهتان: ما يصل المتجر، وما يصل المُختبِر.
+    //
+    // **والغرضُ أن تتعايشا على الجهاز نفسه.** المُختبِرُ يحمل الاثنتين، فلو تشاركتا
+    // `applicationId` لحلّت إحداهما محلّ الأخرى عند التنصيب — ولو تشابهتا في الأيقونة والاسم
+    // لفتح الخطأَ وأبلغ عن عطلٍ في غير موضعه. فاللاحقةُ تفصل الحزمتين، و`src/dev/res` يحمل
+    // اسماً وأيقونةً مختلفين.
+    //
+    // اسمُ النكهة `dev` لا `test`: `test` اسمٌ محجوزٌ لمجموعة مصادر اختبارات الوحدة في Gradle،
+    // ونكهةٌ بذلك الاسم تصطدم بها. وهو الاسمُ نفسه الذي تقرأ به `AppConfig` ملفَّ البيئة
+    // (`--dart-define=FLAVOR=dev` ← `.env.dev`)، فالسلسلةُ واحدة من سطر الأمر إلى العنوان.
+    flavorDimensions += "env"
+
+    productFlavors {
+        create("prod") {
+            dimension = "env"
+        }
+
+        create("dev") {
+            dimension = "env"
+            // ly.dayaa.app.dev — حزمةٌ أخرى، فتُنصَّب بجانب الإنتاج لا فوقه.
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-test"
+        }
+    }
 }
 
 kotlin {

@@ -31,6 +31,11 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_d
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_form_page.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_page.dart';
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/fund_purchase_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/investment_fund_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/investment_period_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/investment_periods_page.dart';
+import 'package:dayaa/features/investment_settings/presentation/views/investment_settings_page.dart';
 import 'package:dayaa/features/investor_portal/presentation/views/investor_portal_page.dart';
 import 'package:dayaa/features/investors/presentation/views/deal_detail_page.dart';
 import 'package:dayaa/features/investors/presentation/views/deal_orders_page.dart';
@@ -123,6 +128,21 @@ abstract final class Routes {
   /// The staff screens for investors and their deals.
   static const String investors = '/investors';
   static const String investorDeals = '/investor-deals';
+
+  /// لوحةُ الصندوق: قيمتُه وفترتُه.
+  static const String investmentFund = '/investment';
+
+  /// سجلُّ الفترات — ما حلّ محلّ «قائمة الصفقات».
+  static const String investmentPeriods = '/investment/periods';
+
+  /// فترةٌ واحدة: طلبياتُها، ونصيبُ كلِّ مستثمرٍ من كلٍّ منها.
+  static String investmentPeriod(int id) => '/investment/periods/$id';
+
+  /// شراءُ أمرِ شراءٍ بمال الصندوق — ما حلّ محلّ شاشة «تمويل الأمر».
+  static const String fundPurchase = '/investment/purchase';
+
+  /// قواعدُ الصندوق الأربع — خلف `settings.view`.
+  static const String investmentSettings = '/investment-settings';
 
   static String investor(int id) => '/investors/$id';
 
@@ -542,6 +562,38 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.investorDeals,
         builder: (context, state) => const InvestorDealsPage(),
+      ),
+      GoRoute(
+        path: Routes.investmentFund,
+        builder: (context, state) => const InvestmentFundPage(),
+      ),
+      GoRoute(
+        path: Routes.investmentPeriods,
+        builder: (context, state) => const InvestmentPeriodsPage(),
+      ),
+      GoRoute(
+        // خلف «/periods» لا أمامه: المسارُ الثابتُ أطولُ مطابقةً، ولا يبتلعه متغيّرٌ بعده.
+        path: '/investment/periods/:id',
+        builder: (context, state) => InvestmentPeriodPage(
+          periodId: int.parse(state.pathParameters['id']!),
+          periodCode: state.payload as String?,
+        ),
+      ),
+      GoRoute(
+        path: Routes.fundPurchase,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.manageInvestors) ? null : Routes.purchaseOrders,
+        builder: (context, state) {
+          final order = state.payload as PurchaseOrder?;
+
+          return order == null
+              ? const _UnknownPurchaseOrder()
+              : FundPurchasePage(order: order);
+        },
+      ),
+      GoRoute(
+        path: Routes.investmentSettings,
+        builder: (context, state) => const InvestmentSettingsPage(),
       ),
       GoRoute(
         path: '/investor-deals/:id/orders',

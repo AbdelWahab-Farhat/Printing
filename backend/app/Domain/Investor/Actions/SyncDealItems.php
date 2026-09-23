@@ -27,6 +27,46 @@ final class SyncDealItems
     ) {}
 
     /**
+     * Adds shelves to a deal that is already open, without touching the ones it has.
+     *
+     * **The fund's door, and only the fund's.** A deal born from a purchase order froze its
+     * shelves when it opened, and replacing them afterwards would change what a partner's money
+     * bought after he had agreed to it. The continuous fund has no such moment: it buys a lorry
+     * this month and another the next, for ever, and every one of them is the same deal.
+     *
+     * Same investability check, same door into Catalog — that is why this lives here rather than
+     * as a second set of writes inside {@see PurchaseFromFund}.
+     *
+     * @param  list<int>  $stockItemIds
+     *
+     * @throws StockItemIsNotInvestable
+     */
+    public function append(InvestorDeal $deal, array $stockItemIds): InvestorDeal
+    {
+        foreach ($stockItemIds as $stockItemId) {
+            $verdict = $this->catalog->stockItemInvestability($stockItemId);
+
+            if (! $verdict['investable']) {
+                throw StockItemIsNotInvestable::make(
+                    $verdict['offending_product'] ?? $this->inventory->findStockItem($stockItemId)->displayName()
+                );
+            }
+        }
+
+        foreach ($stockItemIds as $stockItemId) {
+            if ($deal->items()->where('stock_item_id', $stockItemId)->exists()) {
+                continue;
+            }
+
+            $row = $deal->items()->make();
+            $row->stock_item_id = $stockItemId;
+            $row->save();
+        }
+
+        return $deal->load('items.stockItem');
+    }
+
+    /**
      * @param  list<DealItemData>  $items
      *
      * @throws DealIsNotEditable

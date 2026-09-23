@@ -95,6 +95,12 @@ import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/repositories/home_repository.dart';
 import 'package:dayaa/features/home/repositories/home_repository_impl.dart';
 import 'package:dayaa/features/home/usecases/get_home_summary.dart';
+import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
+import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository_impl.dart';
+import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
+import 'package:dayaa/features/investment_settings/repositories/investment_settings_repository.dart';
+import 'package:dayaa/features/investment_settings/repositories/investment_settings_repository_impl.dart';
+import 'package:dayaa/features/investment_settings/usecases/investment_settings_usecases.dart';
 import 'package:dayaa/features/investor_portal/presentation/viewmodel/investor_portal_cubit.dart';
 import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository.dart';
 import 'package:dayaa/features/investor_portal/repositories/investor_portal_repository_impl.dart';
@@ -356,6 +362,8 @@ abstract final class Injector {
     _registerHome();
     _registerInvestorPortal();
     _registerInvestors();
+    _registerInvestmentSettings();
+    _registerInvestmentFund();
     _registerProducts();
     _registerCities();
     _registerBusinessFields();
@@ -663,6 +671,55 @@ abstract final class Injector {
   }
 
   /// The staff side: the people whose money finances stock, and the deals it finances.
+  /// الصندوق الاستثماري — قيمتُه وفتراتُه.
+  static void _registerInvestmentFund() {
+    sl
+      ..registerLazySingleton<InvestmentFundRepository>(
+        () => InvestmentFundRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetFundStanding>(
+        () => GetFundStanding(sl<InvestmentFundRepository>()),
+      )
+      ..registerLazySingleton<OpenFundPeriod>(
+        () => OpenFundPeriod(sl<InvestmentFundRepository>()),
+      )
+      ..registerLazySingleton<GetFundPeriods>(
+        () => GetFundPeriods(sl<InvestmentFundRepository>()),
+      )
+      ..registerLazySingleton<GetPeriodOrders>(
+        () => GetPeriodOrders(sl<InvestmentFundRepository>()),
+      )
+      ..registerLazySingleton<DepositCapital>(
+        () => DepositCapital(sl<InvestmentFundRepository>()),
+      )
+      ..registerLazySingleton<WithdrawCapital>(
+        () => WithdrawCapital(sl<InvestmentFundRepository>()),
+      )
+      ..registerLazySingleton<RecordFundExpense>(
+        () => RecordFundExpense(sl<InvestmentFundRepository>()),
+      )
+      ..registerLazySingleton<CloseFundPeriod>(
+        () => CloseFundPeriod(sl<InvestmentFundRepository>()),
+      )
+      ..registerLazySingleton<BuyWithFund>(
+        () => BuyWithFund(sl<InvestmentFundRepository>()),
+      );
+  }
+
+  /// إعدادات الاستثمار — أربعُ مددٍ ونسبة، على نقطةٍ واحدة تُقرأ وتُكتب.
+  static void _registerInvestmentSettings() {
+    sl
+      ..registerLazySingleton<InvestmentSettingsRepository>(
+        () => InvestmentSettingsRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetInvestmentSettings>(
+        () => GetInvestmentSettings(sl<InvestmentSettingsRepository>()),
+      )
+      ..registerLazySingleton<UpdateInvestmentSettings>(
+        () => UpdateInvestmentSettings(sl<InvestmentSettingsRepository>()),
+      );
+  }
+
   static void _registerInvestors() {
     sl
       ..registerLazySingleton<InvestorRepository>(
@@ -1252,8 +1309,13 @@ abstract final class Injector {
           reverseReceiptUseCase: sl<ReverseReceipt>(),
         ),
       )
+      // **ويحمل بابَ الصندوق معه**: أمرٌ يُنشأ ليشتريه الصندوق يُموَّل في الضغطة نفسِها، فلا
+      // تُترك الشاشةُ ليُبحث بعدها عن زرٍّ في تفصيل الأمر.
       ..registerFactory<SavePurchaseOrderCubit>(
-        () => SavePurchaseOrderCubit(saveOrder: sl<SavePurchaseOrder>()),
+        () => SavePurchaseOrderCubit(
+          saveOrder: sl<SavePurchaseOrder>(),
+          buyWithFund: sl<BuyWithFund>(),
+        ),
       )
       // One fixed question, asked from a supplier's screen. Parameterised on the filter for the
       // same reason the orders one is: the question is settled before the screen opens.

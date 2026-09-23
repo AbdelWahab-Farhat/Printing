@@ -6,7 +6,10 @@ namespace App\Domain\Investor\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Identity\Models\User;
+use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Enums\WalletEntryType;
+use App\Domain\Investor\Exceptions\PeriodIsClosed;
+use App\Domain\Investor\Queries\PeriodForEntry;
 use Database\Factories\InvestorWalletEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -65,6 +68,43 @@ class InvestorWalletEntry extends Model
     }
 
     /**
+     * @return BelongsTo<InvestmentPeriod, $this>
+     */
+    public function period(): BelongsTo
+    {
+        return $this->belongsTo(InvestmentPeriod::class, 'investment_period_id');
+    }
+
+    /**
+     * لا يدخل صفٌّ فترةً أُقفلت — وهو حارسُ من يأتي بعدنا لا رسالةٌ لمستخدم.
+     *
+     * كلُّ مسارٍ يكتب هنا يمرّ بـ{@see PeriodForEntry}، وهو لا
+     * يُخرج فترةً مغلقةً أبداً: يردّ التصحيحَ إلى المفتوحة اليوم. فمن يصل إلى هذا الاستثناء كتب
+     * الختمَ بيده. ولولا الحارسُ لمرّ صامتاً: الفترةُ المغلقة تحمل أرقامها مجمّدةً على صفّها،
+     * فصفٌّ يدخلها **لا يغيّر رقماً واحداً** — يجعل الصفَّ يكذب فحسب، ولا يشتكي أحد.
+     *
+     * على `creating` لا `saving`: الصفّ لا يُعدَّل بعد كتابته أصلاً — التصحيحُ صفٌّ عكسيّ —
+     * و`saving` كان سيفشل كلَّ حذفٍ ناعمٍ لصفٍّ قديم يوم تُقفَل فترتُه.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $entry): void {
+            if ($entry->investment_period_id === null) {
+                return;
+            }
+
+            $period = InvestmentPeriod::query()->whereKey($entry->investment_period_id)->first();
+
+            // **بالسؤال لا بالمقارنة.** «أيجوز أن يُكتب فيها؟» جوابُه على الحالة نفسها
+            // ({@see PeriodStatus::acceptsPostings()})، فيوم وُلدت الحالةُ الثالثة لم يحتج هذا
+            // السطرُ إلى تعديل — ومقارنةٌ بـ`Closed` كانت ستمرّ صامتةً وتقول شيئاً آخر.
+            if ($period !== null && ! $period->status->acceptsPostings()) {
+                throw PeriodIsClosed::make((string) $period->code);
+            }
+        });
+    }
+
+    /**
      * @return BelongsTo<self, $this>
      */
     public function reversedEntry(): BelongsTo
@@ -92,6 +132,27 @@ class InvestorWalletEntry extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    /**
+     * المصدرُ الذي يحكم هذا الصفَّ — مصدرُه، أو مصدرُ الصفّ الذي يعكسه.
+     *
+     * **ونظيرُ {@see effectiveType()} تماماً، وللسبب نفسه.** صفُّ العكس لا يحمل مصدرَ أصله،
+     * فمن قرأه بلا هذه الدالّة رأى عكساً بلا طلبية وأصلاً بها — فيمرّ أحدُهما من بوّابة
+     * التحصيل ويقف الآخر، ولا يُلغي أحدُهما الآخرَ في الجمع. والرقمُ يبقى «صحيحاً» في الحالتين.
+     *
+     * @return array{0: ?string, 1: ?int}
+     */
+    public function effectiveSource(): array
+    {
+        $row = $this->type === WalletEntryType::Reversal
+            ? ($this->reversedEntry ?? $this)
+            : $this;
+
+        return [
+            $row->source_type === null ? null : (string) $row->source_type,
+            $row->source_id === null ? null : (int) $row->source_id,
+        ];
     }
 
     /** The type this row acts on — its own, or that of the row it reverses. */

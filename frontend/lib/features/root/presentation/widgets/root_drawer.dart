@@ -141,20 +141,53 @@ class _RootDrawerState extends State<RootDrawer> {
         ),
       ],
     ),
-    // **المستثمرون themselves are not here.** They are a tab of «الجهات», with العملاء and
-    // الموردون — one screen for the three registers of people. صفقات المستثمرين stays a row,
-    // because a deal is not a person, and it reads beside the money rather than beside a
-    // register of names.
+    // **الاستثمار قسمٌ قائمٌ بذاته، لا سطراً تحت غيره.**
+    //
+    // الصندوقُ كيانٌ واحد مستمرّ: كلُّ شيءٍ فيه — المستثمرون ونسبُهم وفتراتُه وأرباحُه — يُقرأ
+    // من بابه هو. ودمجُه مع التقارير كان يقرأ كأنه تقريرٌ ثالث، وهو ليس تقريراً.
+    //
+    // **و«صفقات المستثمرين» ليست هنا عن قصد.** الصفقةُ صارت دفعةَ شراءٍ داخلية لا كياناً
+    // يديره أحد — «لا أريد تحريك موضوع الصفقات للمستخدم» — فبابُها أُزيل من الواجهة. مسارُها
+    // ما زال قائماً فلا شيء ضاع، لكن لا شيء يقود إليه.
     _Section(
-      title: 'الاستثمار والمالية',
+      title: 'الاستثمار',
       icon: _SectionIcon.investorDeals,
       items: [
         _Link(
           icon: _LinkIcon.investorDeals,
-          label: 'صفقات المستثمرين',
-          route: Routes.investorDeals,
+          label: 'الصندوق الاستثماري',
+          route: Routes.investmentFund,
           permission: AppPermission.viewInvestors,
         ),
+        // **سجلُّ الناس، لا سجلُّ المال.** الصندوقُ يعرض من يملك وحداتٍ الآن؛ وهنا يُضاف من
+        // لم يدخل بعد ويُقرأ كشفُ من خرج. كان بلا بابٍ في الواجهة منذ أن أُزيلت شاشةُ
+        // الصفقات، فلم يكن يمكن إضافةُ مستثمرٍ أصلاً.
+        _Link(
+          icon: _LinkIcon.investors,
+          label: 'المستثمرون',
+          route: Routes.investors,
+          permission: AppPermission.viewInvestors,
+        ),
+        _Link(
+          icon: _LinkIcon.report,
+          label: 'سجل الفترات',
+          route: Routes.investmentPeriods,
+          permission: AppPermission.viewInvestors,
+        ),
+        // خلف `settings.view` لا `investors.view`: قواعدُ الصندوق إعداداتُ شركةٍ لا سجلُّ
+        // مستثمرين، وقد يملك المرءُ أحدهما دون الآخر.
+        _Link(
+          icon: _LinkIcon.settings,
+          label: 'إعدادات الاستثمار',
+          route: Routes.investmentSettings,
+          permission: AppPermission.viewCompanySettings,
+        ),
+      ],
+    ),
+    _Section(
+      title: 'التقارير المالية',
+      icon: _SectionIcon.report,
+      items: [
         // The one screen in the panel that is read rather than curated.
         _Link(
           icon: _LinkIcon.report,
@@ -402,6 +435,7 @@ enum _SectionIcon {
   products,
   purchaseOrders,
   investorDeals,
+  report,
   employees,
   archive;
 
@@ -409,6 +443,7 @@ enum _SectionIcon {
     _SectionIcon.products => AppIcons.products,
     _SectionIcon.purchaseOrders => AppIcons.purchaseOrders,
     _SectionIcon.investorDeals => AppIcons.investorDeals,
+    _SectionIcon.report => AppIcons.report,
     _SectionIcon.employees => AppIcons.employees,
     // The same glyph the row under it carries. A heading of one row is the one place in this
     // panel where two icons would say the same thing twice, and picking a *different* one to
@@ -419,6 +454,7 @@ enum _SectionIcon {
 
 /// The same trick for the rows. Each keeps the glyph it had as a row of the flat drawer.
 enum _LinkIcon {
+  settings,
   products,
   productCategory,
   businessField,
@@ -428,6 +464,7 @@ enum _LinkIcon {
   city,
   manufacturingCostRates,
   investorDeals,
+  investors,
   report,
   salesStatistics,
   employees,
@@ -443,7 +480,9 @@ enum _LinkIcon {
     _LinkIcon.warehouse => AppIcons.warehouse,
     _LinkIcon.city => AppIcons.city,
     _LinkIcon.manufacturingCostRates => AppIcons.manufacturingCostRates,
+    _LinkIcon.settings => AppIcons.settings,
     _LinkIcon.investorDeals => AppIcons.investorDeals,
+    _LinkIcon.investors => AppIcons.investors,
     _LinkIcon.report => AppIcons.report,
     _LinkIcon.salesStatistics => AppIcons.products,
     _LinkIcon.employees => AppIcons.employees,

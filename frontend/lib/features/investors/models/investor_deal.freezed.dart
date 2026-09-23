@@ -15,7 +15,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$InvestorDeal {
 
- int get id; String get code; String get status;@JsonKey(name: 'status_label') String get statusLabel;/// Whether its terms may still be rewritten — true only while it is a draft.
+ int get id; String get code;/// **أهذه الصفقةُ هي الصندوق؟** يقولها الخادم، لأن «FUND» رمزٌ محجوز وقراءتُه هنا تعريفٌ
+/// ثانٍ له. والصندوقُ لا يُغلَق — ما يُقفَل فترةُ الأرباح — فالشاشةُ تُخفي الزرَّ بدل أن
+/// تَعِد بضغطةٍ يرفضها الخادم.
+@JsonKey(name: 'is_fund') bool get isFund; String get status;@JsonKey(name: 'status_label') String get statusLabel;/// Whether its terms may still be rewritten — true only while it is a draft.
 @JsonKey(name: 'can_be_edited') bool get canBeEdited;/// The investors' share of **this** deal's profit, copied from the company default when it
 /// was created and frozen when it opened.
 @JsonKey(name: 'investor_profit_share_percent') String get investorProfitSharePercent;/// The company as a partner: what it put in beside the investors — «الباقي على الشركة» —
@@ -45,16 +48,16 @@ $InvestorDealCopyWith<InvestorDeal> get copyWith => _$InvestorDealCopyWithImpl<I
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.canBeEdited, canBeEdited) || other.canBeEdited == canBeEdited)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.companyStake, companyStake) || other.companyStake == companyStake)&&(identical(other.investorFundedPercent, investorFundedPercent) || other.investorFundedPercent == investorFundedPercent)&&(identical(other.printingSalePrice, printingSalePrice) || other.printingSalePrice == printingSalePrice)&&(identical(other.openedOn, openedOn) || other.openedOn == openedOn)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.investors, investors)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.stock, stock) || other.stock == stock)&&(identical(other.ordersProfit, ordersProfit) || other.ordersProfit == ordersProfit));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.isFund, isFund) || other.isFund == isFund)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.canBeEdited, canBeEdited) || other.canBeEdited == canBeEdited)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.companyStake, companyStake) || other.companyStake == companyStake)&&(identical(other.investorFundedPercent, investorFundedPercent) || other.investorFundedPercent == investorFundedPercent)&&(identical(other.printingSalePrice, printingSalePrice) || other.printingSalePrice == printingSalePrice)&&(identical(other.openedOn, openedOn) || other.openedOn == openedOn)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.investors, investors)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.stock, stock) || other.stock == stock)&&(identical(other.ordersProfit, ordersProfit) || other.ordersProfit == ordersProfit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,status,statusLabel,canBeEdited,investorProfitSharePercent,companyStake,investorFundedPercent,printingSalePrice,openedOn,closedAt,notes,const DeepCollectionEquality().hash(investors),const DeepCollectionEquality().hash(items),balances,stock,ordersProfit);
+int get hashCode => Object.hash(runtimeType,id,code,isFund,status,statusLabel,canBeEdited,investorProfitSharePercent,companyStake,investorFundedPercent,printingSalePrice,openedOn,closedAt,notes,const DeepCollectionEquality().hash(investors),const DeepCollectionEquality().hash(items),balances,stock,ordersProfit);
 
 @override
 String toString() {
-  return 'InvestorDeal(id: $id, code: $code, status: $status, statusLabel: $statusLabel, canBeEdited: $canBeEdited, investorProfitSharePercent: $investorProfitSharePercent, companyStake: $companyStake, investorFundedPercent: $investorFundedPercent, printingSalePrice: $printingSalePrice, openedOn: $openedOn, closedAt: $closedAt, notes: $notes, investors: $investors, items: $items, balances: $balances, stock: $stock, ordersProfit: $ordersProfit)';
+  return 'InvestorDeal(id: $id, code: $code, isFund: $isFund, status: $status, statusLabel: $statusLabel, canBeEdited: $canBeEdited, investorProfitSharePercent: $investorProfitSharePercent, companyStake: $companyStake, investorFundedPercent: $investorFundedPercent, printingSalePrice: $printingSalePrice, openedOn: $openedOn, closedAt: $closedAt, notes: $notes, investors: $investors, items: $items, balances: $balances, stock: $stock, ordersProfit: $ordersProfit)';
 }
 
 
@@ -65,7 +68,7 @@ abstract mixin class $InvestorDealCopyWith<$Res>  {
   factory $InvestorDealCopyWith(InvestorDeal value, $Res Function(InvestorDeal) _then) = _$InvestorDealCopyWithImpl;
 @useResult
 $Res call({
- int id, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'can_be_edited') bool canBeEdited,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'company_stake') String companyStake,@JsonKey(name: 'investor_funded_percent') String investorFundedPercent,@JsonKey(name: 'printing_sale_price') String? printingSalePrice,@JsonKey(name: 'opened_on') String? openedOn,@JsonKey(name: 'closed_at') String? closedAt, String? notes, List<DealParticipant> investors, List<DealItem> items, DealBalances? balances, DealStock? stock,@JsonKey(name: 'orders_profit') DealOrdersProfit? ordersProfit
+ int id, String code,@JsonKey(name: 'is_fund') bool isFund, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'can_be_edited') bool canBeEdited,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'company_stake') String companyStake,@JsonKey(name: 'investor_funded_percent') String investorFundedPercent,@JsonKey(name: 'printing_sale_price') String? printingSalePrice,@JsonKey(name: 'opened_on') String? openedOn,@JsonKey(name: 'closed_at') String? closedAt, String? notes, List<DealParticipant> investors, List<DealItem> items, DealBalances? balances, DealStock? stock,@JsonKey(name: 'orders_profit') DealOrdersProfit? ordersProfit
 });
 
 
@@ -82,11 +85,12 @@ class _$InvestorDealCopyWithImpl<$Res>
 
 /// Create a copy of InvestorDeal
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? canBeEdited = null,Object? investorProfitSharePercent = null,Object? companyStake = null,Object? investorFundedPercent = null,Object? printingSalePrice = freezed,Object? openedOn = freezed,Object? closedAt = freezed,Object? notes = freezed,Object? investors = null,Object? items = null,Object? balances = freezed,Object? stock = freezed,Object? ordersProfit = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? isFund = null,Object? status = null,Object? statusLabel = null,Object? canBeEdited = null,Object? investorProfitSharePercent = null,Object? companyStake = null,Object? investorFundedPercent = null,Object? printingSalePrice = freezed,Object? openedOn = freezed,Object? closedAt = freezed,Object? notes = freezed,Object? investors = null,Object? items = null,Object? balances = freezed,Object? stock = freezed,Object? ordersProfit = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
-as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,isFund: null == isFund ? _self.isFund : isFund // ignore: cast_nullable_to_non_nullable
+as bool,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String,statusLabel: null == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
 as String,canBeEdited: null == canBeEdited ? _self.canBeEdited : canBeEdited // ignore: cast_nullable_to_non_nullable
 as bool,investorProfitSharePercent: null == investorProfitSharePercent ? _self.investorProfitSharePercent : investorProfitSharePercent // ignore: cast_nullable_to_non_nullable
@@ -222,10 +226,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'printing_sale_price')  String? printingSalePrice, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock, @JsonKey(name: 'orders_profit')  DealOrdersProfit? ordersProfit)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(name: 'is_fund')  bool isFund,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'printing_sale_price')  String? printingSalePrice, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock, @JsonKey(name: 'orders_profit')  DealOrdersProfit? ordersProfit)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InvestorDeal() when $default != null:
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.printingSalePrice,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock,_that.ordersProfit);case _:
+return $default(_that.id,_that.code,_that.isFund,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.printingSalePrice,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock,_that.ordersProfit);case _:
   return orElse();
 
 }
@@ -243,10 +247,10 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEd
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'printing_sale_price')  String? printingSalePrice, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock, @JsonKey(name: 'orders_profit')  DealOrdersProfit? ordersProfit)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(name: 'is_fund')  bool isFund,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'printing_sale_price')  String? printingSalePrice, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock, @JsonKey(name: 'orders_profit')  DealOrdersProfit? ordersProfit)  $default,) {final _that = this;
 switch (_that) {
 case _InvestorDeal():
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.printingSalePrice,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock,_that.ordersProfit);case _:
+return $default(_that.id,_that.code,_that.isFund,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.printingSalePrice,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock,_that.ordersProfit);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -263,10 +267,10 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEd
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'printing_sale_price')  String? printingSalePrice, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock, @JsonKey(name: 'orders_profit')  DealOrdersProfit? ordersProfit)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code, @JsonKey(name: 'is_fund')  bool isFund,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'can_be_edited')  bool canBeEdited, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'company_stake')  String companyStake, @JsonKey(name: 'investor_funded_percent')  String investorFundedPercent, @JsonKey(name: 'printing_sale_price')  String? printingSalePrice, @JsonKey(name: 'opened_on')  String? openedOn, @JsonKey(name: 'closed_at')  String? closedAt,  String? notes,  List<DealParticipant> investors,  List<DealItem> items,  DealBalances? balances,  DealStock? stock, @JsonKey(name: 'orders_profit')  DealOrdersProfit? ordersProfit)?  $default,) {final _that = this;
 switch (_that) {
 case _InvestorDeal() when $default != null:
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.printingSalePrice,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock,_that.ordersProfit);case _:
+return $default(_that.id,_that.code,_that.isFund,_that.status,_that.statusLabel,_that.canBeEdited,_that.investorProfitSharePercent,_that.companyStake,_that.investorFundedPercent,_that.printingSalePrice,_that.openedOn,_that.closedAt,_that.notes,_that.investors,_that.items,_that.balances,_that.stock,_that.ordersProfit);case _:
   return null;
 
 }
@@ -278,11 +282,15 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.canBeEd
 @JsonSerializable()
 
 class _InvestorDeal implements InvestorDeal {
-  const _InvestorDeal({required this.id, required this.code, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'can_be_edited') this.canBeEdited = false, @JsonKey(name: 'investor_profit_share_percent') required this.investorProfitSharePercent, @JsonKey(name: 'company_stake') this.companyStake = '0.00', @JsonKey(name: 'investor_funded_percent') this.investorFundedPercent = '100.0000', @JsonKey(name: 'printing_sale_price') this.printingSalePrice, @JsonKey(name: 'opened_on') this.openedOn, @JsonKey(name: 'closed_at') this.closedAt, this.notes, final  List<DealParticipant> investors = const <DealParticipant>[], final  List<DealItem> items = const <DealItem>[], this.balances, this.stock, @JsonKey(name: 'orders_profit') this.ordersProfit}): _investors = investors,_items = items;
+  const _InvestorDeal({required this.id, required this.code, @JsonKey(name: 'is_fund') this.isFund = false, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'can_be_edited') this.canBeEdited = false, @JsonKey(name: 'investor_profit_share_percent') required this.investorProfitSharePercent, @JsonKey(name: 'company_stake') this.companyStake = '0.00', @JsonKey(name: 'investor_funded_percent') this.investorFundedPercent = '100.0000', @JsonKey(name: 'printing_sale_price') this.printingSalePrice, @JsonKey(name: 'opened_on') this.openedOn, @JsonKey(name: 'closed_at') this.closedAt, this.notes, final  List<DealParticipant> investors = const <DealParticipant>[], final  List<DealItem> items = const <DealItem>[], this.balances, this.stock, @JsonKey(name: 'orders_profit') this.ordersProfit}): _investors = investors,_items = items;
   factory _InvestorDeal.fromJson(Map<String, dynamic> json) => _$InvestorDealFromJson(json);
 
 @override final  int id;
 @override final  String code;
+/// **أهذه الصفقةُ هي الصندوق؟** يقولها الخادم، لأن «FUND» رمزٌ محجوز وقراءتُه هنا تعريفٌ
+/// ثانٍ له. والصندوقُ لا يُغلَق — ما يُقفَل فترةُ الأرباح — فالشاشةُ تُخفي الزرَّ بدل أن
+/// تَعِد بضغطةٍ يرفضها الخادم.
+@override@JsonKey(name: 'is_fund') final  bool isFund;
 @override final  String status;
 @override@JsonKey(name: 'status_label') final  String statusLabel;
 /// Whether its terms may still be rewritten — true only while it is a draft.
@@ -341,16 +349,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.canBeEdited, canBeEdited) || other.canBeEdited == canBeEdited)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.companyStake, companyStake) || other.companyStake == companyStake)&&(identical(other.investorFundedPercent, investorFundedPercent) || other.investorFundedPercent == investorFundedPercent)&&(identical(other.printingSalePrice, printingSalePrice) || other.printingSalePrice == printingSalePrice)&&(identical(other.openedOn, openedOn) || other.openedOn == openedOn)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other._investors, _investors)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.stock, stock) || other.stock == stock)&&(identical(other.ordersProfit, ordersProfit) || other.ordersProfit == ordersProfit));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.isFund, isFund) || other.isFund == isFund)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.canBeEdited, canBeEdited) || other.canBeEdited == canBeEdited)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.companyStake, companyStake) || other.companyStake == companyStake)&&(identical(other.investorFundedPercent, investorFundedPercent) || other.investorFundedPercent == investorFundedPercent)&&(identical(other.printingSalePrice, printingSalePrice) || other.printingSalePrice == printingSalePrice)&&(identical(other.openedOn, openedOn) || other.openedOn == openedOn)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other._investors, _investors)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.stock, stock) || other.stock == stock)&&(identical(other.ordersProfit, ordersProfit) || other.ordersProfit == ordersProfit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,status,statusLabel,canBeEdited,investorProfitSharePercent,companyStake,investorFundedPercent,printingSalePrice,openedOn,closedAt,notes,const DeepCollectionEquality().hash(_investors),const DeepCollectionEquality().hash(_items),balances,stock,ordersProfit);
+int get hashCode => Object.hash(runtimeType,id,code,isFund,status,statusLabel,canBeEdited,investorProfitSharePercent,companyStake,investorFundedPercent,printingSalePrice,openedOn,closedAt,notes,const DeepCollectionEquality().hash(_investors),const DeepCollectionEquality().hash(_items),balances,stock,ordersProfit);
 
 @override
 String toString() {
-  return 'InvestorDeal(id: $id, code: $code, status: $status, statusLabel: $statusLabel, canBeEdited: $canBeEdited, investorProfitSharePercent: $investorProfitSharePercent, companyStake: $companyStake, investorFundedPercent: $investorFundedPercent, printingSalePrice: $printingSalePrice, openedOn: $openedOn, closedAt: $closedAt, notes: $notes, investors: $investors, items: $items, balances: $balances, stock: $stock, ordersProfit: $ordersProfit)';
+  return 'InvestorDeal(id: $id, code: $code, isFund: $isFund, status: $status, statusLabel: $statusLabel, canBeEdited: $canBeEdited, investorProfitSharePercent: $investorProfitSharePercent, companyStake: $companyStake, investorFundedPercent: $investorFundedPercent, printingSalePrice: $printingSalePrice, openedOn: $openedOn, closedAt: $closedAt, notes: $notes, investors: $investors, items: $items, balances: $balances, stock: $stock, ordersProfit: $ordersProfit)';
 }
 
 
@@ -361,7 +369,7 @@ abstract mixin class _$InvestorDealCopyWith<$Res> implements $InvestorDealCopyWi
   factory _$InvestorDealCopyWith(_InvestorDeal value, $Res Function(_InvestorDeal) _then) = __$InvestorDealCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'can_be_edited') bool canBeEdited,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'company_stake') String companyStake,@JsonKey(name: 'investor_funded_percent') String investorFundedPercent,@JsonKey(name: 'printing_sale_price') String? printingSalePrice,@JsonKey(name: 'opened_on') String? openedOn,@JsonKey(name: 'closed_at') String? closedAt, String? notes, List<DealParticipant> investors, List<DealItem> items, DealBalances? balances, DealStock? stock,@JsonKey(name: 'orders_profit') DealOrdersProfit? ordersProfit
+ int id, String code,@JsonKey(name: 'is_fund') bool isFund, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'can_be_edited') bool canBeEdited,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'company_stake') String companyStake,@JsonKey(name: 'investor_funded_percent') String investorFundedPercent,@JsonKey(name: 'printing_sale_price') String? printingSalePrice,@JsonKey(name: 'opened_on') String? openedOn,@JsonKey(name: 'closed_at') String? closedAt, String? notes, List<DealParticipant> investors, List<DealItem> items, DealBalances? balances, DealStock? stock,@JsonKey(name: 'orders_profit') DealOrdersProfit? ordersProfit
 });
 
 
@@ -378,11 +386,12 @@ class __$InvestorDealCopyWithImpl<$Res>
 
 /// Create a copy of InvestorDeal
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? canBeEdited = null,Object? investorProfitSharePercent = null,Object? companyStake = null,Object? investorFundedPercent = null,Object? printingSalePrice = freezed,Object? openedOn = freezed,Object? closedAt = freezed,Object? notes = freezed,Object? investors = null,Object? items = null,Object? balances = freezed,Object? stock = freezed,Object? ordersProfit = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? isFund = null,Object? status = null,Object? statusLabel = null,Object? canBeEdited = null,Object? investorProfitSharePercent = null,Object? companyStake = null,Object? investorFundedPercent = null,Object? printingSalePrice = freezed,Object? openedOn = freezed,Object? closedAt = freezed,Object? notes = freezed,Object? investors = null,Object? items = null,Object? balances = freezed,Object? stock = freezed,Object? ordersProfit = freezed,}) {
   return _then(_InvestorDeal(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
-as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,isFund: null == isFund ? _self.isFund : isFund // ignore: cast_nullable_to_non_nullable
+as bool,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String,statusLabel: null == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
 as String,canBeEdited: null == canBeEdited ? _self.canBeEdited : canBeEdited // ignore: cast_nullable_to_non_nullable
 as bool,investorProfitSharePercent: null == investorProfitSharePercent ? _self.investorProfitSharePercent : investorProfitSharePercent // ignore: cast_nullable_to_non_nullable

@@ -20,6 +20,9 @@ _Investor _$InvestorFromJson(Map<String, dynamic> json) => _Investor(
   balances: json['balances'] == null
       ? null
       : InvestorBalances.fromJson(json['balances'] as Map<String, dynamic>),
+  profitFigures: json['profit_figures'] == null
+      ? null
+      : ProfitFigures.fromJson(json['profit_figures'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$InvestorToJson(_Investor instance) => <String, dynamic>{
@@ -32,6 +35,7 @@ Map<String, dynamic> _$InvestorToJson(_Investor instance) => <String, dynamic>{
   'has_login': instance.hasLogin,
   'totals': instance.totals?.toJson(),
   'balances': instance.balances?.toJson(),
+  'profit_figures': instance.profitFigures?.toJson(),
 };
 
 _InvestorBalances _$InvestorBalancesFromJson(Map<String, dynamic> json) =>
@@ -84,4 +88,21 @@ Map<String, dynamic> _$InvestorTotalsToJson(_InvestorTotals instance) =>
       'profit': instance.profit,
       'wallet_capital': instance.walletCapital,
       'wallet_profit': instance.walletProfit,
+    };
+
+_ProfitFigures _$ProfitFiguresFromJson(Map<String, dynamic> json) =>
+    _ProfitFigures(
+      awaitingDelivery: json['awaiting_delivery'] as String,
+      ordersAwaitingDelivery:
+          (json['orders_awaiting_delivery'] as num?)?.toInt() ?? 0,
+      pending: json['pending'] as String,
+      available: json['available'] as String,
+    );
+
+Map<String, dynamic> _$ProfitFiguresToJson(_ProfitFigures instance) =>
+    <String, dynamic>{
+      'awaiting_delivery': instance.awaitingDelivery,
+      'orders_awaiting_delivery': instance.ordersAwaitingDelivery,
+      'pending': instance.pending,
+      'available': instance.available,
     };

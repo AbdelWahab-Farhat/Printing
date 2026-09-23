@@ -133,7 +133,10 @@ class _Actions extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppSpeedDial(
       actions: [
-        if (deal.status == 'open')
+        // **والصندوقُ ليس صفقةً تُغلَق.** هو مفتوحٌ أبداً، فيمرّ من شرط «open» كما مرّ من كل
+        // حارسٍ يوم أُغلق صندوقُ سيرفر التجربة في ٢٢ سبتمبر ٢٠٢٦: عادت ١٧٬٠٠٠ إلى المحافظ
+        // والوحداتُ قائمة. والخادمُ يرفضها اليوم — وزرٌّ يَعِد بما يُرفض أسوأ من غيابه.
+        if (deal.status == 'open' && !deal.isFund)
           AppAction(
             label: 'إغلاق وتسوية الحسابات',
             icon: AppIcons.settled,

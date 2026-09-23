@@ -5,9 +5,16 @@ declare(strict_types=1);
 namespace App\Domain\Investor\Queries;
 
 use App\Domain\Investor\Models\InvestorDeal;
+use App\Domain\Investor\Support\FundDeal;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-/** The deals screen: newest first, filterable by status and by who is in one. */
+/**
+ * The deals screen: newest first, filterable by status and by who is in one.
+ *
+ * **والصندوقُ ليس منها.** صفُّ `FUND` صفقةٌ في الجدول وحده — ختمُ ملكيةٍ على طبقات التكلفة،
+ * لا ورقةَ شراءٍ يقرؤها أحد ({@see FundDeal}). وعرضُه هنا كان يضعه على شاشةٍ فيها زرُّ إغلاق،
+ * وهو ما أُغلق به الصندوقُ فعلاً على سيرفر التجربة في ٢٢ سبتمبر ٢٠٢٦.
+ */
 final class DealListQuery
 {
     /**
@@ -19,6 +26,7 @@ final class DealListQuery
         $search = isset($filters['search']) ? trim((string) $filters['search']) : '';
 
         return InvestorDeal::query()
+            ->where('code', '!=', FundDeal::CODE)
             ->with(['product', 'shares.investor'])
             ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w
                 ->orWhere('code', 'ilike', '%'.$search.'%')))

@@ -271,13 +271,19 @@ final class InvestorService
             return null;
         }
 
+        // **The line's own price first, the deal's only as a fallback.** سعر السادة was a term
+        // of a صفقة while a صفقة was one lorry; the fund is a single deal that never ends, so a
+        // price on it would be one number for every material it will ever hold. The price now
+        // belongs to the supply row — this purchase order's line for this shelf — and the deal's
+        // column stays readable so that every صفقة funded before today prices exactly as it did.
+        // A supply that names a price outranks its deal; no old deal has one.
+        $price = $supply->printing_sale_price ?? $supply->deal?->printing_sale_price;
+
         return new SupplyFunding(
             dealId: (int) $supply->investor_deal_id,
             // Carried out with the id because the layer this answer opens must freeze both, and
             // asking twice would be two reads of one row for one decision.
-            printingSalePrice: $supply->deal?->printing_sale_price === null
-                ? null
-                : (string) $supply->deal->printing_sale_price,
+            printingSalePrice: $price === null ? null : (string) $price,
         );
     }
 

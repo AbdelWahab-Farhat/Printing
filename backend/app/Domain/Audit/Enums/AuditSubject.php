@@ -31,6 +31,10 @@ use App\Domain\Inventory\Models\StockItemGroup;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
+use App\Domain\Investor\Models\InvestmentCashEntry;
+use App\Domain\Investor\Models\InvestmentPeriod;
+use App\Domain\Investor\Models\InvestmentPeriodShare;
+use App\Domain\Investor\Models\InvestmentUnit;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorDealExpense;
@@ -143,6 +147,10 @@ enum AuditSubject: string
     case InvestorDealSupply = 'investor_deal_supply';
     case InvestorDealExpense = 'investor_deal_expense';
     case InvestorWalletEntry = 'investor_wallet_entry';
+    case InvestmentPeriod = 'investment_period';
+    case InvestmentCashEntry = 'investment_cash_entry';
+    case InvestmentUnit = 'investment_unit';
+    case InvestmentPeriodShare = 'investment_period_share';
 
     // Shortages
     case Shortage = 'shortage';
@@ -213,6 +221,10 @@ enum AuditSubject: string
             self::PurchaseOrderAdditionalCost => PurchaseOrderAdditionalCost::class,
             self::Investor => Investor::class,
             self::InvestorDeal => InvestorDeal::class,
+            self::InvestmentPeriod => InvestmentPeriod::class,
+            self::InvestmentCashEntry => InvestmentCashEntry::class,
+            self::InvestmentUnit => InvestmentUnit::class,
+            self::InvestmentPeriodShare => InvestmentPeriodShare::class,
             self::InvestorDealItem => InvestorDealItem::class,
             self::InvestorDealShare => InvestorDealShare::class,
             self::InvestorDealSupply => InvestorDealSupply::class,
@@ -273,6 +285,10 @@ enum AuditSubject: string
             self::PurchaseOrderAdditionalCost => 'تكلفة إضافية لأمر شراء',
             self::Investor => 'مستثمر',
             self::InvestorDeal => 'صفقة استثمار',
+            self::InvestmentPeriod => 'فترة استثمار',
+            self::InvestmentCashEntry => 'حركة خزينة الصندوق',
+            self::InvestmentUnit => 'وحدات استثمار',
+            self::InvestmentPeriodShare => 'نصيب في فترة',
             self::InvestorDealItem => 'مادة في صفقة',
             self::InvestorDealShare => 'حصة مستثمر',
             self::InvestorDealSupply => 'إقرار تمويل',

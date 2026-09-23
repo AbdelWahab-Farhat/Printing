@@ -51,3 +51,9 @@ backend/database/seeders/data/customers-without-a-phone.xlsx
 *.p8
 *-fcm.json
 google-services*.json.bak
+
+# إعدادُ النشر المحليّ — عنوانُ الصندوق لا يُدفع
+bin/deploy-test.local
+
+# سجلُّ أخطاء PHP الذي يكتبه cPanel بجانب السكربت — دُفع مرّةً من الخادم مع 4b90232
+error_log

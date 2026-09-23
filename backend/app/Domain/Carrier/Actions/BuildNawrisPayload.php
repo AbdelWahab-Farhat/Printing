@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Carrier\Actions;
 
+use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Support\Money;
 use Illuminate\Support\Str;
@@ -101,7 +102,7 @@ final class BuildNawrisPayload
      * edit rather than being left to drift.
      *
      * **Nothing is taken off for delivery any more, because nothing was put on.** The fee left
-     * `grand_total` — see {@see \App\Domain\Order\Actions\RecalculateOrderTotals} — so the
+     * `grand_total` — see {@see RecalculateOrderTotals} — so the
      * courier charging it at the door on their own account bills it exactly once, which is what
      * the old subtraction was arranging by hand. Subtracting it from a total that no longer
      * contains it would collect less than the customer owes. NAWRIS-INTEGRATION.md §5.2.

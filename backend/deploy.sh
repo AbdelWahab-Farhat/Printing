@@ -37,4 +37,31 @@ echo "==> optimize (config + routes + views + events)"
 
 "$php_bin" artisan queue:restart >/dev/null 2>&1 || true
 
+# ينصب `schedule:run` في cron إن لم يكن منصَّباً.
+#
+# **بلا هذا لا تعمل مهمّةٌ مجدولة واحدة، وغيابُه صامت:** فترةُ الصندوق لا تُقفَل، ولا
+# يقبض مستثمرٌ ديناراً، ولا يشتكي شيءٌ في سجلٍّ — والشاشاتُ كلُّها تعمل كأن لا شيء.
+# ولذلك يُنصَّب مع الكود لا على ورقةِ تعليمات، ويُعاد التحقّق منه في كل نشر.
+#
+# ويُشغَّل باسم مستخدم php-fpm لا root: ملفُّ سجلٍّ أو كاشٍ يملكه root في storage/
+# يوقف الويب عن الكتابة فيه.
+cron_file=/etc/cron.d/printing-schedule
+if [[ ! -f "$cron_file" ]]; then
+    web_user=$(stat -c '%U' storage)
+    php_abs=$(command -v "$php_bin")
+
+    if cat > "$cron_file" 2>/dev/null <<CRON
+# جدولةُ Laravel — يُنصَّب من backend/deploy.sh. انظر backend/bootstrap/app.php.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+* * * * * ${web_user} cd $(pwd) && ${php_abs} artisan schedule:run >> /dev/null 2>&1
+CRON
+    then
+        chmod 644 "$cron_file"
+        echo "==> cron: schedule:run منصَّب باسم ${web_user}"
+    else
+        echo "!!! cron غير منصَّب — لا صلاحية على ${cron_file}. المهامُّ المجدولة لن تعمل." >&2
+    fi
+fi
+
 echo "==> done"

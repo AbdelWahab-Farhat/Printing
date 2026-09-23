@@ -8,6 +8,9 @@ use App\Domain\Inventory\Actions\CreditBackStockBatches;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\Enums\MovementType;
 use App\Domain\Inventory\InventoryService;
+use App\Domain\Order\Enums\ManufacturingCostType;
+use App\Domain\Order\Enums\OrderFlow;
+use App\Domain\Order\Enums\UndeliveredDisposition;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\ProductionCostEntry;
@@ -40,7 +43,16 @@ final class ReverseOrderStockDeduction
 {
     public function __construct(private readonly InventoryService $inventory) {}
 
-    public function __invoke(Order $order, int $employeeId): void
+    /**
+     * @param  bool  $printedMaterialIsLost  **الفرق بين الإلغاء والحذف، وهو فرقٌ حقيقيّ لا علم.**
+     *                                       الإلغاء نهاية: أكياسٌ طُبعت بشعار زبونٍ تراجع لا تعود
+     *                                       إلى رفٍّ تُباع منه، فتُشطب. **والحذف قابلٌ للاستعادة**،
+     *                                       و{@see RestoreOrder} تسحب المخزون من جديد — فلو شُطب
+     *                                       هنا لما وجدت الاستعادةُ ما تسحبه ولارتدّت بـ«الكمية
+     *                                       المتوفرة لا تكفي». فيُمرّره {@see ChangeOrderStatus}
+     *                                       وحده، و{@see DeleteOrder} يترك الافتراض.
+     */
+    public function __invoke(Order $order, int $employeeId, bool $printedMaterialIsLost = false): void
     {
         // One query for the whole order rather than one per line; strict-mode lazy loading is on
         // outside production, so the hop from a line to its shelf has to be asked for explicitly.
@@ -48,6 +60,16 @@ final class ReverseOrderStockDeduction
 
         foreach ($order->items as $item) {
             if ($item->fulfillment_stock_movement_id === null) {
+                continue;
+            }
+
+            // **البضاعة التي مرّت على المكينة لا تعود إلى الرفّ.** أكياسٌ تحمل شعار زبونٍ ألغى
+            // لا تساوي شيئاً لأحدٍ غيره، وإعادتُها ترفع رصيد المخزن ببضاعةٍ لا تُباع — ويقتسم
+            // قيمتَها الوهمية مَن يدخل بعد ذلك.
+            if ($printedMaterialIsLost && $this->carriesArtwork($order, $item)) {
+                $this->reverseProductionCostEntries($item, $employeeId);
+                $this->writeOffPrintedMaterial($order, $item, $employeeId);
+
                 continue;
             }
 
@@ -76,6 +98,65 @@ final class ReverseOrderStockDeduction
 
             $this->reverseProductionCostEntries($item, $employeeId);
         }
+    }
+
+    /**
+     * هل تحمل بضاعةُ هذا السطر شعارَ الزبون الآن؟
+     *
+     * **سؤالان لا واحد، والخلطُ بينهما هو العطب الذي كان هنا.**
+     *
+     * الأول: أهذا سطرٌ تطبعه مكينتُنا أصلاً؟ — يجيب عنه {@see UndeliveredDisposition::forItem()}،
+     * وهو المصدر الوحيد لهذه القسمة في النظام كلّه، يقرأه هذا الفعل و{@see RecordPartialDelivery}
+     * و`TransitionFields` معاً فلا تفترق جملةُ الشاشة عن فعل الزرّ.
+     *
+     * والثاني — **وهو ما كان ناقصاً**: أطُبع فعلاً بعدُ؟ المخزون يخرج عند «جاهزة للطباعة»، **قبل
+     * الطباعة بأيام**. فطلبيةٌ أُلغيت بعد ساعةٍ من خروج البضاعة بضاعتُها سادةٌ نظيفة على الطاولة،
+     * وشطبُها خسارةً يحرق مالاً لم يُحرق. و`ready_at` هو ما يفصل: بلوغُ «جاهزة» يعني أن المكينة
+     * قد مرّت. وهي العلامةُ نفسُها التي يقرأها `DealOrdersInFlightQuery` للسؤال المجاور — «متى لم
+     * تعد المطبعة تستطيع تغيير رأيها» — لا علامةٌ مخترعةٌ لهذا الموضع.
+     *
+     * **وسطرُ السادة يعود دائماً** مهما تأخّر الإلغاء، لأنه لا يُطبع أبداً. و«الوسيط» لا يصل هنا
+     * إطلاقاً: {@see OrderFlow::deductsStock()} تمنعه من سحب مخزون، فلا
+     * `fulfillment_stock_movement_id` له ولا شيءَ يُعاد.
+     */
+    private function carriesArtwork(Order $order, OrderItem $item): bool
+    {
+        return $order->ready_at !== null
+            && UndeliveredDisposition::forItem($item) === UndeliveredDisposition::WrittenOff;
+    }
+
+    /**
+     * المادةُ التي خرجت ولم تعد — تُسجَّل خسارةً مسمّاة لا تختفي بين الأرقام.
+     *
+     * **بتكلفة المادة وحدها، لا بـ`cogs` السطر كلِّه.** العمالةُ والمصاريف العامة يعكسها
+     * {@see reverseProductionCostEntries()} بصفوفٍ مقابلة قبل هذا السطر بلحظة؛ فجمعُها هنا ثانيةً
+     * يحسب الشيء مرّتين. والسؤال الذي يجيب عنه هذا الصفّ واحدٌ بعينه: **كم كانت تساوي البضاعة التي
+     * غادرت الرفّ ولم ترجع إليه؟**
+     *
+     * ونوعُه {@see ManufacturingCostType::DeliveryLoss} لا نوعٌ جديد: الواقعة هي هي — بضاعةٌ
+     * صُنعت ولم يأخذها أحد — سواءٌ تركها الزبون على الطاولة أو ألغى قبل أن يصل. ونوعٌ ثالث يقول
+     * الشيء نفسه يحتاج ذراعاً في كل `match` شاملة ولا يضيف جواباً.
+     */
+    private function writeOffPrintedMaterial(Order $order, OrderItem $item, int $employeeId): void
+    {
+        $amount = $item->material_cost;
+
+        // سطرٌ بلا تكلفة مادة لا خسارة فيه تُكتب — وصفٌّ بصفر ضجيجٌ في تقريرٍ يُقرأ.
+        if ($amount === null || bccomp((string) $amount, '0', 2) <= 0) {
+            return;
+        }
+
+        $entry = new ProductionCostEntry;
+        $entry->order_id = $order->getKey();
+        $entry->order_item_id = $item->getKey();
+        $entry->cost_type = ManufacturingCostType::DeliveryLoss;
+        $entry->quantity = $item->producedQuantity();
+        $entry->rate = null;
+        $entry->amount = (string) $amount;
+        $entry->recorded_by = $employeeId;
+        $entry->incurred_at = now();
+        $entry->notes = 'إلغاء بعد الطباعة — البضاعة لا تعود إلى الرفّ';
+        $entry->save();
     }
 
     /**

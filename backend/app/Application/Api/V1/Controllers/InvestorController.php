@@ -14,11 +14,14 @@ use App\Application\Api\V1\Resources\InvestorResource;
 use App\Application\Api\V1\Resources\InvestorWalletEntryResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
+use App\Domain\Investor\Actions\ReverseWalletEntry;
 use App\Domain\Investor\DTOs\InvestorData;
 use App\Domain\Investor\DTOs\WalletEntryData;
 use App\Domain\Investor\InvestorService;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Investor\Queries\ProfitAwaitingDelivery;
+use App\Domain\Investor\Support\FundDeal;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,7 +41,11 @@ class InvestorController extends Controller
 {
     use ReadsAuditTrail, ResponseTrait;
 
-    public function __construct(private readonly InvestorService $investors) {}
+    public function __construct(
+        private readonly InvestorService $investors,
+        private readonly FundDeal $fund,
+        private readonly ProfitAwaitingDelivery $awaiting,
+    ) {}
 
     /**
      * List investors
@@ -84,10 +91,43 @@ class InvestorController extends Controller
      *
      * With his balances: what is in his wallet, and what each of his deals is holding and has
      * earned him.
+     *
+     * **والصندوقُ ليس منها.** هو صفقةٌ في الجدول — ختمُ ملكيةٍ على طبقات التكلفة، لا كيانٌ يديره
+     * أحد ({@see FundDeal}) — وقسمُ «في الصفقات» على صفحته كان يعرضه صفّاً يفتح صفحةَ الصفقة
+     * بزرِّ إغلاقها. وهو البابُ الذي أُغلق منه الصندوقُ فعلاً في ٢٢ سبتمبر ٢٠٢٦: رابطُ قائمة
+     * الصفقات كان قد رُفع من الدرج، وبقي هذا الطريقُ إليه مفتوحاً من صفحة كلِّ مشترك.
+     *
+     * ومالُه فيه لا يغيب عنه بهذا: بابُه لوحةُ الصندوق، وهي تقوله بوحداتٍ ونسبةٍ ورأسِ مال.
+     * والحذفُ هنا في طبقة العرض وحدها — `InvestorBalances` يبقى يمشي على كل صفقة، وعليه
+     * يقف حارسُ الاسترداد وتسويةُ الإقفال.
      */
     public function show(Investor $investor): JsonResponse
     {
-        $investor->setAttribute('balances', $this->investors->balancesFor((int) $investor->getKey()));
+        $balances = $this->investors->balancesFor((int) $investor->getKey());
+        $fundId = $this->fund->idOrNull();
+
+        // **الأرقامُ الثلاثة قبل أن يُحذف الصندوقُ من الصفقات** — ربحُه المقيَّد فيه جزءٌ من
+        // «أرباح معلّقة»، وحذفُه من القائمة أدناه عرضٌ لا حساب.
+        $pending = '0.00';
+
+        foreach ($balances['deals'] as $pots) {
+            $pending = bcadd($pending, $pots['profit'], 2);
+        }
+
+        $awaiting = $this->awaiting->forInvestor((int) $investor->getKey());
+
+        $investor->setAttribute('profit_figures', [
+            'awaiting_delivery' => $awaiting['amount'],
+            'orders_awaiting_delivery' => $awaiting['orders'],
+            'pending' => $pending,
+            'available' => $balances['wallet']['profit'],
+        ]);
+
+        if ($fundId !== null) {
+            unset($balances['deals'][$fundId]);
+        }
+
+        $investor->setAttribute('balances', $balances);
 
         return $this->success(new InvestorResource($investor));
     }
@@ -176,5 +216,35 @@ class InvestorController extends Controller
     public function logs(ActivityLogFilterRequest $request, Investor $investor, AuditService $audit): JsonResponse
     {
         return $this->auditTrailResponse($request, $investor, $audit);
+    }
+
+    /**
+     * Reverse a wallet entry
+     *
+     * **الشريحة ٠ب**: المؤشّرُ `can_be_reversed` كان يُرسَل إلى التطبيق منذ البداية بلا مسارٍ
+     * خلفه. والإبطالُ هنا يبطل ما تبع الحركةَ أيضاً — صفَّ الخزينة ووحداتِ الصندوق — وإلا بقيت
+     * نسبةُ رجلٍ استُرجع مالُه تقاسم ربحاً لا يموّله.
+     */
+    public function reverseWalletEntry(Request $request, int $investor, int $entry): JsonResponse
+    {
+        $validated = $request->validate([
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $row = InvestorWalletEntry::query()
+            ->where('investor_id', $investor)
+            ->whereKey($entry)
+            ->firstOrFail();
+
+        $reversal = app(ReverseWalletEntry::class)(
+            $row,
+            $request->user()?->id,
+            $validated['notes'] ?? null,
+        );
+
+        return $this->success(
+            ['id' => $reversal->id],
+            'أُبطلت الحركة — ومعها ما تبعها في الخزينة والوحدات',
+        );
     }
 }

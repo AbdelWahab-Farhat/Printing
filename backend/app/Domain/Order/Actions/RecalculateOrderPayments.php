@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Actions;
 
+use App\Domain\Order\Events\OrderPaymentsRecalculated;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
@@ -67,6 +68,11 @@ final class RecalculateOrderPayments
             'written_off_amount' => Money::round($writtenOff),
             'carrier_settled_amount' => Money::round($carrierSettled),
         ])->save();
+
+        // **خزينةُ الصندوق تتحرّك من هنا.** هذا هو المعبرُ الذي يمرّ به كلُّ طريقٍ يحرّك مالَ
+        // طلبية، فحدثٌ واحدٌ فيه أضمنُ من أربعةٍ عند كلٍّ منها. والمستمعُ في نطاق المستثمرين
+        // يعيد حساب نصيب الصندوق ويصحّح نفسه، فلا يضرّه أن يصل مرّتين.
+        event(new OrderPaymentsRecalculated((int) $order->getKey()));
 
         return $order;
     }

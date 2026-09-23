@@ -94,7 +94,7 @@ final class DealStockPosition
             ->groupBy('b.stock_item_id', 'm.movement_type', 'm.adjustment_reason', 'm.from_warehouse_id')
             ->get();
 
-        $buckets = ['sold' => ['0', '0'], 'damaged' => ['0', '0'], 'short' => ['0', '0']];
+        $buckets = ['sold' => ['0', '0'], 'damaged' => ['0', '0'], 'short' => ['0', '0'], 'transferred' => ['0', '0']];
         $perItem = [];
 
         foreach ($remaining as $row) {
@@ -134,9 +134,16 @@ final class DealStockPosition
             'quantity_sold' => $this->qty($buckets['sold'][0]),
             'quantity_damaged' => $this->qty($buckets['damaged'][0]),
             'quantity_short' => $this->qty($buckets['short'][0]),
+            // **ما انتقل إلى الصندوق ليس مبيعاً ولا تالفاً** — §٠.٩. وبلا بندٍ له ينقص «وصل»
+            // بقدره: شحنةٌ من 500 تُقرأ «وصل ١٥٠» لأن 350 منها صارت على رفّ الصندوق.
+            'quantity_transferred' => $this->qty($buckets['transferred'][0]),
             'quantity_received' => $this->qty(bcadd(
                 $remainingQty,
-                bcadd($buckets['sold'][0], bcadd($buckets['damaged'][0], $buckets['short'][0], 3), 3),
+                bcadd(
+                    bcadd($buckets['sold'][0], $buckets['transferred'][0], 3),
+                    bcadd($buckets['damaged'][0], $buckets['short'][0], 3),
+                    3,
+                ),
                 3,
             )),
             'unit' => $unit?->value,
@@ -145,6 +152,7 @@ final class DealStockPosition
             'cost_sold' => Money::round($buckets['sold'][1]),
             'cost_damaged' => Money::round($buckets['damaged'][1]),
             'cost_short' => Money::round($buckets['short'][1]),
+            'cost_transferred' => Money::round($buckets['transferred'][1]),
             'per_item' => array_values($perItem),
         ];
     }
@@ -182,6 +190,10 @@ final class DealStockPosition
             return 'damaged';
         }
 
+        if ($type === 'ownership_transfer') {
+            return 'transferred';
+        }
+
         if ($type !== 'adjustment' || $fromWarehouse === null) {
             return null;
         }
@@ -204,6 +216,7 @@ final class DealStockPosition
             'quantity_sold' => '0',
             'quantity_damaged' => '0',
             'quantity_short' => '0',
+            'quantity_transferred' => '0',
             'cost_remaining' => '0.00',
         ];
     }

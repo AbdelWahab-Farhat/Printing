@@ -382,4 +382,29 @@ void main() {
     // with nothing on screen to explain why.
     expect(find.textContaining('يحتاج نسخة أحدث'), findsOneWidget);
   });
+
+  testWidgets('a warning is read, not answered — and its words are the server words', (
+    tester,
+  ) async {
+    // Arrange
+    Object? reported;
+    const field = TransitionField(
+      key: 'cancellation_effect',
+      type: TransitionFieldType.notice,
+      label: 'تحذير — بضاعةٌ لن تعود',
+      hint: 'لا تعود إلى المخزن — طُبعت، وتُسجَّل خسارة:\n• كيس 25×35 — 40 قطعة',
+    );
+
+    // Act
+    await tester.pumpWidget(
+      host(input(field, onChanged: (value) => reported = value)),
+    );
+
+    // Assert — النصّ كما أرسله الخادم، بلا خانةٍ تُملأ ولا نداءٍ للمستدعي.
+    expect(find.text('تحذير — بضاعةٌ لن تعود'), findsOneWidget);
+    expect(find.textContaining('كيس 25×35 — 40 قطعة'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(reported, isNull);
+  });
+
 }

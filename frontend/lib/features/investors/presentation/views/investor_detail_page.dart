@@ -2,6 +2,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/arabic_counts.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -143,10 +144,30 @@ class _Body extends StatelessWidget {
             artwork: 'assets/images/wallet.png',
           ),
           SizedBox(height: 12.h),
+          // **الأرقامُ الثلاثة كما يقرؤها على بوابته** — §٠.٨: قيد التسليم، ثم معلّقة، ثم
+          // متاحة للسحب. وكانت الصفحةُ تعرض الثالثَ وحده، وربحُه في الصندوق لا يظهر فيها.
+          if (investor.profitFigures case final figures?) ...[
+            InvestorMoneyTile(
+              label: 'ربح قيد التسليم',
+              amount: figures.awaitingDelivery,
+              caption: figures.ordersAwaitingDelivery > 0
+                  ? 'من ${ordersCount(figures.ordersAwaitingDelivery)} في الطريق'
+                  : 'لا طلبيات في الطريق',
+              icon: AppIcons.report,
+            ),
+            SizedBox(height: 12.h),
+            InvestorMoneyTile(
+              label: 'أرباح معلّقة',
+              amount: figures.pending,
+              caption: 'سُلِّمت — تُتاح بانتهاء فترتها وتحصيلها',
+              icon: AppIcons.report,
+            ),
+            SizedBox(height: 12.h),
+          ],
           InvestorMoneyTile(
             label: 'أرباح متاحة للسحب',
             amount: balances.wallet.profit,
-            caption: 'أُفرجت عنها بإقفال صفقة',
+            caption: 'انتهت فترتها وحُصِّلت',
             icon: AppIcons.report,
           ),
           SizedBox(height: 24.h),

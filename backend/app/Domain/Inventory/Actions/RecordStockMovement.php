@@ -202,9 +202,10 @@ final class RecordStockMovement
             // Never reached: InternalTransfer, OrderReversal and ArrivalReversal each relocate,
             // credit back or withdraw existing batches instead of opening one, and
             // OrderFulfillment, ScrapLoss and an Adjustment-decrease only ever call decrease().
+            // OwnershipTransfer never comes through here at all — see handOverBatches().
             MovementType::InternalTransfer, MovementType::OrderFulfillment,
             MovementType::OrderReversal, MovementType::ScrapLoss,
-            MovementType::ArrivalReversal => StockBatchSourceType::Adjustment,
+            MovementType::ArrivalReversal, MovementType::OwnershipTransfer => StockBatchSourceType::Adjustment,
         };
     }
 

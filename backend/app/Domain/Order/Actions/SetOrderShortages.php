@@ -44,9 +44,9 @@ final class SetOrderShortages
 
     /**
      * @param  array<int|string, LineShortage|string|int|float|null>  $shortages  line id → what
-     *              is missing from it. A {@see LineShortage} states both units; a bare number is
-     *              the shorthand for a line whose shelf counts the way the invoice does, which is
-     *              most of them. Absent or null is nothing missing.
+     *                                                                            is missing from it. A {@see LineShortage} states both units; a bare number is
+     *                                                                            the shorthand for a line whose shelf counts the way the invoice does, which is
+     *                                                                            most of them. Absent or null is nothing missing.
      * @param  User|null  $actor  who moved it, so whoever did is not told that they did. Null
      *                            when nobody did: a console command, a seeder, the sync itself.
      * @param  ShortageRevision  $reason  why the set is being rewritten — see the enum for why a

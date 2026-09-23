@@ -1,0 +1,21 @@
+# أيقوناتُ نسخة الاختبار.
+#
+# ملفٌّ مستقلٌّ باسم `flutter_launcher_icons-<flavor>.yaml` هو ما يفهمه المولّد نكهةً: يكتب
+# أندرويد في `android/app/src/dev/res/` و iOS في `DevAppIcon.appiconset`، فلا تدوس أيقونةُ
+# الاختبار أيقونةَ الإنتاج.
+#
+#   dart run flutter_launcher_icons
+#
+# (بلا وسائط — يلتقط هذا الملفَّ وملفَّ الإنتاج في `pubspec.yaml` معاً.)
+flutter_launcher_icons:
+  image_path: assets/branding/icon_1024_test.png
+
+  android: true
+  adaptive_icon_foreground: assets/branding/adaptive_foreground_test.png
+  # البرتقاليُّ نفسه خلف الشريط: خلفيةٌ فاتحة تحت شريطٍ ناريّ تجعل الأيقونةَ تُقرأ نصفين.
+  adaptive_icon_background: "#f4fbfa"
+  min_sdk_android: 24
+
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#f4fbfa"

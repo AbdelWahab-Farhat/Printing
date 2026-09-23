@@ -6,11 +6,9 @@ namespace App\Domain\Investor\Actions;
 
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Investor\DTOs\DealExpenseData;
-use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorDealExpense;
-use App\Domain\Investor\Models\InvestorWalletEntry;
-use App\Domain\Investor\Support\Money;
+use App\Domain\Investor\Queries\ProfitShareForEntry;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -29,6 +27,11 @@ use Illuminate\Support\Facades\DB;
  */
 final class RecordDealExpense
 {
+    public function __construct(
+        private readonly PostDealShare $postShare,
+        private readonly ProfitShareForEntry $profitShare,
+    ) {}
+
     public function __invoke(InvestorDeal $deal, DealExpenseData $data, ?int $actorId): InvestorDealExpense
     {
         return DB::transaction(function () use ($deal, $data, $actorId): InvestorDealExpense {
@@ -63,44 +66,38 @@ final class RecordDealExpense
      * their half alone took 500 from men who own 750 of the profit.
      *
      * A cost the company bears alone would be a different arrangement, and nothing in it says so.
+     *
+     * **Through {@see PostDealShare} rather than writing the rows here**, since the fund arrived:
+     * that one class knows which weights a deal splits by — frozen `investor_deal_shares` for an
+     * old deal, the period's units for the fund — and stamps each row with the period it belongs
+     * to. A second hand on the ledger beside it is a second answer to both questions.
      */
     private function chargeInvestors(InvestorDeal $deal, InvestorDealExpense $expense): void
     {
-        $shares = $deal->shares()->get();
-
-        if ($shares->isEmpty()) {
-            return;
-        }
-
-        $investorsAmount = $deal->investorsCutOf((string) $expense->amount);
+        // نسبةُ الفترة التي يقع فيها **يومُ وقوع المصروف** — وهي الفترةُ نفسُها التي يختم بها
+        // `PostDealShare` صفوفَه بعد سطرين، فالصفُّ وحسابُه من مشكاةٍ واحدة.
+        $investorsAmount = $deal->investorsCutOf(
+            (string) $expense->amount,
+            $this->profitShare->bySource(
+                $deal,
+                AuditSubject::InvestorDealExpense->value,
+                (int) $expense->getKey(),
+            ),
+        );
 
         if (bccomp($investorsAmount, '0', 2) <= 0) {
             return;
         }
 
-        $amounts = Money::allocate(
-            $investorsAmount,
-            $shares->map(fn ($share) => (string) $share->share_percent)->all(),
+        // A cost is a negative earning, and that is the whole of it: `PostDealShare` writes
+        // `loss` rows for a negative figure, reverses them if the invoice is restated, and needs
+        // to know nothing about expenses.
+        ($this->postShare)(
+            $deal,
+            '-'.$investorsAmount,
+            AuditSubject::InvestorDealExpense->value,
+            (int) $expense->getKey(),
+            'تصحيح تحميل مصروف',
         );
-
-        foreach ($shares as $index => $share) {
-            $amount = $amounts[$index] ?? '0.00';
-
-            if (bccomp($amount, '0', 2) <= 0) {
-                continue;
-            }
-
-            $entry = new InvestorWalletEntry([
-                'amount' => $amount,
-                'occurred_at' => now(),
-            ]);
-
-            $entry->investor_id = $share->investor_id;
-            $entry->investor_deal_id = $deal->getKey();
-            $entry->type = WalletEntryType::Loss;
-            $entry->source_type = AuditSubject::InvestorDealExpense->value;
-            $entry->source_id = $expense->getKey();
-            $entry->save();
-        }
     }
 }

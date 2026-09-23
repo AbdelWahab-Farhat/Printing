@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Orders;
 
+use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
-use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\Warehouse;

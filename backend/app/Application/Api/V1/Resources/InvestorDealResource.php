@@ -22,6 +22,11 @@ class InvestorDealResource extends JsonResource
             'id' => $this->id,
             'code' => $this->code,
 
+            // **الصندوقُ صفٌّ هنا ولا يُقفَل.** الخادمُ يرفض الضغطة
+            // ({@see \App\Domain\Investor\Exceptions\TheFundIsNotADeal})، والشاشةُ تحتاج أن
+            // تعرف قبلها لتُخفي الزرَّ بدل أن تَعِد بما يُرفض.
+            'is_fund' => $this->resource->isTheFund(),
+
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
             'can_be_edited' => $this->status->isEditable(),

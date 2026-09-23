@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Domain\Carrier\Actions\BuildNawrisPayload;
+use App\Domain\Investor\Actions\PostDealEarningsForOrder;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Exceptions\DiscountExceedsTotal;
@@ -20,7 +22,7 @@ use Illuminate\Console\ConfirmableTrait;
  * before that day are still carrying it, and this is the repair for the ones that are still alive.
  *
  * **An in-flight order cannot be left carrying it, and that is what makes this urgent rather than
- * tidy.** {@see \App\Domain\Carrier\Actions\BuildNawrisPayload::amountToCollect()} no longer
+ * tidy.** {@see BuildNawrisPayload::amountToCollect()} no longer
  * subtracts the fee, because nothing adds it any more. On an order whose total still contains it,
  * the next edit of the parcel
  * would ask Nawris to collect the fee *and* leave the courier charging it at the door — the
@@ -36,7 +38,7 @@ use Illuminate\Console\ConfirmableTrait;
  * order disagree with the receipt in the customer's hand and with the cash that was counted.
  * Money that genuinely needs correcting on a closed order is the investors' share of it — posted
  * out of `grand_total − total_cogs` by
- * {@see \App\Domain\Investor\Actions\PostDealEarningsForOrder} — and a ledger is corrected with a
+ * {@see PostDealEarningsForOrder} — and a ledger is corrected with a
  * reversal entry, never by rewriting the figure it was computed from. That is a separate,
  * deliberate piece of work and this command does not pretend to do it.
  *

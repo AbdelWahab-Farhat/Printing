@@ -36,11 +36,67 @@ final class SettingsService
         return (string) $this->current()->investor_profit_share_percent;
     }
 
-    public function update(string $investorProfitSharePercent, ?int $actorId): CompanySetting
+    /**
+     * المدد الأربع التي يحكم بها الصندوقُ نفسَه، لمن يفتح فترةً جديدة.
+     *
+     * **تُقرأ مرّةً وتُنسَخ على صفّ الفترة**، ولا تُقرأ من هنا بعدها — فمن أقفل سبتمبر على شهرٍ
+     * واحد يبقى شهراً واحداً ولو صارت المدةُ شهرين في أكتوبر. وهو الانضباطُ نفسه الذي تمشي عليه
+     * {@see investorProfitSharePercent()} بجانبها.
+     *
+     * تُسلَّم أربعتُها معاً لا واحدةً واحدة: فتحُ الفترة يحتاجها كلَّها في اللحظة نفسها، وأربعُ
+     * قراءاتٍ لصفٍّ واحد تفتح أربعَ نوافذَ يتغيّر فيها الإعداد بين واحدةٍ وأختها.
+     *
+     * @return array{period_months: int, subscription_window_days: int, settlement_months: int, capital_lock_months: int}
+     */
+    public function investmentDurations(): array
     {
         $settings = $this->current();
 
-        $settings->fill(['investor_profit_share_percent' => $investorProfitSharePercent]);
+        return [
+            'period_months' => (int) $settings->investment_period_months,
+            'subscription_window_days' => (int) $settings->investment_subscription_window_days,
+            'settlement_months' => (int) $settings->investment_settlement_months,
+            'capital_lock_months' => (int) $settings->investment_capital_lock_months,
+        ];
+    }
+
+    /**
+     * سعرُ السادة الافتراضي، أو null حين لا افتراضَ أصلاً.
+     *
+     * **افتراضٌ لشاشةٍ لا قاعدةٌ في حساب.** تُملأ به حقولُ التمويل قبل أن يُكتب رقم، فيُرى
+     * ويُغيَّر لكل رفّ؛ والمكتوبُ وحده يُجمَّد على سطر التوريد. فلا شيءَ في المال يقرأ هذا
+     * العمود بعد لحظة التمويل، وتغييرُه غداً لا يحرّك ديناراً وُقِّع عليه أمس.
+     *
+     * ووحدتُه الكيلو — انظر ترحيلَ العمود.
+     */
+    public function defaultPlainSalePrice(): ?string
+    {
+        $price = $this->current()->default_plain_sale_price;
+
+        return $price === null ? null : (string) $price;
+    }
+
+    /**
+     * @param  array<string, int>  $durations  ما وصل من المدد، بأسماء أعمدتها. الفارغُ يعني
+     *                                         «لم تُذكر» فتبقى كما هي — لا «صفّرها».
+     */
+    public function update(
+        string $investorProfitSharePercent,
+        ?int $actorId,
+        array $durations = [],
+        bool $touchesPlainPrice = false,
+        ?string $defaultPlainSalePrice = null,
+    ): CompanySetting {
+        $settings = $this->current();
+
+        $settings->fill([
+            'investor_profit_share_percent' => $investorProfitSharePercent,
+            ...$durations,
+            // **رايةٌ بجانب القيمة، لأن null هنا جوابان.** «لم تُذكر فتبقى كما هي» و«امسحها»
+            // يصلان كـnull في الجسد نفسه، والمدد فوقها تفرّق بينهما بغياب المفتاح — وقيمةٌ
+            // تُمحى لا تستطيع ذلك.
+            ...($touchesPlainPrice ? ['default_plain_sale_price' => $defaultPlainSalePrice] : []),
+        ]);
         $settings->updated_by = $actorId;
         $settings->save();
 

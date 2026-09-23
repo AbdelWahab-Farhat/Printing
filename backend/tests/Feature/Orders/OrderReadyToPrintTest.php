@@ -540,6 +540,9 @@ class OrderReadyToPrintTest extends TestCase
             TransitionFields::stockQuantityKey($item) => '3.2',
         ])->assertOk();
 
+        // الرصيد بعد التصحيح وقبل الإلغاء — الشاهد الذي يُقارن به ما بعده.
+        $beforeCancelling = $this->balanceOf($warehouse, $size);
+
         // Act
         $this->move($headers, $order->refresh(), OrderStatus::Cancelled)
             ->assertStatus(422); // a cancellation owes a reason
@@ -549,11 +552,25 @@ class OrderReadyToPrintTest extends TestCase
             'reason' => 'العميل ألغى الطلب',
         ])->assertOk();
 
-        // Assert — **the regression test for keeping one movement id per line.** The reversal
-        // credits back what the order actually took, not what it first pulled: 3.2 returns and
-        // the shelf lands back where it started. A delta movement at «جاهزة» would have left
-        // `fulfillment_stock_movement_id` naming one of two draws, and this figure would be wrong.
-        $this->assertSame('1000.000', $this->balanceOf($warehouse, $size));
+        // Assert — **the regression test for keeping one movement id per line**, now read off the
+        // loss instead of the shelf.
+        //
+        // البضاعة مطبوعة والإلغاء بعد «جاهزة»، فلا شيء يعود إلى الرفّ — تُشطب خسارةً بدلاً من ذلك
+        // ({@see \App\Domain\Order\Actions\ReverseOrderStockDeduction}). والانحدارُ الذي يحرسه
+        // هذا الاختبار لم يتغيّر: الشطب يسمّي ما أخذته الطلبية فعلاً — ٣٫٢ — لا ما سحبته أولاً —
+        // ٣٫٥. وحركةُ فرقٍ عند «جاهزة» كانت ستترك `fulfillment_stock_movement_id` يسمّي إحدى
+        // سحبتين، فيخرج هذا الرقم خاطئاً كما كان سيخرج الرصيد خاطئاً قبلاً.
+        // ٩٩٦٫٨ لا ٩٩٦٫٥: التصحيح عند «جاهزة» ردّ الـ٠٫٣ الزائدة يومَها، فالخارج ٣٫٢ — وهو
+        // الرقم المصحَّح عينُه. لو نجا العطبُ القديم لبقي الخارج ٣٫٥ ولقرأ الرصيدُ ٩٩٦٫٥.
+        $this->assertSame('996.800', $this->balanceOf($warehouse, $size));
+
+        // **والإلغاء نفسُه لم يحرّك الرفّ بشيء** — لا قبله ولا بعده فرق.
+        //
+        // ولا صفَّ خسارةٍ هنا، وهو صحيح: هذا التجهيز يملأ الرفّ بـ`WarehouseStock` مباشرةً بلا
+        // طبقات تكلفة، فلا `material_cost` للسطر — ولا يُشطب ما لم يكلّف شيئاً. قيمةُ الخسارة
+        // يحرسها `OrderCancellationReversalTest` حيث توجد طبقاتٌ بتكلفة حقيقية.
+        $this->assertSame($beforeCancelling, $this->balanceOf($warehouse, $size));
+        $this->assertDatabaseEmpty('production_cost_entries');
     }
 
     // ──────────────────────── goods that never see the press ────────────────────────
