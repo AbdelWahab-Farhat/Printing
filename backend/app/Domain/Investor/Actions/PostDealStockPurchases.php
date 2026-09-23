@@ -9,6 +9,7 @@ use App\Domain\Inventory\InventoryService;
 use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Investor\Queries\ProfitShareForEntry;
 use App\Domain\Investor\Support\StockPurchaseMargins;
 use App\Domain\Order\OrderService;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,7 @@ final class PostDealStockPurchases
         private readonly InventoryService $inventory,
         private readonly PostDealShare $postShare,
         private readonly PostPressPurchaseProceeds $postProceeds,
+        private readonly ProfitShareForEntry $profitShare,
     ) {}
 
     /**
@@ -222,7 +224,10 @@ final class PostDealStockPurchases
 
                 $rows = ($this->postShare)(
                     $deal,
-                    $deal->investorsCutOf($margins[$dealId] ?? '0.00'),
+                    $deal->investorsCutOf(
+                        $margins[$dealId] ?? '0.00',
+                        $this->profitShare->bySource($deal, $sourceType, $sourceId),
+                    ),
                     $sourceType,
                     $sourceId,
                     $correctionNote,

@@ -56,6 +56,7 @@ final class OrderInvestorSharesQuery
     public function __construct(
         private readonly OrderService $orders,
         private readonly InventoryService $inventory,
+        private readonly ProfitShareForEntry $profitShare,
     ) {}
 
     /**
@@ -167,7 +168,7 @@ final class OrderInvestorSharesQuery
                 continue;
             }
 
-            $share = $deal->investorsCutOf($figures['margin']);
+            $share = $deal->investorsCutOf($figures['margin'], $this->rateFor($deal, $orderId));
 
             $rows[] = [
                 'deal_id' => $dealId,
@@ -215,7 +216,7 @@ final class OrderInvestorSharesQuery
                 continue;
             }
 
-            $share = $deal->investorsCutOf($slice['profit']);
+            $share = $deal->investorsCutOf($slice['profit'], $this->rateFor($deal, $orderId));
             $standing = $posted[$dealId] ?? null;
 
             $rows[] = [
@@ -284,5 +285,17 @@ final class OrderInvestorSharesQuery
         }
 
         return $posted;
+    }
+
+    /**
+     * نسبةُ المستثمرين في هذه الطلبية — بفترتها هي.
+     *
+     * **بالطلبية لا بكل مصدرٍ على حدة**، وهي شاشةُ طلبيةٍ واحدة: بنودُها وهالكُها كلُّها تحت
+     * `placed_at` واحد، فلا تقع في فترتين. وهو ما يقرأ به {@see CloseInvestmentPeriod} صافيَ
+     * الفترة ونصيبَ مستثمريها، فيتّفق المعروضُ مع المجمَّد بالبناء.
+     */
+    private function rateFor(InvestorDeal $deal, int $orderId): string
+    {
+        return $this->profitShare->bySource($deal, AuditSubject::Order->value, $orderId);
     }
 }

@@ -95,7 +95,10 @@ class InvestorWalletEntry extends Model
 
             $period = InvestmentPeriod::query()->whereKey($entry->investment_period_id)->first();
 
-            if ($period !== null && $period->status === PeriodStatus::Closed) {
+            // **بالسؤال لا بالمقارنة.** «أيجوز أن يُكتب فيها؟» جوابُه على الحالة نفسها
+            // ({@see PeriodStatus::acceptsPostings()})، فيوم وُلدت الحالةُ الثالثة لم يحتج هذا
+            // السطرُ إلى تعديل — ومقارنةٌ بـ`Closed` كانت ستمرّ صامتةً وتقول شيئاً آخر.
+            if ($period !== null && ! $period->status->acceptsPostings()) {
                 throw PeriodIsClosed::make((string) $period->code);
             }
         });

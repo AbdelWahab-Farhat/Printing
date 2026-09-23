@@ -6,6 +6,7 @@ namespace Tests\Feature\Investors;
 
 use App\Domain\Investor\Actions\CloseInvestmentPeriod;
 use App\Domain\Investor\Actions\OpenInvestmentPeriod;
+use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Exceptions\PeriodIsClosed;
 use App\Domain\Investor\Models\InvestmentPeriod;
@@ -220,5 +221,78 @@ class PeriodStampingTest extends TestCase
         Carbon::setTestNow();
 
         parent::tearDown();
+    }
+
+    /** تضع الفترةَ في انتظار طلبياتها، كما يفعل بها الإقفالُ في موعدها. */
+    private function markClosing(InvestmentPeriod $period): void
+    {
+        $period->status = PeriodStatus::Closing;
+        $period->save();
+    }
+
+    public function test_a_late_order_of_a_waiting_period_is_stamped_that_period_not_todays(): void
+    {
+        // Arrange — سبتمبر أُقفل في موعده وبقيت له طلبيةٌ لم تُسلَّم، فهو «قيد الإغلاق»،
+        // وأكتوبر فُتح ويستقبل طلبياته. ونسبُ سبتمبر مجمَّدةٌ تنتظر من يقسّم بها.
+        Carbon::setTestNow('2026-09-15 09:00:00');
+        $september = $this->openPeriod();
+
+        $orderId = (int) Order::factory()->create(['placed_at' => '2026-09-28 10:00:00'])->id;
+
+        Carbon::setTestNow('2026-10-01 09:00:00');
+        $this->markClosing($september);
+        $october = $this->openPeriod();
+
+        // Act — الطلبيةُ تُسلَّم في السابع من أكتوبر.
+        Carbon::setTestNow('2026-10-07 09:00:00');
+        $stamp = app(PeriodForEntry::class)->bySource('order', $orderId);
+
+        // Assert — ربحُها لسبتمبر ولأصحابه، لا لحَمَلة أكتوبر.
+        $this->assertSame((int) $september->id, $stamp);
+        $this->assertNotSame((int) $october->id, $stamp);
+    }
+
+    public function test_a_waiting_period_still_accepts_the_profit_of_its_own_order(): void
+    {
+        // Arrange — الحارسُ يرفض الكتابة في فترةٍ **مغلقة**؛ والمنتظِرةُ ليست كذلك، وإلا لم
+        // يكن لانتظارها معنى: هي تنتظر هذا الصفَّ بعينه.
+        Carbon::setTestNow('2026-09-15 09:00:00');
+        $september = $this->openPeriod();
+        $investor = Investor::factory()->create();
+        $deal = InvestorDeal::factory()->create();
+
+        Carbon::setTestNow('2026-10-01 09:00:00');
+        $this->markClosing($september);
+
+        // Act
+        Carbon::setTestNow('2026-10-07 09:00:00');
+        $entry = $this->accrue((int) $investor->id, (int) $deal->id, '900.00', 88, (int) $september->id);
+
+        // Assert
+        $this->assertSame((int) $september->id, (int) $entry->fresh()->investment_period_id);
+    }
+
+    public function test_a_waiting_period_does_not_take_an_entry_dated_after_its_window(): void
+    {
+        // Arrange — الانتظارُ لطلبياتها هي، لا بابٌ خلفيّ يُدخِل فيها واقعةَ أكتوبر. وهذا ما
+        // يفرّق `acceptsPostings()` عن `acceptsNewEntries()`: الأولى تسمح بصفِّ سبتمبر يصل
+        // متأخّراً، والثانيةُ تمنع أن يقع فيها يومُ أكتوبر أصلاً.
+        Carbon::setTestNow('2026-09-15 09:00:00');
+        $september = $this->openPeriod();
+
+        Carbon::setTestNow('2026-10-01 09:00:00');
+        $this->markClosing($september);
+        $october = $this->openPeriod();
+
+        // بتاريخٍ يقع في نافذة أكتوبر مهما حُسبت حوافُّ الفترات — فالاختبارُ عن الحالة لا عن
+        // حسابِ التقويم، وذاك له اختبارُه.
+        $lateOrder = (int) Order::factory()->create(['placed_at' => '2026-10-20 10:00:00'])->id;
+
+        // Act
+        Carbon::setTestNow('2026-10-22 09:00:00');
+        $stamp = app(PeriodForEntry::class)->bySource('order', $lateOrder);
+
+        // Assert
+        $this->assertSame((int) $october->id, $stamp);
     }
 }

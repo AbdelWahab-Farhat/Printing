@@ -201,4 +201,81 @@ class InvestmentPeriodShapeTest extends TestCase
             'subscription_closes_on' => '2026-10-15',
         ]));
     }
+
+    public function test_a_period_whose_window_ended_waits_in_closing_without_freezing_a_figure(): void
+    {
+        // Arrange — النافذةُ انتهت وبقيت لها طلبيةٌ لم تُسلَّم. أرقامُها ما زالت تتحرّك، فلا
+        // يُجمَّد منها شيء: «قيد الإغلاق» حالةُ فترةٍ لم تَعُد تستقبل قيداً جديداً وما زالت
+        // تستقبل ربحَ طلبياتها هي.
+        DB::table('investment_periods')->insert($this->period());
+
+        // Act
+        DB::table('investment_periods')->where('starts_on', '2026-09-01')
+            ->update(['status' => 'closing']);
+
+        // Assert
+        $this->assertDatabaseHas('investment_periods', [
+            'starts_on' => '2026-09-01',
+            'status' => 'closing',
+            'closed_at' => null,
+            'net_profit' => null,
+        ]);
+    }
+
+    public function test_a_closing_period_does_not_hold_the_next_one_shut(): void
+    {
+        // Arrange — وهذا هو كلُّ الغرض من الحالة الثالثة: سبتمبر ينتظر آخرَ طلبياته بينما
+        // أكتوبر يستقبل طلبياته، فلا تُحبَس أرباحُ أحدٍ من أجل طلبيةٍ واحدة.
+        DB::table('investment_periods')->insert($this->period());
+        DB::table('investment_periods')->where('starts_on', '2026-09-01')
+            ->update(['status' => 'closing']);
+
+        // Act
+        DB::table('investment_periods')->insert($this->period([
+            'starts_on' => '2026-10-01',
+            'ends_on' => '2026-10-31',
+            'subscription_closes_on' => '2026-10-07',
+        ]));
+
+        // Assert — واحدةٌ مفتوحة لا اثنتان، والمنتظِرةُ بجانبها لا تُعدّ منها.
+        $this->assertSame(1, DB::table('investment_periods')->where('status', 'open')->count());
+        $this->assertSame(1, DB::table('investment_periods')->where('status', 'closing')->count());
+    }
+
+    public function test_a_closing_period_freezes_no_figure_either(): void
+    {
+        // Arrange — «قيد الإغلاق» ما زالت تستقبل ربحَ طلبياتها المتأخّرة، فأيُّ رقمٍ يُكتب
+        // عليها اليوم رقمٌ سيتغيّر غداً — وهو العطبُ نفسُه الذي يحرسه الشرطُ على المفتوحة.
+        DB::table('investment_periods')->insert($this->period());
+        DB::table('investment_periods')->where('starts_on', '2026-09-01')
+            ->update(['status' => 'closing']);
+
+        // Assert
+        $this->expectException(QueryException::class);
+
+        // Act
+        DB::table('investment_periods')->where('starts_on', '2026-09-01')
+            ->update(['net_profit' => '6000.00']);
+    }
+
+    public function test_two_periods_may_wait_in_closing_at_once(): void
+    {
+        // Arrange — أغسطس بطلبيةٍ عالقة، وسبتمبر انتهى بعده وله عالقةٌ أخرى. لا شيء في النظام
+        // يجعل الثانيةَ تنتظر الأولى، فلا قيدَ يمنع اجتماعَهما.
+        DB::table('investment_periods')->insert($this->period([
+            'starts_on' => '2026-08-01',
+            'ends_on' => '2026-08-31',
+            'subscription_closes_on' => '2026-08-07',
+        ]));
+        DB::table('investment_periods')->where('starts_on', '2026-08-01')
+            ->update(['status' => 'closing']);
+
+        // Act
+        DB::table('investment_periods')->insert($this->period());
+        DB::table('investment_periods')->where('starts_on', '2026-09-01')
+            ->update(['status' => 'closing']);
+
+        // Assert
+        $this->assertSame(2, DB::table('investment_periods')->where('status', 'closing')->count());
+    }
 }

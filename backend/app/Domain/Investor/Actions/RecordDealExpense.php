@@ -8,6 +8,7 @@ use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Investor\DTOs\DealExpenseData;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorDealExpense;
+use App\Domain\Investor\Queries\ProfitShareForEntry;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -26,7 +27,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class RecordDealExpense
 {
-    public function __construct(private readonly PostDealShare $postShare) {}
+    public function __construct(
+        private readonly PostDealShare $postShare,
+        private readonly ProfitShareForEntry $profitShare,
+    ) {}
 
     public function __invoke(InvestorDeal $deal, DealExpenseData $data, ?int $actorId): InvestorDealExpense
     {
@@ -70,7 +74,16 @@ final class RecordDealExpense
      */
     private function chargeInvestors(InvestorDeal $deal, InvestorDealExpense $expense): void
     {
-        $investorsAmount = $deal->investorsCutOf((string) $expense->amount);
+        // نسبةُ الفترة التي يقع فيها **يومُ وقوع المصروف** — وهي الفترةُ نفسُها التي يختم بها
+        // `PostDealShare` صفوفَه بعد سطرين، فالصفُّ وحسابُه من مشكاةٍ واحدة.
+        $investorsAmount = $deal->investorsCutOf(
+            (string) $expense->amount,
+            $this->profitShare->bySource(
+                $deal,
+                AuditSubject::InvestorDealExpense->value,
+                (int) $expense->getKey(),
+            ),
+        );
 
         if (bccomp($investorsAmount, '0', 2) <= 0) {
             return;

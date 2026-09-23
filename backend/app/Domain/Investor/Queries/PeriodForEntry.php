@@ -72,8 +72,13 @@ final class PeriodForEntry
         }
 
         $status = InvestmentPeriod::query()->whereKey($periodId)->value('status');
+        $status = $status instanceof PeriodStatus ? $status : PeriodStatus::tryFrom((string) $status);
 
-        if ($status === PeriodStatus::Open->value || $status === PeriodStatus::Open) {
+        // **والمنتظِرةُ تأخذ صفَّها كالمفتوحة.** هذا هو الموضعُ الذي كان يحوّل ربحَ طلبية سبتمبر
+        // إلى حَمَلة أكتوبر لو أُقفلت الفترةُ في موعدها: الأرضيةُ كُتبت لتصحيحٍ متأخّرٍ عن فترةٍ
+        // **راح مالُها إلى جيوب الناس**، وهي هناك صواب — ولا شيءَ راح من فترةٍ ما زالت تنتظر
+        // طلبياتها، فإسقاطُ صفّها على غيرها يسلّم ربحاً لمن لم يموّله.
+        if ($status !== null && $status->acceptsPostings()) {
             return $periodId;
         }
 

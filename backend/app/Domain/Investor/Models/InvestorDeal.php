@@ -196,8 +196,19 @@ class InvestorDeal extends Model implements HasAuditTrail
      *
      * The sign travels with the amount; the magnitude is rounded once at the end, and a result
      * that rounds to nothing is returned as plain zero rather than «-0.00».
+     *
+     * ## ولماذا تُمرَّر النسبةُ من خارج
+     *
+     * **النسبةُ على هذا الصفّ صحيحةٌ للصفقة القديمة وحدها.** عقدُها جُمّد يوم مولدها ولا فترةَ
+     * له، فصفُّها هو الحقيقة. وأمّا الصندوق فصفُّه **افتراضٌ كُتب يوم وُلد ولا يُحدَّث أبداً**،
+     * والحقيقةُ منسوخةٌ على صفّ كلِّ فترة ({@see ProfitShareForEntry}) — وإلا عرضت اللوحةُ
+     * نسبةً ودفع الدفترُ بأخرى أوّلَ ما يُغيَّر الإعداد.
+     *
+     * فمن يعرف فترةَ المصدر يمرّرها، ومن لا يعرفها يقع على الافتراض كما كان الحالُ دائماً.
+     *
+     * @param  string|null  $profitSharePercent  نسبةُ فترة المصدر؛ و`null` تقع على افتراض الصفّ
      */
-    public function investorsCutOf(string $amount): string
+    public function investorsCutOf(string $amount, ?string $profitSharePercent = null): string
     {
         $negative = bccomp($amount, '0', Money::SCALE) < 0;
         $magnitude = $negative ? substr($amount, 1) : $amount;
@@ -205,7 +216,7 @@ class InvestorDeal extends Model implements HasAuditTrail
         $cut = Money::round(bcdiv(
             bcmul(
                 bcmul($magnitude, (string) $this->investor_funded_percent, 8),
-                (string) $this->investor_profit_share_percent,
+                $profitSharePercent ?? (string) $this->investor_profit_share_percent,
                 8,
             ),
             '10000',
